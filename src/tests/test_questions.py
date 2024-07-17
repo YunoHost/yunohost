@@ -11,27 +11,30 @@ from typing import Any, Literal, Sequence, TypedDict, Union
 
 from _pytest.mark.structures import ParameterSet
 
-
 from moulinette import Moulinette
 from yunohost import app, domain, user
 from yunohost.utils.form import (
     OPTIONS,
+    FORBIDDEN_PASSWORD_CHARS,
+    READONLY_TYPES,
     ask_questions_and_parse_answers,
-    DisplayTextOption,
-    PasswordOption,
+    BaseChoicesOption,
+    BaseInputOption,
+    BaseReadonlyOption,
     DomainOption,
     WebPathOption,
     BooleanOption,
     FileOption,
     evaluate_simple_js_expression,
 )
+from yunohost.utils import form
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
 
 """
 Argument default format:
 {
-    "the_name": {
+    "the_id": {
         "type": "one_of_the_available_type",  // "sting" is not specified
         "ask": {
             "en": "the question in english",
@@ -48,7 +51,7 @@ Argument default format:
 }
 
 User answers:
-{"the_name": "value", ...}
+{"the_id": "value", ...}
 """
 
 
@@ -90,6 +93,12 @@ def patch_no_tty():
 @pytest.fixture
 def patch_with_tty():
     with patch_isatty(True):
+        yield
+
+
+@pytest.fixture
+def patch_cli_retries():
+    with patch.object(form, "MAX_RETRIES", 0):
         yield
 
 
@@ -215,9 +224,11 @@ def generate_test_name(intake, output, raw_option, data):
         "=".join(
             [
                 key,
-                str(raw_option[key])
-                if not isinstance(raw_option[key], str)
-                else f"'{raw_option[key]}'",
+                (
+                    str(raw_option[key])
+                    if not isinstance(raw_option[key], str)
+                    else f"'{raw_option[key]}'"
+                ),
             ]
         )
         for key in raw_option.keys()
@@ -254,9 +265,11 @@ def pytest_generate_tests(metafunc):
                         [metafunc.cls.raw_option], metafunc.cls.scenarios
                     )
                     ids += [
-                        generate_test_name(*args.values)
-                        if isinstance(args, ParameterSet)
-                        else generate_test_name(*args)
+                        (
+                            generate_test_name(*args.values)
+                            if isinstance(args, ParameterSet)
+                            else generate_test_name(*args)
+                        )
                         for args in argvalues
                     ]
                 elif params[1] == "expected_normalized":
@@ -376,9 +389,8 @@ def _fill_or_prompt_one_option(raw_option, intake):
     options = {id_: raw_option}
     answers = {id_: intake} if intake is not None else {}
 
-    option = ask_questions_and_parse_answers(options, answers)[0]
-
-    return (option, option.value)
+    options, form = ask_questions_and_parse_answers(options, answers)
+    return (options[0], form[id_] if isinstance(options[0], BaseInputOption) else None)
 
 
 def _test_value_is_expected_output(value, expected_output):
@@ -405,6 +417,7 @@ def _test_intake_may_fail(raw_option, intake, expected_output):
         _test_intake(raw_option, intake, expected_output)
 
 
+@pytest.mark.usefixtures("patch_cli_retries")  # To avoid chain error logging
 class BaseTest:
     raw_option: dict[str, Any] = {}
     prefill: dict[Literal["raw_option", "prefill", "intake"], Any]
@@ -435,17 +448,24 @@ class BaseTest:
     @classmethod
     def _test_basic_attrs(self):
         raw_option = self.get_raw_option(optional=True)
+
+        if raw_option["type"] in READONLY_TYPES:
+            del raw_option["optional"]
+
+        if raw_option["type"] == "select":
+            raw_option["choices"] = ["one"]
+
         id_ = raw_option["id"]
         option, value = _fill_or_prompt_one_option(raw_option, None)
 
-        is_special_readonly_option = isinstance(option, DisplayTextOption)
+        is_special_readonly_option = isinstance(option, BaseReadonlyOption)
 
         assert isinstance(option, OPTIONS[raw_option["type"]])
         assert option.type == raw_option["type"]
-        assert option.name == id_
-        assert option.ask == {"en": id_}
+        assert option.id == id_
+        assert option.ask == id_
         assert option.readonly is (True if is_special_readonly_option else False)
-        assert option.visible is None
+        assert option.visible is True
         # assert option.bind is None
 
         if is_special_readonly_option:
@@ -480,6 +500,7 @@ class BaseTest:
         base_raw_option = prefill_data["raw_option"]
         prefill = prefill_data["prefill"]
 
+        # FIXME could patch prompt with prefill if we switch to "do not apply default if value is None|''"
         with patch_prompt("") as prompt:
             raw_option = self.get_raw_option(
                 raw_option=base_raw_option,
@@ -488,15 +509,13 @@ class BaseTest:
             )
             option, value = _fill_or_prompt_one_option(raw_option, None)
 
-            expected_message = option.ask["en"]
+            expected_message = option.ask
+            choices = []
 
-            if option.choices:
-                choices = (
-                    option.choices
-                    if isinstance(option.choices, list)
-                    else option.choices.keys()
-                )
-                expected_message += f" [{' | '.join(choices)}]"
+            if isinstance(option, BaseChoicesOption):
+                choices = option.choices
+                if choices:
+                    expected_message += f" [{' | '.join(choices)}]"
             if option.type == "boolean":
                 expected_message += " [yes | no]"
 
@@ -506,8 +525,8 @@ class BaseTest:
                 confirm=False,  # FIXME no confirm?
                 prefill=prefill,
                 is_multiline=option.type == "text",
-                autocomplete=option.choices or [],
-                help=option.help["en"],
+                autocomplete=choices,
+                help=option.help,
             )
 
     def test_scenarios(self, intake, expected_output, raw_option, data):
@@ -552,10 +571,10 @@ class TestDisplayText(BaseTest):
                     ask_questions_and_parse_answers({_id: raw_option}, answers)
             else:
                 with patch.object(sys, "stdout", new_callable=StringIO) as stdout:
-                    options = ask_questions_and_parse_answers(
+                    options, form = ask_questions_and_parse_answers(
                         {_id: raw_option}, answers
                     )
-                    assert stdout.getvalue() == f"{options[0].ask['en']}\n"
+                    assert stdout.getvalue() == f"{options[0].ask}\n"
 
 
 # ╭───────────────────────────────────────────────────────╮
@@ -584,9 +603,7 @@ class TestAlert(TestDisplayText):
         (None, None, {"ask": "Some text\na new line"}),
         (None, None, {"ask": {"en": "Some text\na new line", "fr": "Un peu de texte\nune nouvelle ligne"}}),
         *[(None, None, {"ask": "question", "style": style}) for style in ("success", "info", "warning", "danger")],
-        *xpass(scenarios=[
-            (None, None, {"ask": "question", "style": "nimp"}),
-        ], reason="Should fail, wrong style"),
+        (None, YunohostError, {"ask": "question", "style": "nimp"}),
     ]
     # fmt: on
 
@@ -605,10 +622,10 @@ class TestAlert(TestDisplayText):
                     )
             else:
                 with patch.object(sys, "stdout", new_callable=StringIO) as stdout:
-                    options = ask_questions_and_parse_answers(
+                    options, form = ask_questions_and_parse_answers(
                         {"display_text_id": raw_option}, answers
                     )
-                    ask = options[0].ask["en"]
+                    ask = options[0].ask
                     if style in colors:
                         color = colors[style]
                         title = style.title() + (":" if style != "success" else "!")
@@ -644,11 +661,15 @@ class TestString(BaseTest):
     scenarios = [
         *nones(None, "", output=""),
         # basic typed values
-        *unchanged(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),  # FIXME should output as str?
+        (False, "False"),
+        (True, "True"),
+        (0, "0"),
+        (1, "1"),
+        (-1, "-1"),
+        (1337, "1337"),
+        (13.37, "13.37"),
+        *all_fails([], ["one"], {}),
         *unchanged("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", raw_option={"optional": True}),
-        *xpass(scenarios=[
-            ([], []),
-        ], reason="Should fail"),
         # test strip
         ("value", "value"),
         ("value\n", "value"),
@@ -661,9 +682,7 @@ class TestString(BaseTest):
             (" ##value \n \tvalue\n  ", "##value \n \tvalue"),
         ], reason=r"should fail or without `\n`?"),
         # readonly
-        *xfail(scenarios=[
-            ("overwrite", "expected value", {"readonly": True, "default": "expected value"}),
-        ], reason="Should not be overwritten"),
+        ("overwrite", "expected value", {"readonly": True, "default": "expected value"}),  # FIXME do we want to fail instead?
     ]
     # fmt: on
 
@@ -683,13 +702,19 @@ class TestText(BaseTest):
     scenarios = [
         *nones(None, "", output=""),
         # basic typed values
-        *unchanged(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),  # FIXME should fail or output as str?
+        (False, "False"),
+        (True, "True"),
+        (0, "0"),
+        (1, "1"),
+        (-1, "-1"),
+        (1337, "1337"),
+        (13.37, "13.37"),
+        *all_fails([], ["one"], {}),
         *unchanged("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", raw_option={"optional": True}),
-        *xpass(scenarios=[
-            ([], [])
-        ], reason="Should fail"),
         ("value", "value"),
         ("value\n value", "value\n value"),
+        ("value", FAIL, {"pattern": {"regexp": r'^[A-F]\d\d$', "error": "Provide a room like F12 : one uppercase and 2 numbers"}}),
+        ("F12", "F12", {"pattern": {"regexp": r'^[A-F]\d\d$', "error": "Provide a room like F12 : one uppercase and 2 numbers"}}),
         # test no strip
         *xpass(scenarios=[
             ("value\n", "value"),
@@ -700,9 +725,7 @@ class TestText(BaseTest):
             (r" ##value \n \tvalue\n  ", r"##value \n \tvalue\n"),
         ], reason="Should not be stripped"),
         # readonly
-        *xfail(scenarios=[
-            ("overwrite", "expected value", {"readonly": True, "default": "expected value"}),
-        ], reason="Should not be overwritten"),
+        ("overwrite", "expected value", {"readonly": True, "default": "expected value"}),
     ]
     # fmt: on
 
@@ -720,11 +743,11 @@ class TestPassword(BaseTest):
     }
     # fmt: off
     scenarios = [
-        *all_fails(False, True, 0, 1, -1, 1337, 13.37, raw_option={"optional": True}, error=TypeError),  # FIXME those fails with TypeError
+        *all_fails(False, True, 0, 1, -1, 1337, 13.37, raw_option={"optional": True}),
         *all_fails([], ["one"], {}, raw_option={"optional": True}, error=AttributeError),  # FIXME those fails with AttributeError
         *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
         *nones(None, "", output=""),
-        ("s3cr3t!!", FAIL, {"default": "SUPAs3cr3t!!"}),  # default is forbidden
+        ("s3cr3t!!", YunohostError, {"default": "SUPAs3cr3t!!"}),  # default is forbidden
         *xpass(scenarios=[
             ("s3cr3t!!", "s3cr3t!!", {"example": "SUPAs3cr3t!!"}),  # example is forbidden
         ], reason="Should fail; example is forbidden"),
@@ -734,11 +757,9 @@ class TestPassword(BaseTest):
         ], reason="Should output exactly the same"),
         ("s3cr3t!!", "s3cr3t!!"),
         ("secret", FAIL),
-        *[("supersecret" + char, FAIL) for char in PasswordOption.forbidden_chars],  # FIXME maybe add ` \n` to the list?
+        *[("supersecret" + char, FAIL) for char in FORBIDDEN_PASSWORD_CHARS],  # FIXME maybe add ` \n` to the list?
         # readonly
-        *xpass(scenarios=[
-            ("s3cr3t!!", "s3cr3t!!", {"readonly": True}),
-        ], reason="Should fail since readonly is forbidden"),
+        ("s3cr3t!!", YunohostError, {"readonly": True}),  # readonly is forbidden
     ]
     # fmt: on
 
@@ -751,37 +772,31 @@ class TestPassword(BaseTest):
 class TestColor(BaseTest):
     raw_option = {"type": "color", "id": "color_id"}
     prefill = {
-        "raw_option": {"default": "#ff0000"},
-        "prefill": "#ff0000",
-        # "intake": "#ff00ff",
+        "raw_option": {"default": "red"},
+        "prefill": "red",
     }
     # fmt: off
     scenarios = [
         *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
-        *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+        *all_fails("none", "_none", "False", "True", "0", "1", "-1", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
         *nones(None, "", output=""),
         # custom valid
-        ("#000000", "#000000"),
+        (" #fe1  ", "#fe1"),
+        ("#000000", "#000"),
         ("#000", "#000"),
-        ("#fe100", "#fe100"),
-        (" #fe100  ", "#fe100"),
-        ("#ABCDEF", "#ABCDEF"),
+        ("#ABCDEF", "#abcdef"),
+        ('1337', "#1337"),  # rgba=(17, 51, 51, 0.47)
+        ("000000", "#000"),
+        ("#feaf", "#fea"),  # `#feaf` is `#fea` with alpha at `f|100%` -> equivalent to `#fea`
+        # named
+        ("red", "#f00"),
+        ("yellow", "#ff0"),
         # custom fail
-        *xpass(scenarios=[
-            ("#feaf", "#feaf"),
-        ], reason="Should fail; not a legal color value"),
-        ("000000", FAIL),
         ("#12", FAIL),
         ("#gggggg", FAIL),
         ("#01010101af", FAIL),
-        *xfail(scenarios=[
-            ("red", "#ff0000"),
-            ("yellow", "#ffff00"),
-        ], reason="Should work with pydantic"),
         # readonly
-        *xfail(scenarios=[
-            ("#ffff00", "#fe100", {"readonly": True, "default": "#fe100"}),
-        ], reason="Should not be overwritten"),
+        ("#ffff00", "#000", {"readonly": True, "default": "#000"}),
     ]
     # fmt: on
 
@@ -805,10 +820,8 @@ class TestNumber(BaseTest):
 
         *nones(None, "", output=None),
         *unchanged(0, 1, -1, 1337),
-        *xpass(scenarios=[(False, False)], reason="should fail or output as `0`"),
-        *xpass(scenarios=[(True, True)], reason="should fail or output as `1`"),
-        *all_as("0", 0, output=0),
-        *all_as("1", 1, output=1),
+        *all_as(False, "0", 0, output=0),  # FIXME should `False` fail instead?
+        *all_as(True, "1", 1, output=1),  # FIXME should `True` fail instead?
         *all_as("1337", 1337, output=1337),
         *xfail(scenarios=[
             ("-1", -1)
@@ -823,9 +836,7 @@ class TestNumber(BaseTest):
         (-10, -10, {"default": 10}),
         (-10, -10, {"default": 10, "optional": True}),
         # readonly
-        *xfail(scenarios=[
-            (1337, 10000, {"readonly": True, "default": 10000}),
-        ], reason="Should not be overwritten"),
+        (1337, 10000, {"readonly": True, "default": "10000"}),
     ]
     # fmt: on
     # FIXME should `step` be some kind of "multiple of"?
@@ -850,14 +861,20 @@ class TestBoolean(BaseTest):
         *all_fails("none", "None"),  # FIXME should output as `0` (default) like other none values when required?
         *all_as(None, "", output=0, raw_option={"optional": True}),  # FIXME should output as `None`?
         *all_as("none", "None", output=None, raw_option={"optional": True}),
-        # FIXME even if default is explicity `None|""`, it ends up with class_default `0`
-        *all_as(None, "", output=0, raw_option={"default": None}),  # FIXME this should fail, default is `None`
-        *all_as(None, "", output=0, raw_option={"optional": True, "default": None}),  # FIXME even if default is explicity None, it ends up with class_default
-        *all_as(None, "", output=0, raw_option={"default": ""}),  # FIXME this should fail, default is `""`
-        *all_as(None, "", output=0, raw_option={"optional": True, "default": ""}),  # FIXME even if default is explicity None, it ends up with class_default
-        # With "none" behavior is ok
-        *all_fails(None, "", raw_option={"default": "none"}),
-        *all_as(None, "", output=None, raw_option={"optional": True, "default": "none"}),
+        {
+            "raw_options": [
+                {"default": None},
+                {"default": ""},
+                {"default": "none"},
+                {"default": "None"}
+            ],
+            "scenarios": [
+                # All none values fails if default is overriden
+                *all_fails(None, "", "none", "None"),
+                # All none values ends up as None if default is overriden
+                *all_as(None, "", "none", "None", output=None, raw_option={"optional": True}),
+            ]
+        },
         # Unhandled types should fail
         *all_fails(1337, "1337", "string", [], "[]", ",", "one,two"),
         *all_fails(1337, "1337", "string", [], "[]", ",", "one,two", {"optional": True}),
@@ -890,9 +907,7 @@ class TestBoolean(BaseTest):
             "scenarios": all_fails("", "y", "n", error=AssertionError),
         },
         # readonly
-        *xfail(scenarios=[
-            (1, 0, {"readonly": True, "default": 0}),
-        ], reason="Should not be overwritten"),
+        (1, 0, {"readonly": True, "default": 0}),
     ]
 
 
@@ -909,8 +924,12 @@ class TestDate(BaseTest):
     }
     # fmt: off
     scenarios = [
-        *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
-        *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+        # Those passes since False|True are parsed as 0|1 then int|float are considered a timestamp in seconds which ends up as default Unix date
+        *all_as(False, True, 0, 1, 1337, 13.37, "0", "1", "1337", "13.37", output="1970-01-01"),
+        # Those are negative one second timestamp ending up as Unix date - 1 sec (so day change)
+        *all_as(-1, "-1", output="1969-12-31"),
+        *all_fails([], ["one"], {}, raw_option={"optional": True}),
+        *all_fails("none", "_none", "False", "True", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
         *nones(None, "", output=""),
         # custom valid
         ("2070-12-31", "2070-12-31"),
@@ -919,20 +938,16 @@ class TestDate(BaseTest):
             ("2025-06-15T13:45:30", "2025-06-15"),
             ("2025-06-15 13:45:30", "2025-06-15")
         ], reason="iso date repr should be valid and extra data striped"),
-        *xfail(scenarios=[
-            (1749938400, "2025-06-15"),
-            (1749938400.0, "2025-06-15"),
-            ("1749938400", "2025-06-15"),
-            ("1749938400.0", "2025-06-15"),
-        ], reason="timestamp could be an accepted value"),
+        (1749938400, "2025-06-14"),
+        (1749938400.0, "2025-06-14"),
+        ("1749938400", "2025-06-14"),
+        ("1749938400.0", "2025-06-14"),
         # custom invalid
         ("29-12-2070", FAIL),
         ("12-01-10", FAIL),
         ("2022-02-29", FAIL),
         # readonly
-        *xfail(scenarios=[
-            ("2070-12-31", "2024-02-29", {"readonly": True, "default": "2024-02-29"}),
-        ], reason="Should not be overwritten"),
+        ("2070-12-31", "2024-02-29", {"readonly": True, "default": "2024-02-29"}),
     ]
     # fmt: on
 
@@ -950,24 +965,26 @@ class TestTime(BaseTest):
     }
     # fmt: off
     scenarios = [
-        *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
-        *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+        # Those passes since False|True are parsed as 0|1 then int|float are considered a timestamp in seconds but we don't take seconds into account so -> 00:00
+        *all_as(False, True, 0, 1, 13.37, "0", "1", "13.37", output="00:00"),
+        # 1337 seconds == 22 minutes
+        *all_as(1337, "1337", output="00:22"),
+        # Negative timestamp fails
+        *all_fails(-1, "-1", error=OverflowError),  # FIXME should handle that as a validation error
+        # *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
+        *all_fails("none", "_none", "False", "True", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
         *nones(None, "", output=""),
         # custom valid
         *unchanged("00:00", "08:00", "12:19", "20:59", "23:59"),
-        ("3:00", "3:00"),  # FIXME should fail or output as `"03:00"`?
-        *xfail(scenarios=[
-            ("22:35:05", "22:35"),
-            ("22:35:03.514", "22:35"),
-        ], reason="time as iso format could be valid"),
+        ("3:00", "03:00"),
+        ("23:1", "23:01"),
+        ("22:35:05", "22:35"),
+        ("22:35:03.514", "22:35"),
         # custom invalid
         ("24:00", FAIL),
-        ("23:1", FAIL),
         ("23:005", FAIL),
         # readonly
-        *xfail(scenarios=[
-            ("00:00", "08:00", {"readonly": True, "default": "08:00"}),
-        ], reason="Should not be overwritten"),
+        ("00:00", "08:00", {"readonly": True, "default": "08:00"}),
     ]
     # fmt: on
 
@@ -990,74 +1007,75 @@ class TestEmail(BaseTest):
 
         *nones(None, "", output=""),
         ("\n Abc@example.tld  ", "Abc@example.tld"),
+        *xfail(scenarios=[("admin@ynh.local", "admin@ynh.local")], reason="Should this pass?"),
         # readonly
-        *xfail(scenarios=[
-            ("Abc@example.tld", "admin@ynh.local", {"readonly": True, "default": "admin@ynh.local"}),
-        ], reason="Should not be overwritten"),
+        ("Abc@example.tld", "admin@ynh.org", {"readonly": True, "default": "admin@ynh.org"}),
 
         # Next examples are from https://github.com/JoshData/python-email-validator/blob/main/tests/test_syntax.py
         # valid email values
-        ("Abc@example.tld", "Abc@example.tld"),
-        ("Abc.123@test-example.com", "Abc.123@test-example.com"),
-        ("user+mailbox/department=shipping@example.tld", "user+mailbox/department=shipping@example.tld"),
-        ("伊昭傑@郵件.商務", "伊昭傑@郵件.商務"),
-        ("राम@मोहन.ईन्फो", "राम@मोहन.ईन्फो"),
-        ("юзер@екзампл.ком", "юзер@екзампл.ком"),
-        ("θσερ@εχαμπλε.ψομ", "θσερ@εχαμπλε.ψομ"),
-        ("葉士豪@臺網中心.tw", "葉士豪@臺網中心.tw"),
-        ("jeff@臺網中心.tw", "jeff@臺網中心.tw"),
-        ("葉士豪@臺網中心.台灣", "葉士豪@臺網中心.台灣"),
-        ("jeff葉@臺網中心.tw", "jeff葉@臺網中心.tw"),
-        ("ñoñó@example.tld", "ñoñó@example.tld"),
-        ("甲斐黒川日本@example.tld", "甲斐黒川日本@example.tld"),
-        ("чебурашкаящик-с-апельсинами.рф@example.tld", "чебурашкаящик-с-апельсинами.рф@example.tld"),
-        ("उदाहरण.परीक्ष@domain.with.idn.tld", "उदाहरण.परीक्ष@domain.with.idn.tld"),
-        ("ιωάννης@εεττ.gr", "ιωάννης@εεττ.gr"),
+        *unchanged(
+            "Abc@example.tld",
+            "Abc.123@test-example.com",
+            "user+mailbox/department=shipping@example.tld",
+            "伊昭傑@郵件.商務",
+            "राम@मोहन.ईन्फो",
+            "юзер@екзампл.ком",
+            "θσερ@εχαμπλε.ψομ",
+            "葉士豪@臺網中心.tw",
+            "jeff@臺網中心.tw",
+            "葉士豪@臺網中心.台灣",
+            "jeff葉@臺網中心.tw",
+            "ñoñó@example.tld",
+            "甲斐黒川日本@example.tld",
+            "чебурашкаящик-с-апельсинами.рф@example.tld",
+            "उदाहरण.परीक्ष@domain.with.idn.tld",
+            "ιωάννης@εεττ.gr",
+        ),
         # invalid email (Hiding because our current regex is very permissive)
-        # ("my@localhost", FAIL),
-        # ("my@.leadingdot.com", FAIL),
-        # ("my@．leadingfwdot.com", FAIL),
-        # ("my@twodots..com", FAIL),
-        # ("my@twofwdots．．.com", FAIL),
-        # ("my@trailingdot.com.", FAIL),
-        # ("my@trailingfwdot.com．", FAIL),
-        # ("me@-leadingdash", FAIL),
-        # ("me@－leadingdashfw", FAIL),
-        # ("me@trailingdash-", FAIL),
-        # ("me@trailingdashfw－", FAIL),
-        # ("my@baddash.-.com", FAIL),
-        # ("my@baddash.-a.com", FAIL),
-        # ("my@baddash.b-.com", FAIL),
-        # ("my@baddashfw.－.com", FAIL),
-        # ("my@baddashfw.－a.com", FAIL),
-        # ("my@baddashfw.b－.com", FAIL),
-        # ("my@example.com\n", FAIL),
-        # ("my@example\n.com", FAIL),
-        # ("me@x!", FAIL),
-        # ("me@x ", FAIL),
-        # (".leadingdot@domain.com", FAIL),
-        # ("twodots..here@domain.com", FAIL),
-        # ("trailingdot.@domain.email", FAIL),
-        # ("me@⒈wouldbeinvalid.com", FAIL),
-        ("@example.com", FAIL),
-        # ("\nmy@example.com", FAIL),
-        ("m\ny@example.com", FAIL),
-        ("my\n@example.com", FAIL),
-        # ("11111111112222222222333333333344444444445555555555666666666677777@example.com", FAIL),
-        # ("111111111122222222223333333333444444444455555555556666666666777777@example.com", FAIL),
-        # ("me@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.111111111122222222223333333333444444444455555555556.com", FAIL),
-        # ("me@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555566.com", FAIL),
-        # ("me@中1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555566.com", FAIL),
-        # ("my.long.address@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.11111111112222222222333333333344444.info", FAIL),
-        # ("my.long.address@λ111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.11111111112222222222333333.info", FAIL),
-        # ("my.long.address@λ111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444.info", FAIL),
-        # ("my.λong.address@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.111111111122222222223333333333444.info", FAIL),
-        # ("my.λong.address@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444.info", FAIL),
-        # ("me@bad-tld-1", FAIL),
-        # ("me@bad.tld-2", FAIL),
-        # ("me@xn--0.tld", FAIL),
-        # ("me@yy--0.tld", FAIL),
-        # ("me@yy－－0.tld", FAIL),
+        *all_fails(
+            "my@localhost",
+            "my@.leadingdot.com",
+            "my@．leadingfwdot.com",
+            "my@twodots..com",
+            "my@twofwdots．．.com",
+            "my@trailingdot.com.",
+            "my@trailingfwdot.com．",
+            "me@-leadingdash",
+            "me@－leadingdashfw",
+            "me@trailingdash-",
+            "me@trailingdashfw－",
+            "my@baddash.-.com",
+            "my@baddash.-a.com",
+            "my@baddash.b-.com",
+            "my@baddashfw.－.com",
+            "my@baddashfw.－a.com",
+            "my@baddashfw.b－.com",
+            "my@example\n.com",
+            "me@x!",
+            "me@x ",
+            ".leadingdot@domain.com",
+            "twodots..here@domain.com",
+            "trailingdot.@domain.email",
+            "me@⒈wouldbeinvalid.com",
+            "@example.com",
+            "m\ny@example.com",
+            "my\n@example.com",
+            "11111111112222222222333333333344444444445555555555666666666677777@example.com",
+            "111111111122222222223333333333444444444455555555556666666666777777@example.com",
+            "me@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.111111111122222222223333333333444444444455555555556.com",
+            "me@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555566.com",
+            "me@中1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555566.com",
+            "my.long.address@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.11111111112222222222333333333344444.info",
+            "my.long.address@λ111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.11111111112222222222333333.info",
+            "my.long.address@λ111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444.info",
+            "my.λong.address@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.111111111122222222223333333333444.info",
+            "my.λong.address@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444.info",
+            "me@bad-tld-1",
+            "me@bad.tld-2",
+            "me@xn--0.tld",
+            "me@yy--0.tld",
+            "me@yy－－0.tld",
+        )
     ]
     # fmt: on
 
@@ -1106,9 +1124,7 @@ class TestWebPath(BaseTest):
             ("https://example.com/folder", "/https://example.com/folder")
         ], reason="Should fail or scheme+domain removed"),
         # readonly
-        *xfail(scenarios=[
-            ("/overwrite", "/value", {"readonly": True, "default": "/value"}),
-        ], reason="Should not be overwritten"),
+        ("/overwrite", "/value", {"readonly": True, "default": "/value"}),
         # FIXME should path have forbidden_chars?
     ]
     # fmt: on
@@ -1132,23 +1148,17 @@ class TestUrl(BaseTest):
 
         *nones(None, "", output=""),
         ("http://some.org/folder/file.txt", "http://some.org/folder/file.txt"),
+        ('  https://www.example.com \n', 'https://www.example.com'),
         # readonly
-        *xfail(scenarios=[
-            ("https://overwrite.org", "https://example.org", {"readonly": True, "default": "https://example.org"}),
-        ], reason="Should not be overwritten"),
+        ("https://overwrite.org", "https://example.org", {"readonly": True, "default": "https://example.org"}),
         # rest is taken from https://github.com/pydantic/pydantic/blob/main/tests/test_networks.py
         # valid
         *unchanged(
             # Those are valid but not sure how they will output with pydantic
             'http://example.org',
-            'http://test',
-            'http://localhost',
             'https://example.org/whatever/next/',
             'https://example.org',
-            'http://localhost',
-            'http://localhost/',
-            'http://localhost:8000',
-            'http://localhost:8000/',
+
             'https://foo_bar.example.com/',
             'http://example.co.jp',
             'http://www.example.com/a%C2%B1b',
@@ -1172,29 +1182,31 @@ class TestUrl(BaseTest):
             'http://twitter.com/@handle/',
             'http://11.11.11.11.example.com/action',
             'http://abc.11.11.11.11.example.com/action',
-            'http://example#',
-            'http://example/#',
-            'http://example/#fragment',
-            'http://example/?#',
             'http://example.org/path#',
             'http://example.org/path#fragment',
             'http://example.org/path?query#',
             'http://example.org/path?query#fragment',
+            'https://foo_bar.example.com/',
+            'https://exam_ple.com/',
+            'HTTP://EXAMPLE.ORG',
+            'https://example.org',
+            'https://example.org?a=1&b=2',
+            'https://example.org#a=3;b=3',
+            'https://example.xn--p1ai',
+            'https://example.xn--vermgensberatung-pwb',
+            'https://example.xn--zfr164b',
         ),
-        # Pydantic default parsing add a final `/`
-        ('https://foo_bar.example.com/', 'https://foo_bar.example.com/'),
-        ('https://exam_ple.com/', 'https://exam_ple.com/'),
         *xfail(scenarios=[
-            ('  https://www.example.com \n', 'https://www.example.com/'),
-            ('HTTP://EXAMPLE.ORG', 'http://example.org/'),
-            ('https://example.org', 'https://example.org/'),
-            ('https://example.org?a=1&b=2', 'https://example.org/?a=1&b=2'),
-            ('https://example.org#a=3;b=3', 'https://example.org/#a=3;b=3'),
-            ('https://example.xn--p1ai', 'https://example.xn--p1ai/'),
-            ('https://example.xn--vermgensberatung-pwb', 'https://example.xn--vermgensberatung-pwb/'),
-            ('https://example.xn--zfr164b', 'https://example.xn--zfr164b/'),
-        ], reason="pydantic default behavior would append a final `/`"),
-
+            ('http://test', 'http://test'),
+            ('http://localhost', 'http://localhost'),
+            ('http://localhost/', 'http://localhost/'),
+            ('http://localhost:8000', 'http://localhost:8000'),
+            ('http://localhost:8000/', 'http://localhost:8000/'),
+            ('http://example#', 'http://example#'),
+            ('http://example/#', 'http://example/#'),
+            ('http://example/#fragment', 'http://example/#fragment'),
+            ('http://example/?#', 'http://example/?#'),
+        ], reason="Should this be valid?"),
         # invalid
         *all_fails(
             'ftp://example.com/',
@@ -1205,15 +1217,13 @@ class TestUrl(BaseTest):
             "/",
             "+http://example.com/",
             "ht*tp://example.com/",
+            "http:///",
+            "http://??",
+            "https://example.org more",
+            "http://2001:db8::ff00:42:8329",
+            "http://[192.168.1.1]:8329",
+            "http://example.com:99999",
         ),
-        *xpass(scenarios=[
-            ("http:///", "http:///"),
-            ("http://??", "http://??"),
-            ("https://example.org more", "https://example.org more"),
-            ("http://2001:db8::ff00:42:8329", "http://2001:db8::ff00:42:8329"),
-            ("http://[192.168.1.1]:8329", "http://[192.168.1.1]:8329"),
-            ("http://example.com:99999", "http://example.com:99999"),
-        ], reason="Should fail"),
     ]
     # fmt: on
 
@@ -1294,7 +1304,7 @@ class TestFile(BaseTest):
     def test_basic_attrs(self):
         raw_option, option, value = self._test_basic_attrs()
 
-        accept = raw_option.get("accept", "")  # accept default
+        accept = raw_option.get("accept", None)  # accept default
         assert option.accept == accept
 
     def test_options_prompted_with_ask_help(self):
@@ -1384,7 +1394,6 @@ class TestSelect(BaseTest):
             # [-1, 0, 1]
             "raw_options": [
                 {"choices": [-1, 0, 1, 10]},
-                {"choices": {-1: "verbose -one", 0: "verbose zero", 1: "verbose one", 10: "verbose ten"}},
             ],
             "scenarios": [
                 *nones(None, "", output=""),
@@ -1395,6 +1404,18 @@ class TestSelect(BaseTest):
                     ("1", 1),
                     ("10", 10),
                 ], reason="str -> int not handled"),
+                *all_fails("100", 100),
+            ]
+        },
+        {
+            "raw_options": [
+                {"choices": {-1: "verbose -one", 0: "verbose zero", 1: "verbose one", 10: "verbose ten"}},
+                {"choices": {"-1": "verbose -one", "0": "verbose zero", "1": "verbose one", "10": "verbose ten"}},
+            ],
+            "scenarios": [
+                *nones(None, "", output=""),
+                *all_fails(-1, 0, 1, 10),  # Should pass? converted to str?
+                *unchanged("-1", "0", "1", "10"),
                 *all_fails("100", 100),
             ]
         },
@@ -1425,9 +1446,7 @@ class TestSelect(BaseTest):
             ]
         },
         # readonly
-        *xfail(scenarios=[
-            ("one", "two", {"readonly": True, "choices": ["one", "two"], "default": "two"}),
-        ], reason="Should not be overwritten"),
+        ("one", "two", {"readonly": True, "choices": ["one", "two"], "default": "two"}),
     ]
     # fmt: on
 
@@ -1437,6 +1456,7 @@ class TestSelect(BaseTest):
 # ╰───────────────────────────────────────────────────────╯
 
 
+#  [], ["one"], {}
 class TestTags(BaseTest):
     raw_option = {"type": "tags", "id": "tags_id"}
     prefill = {
@@ -1445,12 +1465,7 @@ class TestTags(BaseTest):
     }
     # fmt: off
     scenarios = [
-        *nones(None, [], "", output=""),
-        # FIXME `","` could be considered a none value which kinda already is since it fail when required
-        (",", FAIL),
-        *xpass(scenarios=[
-            (",", ",", {"optional": True})
-        ], reason="Should output as `''`? ie: None"),
+        *nones(None, [], "", ",", output=""),
         {
             "raw_options": [
                 {},
@@ -1470,14 +1485,12 @@ class TestTags(BaseTest):
         # basic types (not in a list) should fail
         *all_fails(True, False, -1, 0, 1, 1337, 13.37, {}),
         # Mixed choices should fail
-        ([False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}], FAIL, {"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
-        ("False,True,-1,0,1,1337,13.37,[],['one'],{}", FAIL, {"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
-        *all_fails(*([t] for t in [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]), raw_option={"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
-        *all_fails(*([str(t)] for t in [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]), raw_option={"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
+        ([False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}], YunohostError, {"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
+        ("False,True,-1,0,1,1337,13.37,[],['one'],{}", YunohostError, {"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
+        *all_fails(*([t] for t in [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]), raw_option={"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}, error=YunohostError),
+        *all_fails(*([str(t)] for t in [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]), raw_option={"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}, error=YunohostError),
         # readonly
-        *xfail(scenarios=[
-            ("one", "one,two", {"readonly": True, "choices": ["one", "two"], "default": "one,two"}),
-        ], reason="Should not be overwritten"),
+        ("one", "one,two", {"readonly": True, "choices": ["one", "two"], "default": "one,two"}),
     ]
     # fmt: on
 
@@ -1525,9 +1538,7 @@ class TestDomain(BaseTest):
                 ("doesnt_exist.pouet", FAIL, {}),
                 ("fake.com", FAIL, {"choices": ["fake.com"]}),
                 # readonly
-                *xpass(scenarios=[
-                    (domains1[0], domains1[0], {"readonly": True}),
-                ], reason="Should fail since readonly is forbidden"),
+                (domains1[0], YunohostError, {"readonly": True}),  # readonly is forbidden
             ]
         },
         {
@@ -1543,6 +1554,10 @@ class TestDomain(BaseTest):
 
     ]
     # fmt: on
+
+    def test_options_prompted_with_ask_help(self, prefill_data=None):
+        with patch_domains(domains=[main_domain], main_domain=main_domain):
+            super().test_options_prompted_with_ask_help(prefill_data=prefill_data)
 
     def test_scenarios(self, intake, expected_output, raw_option, data):
         with patch_domains(**data):
@@ -1591,8 +1606,7 @@ class TestApp(BaseTest):
             ],
             "scenarios": [
                 # FIXME there are currently 3 different nones (`None`, `""` and `_none`), choose one?
-                *nones(None, output=None),  # FIXME Should return chosen none?
-                *nones("", output=""),  # FIXME Should return chosen none?
+                *nones(None, "", output=""),  # FIXME Should return chosen none?
                 *xpass(scenarios=[
                     ("_none", "_none"),
                     ("_none", "_none", {"default": "_none"}),
@@ -1615,7 +1629,7 @@ class TestApp(BaseTest):
                 (installed_webapp["id"], installed_webapp["id"], {"filter": "is_webapp"}),
                 (installed_webapp["id"], FAIL, {"filter": "is_webapp == false"}),
                 (installed_webapp["id"], FAIL, {"filter": "id != 'my_webapp'"}),
-                (None, None, {"filter": "id == 'fake_app'", "optional": True}),
+                (None, "", {"filter": "id == 'fake_app'", "optional": True}),
             ]
         },
         {
@@ -1624,9 +1638,7 @@ class TestApp(BaseTest):
                 (installed_non_webapp["id"], installed_non_webapp["id"]),
                 (installed_non_webapp["id"], FAIL, {"filter": "is_webapp"}),
                 # readonly
-                *xpass(scenarios=[
-                    (installed_non_webapp["id"], installed_non_webapp["id"], {"readonly": True}),
-                ], reason="Should fail since readonly is forbidden"),
+                (installed_non_webapp["id"], YunohostError, {"readonly": True}),  # readonly is forbidden
             ]
         },
     ]
@@ -1673,47 +1685,29 @@ class TestApp(BaseTest):
 
 admin_username = "admin_user"
 admin_user = {
-    "ssh_allowed": False,
     "username": admin_username,
-    "mailbox-quota": "0",
     "mail": "a@ynh.local",
-    "mail-aliases": [f"root@{main_domain}"],  # Faking "admin"
     "fullname": "john doe",
-    "group": [],
+    "groups": ["admins"],
 }
 regular_username = "normal_user"
 regular_user = {
-    "ssh_allowed": False,
     "username": regular_username,
-    "mailbox-quota": "0",
     "mail": "z@ynh.local",
     "fullname": "john doe",
-    "group": [],
+    "groups": [],
 }
 
 
 @contextmanager
-def patch_users(
-    *,
-    users,
-    admin_username,
-    main_domain,
-):
+def patch_users(*, users):
     """
     Data mocking for UserOption:
     - yunohost.user.user_list
     - yunohost.user.user_info
     - yunohost.domain._get_maindomain
     """
-    admin_info = next(
-        (user for user in users.values() if user["username"] == admin_username),
-        {"mail-aliases": []},
-    )
-    with patch.object(user, "user_list", return_value={"users": users}), patch.object(
-        user,
-        "user_info",
-        return_value=admin_info,  # Faking admin user
-    ), patch.object(domain, "_get_maindomain", return_value=main_domain):
+    with patch.object(user, "user_list", return_value={"users": users}):
         yield
 
 
@@ -1724,8 +1718,8 @@ class TestUser(BaseTest):
         # No tests for empty users since it should not happens
         {
             "data": [
-                {"users": {admin_username: admin_user}, "admin_username": admin_username, "main_domain": main_domain},
-                {"users": {admin_username: admin_user, regular_username: regular_user}, "admin_username": admin_username, "main_domain": main_domain},
+                {"users": {admin_username: admin_user}},
+                {"users": {admin_username: admin_user, regular_username: regular_user}},
             ],
             "scenarios": [
                 # FIXME User option is not really nullable, even if optional
@@ -1736,26 +1730,27 @@ class TestUser(BaseTest):
         },
         {
             "data": [
-                {"users": {admin_username: admin_user, regular_username: regular_user}, "admin_username": admin_username, "main_domain": main_domain},
+                {"users": {admin_username: admin_user, regular_username: regular_user}},
             ],
             "scenarios": [
                 *xpass(scenarios=[
                     ("", regular_username, {"default": regular_username})
                 ], reason="Should throw 'no default allowed'"),
                 # readonly
-                *xpass(scenarios=[
-                    (admin_username, admin_username, {"readonly": True}),
-                ], reason="Should fail since readonly is forbidden"),
+                (admin_username, YunohostError, {"readonly": True}),  # readonly is forbidden
             ]
         },
     ]
     # fmt: on
 
+    @pytest.mark.usefixtures("patch_no_tty")
+    def test_basic_attrs(self):
+        with patch_users(users={admin_username: admin_user}):
+            self._test_basic_attrs()
+
     def test_options_prompted_with_ask_help(self, prefill_data=None):
         with patch_users(
-            users={admin_username: admin_user, regular_username: regular_user},
-            admin_username=admin_username,
-            main_domain=main_domain,
+            users={admin_username: admin_user, regular_username: regular_user}
         ):
             super().test_options_prompted_with_ask_help(
                 prefill_data={"raw_option": {}, "prefill": admin_username}
@@ -1816,13 +1811,9 @@ class TestGroup(BaseTest):
             "scenarios": [
                 ("custom_group", "custom_group"),
                 *all_as("", None, output="visitors", raw_option={"default": "visitors"}),
-                *xpass(scenarios=[
-                    ("", "custom_group", {"default": "custom_group"}),
-                ], reason="Should throw 'default must be in (None, 'all_users', 'visitors', 'admins')"),
+                ("", YunohostError, {"default": "custom_group"}),  # Not allowed to set a default which is not a default group
                 # readonly
-                *xpass(scenarios=[
-                    ("admins", "admins", {"readonly": True}),
-                ], reason="Should fail since readonly is forbidden"),
+                ("admins", YunohostError, {"readonly": True}),  # readonly is forbidden
             ]
         },
     ]
@@ -1837,13 +1828,6 @@ class TestGroup(BaseTest):
                 prefill_data={
                     "raw_option": {"default": "admins"},
                     "prefill": "admins",
-                }
-            )
-            # FIXME This should fail, not allowed to set a default which is not a default group
-            super().test_options_prompted_with_ask_help(
-                prefill_data={
-                    "raw_option": {"default": "custom_group"},
-                    "prefill": "custom_group",
                 }
             )
 
@@ -1863,8 +1847,6 @@ def patch_entities():
         apps=[installed_webapp, installed_non_webapp]
     ), patch_users(
         users={admin_username: admin_user, regular_username: regular_user},
-        admin_username=admin_username,
-        main_domain=main_domain,
     ), patch_groups(
         groups=groups2
     ):
@@ -1902,12 +1884,12 @@ def test_options_query_string():
         "string_id": "string",
         "text_id": "text\ntext",
         "password_id": "sUpRSCRT",
-        "color_id": "#ffff00",
+        "color_id": "#ff0",
         "number_id": 10,
         "boolean_id": 1,
         "date_id": "2030-03-06",
         "time_id": "20:55",
-        "email_id": "coucou@ynh.local",
+        "email_id": "coucou@ynh.org",
         "path_id": "/ynh-dev",
         "url_id": "https://yunohost.org",
         "file_id": file_content1,
@@ -1930,7 +1912,7 @@ def test_options_query_string():
             "&boolean_id=y"
             "&date_id=2030-03-06"
             "&time_id=20:55"
-            "&email_id=coucou@ynh.local"
+            "&email_id=coucou@ynh.org"
             "&path_id=ynh-dev/"
             "&url_id=https://yunohost.org"
             f"&file_id={file_repr}"
@@ -1947,9 +1929,7 @@ def test_options_query_string():
             "&fake_id=fake_value"
         )
 
-    def _assert_correct_values(options, raw_options):
-        form = {option.name: option.value for option in options}
-
+    def _assert_correct_values(options, form, raw_options):
         for k, v in results.items():
             if k == "file_id":
                 assert os.path.exists(form["file_id"]) and os.path.isfile(
@@ -1965,24 +1945,39 @@ def test_options_query_string():
 
     with patch_interface("api"), patch_file_api(file_content1) as b64content:
         with patch_query_string(b64content.decode("utf-8")) as query_string:
-            options = ask_questions_and_parse_answers(raw_options, query_string)
-            _assert_correct_values(options, raw_options)
+            options, form = ask_questions_and_parse_answers(raw_options, query_string)
+            _assert_correct_values(options, form, raw_options)
 
     with patch_interface("cli"), patch_file_cli(file_content1) as filepath:
         with patch_query_string(filepath) as query_string:
-            options = ask_questions_and_parse_answers(raw_options, query_string)
-            _assert_correct_values(options, raw_options)
+            options, form = ask_questions_and_parse_answers(raw_options, query_string)
+            _assert_correct_values(options, form, raw_options)
 
 
 def test_question_string_default_type():
     questions = {"some_string": {}}
     answers = {"some_string": "some_value"}
 
-    out = ask_questions_and_parse_answers(questions, answers)[0]
+    options, form = ask_questions_and_parse_answers(questions, answers)
+    option = options[0]
+    assert option.id == "some_string"
+    assert option.type == "string"
+    assert form[option.id] == "some_value"
 
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "some_value"
+
+def test_option_default_type_with_choices_is_select():
+    questions = {
+        "some_choices": {"choices": ["a", "b"]},
+        # LEGACY (`choices` in option `string` used to be valid)
+        # make sure this result as a `select` option
+        "some_legacy": {"type": "string", "choices": ["a", "b"]},
+    }
+    answers = {"some_choices": "a", "some_legacy": "a"}
+
+    options, form = ask_questions_and_parse_answers(questions, answers)
+    for option in options:
+        assert option.type == "select"
+        assert form[option.id] == "a"
 
 
 @pytest.mark.skip  # we should do something with this example
@@ -2003,75 +1998,6 @@ def test_question_string_input_test_ask_with_example():
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert example_text in prompt.call_args[1]["message"]
-
-
-def test_question_string_with_choice():
-    questions = {"some_string": {"type": "string", "choices": ["fr", "en"]}}
-    answers = {"some_string": "fr"}
-    out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "fr"
-
-
-def test_question_string_with_choice_prompt():
-    questions = {"some_string": {"type": "string", "choices": ["fr", "en"]}}
-    answers = {"some_string": "fr"}
-    with patch.object(Moulinette, "prompt", return_value="fr"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "fr"
-
-
-def test_question_string_with_choice_bad():
-    questions = {"some_string": {"type": "string", "choices": ["fr", "en"]}}
-    answers = {"some_string": "bad"}
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_string_with_choice_ask():
-    ask_text = "some question"
-    choices = ["fr", "en", "es", "it", "ru"]
-    questions = {
-        "some_string": {
-            "ask": ask_text,
-            "choices": choices,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="ru") as prompt, patch.object(
-        os, "isatty", return_value=True
-    ):
-        ask_questions_and_parse_answers(questions, answers)
-        assert ask_text in prompt.call_args[1]["message"]
-
-        for choice in choices:
-            assert choice in prompt.call_args[1]["message"]
-
-
-def test_question_string_with_choice_default():
-    questions = {
-        "some_string": {
-            "type": "string",
-            "choices": ["fr", "en"],
-            "default": "en",
-        }
-    }
-    answers = {}
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "en"
 
 
 @pytest.mark.skip  # we should do something with this example

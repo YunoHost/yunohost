@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# Create a dedicated nginx config
+#
+# usage: ynh_config_add_nginx
+#
+# This will use a template in `../conf/nginx.conf`
+# See the documentation of `ynh_config_add` for a description of the template
+# format and how placeholders are replaced with actual variables.
+#
+# Additionally, ynh_config_add_nginx will replace:
+# - `#sub_path_only`      by empty string if `path` is not `'/'`
+# - `#root_path_only`     by empty string if `path`  *is*  `'/'`
+#
+# This allows to enable/disable specific behaviors dependenging on the install
+# location
+ynh_config_add_nginx() {
+
+    local finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
+
+    ynh_config_add --template="nginx.conf" --destination="$finalnginxconf"
+
+    if [ "${path:-}" != "/" ]; then
+        ynh_replace --match="^#sub_path_only" --replace="" --file="$finalnginxconf"
+    else
+        ynh_replace --match="^#root_path_only" --replace="" --file="$finalnginxconf"
+    fi
+
+    ynh_store_file_checksum "$finalnginxconf"
+
+    ynh_systemctl --service=nginx --action=reload
+}
+
+# Remove the dedicated nginx config
+#
+# usage: ynh_config_remove_nginx
+ynh_config_remove_nginx() {
+    ynh_safe_rm "/etc/nginx/conf.d/$domain.d/$app.conf"
+    ynh_systemctl --service=nginx --action=reload
+}
+
+
+# Regen the nginx config in a change url context
+#
+# usage: ynh_config_change_url_nginx
+ynh_config_change_url_nginx() {
+
+    # Make a backup of the original NGINX config file if manually modified
+    # (nb: this is possibly different from the same instruction called by
+    # ynh_config_add inside ynh_config_add_nginx because the path may have 
+    # changed if we're changing the domain too...)
+    local old_nginx_conf_path=/etc/nginx/conf.d/$old_domain.d/$app.conf
+    ynh_backup_if_checksum_is_different "$old_nginx_conf_path"
+    ynh_delete_file_checksum "$old_nginx_conf_path"
+    ynh_safe_rm "$old_nginx_conf_path"
+
+    # Regen the nginx conf
+    ynh_config_add_nginx
+}

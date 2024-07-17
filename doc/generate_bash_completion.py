@@ -8,6 +8,7 @@ adds `--help` at the end if one presses [tab] again.
 
 author: Christophe Vuillot
 """
+
 import os
 import yaml
 

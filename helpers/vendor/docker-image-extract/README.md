@@ -1,1 +1,1 @@
-This is taken from https://github.com/efrecon/docker-image-extract
+This is taken from https://github.com/jjlin/docker-image-extract, under MIT license.

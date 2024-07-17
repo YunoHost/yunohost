@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023 YunoHost Contributors
+# Copyright (c) 2024 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -22,26 +22,28 @@ import shutil
 import random
 import tempfile
 import subprocess
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union, Callable
+from logging import getLogger
 
 from moulinette import m18n
+from moulinette.utils.text import random_ascii
 from moulinette.utils.process import check_output
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import mkdir, chown, chmod, write_to_file
 from moulinette.utils.filesystem import (
     rm,
 )
-from yunohost.utils.system import system_arch
+from yunohost.utils.system import system_arch, debian_version, debian_version_id
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
-logger = getActionLogger("yunohost.app_resources")
+logger = getLogger("yunohost.utils.resources")
 
 
 class AppResourceManager:
-    def __init__(self, app: str, current: Dict, wanted: Dict):
+    def __init__(self, app: str, current: Dict, wanted: Dict, workdir=None):
         self.app = app
         self.current = current
         self.wanted = wanted
+        self.workdir = workdir
 
         if "resources" not in self.current:
             self.current["resources"] = {}
@@ -60,10 +62,10 @@ class AppResourceManager:
             try:
                 if todo == "deprovision":
                     # FIXME : i18n, better info strings
-                    logger.info(f"Deprovisionning {name}...")
+                    logger.info(f"Deprovisioning {name}...")
                     old.deprovision(context=context)
                 elif todo == "provision":
-                    logger.info(f"Provisionning {name}...")
+                    logger.info(f"Provisioning {name}...")
                     new.provision_or_update(context=context)
                 elif todo == "update":
                     logger.info(f"Updating {name}...")
@@ -89,10 +91,10 @@ class AppResourceManager:
                     # (NB. here we want to undo the todo)
                     if todo == "deprovision":
                         # FIXME : i18n, better info strings
-                        logger.info(f"Reprovisionning {name}...")
+                        logger.info(f"Reprovisioning {name}...")
                         old.provision_or_update(context=context)
                     elif todo == "provision":
-                        logger.info(f"Deprovisionning {name}...")
+                        logger.info(f"Deprovisioning {name}...")
                         new.deprovision(context=context)
                     elif todo == "update":
                         logger.info(f"Reverting {name}...")
@@ -145,15 +147,70 @@ class AppResource:
     def __init__(self, properties: Dict[str, Any], app: str, manager=None):
         self.app = app
         self.manager = manager
+        properties = self.default_properties | properties
 
-        for key, value in self.default_properties.items():
-            if isinstance(value, str):
-                value = value.replace("__APP__", self.app)
-            setattr(self, key, value)
+        # It's not guaranteed that this info will be defined, e.g. during unit tests, only small resource snippets are used, not proper manifests
+        app_upstream_version = ""
+        if manager and manager.wanted and "version" in manager.wanted:
+            app_upstream_version = manager.wanted["version"].split("~")[0]
+        elif manager and manager.current and "version" in manager.current:
+            app_upstream_version = manager.current["version"].split("~")[0]
+
+        # FIXME : should use packaging.version to properly parse / compare versions >_>
+        self.helpers_version: float = 0
+        if (
+            manager
+            and manager.wanted
+            and manager.wanted.get("integration", {}).get("helpers_version")
+        ):
+            self.helpers_version = float(
+                manager.wanted.get("integration", {}).get("helpers_version")
+            )
+        elif (
+            manager
+            and manager.current
+            and manager.current.get("integration", {}).get("helpers_version")
+        ):
+            self.helpers_version = float(
+                manager.current.get("integration", {}).get("helpers_version")
+            )
+        elif manager and manager.wanted and manager.wanted.get("packaging_format"):
+            self.helpers_version = float(manager.wanted.get("packaging_format"))
+        elif manager and manager.current and manager.current.get("packaging_format"):
+            self.helpers_version = float(manager.current.get("packaging_format"))
+        if not self.helpers_version:
+            self.helpers_version = 1.0
+
+        replacements: dict[str, str] = {
+            "__APP__": self.app,
+            "__YNH_ARCH__": system_arch(),
+            "__YNH_DEBIAN_VERSION__": debian_version(),
+            "__YNH_DEBIAN_VERSION_ID__": debian_version_id(),
+            "__YNH_APP_UPSTREAM_VERSION__": app_upstream_version,
+        }
+
+        def recursive_apply(function: Callable, data: Any) -> Any:
+            if isinstance(data, dict):  # FIXME: hashable?
+                return {
+                    key: recursive_apply(function, value) for key, value in data.items()
+                }
+
+            if isinstance(data, list):  # FIXME: iterable?
+                return [recursive_apply(function, value) for value in data]
+
+            return function(data)
+
+        def replace_tokens_in_strings(data: Any):
+            if not isinstance(data, str):
+                return data
+            for token, replacement in replacements.items():
+                data = data.replace(token, replacement)
+
+            return data
+
+        properties = recursive_apply(replace_tokens_in_strings, properties)
 
         for key, value in properties.items():
-            if isinstance(value, str):
-                value = value.replace("__APP__", self.app)
             setattr(self, key, value)
 
     def get_setting(self, key):
@@ -200,17 +257,21 @@ class AppResource:
         )
         from yunohost.hook import hook_exec_with_script_debug_if_failure
 
-        tmpdir = _make_tmp_workdir_for_app(app=self.app)
+        workdir = (
+            self.manager.workdir
+            if self.manager and self.manager.workdir
+            else _make_tmp_workdir_for_app(app=self.app)
+        )
 
         env_ = _make_environment_for_app_script(
             self.app,
-            workdir=tmpdir,
+            workdir=workdir,
             action=f"{action}_{self.type}",
             force_include_app_settings=True,
         )
         env_.update(env)
 
-        script_path = f"{tmpdir}/{action}_{self.type}"
+        script_path = f"{workdir}/{action}_{self.type}"
         script = f"""
 source /usr/share/yunohost/helpers
 ynh_abort_if_errors
@@ -267,7 +328,7 @@ class SourcesResource(AppResource):
 
     Various options are available to accomodate the behavior according to the asset structure
 
-    ##### Example
+    ### Example
 
     ```toml
     [resources.sources]
@@ -306,7 +367,7 @@ class SourcesResource(AppResource):
 
     ```
 
-    ##### Properties (for each source)
+    ### Properties (for each source)
 
     - `prefetch` : `true` (default) or `false`, wether or not to pre-fetch this asset during the provisioning phase of the resource. If several arch-dependent url are provided, YunoHost will only prefetch the one for the current system architecture.
     - `url` : the asset's URL
@@ -323,27 +384,46 @@ class SourcesResource(AppResource):
     - `rename`: some string like `whatever_your_want`, to be used for convenience when `extract` is `false` and the default name of the file is not practical
     - `platform`: for example `linux/amd64` (defaults to `linux/$YNH_ARCH`) to be used in conjonction with `format = "docker"` to specify which architecture to extract for
 
-    ###### Regarding `autoupdate`
+    #### Regarding `autoupdate`
 
     Strictly speaking, this has nothing to do with the actual app install. `autoupdate` is expected to contain metadata for automatic maintenance / update of the app sources info in the manifest. It is meant to be a simpler replacement for "autoupdate" Github workflow mechanism.
 
-    The infos are used by this script : https://github.com/YunoHost/apps/blob/master/tools/autoupdate_app_sources/autoupdate_app_sources.py which is ran by the YunoHost infrastructure periodically and will create the corresponding pull request automatically.
+    The infos are used by this script : <https://github.com/YunoHost/apps/blob/master/tools/autoupdate_app_sources/autoupdate_app_sources.py> which is ran by the YunoHost infrastructure periodically and will create the corresponding pull request automatically.
 
-    The script will rely on the code repo specified in the upstream section of the manifest.
+    The script will rely on the code repo specified in `code` in the upstream section of the manifest.
 
-    `autoupdate.strategy` is expected to be one of :
-    - `latest_github_tag` : look for the latest tag (by sorting tags and finding the "largest" version). Then using the corresponding tar.gz url. Tags containing `rc`, `beta`, `alpha`, `start` are ignored, and actually any tag which doesn't look like `x.y.z` or `vx.y.z`
-    - `latest_github_release` : similar to `latest_github_tags`, but starting from the list of releases. Pre- or draft releases are ignored. Releases may have assets attached to them, in which case you can define:
-        - `autoupdate.asset = "some regex"` (when there's only one asset to use). The regex is used to find the appropriate asset among the list of all assets
-        - or several `autoupdate.asset.$arch = "some_regex"` (when the asset is arch-specific). The regex is used to find the appropriate asset for the specific arch among the list of assets
-    - `latest_github_commit` : will use the latest commit on github, and the corresponding tarball. If this is used for the 'main' source, it will also assume that the version is YYYY.MM.DD corresponding to the date of the commit.
+    The `autoupdate.strategy` is expected to be constructed like this: `latest_<gitforge>_<strategy>`
 
-    It is also possible to define `autoupdate.upstream` to use a different Git(hub) repository instead of the code repository from the upstream section of the manifest. This can be useful when, for example, the app uses other assets such as plugin from a different repository.
+    You need to replace the `<gitforge>` in the strategy name by either `github`, `gitlab`, `gitea` or `forgejo`, as the autoupdater supports:
 
-    ##### Provision/Update
+    - GitHub
+    - GitLab (official and self-hosted instances)
+    - Gitea & Forgejo instances
+
+    And choose one strategy in the following ones:
+
+    - `latest_<gitforge>_release` : similar to `latest_<gitforge>_tag`, but starting from the list of releases. Note that it's the only strategy that provides the changelog link in the PR message. Pre- or draft releases are ignored. Releases may have assets attached to them, in which case you can define:
+      - `autoupdate.asset = "some regex"` (when there's only one asset to use). The regex is used to find the appropriate asset among the list of all assets
+      - or several `autoupdate.asset.$arch = "some_regex"` (when the asset is arch-specific). The regex is used to find the appropriate asset for the specific arch among the list of assets
+    - `latest_<gitforge>_tag` : look for the latest tag (by sorting tags and finding the "largest" version). Then using the corresponding tar.gz url. Tags containing `rc`, `beta`, `alpha`, `start` are ignored, and actually any tag which doesn't look like `x.y.z` or `vx.y.z`
+    - `latest_<gitforge>_commit` : will use the latest commit on github, and the corresponding tarball. If this is used for the 'main' source, it will also assume that the version is YYYY.MM.DD corresponding to the date of the commit.
+
+    It is also possible to define `autoupdate.upstream` to use a different Git repository instead of the code repository from the upstream section of the manifest. This can be useful when, for example, the app uses other assets such as plugin from a different repository.
+
+    If the upstream project provides non-standard tag or release names, you can fix this, with a regex with a matching group.
+
+    For example, if tags look like `release-v4.1`, put:
+
+    ```toml
+    autoupdate.version_regex = "^release-v(.*)$"
+    ```
+
+    And the autoupdater will use the matched group (here: `4.1`) as the version.
+
+    ### Provision/Update
     - For elements with `prefetch = true`, will download the asset (for the appropriate architecture) and store them in `/var/cache/yunohost/download/$app/$source_id`, to be later picked up by `ynh_setup_source`. (NB: this only happens during install and upgrade, not restore)
 
-    ##### Deprovision
+    ### Deprovision
     - Nothing (just cleanup the cache)
     """
 
@@ -462,7 +542,7 @@ class PermissionsResource(AppResource):
 
     The list of allowed user/groups may be initialized using the content of the `init_{perm}_permission` question from the manifest, hence `init_main_permission` replaces the `is_public` question and shall contain a group name (typically, `all_users` or `visitors`).
 
-    ##### Example
+    ### Example
     ```toml
     [resources.permissions]
     main.url = "/"
@@ -473,7 +553,7 @@ class PermissionsResource(AppResource):
     admin.allowed = "admins"   # Assuming the "admins" group exists (cf future developments ;))
     ```
 
-    ##### Properties (for each perm name)
+    ### Properties (for each perm name)
     - `url`: The relative URI corresponding to this permission. Typically `/` or `/something`. This property may be omitted for non-web permissions.
     - `show_tile`: (default: `true` if `url` is defined) Wether or not a tile should be displayed for that permission in the user portal
     - `allowed`: (default: nobody) The group initially allowed to access this perm, if `init_{perm}_permission` is not defined in the manifest questions. Note that the admin may tweak who is allowed/unallowed on that permission later on, this is only meant to **initialize** the permission.
@@ -481,14 +561,14 @@ class PermissionsResource(AppResource):
     - `protected`: (default: `false`) Define if this permission is protected. If it is protected the administrator won't be able to add or remove the visitors group of this permission. Defaults to 'false'.
     - `additional_urls`: (default: none) List of additional URL for which access will be allowed/forbidden
 
-    ##### Provision/Update
+    ### Provision/Update
     - Delete any permissions that may exist and be related to this app yet is not declared anymore
     - Loop over the declared permissions and create them if needed or update them with the new values
 
-    ##### Deprovision
+    ### Deprovision
     - Delete all permission related to this app
 
-    ##### Legacy management
+    ### Legacy management
     - Legacy `is_public` setting will be deleted if it exists
     """
 
@@ -670,22 +750,23 @@ class SystemuserAppResource(AppResource):
     """
     Provision a system user to be used by the app. The username is exactly equal to the app id
 
-    ##### Example
+    ### Example
     ```toml
     [resources.system_user]
     # (empty - defaults are usually okay)
     ```
 
-    ##### Properties
+    ### Properties
     - `allow_ssh`: (default: False) Adds the user to the ssh.app group, allowing SSH connection via this user
     - `allow_sftp`: (default: False) Adds the user to the sftp.app group, allowing SFTP connection via this user
+    - `allow_email`: (default: False) Enable authentication on the mail stack for the system user and send mail using `__APP__@__DOMAIN__`. A `mail_pwd` setting is automatically defined (similar to `db_pwd` for databases). You can then configure the app to use `__APP__` and `__MAIL_PWD__` as SMTP credentials (with host 127.0.0.1). You can also tweak the user-part of the domain-part of the email used by manually defining a custom setting `mail_user` or `mail_domain`
     - `home`: (default: `/var/www/__APP__`) Defines the home property for this user. NB: unfortunately you can't simply use `__INSTALL_DIR__` or `__DATA_DIR__` for now
 
-    ##### Provision/Update
+    ### Provision/Update
     - will create the system user if it doesn't exists yet
     - will add/remove the ssh/sftp.app groups
 
-    ##### Deprovision
+    ### Deprovision
     - deletes the user and group
     """
 
@@ -702,6 +783,7 @@ class SystemuserAppResource(AppResource):
     default_properties: Dict[str, Any] = {
         "allow_ssh": False,
         "allow_sftp": False,
+        "allow_email": False,
         "home": "/var/www/__APP__",
     }
 
@@ -709,9 +791,12 @@ class SystemuserAppResource(AppResource):
 
     allow_ssh: bool = False
     allow_sftp: bool = False
+    allow_email: bool = False
     home: str = ""
 
     def provision_or_update(self, context: Dict = {}):
+        from yunohost.app import regen_mail_app_user_config_for_dovecot_and_postfix
+
         # FIXME : validate that no yunohost user exists with that name?
         # and/or that no system user exists during install ?
 
@@ -756,7 +841,31 @@ class SystemuserAppResource(AppResource):
                     f"sed -i 's@{raw_user_line_in_etc_passwd}@{new_raw_user_line_in_etc_passwd}@g' /etc/passwd"
                 )
 
+        # Update mail-related stuff
+        if self.allow_email:
+            mail_pwd = self.get_setting("mail_pwd")
+            if not mail_pwd:
+                mail_pwd = random_ascii(24)
+                self.set_setting("mail_pwd", mail_pwd)
+
+            regen_mail_app_user_config_for_dovecot_and_postfix()
+        else:
+            self.delete_setting("mail_pwd")
+            if (
+                os.system(
+                    f"grep --quiet ' {self.app}$' /etc/postfix/app_senders_login_maps"
+                )
+                == 0
+                or os.system(
+                    f"grep --quiet '^{self.app}:' /etc/dovecot/app-senders-passwd"
+                )
+                == 0
+            ):
+                regen_mail_app_user_config_for_dovecot_and_postfix()
+
     def deprovision(self, context: Dict = {}):
+        from yunohost.app import regen_mail_app_user_config_for_dovecot_and_postfix
+
         if os.system(f"getent passwd {self.app} >/dev/null 2>/dev/null") == 0:
             os.system(f"deluser {self.app} >/dev/null")
         if os.system(f"getent passwd {self.app} >/dev/null 2>/dev/null") == 0:
@@ -771,6 +880,17 @@ class SystemuserAppResource(AppResource):
                 f"Failed to delete system user for {self.app}", raw_msg=True
             )
 
+        self.delete_setting("mail_pwd")
+        if (
+            os.system(
+                f"grep --quiet ' {self.app}$' /etc/postfix/app_senders_login_maps"
+            )
+            == 0
+            or os.system(f"grep --quiet '^{self.app}:' /etc/dovecot/app-senders-passwd")
+            == 0
+        ):
+            regen_mail_app_user_config_for_dovecot_and_postfix()
+
         # FIXME : better logging and error handling, add stdout/stderr from the deluser/delgroup commands...
 
 
@@ -778,28 +898,28 @@ class InstalldirAppResource(AppResource):
     """
     Creates a directory to be used by the app as the installation directory, typically where the app sources and assets are located. The corresponding path is stored in the settings as `install_dir`
 
-    ##### Example
+    ### Example
     ```toml
     [resources.install_dir]
     # (empty - defaults are usually okay)
     ```
 
-    ##### Properties
+    ### Properties
     - `dir`: (default: `/var/www/__APP__`) The full path of the install dir
     - `owner`: (default: `__APP__:rwx`) The owner (and owner permissions) for the install dir
     - `group`: (default: `__APP__:rx`) The group (and group permissions) for the install dir
 
-    ##### Provision/Update
+    ### Provision/Update
     - during install, the folder will be deleted if it already exists (FIXME: is this what we want?)
     - if the dir path changed and a folder exists at the old location, the folder will be `mv`'ed to the new location
     - otherwise, creates the directory if it doesn't exists yet
     - (re-)apply permissions (only on the folder itself, not recursively)
     - save the value of `dir` as `install_dir` in the app's settings, which can be then used by the app scripts (`$install_dir`) and conf templates (`__INSTALL_DIR__`)
 
-    ##### Deprovision
+    ### Deprovision
     - recursively deletes the directory if it exists
 
-    ##### Legacy management
+    ### Legacy management
     - In the past, the setting was called `final_path`. The code will automatically rename it as `install_dir`.
     - As explained in the 'Provision/Update' section, the folder will also be moved if the location changed
 
@@ -893,30 +1013,30 @@ class DatadirAppResource(AppResource):
     """
     Creates a directory to be used by the app as the data store directory, typically where the app multimedia or large assets added by users are located. The corresponding path is stored in the settings as `data_dir`. This resource behaves very similarly to install_dir.
 
-    ##### Example
+    ### Example
     ```toml
     [resources.data_dir]
     # (empty - defaults are usually okay)
     ```
 
-    ##### Properties
+    ### Properties
     - `dir`: (default: `/home/yunohost.app/__APP__`) The full path of the data dir
     - `subdirs`: (default: empty list) A list of subdirs to initialize inside the data dir. For example, `['foo', 'bar']`
     - `owner`: (default: `__APP__:rwx`) The owner (and owner permissions) for the data dir
     - `group`: (default: `__APP__:rx`) The group (and group permissions) for the data dir
 
-    ##### Provision/Update
+    ### Provision/Update
     - if the dir path changed and a folder exists at the old location, the folder will be `mv`'ed to the new location
     - otherwise, creates the directory if it doesn't exists yet
     - create each subdir declared and which do not exist already
     - (re-)apply permissions (only on the folder itself and declared subdirs, not recursively)
     - save the value of `dir` as `data_dir` in the app's settings, which can be then used by the app scripts (`$data_dir`) and conf templates (`__DATA_DIR__`)
 
-    ##### Deprovision
+    ### Deprovision
     - (only if the purge option is chosen by the user) recursively deletes the directory if it exists
     - also delete the corresponding setting
 
-    ##### Legacy management
+    ### Legacy management
     - In the past, the setting may have been called `datadir`. The code will automatically rename it as `data_dir`.
     - As explained in the 'Provision/Update' section, the folder will also be moved if the location changed
 
@@ -1008,27 +1128,27 @@ class AptDependenciesAppResource(AppResource):
     """
     Create a virtual package in apt, depending on the list of specified packages that the app needs. The virtual packages is called `$app-ynh-deps` (with `_` being replaced by `-` in the app name, see `ynh_install_app_dependencies`)
 
-    ##### Example
+    ### Example
     ```toml
     [resources.apt]
-    packages = "nyancat, lolcat, sl"
+    packages = ["nyancat", "lolcat", "sl"]
 
     # (this part is optional and corresponds to the legacy ynh_install_extra_app_dependencies helper)
     extras.yarn.repo = "deb https://dl.yarnpkg.com/debian/ stable main"
     extras.yarn.key = "https://dl.yarnpkg.com/debian/pubkey.gpg"
-    extras.yarn.packages = "yarn"
+    extras.yarn.packages = ["yarn"]
     ```
 
-    ##### Properties
-    - `packages`: Comma-separated list of packages to be installed via `apt`
+    ### Properties
+    - `packages`: List of packages to be installed via `apt`
     - `packages_from_raw_bash`: A multi-line bash snippet (using triple quotes as open/close) which should echo additional packages to be installed. Meant to be used for packages to be conditionally installed depending on architecture, debian version, install questions, or other logic.
     - `extras`: A dict of (repo, key, packages) corresponding to "extra" repositories to fetch dependencies from
 
-    ##### Provision/Update
+    ### Provision/Update
     - The code literally calls the bash helpers `ynh_install_app_dependencies` and `ynh_install_extra_app_dependencies`, similar to what happens in v1.
     - Note that when `packages` contains some phpX.Y-foobar dependencies, this will automagically define a `phpversion` setting equal to `X.Y` which can therefore be used in app scripts ($phpversion) or templates (`__PHPVERSION__`)
 
-    ##### Deprovision
+    ### Deprovision
     - The code literally calls the bash helper `ynh_remove_app_dependencies`
     """
 
@@ -1044,19 +1164,13 @@ class AptDependenciesAppResource(AppResource):
 
     packages: List = []
     packages_from_raw_bash: str = ""
-    extras: Dict[str, Dict[str, str]] = {}
+    extras: Dict[str, Dict[str, Union[str, List]]] = {}
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
-        for key, values in properties.get("extras", {}).items():
-            if not all(
-                isinstance(values.get(k), str) for k in ["repo", "key", "packages"]
-            ):
-                raise YunohostError(
-                    "In apt resource in the manifest: 'extras' repo should have the keys 'repo', 'key' and 'packages' defined and be strings",
-                    raw_msg=True,
-                )
-
         super().__init__(properties, *args, **kwargs)
+
+        if isinstance(self.packages, str):
+            self.packages = [value.strip() for value in self.packages.split(",")]
 
         if self.packages_from_raw_bash:
             out, err = self.check_output_bash_snippet(self.packages_from_raw_bash)
@@ -1065,20 +1179,72 @@ class AptDependenciesAppResource(AppResource):
                     "Error while running apt resource packages_from_raw_bash snippet:"
                 )
                 logger.error(err)
-            self.packages += ", " + out.replace("\n", ", ")
+            self.packages += out.split("\n")
+
+        for key, values in self.extras.items():
+            if isinstance(values.get("packages"), str):
+                values["packages"] = [value.strip() for value in values["packages"].split(",")]  # type: ignore
+
+            if isinstance(values.get("packages_from_raw_bash"), str):
+                out, err = self.check_output_bash_snippet(
+                    values.get("packages_from_raw_bash")
+                )
+                if err:
+                    logger.error(
+                        f"Error while running apt resource packages_from_raw_bash snippet for '{key}' extras:"
+                    )
+                    logger.error(err)
+                values["packages"] = values.get("packages", []) + [value.strip() for value in out.split("\n")]  # type: ignore
+
+            if (
+                not isinstance(values.get("repo"), str)
+                or not isinstance(values.get("key"), str)
+                or not isinstance(values.get("packages"), list)
+            ):
+                raise YunohostError(
+                    "In apt resource in the manifest: 'extras' repo should have the keys 'repo', 'key' defined as strings, 'packages' defined as list or 'packages_from_raw_bash' defined as string",
+                    raw_msg=True,
+                )
+
+        # Drop 'extras' entries associated to no packages
+        self.extras = {
+            key: values for key, values in self.extras.items() if values["packages"]
+        }
 
     def provision_or_update(self, context: Dict = {}):
-        script = [f"ynh_install_app_dependencies {self.packages}"]
+
+        if self.helpers_version >= 2.1:
+            ynh_apt_install_dependencies = "ynh_apt_install_dependencies"
+            ynh_apt_install_dependencies_from_extra_repository = (
+                "ynh_apt_install_dependencies_from_extra_repository"
+            )
+        else:
+            ynh_apt_install_dependencies = "ynh_install_app_dependencies"
+            ynh_apt_install_dependencies_from_extra_repository = (
+                "ynh_install_extra_app_dependencies"
+            )
+
+        script = " ".join([ynh_apt_install_dependencies, *self.packages])
         for repo, values in self.extras.items():
-            script += [
-                f"ynh_install_extra_app_dependencies --repo='{values['repo']}' --key='{values['key']}' --package='{values['packages']}'"
-            ]
+            script += "\n" + " ".join(
+                [
+                    ynh_apt_install_dependencies_from_extra_repository,
+                    f"--repo='{values['repo']}'",
+                    f"--key='{values['key']}'",
+                    f"--package='{' '.join(values['packages'])}'",
+                ]
+            )
             # FIXME : we're feeding the raw value of values['packages'] to the helper .. if we want to be consistent, may they should be comma-separated, though in the majority of cases, only a single package is installed from an extra repo..
 
-        self._run_script("provision_or_update", "\n".join(script))
+        self._run_script("provision_or_update", script)
 
     def deprovision(self, context: Dict = {}):
-        self._run_script("deprovision", "ynh_remove_app_dependencies")
+        if self.helpers_version >= 2.1:
+            ynh_apt_remove_dependencies = "ynh_apt_remove_dependencies"
+        else:
+            ynh_apt_remove_dependencies = "ynh_remove_app_dependencies"
+
+        self._run_script("deprovision", ynh_apt_remove_dependencies)
 
 
 class PortsResource(AppResource):
@@ -1087,7 +1253,7 @@ class PortsResource(AppResource):
 
     Note that because multiple ports can be booked, each properties is prefixed by the name of the port. `main` is a special name and will correspond to the setting `$port`, whereas for example `xmpp_client` will correspond to the setting `$port_xmpp_client`.
 
-    ##### Example
+    ### Example
     ```toml
     [resources.ports]
     # (empty should be fine for most apps... though you can customize stuff if absolutely needed)
@@ -1099,21 +1265,21 @@ class PortsResource(AppResource):
     xmpp_client.exposed = "TCP" # here, we're telling that the port needs to be publicly exposed on TCP on the firewall
     ```
 
-    ##### Properties (for every port name)
+    ### Properties (for every port name)
     - `default`: The prefered value for the port. If this port is already being used by another process right now, or is booked in another app's setting, the code will increment the value until it finds a free port and store that value as the setting. If no value is specified, a random value between 10000 and 60000 is used.
     - `exposed`: (default: `false`) Wether this port should be opened on the firewall and be publicly reachable. This should be kept to `false` for the majority of apps than only need a port for internal reverse-proxying! Possible values: `false`, `true`(=`Both`), `Both`, `TCP`, `UDP`. This will result in the port being opened on the firewall, and the diagnosis checking that a program answers on that port.
     - `fixed`: (default: `false`) Tells that the app absolutely needs the specific value provided in `default`, typically because it's needed for a specific protocol
 
-    ##### Provision/Update (for every port name)
+    ### Provision/Update (for every port name)
     - If not already booked, look for a free port, starting with the `default` value (or a random value between 10000 and 60000 if no `default` set)
     - If `exposed` is not `false`, open the port in the firewall accordingly - otherwise make sure it's closed.
     - The value of the port is stored in the `$port` setting for the `main` port, or `$port_NAME` for other `NAME`s
 
-    ##### Deprovision
+    ### Deprovision
     - Close the ports on the firewall if relevant
     - Deletes all the port settings
 
-    ##### Legacy management
+    ### Legacy management
     - In the past, some settings may have been named `NAME_port` instead of `port_NAME`, in which case the code will automatically rename the old setting.
     """
 
@@ -1146,17 +1312,30 @@ class PortsResource(AppResource):
             if properties[port]["default"] is None:
                 properties[port]["default"] = random.randint(10000, 60000)
 
+        # This is to prevent using twice the same port during provisionning.
+        self.ports_used_by_self: list[int] = []
+
         super().__init__({"ports": properties}, *args, **kwargs)
 
     def _port_is_used(self, port):
         # FIXME : this could be less brutal than two os.system...
-        cmd1 = (
-            "ss --numeric --listening --tcp --udp | awk '{print$5}' | grep --quiet --extended-regexp ':%s$'"
-            % port
+        used_by_process = (
+            os.system(
+                "ss --numeric --listening --tcp --udp | awk '{print$5}' | grep --quiet --extended-regexp ':%s$'"
+                % port
+            )
+            == 0
         )
         # This second command is mean to cover (most) case where an app is using a port yet ain't currently using it for some reason (typically service ain't up)
-        cmd2 = f"grep --quiet --extended-regexp \"port: '?{port}'?\" /etc/yunohost/apps/*/settings.yml"
-        return os.system(cmd1) == 0 or os.system(cmd2) == 0
+        used_by_app = (
+            os.system(
+                f"grep --quiet --extended-regexp \"port: '?{port}'?\" /etc/yunohost/apps/*/settings.yml"
+            )
+            == 0
+        )
+        used_by_self_provisioning = port in self.ports_used_by_self
+
+        return used_by_process or used_by_app or used_by_self_provisioning
 
     def provision_or_update(self, context: Dict = {}):
         from yunohost.firewall import firewall_allow, firewall_disallow
@@ -1166,7 +1345,7 @@ class PortsResource(AppResource):
             port_value = self.get_setting(setting_name)
             if not port_value and name != "main":
                 # Automigrate from legacy setting foobar_port (instead of port_foobar)
-                legacy_setting_name = "{name}_port"
+                legacy_setting_name = f"{name}_port"
                 port_value = self.get_setting(legacy_setting_name)
                 if port_value:
                     self.set_setting(setting_name, port_value)
@@ -1186,6 +1365,7 @@ class PortsResource(AppResource):
                     while self._port_is_used(port_value):
                         port_value += 1
 
+            self.ports_used_by_self.append(port_value)
             self.set_setting(setting_name, port_value)
 
             if infos["exposed"]:
@@ -1216,25 +1396,25 @@ class DatabaseAppResource(AppResource):
 
     NB2: no automagic migration will happen in an suddenly change `type` from `mysql` to `postgresql` or viceversa in its life
 
-    ##### Example
+    ### Example
     ```toml
     [resources.database]
     type = "mysql"   # or : "postgresql". Only these two values are supported
     ```
 
-    ##### Properties
+    ### Properties
     - `type`: The database type, either `mysql` or `postgresql`
 
-    ##### Provision/Update
+    ### Provision/Update
     - (Re)set the `$db_name` and `$db_user` settings with the sanitized app name (replacing `-` and `.` with `_`)
     - If `$db_pwd` doesn't already exists, pick a random database password and store it in that setting
     - If the database doesn't exists yet, create the SQL user and DB using `ynh_mysql_create_db` or `ynh_psql_create_db`.
 
-    ##### Deprovision
+    ### Deprovision
     - Drop the DB using `ynh_mysql_remove_db` or `ynh_psql_remove_db`
     - Deletes the `db_name`, `db_user` and `db_pwd` settings
 
-    ##### Legacy management
+    ### Legacy management
     - In the past, the sql passwords may have been named `mysqlpwd` or `psqlpwd`, in which case it will automatically be renamed as `db_pwd`
     """
 
@@ -1283,8 +1463,8 @@ class DatabaseAppResource(AppResource):
 
     def provision_or_update(self, context: Dict = {}):
         # This is equivalent to ynh_sanitize_dbid
-        db_name = self.app.replace("-", "_").replace(".", "_")
-        db_user = db_name
+        db_user = self.app.replace("-", "_").replace(".", "_")
+        db_name = self.get_setting("db_name") or db_user
         self.set_setting("db_name", db_name)
         self.set_setting("db_user", db_user)
 
@@ -1302,8 +1482,6 @@ class DatabaseAppResource(AppResource):
                 self.set_setting("db_pwd", db_pwd)
 
         if not db_pwd:
-            from moulinette.utils.text import random_ascii
-
             db_pwd = random_ascii(24)
             self.set_setting("db_pwd", db_pwd)
 
@@ -1320,17 +1498,23 @@ class DatabaseAppResource(AppResource):
                 )
 
     def deprovision(self, context: Dict = {}):
-        db_name = self.app.replace("-", "_").replace(".", "_")
-        db_user = db_name
+        db_user = self.app.replace("-", "_").replace(".", "_")
+        db_name = self.get_setting("db_name") or db_user
 
         if self.dbtype == "mysql":
-            self._run_script(
-                "deprovision", f"ynh_mysql_remove_db '{db_name}' '{db_user}'"
-            )
+            db_helper_name = "mysql"
         elif self.dbtype == "postgresql":
-            self._run_script(
-                "deprovision", f"ynh_psql_remove_db '{db_name}' '{db_user}'"
-            )
+            db_helper_name = "psql"
+        else:
+            raise RuntimeError(f"Invalid dbtype {self.dbtype}")
+
+        self._run_script(
+            "deprovision",
+            f"""
+ynh_{db_helper_name}_database_exists "{db_name}" && ynh_{db_helper_name}_drop_db "{db_name}" || true
+ynh_{db_helper_name}_user_exists "{db_user}" && ynh_{db_helper_name}_drop_user "{db_user}" || true
+""",
+        )
 
         self.delete_setting("db_name")
         self.delete_setting("db_user")

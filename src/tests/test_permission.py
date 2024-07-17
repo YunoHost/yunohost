@@ -158,7 +158,7 @@ def setup_function(function):
 
     socket.getaddrinfo = new_getaddrinfo
 
-    user_create("alice", maindomain, dummy_password, fullname="Alice White")
+    user_create("alice", maindomain, dummy_password, fullname="Alice White", admin=True)
     user_create("bob", maindomain, dummy_password, fullname="Bob Snow")
     _permission_create_with_dummy_app(
         permission="wiki.main",
@@ -338,7 +338,7 @@ def check_LDAP_db_integrity():
 def check_permission_for_apps():
     # We check that the for each installed apps we have at last the "main" permission
     # and we don't have any permission linked to no apps. The only exception who is not liked to an app
-    # is mail, xmpp, and sftp
+    # is mail, and sftp
 
     app_perms = user_permission_list(ignore_system_perms=True)["permissions"].keys()
 
@@ -355,7 +355,7 @@ def check_permission_for_apps():
 
 def can_access_webpage(webpath, logged_as=None):
     webpath = webpath.rstrip("/")
-    sso_url = "https://" + maindomain + "/yunohost/sso/"
+    login_endpoint = f"https://{maindomain}/yunohost/portalapi/login"
 
     # Anonymous access
     if not logged_as:
@@ -363,12 +363,11 @@ def can_access_webpage(webpath, logged_as=None):
     # Login as a user using dummy password
     else:
         with requests.Session() as session:
-            session.post(
-                sso_url,
-                data={"user": logged_as, "password": dummy_password},
+            r = session.post(
+                login_endpoint,
+                data={"credentials": f"{logged_as}:{dummy_password}"},
                 headers={
-                    "Referer": sso_url,
-                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-Requested-With": "",
                 },
                 verify=False,
             )
@@ -377,6 +376,15 @@ def can_access_webpage(webpath, logged_as=None):
             r = session.get(webpath, verify=False)
 
     # If we can't access it, we got redirected to the SSO
+    # with `r=<base64_callback_url>` for anonymous access because they're encouraged to log-in,
+    # and `msg=access_denied` if we are logged but not allowed for this url
+    # with `r=
+    sso_url = f"https://{maindomain}/yunohost/sso/"
+    if not logged_as:
+        sso_url += "?r="
+    else:
+        sso_url += "?msg=access_denied"
+
     return not r.url.startswith(sso_url)
 
 
@@ -389,7 +397,6 @@ def test_permission_list():
     res = user_permission_list(full=True)["permissions"]
 
     assert "mail.main" in res
-    assert "xmpp.main" in res
 
     assert "wiki.main" in res
     assert "blog.main" in res
@@ -607,7 +614,6 @@ def test_permission_delete_doesnt_existing(mocker):
     assert "wiki.main" in res
     assert "blog.main" in res
     assert "mail.main" in res
-    assert "xmpp.main" in res
 
 
 def test_permission_delete_main_without_force(mocker):
@@ -948,14 +954,8 @@ def test_ssowat_conf():
     assert permissions["wiki.main"]["public"] is False
     assert permissions["blog.main"]["public"] is False
 
-    assert permissions["wiki.main"]["auth_header"] is False
-    assert permissions["blog.main"]["auth_header"] is True
-
-    assert permissions["wiki.main"]["label"] == "Wiki"
-    assert permissions["blog.main"]["label"] == "Blog"
-
-    assert permissions["wiki.main"]["show_tile"] is True
-    assert permissions["blog.main"]["show_tile"] is False
+    assert permissions["wiki.main"]["auth_header"] is None
+    assert permissions["blog.main"]["auth_header"] == "basic-without-password"
 
 
 def test_show_tile_cant_be_enabled():
@@ -995,12 +995,11 @@ def test_show_tile_cant_be_enabled():
 #
 
 
-@pytest.mark.other_domains(number=1)
 def test_permission_app_install():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
         args="domain=%s&domain_2=%s&path=%s&is_public=0&admin=%s"
-        % (maindomain, other_domains[0], "/urlpermissionapp", "alice"),
+        % (maindomain, maindomain, "/urlpermissionapp", "alice"),
         force=True,
     )
 
@@ -1028,12 +1027,11 @@ def test_permission_app_install():
     assert maindomain + "/urlpermissionapp" in app_map(user="bob").keys()
 
 
-@pytest.mark.other_domains(number=1)
 def test_permission_app_remove():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
         args="domain=%s&domain_2=%s&path=%s&is_public=0&admin=%s"
-        % (maindomain, other_domains[0], "/urlpermissionapp", "alice"),
+        % (maindomain, maindomain, "/urlpermissionapp", "alice"),
         force=True,
     )
     app_remove("permissions_app")
@@ -1043,12 +1041,11 @@ def test_permission_app_remove():
     assert not any(p.startswith("permissions_app.") for p in res.keys())
 
 
-@pytest.mark.other_domains(number=1)
 def test_permission_app_change_url():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
         args="domain=%s&domain_2=%s&path=%s&is_public=1&admin=%s"
-        % (maindomain, other_domains[0], "/urlpermissionapp", "alice"),
+        % (maindomain, maindomain, "/urlpermissionapp", "alice"),
         force=True,
     )
 
@@ -1066,12 +1063,11 @@ def test_permission_app_change_url():
     assert res["permissions_app.dev"]["url"] == "/dev"
 
 
-@pytest.mark.other_domains(number=1)
 def test_permission_protection_management_by_helper():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
         args="domain=%s&domain_2=%s&path=%s&is_public=1&admin=%s"
-        % (maindomain, other_domains[0], "/urlpermissionapp", "alice"),
+        % (maindomain, maindomain, "/urlpermissionapp", "alice"),
         force=True,
     )
 
@@ -1091,12 +1087,11 @@ def test_permission_protection_management_by_helper():
     assert res["permissions_app.dev"]["protected"] is True
 
 
-@pytest.mark.other_domains(number=1)
 def test_permission_app_propagation_on_ssowat():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
         args="domain=%s&domain_2=%s&path=%s&is_public=1&admin=%s"
-        % (maindomain, other_domains[0], "/urlpermissionapp", "alice"),
+        % (maindomain, maindomain, "/urlpermissionapp", "alice"),
         force=True,
     )
 
@@ -1127,24 +1122,23 @@ def test_permission_app_propagation_on_ssowat():
     assert not can_access_webpage(app_webroot + "/admin", logged_as="bob")
 
 
-@pytest.mark.other_domains(number=1)
 def test_permission_legacy_app_propagation_on_ssowat():
     app_install(
         os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
-        args="domain=%s&domain_2=%s&path=%s&is_public=1"
-        % (maindomain, other_domains[0], "/legacy"),
+        args="domain=%s&domain_2=%s&path=%s&is_public=0"
+        % (maindomain, maindomain, "/legacy"),
         force=True,
     )
 
     # App is configured as public by default using the legacy unprotected_uri mechanics
     # It should automatically be migrated during the install
     res = user_permission_list(full=True)["permissions"]
-    assert "visitors" in res["legacy_app.main"]["allowed"]
+    assert "visitors" not in res["legacy_app.main"]["allowed"]
     assert "all_users" in res["legacy_app.main"]["allowed"]
 
     app_webroot = "https://%s/legacy" % maindomain
 
-    assert can_access_webpage(app_webroot, logged_as=None)
+    assert not can_access_webpage(app_webroot, logged_as=None)
     assert can_access_webpage(app_webroot, logged_as="alice")
 
     # Try to update the permission and check that permissions are still consistent

@@ -107,7 +107,7 @@ name = "Email"
         [email.pop3.pop3_enabled]
         type = "boolean"
         default = false
-    
+
     [email.smtp]
     name = "SMTP"
         [email.smtp.smtp_allow_ipv6]
@@ -144,16 +144,6 @@ name = "Email"
 
 [misc]
 name = "Other"
-    [misc.portal]
-    name = "User portal"
-        [misc.portal.ssowat_panel_overlay_enabled]
-        type = "boolean"
-        default = true
-
-        [misc.portal.portal_theme]
-        type = "select"
-        # Choices are loaded dynamically in the python code
-        default = "default"
 
     [misc.backup]
     name = "Backup"

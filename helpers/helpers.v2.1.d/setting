@@ -1,0 +1,139 @@
+#!/bin/bash
+
+# Get an application setting
+#
+# usage: ynh_app_setting_get --key=key
+# | arg: --app=     - the application id (global $app by default)
+# | arg: --key=     - the setting to get
+ynh_app_setting_get() {
+    # ============ Argument parsing =============
+    local _globalapp=${app-:}
+    local -A args_array=([a]=app= [k]=key=)
+    local app
+    local key
+    ynh_handle_getopts_args "$@"
+    app="${app:-$_globalapp}"
+    # ===========================================
+
+    ynh_app_setting "get" "$app" "$key"
+}
+
+# Set an application setting
+#
+# usage: ynh_app_setting_set --key=key --value=value
+# | arg: --app=     - the application id (global $app by default)
+# | arg: --key=     - the setting name to set
+# | arg: --value=   - the setting value to set
+ynh_app_setting_set() {
+    # ============ Argument parsing =============
+    local _globalapp=${app-:}
+    local -A args_array=([a]=app= [k]=key= [v]=value=)
+    local app
+    local key
+    local value
+    ynh_handle_getopts_args "$@"
+    app="${app:-$_globalapp}"
+    # ===========================================
+
+    ynh_app_setting "set" "$app" "$key" "$value"
+}
+
+# Set an application setting but only if the "$key" variable ain't set yet
+#
+# Note that it doesn't just define the setting but ALSO define the $foobar variable
+#
+# Hence it's meant as a replacement for this legacy overly complex syntax:
+#
+# if [ -z "${foo:-}" ]
+# then
+#     foo="bar"
+#     ynh_app_setting_set --key="foo" --value="$foo"
+# fi
+#
+# usage: ynh_app_setting_set_default --key=key --value=value
+# | arg: --app=     - the application id (global $app by default)
+# | arg: --key=     - the setting name to set
+# | arg: --value=   - the default setting value to set
+ynh_app_setting_set_default() {
+    # ============ Argument parsing =============
+    local _globalapp=${app-:}
+    local -A args_array=([a]=app= [k]=key= [v]=value=)
+    local app
+    local key
+    local value
+    ynh_handle_getopts_args "$@"
+    app="${app:-$_globalapp}"
+    # ===========================================
+
+    if [ -z "${!key:-}" ]; then
+        eval $key=\$value
+        ynh_app_setting "set" "$app" "$key" "$value"
+    fi
+}
+
+# Delete an application setting
+#
+# usage: ynh_app_setting_delete --key=key
+# | arg: --app=     - the application id (global $app by default)
+# | arg: --key=     - the setting to delete
+ynh_app_setting_delete() {
+    # ============ Argument parsing =============
+    local _globalapp=${app-:}
+    local -A args_array=([a]=app= [k]=key=)
+    local app
+    local key
+    ynh_handle_getopts_args "$@"
+    app="${app:-$_globalapp}"
+    # ===========================================
+
+    ynh_app_setting "delete" "$app" "$key"
+}
+
+# Small "hard-coded" interface to avoid calling "yunohost app" directly each
+# time dealing with a setting is needed (which may be so slow on ARM boards)
+#
+# [internal]
+#
+ynh_app_setting() {
+    # Trick to only re-enable debugging if it was set before
+    local xtrace_enable=$(set +o | grep xtrace)
+    set +o xtrace # set +x
+    ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python3 - <<EOF
+import os, yaml, sys
+app, action = os.environ['APP'], os.environ['ACTION'].lower()
+key, value = os.environ['KEY'], os.environ.get('VALUE', None)
+setting_file = "/etc/yunohost/apps/%s/settings.yml" % app
+assert os.path.exists(setting_file), "Setting file %s does not exists ?" % setting_file
+with open(setting_file) as f:
+    settings = yaml.safe_load(f)
+if action == "get":
+    if key in settings:
+        print(settings[key])
+else:
+    if action == "delete":
+        if key in settings:
+            del settings[key]
+    elif action == "set":
+        settings[key] = value
+    else:
+        raise ValueError("action should either be get, set or delete")
+    with open(setting_file, "w") as f:
+        yaml.safe_dump(settings, f, default_flow_style=False)
+EOF
+    eval "$xtrace_enable"
+}
+
+# Legacy: auto-convert phpversion to php_version (for consistency with nodejs_version, ruby_version, ...)
+# This has to be here and not in the "php" code file because ynh_app_setting_set/delete need to be defined @_@
+if [[ -n "${app:-}" ]] && [[ -n "${phpversion:-}" ]]
+then
+    if [[ -z "${php_version:-}" ]]
+    then
+        php_version=$phpversion
+        ynh_app_setting_set --key=php_version --value=$php_version
+    fi
+    ynh_app_setting_delete --key=phpversion
+    unset phpversion
+fi
+
+

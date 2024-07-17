@@ -2,7 +2,7 @@
 #
 # This script pulls and extracts all files from an image in Docker Hub.
 #
-# Copyright (c) 2020-2022, Jeremy Lin
+# Copyright (c) 2020-2023, Jeremy Lin
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -103,6 +103,17 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
+if [ -e "${OUT_DIR}" ]; then
+    if [ -d "${OUT_DIR}" ]; then
+        echo "WARNING: Output dir already exists. If it contains a previous extracted image,"
+        echo "there may be errors when trying to overwrite files with read-only permissions."
+        echo
+    else
+        echo "ERROR: Output dir already exists, but is not a directory."
+        exit 1
+    fi
+fi
+
 have_curl() {
     command -v curl >/dev/null
 }
@@ -173,16 +184,20 @@ fetch() {
 # https://docs.docker.com/docker-hub/api/latest/#tag/repositories
 manifest_list_url="https://hub.docker.com/v2/repositories/${image}/tags/${ref}"
 
-# If we're pulling the image for the default platform, or the ref is already
-# a SHA-256 image digest, then we don't need to look up anything.
-if [ "${PLATFORM}" = "${PLATFORM_DEFAULT}" ] || [ -z "${ref##sha256:*}" ]; then
+# If the ref is already a SHA-256 image digest, then we don't need to look up anything.
+if [ -z "${ref##sha256:*}" ]; then
     digest="${ref}"
 else
     echo "Getting multi-arch manifest list..."
+    NL='
+'
     digest=$(fetch "${manifest_list_url}" |
         # Break up the single-line JSON output into separate lines by adding
         # newlines before and after the chars '[', ']', '{', and '}'.
-        sed -e 's/\([][{}]\)/\n\1\n/g' |
+        # This uses the \${NL} syntax because some BSD variants of sed don't
+        # support \n syntax in the replacement string, but instead require
+        # a literal newline preceded by a backslash.
+        sed -e 's/\([][{}]\)/\'"${NL}"'\1\'"${NL}"'/g' |
         # Extract the "images":[...] list.
         sed -n '/"images":/,/]/ p' |
         # Each image's details are now on a separate line, e.g.
@@ -205,13 +220,13 @@ else
                 break
             fi
         done)
-fi
 
-if [ -n "${digest}" ]; then
-    echo "Platform ${PLATFORM} resolved to '${digest}'..."
-else
-    echo "No image digest found. Verify that the image, ref, and platform are valid."
-    exit 1
+    if [ -n "${digest}" ]; then
+        echo "Platform ${PLATFORM} resolved to '${digest}'..."
+    else
+        echo "No image digest found. Verify that the image, ref, and platform are valid."
+        exit 1
+    fi
 fi
 
 # https://docs.docker.com/registry/spec/auth/token/#how-to-authenticate
@@ -226,10 +241,21 @@ blobs_base_url="https://registry-1.docker.io/v2/${image}/blobs"
 echo "Getting API token..."
 token=$(fetch "${api_token_url}" | extract 'token')
 auth_header="Authorization: Bearer $token"
-v2_header="Accept: application/vnd.docker.distribution.manifest.v2+json"
+
+# https://github.com/distribution/distribution/blob/main/docs/spec/manifest-v2-2.md
+docker_manifest_v2="application/vnd.docker.distribution.manifest.v2+json"
+
+# https://github.com/opencontainers/image-spec/blob/main/manifest.md
+oci_manifest_v1="application/vnd.oci.image.manifest.v1+json"
+
+# Docker Hub can return either type of manifest format. Most images seem to
+# use the Docker format for now, but the OCI format will likely become more
+# common as features that require that format become enabled by default
+# (e.g., https://github.com/docker/build-push-action/releases/tag/v3.3.0).
+accept_header="Accept: ${docker_manifest_v2},${oci_manifest_v1}"
 
 echo "Getting image manifest for $image:$ref..."
-layers=$(fetch "${manifest_url}" "${auth_header}" "${v2_header}" |
+layers=$(fetch "${manifest_url}" "${auth_header}" "${accept_header}" |
              # Extract `digest` values only after the `layers` section appears.
              sed -n '/"layers":/,$ p' |
              extract 'digest')

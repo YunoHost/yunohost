@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023 YunoHost Contributors
+# Copyright (c) 2024 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+import pwd
 import re
 import os
 import subprocess
@@ -23,38 +24,26 @@ import time
 from importlib import import_module
 from packaging import version
 from typing import List
+from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import call_async_output
 from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm, chown
 
-from yunohost.app import (
-    app_upgrade,
-    app_list,
-    _list_upgradable_apps,
-)
-from yunohost.app_catalog import (
-    _initialize_apps_catalog_system,
-    _update_apps_catalog,
-)
-from yunohost.domain import domain_add
-from yunohost.firewall import firewall_upnp
-from yunohost.service import service_start, service_enable
-from yunohost.regenconf import regen_conf
 from yunohost.utils.system import (
     _dump_sources_list,
     _list_upgradable_apt_packages,
     ynh_packages_version,
     dpkg_is_broken,
     dpkg_lock_available,
+    _apt_log_line_is_relevant,
 )
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation, OperationLogger
 
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
-logger = getActionLogger("yunohost.tools")
+logger = getLogger("yunohost.tools")
 
 
 def tools_versions():
@@ -62,10 +51,10 @@ def tools_versions():
 
 
 def tools_rootpw(new_password, check_strength=True):
-    from yunohost.user import _hash_user_password
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
         assert_password_is_compatible,
+        _hash_user_password,
     )
     import spwd
 
@@ -143,25 +132,30 @@ def _set_hostname(hostname, pretty_hostname=None):
             logger.debug(out)
 
 
-@is_unit_operation()
+@is_unit_operation(exclude=["dyndns_recovery_password", "password"])
 def tools_postinstall(
     operation_logger,
     domain,
     username,
     fullname,
     password,
+    dyndns_recovery_password=None,
     ignore_dyndns=False,
     force_diskspace=False,
     overwrite_root_password=True,
 ):
-    from yunohost.dyndns import _dyndns_available
+    from yunohost.service import _run_service_command
+    from yunohost.dyndns import _dyndns_available, dyndns_unsubscribe
     from yunohost.utils.dns import is_yunohost_dyndns_domain
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
         assert_password_is_compatible,
     )
-    from yunohost.domain import domain_main_domain
+    from yunohost.domain import domain_main_domain, domain_add
     from yunohost.user import user_create, ADMIN_ALIASES
+    from yunohost.app_catalog import _update_apps_catalog
+    from yunohost.firewall import firewall_upnp
+
     import psutil
 
     # Do some checks at first
@@ -173,6 +167,12 @@ def tools_postinstall(
             "It looks like you're trying to re-postinstall a system that was already working previously ... If you recently had some bug or issues with your installation, please first discuss with the team on how to fix the situation instead of savagely re-running the postinstall ...",
             raw_msg=True,
         )
+
+    # Crash early if the username is already a system user, which is
+    # a common confusion. We don't want to crash later and end up in an half-configured state.
+    all_existing_usernames = {x.pw_name for x in pwd.getpwall()}
+    if username in all_existing_usernames:
+        raise YunohostValidationError("system_username_exists")
 
     if username in ADMIN_ALIASES:
         raise YunohostValidationError(
@@ -196,9 +196,8 @@ def tools_postinstall(
     assert_password_is_strong_enough("admin", password)
 
     # If this is a nohost.me/noho.st, actually check for availability
-    if not ignore_dyndns and is_yunohost_dyndns_domain(domain):
-        available = None
-
+    dyndns = not ignore_dyndns and is_yunohost_dyndns_domain(domain)
+    if dyndns:
         # Check if the domain is available...
         try:
             available = _dyndns_available(domain)
@@ -206,17 +205,19 @@ def tools_postinstall(
         # connectivity or something. Assume that this domain isn't manageable
         # and inform the user that we could not contact the dyndns host server.
         except Exception:
-            logger.warning(
-                m18n.n("dyndns_provider_unreachable", provider="dyndns.yunohost.org")
+            raise YunohostValidationError(
+                "dyndns_provider_unreachable", provider="dyndns.yunohost.org"
             )
-
-        if available:
-            dyndns = True
-        # If not, abort the postinstall
         else:
-            raise YunohostValidationError("dyndns_unavailable", domain=domain)
-    else:
-        dyndns = False
+            if not available:
+                if dyndns_recovery_password:
+                    # Try to unsubscribe the domain so it can be subscribed again
+                    # If successful, it will be resubscribed with the same recovery password
+                    dyndns_unsubscribe(
+                        domain=domain, recovery_password=dyndns_recovery_password
+                    )
+                else:
+                    raise YunohostValidationError("dyndns_unavailable", domain=domain)
 
     if os.system("iptables -V >/dev/null 2>/dev/null") != 0:
         raise YunohostValidationError(
@@ -228,7 +229,11 @@ def tools_postinstall(
     logger.info(m18n.n("yunohost_installing"))
 
     # New domain config
-    domain_add(domain, dyndns)
+    domain_add(
+        domain,
+        dyndns_recovery_password=dyndns_recovery_password,
+        ignore_dyndns=ignore_dyndns,
+    )
     domain_main_domain(domain)
 
     # First user
@@ -240,10 +245,7 @@ def tools_postinstall(
     # Enable UPnP silently and reload firewall
     firewall_upnp("enable", no_refresh=True)
 
-    # Initialize the apps catalog system
-    _initialize_apps_catalog_system()
-
-    # Try to update the apps catalog ...
+    # Try to fetch the apps catalog ...
     # we don't fail miserably if this fails,
     # because that could be for example an offline installation...
     try:
@@ -257,10 +259,10 @@ def tools_postinstall(
     os.system("touch /etc/yunohost/installed")
 
     # Enable and start YunoHost firewall at boot time
-    service_enable("yunohost-firewall")
-    service_start("yunohost-firewall")
+    _run_service_command("enable", "yunohost-firewall")
+    _run_service_command("start", "yunohost-firewall")
 
-    regen_conf(names=["ssh"], force=True)
+    tools_regen_conf(names=["ssh"], force=True)
 
     # Restore original ssh conf, as chosen by the
     # admin during the initial install
@@ -275,7 +277,7 @@ def tools_postinstall(
     if os.path.exists(original_sshd_conf):
         os.rename(original_sshd_conf, "/etc/ssh/sshd_config")
 
-    regen_conf(force=True)
+    tools_regen_conf(force=True)
 
     logger.success(m18n.n("yunohost_configured"))
 
@@ -285,17 +287,8 @@ def tools_postinstall(
 def tools_regen_conf(
     names=[], with_diff=False, force=False, dry_run=False, list_pending=False
 ):
-    # Make sure the settings are migrated before running the migration,
-    # which may otherwise fuck things up such as the ssh config ...
-    # We do this here because the regen-conf is called before the migration in debian/postinst
-    if os.path.exists("/etc/yunohost/settings.json") and not os.path.exists(
-        "/etc/yunohost/settings.yml"
-    ):
-        try:
-            tools_migrations_run(["0025_global_settings_to_configpanel"])
-        except Exception as e:
-            logger.error(e)
 
+    from yunohost.regenconf import regen_conf
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 
@@ -303,6 +296,8 @@ def tools_update(target=None):
     """
     Update apps & system package cache
     """
+    from yunohost.app_catalog import _update_apps_catalog
+    from yunohost.app import _list_upgradable_apps
 
     if not target:
         target = "all"
@@ -338,9 +333,11 @@ def tools_update(target=None):
             # stdout goes to debug
             lambda l: logger.debug(l.rstrip()),
             # stderr goes to warning except for the boring apt messages
-            lambda l: logger.warning(l.rstrip())
-            if is_legit_warning(l)
-            else logger.debug(l.rstrip()),
+            lambda l: (
+                logger.warning(l.rstrip())
+                if is_legit_warning(l)
+                else logger.debug(l.rstrip())
+            ),
         )
 
         logger.info(m18n.n("updating_apt_cache"))
@@ -408,6 +405,8 @@ def tools_upgrade(operation_logger, target=None):
        apps -- List of apps to upgrade (or [] to update all apps)
        system -- True to upgrade system
     """
+
+    from yunohost.app import app_upgrade, app_list
 
     if dpkg_is_broken():
         raise YunohostValidationError("dpkg_is_broken")
@@ -477,12 +476,16 @@ def tools_upgrade(operation_logger, target=None):
         logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
         callbacks = (
-            lambda l: logger.info("+ " + l.rstrip() + "\r")
-            if _apt_log_line_is_relevant(l)
-            else logger.debug(l.rstrip() + "\r"),
-            lambda l: logger.warning(l.rstrip())
-            if _apt_log_line_is_relevant(l)
-            else logger.debug(l.rstrip()),
+            lambda l: (
+                logger.info("+ " + l.rstrip() + "\r")
+                if _apt_log_line_is_relevant(l)
+                else logger.debug(l.rstrip() + "\r")
+            ),
+            lambda l: (
+                logger.warning(l.rstrip())
+                if _apt_log_line_is_relevant(l)
+                else logger.debug(l.rstrip())
+            ),
         )
         returncode = call_async_output(dist_upgrade, callbacks, shell=True)
 
@@ -509,32 +512,6 @@ def tools_upgrade(operation_logger, target=None):
 
         logger.success(m18n.n("system_upgraded"))
         operation_logger.success()
-
-
-def _apt_log_line_is_relevant(line):
-    irrelevants = [
-        "service sudo-ldap already provided",
-        "Reading database ...",
-        "Preparing to unpack",
-        "Selecting previously unselected package",
-        "Created symlink /etc/systemd",
-        "Replacing config file",
-        "Creating config file",
-        "Installing new version of config file",
-        "Installing new config file as you requested",
-        ", does not exist on system.",
-        "unable to delete old directory",
-        "update-alternatives:",
-        "Configuration file '/etc",
-        "==> Modified (by you or by a script) since installation.",
-        "==> Package distributor has shipped an updated version.",
-        "==> Keeping old config file as default.",
-        "is a disabled or a static unit",
-        " update-rc.d: warning: start and stop actions are no longer supported; falling back to defaults",
-        "insserv: warning: current stop runlevel",
-        "insserv: warning: current start runlevel",
-    ]
-    return line.rstrip() and all(i not in line.rstrip() for i in irrelevants)
 
 
 @is_unit_operation()
@@ -609,6 +586,23 @@ def tools_shell(command=None):
         vars.update(locals())
         shell = code.InteractiveConsole(vars)
         shell.interact()
+
+
+def tools_basic_space_cleanup():
+    """
+    Basic space cleanup.
+
+    apt autoremove
+    apt autoclean
+    journalctl vacuum (leaves 50M of logs)
+    archived logs removal
+    """
+    subprocess.run("apt autoremove && apt autoclean", shell=True)
+    subprocess.run("journalctl --vacuum-size=50M", shell=True)
+    subprocess.run("rm /var/log/*.gz", shell=True)
+    subprocess.run("rm /var/log/*/*.gz", shell=True)
+    subprocess.run("rm /var/log/*.?", shell=True)
+    subprocess.run("rm /var/log/*/*.?", shell=True)
 
 
 # ############################################ #
@@ -945,9 +939,9 @@ class Migration:
     # Those are to be implemented by daughter classes
 
     mode = "auto"
-    dependencies: List[
-        str
-    ] = []  # List of migration ids required before running this migration
+    dependencies: List[str] = (
+        []
+    )  # List of migration ids required before running this migration
 
     @property
     def disclaimer(self):

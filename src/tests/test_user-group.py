@@ -264,12 +264,6 @@ def test_del_group_that_does_not_exist(mocker):
 
 def test_update_user():
     with message("user_updated"):
-        user_update("alice", firstname="NewName", lastname="NewLast")
-
-    info = user_info("alice")
-    assert info["fullname"] == "NewName NewLast"
-
-    with message("user_updated"):
         user_update("alice", fullname="New2Name New2Last")
 
     info = user_info("alice")
@@ -315,7 +309,7 @@ def test_update_group_remove_user_not_already_in():
 
 def test_update_user_that_doesnt_exist(mocker):
     with raiseYunohostError(mocker, "user_unknown"):
-        user_update("doesnt_exist", firstname="NewName", lastname="NewLast")
+        user_update("doesnt_exist", fullname="Foo Bar")
 
 
 def test_update_group_that_doesnt_exist(mocker):

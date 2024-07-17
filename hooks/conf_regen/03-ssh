@@ -9,17 +9,16 @@ do_pre_regen() {
 
     cd /usr/share/yunohost/conf/ssh
 
+    # Support different strategy for security configurations
+    export compatibility="$(jq -r '.ssh_compatibility' <<< "$YNH_SETTINGS")"
+    export port="$(jq -r '.ssh_port' <<< "$YNH_SETTINGS")"
+    export password_authentication="$(jq -r '.ssh_password_authentication' <<< "$YNH_SETTINGS" | int_to_bool)"
+    export ssh_keys=$(ls /etc/ssh/ssh_host_{ed25519,rsa,ecdsa}_key 2>/dev/null || true)
+
     # do not listen to IPv6 if unavailable
     [[ -f /proc/net/if_inet6 ]] && ipv6_enabled=true || ipv6_enabled=false
-
-    ssh_keys=$(ls /etc/ssh/ssh_host_{ed25519,rsa,ecdsa}_key 2>/dev/null || true)
-
-    # Support different strategy for security configurations
-    export compatibility="$(yunohost settings get 'security.ssh.ssh_compatibility')"
-    export port="$(yunohost settings get 'security.ssh.ssh_port')"
-    export password_authentication="$(yunohost settings get 'security.ssh.ssh_password_authentication' | int_to_bool)"
-    export ssh_keys
     export ipv6_enabled
+
     ynh_render_template "sshd_config" "${pending_dir}/etc/ssh/sshd_config"
 }
 

@@ -1,77 +1,34 @@
-#!/bin/bash
+#!/usr/bin/env python3
 
-set -e
-set -u
+import sys
+import requests
+import json
 
-PASTE_URL="https://paste.yunohost.org"
+SERVER_URL = "https://paste.yunohost.org"
+TIMEOUT = 3
 
-_die() {
-  printf "Error: %s\n" "$*"
-  exit 1
-}
+def create_snippet(data):
+    try:
+        url = SERVER_URL + "/documents"
+        response = requests.post(url, data=data.encode('utf-8'), timeout=TIMEOUT)
+        response.raise_for_status()
+        dockey = json.loads(response.text)['key']
+        return SERVER_URL + "/raw/" + dockey
+    except requests.exceptions.RequestException as e:
+        print("\033[31mError: {}\033[0m".format(e))
+        sys.exit(1)
 
-check_dependencies() {
-  curl -V > /dev/null 2>&1 || _die "This script requires curl."
-}
 
-paste_data() {
-  json=$(curl -X POST -s -d "$1" "${PASTE_URL}/documents")
-  [[ -z "$json" ]] && _die "Unable to post the data to the server."
+def main():
+    output = sys.stdin.read()
 
-  key=$(echo "$json" \
-    | python3 -c 'import json,sys;o=json.load(sys.stdin);print(o["key"])' \
-        2>/dev/null)
-  [[ -z "$key" ]] && _die "Unable to parse the server response."
+    if not output:
+        print("\033[31mError: No input received from stdin.\033[0m")
+        sys.exit(1)
 
-  echo "${PASTE_URL}/${key}"
-}
+    url = create_snippet(output)
 
-usage() {
-  printf "Usage: ${0} [OPTION]...
+    print("\033[32mURL: {}\033[0m".format(url))
 
-Read from input stream and paste the data to the YunoHost
-Haste server.
-
-For example, to paste the output of the YunoHost diagnosis, you
-can simply execute the following:
-  yunohost diagnosis show | ${0}
-
-It will return the URL where you can access the pasted data.
-
-Options:
-  -h, --help   show this help message and exit
-"
-}
-
-main() {
-  # parse options
-  while (( ${#} )); do
-    case "${1}" in
-      --help|-h)
-        usage
-        exit 0
-        ;;
-      *)
-        echo "Unknown parameter detected: ${1}" >&2
-        echo >&2
-        usage >&2
-        exit 1
-        ;;
-    esac
-
-    shift 1
-  done
-
-  # check input stream
-  read -t 0 || {
-    echo -e "Invalid usage: No input is provided.\n" >&2
-    usage
-    exit 1
-  }
-
-  paste_data "$(cat)"
-}
-
-check_dependencies
-
-main "${@}"
+if __name__ == "__main__":
+    main()

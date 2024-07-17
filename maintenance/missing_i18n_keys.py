@@ -32,6 +32,7 @@ def find_expected_string_keys():
     python_files = glob.glob(ROOT + "src/*.py")
     python_files.extend(glob.glob(ROOT + "src/utils/*.py"))
     python_files.extend(glob.glob(ROOT + "src/migrations/*.py"))
+    python_files.extend(glob.glob(ROOT + "src/migrations/*.py.disabled"))
     python_files.extend(glob.glob(ROOT + "src/authenticators/*.py"))
     python_files.extend(glob.glob(ROOT + "src/diagnosers/*.py"))
     python_files.append(ROOT + "bin/yunohost")
@@ -135,6 +136,13 @@ def find_expected_string_keys():
 
     # Domain config panel
     domain_config = toml.load(open(ROOT + "share/config_domain.toml"))
+    domain_settings_with_help_key = [
+        "portal_logo",
+        "portal_public_intro",
+        "portal_theme",
+        "portal_user_intro",
+        "search_engine",
+    ]
     for panel in domain_config.values():
         if not isinstance(panel, dict):
             continue
@@ -145,6 +153,8 @@ def find_expected_string_keys():
                 if not isinstance(values, dict):
                     continue
                 yield f"domain_config_{key}"
+                if key in domain_settings_with_help_key:
+                    yield f"domain_config_{key}_help"
 
     # Global settings
     global_config = toml.load(open(ROOT + "share/config_global.toml"))
@@ -155,7 +165,6 @@ def find_expected_string_keys():
         "smtp_relay_password",
         "smtp_relay_port",
         "smtp_relay_user",
-        "ssh_port",
         "ssowat_panel_overlay_enabled",
         "root_password",
         "root_access_explain",

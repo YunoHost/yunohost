@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023 YunoHost Contributors
+# Copyright (c) 2024 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -21,11 +21,10 @@ import sys
 import shutil
 import subprocess
 from glob import glob
-
+from logging import getLogger
 from datetime import datetime
 
 from moulinette import m18n
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, chown, chmod
 from moulinette.utils.process import check_output
 
@@ -38,11 +37,11 @@ from yunohost.service import _run_service_command
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
 
-logger = getActionLogger("yunohost.certmanager")
+logger = getLogger("yunohost.certmanager")
 
 CERT_FOLDER = "/etc/yunohost/certs/"
-TMP_FOLDER = "/tmp/acme-challenge-private/"
-WEBROOT_FOLDER = "/tmp/acme-challenge-public/"
+TMP_FOLDER = "/var/www/.well-known/acme-challenge-private/"
+WEBROOT_FOLDER = "/var/www/.well-known/acme-challenge-public/"
 
 SELF_CA_FILE = "/etc/ssl/certs/ca-yunohost_crt.pem"
 ACCOUNT_KEY_FILE = "/etc/yunohost/letsencrypt_account.pem"
@@ -557,6 +556,7 @@ def _fetch_and_enable_new_certificate(domain, no_checks=False):
 
 def _prepare_certificate_signing_request(domain, key_file, output_folder):
     from OpenSSL import crypto  # lazy loading this module for performance reasons
+    from yunohost.hook import hook_callback
 
     # Init a request
     csr = crypto.X509Req()
@@ -564,42 +564,34 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     # Set the domain
     csr.get_subject().CN = domain
 
-    from yunohost.domain import domain_config_get
+    sanlist = []
+    hook_results = hook_callback("cert_alternate_names", env={"domain": domain})
+    for hook_name, results in hook_results.items():
+        #
+        # There can be multiple results per hook name, so results look like
+        # {'/some/path/to/hook1':
+        #       { 'state': 'succeed',
+        #         'stdreturn': ["foo", "bar"]
+        #       },
+        #  '/some/path/to/hook2':
+        #       { ... },
+        #  [...]
+        #
+        # Loop over the sub-results
+        for result in results.values():
+            if result.get("stdreturn"):
+                sanlist += result["stdreturn"]
 
-    # If XMPP is enabled for this domain, add xmpp-upload and muc subdomains
-    # in subject alternate names
-    if domain_config_get(domain, key="feature.xmpp.xmpp") == 1:
-        subdomain = "xmpp-upload." + domain
-        xmpp_records = (
-            Diagnoser.get_cached_report(
-                "dnsrecords", item={"domain": domain, "category": "xmpp"}
-            ).get("data")
-            or {}
-        )
-        sanlist = []
-        for sub in ("xmpp-upload", "muc"):
-            subdomain = sub + "." + domain
-            if xmpp_records.get("CNAME:" + sub) == "OK":
-                sanlist.append(("DNS:" + subdomain))
-            else:
-                logger.warning(
-                    m18n.n(
-                        "certmanager_warning_subdomain_dns_record",
-                        subdomain=subdomain,
-                        domain=domain,
-                    )
+    if sanlist:
+        csr.add_extensions(
+            [
+                crypto.X509Extension(
+                    b"subjectAltName",
+                    False,
+                    (", ".join([f"DNS:{sub}.{domain}" for sub in sanlist])).encode("utf-8"),
                 )
-
-        if sanlist:
-            csr.add_extensions(
-                [
-                    crypto.X509Extension(
-                        b"subjectAltName",
-                        False,
-                        (", ".join(sanlist)).encode("utf-8"),
-                    )
-                ]
-            )
+            ]
+        )
 
     # Set the key
     with open(key_file, "rt") as f:
@@ -733,15 +725,6 @@ def _enable_certificate(domain, new_cert_folder):
 
     logger.debug("Restarting services...")
 
-    for service in ("dovecot", "metronome"):
-        # Ugly trick to not restart metronome if it's not installed or no domain configured for XMPP
-        if service == "metronome" and (
-            os.system("dpkg --list | grep -q 'ii *metronome'") != 0
-            or not glob("/etc/metronome/conf.d/*.cfg.lua")
-        ):
-            continue
-        _run_service_command("restart", service)
-
     if os.path.isfile("/etc/yunohost/installed"):
         # regen nginx conf to be sure it integrates OCSP Stapling
         # (We don't do this yet if postinstall is not finished yet)
@@ -749,6 +732,7 @@ def _enable_certificate(domain, new_cert_folder):
         regen_conf(names=["nginx", "postfix"])
 
     _run_service_command("reload", "nginx")
+    _run_service_command("restart", "dovecot")
 
     from yunohost.hook import hook_callback
 
@@ -778,7 +762,7 @@ def _check_domain_is_ready_for_ACME(domain):
         or {}
     )
 
-    parent_domain = _get_parent_domain_of(domain, return_self=True)
+    parent_domain = _get_parent_domain_of(domain, return_self=True, topest=True)
 
     dnsrecords = (
         Diagnoser.get_cached_report(

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023 YunoHost Contributors
+# Copyright (c) 2024 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -19,9 +19,9 @@
 import os
 import json
 import subprocess
+import logging
 from typing import List
 
-from moulinette.utils import log
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file, read_json, write_to_json
 from yunohost.diagnosis import Diagnoser
@@ -31,7 +31,7 @@ from yunohost.utils.system import (
     system_arch,
 )
 
-logger = log.getActionLogger("yunohost.diagnosis")
+logger = logging.getLogger("yunohost.diagnosis")
 
 
 class MyDiagnoser(Diagnoser):
@@ -118,9 +118,11 @@ class MyDiagnoser(Diagnoser):
                 "repo": ynh_packages["yunohost"]["repo"],
             },
             status="INFO" if consistent_versions else "ERROR",
-            summary="diagnosis_basesystem_ynh_main_version"
-            if consistent_versions
-            else "diagnosis_basesystem_ynh_inconsistent_versions",
+            summary=(
+                "diagnosis_basesystem_ynh_main_version"
+                if consistent_versions
+                else "diagnosis_basesystem_ynh_inconsistent_versions"
+            ),
             details=ynh_version_details,
         )
 

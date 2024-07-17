@@ -227,7 +227,7 @@
     redact = true
     
     [gandi.api_protocol]
-    type = "string"
+    type = "select"
     choices.rpc = "RPC"
     choices.rest = "REST"
     default = "rest"

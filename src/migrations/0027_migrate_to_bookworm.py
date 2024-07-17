@@ -1,31 +1,41 @@
 import glob
 import os
+import subprocess
+from time import sleep
 
-from moulinette import m18n
+from moulinette import Moulinette, m18n
+from moulinette.utils.process import call_async_output
 from yunohost.utils.error import YunohostError
-from moulinette.utils.log import getActionLogger
-from moulinette.utils.process import check_output, call_async_output
-from moulinette.utils.filesystem import read_file, rm, write_to_file
+from yunohost.tools import _write_migration_state
+from moulinette.utils.process import check_output
+from moulinette.utils.filesystem import read_file, write_to_file
 
 from yunohost.tools import (
     Migration,
     tools_update,
-    tools_upgrade,
-    _apt_log_line_is_relevant,
 )
 from yunohost.app import unstable_apps
-from yunohost.regenconf import manually_modified_files, _force_clear_hashes
+from yunohost.regenconf import manually_modified_files, regen_conf
 from yunohost.utils.system import (
     free_space_in_directory,
     get_ynh_package_version,
     _list_upgradable_apt_packages,
+    aptitude_with_progress_bar,
 )
-from yunohost.service import _get_services, _save_services
 
-logger = getActionLogger("yunohost.migration")
+# getActionLogger is not there in bookworm,
+# we use this try/except to make it agnostic wether or not we're on 11.x or 12.x
+# otherwise this may trigger stupid issues
+try:
+    from moulinette.utils.log import getActionLogger
+    logger = getActionLogger("yunohost.migration")
+except ImportError:
+    import logging
+    logger = logging.getLogger("yunohost.migration")
 
-N_CURRENT_DEBIAN = 10
-N_CURRENT_YUNOHOST = 4
+
+N_CURRENT_DEBIAN = 11
+N_CURRENT_YUNOHOST = 11
 
 VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_bookworm_upgrade.txt"
 
@@ -66,47 +76,28 @@ def _backup_pip_freeze_for_python_app_venvs():
     venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
     for venv in venvs:
         # Generate a requirements file from venv
+        # Remove pkg resources from the freeze to avoid an error during the python venv https://stackoverflow.com/a/40167445
         os.system(
-            f"{venv}/bin/pip freeze > {venv}{VENV_REQUIREMENTS_SUFFIX} 2>/dev/null"
+            f"{venv}/bin/pip freeze | grep -E -v 'pkg(-|_)resources==' > {venv}{VENV_REQUIREMENTS_SUFFIX} 2>/dev/null"
         )
 
 
 class MyMigration(Migration):
-    "Upgrade the system to Debian Bookworm and Yunohost 11.x"
+    "Upgrade the system to Debian Bookworm and Yunohost 12.x"
 
     mode = "manual"
 
     def run(self):
         self.check_assertions()
 
-        logger.info(m18n.n("migration_0021_start"))
+        logger.info(m18n.n("migration_0027_start"))
 
         #
         # Add new apt .deb signing key
         #
 
         new_apt_key = "https://forge.yunohost.org/yunohost_bookworm.asc"
-        check_output(f"wget -O- {new_apt_key} -q | apt-key add -qq -")
-
-        #
-        # Patch sources.list
-        #
-        logger.info(m18n.n("migration_0021_patching_sources_list"))
-        self.patch_apt_sources_list()
-
-        # Stupid OVH has some repo configured which dont work with bookworm and break apt ...
-        os.system("sudo rm -f /etc/apt/sources.list.d/ovh-*.list")
-
-        # Force add sury if it's not there yet
-        # This is to solve some weird issue with php-common breaking php7.3-common,
-        # hence breaking many php7.3-deps
-        # hence triggering some dependency conflict (or foobar-ynh-deps uninstall)
-        # Adding it there shouldnt be a big deal - Yunohost 11.x does add it
-        # through its regen conf anyway.
-        if not os.path.exists("/etc/apt/sources.list.d/extra_php_version.list"):
-            open("/etc/apt/sources.list.d/extra_php_version.list", "w").write(
-                "deb https://packages.sury.org/php/ bookworm main"
-            )
+        os.system(f'wget --timeout 900 --quiet "{new_apt_key}" --output-document=- | gpg --dearmor >"/usr/share/keyrings/yunohost-bookworm.gpg"')
 
         # Add Sury key even if extra_php_version.list was already there,
         # because some old system may be using an outdated key not valid for Bookworm
@@ -115,9 +106,12 @@ class MyMigration(Migration):
             'wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"'
         )
 
-        # Remove legacy, duplicated sury entry if it exists
-        if os.path.exists("/etc/apt/sources.list.d/sury.list"):
-            os.system("rm -rf /etc/apt/sources.list.d/sury.list")
+        #
+        # Patch sources.list
+        #
+
+        logger.info(m18n.n("migration_0027_patching_sources_list"))
+        self.patch_apt_sources_list()
 
         #
         # Get requirements of the different venvs from python apps
@@ -129,7 +123,7 @@ class MyMigration(Migration):
         # Run apt update
         #
 
-        tools_update(target="system")
+        aptitude_with_progress_bar("update")
 
         # Tell libc6 it's okay to restart system stuff during the upgrade
         os.system(
@@ -137,13 +131,13 @@ class MyMigration(Migration):
         )
 
         # Do not restart nginx during the upgrade of nginx-common and nginx-extras ...
-        # c.f. https://manpages.debian.org/bookworm/init-system-helpers/deb-systemd-invoke.1p.en.html
+        # c.f. https://manpages.debian.org/bullseye/init-system-helpers/deb-systemd-invoke.1p.en.html
         # and zcat /usr/share/doc/init-system-helpers/README.policy-rc.d.gz
         # and the code inside /usr/bin/deb-systemd-invoke to see how it calls /usr/sbin/policy-rc.d ...
         # and also invoke-rc.d ...
         write_to_file(
             "/usr/sbin/policy-rc.d",
-            '#!/bin/bash\n[[ "$1" =~ "nginx" ]] && [[ "$2" == "restart" ]] && exit 101 || exit 0',
+            '#!/bin/bash\n[[ "$1" =~ "nginx" ]] && exit 101 || exit 0',
         )
         os.system("chmod +x /usr/sbin/policy-rc.d")
 
@@ -155,151 +149,56 @@ class MyMigration(Migration):
         #
         # Patch yunohost conflicts
         #
-        logger.info(m18n.n("migration_0021_patch_yunohost_conflicts"))
+        logger.info(m18n.n("migration_0027_patch_yunohost_conflicts"))
 
         self.patch_yunohost_conflicts()
-
-        #
-        # Specific tweaking to get rid of custom my.cnf and use debian's default one
-        # (my.cnf is actually a symlink to mariadb.cnf)
-        #
-
-        _force_clear_hashes(["/etc/mysql/my.cnf"])
-        rm("/etc/mysql/mariadb.cnf", force=True)
-        rm("/etc/mysql/my.cnf", force=True)
-        ret = self.apt_install(
-            "mariadb-common --reinstall -o Dpkg::Options::='--force-confmiss'"
-        )
-        if ret != 0:
-            raise YunohostError("Failed to reinstall mariadb-common ?", raw_msg=True)
-
-        #
-        # /usr/share/yunohost/yunohost-config/ssl/yunoCA -> /usr/share/yunohost/ssl
-        #
-        if os.path.exists("/usr/share/yunohost/yunohost-config/ssl/yunoCA"):
-            os.system(
-                "mv /usr/share/yunohost/yunohost-config/ssl/yunoCA /usr/share/yunohost/ssl"
-            )
-            rm("/usr/share/yunohost/yunohost-config", recursive=True, force=True)
-
-        #
-        # /home/yunohost.conf -> /var/cache/yunohost/regenconf
-        #
-        if os.path.exists("/home/yunohost.conf"):
-            os.system("mv /home/yunohost.conf /var/cache/yunohost/regenconf")
-            rm("/home/yunohost.conf", recursive=True, force=True)
-
-        # Remove legacy postgresql service record added by helpers,
-        # will now be dynamically handled by the core in bookworm
-        services = _get_services()
-        if "postgresql" in services:
-            del services["postgresql"]
-            _save_services(services)
 
         #
         # Critical fix for RPI otherwise network is down after rebooting
         # https://forum.yunohost.org/t/20652
         #
-        if os.system("systemctl | grep -q dhcpcd") == 0:
-            logger.info("Applying fix for DHCPCD ...")
-            os.system("mkdir -p /etc/systemd/system/dhcpcd.service.d")
-            write_to_file(
-                "/etc/systemd/system/dhcpcd.service.d/wait.conf",
-                "[Service]\nExecStart=\nExecStart=/usr/sbin/dhcpcd -w",
-            )
+        # FIXME : this is from buster->bullseye, do we still needed it ?
+        #
+        #if os.system("systemctl | grep -q dhcpcd") == 0:
+        #    logger.info("Applying fix for DHCPCD ...")
+        #    os.system("mkdir -p /etc/systemd/system/dhcpcd.service.d")
+        #    write_to_file(
+        #        "/etc/systemd/system/dhcpcd.service.d/wait.conf",
+        #        "[Service]\nExecStart=\nExecStart=/usr/sbin/dhcpcd -w",
+        #    )
 
         #
         # Main upgrade
         #
-        logger.info(m18n.n("migration_0021_main_upgrade"))
+        logger.info(m18n.n("migration_0027_main_upgrade"))
 
+        # Mark php, mariadb, metronome and rspamd as "auto" so that they may be uninstalled if they ain't explicitly wanted by app or admins
+        php_packages = self.get_php_packages()
+        aptitude_with_progress_bar(f"markauto mariadb-server metronome rspamd {' '.join(php_packages)}")
+
+        # Hold import yunohost packages
         apps_packages = self.get_apps_equivs_packages()
-        self.hold(apps_packages)
-        tools_upgrade(target="system", allow_yunohost_upgrade=False)
+        aptitude_with_progress_bar(f"hold yunohost moulinette ssowat yunohost-admin {' '.join(apps_packages)}")
+
+        # Dirty hack to be able to remove rspamd because it's causing too many issues due to libluajit ...
+        command = "sed -i /var/lib/dpkg/status -e 's@rspamd, @@g'"
+        logger.debug(f"Running: {command}")
+        os.system(command)
+
+        aptitude_with_progress_bar("upgrade cron rspamd- libluajit-5.1-2- --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'")
+
+        aptitude_with_progress_bar("full-upgrade --show-why -o Dpkg::Options::='--force-confold'")
+
+        # Force regenconf of nsswitch because for some reason
+        # /etc/nsswitch.conf is reset despite the --force-confold? It's a
+        # disaster because then admins cannot "sudo" >_> ...
+        regen_conf(names=["nsswitch"], force=True)
 
         if self.debian_major_version() == N_CURRENT_DEBIAN:
-            raise YunohostError("migration_0021_still_on_bullseye_after_main_upgrade")
-
-        # Force explicit install of php8.2fpm and other old 'default' dependencies
-        # that are now only in Recommends
-        #
-        # Also, we need to install php8.2 equivalents of other php7.4 dependencies.
-        # For example, Nextcloud may depend on php7.3-zip, and after the php pool migration
-        # to autoupgrade Nextcloud to 8.2, it will need the php8.2-zip to work.
-        # The following list is based on an ad-hoc analysis of php deps found in the
-        # app ecosystem, with a known equivalent on php8.2.
-        #
-        # This is kinda a dirty hack as it doesnt properly update the *-ynh-deps virtual packages
-        # with the proper list of dependencies, and the dependencies install this way
-        # will get flagged as 'manually installed'.
-        #
-        # We'll probably want to do something during the Bookworm->Bookworm migration to re-flag
-        # these as 'auto' so they get autoremoved if not needed anymore.
-        # Also hopefully by then we'll have manifestv2 (maybe) and will be able to use
-        # the apt resource mecanism to regenerate the *-ynh-deps virtual packages ;)
-
-        php74packages_suffixes = [
-            "apcu",
-            "bcmath",
-            "bz2",
-            "dom",
-            "gmp",
-            "igbinary",
-            "imagick",
-            "imap",
-            "mbstring",
-            "memcached",
-            "mysqli",
-            "mysqlnd",
-            "pgsql",
-            "redis",
-            "simplexml",
-            "soap",
-            "sqlite3",
-            "ssh2",
-            "tidy",
-            "xml",
-            "xmlrpc",
-            "xsl",
-            "zip",
-        ]
-
-        cmd = (
-            "apt show '*-ynh-deps' 2>/dev/null"
-            "  | grep Depends"
-            f" | grep -o -E \"php7.4-({'|'.join(php74packages_suffixes)})\""
-            "  | sort | uniq"
-            "  | sed 's/php7.4/php8.2/g'"
-            "  || true"
-        )
-
-        basephp82packages_to_install = [
-            "php8.2-fpm",
-            "php8.2-common",
-            "php8.2-ldap",
-            "php8.2-intl",
-            "php8.2-mysql",
-            "php8.2-gd",
-            "php8.2-curl",
-            "php-php-gettext",
-        ]
-
-        php74packages_to_install = basephp82packages_to_install + [
-            f.strip() for f in check_output(cmd).split("\n") if f.strip()
-        ]
-
-        ret = self.apt_install(
-            f"{' '.join(php74packages_to_install)} "
-            "$(dpkg --list | grep ynh-deps | awk '{print $2}') "
-            "-o Dpkg::Options::='--force-confmiss'"
-        )
-        if ret != 0:
-            raise YunohostError(
-                "Failed to force the install of php dependencies ?", raw_msg=True
-            )
+            raise YunohostError("migration_0027_still_on_bullseye_after_main_upgrade")
 
         # Clean the mess
-        logger.info(m18n.n("migration_0021_cleaning_up"))
+        logger.info(m18n.n("migration_0027_cleaning_up"))
         os.system(
             "LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt autoremove --assume-yes"
         )
@@ -309,42 +208,56 @@ class MyMigration(Migration):
         # Stupid hack for stupid dnsmasq not picking up its new init.d script then breaking everything ...
         # https://forum.yunohost.org/t/20676
         #
-        if os.path.exists("/etc/init.d/dnsmasq.dpkg-dist"):
-            logger.info("Copying new version for /etc/init.d/dnsmasq ...")
-            os.system("cp /etc/init.d/dnsmasq.dpkg-dist /etc/init.d/dnsmasq")
+        # FIXME : this is from buster->bullseye, do we still needed it ?
+        #
+        #if os.path.exists("/etc/init.d/dnsmasq.dpkg-dist"):
+        #    logger.info("Copying new version for /etc/init.d/dnsmasq ...")
+        #    os.system("cp /etc/init.d/dnsmasq.dpkg-dist /etc/init.d/dnsmasq")
 
         #
         # Yunohost upgrade
         #
-        logger.info(m18n.n("migration_0021_yunohost_upgrade"))
+        logger.info(m18n.n("migration_0027_yunohost_upgrade"))
+        aptitude_with_progress_bar("unhold yunohost moulinette ssowat yunohost-admin")
 
-        self.unhold(apps_packages)
+        try:
+            aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin yunohost-portal moulinette ssowat python3.9- python3.9-venv- -o Dpkg::Options::='--force-confold'")
+        except Exception:
+            # Retry after unholding the app packages, maybe it can unlock the situation idk
+            if apps_packages:
+                aptitude_with_progress_bar(f"unhold {' '.join(apps_packages)}")
+                aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin yunohost-portal moulinette ssowat python3.9- python3.9-venv- -o Dpkg::Options::='--force-confold'")
+        else:
+            # If the upgrade was sucessful, we want to unhold the apps packages
+            if apps_packages:
+                aptitude_with_progress_bar(f"unhold {' '.join(apps_packages)}")
 
-        cmd = "LC_ALL=C"
-        cmd += " DEBIAN_FRONTEND=noninteractive"
-        cmd += " APT_LISTCHANGES_FRONTEND=none"
-        cmd += " apt dist-upgrade "
-        cmd += " --quiet -o=Dpkg::Use-Pty=0 --fix-broken --dry-run"
-        cmd += " | grep -q 'ynh-deps'"
+        # Mark this migration as completed before triggering the "new" migrations
+        _write_migration_state(self.id, "done")
 
-        logger.info("Simulating upgrade...")
-        if os.system(cmd) == 0:
-            raise YunohostError(
-                "The upgrade cannot be completed, because some app dependencies would need to be removed?",
-                raw_msg=True,
-            )
+        callbacks = (
+            lambda l: logger.debug("+ " + l.rstrip() + "\r"),
+            lambda l: logger.warning(l.rstrip()),
+        )
+        try:
+            call_async_output(["yunohost", "tools", "migrations", "run"], callbacks)
+        except Exception as e:
+            logger.error(e)
 
-        postupgradecmds = f"apt-mark auto {' '.join(basephp74packages_to_install)}\n"
-        postupgradecmds += "rm -f /usr/sbin/policy-rc.d\n"
-        postupgradecmds += "echo 'Restarting nginx...' >&2\n"
-        postupgradecmds += "systemctl restart nginx\n"
-
-        tools_upgrade(target="system", postupgradecmds=postupgradecmds)
+        # If running from the webadmin, restart the API after a delay
+        if Moulinette.interface.type == "api":
+            logger.warning(m18n.n("migration_0027_delayed_api_restart"))
+            sleep(5)
+            # Restart the API after 10 sec (at now doesn't support sub-minute times...)
+            # We do this so that the API / webadmin still gets the proper HTTP response
+            cmd = 'at -M now >/dev/null 2>&1 <<< "sleep 10; systemctl restart nginx yunohost-api"'
+            # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
+            subprocess.check_call(["bash", "-c", cmd])
 
     def debian_major_version(self):
         # The python module "platform" and lsb_release are not reliable because
         # on some setup, they may still return Release=9 even after upgrading to
-        # bullseye ... (Apparently this is related to OVH overriding some stuff
+        # buster ... (Apparently this is related to OVH overriding some stuff
         # with /etc/lsb-release for instance -_-)
         # Instead, we rely on /etc/os-release which should be the raw info from
         # the distribution...
@@ -358,10 +271,10 @@ class MyMigration(Migration):
         return int(get_ynh_package_version("yunohost")["version"].split(".")[0])
 
     def check_assertions(self):
-        # Be on bullseye (10.x) and yunohost 4.x
+        # Be on bullseye (11.x) and yunohost 11.x
         # NB : we do both check to cover situations where the upgrade crashed
-        # in the middle and debian version could be > 9.x but yunohost package
-        # would still be in 3.x...
+        # in the middle and debian version could be > 12.x but yunohost package
+        # would still be in 11.x...
         if (
             not self.debian_major_version() == N_CURRENT_DEBIAN
             and not self.yunohost_major_version() == N_CURRENT_YUNOHOST
@@ -379,14 +292,13 @@ class MyMigration(Migration):
                 # Yeah it's not that important ... it's to simplify support ...
                 pass
 
-            raise YunohostError("migration_0021_not_bullseye2")
+            raise YunohostError("migration_0027_not_bullseye")
 
         # Have > 1 Go free space on /var/ ?
         if free_space_in_directory("/var/") / (1024**3) < 1.0:
-            raise YunohostError("migration_0021_not_enough_free_space")
+            raise YunohostError("migration_0027_not_enough_free_space")
 
         # Have > 70 MB free space on /var/ ?
-        # FIXME: Create a way to ignore this check, on some system 70M is enough...
         if free_space_in_directory("/boot/") / (1024**2) < 70.0:
             raise YunohostError(
                 "/boot/ has less than 70MB available. This will probably trigger a crash during the upgrade because a new kernel needs to be installed. Please look for advice on the forum on how to remove old, unused kernels to free up some space in /boot/.",
@@ -394,7 +306,7 @@ class MyMigration(Migration):
             )
 
         # Check system is up to date
-        # (but we don't if 'bookworm' is already in the sources.list ...
+        # (but we don't if 'bullseye' is already in the sources.list ...
         # which means maybe a previous upgrade crashed and we're re-running it)
         if os.path.exists("/etc/apt/sources.list") and " bookworm " not in read_file(
             "/etc/apt/sources.list"
@@ -418,15 +330,15 @@ class MyMigration(Migration):
                 ]
             )
             if upgradable_system_packages - lime2_hold_packages:
-                raise YunohostError("migration_0021_system_not_fully_up_to_date")
+                raise YunohostError("migration_0027_system_not_fully_up_to_date")
 
     @property
     def disclaimer(self):
         # Avoid having a super long disclaimer + uncessary check if we ain't
-        # on bullseye / yunohost 4.x anymore
+        # on bullseye / yunohost 11.x
         # NB : we do both check to cover situations where the upgrade crashed
-        # in the middle and debian version could be >= 10.x but yunohost package
-        # would still be in 4.x...
+        # in the middle and debian version could be 12.x but yunohost package
+        # would still be in 11.x...
         if (
             not self.debian_major_version() == N_CURRENT_DEBIAN
             and not self.yunohost_major_version() == N_CURRENT_YUNOHOST
@@ -441,22 +353,24 @@ class MyMigration(Migration):
         modified_files = manually_modified_files()
         modified_files = "".join(["\n    - " + f for f in modified_files])
 
-        message = m18n.n("migration_0021_general_warning")
+        message = m18n.n("migration_0027_general_warning")
 
         message = (
-            "N.B.: This migration has been tested by the community over the last few months but has only been declared stable recently. If your server hosts critical services and if you are not too confident with debugging possible issues, we recommend you to wait a little bit more while we gather more feedback and polish things up. If on the other hand you are relatively confident with debugging small issues that may arise, you are encouraged to run this migration ;)! You can read about remaining known issues and feedback from the community here: https://forum.yunohost.org/t/20590\n\n"
+            "N.B.: This migration has been tested by the community over the last few months but has only been declared stable recently. If your server hosts critical services and if you are not too confident with debugging possible issues, we recommend you to wait a little bit more while we gather more feedback and polish things up. If on the other hand you are relatively confident with debugging small issues that may arise, you are encouraged to run this migration ;)! You can read about remaining known issues and feedback from the community here: https://forum.yunohost.org/t/?? FIXME ?? \n\n"
             + message
+            + "\n\n"
+            + "Packages 'metronome' (xmpp server) and 'rspamd' (mail antispam) are now separate applications available in the catalog, and will be uninstalled during the upgrade. Make sure to explicitly install the corresponding new apps after the upgrade if you care about those!"
         )
 
         if problematic_apps:
             message += "\n\n" + m18n.n(
-                "migration_0021_problematic_apps_warning",
+                "migration_0027_problematic_apps_warning",
                 problematic_apps=problematic_apps,
             )
 
         if modified_files:
             message += "\n\n" + m18n.n(
-                "migration_0021_modified_files", manually_modified_files=modified_files
+                "migration_0027_modified_files", manually_modified_files=modified_files
             )
 
         return message
@@ -467,16 +381,27 @@ class MyMigration(Migration):
             sources_list.append("/etc/apt/sources.list")
 
         # This :
-        # - replace single 'bullseye' occurence by 'bulleye'
+        # - replace single 'bullseye' occurence by 'bookworm'
         # - comments lines containing "backports"
+        # - replace 'bullseye/updates' by 'bookworm/updates' (or same with -)
+        # - make sure the yunohost line has the "signed-by" thingy
+        # - replace "non-free" with "non-free non-free-firmware"
+        # Special note about the security suite:
+        # https://www.debian.org/releases/bullseye/amd64/release-notes/ch-information.en.html#security-archive
         for f in sources_list:
             command = (
                 f"sed -i {f} "
                 "-e 's@ bullseye @ bookworm @g' "
                 "-e '/backports/ s@^#*@#@' "
+                "-e 's@ bullseye/updates @ bookworm-security @g' "
                 "-e 's@ bullseye-@ bookworm-@g' "
+                "-e 's@ non-free@ non-free non-free-firmware@g' "
+                "-e 's@deb.*http://forge.yunohost.org@deb [signed-by=/usr/share/keyrings/yunohost-bookworm.gpg] http://forge.yunohost.org@g' "
             )
             os.system(command)
+
+        # Stupid OVH has some repo configured which dont work with next debian and break apt ...
+        os.system("rm -f /etc/apt/sources.list.d/ovh-*.list")
 
     def get_apps_equivs_packages(self):
         command = (
@@ -490,35 +415,17 @@ class MyMigration(Migration):
 
         return output.split("\n") if output else []
 
-    def hold(self, packages):
-        for package in packages:
-            os.system(f"apt-mark hold {package}")
-
-    def unhold(self, packages):
-        for package in packages:
-            os.system(f"apt-mark unhold {package}")
-
-    def apt_install(self, cmd):
-        def is_relevant(line):
-            return "Reading database ..." not in line.rstrip()
-
-        callbacks = (
-            lambda l: logger.info("+ " + l.rstrip() + "\r")
-            if _apt_log_line_is_relevant(l)
-            else logger.debug(l.rstrip() + "\r"),
-            lambda l: logger.warning(l.rstrip())
-            if _apt_log_line_is_relevant(l)
-            else logger.debug(l.rstrip()),
+    def get_php_packages(self):
+        command = (
+            "dpkg --get-selections"
+            " | grep -v deinstall"
+            " | awk '{print $1}'"
+            " | { grep '^php' || true; }"
         )
 
-        cmd = (
-            "LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt install --quiet -o=Dpkg::Use-Pty=0 --fix-broken --assume-yes "
-            + cmd
-        )
+        output = check_output(command)
 
-        logger.debug("Running: %s" % cmd)
-
-        return call_async_output(cmd, callbacks, shell=True)
+        return output.split("\n") if output else []
 
     def patch_yunohost_conflicts(self):
         #
@@ -530,7 +437,7 @@ class MyMigration(Migration):
         # The hack consists in savagely removing the conflicts directly in /var/lib/dpkg/status
         #
 
-        # We only patch the conflict if we're on yunohost 4.x
+        # We only patch the conflict if we're on yunohost 11.x
         if self.yunohost_major_version() != N_CURRENT_YUNOHOST:
             return
 

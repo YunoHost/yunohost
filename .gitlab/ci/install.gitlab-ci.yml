@@ -17,7 +17,9 @@ upgrade:
   image: "after-install"
   script:
     - apt-get update -o Acquire::Retries=3
+    - systemctl restart nginx || journalctl -u nginx -n 50 --no-pager --no-hostname
     - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ${CI_PROJECT_DIR}/*.deb
+    - systemctl restart nginx || journalctl -u nginx -n 50 --no-pager --no-hostname
 
 
 install-postinstall:
@@ -25,5 +27,7 @@ install-postinstall:
   image: "before-install"
   script:
     - apt-get update -o Acquire::Retries=3
+    - systemctl restart nginx || journalctl -u nginx -n 50 --no-pager --no-hostname
     - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ${CI_PROJECT_DIR}/*.deb
+    - systemctl restart nginx || journalctl -u nginx -n 50 --no-pager --no-hostname
     - yunohost tools postinstall -d domain.tld -u syssa -F 'Syssa Mine' -p the_password --ignore-dyndns --force-diskspace

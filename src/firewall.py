@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023 YunoHost Contributors
+# Copyright (c) 2024 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -19,16 +19,16 @@
 import os
 import yaml
 import miniupnpc
+from logging import getLogger
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils import process
-from moulinette.utils.log import getActionLogger
 
 FIREWALL_FILE = "/etc/yunohost/firewall.yml"
 UPNP_CRON_JOB = "/etc/cron.d/yunohost-firewall-upnp"
 
-logger = getActionLogger("yunohost.firewall")
+logger = getLogger("yunohost.firewall")
 
 
 def firewall_allow(
@@ -256,7 +256,7 @@ def firewall_reload(skip_upnp=False):
 
     # IPv4
     try:
-        process.check_output("iptables -w -L")
+        process.check_output("iptables -n -w -L")
     except process.CalledProcessError as e:
         logger.debug(
             "iptables seems to be not available, it outputs:\n%s",
@@ -289,7 +289,7 @@ def firewall_reload(skip_upnp=False):
 
     # IPv6
     try:
-        process.check_output("ip6tables -L")
+        process.check_output("ip6tables -n -L")
     except process.CalledProcessError as e:
         logger.debug(
             "ip6tables seems to be not available, it outputs:\n%s",
@@ -331,7 +331,7 @@ def firewall_reload(skip_upnp=False):
         # Refresh port forwarding with UPnP
         firewall_upnp(no_refresh=False)
 
-    _run_service_command("reload", "fail2ban")
+    _run_service_command("restart", "fail2ban")
 
     if errors:
         logger.warning(m18n.n("firewall_rules_cmd_failed"))
@@ -404,7 +404,7 @@ def firewall_upnp(action="status", no_refresh=False):
         logger.debug("discovering UPnP devices...")
         try:
             nb_dev = upnpc.discover()
-        except Exception as e:
+        except Exception:
             logger.warning("Failed to find any UPnP device on the network")
             nb_dev = -1
             enabled = False

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023 YunoHost Contributors
+# Copyright (c) 2024 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -30,10 +30,10 @@ from glob import glob
 from collections import OrderedDict
 from functools import reduce
 from packaging import version
+from logging import getLogger
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.text import random_ascii
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import (
     read_file,
     mkdir,
@@ -76,7 +76,6 @@ from yunohost.utils.system import (
     binary_to_human,
     space_used_by_directory,
 )
-from yunohost.settings import settings_get
 
 BACKUP_PATH = "/home/yunohost.backup"
 ARCHIVES_PATH = f"{BACKUP_PATH}/archives"
@@ -84,11 +83,10 @@ APP_MARGIN_SPACE_SIZE = 100  # In MB
 CONF_MARGIN_SPACE_SIZE = 10  # IN MB
 POSTINSTALL_ESTIMATE_SPACE_SIZE = 5  # In MB
 MB_ALLOWED_TO_ORGANIZE = 10
-logger = getActionLogger("yunohost.backup")
+logger = getLogger("yunohost.backup")
 
 
 class BackupRestoreTargetsManager:
-
     """
     BackupRestoreTargetsManager manage the targets
     in BackupManager and RestoreManager
@@ -211,7 +209,6 @@ class BackupRestoreTargetsManager:
 
 
 class BackupManager:
-
     """
     This class collect files to backup in a list and apply one or several
     backup method on it.
@@ -825,7 +822,6 @@ class BackupManager:
 
 
 class RestoreManager:
-
     """
     RestoreManager allow to restore a past backup archive
 
@@ -1189,9 +1185,6 @@ class RestoreManager:
         try:
             self._postinstall_if_needed()
 
-            # Apply dirty patch to redirect php5 file on php7
-            self._patch_legacy_php_versions_in_csv_file()
-
             self._restore_system()
             self._restore_apps()
         except Exception as e:
@@ -1201,39 +1194,6 @@ class RestoreManager:
             )
         finally:
             self.clean()
-
-    def _patch_legacy_php_versions_in_csv_file(self):
-        """
-        Apply dirty patch to redirect php5 and php7.x files to php8.2
-        """
-        from yunohost.utils.legacy import LEGACY_PHP_VERSION_REPLACEMENTS
-
-        backup_csv = os.path.join(self.work_dir, "backup.csv")
-
-        if not os.path.isfile(backup_csv):
-            return
-
-        replaced_something = False
-        with open(backup_csv) as csvfile:
-            reader = csv.DictReader(csvfile, fieldnames=["source", "dest"])
-            newlines = []
-            for row in reader:
-                for pattern, replace in LEGACY_PHP_VERSION_REPLACEMENTS:
-                    if pattern in row["source"]:
-                        replaced_something = True
-                        row["source"] = row["source"].replace(pattern, replace)
-
-                newlines.append(row)
-
-        if not replaced_something:
-            return
-
-        with open(backup_csv, "w") as csvfile:
-            writer = csv.DictWriter(
-                csvfile, fieldnames=["source", "dest"], quoting=csv.QUOTE_ALL
-            )
-            for row in newlines:
-                writer.writerow(row)
 
     def _restore_system(self):
         """Restore user and system parts"""
@@ -1328,9 +1288,11 @@ class RestoreManager:
                     url=permission_infos["url"],
                     additional_urls=permission_infos["additional_urls"],
                     auth_header=permission_infos["auth_header"],
-                    label=permission_infos["label"]
-                    if perm_name == "main"
-                    else permission_infos["sublabel"],
+                    label=(
+                        permission_infos["label"]
+                        if perm_name == "main"
+                        else permission_infos["sublabel"]
+                    ),
                     show_tile=permission_infos["show_tile"],
                     protected=permission_infos["protected"],
                     sync_perm=False,
@@ -1369,8 +1331,6 @@ class RestoreManager:
                              name should be already install)
         """
         from yunohost.utils.legacy import (
-            _patch_legacy_php_versions,
-            _patch_legacy_php_versions_in_settings,
             _patch_legacy_helpers,
         )
         from yunohost.user import user_group_list
@@ -1408,10 +1368,6 @@ class RestoreManager:
 
         # Attempt to patch legacy helpers...
         _patch_legacy_helpers(app_settings_in_archive)
-
-        # Apply dirty patch to make php5 apps compatible with php7
-        _patch_legacy_php_versions(app_settings_in_archive)
-        _patch_legacy_php_versions_in_settings(app_settings_in_archive)
 
         # Delete _common.sh file in backup
         common_file = os.path.join(app_backup_in_archive, "_common.sh")
@@ -1468,9 +1424,11 @@ class RestoreManager:
                     url=permission_infos.get("url"),
                     additional_urls=permission_infos.get("additional_urls"),
                     auth_header=permission_infos.get("auth_header"),
-                    label=permission_infos.get("label")
-                    if perm_name == "main"
-                    else permission_infos.get("sublabel"),
+                    label=(
+                        permission_infos.get("label")
+                        if perm_name == "main"
+                        else permission_infos.get("sublabel")
+                    ),
                     show_tile=permission_infos.get("show_tile", True),
                     protected=permission_infos.get("protected", False),
                     sync_perm=False,
@@ -1554,6 +1512,10 @@ class RestoreManager:
             if not restore_failed:
                 self.targets.set_result("apps", app_instance_name, "Success")
                 operation_logger.success()
+
+                # Call post_app_restore hook
+                env_dict = _make_environment_for_app_script(app_instance_name)
+                hook_callback("post_app_restore", env=env_dict)
             else:
                 self.targets.set_result("apps", app_instance_name, "Error")
 
@@ -1566,7 +1528,6 @@ class RestoreManager:
 # Backup methods                                                            #
 #
 class BackupMethod:
-
     """
     BackupMethod is an abstract class that represents a way to backup and
     restore a list of files.
@@ -1857,7 +1818,6 @@ class BackupMethod:
 
 
 class CopyBackupMethod(BackupMethod):
-
     """
     This class just do an uncompress copy of each file in a location, and
     could be the inverse for restoring
@@ -1920,6 +1880,11 @@ class TarBackupMethod(BackupMethod):
 
     @property
     def _archive_file(self):
+        from yunohost.settings import settings_get
+
+        if isinstance(self.manager, RestoreManager):
+            return self.manager.archive_path
+
         if isinstance(self.manager, BackupManager) and settings_get(
             "misc.backup.backup_compress_tar_archives"
         ):
@@ -2089,7 +2054,6 @@ class TarBackupMethod(BackupMethod):
 
 
 class CustomBackupMethod(BackupMethod):
-
     """
     This class use a bash script/hook "backup_method" to do the
     backup/restore operations. A user can add his own hook inside
@@ -2202,7 +2166,7 @@ def backup_create(
 
     # Validate there is no archive with the same name
     if name and name in backup_list()["archives"]:
-        raise YunohostValidationError("backup_archive_name_exists")
+        raise YunohostValidationError("backup_archive_name_exists", name=name)
 
     # By default we backup using the tar method
     if not methods:
@@ -2312,11 +2276,6 @@ def backup_restore(name, system=[], apps=[], force=False):
     # Initialize                                                            #
     #
 
-    if name.endswith(".tar.gz"):
-        name = name[: -len(".tar.gz")]
-    elif name.endswith(".tar"):
-        name = name[: -len(".tar")]
-
     restore_manager = RestoreManager(name)
 
     restore_manager.set_system_targets(system)
@@ -2328,8 +2287,10 @@ def backup_restore(name, system=[], apps=[], force=False):
     # Add validation if restoring system parts on an already-installed system
     #
 
-    if restore_manager.targets.targets["system"] != [] and os.path.isfile(
-        "/etc/yunohost/installed"
+    if (
+        restore_manager.info["system"] != {}
+        and restore_manager.targets.targets["system"] != []
+        and os.path.isfile("/etc/yunohost/installed")
     ):
         logger.warning(m18n.n("yunohost_already_installed"))
         if not force:
@@ -2449,6 +2410,7 @@ def backup_info(name, with_details=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
+    original_name = name
 
     if name.endswith(".tar.gz"):
         name = name[: -len(".tar.gz")]
@@ -2461,7 +2423,10 @@ def backup_info(name, with_details=False, human_readable=False):
     if not os.path.lexists(archive_file):
         archive_file += ".gz"
         if not os.path.lexists(archive_file):
-            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+            # Maybe the user provided a path to the backup?
+            archive_file = original_name
+            if not os.path.lexists(archive_file):
+                raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
     # If symlink, retrieve the real path
     if os.path.islink(archive_file):
@@ -2548,9 +2513,6 @@ def backup_info(name, with_details=False, human_readable=False):
             for category in ["apps", "system"]:
                 for name, key_info in info[category].items():
                     if category == "system":
-                        # Stupid legacy fix for weird format between 3.5 and 3.6
-                        if isinstance(key_info, dict):
-                            key_info = key_info.keys()
                         info[category][name] = key_info = {"paths": key_info}
                     else:
                         info[category][name] = key_info

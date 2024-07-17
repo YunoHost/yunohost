@@ -69,8 +69,23 @@ def test_repo_url_definition():
     assert _is_app_repo_url("git@github.com:YunoHost-Apps/foobar_ynh.git")
     assert _is_app_repo_url("https://git.super.host/~max/foobar_ynh")
 
+    ### Gitea
+    assert _is_app_repo_url("https://gitea.instance.tld/user/repo_ynh")
+    assert _is_app_repo_url(
+        "https://gitea.instance.tld/user/repo_ynh/src/branch/branch_name"
+    )
+    assert _is_app_repo_url("https://gitea.instance.tld/user/repo_ynh/src/tag/tag_name")
+    assert _is_app_repo_url(
+        "https://gitea.instance.tld/user/repo_ynh/src/commit/abcd1234"
+    )
+
+    ### Invalid patterns
+
+    # no schema
     assert not _is_app_repo_url("github.com/YunoHost-Apps/foobar_ynh")
+    # http
     assert not _is_app_repo_url("http://github.com/YunoHost-Apps/foobar_ynh")
+    # does not end in `_ynh`
     assert not _is_app_repo_url("https://github.com/YunoHost-Apps/foobar_wat")
     assert not _is_app_repo_url("https://github.com/YunoHost-Apps/foobar_ynh_wat")
     assert not _is_app_repo_url("https://github.com/YunoHost-Apps/foobar/tree/testing")

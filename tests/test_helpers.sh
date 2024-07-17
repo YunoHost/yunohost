@@ -1,5 +1,7 @@
 #!/bin/bash
 
+VERSION=${1:-2}
+
 readonly NORMAL=$(printf '\033[0m')
 readonly BOLD=$(printf '\033[1m')
 readonly RED=$(printf '\033[31m')
@@ -41,9 +43,13 @@ popd >/dev/null
 
 VAR_WWW=$(mktemp -d)/var/www
 mkdir -p $VAR_WWW
+
+# Needed to check the permission behavior in ynh_add_config x_x
+getent passwd ynhtest &>/dev/null || useradd --system ynhtest
+
 # =========================================================
 
-for TEST_SUITE in $(ls test_helpers.d/*)
+for TEST_SUITE in $(ls test_helpers.v$VERSION.d/*)
 do
     source $TEST_SUITE
 done
@@ -60,6 +66,7 @@ do
     (mkdir conf
      mkdir scripts
      cd scripts
+     export YNH_HELPERS_VERSION=$VERSION
      source /usr/share/yunohost/helpers
      app=ynhtest
      YNH_APP_ID=$app

@@ -1,0 +1,149 @@
+#!/bin/bash
+
+# (this is used in the apt helpers, big meh ...)
+readonly YNH_DEFAULT_PHP_VERSION=7.4
+
+# Create a dedicated PHP-FPM config
+#
+# usage: ynh_config_add_phpfpm
+#
+# This will automatically generate an appropriate PHP-FPM configuration for this app.
+#
+# The resulting configuration will be deployed to the appropriate place:
+# `/etc/php/$php_version/fpm/pool.d/$app.conf`
+#
+# If the app provides a `conf/extra_php-fpm.conf` template, it will be appended
+# to the generated configuration. (In the vast majority of cases, this shouldnt
+# be necessary)
+#
+# $php_version should be defined prior to calling this helper, but there should
+# be no reason to manually set it, as it is automatically set by the apt
+# helpers/resources when installing phpX.Y dependencies (PHP apps should at
+# least install phpX.Y-fpm using the `apt` helper/resource)
+#
+# `$php_group` can be defined as a global (from `_common.sh`) if the worker
+# processes should run with a different group than `$app`
+#
+# Additional "pm" and "php_admin_value" settings which are meant to be possibly
+# configurable by admins from a future standard config panel at some point,
+# related to performance and availability of the app, for which tweaking may be
+# required if the app is used by "plenty" of users and other memory/CPU load
+# considerations....
+#
+# If you have good reasons to be willing to use different
+# defaults than the one set by this helper (while still allowing admin to
+# override it) you should use `ynh_app_setting_set_default`
+#
+# - `$php_upload_max_filezise`: corresponds upload_max_filesize and post_max_size. Defaults to 50M
+# - `$php_process_management`: corresponds to "pm" (ondemand, dynamic, static). Defaults to ondemand
+# - `$php_max_children`: by default, computed from "total RAM" divided by 40, cf `_default_php_max_children`
+# - `$php_memory_limit`: by default, 128M (from global php.ini)
+#
+# Note that if $php_process_management is set to "dynamic", then these
+# variables MUST be defined prior to calling the helper (no default value) ...
+# Check PHP-FPM's manual for more info on what these are (: ...
+#
+# - `$php_start_servers`
+# - `$php_min_spare_servers`
+# - `$php_max_spare_servers`
+#
+ynh_config_add_phpfpm() {
+
+    [[ -n "${php_version:-}" ]] || ynh_die "\$php_version should be defined prior to calling ynh_config_add_phpfpm. You should not need to define it manually, it is automatically set by the apt helper when installing the phpX.Y- depenencies"
+
+    # Apps may define $php_group as a global (e.g. from _common.sh) to change this
+    # (this is not meant to be overridable by users)
+    local php_group=${php_group:-$app}
+
+    # Meant to be overridable by users from a standard config panel at some point ...
+    # Apps willing to tweak these should use ynh_setting_set_default_value (in install and upgrade?)
+    #
+    local php_upload_max_filesize=${php_upload_max_filesize:-50M}
+    local php_process_management=${php_process_management:-ondemand}  # alternatively 'dynamic' or 'static'
+    local php_max_children=${php_max_children:-$(_default_php_max_children)}
+    local php_memory_limit=${php_memory_limit:-128M}  # default value is from global php.ini
+
+    local phpfpm_template=$(mktemp)
+    cat << EOF > $phpfpm_template
+[__APP__]
+
+user = __APP__
+group = __PHP_GROUP__
+
+chdir = __INSTALL_DIR__
+
+listen = /var/run/php/php__PHP_VERSION__-fpm-__APP__.sock
+listen.owner = www-data
+listen.group = www-data
+
+pm = __PHP_PROCESS_MANAGEMENT__
+pm.max_children = __PHP_MAX_CHILDREN__
+pm.max_requests = 500
+request_terminate_timeout = 1d
+
+EOF
+    if [ "$php_process_management" = "dynamic" ]; then
+        cat << EOF >> $phpfpm_template
+pm.start_servers = __PHP_START_SERVERS__
+pm.min_spare_servers = __PHP_MIN_SPARE_SERVERS__
+pm.max_spare_servers = __PHP_MAX_SPARE_SERVERS__
+EOF
+    elif [ "$php_process_management" = "ondemand" ]; then
+        cat << EOF >> $phpfpm_template
+pm.process_idle_timeout = 10s
+EOF
+    fi
+
+    cat << EOF >> $phpfpm_template
+php_admin_value[upload_max_filesize] = __PHP_UPLOAD_MAX_FILESIZE__
+php_admin_value[post_max_size] = __PHP_UPLOAD_MAX_FILESIZE__
+php_admin_value[memory_limit] = __PHP_MEMORY_LIMIT__
+EOF
+
+    # Concatene the extra config
+    if [ -e $YNH_APP_BASEDIR/conf/extra_php-fpm.conf ]; then
+        cat $YNH_APP_BASEDIR/conf/extra_php-fpm.conf >>"$phpfpm_template"
+    fi
+
+    # Make sure the fpm pool dir exists
+    mkdir --parents "/etc/php/$php_version/fpm/pool.d"
+    # And hydrate configuration
+    ynh_config_add --template="$phpfpm_template" --destination="/etc/php/$php_version/fpm/pool.d/$app.conf"
+
+    # Validate that the new php conf doesn't break php-fpm entirely
+    if ! php-fpm${php_version} --test 2>/dev/null; then
+        php-fpm${php_version} --test || true
+        ynh_safe_rm "/etc/php/$php_version/fpm/pool.d/$app.conf"
+        ynh_die "The new configuration broke php-fpm?"
+    fi
+
+    ynh_systemctl --service=php${php_version}-fpm --action=reload
+}
+
+# Remove the dedicated PHP-FPM config
+#
+# usage: ynh_config_remove_phpfpm
+ynh_config_remove_phpfpm() {
+    ynh_safe_rm "/etc/php/$php_version/fpm/pool.d/$app.conf"
+    ynh_systemctl --service="php${php_version}-fpm" --action=reload
+}
+
+_default_php_max_children() {
+    # Get the total of RAM available
+    local total_ram=$(ynh_get_ram --total)
+
+    # The value of pm.max_children is the total amount of ram divide by 2,
+    # divide again by 20MB (= a default, classic worker footprint) This is
+    # designed such that if PHP-FPM start the maximum of children, it won't
+    # exceed half of the ram.
+    local php_max_children="$(($total_ram / 40))"
+    # Make sure we get at least max_children = 1
+    if [ $php_max_children -le 0 ]; then
+        php_max_children=1
+    # To not overload the proc, limit the number of children to 4 times the number of cores.
+    elif [ $php_max_children -gt "$(($(nproc) * 4))" ]; then
+        php_max_children="$(($(nproc) * 4))"
+    fi
+
+    echo "$php_max_children"
+}

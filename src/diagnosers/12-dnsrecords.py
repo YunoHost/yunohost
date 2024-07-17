@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023 YunoHost Contributors
+# Copyright (c) 2024 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -18,11 +18,11 @@
 #
 import os
 import re
+import logging
 from typing import List
 from datetime import datetime, timedelta
 from publicsuffix2 import PublicSuffixList
 
-from moulinette.utils import log
 from moulinette.utils.process import check_output
 
 from yunohost.utils.dns import (
@@ -39,7 +39,7 @@ from yunohost.dns import (
     _get_relative_name_for_dns_zone,
 )
 
-logger = log.getActionLogger("yunohost.diagnosis")
+logger = logging.getLogger("yunohost.diagnosis")
 
 
 class MyDiagnoser(Diagnoser):
@@ -91,7 +91,7 @@ class MyDiagnoser(Diagnoser):
             domain, include_empty_AAAA_if_no_ipv6=True
         )
 
-        categories = ["basic", "mail", "xmpp", "extra"]
+        categories = ["basic", "mail", "extra"]
 
         for category in categories:
             records = expected_configuration[category]
@@ -182,6 +182,10 @@ class MyDiagnoser(Diagnoser):
         if success != "ok":
             return None
         else:
+            if type_ == "TXT" and isinstance(answers, list):
+                for part in answers:
+                    if part.startswith('"v=spf1'):
+                        return part
             return answers[0] if len(answers) == 1 else answers
 
     def current_record_match_expected(self, r):
@@ -211,6 +215,11 @@ class MyDiagnoser(Diagnoser):
                     for part in current
                     if not part.startswith("ip4:") and not part.startswith("ip6:")
                 }
+            if "v=DMARC1" in r["value"]:
+                for param in current:
+                    key, value = param.split("=")
+                    if key == "p":
+                        return value in ["none", "quarantine", "reject"]
             return expected == current
         elif r["type"] == "MX":
             # For MX, we want to ignore the priority
@@ -282,9 +291,9 @@ class MyDiagnoser(Diagnoser):
                 yield dict(
                     meta=meta,
                     data={},
-                    status=alert_type.upper()
-                    if alert_type != "not_found"
-                    else "WARNING",
+                    status=(
+                        alert_type.upper() if alert_type != "not_found" else "WARNING"
+                    ),
                     summary="diagnosis_domain_expiration_" + alert_type,
                     details=details[alert_type],
                 )

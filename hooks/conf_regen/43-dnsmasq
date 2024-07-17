@@ -62,7 +62,8 @@ do_post_regen() {
     regen_conf_files=$1
 
     # Force permission (to cover some edge cases where root's umask is like 027 and then dnsmasq cant read this file)
-    chown 644 /etc/resolv.dnsmasq.conf
+    chown root /etc/resolv.dnsmasq.conf
+    chmod 644 /etc/resolv.dnsmasq.conf
 
     # Fuck it, those domain/search entries from dhclient are usually annoying
     # lying shit from the ISP trying to MiTM
