@@ -4,7 +4,9 @@ import subprocess
 from time import sleep
 
 from moulinette import Moulinette, m18n
+from moulinette.utils.process import call_async_output
 from yunohost.utils.error import YunohostError
+from yunohost.tools import _write_migration_state
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file, write_to_file
 
@@ -74,8 +76,9 @@ def _backup_pip_freeze_for_python_app_venvs():
     venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
     for venv in venvs:
         # Generate a requirements file from venv
+        # Remove pkg resources from the freeze to avoid an error during the python venv https://stackoverflow.com/a/40167445
         os.system(
-            f"{venv}/bin/pip freeze > {venv}{VENV_REQUIREMENTS_SUFFIX} 2>/dev/null"
+            f"{venv}/bin/pip freeze | grep -E -v 'pkg(-|_)resources==' > {venv}{VENV_REQUIREMENTS_SUFFIX} 2>/dev/null"
         )
 
 
@@ -184,7 +187,6 @@ class MyMigration(Migration):
 
         aptitude_with_progress_bar("upgrade cron rspamd- libluajit-5.1-2- --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'")
 
-        # FIXME : find a way to simulate and validate the upgrade first
         aptitude_with_progress_bar("full-upgrade --show-why -o Dpkg::Options::='--force-confold'")
 
         # Force regenconf of nsswitch because for some reason
@@ -216,30 +218,31 @@ class MyMigration(Migration):
         # Yunohost upgrade
         #
         logger.info(m18n.n("migration_0027_yunohost_upgrade"))
+        aptitude_with_progress_bar(f"unhold yunohost moulinette ssowat yunohost-admin")
 
-        aptitude_with_progress_bar(f"unhold yunohost moulinette ssowat yunohost-admin {' '.join(apps_packages)}")
+        try:
+            aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin yunohost-portal moulinette ssowat python3.9- python3.9-venv- -o Dpkg::Options::='--force-confold'")
+        except Exception as e:
+            # Retry after unholding the app packages, maybe it can unlock the situation idk
+            if apps_packages:
+                aptitude_with_progress_bar(f"unhold {' '.join(apps_packages)}")
+                aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin yunohost-portal moulinette ssowat python3.9- python3.9-venv- -o Dpkg::Options::='--force-confold'")
+        else:
+            # If the upgrade was sucessful, we want to unhold the apps packages
+            if apps_packages:
+                aptitude_with_progress_bar(f"unhold {' '.join(apps_packages)}")
 
-        # FIXME : find a way to simulate and validate the upgrade first
-        aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin moulinette ssowat -o Dpkg::Options::='--force-confold'")
+        # Mark this migration as completed before triggering the "new" migrations
+        _write_migration_state(self.id, "done")
 
-        #cmd = "LC_ALL=C"
-        #cmd += " DEBIAN_FRONTEND=noninteractive"
-        #cmd += " APT_LISTCHANGES_FRONTEND=none"
-        #cmd += " apt dist-upgrade "
-        #cmd += " --quiet -o=Dpkg::Use-Pty=0 --fix-broken --dry-run"
-        #cmd += " | grep -q 'ynh-deps'"
-
-        #logger.info("Simulating upgrade...")
-        #if os.system(cmd) == 0:
-        #    raise YunohostError(
-        #        "The upgrade cannot be completed, because some app dependencies would need to be removed?",
-        #        raw_msg=True,
-        #    )
-
-        # FIXME :
-        #postupgradecmds = "rm -f /usr/sbin/policy-rc.d\n"
-        #postupgradecmds += "echo 'Restarting nginx...' >&2\n"
-        #postupgradecmds += "systemctl restart nginx\n"
+        callbacks = (
+            lambda l: logger.debug("+ " + l.rstrip() + "\r"),
+            lambda l: logger.warning(l.rstrip()),
+        )
+        try:
+            call_async_output(["yunohost", "tools", "migrations", "run"], callbacks)
+        except Exception as e:
+            logger.error(e)
 
         # If running from the webadmin, restart the API after a delay
         if Moulinette.interface.type == "api":
@@ -382,6 +385,7 @@ class MyMigration(Migration):
         # - comments lines containing "backports"
         # - replace 'bullseye/updates' by 'bookworm/updates' (or same with -)
         # - make sure the yunohost line has the "signed-by" thingy
+        # - replace "non-free" with "non-free non-free-firmware"
         # Special note about the security suite:
         # https://www.debian.org/releases/bullseye/amd64/release-notes/ch-information.en.html#security-archive
         for f in sources_list:
@@ -391,6 +395,7 @@ class MyMigration(Migration):
                 "-e '/backports/ s@^#*@#@' "
                 "-e 's@ bullseye/updates @ bookworm-security @g' "
                 "-e 's@ bullseye-@ bookworm-@g' "
+                "-e 's@ non-free@ non-free non-free-firmware@g' "
                 "-e 's@deb.*http://forge.yunohost.org@deb [signed-by=/usr/share/keyrings/yunohost-bookworm.gpg] http://forge.yunohost.org@g' "
             )
             os.system(command)
