@@ -87,7 +87,7 @@ def _update_log_parent_symlinks():
 
     one_year_ago = time.time() - 365 * 24 * 3600
 
-    logs = glob.iglob("*" + METADATA_FILE_EXT, root_dir=OPERATIONS_PATH, include_hidden=True)
+    logs = glob.iglob("*" + METADATA_FILE_EXT, root_dir=OPERATIONS_PATH)
     for log_md in logs:
         log_file = os.path.join(OPERATIONS_PATH, log_md)
         if os.path.getctime(log_file) < one_year_ago:
