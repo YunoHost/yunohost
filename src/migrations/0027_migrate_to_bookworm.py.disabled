@@ -221,7 +221,7 @@ class MyMigration(Migration):
         aptitude_with_progress_bar(f"unhold yunohost moulinette ssowat yunohost-admin {' '.join(apps_packages)}")
 
         # FIXME : find a way to simulate and validate the upgrade first
-        aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin moulinette ssowat -o Dpkg::Options::='--force-confold'")
+        aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin yunohost-portal moulinette ssowat -o Dpkg::Options::='--force-confold'")
 
         #cmd = "LC_ALL=C"
         #cmd += " DEBIAN_FRONTEND=noninteractive"
