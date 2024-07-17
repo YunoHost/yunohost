@@ -89,19 +89,19 @@ def _update_log_parent_symlinks():
 
     logs = glob.iglob("*" + METADATA_FILE_EXT, root_dir=OPERATIONS_PATH)
     for log_md in logs:
-        log_file = os.path.join(OPERATIONS_PATH, log_md)
-        if os.path.getctime(log_file) < one_year_ago:
+        log_md_fullpath = os.path.join(OPERATIONS_PATH, log_md)
+        if os.path.getctime(log_md_fullpath) < one_year_ago:
             # Let's ignore files older than one year because hmpf reading a shitload of yml is not free
             continue
 
         name = log_md[: -len(METADATA_FILE_EXT)]
         parent_symlink = os.path.join(OPERATIONS_PATH, f".{name}.parent.yml")
-        if (os.path.islink(log_file) and os.path.realpath(log_file) == "/dev/null") or os.path.islink(parent_symlink):
+        if (os.path.islink(log_md_fullpath) and os.path.realpath(log_md_fullpath) == "/dev/null") or os.path.islink(parent_symlink):
             continue
 
         try:
             metadata = (
-                read_yaml(log_file) or {}
+                read_yaml(log_md_fullpath) or {}
             )  # Making sure this is a dict and not  None..?
         except Exception as e:
             # If we can't read the yaml for some reason, report an error and ignore this entry...
