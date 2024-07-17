@@ -96,7 +96,7 @@ def _update_log_parent_symlinks():
 
         name = log_md[: -len(METADATA_FILE_EXT)]
         parent_symlink = os.path.join(OPERATIONS_PATH, f"{name}.parent.yml")
-        if not os.path.exists(parent_symlink) or os.path.islink(parent_symlink):
+        if (os.path.islink(log_file) and os.path.realpath(log_file) == "/dev/null") or os.path.islink(parent_symlink):
             continue
 
         try:
