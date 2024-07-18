@@ -439,7 +439,13 @@ def _get_regenconf_infos():
     """
     try:
         with open(REGEN_CONF_FILE, "r") as f:
-            return yaml.safe_load(f)
+            data = yaml.safe_load(f)
+        # Cleanup legacy
+        if "metronome" in data:
+            del data["metronome"]
+        if "rspamd" in data:
+            del data["rspamd"]
+        return data
     except Exception:
         return {}
 
