@@ -1,3 +1,18 @@
+yunohost (11.2.22) stable; urgency=low
+
+  - logs: fix "log list" : use root_dir for iglob / make sure we use absolute paths ([#1913](http://github.com/YunoHost/yunohost/pull/1913))
+  - bullseye->bookworm: remove pkg_resources from pip freeze ([#1912](http://github.com/YunoHost/yunohost/pull/1912))
+  - bullseye->bookworm: explicitly install yunohost-portal (4232fc7c)
+  - bullseye->bookworm: explicitly remove python3.9 and python3.9-venv which seems to confuse aptitude... (079cdc26)
+  - bullseye->bookworm: try the yunohost upgrade without unholding the app-ynh-deps virtual packages, then after unholding if it didnt work for some reason (a8fd6afe)
+  - bullseye->bookworm: automatically add non-free-firmware if non-free is enabled (97bb6bde)
+  - bullseye->bookworm: trigger the 'new' migrations from inside the bullseye->bookworm migration (f11f1197)
+  - i18n: Translations updated for Basque, French, Indonesian
+
+  Thanks to all contributors <3 ! (Anonymous, cjdw, Kayou, ppr, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 19 Jul 2024 16:51:55 +0200
+
 yunohost (11.2.21.2) stable; urgency=low
 
   - bullseye->bookworm migration: tweak message to reflect the fact that metronome and rspamd will be applications starting with bookworm (64c8d9e8)
