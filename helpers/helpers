@@ -13,6 +13,7 @@ YNH_HELPERS_DIR="$SCRIPT_DIR/helpers.v${YNH_HELPERS_VERSION}.d"
 case "$YNH_HELPERS_VERSION" in
     "1" | "2" | "2.1")
         readarray -t HELPERS < <(find -L "$YNH_HELPERS_DIR" -mindepth 1 -maxdepth 1 -type f)
+        source $YNH_HELPERS_VERSION/getopts
         for helper in "${HELPERS[@]}"; do
             [ -r "$helper" ] && source "$helper"
         done
