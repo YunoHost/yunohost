@@ -74,7 +74,6 @@ def _permission_create_with_dummy_app(
     url=None,
     additional_urls=None,
     auth_header=True,
-    label=None,
     show_tile=False,
     protected=True,
     sync_perm=True,
@@ -109,7 +108,6 @@ def _permission_create_with_dummy_app(
         url=url,
         additional_urls=additional_urls,
         auth_header=auth_header,
-        label=label,
         show_tile=show_tile,
         protected=protected,
         sync_perm=sync_perm,
@@ -186,7 +184,6 @@ def setup_function(function):
         url="/",
         additional_urls=["/whatever", "/idontnow"],
         auth_header=False,
-        label="Wiki",
         show_tile=True,
         allowed=["all_users"],
         protected=False,
@@ -465,7 +462,7 @@ def test_permission_list():
 
 def test_permission_create_main():
     with message("permission_created", permission="site.main"):
-        permission_create("site.main", allowed=["all_users"], protected=False)
+        _permission_create_with_dummy_app("site.main", allowed=["all_users"], protected=False)
 
     res = user_permission_list(full=True)["permissions"]
     assert "site.main" in res
@@ -476,7 +473,7 @@ def test_permission_create_main():
 
 def test_permission_create_extra():
     with message("permission_created", permission="site.test"):
-        permission_create("site.test")
+        _permission_create_with_dummy_app("site.test", protected=None)
 
     res = user_permission_list(full=True)["permissions"]
     assert "site.test" in res
@@ -487,7 +484,8 @@ def test_permission_create_extra():
 
 
 def test_permission_create_with_specific_user():
-    permission_create("site.test", allowed=["alice"])
+    with message("permission_created", permission="site.test"):
+        _permission_create_with_dummy_app("site.test", allowed=["alice"])
 
     res = user_permission_list(full=True)["permissions"]
     assert "site.test" in res
@@ -499,7 +497,6 @@ def test_permission_create_with_tile_management():
         _permission_create_with_dummy_app(
             "site.main",
             allowed=["all_users"],
-            label="The Site",
             show_tile=False,
             domain=maindomain,
             path="/site",
@@ -507,7 +504,7 @@ def test_permission_create_with_tile_management():
 
     res = user_permission_list(full=True)["permissions"]
     assert "site.main" in res
-    assert res["site.main"]["label"] == "The Site"
+    assert res["site.main"]["label"] == "Site"
     assert res["site.main"]["show_tile"] is False
 
 
@@ -979,7 +976,6 @@ def test_show_tile_cant_be_enabled():
     _permission_create_with_dummy_app(
         permission="site.main",
         auth_header=False,
-        label="Site",
         show_tile=True,
         allowed=["all_users"],
         protected=False,
@@ -992,7 +988,6 @@ def test_show_tile_cant_be_enabled():
         permission="web.main",
         url="re:/[a-z]{3}/bla",
         auth_header=False,
-        label="Web",
         show_tile=True,
         allowed=["all_users"],
         protected=False,

@@ -131,15 +131,11 @@ def app_info(app, full=False, upgradable=False):
 
     setting_path = os.path.join(APPS_SETTING_PATH, app)
     local_manifest = _get_manifest_of_app(setting_path)
-    permissions = user_permission_list(full=True, absolute_urls=True, apps=[app])[
-        "permissions"
-    ]
-
     settings = _get_app_settings(app)
 
     ret = {
         "description": _value_for_locale(local_manifest["description"]),
-        "name": permissions.get(app + ".main", {}).get("label", local_manifest["name"]),
+        "name": settings.get("label", local_manifest["name"]),
         "version": local_manifest.get("version", "-"),
     }
 
@@ -247,12 +243,13 @@ def app_info(app, full=False, upgradable=False):
         and local_manifest["resources"].get("data_dir") is not None
     )
 
-    ret["permissions"] = permissions
-    ret["label"] = permissions.get(app + ".main", {}).get("label")
+    ret["permissions"] = user_permission_list(full=True, absolute_urls=True, apps=[app])[
+        "permissions"
+    ]
 
-    if not ret["label"]:
-        logger.debug(f"Failed to get label for app {app}, maybe it is not a webapp?")
-        ret["label"] = local_manifest["name"]
+    # FIXME : this is the same stuff as "name" ... maybe we should get rid of "name" ?
+    ret["label"] = settings.get("label", local_manifest["name"])
+
     return ret
 
 
@@ -1155,12 +1152,19 @@ def app_install(
         shutil.rmtree(app_setting_path)
     os.makedirs(app_setting_path)
 
+    # Hotfix for bug in the webadmin while we fix the actual issue :D
+    if label == "undefined":
+        label = None
+
     # Set initial app settings
     app_settings = {
         "id": app_instance_name,
         "install_time": int(time.time()),
         "current_revision": manifest.get("remote", {}).get("revision", "?"),
     }
+
+    if label:
+        app_settings["label"] = label
 
     # If packaging_format v2+, save all install options as settings
     if packaging_format >= 2:
@@ -1186,15 +1190,6 @@ def app_install(
                 recursive=True,
             )
 
-    # Hotfix for bug in the webadmin while we fix the actual issue :D
-    if label == "undefined":
-        label = None
-
-    # Override manifest name by given label
-    # This info is also later picked-up by the 'permission' resource initialization
-    if label:
-        manifest["name"] = label
-
     if packaging_format >= 2:
         from yunohost.utils.resources import AppResourceManager
 
@@ -1216,7 +1211,6 @@ def app_install(
         permission_create(
             app_instance_name + ".main",
             allowed=["all_users"],
-            label=manifest["name"],
             show_tile=False,
             protected=False,
         )
@@ -1694,10 +1688,11 @@ def app_ssowatconf():
 
     # New permission system
     for perm_name, perm_info in all_permissions.items():
+
         uris = (
             []
-            + ([perm_info["url"]] if perm_info["url"] else [])
-            + perm_info["additional_urls"]
+            + ([perm_info["url"]] if perm_info.get("url") else [])
+            + perm_info.get("additional_urls", [])
         )
 
         # Ignore permissions for which there's no url defined
@@ -1823,19 +1818,14 @@ def app_ssowatconf():
 
 @is_unit_operation(flash=True)
 def app_change_label(app, new_label):
-    from yunohost.permission import user_permission_update
 
     installed = _is_installed(app)
     if not installed:
         raise YunohostValidationError(
             "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
         )
-    logger.warning(m18n.n("app_label_deprecated"))
-    user_permission_update(app + ".main", label=new_label)
 
-
-# actions todo list:
-# * docstring
+    app_setting(app, "label", new_label)
 
 
 def app_action_list(app):
