@@ -954,7 +954,7 @@ def test_ssowat_conf():
     assert permissions["wiki.main"]["public"] is False
     assert permissions["blog.main"]["public"] is False
 
-    assert permissions["wiki.main"]["auth_header"] is None
+    assert permissions["wiki.main"]["auth_header"] is False
     assert permissions["blog.main"]["auth_header"] == "basic-without-password"
 
 
