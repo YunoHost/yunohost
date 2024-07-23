@@ -1,3 +1,15 @@
+yunohost (11.2.23) stable; urgency=low
+
+  - helpers2.1: force sourcing getopts before the other helpers to prevent stupid issues (in particular when renaming phpversion to php_version) (3d53cf04)
+  - diagnosis: Remove SenderScore from the dnsbl_list.yml file ([#1918](http://github.com/YunoHost/yunohost/pull/1918))
+  - ldap: make slapd listen also on ipv6 ([#1916](http://github.com/YunoHost/yunohost/pull/1916))
+  - log: zzz fix log list again (b2492ffc)
+  - i18n: Translations updated for Galician, Indonesian, Slovak
+
+  Thanks to all contributors <3 ! (cjdw, Étienne Deparis, José M, Jose Riha, Josué Tille)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 23 Jul 2024 19:07:20 +0200
+
 yunohost (11.2.22) stable; urgency=low
 
   - logs: fix "log list" : use root_dir for iglob / make sure we use absolute paths ([#1913](http://github.com/YunoHost/yunohost/pull/1913))
