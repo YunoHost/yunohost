@@ -1908,9 +1908,10 @@ ynh_app_config_run $1
             logger.debug(f"Calling '{action}' action from config script")
             app = self.entity
             app_setting_path = os.path.join(APPS_SETTING_PATH, self.entity)
-            env = _make_environment_for_app_script(app, workdir=app_setting_path)
+            app_script_env = _make_environment_for_app_script(app, workdir=app_setting_path)
+            app_script_env.update(env)
 
-            ret, values = hook_exec(config_script, args=[action], env=env)
+            ret, values = hook_exec(config_script, args=[action], env=app_script_env)
             if ret != 0:
                 if action == "show":
                     raise YunohostError("app_config_unable_to_read")
