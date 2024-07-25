@@ -200,7 +200,7 @@ ynh_package_install_from_equivs() {
 
     # Install the fake package without its dependencies with dpkg --force-depends
     if ! LC_ALL=C dpkg-deb --build "${TMPDIR}/${pkgname}" "${TMPDIR}/${pkgname}.deb" > "${TMPDIR}/dpkg_log" 2>&1; then
-        cat ${TMPDIR}/dpkg_log >&2
+        cat "${TMPDIR}/dpkg_log" >&2
         ynh_die --message="Unable to install dependencies"
     fi
     # Don't crash in case of error, because is nicely covered by the following line
