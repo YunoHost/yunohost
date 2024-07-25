@@ -803,5 +803,5 @@
     "migration_0027_modified_files": "Detectamos que os seguintes ficheiros semella foron modificados manualmente e poderían ser sobreescritos durante a actualización: {manually_modified_files}",
     "migration_0027_not_enough_free_space": "Hai moi pouco espazo en /var/! Deberías ter polo menos 1GB libre para realizar a migración.",
     "migration_0027_patch_yunohost_conflicts": "Aplicando a solución para resolver o problema conflictivo…",
-    "migration_0027_system_not_fully_up_to_date": "O teu sistema non está totalmente actualizado. Fai unha actualización corrente antes de iniciar a migración a Bullseye."
+    "migration_0027_system_not_fully_up_to_date": "O teu sistema non está totalmente actualizado. Fai unha actualización corrente antes de iniciar a migración a Bookworm."
 }

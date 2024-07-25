@@ -84,21 +84,20 @@ def _update_log_parent_symlinks():
 
     one_year_ago = time.time() - 365 * 24 * 3600
 
-    logs = glob.iglob("*" + METADATA_FILE_EXT, root_dir=OPERATIONS_PATH)
+    logs = glob.iglob(OPERATIONS_PATH + "*" + METADATA_FILE_EXT)
     for log_md in logs:
-        log_md_fullpath = os.path.join(OPERATIONS_PATH, log_md)
-        if os.path.getctime(log_md_fullpath) < one_year_ago:
+        if os.path.getctime(log_md) < one_year_ago:
             # Let's ignore files older than one year because hmpf reading a shitload of yml is not free
             continue
 
-        name = log_md[: -len(METADATA_FILE_EXT)]
+        name = log_md.split("/")[-1][: -len(METADATA_FILE_EXT)]
         parent_symlink = os.path.join(OPERATIONS_PATH, f".{name}.parent.yml")
         if os.path.islink(parent_symlink):
             continue
 
         try:
             metadata = (
-                read_yaml(log_md_fullpath) or {}
+                read_yaml(log_md) or {}
             )  # Making sure this is a dict and not  None..?
         except Exception as e:
             # If we can't read the yaml for some reason, report an error and ignore this entry...
@@ -133,9 +132,9 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
 
     one_year_ago = time.time() - 365 * 24 * 3600
     logs = [
-        x
-        for x in os.listdir(OPERATIONS_PATH)
-        if x.endswith(METADATA_FILE_EXT) and os.path.getctime(os.path.join(OPERATIONS_PATH, x)) > one_year_ago
+        x.split("/")[-1]
+        for x in glob.iglob(OPERATIONS_PATH + "*" + METADATA_FILE_EXT)
+        if os.path.getctime(x) > one_year_ago
     ]
     logs = list(reversed(sorted(logs)))
 

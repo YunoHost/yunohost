@@ -278,5 +278,6 @@
     "domain_config_mail_in": "Prichádzajúce e-maily",
     "domain_config_cert_summary": "Stav certifikátu",
     "domain_config_xmpp": "Krátke správy (XMPP)",
-    "log_app_makedefault": "Nastaviť '{}' ako predvolenú aplikáciu"
+    "log_app_makedefault": "Nastaviť '{}' ako predvolenú aplikáciu",
+    "domain_config_cert_renew_help": "Certifikát bude automaticky obnovený po 15 dňoch platnosti. Ak chcete, môžete ho obnoviť aj ručne. (Neodporúča sa)."
 }

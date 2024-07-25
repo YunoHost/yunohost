@@ -802,6 +802,6 @@
     "migration_0027_problematic_apps_warning": "Veuillez noter que des applications installées susceptibles de poser problème ont été détectées. Il semble qu'elles n'aient pas été installées à partir du catalogue d'applications de YunoHost, ou bien qu'elles ne soient pas marquées comme 'fonctionnelles'. Par conséquent, il ne peut pas être garanti qu'elles continueront à fonctionner après la mise à jour : {problematic_apps}",
     "migration_0027_start": "Démarrage de la migration vers Bookworm…",
     "migration_0027_still_on_bullseye_after_main_upgrade": "Quelque chose s'est mal passé lors de la mise à jour du système, il semble que celui-ci soit toujours sous Debian Bullseye.",
-    "migration_0027_system_not_fully_up_to_date": "Votre système n'est pas complètement à jour. Veuillez effectuer une mise à jour classique avant de procéder à la migration vers Bullseye.",
+    "migration_0027_system_not_fully_up_to_date": "Votre système n'est pas complètement à jour. Veuillez effectuer une mise à jour classique avant de procéder à la migration vers Bookworm.",
     "migration_0027_yunohost_upgrade": "Démarrage de la mise à jour du cœur de YunoHost…"
 }

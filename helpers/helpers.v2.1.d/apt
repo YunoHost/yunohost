@@ -105,7 +105,7 @@ Section: misc
 Priority: optional
 Package: ${app_ynh_deps}
 Version: ${version}
-Depends: ${dependencies}
+Depends: ${dependencies//,,/,}
 Architecture: all
 Maintainer: root@localhost
 Description: Fake package for ${app} (YunoHost app) dependencies
@@ -116,13 +116,13 @@ EOF
 
     _ynh_wait_dpkg_free
 
-    (
-        # NB: this is in a subshell (though not sure why exactly not just use pushd/popd...)
-        cd "$TMPDIR"
-        # Install the fake package without its dependencies with dpkg --force-depends
-        LC_ALL=C dpkg-deb --build ${app_ynh_deps} ${app_ynh_deps}.deb > ./dpkg_log 2>&1 || { cat ./dpkg_log; false; }
-        LC_ALL=C dpkg --force-depends --install "./${app_ynh_deps}.deb" > ./dpkg_log 2>&1
-    )
+    # Install the fake package without its dependencies with dpkg --force-depends
+    if ! LC_ALL=C dpkg-deb --build "${TMPDIR}/${app_ynh_deps}" "${TMPDIR}/${app_ynh_deps}.deb" > "${TMPDIR}/dpkg_log" 2>&1; then
+        cat "${TMPDIR}/dpkg_log" >&2
+        ynh_die --message="Unable to install dependencies"
+    fi
+    # Don't crash in case of error, because is nicely covered by the following line
+    LC_ALL=C dpkg --force-depends --install "${TMPDIR}/${app_ynh_deps}.deb" 2>&1 | tee "${TMPDIR}/dpkg_log" || true
 
     # Then install the missing dependencies with apt install
     _ynh_apt_install --fix-broken || {
