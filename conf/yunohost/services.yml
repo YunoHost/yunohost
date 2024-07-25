@@ -38,6 +38,7 @@ postgresql:
 redis-server:
   log: /var/log/redis/redis-server.log
   category: database
+  ignore_if_package_is_not_installed: redis-server
 slapd:
   category: database
   test_conf: slapd -Tt
