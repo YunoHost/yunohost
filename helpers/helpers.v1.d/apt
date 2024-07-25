@@ -196,9 +196,6 @@ ynh_package_install_from_equivs() {
     # Install missing dependencies with ynh_package_install
     ynh_wait_dpkg_free
 
-    # Remove the double commas because dpkg-deb doesn't like them
-    sed --in-place 's@,,@,@g' "$controlfile"
-
     cp "$controlfile" "${TMPDIR}/${pkgname}/DEBIAN/control"
 
     # Install the fake package without its dependencies with dpkg --force-depends
@@ -327,7 +324,7 @@ Section: misc
 Priority: optional
 Package: ${dep_app}-ynh-deps
 Version: ${version}
-Depends: ${dependencies}
+Depends: ${dependencies//,,/,}
 Architecture: all
 Maintainer: root@localhost
 Description: Fake package for ${app} (YunoHost app) dependencies
