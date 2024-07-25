@@ -195,13 +195,19 @@ ynh_package_install_from_equivs() {
     # Install the fake package without its dependencies with dpkg
     # Install missing dependencies with ynh_package_install
     ynh_wait_dpkg_free
+
+    # Remove the double commas because dpkg-deb doesn't like them
+    sed --in-place 's@,,@,@g' "$controlfile"
+
     cp "$controlfile" "${TMPDIR}/${pkgname}/DEBIAN/control"
-    (
-        cd "$TMPDIR"
-        # Install the fake package without its dependencies with dpkg --force-depends
-        LC_ALL=C dpkg-deb --build ${pkgname} ${pkgname}.deb > ./dpkg_log 2>&1 || { cat ./dpkg_log; false; }
-        LC_ALL=C dpkg --force-depends --install "./${pkgname}.deb" 2>&1 | tee ./dpkg_log
-    )
+
+    # Install the fake package without its dependencies with dpkg --force-depends
+    if ! LC_ALL=C dpkg-deb --build "${TMPDIR}/${pkgname}" "${TMPDIR}/${pkgname}.deb" > "${TMPDIR}/dpkg_log" 2>&1; then
+        cat ${TMPDIR}/dpkg_log >&2
+        ynh_die --message="Unable to install dependencies"
+    fi
+    # Don't crash in case of error, because is nicely covered by the following line
+    LC_ALL=C dpkg --force-depends --install "${TMPDIR}/${pkgname}.deb" 2>&1 | tee "${TMPDIR}/dpkg_log" || true
 
     ynh_package_install --fix-broken \
         || { # If the installation failed
