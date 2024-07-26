@@ -1,3 +1,14 @@
+yunohost (11.2.24) stable; urgency=low
+
+  - ci: we don't care about mypy in tests/ folder (ebaecfcbd)
+  - helpers: fix install from equivs ([#1921](http://github.com/YunoHost/yunohost/pull/1921))
+  - bullseye->bookworm: re-add tweak about libluajit2 + be more robust about full-upgrade that may fail if python3.9-venv aint installed (9e1b0561e)
+  - i18n: Translations updated for Indonesian
+
+  Thanks to all contributors <3 ! (cjdw, Kayou)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 26 Jul 2024 21:01:23 +0200
+
 yunohost (11.2.23) stable; urgency=low
 
   - helpers2.1: force sourcing getopts before the other helpers to prevent stupid issues (in particular when renaming phpversion to php_version) (3d53cf04)
