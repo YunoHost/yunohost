@@ -220,13 +220,23 @@ class MyMigration(Migration):
         logger.info(m18n.n("migration_0027_yunohost_upgrade"))
         aptitude_with_progress_bar("unhold yunohost moulinette ssowat yunohost-admin")
 
+
+        full_upgrade_cmd = "full-upgrade --show-why -o Dpkg::Options::='--force-confold' "
+        full_upgrade_cmd += "yunohost yunohost-admin yunohost-portal moulinette ssowat "
+        # This one is needed to solve aptitude derping with nginx dependencies
+        full_upgrade_cmd += "libluajit2-5.1-2 "
+        if os.system('dpkg --list | grep -q "^ii  python3.9-venv "') == 0:
+            full_upgrade_cmd += "python3.9- "
+        if os.system('dpkg --list | grep -q "^ii  python3.9 "') == 0:
+            full_upgrade_cmd += "python3.9-venv- "
+
         try:
-            aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin yunohost-portal moulinette ssowat python3.9- python3.9-venv- -o Dpkg::Options::='--force-confold'")
+            aptitude_with_progress_bar(full_upgrade_cmd)
         except Exception:
             # Retry after unholding the app packages, maybe it can unlock the situation idk
             if apps_packages:
                 aptitude_with_progress_bar(f"unhold {' '.join(apps_packages)}")
-                aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin yunohost-portal moulinette ssowat python3.9- python3.9-venv- -o Dpkg::Options::='--force-confold'")
+                aptitude_with_progress_bar(full_upgrade_cmd)
         else:
             # If the upgrade was sucessful, we want to unhold the apps packages
             if apps_packages:
