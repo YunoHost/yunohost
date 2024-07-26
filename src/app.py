@@ -1682,17 +1682,12 @@ def app_ssowatconf():
         app_id = perm_name.split(".")[0]
         app_settings = _get_app_settings(app_id)
 
-        # Stupid hard-coded hack until we properly propagate this to apps ...
-        apps_that_need_password_in_auth_header = ["nextcloud"]
-
         if perm_info["auth_header"]:
-            if app_id in apps_that_need_password_in_auth_header:
-                auth_header = "basic-with-password"
-            elif app_settings.get("auth_header"):
+            if app_settings.get("auth_header"):
                 auth_header = app_settings.get("auth_header")
                 assert auth_header in ["basic-with-password", "basic-without-password"]
             else:
-                auth_header = "basic-without-password"
+                auth_header = "basic-with-password"
         else:
             auth_header = False
 
@@ -1705,7 +1700,12 @@ def app_ssowatconf():
 
         # Apps can opt out of the auth spoofing protection using this if they really need to,
         # but that's a huge security hole and ultimately should never happen...
-        if app_settings.get("protect_against_basic_auth_spoofing", True) in [False, "False", "false", "0", 0]:
+        # ... But some apps live caldav/webdav need this to not break external clients x_x
+        apps_that_need_external_auth_maybe = ["agendav", "baikal", "keeweb", "monica", "nextcloud", "paheko", "radicale", "tracim", "vikunja", "z-push"]
+        protect_against_basic_auth_spoofing = app_settings.get("protect_against_basic_auth_spoofing")
+        if protect_against_basic_auth_spoofing is not None:
+            permissions[perm_name]["protect_against_basic_auth_spoofing"] = protect_against_basic_auth_spoofing not in [False, "False", "false", "0", 0]
+        elif app_id in apps_that_need_external_auth_maybe:
             permissions[perm_name]["protect_against_basic_auth_spoofing"] = False
 
         # Next: portal related
