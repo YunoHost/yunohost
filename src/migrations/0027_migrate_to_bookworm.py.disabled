@@ -267,6 +267,9 @@ class MyMigration(Migration):
             # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
             subprocess.check_call(["bash", "-c", cmd])
 
+        if self.yunohost_major_version() != N_CURRENT_YUNOHOST + 1:
+            raise YunohostError("Still on YunoHost 11.x at the end of the migration, eh? Sounds like the migration didn't really complete!?", raw_msg=True)
+
     def debian_major_version(self):
         # The python module "platform" and lsb_release are not reliable because
         # on some setup, they may still return Release=9 even after upgrading to
