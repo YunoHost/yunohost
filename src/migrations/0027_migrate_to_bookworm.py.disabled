@@ -228,10 +228,11 @@ class MyMigration(Migration):
         full_upgrade_cmd += "yunohost yunohost-admin yunohost-portal moulinette ssowat "
         # This one is needed to solve aptitude derping with nginx dependencies
         full_upgrade_cmd += "libluajit2-5.1-2 "
+        # For some reason aptitude is derping about python3 / python3-venv so try to explicitly tell to install python3.11 to replace 3.9...
         if os.system('dpkg --list | grep -q "^ii  python3.9-venv "') == 0:
-            full_upgrade_cmd += "python3.9- "
+            full_upgrade_cmd += "python3.11-venv python3.9-venv- "
         if os.system('dpkg --list | grep -q "^ii  python3.9 "') == 0:
-            full_upgrade_cmd += "python3.9-venv- "
+            full_upgrade_cmd += "python3.11 python3.9- "
 
         try:
             aptitude_with_progress_bar(full_upgrade_cmd)
