@@ -217,7 +217,9 @@ class MyDiagnoser(Diagnoser):
                 }
             if "v=DMARC1" in r["value"]:
                 for param in current:
-                    key, value = param.split("=")
+                    if "=" not in param:
+                        return False
+                    key, value = param.split("=", 1)
                     if key == "p":
                         return value in ["none", "quarantine", "reject"]
             return expected == current
