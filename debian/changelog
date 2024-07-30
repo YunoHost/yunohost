@@ -1,3 +1,14 @@
+yunohost (11.2.25) stable; urgency=low
+
+  - diagnosis: be more robust when diagnosis DMARC records not containing '=' (d376677db)
+  - bullseye->bookworm: explicitly import _strptime at the beginning to try to prevent "No module named '_strptime'" during migration (2d3dddc51)
+  - bullseye->bookworm: explicitly validate that we're on yunohost 12.x at the end of the migration (8b5698317)
+  - bullseye->bookworm: make sure the non-free / non-free-firmware stuff is idempotent (ad98a10fa)
+  - bullseye->bookworm: in debian control, add rule that moulinette and ssowat must be < 12 to prevent situation in bullseye->bookworm transition where moulinette gets upgrade but yunohost doesnt and everything explodes (8705dfcf5)
+  - bullseye->bookworm: more stuff to try to prevent aptitude derping about python dependencies (f4727d3cb)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 30 Jul 2024 17:12:12 +0200
+
 yunohost (11.2.24) stable; urgency=low
 
   - ci: we don't care about mypy in tests/ folder (ebaecfcbd)
