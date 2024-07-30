@@ -188,8 +188,16 @@ class MyMigration(Migration):
         logger.debug(f"Running: {command}")
         os.system(command)
 
-        aptitude_with_progress_bar("upgrade cron rspamd- luajit- libluajit-5.1-2- --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'")
+        aptitude_with_progress_bar("full-upgrade cron rspamd- luajit- libluajit-5.1-2- --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'")
 
+        # For some reason aptitude is derping about python3 / python3-venv so try to explicitly tell to install python3.11 to replace 3.9...
+        # Note the '+M' prefix which is here to mark the packages as automatically installed
+        python_upgrade_list = "python3 python3.11+M python3.9- "
+        if os.system('dpkg --list | grep -q "^ii  python3.9-venv "') == 0:
+            python_upgrade_list += "python3-venv+M python3.11-venv+M python3.9-venv-"
+        aptitude_with_progress_bar(f"full-upgrade {python_upgrade_list} --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'")
+
+        # Full upgrade of "every" packages except the yunohost ones which are held
         aptitude_with_progress_bar("full-upgrade --show-why -o Dpkg::Options::='--force-confold'")
 
         # Force regenconf of nsswitch because for some reason
@@ -228,11 +236,6 @@ class MyMigration(Migration):
         full_upgrade_cmd += "yunohost yunohost-admin yunohost-portal moulinette ssowat "
         # This one is needed to solve aptitude derping with nginx dependencies
         full_upgrade_cmd += "libluajit2-5.1-2 "
-        # For some reason aptitude is derping about python3 / python3-venv so try to explicitly tell to install python3.11 to replace 3.9...
-        if os.system('dpkg --list | grep -q "^ii  python3.9-venv "') == 0:
-            full_upgrade_cmd += "python3.11-venv python3.9-venv- "
-        if os.system('dpkg --list | grep -q "^ii  python3.9 "') == 0:
-            full_upgrade_cmd += "python3.11 python3.9- "
 
         try:
             aptitude_with_progress_bar(full_upgrade_cmd)
