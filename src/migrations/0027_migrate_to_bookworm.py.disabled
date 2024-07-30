@@ -411,7 +411,7 @@ class MyMigration(Migration):
                 "-e '/backports/ s@^#*@#@' "
                 "-e 's@ bullseye/updates @ bookworm-security @g' "
                 "-e 's@ bullseye-@ bookworm-@g' "
-                "-e 's@ non-free@ non-free non-free-firmware@g' "
+                "-e '/non-free-firmware/!s@ non-free@ non-free non-free-firmware@g' "
                 "-e 's@deb.*http://forge.yunohost.org@deb [signed-by=/usr/share/keyrings/yunohost-bookworm.gpg] http://forge.yunohost.org@g' "
             )
             os.system(command)
