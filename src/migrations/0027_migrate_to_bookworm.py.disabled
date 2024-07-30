@@ -133,6 +133,9 @@ class MyMigration(Migration):
             "echo 'libc6 libraries/restart-without-asking boolean true' | debconf-set-selections"
         )
 
+        # Stupid stuff because resolvconf later wants to edit /etc/resolv.conf and will miserably crash if it's immutable
+        os.system("chattr -i /etc/resolv.conf")
+
         # Do not restart nginx during the upgrade of nginx-common and nginx-extras ...
         # c.f. https://manpages.debian.org/bullseye/init-system-helpers/deb-systemd-invoke.1p.en.html
         # and zcat /usr/share/doc/init-system-helpers/README.policy-rc.d.gz
