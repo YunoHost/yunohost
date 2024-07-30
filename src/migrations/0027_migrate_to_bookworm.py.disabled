@@ -188,7 +188,7 @@ class MyMigration(Migration):
         logger.debug(f"Running: {command}")
         os.system(command)
 
-        aptitude_with_progress_bar("upgrade cron rspamd- libluajit-5.1-2- --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'")
+        aptitude_with_progress_bar("upgrade cron rspamd- luajit- libluajit-5.1-2- --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'")
 
         aptitude_with_progress_bar("full-upgrade --show-why -o Dpkg::Options::='--force-confold'")
 
