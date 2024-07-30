@@ -3,6 +3,9 @@ import os
 import subprocess
 from time import sleep
 
+# Explicitly import _strptime to prevent an issue that may arise later because of python3.9 being replaced by 3.11 in the middle of the upgrade etc
+import _strptime # noqa: F401
+
 from moulinette import Moulinette, m18n
 from moulinette.utils.process import call_async_output
 from yunohost.utils.error import YunohostError
@@ -130,6 +133,9 @@ class MyMigration(Migration):
             "echo 'libc6 libraries/restart-without-asking boolean true' | debconf-set-selections"
         )
 
+        # Stupid stuff because resolvconf later wants to edit /etc/resolv.conf and will miserably crash if it's immutable
+        os.system("chattr -i /etc/resolv.conf")
+
         # Do not restart nginx during the upgrade of nginx-common and nginx-extras ...
         # c.f. https://manpages.debian.org/bullseye/init-system-helpers/deb-systemd-invoke.1p.en.html
         # and zcat /usr/share/doc/init-system-helpers/README.policy-rc.d.gz
@@ -185,8 +191,16 @@ class MyMigration(Migration):
         logger.debug(f"Running: {command}")
         os.system(command)
 
-        aptitude_with_progress_bar("upgrade cron rspamd- libluajit-5.1-2- --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'")
+        aptitude_with_progress_bar("full-upgrade cron rspamd- luajit- libluajit-5.1-2- --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'")
 
+        # For some reason aptitude is derping about python3 / python3-venv so try to explicitly tell to install python3.11 to replace 3.9...
+        # Note the '+M' prefix which is here to mark the packages as automatically installed
+        python_upgrade_list = "python3 python3.11+M python3.9- "
+        if os.system('dpkg --list | grep -q "^ii  python3.9-venv "') == 0:
+            python_upgrade_list += "python3-venv+M python3.11-venv+M python3.9-venv-"
+        aptitude_with_progress_bar(f"full-upgrade {python_upgrade_list} --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'")
+
+        # Full upgrade of "every" packages except the yunohost ones which are held
         aptitude_with_progress_bar("full-upgrade --show-why -o Dpkg::Options::='--force-confold'")
 
         # Force regenconf of nsswitch because for some reason
@@ -225,10 +239,6 @@ class MyMigration(Migration):
         full_upgrade_cmd += "yunohost yunohost-admin yunohost-portal moulinette ssowat "
         # This one is needed to solve aptitude derping with nginx dependencies
         full_upgrade_cmd += "libluajit2-5.1-2 "
-        if os.system('dpkg --list | grep -q "^ii  python3.9-venv "') == 0:
-            full_upgrade_cmd += "python3.9- "
-        if os.system('dpkg --list | grep -q "^ii  python3.9 "') == 0:
-            full_upgrade_cmd += "python3.9-venv- "
 
         try:
             aptitude_with_progress_bar(full_upgrade_cmd)
@@ -263,6 +273,9 @@ class MyMigration(Migration):
             cmd = 'at -M now >/dev/null 2>&1 <<< "sleep 10; systemctl restart nginx yunohost-api"'
             # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
             subprocess.check_call(["bash", "-c", cmd])
+
+        if self.yunohost_major_version() != N_CURRENT_YUNOHOST + 1:
+            raise YunohostError("Still on YunoHost 11.x at the end of the migration, eh? Sounds like the migration didn't really complete!?", raw_msg=True)
 
     def debian_major_version(self):
         # The python module "platform" and lsb_release are not reliable because
@@ -405,7 +418,7 @@ class MyMigration(Migration):
                 "-e '/backports/ s@^#*@#@' "
                 "-e 's@ bullseye/updates @ bookworm-security @g' "
                 "-e 's@ bullseye-@ bookworm-@g' "
-                "-e 's@ non-free@ non-free non-free-firmware@g' "
+                "-e '/non-free-firmware/!s@ non-free@ non-free non-free-firmware@g' "
                 "-e 's@deb.*http://forge.yunohost.org@deb [signed-by=/usr/share/keyrings/yunohost-bookworm.gpg] http://forge.yunohost.org@g' "
             )
             os.system(command)
