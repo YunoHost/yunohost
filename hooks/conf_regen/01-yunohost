@@ -64,6 +64,10 @@ do_init_regen() {
 
     systemctl enable yunohost-api.service --quiet
     systemctl start yunohost-api.service
+
+    # Enable yunoprompt (in particular for installs from ISO where we want this to show on first boot instead of asking for a login/password)
+    systemctl enable yunoprompt --quiet
+
     # Yunohost-firewall is enabled only during postinstall, not init, not 100% sure why
 
     cp dpkg-origins /etc/dpkg/origins/yunohost
