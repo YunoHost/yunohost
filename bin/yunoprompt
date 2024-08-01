@@ -69,7 +69,7 @@ then
 You should now proceed with YunoHost post-installation. This is where you will
 be asked for:
   - the main domain of your server;
-  - the administration password.
+  - the username and password for the first admin
 
 You can perform this step:
   - from your web browser, by accessing: https://yunohost.local/ or ${local_ip}

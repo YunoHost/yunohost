@@ -27,6 +27,15 @@ yunohost (12.0.0) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
 
+yunohost (11.2.26) stable; urgency=low
+
+  - bullseye->bookworm: encourage apt to remove luajit if it's installed because for some reason it's causing issues (423e79bd5)
+  - bullseye->bookworm: have a specific step dedicated to upgrade python3.9 to 3.11 because apt(itude) is derping about it sometimes... (d766f7cdd)
+  - bullseye->bookworm: boring tweak to remove chattr +i from /etc/resolv.conf otherwise resolvconf will later explode and complain about it (65ea34d7c)
+  - Fix yunomprompt not being enable after ISO install (fe524dd86)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 01 Aug 2024 18:05:33 +0200
+
 yunohost (11.2.25) stable; urgency=low
 
   - diagnosis: be more robust when diagnosis DMARC records not containing '=' (d376677db)
