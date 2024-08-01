@@ -3,7 +3,7 @@
 set -e
 
 ssl_dir="/usr/share/yunohost/ssl"
-template_dir="/usr/share/yunohost/conf/ssl/"
+template_dir="/usr/share/yunohost/conf/ssl"
 ynh_ca="/etc/yunohost/certs/yunohost.org/ca.pem"
 ynh_crt="/etc/yunohost/certs/yunohost.org/crt.pem"
 ynh_key="/etc/yunohost/certs/yunohost.org/key.pem"
