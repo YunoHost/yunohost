@@ -1,3 +1,13 @@
+yunohost (12.0.2) testing; urgency=low
+
+  - Cleanup redis regen conf since redis ain't installed by default anymore (7b50c4eb6)
+  - bullseye->bookworm: add a trick to flag the migration as done if it's still marked as pending (0503a38a7)
+  - Sync with main branch
+
+  Thanks to all contributors <3 ! (Kayou)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 01 Aug 2024 18:08:33 +0200
+
 yunohost (12.0.1) testing; urgency=low
 
   - The user portal and SSO system have been reworked and split into three distinct pieces
