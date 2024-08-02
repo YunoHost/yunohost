@@ -1,7 +1,7 @@
 {
     "password_too_simple_1": "Şifre en az 8 karakter uzunluğunda olmalı",
     "action_invalid": "Geçersiz işlem '{action}'",
-    "admin_password": "Yönetici şifresi",
+    "admin_password": "Yönetici parolası",
     "already_up_to_date": "Yapılacak yeni bir şey yok. Her şey zaten güncel.",
     "app_action_broke_system": "Bu işlem bazı hizmetleri bozmuş olabilir: {services}",
     "good_practices_about_user_password": "Şimdi yeni bir kullanıcı şifresi tanımlamak üzeresiniz. Parola en az 8 karakter uzunluğunda olmalıdır - ancak daha uzun bir parola (yani bir parola) ve/veya çeşitli karakterler (büyük harf, küçük harf, rakamlar ve özel karakterler) daha iyidir.",
@@ -20,5 +20,16 @@
     "app_change_url_failed": "{app}: {error} için url değiştirilemedi",
     "app_argument_required": "'{name}' değeri gerekli",
     "app_argument_invalid": "'{name}': {error} için geçerli bir değer giriniz",
-    "app_argument_password_no_default": "'{name}': çözümlenirken bir hata meydana geldi. Parola argümanı güvenlik nedeniyle varsayılan değer alamaz"
+    "app_argument_password_no_default": "'{name}': çözümlenirken bir hata meydana geldi. Parola argümanı güvenlik nedeniyle varsayılan değer alamaz",
+    "app_failed_to_download_asset": "{app} uygulaması için {source_id}{url} adresinden indirme işlemi sağlanamadı: {out}",
+    "app_extraction_failed": "Kurulum dosyaları çıkarılamadı",
+    "app_change_url_require_full_domain": "{app} bu yeni URL'ye taşınamaz. Çünkü ana etki alanı gerekli (Yani path = / olmalı )",
+    "app_change_url_script_failed": "URL değiştirme betiğinde bir hata oluştu",
+    "app_change_url_success": "{app} URL artık {domain}{path}",
+    "app_config_unable_to_apply": "Yapılandırma paneli değerleri uygulanamadı.",
+    "app_config_unable_to_read": "Yapılandırma paneli değerleri okunamadı.",
+    "app_change_url_no_script": "{app_name} uygulaması henüz URL değişikliğini desteklemiyor. Paket yükseltmeniz gerekebilir.",
+    "app_change_url_identical_domains": "('{domain}{path}') Eski ve yeni alan adının veya URL adresler aynı.Şu anda yapacak bir şey bulunmuyor.",
+    "app_corrupt_source": "YunoHost, {app} için '{source_id}' ({url}) adresinden indirebildi, ancak varlık olması gereken yapılandırmalarla eşleşmiyor. Bu, sunucunuzda geçici bir ağ arızası meydana geldiği veya varlığın bir şekilde yayın yapılan veri sağlacıyısı (veya kötü niyetli bir kişi?) tarafından değiştirildiği ve YunoHost yapımcılarının araştırması ve belki de bu değişikliği dikkate almak için uygulama bildirimini güncellemesi gerektiği anlamına gelebilir.\n    Beklenen sha256 sağlama toplamı: {expected_sha256}\n    İndirilen sha256 sağlama toplamı: {computed_sha256}\n    İndirilen dosya boyutu: {size}",
+    "app_failed_to_upgrade_but_continue": "{failed_app} uygulaması yükseltilirken başarısız oldu. Sıradaki güncellemeler devam ediyor. Konu ile ilgili hata kayıtlarını görüntülemek için 'yunohost log show {operation_logger_name}' komutunu çalıştırın"
 }
