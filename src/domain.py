@@ -240,10 +240,72 @@ def _get_parent_domain_of(domain, return_self=False, topest=False):
 
     return domain if return_self else None
 
+def domains_regen(domains: List[str]):
+    for domain in domains:
+        _force_clear_hashes([f"/etc/nginx/conf.d/{domain}.conf"])
+
+    from yunohost.app import app_ssowatconf
+    from yunohost.service import _run_service_command
+    logger.debug("Restarting services...")
+    for service in ("dovecot", "metronome"):
+        # Ugly trick to not restart metronome if it's not installed or no domain configured for XMPP
+        if service == "metronome" and (
+            os.system("dpkg --list | grep -q 'ii *metronome'") != 0
+            or not glob("/etc/metronome/conf.d/*.cfg.lua")
+        ):
+            continue
+        _run_service_command("restart", service)
+
+    if os.path.isfile("/etc/yunohost/installed"):
+        # regen nginx conf to be sure it integrates OCSP Stapling
+        # (We don't do this yet if postinstall is not finished yet)
+        # We also regenconf for postfix to propagate the SNI hash map thingy
+        regen_conf(
+            names=[
+                "nginx",
+                "metronome",
+                "dnsmasq",
+                "postfix",
+                "rspamd",
+                "mdns",
+                "dovecot",
+            ]
+        )
+        app_ssowatconf()
+        _run_service_command("reload", "nginx")
+
+# Used in tests to delete many domains at once.
+# The permissions/configuration are synchronized at the end of the entire operation.
+@is_unit_operation()
+def domains_remove(operation_logger, domains: List[str]):
+    for domain in domains:
+        domain_remove(domain, do_regen_conf=False)
+
+    domains_regen(domains)
+
+    from yunohost.hook import hook_callback
+    for domain in domains:
+        hook_callback("post_domain_remove", args=[domain])
+        logger.success(m18n.n("domain_deleted"))
+
+# Used in tests to create many domains at once.
+# The permissions/configuration are synchronized at the end of the entire operation.
+@is_unit_operation()
+def domains_add(operation_logger, domains: List[str]):
+    for domain in domains:
+        domain_add(domain, do_regen_conf=False)
+
+    domains_regen(domains)
+
+    from yunohost.hook import hook_callback
+    for domain in domains:
+        hook_callback("post_cert_update", args=[domain])
+        hook_callback("post_domain_add", args=[domain])
+        logger.success(m18n.n("domain_created"))
 
 @is_unit_operation(exclude=["dyndns_recovery_password"])
 def domain_add(
-    operation_logger, domain, dyndns_recovery_password=None, ignore_dyndns=False
+    operation_logger, domain, dyndns_recovery_password=None, ignore_dyndns=False, do_regen_conf=True
 ):
     """
     Create a custom domain
@@ -258,7 +320,7 @@ def domain_add(
     from yunohost.app import app_ssowatconf
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.utils.password import assert_password_is_strong_enough
-    from yunohost.certificate import _certificate_install_selfsigned
+    from yunohost.certificate import _certificate_install_selfsigned, _cert_exists
     from yunohost.utils.dns import is_yunohost_dyndns_domain
 
     if dyndns_recovery_password:
@@ -300,7 +362,8 @@ def domain_add(
             domain=domain, recovery_password=dyndns_recovery_password
         )
 
-    _certificate_install_selfsigned([domain], True)
+    if not _cert_exists(domain):
+        _certificate_install_selfsigned([domain], True, do_regen_conf=False)
 
     try:
         attr_dict = {
@@ -317,7 +380,8 @@ def domain_add(
             domain_list_cache = []
 
         # Don't regen these conf if we're still in postinstall
-        if os.path.exists("/etc/yunohost/installed"):
+        # or if we're in a higher operation that will take care of it, such as domains_add
+        if os.path.exists("/etc/yunohost/installed") and do_regen_conf:
             # Sometime we have weird issues with the regenconf where some files
             # appears as manually modified even though they weren't touched ...
             # There are a few ideas why this happens (like backup/restore nginx
@@ -348,9 +412,9 @@ def domain_add(
             pass
         raise e
 
-    hook_callback("post_domain_add", args=[domain])
-
-    logger.success(m18n.n("domain_created"))
+    if do_regen_conf:
+        hook_callback("post_domain_add", args=[domain])
+        logger.success(m18n.n("domain_created"))
 
 
 @is_unit_operation(exclude=["dyndns_recovery_password"])
@@ -361,6 +425,7 @@ def domain_remove(
     force=False,
     dyndns_recovery_password=None,
     ignore_dyndns=False,
+    do_regen_conf=True,
 ):
     """
     Delete domains
@@ -482,6 +547,10 @@ def domain_remove(
     for key_file in glob.glob(f"/etc/yunohost/dyndns/K{domain}.+*"):
         rm(key_file, force=True)
     rm(f"{DOMAIN_SETTINGS_DIR}/{domain}.yml", force=True)
+
+    # We are in a bulk domains_remove so don't regen_conf immediately
+    if not do_regen_conf:
+        return
 
     # Sometime we have weird issues with the regenconf where some files
     # appears as manually modified even though they weren't touched ...

@@ -6,8 +6,8 @@ import os
 
 from .conftest import message, raiseYunohostError, get_test_apps_dir
 
-from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
-from yunohost.user import user_create, user_list, user_delete
+from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list, domains_add, domains_remove
+from yunohost.user import user_create, user_list, user_delete, User, users_add, users_remove
 from yunohost.authenticators.ldap_ynhuser import Authenticator, SESSION_FOLDER, short_hash
 from yunohost.app import app_install, app_remove, app_setting, app_ssowatconf, app_change_url
 from yunohost.permission import user_permission_list, user_permission_update
@@ -43,31 +43,37 @@ def setup_module(module):
 
     assert os.system("systemctl is-active yunohost-portal-api >/dev/null") == 0
 
-    if "alice" not in user_list()["users"]:
-        user_create("alice", maindomain, dummy_password, fullname="Alice White", admin=True)
-    if "bob" not in user_list()["users"]:
-        user_create("bob", maindomain, dummy_password, fullname="Bob Marley")
+    domainlist = domain_list()["domains"]
+    domains = [ domain for domain in [ subdomain, secondarydomain ] if domain not in domainlist ]
+    domains_add(domains)
 
+    # Install app first, permissions will be synced after users_add
     app_install(
         os.path.join(get_test_apps_dir(), "hellopy_ynh"),
         args=f"domain={maindomain}&init_main_permission=visitors",
         force=True,
+        sync_perm=False,
     )
+
+    userlist = user_list()["users"]
+    users_to_add = [ user for user in [
+        User("alice", maindomain, dummy_password, fullname="Alice White", admin=True),
+        User("bob", maindomain, dummy_password, fullname="Bob Marley"),
+    ] if user.name not in userlist ]
+    users_add(users_to_add)
 
 
 def teardown_module(module):
-    if "alice" in user_list()["users"]:
-        user_delete("alice")
-    if "bob" in user_list()["users"]:
-        user_delete("bob")
+    # Remove app first, permissions will be synced after users_remove
+    app_remove("hellopy", sync_perm=False)
 
-    app_remove("hellopy")
+    userlist = user_list()["users"]
+    users = [ user for user in [ "alice", "bob" ] if user in userlist ]
+    users_remove(users)
 
-    if subdomain in domain_list()["domains"]:
-        domain_remove(subdomain)
-    if secondarydomain in domain_list()["domains"]:
-        domain_remove(secondarydomain)
-
+    domainlist = domain_list()["domains"]
+    domains = [ domain for domain in [ subdomain, secondarydomain ] if domain in domainlist ]
+    domains_remove(domains)
 
 def login(session, logged_as, logged_on=None):
 

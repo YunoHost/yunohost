@@ -24,6 +24,7 @@ import random
 import subprocess
 import copy
 from logging import getLogger
+from typing import List, Optional
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.process import check_output
@@ -49,6 +50,20 @@ FIELDS_FOR_IMPORT = {
 
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
+class User:
+    def __init__(
+        self,
+        name: str,
+        domain: str,
+        password: str,
+        fullname: Optional[str] = None,
+        admin: bool = False,
+    ):
+        self.name = name
+        self.password = password
+        self.domain = domain
+        self.fullname = fullname
+        self.admin = admin
 
 def user_list(fields=None):
     from yunohost.utils.ldap import _get_ldap_interface
@@ -131,6 +146,62 @@ def shellexists(shell):
     """Check if the provided shell exists and is executable."""
     return os.path.isfile(shell) and os.access(shell, os.X_OK)
 
+# Used in tests to create many users at once.
+# The permissions are synchronized at the end of the entire operation.
+@is_unit_operation()
+def users_remove(
+    operation_logger,
+    users: List[str],
+):
+
+    for username in users:
+        user_delete(username, do_regen_conf=False)
+
+    from yunohost.permission import permission_sync_to_user
+    permission_sync_to_user()
+
+    # Invalidate passwd to take user deletion into account
+    subprocess.call(["nscd", "-i", "passwd"])
+
+    from yunohost.hook import hook_callback
+    for username in users:
+        hook_callback("post_user_delete", args=[username, False])
+        logger.success(m18n.n("user_deleted"))
+
+# Used in tests to create many users at once.
+# The permissions are synchronized at the end of the entire operation.
+@is_unit_operation()
+def users_add(
+    operation_logger,
+    users: List[User],
+):
+    hooks = []
+    for user in users:
+        # Only force regen_conf on the last iteration
+        hooks.append(user_create(user.name, user.domain, user.password, fullname=user.fullname, admin=user.admin, do_regen_conf=False))
+
+    # Invalidate passwd and group to take user and group creation into account
+    subprocess.call(["nscd", "-i", "passwd"])
+    subprocess.call(["nscd", "-i", "group"])
+
+    # Add new users to all_users group
+    user_group_update(groupname="all_users", add=[ user.name for user in users ], force=True, sync_perm=False)
+
+    # Do we have new admins?
+    admins = [ user.name for user in users if user.admin ]
+    if len(admins) > 0:
+        user_group_update(groupname="admins", add=admins, sync_perm=False)
+
+    from yunohost.permission import permission_sync_to_user
+    from yunohost.hook import hook_callback
+
+    # Now we can sync the permissions
+    permission_sync_to_user()
+
+    for hook in hooks:
+        # Trigger post_user_create hooks
+        hook_callback("post_user_create", args=[hook["YNH_USER_USERNAME"], hook["YNH_USER_PASSWORD"]], env=hook)
+        logger.success(m18n.n("user_created"))
 
 @is_unit_operation([("username", "user")])
 def user_create(
@@ -143,6 +214,7 @@ def user_create(
     admin=False,
     from_import=False,
     loginShell=None,
+    do_regen_conf=True,
 ):
     if not fullname or not fullname.strip():
         raise YunohostValidationError(
@@ -260,9 +332,6 @@ def user_create(
     except Exception as e:
         raise YunohostError("user_creation_failed", user=username, error=e)
 
-    # Invalidate passwd and group to take user and group creation into account
-    subprocess.call(["nscd", "-i", "passwd"])
-    subprocess.call(["nscd", "-i", "group"])
 
     try:
         # Attempt to create user home folder
@@ -277,13 +346,8 @@ def user_create(
     except subprocess.CalledProcessError:
         logger.warning(f"Failed to protect /home/{username}", exc_info=1)
 
-    # Create group for user and add to group 'all_users'
     user_group_create(groupname=username, gid=uid, primary_group=True, sync_perm=False)
-    user_group_update(groupname="all_users", add=username, force=True, sync_perm=True)
-    if admin:
-        user_group_update(groupname="admins", add=username, sync_perm=True)
 
-    # Trigger post_user_create hooks
     env_dict = {
         "YNH_USER_USERNAME": username,
         "YNH_USER_MAIL": mail,
@@ -292,6 +356,22 @@ def user_create(
         "YNH_USER_LASTNAME": lastname,
     }
 
+    # If do_regen_conf is False, it means we are in a higher operation that will
+    # finish synchronizing everything, then run the hooks... so we return early,
+    # transmitting the env_dict for further hook run.
+    if not do_regen_conf:
+        return env_dict
+
+    # Invalidate passwd and group to take user and group creation into account
+    subprocess.call(["nscd", "-i", "passwd"])
+    subprocess.call(["nscd", "-i", "group"])
+
+    # Create group for user and add to group 'all_users'
+    user_group_update(groupname="all_users", add=username, force=True, sync_perm=not admin)
+    if admin:
+        user_group_update(groupname="admins", add=username, sync_perm=True)
+
+    # Trigger post_user_create hooks
     hook_callback("post_user_create", args=[username, mail], env=env_dict)
 
     # TODO: Send a welcome mail to user
@@ -302,7 +382,7 @@ def user_create(
 
 
 @is_unit_operation([("username", "user")])
-def user_delete(operation_logger, username, purge=False, from_import=False):
+def user_delete(operation_logger, username, purge=False, from_import=False, do_regen_conf=True):
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
@@ -314,7 +394,6 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
     if not from_import:
         operation_logger.start()
 
-    user_group_update("all_users", remove=username, force=True, sync_perm=False)
     for group, infos in user_group_list()["groups"].items():
         if group == "all_users":
             continue
@@ -327,7 +406,14 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
     # epic bug happened somewhere else and only a partial removal was
     # performed...)
     if username in user_group_list()["groups"].keys():
-        user_group_delete(username, force=True, sync_perm=True)
+        user_group_delete(username, force=True, sync_perm=False)
+
+    PortalAuth.invalidate_all_sessions_for_user(username)
+    AdminAuth.invalidate_all_sessions_for_user(username)
+
+    # Apparently ldap.remove uid removes from group all_users, but unless we have test we
+    # can't be too sure... so leave it here until we have tests for this!
+    user_group_update("all_users", remove=username, force=True, sync_perm=do_regen_conf)
 
     ldap = _get_ldap_interface()
     try:
@@ -335,8 +421,9 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
     except Exception as e:
         raise YunohostError("user_deletion_failed", user=username, error=e)
 
-    PortalAuth.invalidate_all_sessions_for_user(username)
-    AdminAuth.invalidate_all_sessions_for_user(username)
+    if not do_regen_conf:
+        return
+
 
     # Invalidate passwd to take user deletion into account
     subprocess.call(["nscd", "-i", "passwd"])
