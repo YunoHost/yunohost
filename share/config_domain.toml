@@ -51,6 +51,7 @@ name = "Features"
         add_yunohost_portal_to_choices = true
 
     [feature.mail]
+    name = "Email"
 
         [feature.mail.mail_out]
         type = "boolean"
