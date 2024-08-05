@@ -279,13 +279,13 @@ def test_sso_basic_auth_header():
     assert r.status_code == 200 and r.content.decode().strip() == "User: None\nPwd: None"
 
     r = request(f"https://{maindomain}/show-auth", logged_as="alice")
-    assert r.status_code == 200 and r.content.decode().strip() == "User: alice\nPwd: -"
+    assert r.status_code == 200 and r.content.decode().strip() == f"User: alice\nPwd: {dummy_password}"
 
-    app_setting("hellopy", "auth_header", value="basic-with-password")
+    app_setting("hellopy", "auth_header", value="basic-without-password")
     app_ssowatconf()
 
     r = request(f"https://{maindomain}/show-auth", logged_as="alice")
-    assert r.status_code == 200 and r.content.decode().strip() == f"User: alice\nPwd: {dummy_password}"
+    assert r.status_code == 200 and r.content.decode().strip() == f"User: alice\nPwd: -"
 
 
 def test_sso_basic_auth_header_spoofing():
