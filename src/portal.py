@@ -118,8 +118,11 @@ def portal_public():
 
     portal_settings = _get_portal_settings()
 
-    if "portal_user_intro" in portal_settings:
-        del portal_settings["portal_user_intro"]
+    try:
+        Auth().get_session_cookie()
+    except Exception:
+        if "portal_user_intro" in portal_settings:
+            del portal_settings["portal_user_intro"]
 
     # Prevent leaking the list of users
     for infos in portal_settings["apps"].values():
