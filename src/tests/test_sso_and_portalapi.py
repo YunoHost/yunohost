@@ -7,7 +7,7 @@ import os
 from .conftest import message, raiseYunohostError, get_test_apps_dir
 
 from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
-from yunohost.user import user_create, user_list, user_delete
+from yunohost.user import user_create, user_list, user_delete, user_update
 from yunohost.authenticators.ldap_ynhuser import Authenticator, SESSION_FOLDER, short_hash
 from yunohost.app import app_install, app_remove, app_setting, app_ssowatconf, app_change_url
 from yunohost.permission import user_permission_list, user_permission_update
@@ -229,18 +229,48 @@ def test_permission_propagation_on_ssowat():
         "hellopy.main", remove=["visitors", "all_users"], add="alice"
     )
 
+    # Visitors now get redirected to portal
     r = request(f"https://{maindomain}/")
     assert r.status_code == 302
     assert r.headers['Location'].startswith(f"https://{maindomain}/yunohost/sso?r=")
 
+    # Alice can still access the app fine
     r = request(f"https://{maindomain}/", logged_as="alice")
     assert r.status_code == 200 and r.content.decode().strip() == "Hello world!"
 
-    # Bob can't even login because doesnt has access to any app on the domain
-    # (that's debattable tho)
+
+def test_login_right_depending_on_app_access_and_mail():
+
+    r = request(f"https://{maindomain}/", logged_as="bob")
+    assert r.status_code == 200 and r.content.decode().strip() == "Hello world!"
+
+    user_permission_update(
+        "hellopy.main", remove=["visitors", "all_users"], add="alice"
+    )
+
+    # Bob can still login even though he has no access to any apps, because its mail address is on the maindomain
+    with requests.Session() as session:
+        r = login(session, "bob")
+        assert session.cookies
+
+    if secondarydomain not in domain_list()["domains"]:
+        domain_add(secondarydomain)
+
+    user_update("bob", mail=f"bob@{secondarydomain}")
+
+    # Now bob shouldn't be able to login anymore (on the main domain)
     with requests.Session() as session:
         r = login(session, "bob")
         assert not session.cookies
+
+    user_permission_update(
+        "hellopy.main", add="bob"
+    )
+
+    # Bob should be allowed to login again (even though its mail is on secondarydomain)
+    r = request(f"https://{maindomain}/", logged_as="bob")
+    assert r.status_code == 200 and r.content.decode().strip() == "Hello world!"
+
 
 
 def test_sso_basic_auth_header():
