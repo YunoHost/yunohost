@@ -4,7 +4,7 @@
 
 generate-helpers-doc:
   stage: doc
-  image: "before-install"
+  image: "build-and-lint"
   needs: []
   before_script:
     - apt-get update -y && apt-get install git hub -y

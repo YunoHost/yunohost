@@ -5,7 +5,7 @@
 
 .test-stage:
   stage: test
-  image: "after-install"
+  image: "core-tests"
   variables:
     PYTEST_ADDOPTS: "--color=yes"
   before_script:

@@ -13,7 +13,7 @@ test-i18n-keys:
 
 autofix-translated-strings:
   stage: translation
-  image: "before-install"
+  image: "build-and-lint"
   needs: []
   before_script:
     - apt-get update -y && apt-get install git hub -y

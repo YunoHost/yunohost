@@ -1,6 +1,6 @@
 .build-stage:
   stage: build
-  image: "before-install"
+  image: "build-and-lint"
   variables:
     YNH_SOURCE: "https://github.com/yunohost"
   before_script:
