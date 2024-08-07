@@ -14,7 +14,7 @@
 
 upgrade:
   extends: .install-stage
-  image: "after-install"
+  image: "core-tests"
   script:
     - apt-get update -o Acquire::Retries=3
     - systemctl restart nginx || journalctl -u nginx -n 50 --no-pager --no-hostname

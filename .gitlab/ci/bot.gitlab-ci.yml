@@ -1,6 +1,6 @@
 generate-helpers-doc:
   stage: bot
-  image: "before-install"
+  image: "build-and-lint"
   needs: []
   before_script:
     - git config --global user.email "yunohost@yunohost.org"
@@ -30,7 +30,7 @@ generate-helpers-doc:
 
 autofix-translated-strings:
   stage: bot
-  image: "before-install"
+  image: "build-and-lint"
   needs: []
   before_script:
     - git config --global user.email "yunohost@yunohost.org"

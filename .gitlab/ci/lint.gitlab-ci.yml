@@ -5,7 +5,7 @@
 
 actionsmap:
   stage: lint
-  image: "before-install"
+  image: "build-and-lint"
   needs: []
   script:
     - python -c 'import yaml; yaml.safe_load(open("share/actionsmap.yml"))'
@@ -13,7 +13,7 @@ actionsmap:
 
 lint311:
   stage: lint
-  image: "before-install"
+  image: "build-and-lint"
   needs: []
   allow_failure: true
   script:
@@ -21,14 +21,14 @@ lint311:
 
 invalidcode311:
   stage: lint
-  image: "before-install"
+  image: "build-and-lint"
   needs: []
   script:
     - tox -e py311-invalidcode
 
 mypy:
   stage: lint
-  image: "before-install"
+  image: "build-and-lint"
   needs: []
   script:
     - tox -e py311-mypy
