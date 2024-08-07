@@ -8,8 +8,8 @@ actionsmap:
   image: "build-and-lint"
   needs: []
   script:
-    - python -c 'import yaml; yaml.safe_load(open("share/actionsmap.yml"))'
-    - python -c 'import yaml; yaml.safe_load(open("share/actionsmap-portal.yml"))'
+    - python3 -c 'import yaml; yaml.safe_load(open("share/actionsmap.yml"))'
+    - python3 -c 'import yaml; yaml.safe_load(open("share/actionsmap-portal.yml"))'
 
 lint311:
   stage: lint
