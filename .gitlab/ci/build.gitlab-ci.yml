@@ -4,12 +4,12 @@
     - job: actionsmap
     - job: invalidcode311
   image: "build-and-lint"
+  variables:
+    YNH_BUILD_DIR: "$GIT_CLONE_PATH/build"
   before_script:
     - echo $PWD
     - echo $CI_PROJECT_DIR
     - mkdir -p $YNH_BUILD_DIR
-  variables:
-    YNH_BUILD_DIR: "$GIT_CLONE_PATH/build"
   artifacts:
     paths:
       - ./*.deb

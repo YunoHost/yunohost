@@ -37,6 +37,15 @@ yunohost (12.0.0) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
 
+yunohost (11.2.27) stable; urgency=low
+
+  - apt resource: fix handling of empty 'packages' list breaking dpkg-deb call (3deffdbd5)
+  - i18n: Translations updated for Indonesian, Turkish
+
+  Thanks to all contributors <3 ! (Ali Çırçır, cjdw)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 03 Aug 2024 18:41:27 +0200
+
 yunohost (11.2.26) stable; urgency=low
 
   - bullseye->bookworm: encourage apt to remove luajit if it's installed because for some reason it's causing issues (423e79bd5)
