@@ -4,24 +4,21 @@
     - job: actionsmap
     - job: invalidcode311
   image: "build-and-lint"
-  variables:
-    YNH_SOURCE: "https://github.com/yunohost"
-    YNH_DEBIAN: "bookworm"
   before_script:
+    - echo $PWD
+    - echo $CI_PROJECT_DIR
     - mkdir -p $YNH_BUILD_DIR
-    - DEBIAN_FRONTEND=noninteractive apt update
+  variables:
+    YNH_BUILD_DIR: "$GIT_CLONE_PATH/build"
   artifacts:
     paths:
       - ./*.deb
 
 .build_script: &build_script
-  - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" install devscripts --no-install-recommends
   - cd $YNH_BUILD_DIR/$PACKAGE
-  - git status || true
-  - git log -n 1 || true
   - VERSION=$(dpkg-parsechangelog -S Version 2>/dev/null)
-  - VERSION_NIGHTLY="${VERSION}+$(date +%Y%m%d%H%M)"
-  - dch --package "${PACKAGE}" --force-bad-version -v "${VERSION_NIGHTLY}" -D "unstable" --force-distribution "Daily build."
+  - VERSION_TIMESTAMPED="${VERSION}+$(date +%Y%m%d%H%M)"
+  - dch --package "${PACKAGE}" --force-bad-version -v "${VERSION_TIMESTAMPED}" -D "unstable" --force-distribution "CI build."
   - debuild --no-lintian -us -uc
   - cp $YNH_BUILD_DIR/*.deb ${CI_PROJECT_DIR}/
   - cd ${CI_PROJECT_DIR}
