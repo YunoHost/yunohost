@@ -1,12 +1,15 @@
+.install_debs: &install_debs
+    - apt-get update -o Acquire::Retries=3
+    - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ${CI_PROJECT_DIR}/*.deb
+    - pip3 install -U mock pip pytest pytest-cov pytest-mock pytest-sugar requests-mock "packaging<22"
+
 .test-stage:
   stage: test
   image: "core-tests"
   variables:
     PYTEST_ADDOPTS: "--color=yes"
   before_script:
-    - apt-get update -o Acquire::Retries=3
-    - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ${CI_PROJECT_DIR}/*.deb
-    - pip3 install -U mock pytest pytest-cov pytest-mock pytest-sugar requests-mock "packaging<22"
+    - *install_debs
   cache:
     paths: 
       - src/tests/apps
@@ -30,8 +33,7 @@ full-tests:
   variables:
     PYTEST_ADDOPTS: "--color=yes"
   before_script:
-    - apt-get update -o Acquire::Retries=3
-    - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ${CI_PROJECT_DIR}/*.deb
+    - *install_debs
     - yunohost tools postinstall -d domain.tld -u syssa -F 'Syssa Mine' -p the_password --ignore-dyndns --force-diskspace
   script:
     - python3 -m pytest --cov=yunohost tests/ src/tests/ --junitxml=report.xml
