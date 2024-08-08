@@ -43,7 +43,10 @@ workflow:
     - when: always
 
 variables:
-  YNH_BUILD_DIR: "/ynh-build"
+  GIT_CLONE_PATH: '$CI_BUILDS_DIR/$CI_COMMIT_SHA/$CI_JOB_ID'
+  YNH_SOURCE: "https://github.com/yunohost"
+  YNH_DEBIAN: "bookworm"
+  YNH_SKIP_DIAGNOSIS_DURING_UPGRADE: "true"
 
 include:
   - template: Code-Quality.gitlab-ci.yml
