@@ -35,6 +35,7 @@ mypy:
 
 i18n-keys:
   stage: lint
+  image: "build-and-lint"
   needs: []
   script:
     - python3 maintenance/missing_i18n_keys.py --check
