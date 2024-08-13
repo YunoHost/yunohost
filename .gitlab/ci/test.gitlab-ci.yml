@@ -20,6 +20,9 @@
       - job: build-moulinette
         artifacts: true
       - job: upgrade
+  artifacts:
+    paths:
+      - ./.coverage
 
 ########################################
 # TESTS
@@ -40,84 +43,84 @@ test-helpers2.1:
 test-domains:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_domains.py
+    - python3 -m pytest src/tests/test_domains.py --cov=src
 
 test-dns:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_dns.py
+    - python3 -m pytest src/tests/test_dns.py --cov=src
 
 test-apps:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_apps.py
+    - python3 -m pytest src/tests/test_apps.py --cov=src
 
 test-appscatalog:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_app_catalog.py
+    - python3 -m pytest src/tests/test_app_catalog.py --cov=src
 
 test-appurl:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_appurl.py
+    - python3 -m pytest src/tests/test_appurl.py --cov=src
 
 test-questions:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_questions.py
+    - python3 -m pytest src/tests/test_questions.py --cov=src
 
 test-app-config:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_app_config.py
+    - python3 -m pytest src/tests/test_app_config.py --cov=src
 
 test-app-resources:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_app_resources.py
+    - python3 -m pytest src/tests/test_app_resources.py --cov=src
 
 test-changeurl:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_changeurl.py
+    - python3 -m pytest src/tests/test_changeurl.py --cov=src
 
 test-backuprestore:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_backuprestore.py
+    - python3 -m pytest src/tests/test_backuprestore.py --cov=src
 
 test-permission:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_permission.py
+    - python3 -m pytest src/tests/test_permission.py --cov=src
 
 test-settings:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_settings.py
+    - python3 -m pytest src/tests/test_settings.py --cov=src
 
 test-user-group:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_user-group.py
+    - python3 -m pytest src/tests/test_user-group.py --cov=src
 
 test-regenconf:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_regenconf.py
+    - python3 -m pytest src/tests/test_regenconf.py --cov=src
 
 test-service:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_service.py
+    - python3 -m pytest src/tests/test_service.py --cov=src
 
 test-ldapauth:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_ldapauth.py
+    - python3 -m pytest src/tests/test_ldapauth.py --cov=src
 
 test-sso-and-portalapi:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_sso_and_portalapi.py
+    - python3 -m pytest src/tests/test_sso_and_portalapi.py --cov=src
