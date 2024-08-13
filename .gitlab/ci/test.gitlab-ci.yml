@@ -9,10 +9,6 @@
     COVERAGE_FILE: ".coverage_$CI_JOB_NAME"
   before_script:
     - *install_debs
-  cache:
-    paths: 
-      - src/tests/apps
-    key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
   needs:
       - job: build-yunohost
         artifacts: true
@@ -125,3 +121,50 @@ test-sso-and-portalapi:
   extends: .test-stage
   script:
     - python3 -m pytest src/tests/test_sso_and_portalapi.py
+
+########################################
+# COVERAGE REPORT
+########################################
+
+coverage:
+  stage: test
+  image: "core-tests"
+  needs:
+      # Yeah ... gotta list all of those individually ... https://gitlab.com/gitlab-org/gitlab/-/issues/332326
+      - job: test-domains
+        artifacts: true
+      - job: test-dns
+        artifacts: true
+      - job: test-apps
+        artifacts: true
+      - job: test-appscatalog
+        artifacts: true
+      - job: test-appurl
+        artifacts: true
+      - job: test-questions
+        artifacts: true
+      - job: test-app-config
+        artifacts: true
+      - job: test-app-resources
+        artifacts: true
+      - job: test-changeurl
+        artifacts: true
+      - job: test-backuprestore
+        artifacts: true
+      - job: test-permission
+        artifacts: true
+      - job: test-settings
+        artifacts: true
+      - job: test-user-group
+        artifacts: true
+      - job: test-regenconf
+        artifacts: true
+      - job: test-service
+        artifacts: true
+      - job: test-ldapauth
+        artifacts: true
+      - job: test-sso-and-portalapi
+        artifacts: true
+    script:
+      - coverage combine ./.coverage_*
+      - coverage report
