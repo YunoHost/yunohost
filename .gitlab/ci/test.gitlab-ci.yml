@@ -5,7 +5,8 @@
   stage: test
   image: "core-tests"
   variables:
-    PYTEST_ADDOPTS: "--color=yes"
+    PYTEST_ADDOPTS: "--color=yes --cov=src"
+    COVERAGE_FILE: ".coverage_$CI_JOB_NAME"
   before_script:
     - *install_debs
   cache:
@@ -22,7 +23,7 @@
       - job: upgrade
   artifacts:
     paths:
-      - ./.coverage
+      - ./.coverage_*
 
 ########################################
 # TESTS
@@ -43,84 +44,84 @@ test-helpers2.1:
 test-domains:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_domains.py --cov=src
+    - python3 -m pytest src/tests/test_domains.py
 
 test-dns:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_dns.py --cov=src
+    - python3 -m pytest src/tests/test_dns.py
 
 test-apps:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_apps.py --cov=src
+    - python3 -m pytest src/tests/test_apps.py
 
 test-appscatalog:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_app_catalog.py --cov=src
+    - python3 -m pytest src/tests/test_app_catalog.py
 
 test-appurl:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_appurl.py --cov=src
+    - python3 -m pytest src/tests/test_appurl.py
 
 test-questions:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_questions.py --cov=src
+    - python3 -m pytest src/tests/test_questions.py
 
 test-app-config:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_app_config.py --cov=src
+    - python3 -m pytest src/tests/test_app_config.py
 
 test-app-resources:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_app_resources.py --cov=src
+    - python3 -m pytest src/tests/test_app_resources.py
 
 test-changeurl:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_changeurl.py --cov=src
+    - python3 -m pytest src/tests/test_changeurl.py
 
 test-backuprestore:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_backuprestore.py --cov=src
+    - python3 -m pytest src/tests/test_backuprestore.py
 
 test-permission:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_permission.py --cov=src
+    - python3 -m pytest src/tests/test_permission.py
 
 test-settings:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_settings.py --cov=src
+    - python3 -m pytest src/tests/test_settings.py
 
 test-user-group:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_user-group.py --cov=src
+    - python3 -m pytest src/tests/test_user-group.py
 
 test-regenconf:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_regenconf.py --cov=src
+    - python3 -m pytest src/tests/test_regenconf.py
 
 test-service:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_service.py --cov=src
+    - python3 -m pytest src/tests/test_service.py
 
 test-ldapauth:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_ldapauth.py --cov=src
+    - python3 -m pytest src/tests/test_ldapauth.py
 
 test-sso-and-portalapi:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_sso_and_portalapi.py --cov=src
+    - python3 -m pytest src/tests/test_sso_and_portalapi.py
