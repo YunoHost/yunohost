@@ -13,7 +13,7 @@ def clone_test_app(request):
     cwd = os.path.split(os.path.realpath(__file__))[0]
 
     if not os.path.exists(cwd + "/apps"):
-        os.system("git clone https://github.com/YunoHost/test_apps %s/apps" % cwd)
+        os.system(f"git clone https://github.com/YunoHost/test_apps {cwd}/apps --depth 1")
     else:
         os.system("cd %s/apps && git pull > /dev/null 2>&1" % cwd)
 
