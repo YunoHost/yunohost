@@ -43,10 +43,6 @@ def raiseYunohostError(mocker, key, **kwargs):
         assert e_info._excinfo[1].kwargs == kwargs
 
 
-def pytest_addoption(parser):
-    parser.addoption("--yunodebug", action="store_true", default=False)
-
-
 #
 # Tweak translator to raise exceptions if string keys are not defined       #
 #
@@ -76,7 +72,7 @@ def pytest_cmdline_main(config):
     sys.path.insert(0, "/usr/lib/moulinette/")
     import yunohost
 
-    yunohost.init(debug=config.option.yunodebug)
+    yunohost.init()
 
     class DummyInterface:
         type = "cli"
