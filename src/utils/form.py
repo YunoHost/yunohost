@@ -273,12 +273,12 @@ FORBIDDEN_READONLY_TYPES = {
     OptionType.group,
 }
 
-# To simplify AppConfigPanel bash scripts, we've chosen to use question 
-# short_ids as global variables. The consequence is that there is a risk 
-# of collision with other variables, notably different global variables 
+# To simplify AppConfigPanel bash scripts, we've chosen to use question
+# short_ids as global variables. The consequence is that there is a risk
+# of collision with other variables, notably different global variables
 # used to expose old values or the type of a question...
 # In addition to conflicts with bash variables, there is a direct
-# conflict with the TOML properties of sections, so the keywords `name`, 
+# conflict with the TOML properties of sections, so the keywords `name`,
 # `visible`, `services`, `optional` and `help` cannot be used either.
 FORBIDDEN_KEYWORDS = {
     "old",
@@ -612,7 +612,7 @@ class BaseInputOption(BaseOption):
     redact: bool = False
     optional: bool = False  # FIXME keep required as default?
     default: Any = None
-    _annotation = Any
+    _annotation: Any = Any
     _none_as_empty_str: bool = True
 
     @validator("default", pre=True)
