@@ -24,7 +24,7 @@ import random
 import subprocess
 import copy
 from logging import getLogger
-from typing import TYPE_CHECKING, Literal, Any, TextIO, Optional, Callable, cast
+from typing import TYPE_CHECKING, Any, TextIO, Optional, Callable, cast
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.process import check_output
