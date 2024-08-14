@@ -218,10 +218,6 @@ user:
                     action_help: List existing groups
                     api: GET /users/groups
                     arguments:
-                        -s:
-                            full: --short
-                            help: List only the names of groups
-                            action: store_true
                         -f:
                             full: --full
                             help: Display all informations known about each groups

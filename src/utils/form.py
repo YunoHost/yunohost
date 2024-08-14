@@ -1783,7 +1783,7 @@ class GroupOption(BaseChoicesOption):
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.user import user_group_list
 
-        groups = user_group_list(short=True, include_primary_groups=False)["groups"]
+        groups = list(user_group_list(include_primary_groups=False)["groups"].keys())
 
         def _human_readable_group(groupname):
             # i18n: visitors
