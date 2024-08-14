@@ -68,10 +68,13 @@ moulinette.core.Translator.translate = new_translate
 
 def pytest_cmdline_main(config):
     import sys
+    from pathlib import Path
 
-    sys.path.insert(0, "/usr/lib/moulinette/")
+    # Tweak python path such that "import yunohost" imports "this" code and not the one from /usr/lib/python3/dist-packages
+    code_root = str(Path(__file__).parent.parent.parent)
+    sys.path.insert(0, code_root)
+
     import yunohost
-
     yunohost.init()
 
     class DummyInterface:
