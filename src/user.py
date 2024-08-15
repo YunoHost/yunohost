@@ -144,7 +144,7 @@ def shellexists(shell):
 
 @is_unit_operation([("username", "user")])
 def user_create(
-    operation_logger: OperationLogger,
+    operation_logger: "OperationLogger",
     username: str,
     domain: str,
     password: str,
@@ -312,7 +312,7 @@ def user_create(
 
 
 @is_unit_operation([("username", "user")])
-def user_delete(operation_logger: OperationLogger, username: str, purge: bool = False, from_import: bool =False):
+def user_delete(operation_logger: "OperationLogger", username: str, purge: bool = False, from_import: bool =False):
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
@@ -363,7 +363,7 @@ def user_delete(operation_logger: OperationLogger, username: str, purge: bool = 
 
 @is_unit_operation([("username", "user")], exclude=["change_password"])
 def user_update(
-    operation_logger: OperationLogger,
+    operation_logger: "OperationLogger",
     username: str,
     mail: Optional[str] = None,
     change_password: Optional[str] = None,
@@ -694,7 +694,7 @@ def user_export() -> str | HTTPResponseType:
 
 
 @is_unit_operation()
-def user_import(operation_logger: OperationLogger, csvfile: TextIO, update: bool = False, delete: bool = False) -> dict[str, int]:
+def user_import(operation_logger: "OperationLogger", csvfile: TextIO, update: bool = False, delete: bool = False) -> dict[str, int]:
     """
     Import users from CSV
 
@@ -1008,7 +1008,7 @@ def user_group_list(full: bool = False, include_primary_groups: bool = True) -> 
 
 @is_unit_operation([("groupname", "group")])
 def user_group_create(
-    operation_logger: OperationLogger, groupname: str, gid: Optional[int] = None, primary_group: bool = False, sync_perm: bool = True
+    operation_logger: "OperationLogger", groupname: str, gid: Optional[int] = None, primary_group: bool = False, sync_perm: bool = True
 ) -> dict[str, str]:
     """
     Create group
@@ -1081,7 +1081,7 @@ def user_group_create(
 
 
 @is_unit_operation([("groupname", "group")])
-def user_group_delete(operation_logger: OperationLogger, groupname: str, force: bool = False, sync_perm: bool = True) -> None:
+def user_group_delete(operation_logger: "OperationLogger", groupname: str, force: bool = False, sync_perm: bool = True) -> None:
     """
     Delete user
 
@@ -1123,7 +1123,7 @@ def user_group_delete(operation_logger: OperationLogger, groupname: str, force: 
 
 @is_unit_operation([("groupname", "group")])
 def user_group_update(
-    operation_logger: OperationLogger,
+    operation_logger: "OperationLogger",
     groupname: str,
     add: None | str | list[str] = None,
     remove: None | str | list[str] = None,
