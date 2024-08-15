@@ -388,12 +388,17 @@ def log_show(
 def log_share(path):
     return log_show(path, share=True)
 
+from typing import TypeVar, Callable, Concatenate, ParamSpec
+
+#FuncT = TypeVar("FuncT", bound=Callable[..., Any])
+Param = ParamSpec("Param")
+RetType = TypeVar("RetType")
 
 def is_unit_operation(
-    entities=["app", "domain", "group", "service", "user"],
-    exclude=["password"],
-    operation_key=None,
-):
+    entities = ["app", "domain", "group", "service", "user"],
+    exclude = ["password"],
+) -> Callable[[Callable[Concatenate["OperationLogger", Param], RetType]], Callable[Param, RetType]]:
+
     """
     Configure quickly a unit operation
 
@@ -410,17 +415,10 @@ def is_unit_operation(
     called 'password' are removed. If an argument is an object, you need to
     exclude it or create manually the unit operation without this decorator.
 
-    operation_key   A key to describe the unit operation log used to create the
-    filename and search a translation. Please ensure that this key prefixed by
-    'log_' is present in locales/en.json otherwise it won't be translatable.
-
     """
 
-    def decorate(func):
+    def decorate(func: Callable[Concatenate["OperationLogger", Param], RetType]) -> Callable[Param, RetType]:
         def func_wrapper(*args, **kwargs):
-            op_key = operation_key
-            if op_key is None:
-                op_key = func.__name__
 
             # If the function is called directly from an other part of the code
             # and not by the moulinette framework, we need to complete kwargs
@@ -471,7 +469,7 @@ def is_unit_operation(
                         context[field] = value.name
                     except Exception:
                         context[field] = "IOBase"
-            operation_logger = OperationLogger(op_key, related_to, args=context)
+            operation_logger = OperationLogger(func.__name__, related_to, args=context)
 
             try:
                 # Start the actual function, and give the unit operation

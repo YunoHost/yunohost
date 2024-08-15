@@ -234,7 +234,7 @@ def user_create(
     uid_guid_found = False
     while not uid_guid_found:
         # LXC uid number is limited to 65536 by default
-        uid = str(random.randint(1001, 65000))
+        uid: str = str(random.randint(1001, 65000))
         uid_guid_found = uid not in all_uid and uid not in all_gid
 
     if not loginShell:
@@ -931,7 +931,7 @@ def user_import(operation_logger: "OperationLogger", csvfile: TextIO, update: bo
                 user["username"],
                 user["domain"],
                 user["password"],
-                user["mailbox-quota"],
+                mailbox_quota=user["mailbox-quota"],
                 from_import=True,
                 fullname=(user["firstname"] + " " + user["lastname"]).strip(),
             )
@@ -1008,7 +1008,7 @@ def user_group_list(full: bool = False, include_primary_groups: bool = True) -> 
 
 @is_unit_operation([("groupname", "group")])
 def user_group_create(
-    operation_logger: "OperationLogger", groupname: str, gid: Optional[int] = None, primary_group: bool = False, sync_perm: bool = True
+    operation_logger: "OperationLogger", groupname: str, gid: Optional[str] = None, primary_group: bool = False, sync_perm: bool = True
 ) -> dict[str, str]:
     """
     Create group
@@ -1044,17 +1044,17 @@ def user_group_create(
 
     if not gid:
         # Get random GID
-        all_gid = {x.gr_gid for x in grp.getgrall()}
+        all_gid = {str(x.gr_gid) for x in grp.getgrall()}
 
         uid_guid_found = False
         while not uid_guid_found:
-            gid = random.randint(200, 99999)
+            gid = str(random.randint(200, 99999))
             uid_guid_found = gid not in all_gid
 
     attr_dict = {
         "objectClass": ["top", "groupOfNamesYnh", "posixGroup"],
         "cn": groupname,
-        "gidNumber": gid,
+        "gidNumber": [gid],
     }
 
     # Here we handle the creation of a primary group
