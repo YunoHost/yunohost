@@ -24,7 +24,7 @@ import random
 import subprocess
 import copy
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, TextIO, Optional, Callable, cast
+from typing import TYPE_CHECKING, Any, TextIO, Optional, Callable, Union, cast
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.process import check_output
@@ -652,7 +652,7 @@ def user_info(username: str) -> dict[str, str]:
     return result_dict
 
 
-def user_export() -> str | "HTTPResponseType":
+def user_export() -> Union[str, "HTTPResponseType"]:
     """
     Export users into CSV
 
