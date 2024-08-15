@@ -36,8 +36,8 @@ from yunohost.utils.system import binary_to_human
 
 if TYPE_CHECKING:
     from yunohost.log import OperationLogger
-    from moulinette.utils.log import MoulinetteLogger
     from bottle import HTTPResponse as HTTPResponseType
+    from moulinette.utils.log import MoulinetteLogger
     logger = cast(MoulinetteLogger, getLogger("yunohost.user"))
 else:
     logger = getLogger("yunohost.user")
@@ -652,7 +652,7 @@ def user_info(username: str) -> dict[str, str]:
     return result_dict
 
 
-def user_export() -> str | HTTPResponseType:
+def user_export() -> str | "HTTPResponseType":
     """
     Export users into CSV
 
