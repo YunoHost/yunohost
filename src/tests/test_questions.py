@@ -1772,8 +1772,8 @@ class TestUser(BaseTest):
 # │ GROUP                                                 │
 # ╰───────────────────────────────────────────────────────╯
 
-groups1 = ["all_users", "visitors", "admins"]
-groups2 = ["all_users", "visitors", "admins", "custom_group"]
+groups1 = {"all_users": {}, "visitors": {}, "admins": {}}
+groups2 = {"all_users": {}, "visitors": {}, "admins": {}, "custom_group": {}}
 
 
 @contextmanager
