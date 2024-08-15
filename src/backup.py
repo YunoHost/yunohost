@@ -1923,6 +1923,9 @@ class TarBackupMethod(BackupMethod):
 
     @property
     def _archive_file(self):
+        if isinstance(self.manager, RestoreManager):
+            return self.manager.archive_path
+
         if isinstance(self.manager, BackupManager) and settings_get(
             "misc.backup.backup_compress_tar_archives"
         ):
@@ -2314,11 +2317,6 @@ def backup_restore(name, system=[], apps=[], force=False):
     # Initialize                                                            #
     #
 
-    if name.endswith(".tar.gz"):
-        name = name[: -len(".tar.gz")]
-    elif name.endswith(".tar"):
-        name = name[: -len(".tar")]
-
     restore_manager = RestoreManager(name)
 
     restore_manager.set_system_targets(system)
@@ -2330,8 +2328,10 @@ def backup_restore(name, system=[], apps=[], force=False):
     # Add validation if restoring system parts on an already-installed system
     #
 
-    if restore_manager.targets.targets["system"] != [] and os.path.isfile(
-        "/etc/yunohost/installed"
+    if (
+        restore_manager.info["system"] != {}
+        and restore_manager.targets.targets["system"] != []
+        and os.path.isfile("/etc/yunohost/installed")
     ):
         logger.warning(m18n.n("yunohost_already_installed"))
         if not force:
@@ -2451,6 +2451,7 @@ def backup_info(name, with_details=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
+    original_name = name
 
     if name.endswith(".tar.gz"):
         name = name[: -len(".tar.gz")]
@@ -2463,7 +2464,10 @@ def backup_info(name, with_details=False, human_readable=False):
     if not os.path.lexists(archive_file):
         archive_file += ".gz"
         if not os.path.lexists(archive_file):
-            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+            # Maybe the user provided a path to the backup?
+            archive_file = original_name
+            if not os.path.lexists(archive_file):
+                raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
     # If symlink, retrieve the real path
     if os.path.islink(archive_file):

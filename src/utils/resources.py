@@ -39,10 +39,11 @@ logger = getActionLogger("yunohost.app_resources")
 
 
 class AppResourceManager:
-    def __init__(self, app: str, current: Dict, wanted: Dict):
+    def __init__(self, app: str, current: Dict, wanted: Dict, workdir=None):
         self.app = app
         self.current = current
         self.wanted = wanted
+        self.workdir = workdir
 
         if "resources" not in self.current:
             self.current["resources"] = {}
@@ -155,6 +156,31 @@ class AppResource:
         elif manager and manager.current and "version" in manager.current:
             app_upstream_version = manager.current["version"].split("~")[0]
 
+        # FIXME : should use packaging.version to properly parse / compare versions >_>
+        self.helpers_version: float = 0
+        if (
+            manager
+            and manager.wanted
+            and manager.wanted.get("integration", {}).get("helpers_version")
+        ):
+            self.helpers_version = float(
+                manager.wanted.get("integration", {}).get("helpers_version")
+            )
+        elif (
+            manager
+            and manager.current
+            and manager.current.get("integration", {}).get("helpers_version")
+        ):
+            self.helpers_version = float(
+                manager.current.get("integration", {}).get("helpers_version")
+            )
+        elif manager and manager.wanted and manager.wanted.get("packaging_format"):
+            self.helpers_version = float(manager.wanted.get("packaging_format"))
+        elif manager and manager.current and manager.current.get("packaging_format"):
+            self.helpers_version = float(manager.current.get("packaging_format"))
+        if not self.helpers_version:
+            self.helpers_version = 1.0
+
         replacements: dict[str, str] = {
             "__APP__": self.app,
             "__YNH_ARCH__": system_arch(),
@@ -231,17 +257,21 @@ class AppResource:
         )
         from yunohost.hook import hook_exec_with_script_debug_if_failure
 
-        tmpdir = _make_tmp_workdir_for_app(app=self.app)
+        workdir = (
+            self.manager.workdir
+            if self.manager and self.manager.workdir
+            else _make_tmp_workdir_for_app(app=self.app)
+        )
 
         env_ = _make_environment_for_app_script(
             self.app,
-            workdir=tmpdir,
+            workdir=workdir,
             action=f"{action}_{self.type}",
             force_include_app_settings=True,
         )
         env_.update(env)
 
-        script_path = f"{tmpdir}/{action}_{self.type}"
+        script_path = f"{workdir}/{action}_{self.type}"
         script = f"""
 source /usr/share/yunohost/helpers
 ynh_abort_if_errors
@@ -1140,7 +1170,10 @@ class AptDependenciesAppResource(AppResource):
         super().__init__(properties, *args, **kwargs)
 
         if isinstance(self.packages, str):
-            self.packages = [value.strip() for value in self.packages.split(",")]
+            if self.packages.strip() == "":
+                self.packages = []
+            else:
+                self.packages = [value.strip() for value in self.packages.split(",")]
 
         if self.packages_from_raw_bash:
             out, err = self.check_output_bash_snippet(self.packages_from_raw_bash)
@@ -1176,17 +1209,31 @@ class AptDependenciesAppResource(AppResource):
                     raw_msg=True,
                 )
 
-            # Drop 'extras' entries associated to no packages
-            self.extras = {
-                key: values for key, values in self.extras.items() if values["packages"]
-            }
+        # Drop 'extras' entries associated to no packages
+        self.extras = {
+            key: values for key, values in self.extras.items() if values["packages"]
+        }
 
     def provision_or_update(self, context: Dict = {}):
-        script = " ".join(["ynh_install_app_dependencies", *self.packages])
+
+        if self.helpers_version >= 2.1:
+            ynh_apt_install_dependencies = "ynh_apt_install_dependencies"
+            ynh_apt_install_dependencies_from_extra_repository = (
+                "ynh_apt_install_dependencies_from_extra_repository"
+            )
+        else:
+            ynh_apt_install_dependencies = "ynh_install_app_dependencies"
+            ynh_apt_install_dependencies_from_extra_repository = (
+                "ynh_install_extra_app_dependencies"
+            )
+
+        script = ""
+        if self.packages:
+            script += " ".join([ynh_apt_install_dependencies, *self.packages])
         for repo, values in self.extras.items():
             script += "\n" + " ".join(
                 [
-                    "ynh_install_extra_app_dependencies",
+                    ynh_apt_install_dependencies_from_extra_repository,
                     f"--repo='{values['repo']}'",
                     f"--key='{values['key']}'",
                     f"--package='{' '.join(values['packages'])}'",
@@ -1197,7 +1244,12 @@ class AptDependenciesAppResource(AppResource):
         self._run_script("provision_or_update", script)
 
     def deprovision(self, context: Dict = {}):
-        self._run_script("deprovision", "ynh_remove_app_dependencies")
+        if self.helpers_version >= 2.1:
+            ynh_apt_remove_dependencies = "ynh_apt_remove_dependencies"
+        else:
+            ynh_apt_remove_dependencies = "ynh_remove_app_dependencies"
+
+        self._run_script("deprovision", ynh_apt_remove_dependencies)
 
 
 class PortsResource(AppResource):
@@ -1455,13 +1507,19 @@ class DatabaseAppResource(AppResource):
         db_name = self.get_setting("db_name") or db_user
 
         if self.dbtype == "mysql":
-            self._run_script(
-                "deprovision", f"ynh_mysql_remove_db '{db_name}' '{db_user}'"
-            )
+            db_helper_name = "mysql"
         elif self.dbtype == "postgresql":
-            self._run_script(
-                "deprovision", f"ynh_psql_remove_db '{db_name}' '{db_user}'"
-            )
+            db_helper_name = "psql"
+        else:
+            raise RuntimeError(f"Invalid dbtype {self.dbtype}")
+
+        self._run_script(
+            "deprovision",
+            f"""
+ynh_{db_helper_name}_database_exists "{db_name}" && ynh_{db_helper_name}_drop_db "{db_name}" || true
+ynh_{db_helper_name}_user_exists "{db_user}" && ynh_{db_helper_name}_drop_user "{db_user}" || true
+""",
+        )
 
         self.delete_setting("db_name")
         self.delete_setting("db_user")

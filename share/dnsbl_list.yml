@@ -168,15 +168,6 @@
   ipv6: false
   domain: false
   non_blacklisted_return_code: []
-# Used by GAFAM
-- name: SenderScore Blacklist 
-  dns_server: bl.score.senderscore.com
-  website: https://senderscore.com 
-  ipv4: true
-  ipv6: false
-  domain: false
-# Added cause it supports IPv6
-  non_blacklisted_return_code: []
 - name: AntiCaptcha.NET IPv6
   dns_server: dnsbl6.anticaptcha.net
   website: http://anticaptcha.net/ 

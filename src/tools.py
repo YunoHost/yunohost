@@ -41,7 +41,6 @@ from yunohost.app_catalog import (
 )
 from yunohost.domain import domain_add
 from yunohost.firewall import firewall_upnp
-from yunohost.service import service_start, service_enable
 from yunohost.regenconf import regen_conf
 from yunohost.utils.system import (
     _dump_sources_list,
@@ -49,6 +48,7 @@ from yunohost.utils.system import (
     ynh_packages_version,
     dpkg_is_broken,
     dpkg_lock_available,
+    _apt_log_line_is_relevant,
 )
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation, OperationLogger
@@ -156,6 +156,7 @@ def tools_postinstall(
     force_diskspace=False,
     overwrite_root_password=True,
 ):
+    from yunohost.service import _run_service_command
     from yunohost.dyndns import _dyndns_available, dyndns_unsubscribe
     from yunohost.utils.dns import is_yunohost_dyndns_domain
     from yunohost.utils.password import (
@@ -270,8 +271,8 @@ def tools_postinstall(
     os.system("touch /etc/yunohost/installed")
 
     # Enable and start YunoHost firewall at boot time
-    service_enable("yunohost-firewall")
-    service_start("yunohost-firewall")
+    _run_service_command("enable", "yunohost-firewall")
+    _run_service_command("start", "yunohost-firewall")
 
     regen_conf(names=["ssh"], force=True)
 
@@ -528,32 +529,6 @@ def tools_upgrade(operation_logger, target=None):
 
         logger.success(m18n.n("system_upgraded"))
         operation_logger.success()
-
-
-def _apt_log_line_is_relevant(line):
-    irrelevants = [
-        "service sudo-ldap already provided",
-        "Reading database ...",
-        "Preparing to unpack",
-        "Selecting previously unselected package",
-        "Created symlink /etc/systemd",
-        "Replacing config file",
-        "Creating config file",
-        "Installing new version of config file",
-        "Installing new config file as you requested",
-        ", does not exist on system.",
-        "unable to delete old directory",
-        "update-alternatives:",
-        "Configuration file '/etc",
-        "==> Modified (by you or by a script) since installation.",
-        "==> Package distributor has shipped an updated version.",
-        "==> Keeping old config file as default.",
-        "is a disabled or a static unit",
-        " update-rc.d: warning: start and stop actions are no longer supported; falling back to defaults",
-        "insserv: warning: current stop runlevel",
-        "insserv: warning: current start runlevel",
-    ]
-    return line.rstrip() and all(i not in line.rstrip() for i in irrelevants)
 
 
 @is_unit_operation()

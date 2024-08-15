@@ -74,6 +74,8 @@ ynh_use_nodejs() {
     ynh_node_load_PATH="PATH=$node_PATH"
     # Same var but in lower case to be compatible with ynh_replace_vars...
     ynh_node_load_path="PATH=$node_PATH"
+    # Prevent yet another Node and Corepack madness, with Corepack wanting the user to confirm download of Yarn
+    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 }
 
 # Install a specific version of nodejs
@@ -81,7 +83,7 @@ ynh_use_nodejs() {
 # ynh_install_nodejs will install the version of node provided as argument by using n.
 #
 # usage: ynh_install_nodejs --nodejs_version=nodejs_version
-# | arg: -n, --nodejs_version=      - Version of node to install. When possible, your should prefer to use major version number (e.g. 8 instead of 8.10.0). The crontab will then handle the update of minor versions when needed.
+# | arg: -n, --nodejs_version=      - Version of node to install. When possible, your should prefer to use major version number (e.g. 8 instead of 8.10.0).
 #
 # `n` (Node version management) uses the `PATH` variable to store the path of the version of node it is going to use.
 # That's how it changes the version
@@ -113,7 +115,7 @@ ynh_install_nodejs() {
 
     # Install (or update if YunoHost vendor/ folder updated since last install) n
     mkdir -p $n_install_dir/bin/
-    cp /usr/share/yunohost/helpers.d/vendor/n/n $n_install_dir/bin/n
+    cp "$YNH_HELPERS_DIR/vendor/n/n" $n_install_dir/bin/n
     # Tweak for n to understand it's installed in $N_PREFIX
     ynh_replace_string --match_string="^N_PREFIX=\${N_PREFIX-.*}$" --replace_string="N_PREFIX=\${N_PREFIX-$N_PREFIX}" --target_file="$n_install_dir/bin/n"
 
@@ -142,13 +144,10 @@ ynh_install_nodejs() {
     fi
 
     # Store the ID of this app and the version of node requested for it
-    echo "$YNH_APP_INSTANCE_NAME:$nodejs_version" | tee --append "$n_install_dir/ynh_app_version"
+    echo "$app:$nodejs_version" | tee --append "$n_install_dir/ynh_app_version"
 
     # Store nodejs_version into the config of this app
     ynh_app_setting_set --app=$app --key=nodejs_version --value=$nodejs_version
-
-    # Build the update script and set the cronjob
-    ynh_cron_upgrade_node
 
     ynh_use_nodejs
 }
@@ -166,7 +165,7 @@ ynh_remove_nodejs() {
     nodejs_version=$(ynh_app_setting_get --app=$app --key=nodejs_version)
 
     # Remove the line for this app
-    sed --in-place "/$YNH_APP_INSTANCE_NAME:$nodejs_version/d" "$n_install_dir/ynh_app_version"
+    sed --in-place "/$app:$nodejs_version/d" "$n_install_dir/ynh_app_version"
 
     # If no other app uses this version of nodejs, remove it.
     if ! grep --quiet "$nodejs_version" "$n_install_dir/ynh_app_version"; then
@@ -178,62 +177,5 @@ ynh_remove_nodejs() {
         ynh_secure_remove --file="$n_install_dir"
         ynh_secure_remove --file="/usr/local/n"
         sed --in-place "/N_PREFIX/d" /root/.bashrc
-        rm --force /etc/cron.daily/node_update
     fi
-}
-
-# Set a cron design to update your node versions
-#
-# [internal]
-#
-# This cron will check and update all minor node versions used by your apps.
-#
-# usage: ynh_cron_upgrade_node
-#
-# Requires YunoHost version 2.7.12 or higher.
-ynh_cron_upgrade_node() {
-    # Build the update script
-    cat >"$n_install_dir/node_update.sh" <<EOF
-#!/bin/bash
-
-version_path="$node_version_path"
-n_install_dir="$n_install_dir"
-
-# Log the date
-date
-
-# List all real installed version of node
-all_real_version="\$(find \$version_path/* -maxdepth 0 -type d | sed "s@\$version_path/@@g")"
-
-# Keep only the major version number of each line
-all_real_version=\$(echo "\$all_real_version" | sed 's/\..*\$//')
-
-# Remove double entries
-all_real_version=\$(echo "\$all_real_version" | sort --unique)
-
-# Read each major version
-while read version
-do
-    echo "Update of the version \$version"
-    sudo \$n_install_dir/bin/n \$version
-
-    # Find the last "real" version for this major version of node.
-    real_nodejs_version=\$(find \$version_path/\$version* -maxdepth 0 | sort --version-sort | tail --lines=1)
-    real_nodejs_version=\$(basename \$real_nodejs_version)
-
-    # Update the symbolic link for this version
-    sudo ln --symbolic --force --no-target-directory \$version_path/\$real_nodejs_version \$version_path/\$version
-done <<< "\$(echo "\$all_real_version")"
-EOF
-
-    chmod +x "$n_install_dir/node_update.sh"
-
-    # Build the cronjob
-    cat >"/etc/cron.daily/node_update" <<EOF
-#!/bin/bash
-
-$n_install_dir/node_update.sh >> $n_install_dir/node_update.log
-EOF
-
-    chmod +x "/etc/cron.daily/node_update"
 }
