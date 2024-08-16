@@ -316,6 +316,8 @@
     "diagnosis_regenconf_allgood": "All configuration files are in line with the recommended configuration!",
     "diagnosis_regenconf_manually_modified": "Configuration file <code>{file}</code> appears to have been manually modified.",
     "diagnosis_regenconf_manually_modified_details": "This is probably OK if you know what you're doing! YunoHost will stop updating this file automatically… But beware that YunoHost upgrades could contain important recommended changes. If you want to, you can inspect the differences with <cmd>yunohost tools regen-conf {category} --dry-run --with-diff</cmd> and force the reset to the recommended configuration with <cmd>yunohost tools regen-conf {category} --force</cmd>",
+    "diagnosis_rfkill_wifi": "The Wi-Fi card is disabled and a system warning might prevent app installations",
+    "diagnosis_rfkill_wifi_details": "This warning sneaks in many command outputs, breaking some apps. It is usually required to specify your country code with the command <code>sudo raspi-config</code>. Here is the error:<br>{rfkill_wifi_error}",
     "diagnosis_rootfstotalspace_critical": "The root filesystem only has a total of {space} which is quite worrisome! You will likely run out of disk space very quickly! It's recommended to have at least 16 GB for the root filesystem.",
     "diagnosis_rootfstotalspace_warning": "The root filesystem only has a total of {space}. This may be okay, but be careful because ultimately you may run out of disk space quickly… It's recommended to have at least 16 GB for the root filesystem.",
     "diagnosis_security_vulnerable_to_meltdown": "You appear vulnerable to the Meltdown critical security vulnerability",
@@ -807,7 +809,5 @@
     "yunohost_configured": "YunoHost is now configured",
     "yunohost_installing": "Installing YunoHost…",
     "yunohost_not_installed": "YunoHost is not correctly installed. Please run 'yunohost tools postinstall'",
-    "yunohost_postinstall_end_tip": "The post-install completed! To finalize your setup, please consider:\n    - diagnose potential issues through the 'Diagnosis' section of the webadmin (or 'yunohost diagnosis run' in command-line);\n    - reading the 'Finalizing your setup' and 'Getting to know YunoHost' parts in the admin documentation: https://yunohost.org/admindoc.",
-    "diagnosis_rfkill_wifi": "The Wi-Fi card is disabled and a system warning might prevent app installations",
-    "diagnosis_rfkill_wifi_details": "This warning sneaks in many command outputs, breaking some apps. It is usually required to specify your country code with the command <code>sudo raspi-config</code>. Here is the error:<br>{rfkill_wifi_error}"
+    "yunohost_postinstall_end_tip": "The post-install completed! To finalize your setup, please consider:\n    - diagnose potential issues through the 'Diagnosis' section of the webadmin (or 'yunohost diagnosis run' in command-line);\n    - reading the 'Finalizing your setup' and 'Getting to know YunoHost' parts in the admin documentation: https://yunohost.org/admindoc."
 }
