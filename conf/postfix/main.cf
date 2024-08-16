@@ -211,3 +211,11 @@ smtp_sasl_security_options = noanonymous
 # where to find sasl_passwd
 smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
 {% endif %}
+
+{% if backup_mx_domains != "" %}
+# Backup MX (secondary MX)
+relay_domains = $mydestination {{backup_mx_domains}}
+relay_recipient_maps = hash:/etc/postfix/relay_recipients
+maximal_queue_lifetime = 20d
+{% endif %}
+
