@@ -803,5 +803,9 @@
     "migration_0027_patch_yunohost_conflicts": "Arazo gatazkatsu bati adabakia jartzen…",
     "migration_0027_modified_files": "Ondorengo fitxategiak eskuz moldatu direla antzeman da eta litekeena da bertsio-berritzeak gainean idaztea: {manually_modified_files}",
     "migration_0027_not_enough_free_space": "/var/-en erabilgarri dagoen espazioa oso txikia da! Gutxienez GB 1 izan beharko zenuke erabilgarri migrazioari ekiteko.",
-    "migration_0027_patching_sources_list": "sources.lists fitxategia petatxatzen…"
+    "migration_0027_patching_sources_list": "sources.lists fitxategia petatxatzen…",
+    "global_settings_setting_smtp_backup_mx_emails_whitelisted": "Baimendutako posta elektronikoen MXren SMTP babeskopia",
+    "global_settings_setting_smtp_backup_mx_domains": "Bigarren mailako MX gisa jarduteko domeinuak",
+    "global_settings_setting_smtp_backup_mx_domains_help": "Zerbitzari honek zerrendan agertzen den domeinurako *bigarren mailako* MX domeinu gisa jardun dezake. Domeinurako lehenetsitako MX lortu ezin denean (adibidez, itzalaldi baten ondorioz), mezuak bigarren zerbitzari horretara bidaliko dira —gehienez 20 egunez mantenduko dituena— eta berriro eskuragarri dagoenean benetako helburura helarazten saiatuko da. Hainbat domeinu zehaztu daitezke, komaz bereizita.",
+    "global_settings_setting_smtp_backup_mx_emails_whitelisted_help": "Bigarren mailako MX gisa jarduten duenean, baimendutako hartzaileen posta elektronikoko helbideen zerrenda zehatza eman beharko da (bestela, mezuak ukatu eta baztertuko dira). Hainbat sarrera eman daitezke, komaz bereizita."
 }
