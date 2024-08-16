@@ -199,7 +199,7 @@ class MyDiagnoser(Diagnoser):
                 status="ERROR",
                 summary="diagnosis_rfkill_wifi",
                 details=["diagnosis_rfkill_wifi_details"],
-                data={"rfkill_wifi_error": rfkill_wifi}
+                data={"rfkill_wifi_error": rfkill_wifi},
             )
 
     def bad_sury_packages(self):
