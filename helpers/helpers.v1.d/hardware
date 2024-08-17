@@ -144,21 +144,18 @@ ynh_add_swap () {
         return
     fi
 
-    local swap_max_size_kb=$(( size * 1024 ))
 
     local free_space_kb
     free_space_kb=$(df --block-size=K --output=avail "$swapfile_dir" | sed 1d | sed -e 's/K$//')
-    # Because we don't want to fill the disk with a swap file, divide by 2 the available space.
-    local usable_space_kb=$(( free_space_kb / 2 ))
+    # We don't want to fill the disk with a swap file.
+    local usable_space=$(( free_space_kb / 1024 - 1024 ))
 
     # Compare the available space with the size of the swap.
-    # And set a acceptable size from the request
-    size_space_ratio=$(( swap_max_size_kb / usable_space_kb + 1 ))
-    if (( size_space_ratio > 4)); then
+    if (( size > usable_space )); then
         ynh_print_warn --message="Not enough space for a swap file at $swapfile_path."
         return
     fi
-    swap_size_kb=$(( swap_max_size_kb / size_space_ratio ))
+    swap_size_kb=$(( size * 1024 ))
 
     # Configure swappiness
     if [ ! -f /etc/sysctl.d/999-yunohost-swap.conf ]; then
