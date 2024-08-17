@@ -1736,7 +1736,7 @@ def app_ssowatconf():
         if app_catalog_info and "logo_hash" in app_catalog_info:
             app_portal_info["logo"] = f"/yunohost/sso/applogos/{app_catalog_info['logo_hash']}.png"
 
-        portal_domains_apps[app_portal_domain][app_id] = app_portal_info
+        portal_domains_apps[app_portal_domain][perm_name] = app_portal_info
 
     conf_dict = {
         "cookie_secret_file": "/etc/yunohost/.ssowat_cookie_secret",
