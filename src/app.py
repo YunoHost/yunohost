@@ -1627,6 +1627,8 @@ def app_ssowatconf():
     )
     from yunohost.permission import user_permission_list
 
+    domain_portal_dict = _get_domain_portal_dict()
+
     domains = domain_list()["domains"]
     portal_domains = domain_list(exclude_subdomains=True)["domains"]
     all_permissions = user_permission_list(
@@ -1654,7 +1656,10 @@ def app_ssowatconf():
     redirected_urls = {}
     for domain in domains:
         default_app = _get_raw_domain_settings(domain).get("default_app")
-        if default_app not in ["_none", None] and _is_installed(default_app):
+
+        if default_app == "_yunohost_portal_with_public_apps":
+            redirected_urls[domain + "/"] = domain_portal_dict[domain]
+        elif default_app not in ["_none", None] and _is_installed(default_app):
             app_settings = _get_app_settings(default_app)
             app_domain = app_settings["domain"]
             app_path = app_settings["path"]
@@ -1743,7 +1748,7 @@ def app_ssowatconf():
         "session_folder": "/var/cache/yunohost-portal/sessions",
         "cookie_name": "yunohost.portal",
         "redirected_urls": redirected_urls,
-        "domain_portal_urls": _get_domain_portal_dict(),
+        "domain_portal_urls": domain_portal_dict,
         "permissions": permissions,
     }
 
