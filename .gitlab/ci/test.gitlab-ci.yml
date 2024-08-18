@@ -32,6 +32,7 @@ full-tests:
     PYTEST_ADDOPTS: "--color=yes"
   before_script:
     - *install_debs
+    - pip install mock pip pyOpenSSL pytest pytest-cov pytest-mock pytest-sugar requests-mock "packaging<22"
     - yunohost tools postinstall -d domain.tld -u syssa -F 'Syssa Mine' -p the_password --ignore-dyndns --force-diskspace
   script:
     - python3 -m pytest --cov=yunohost tests/ src/tests/ --junitxml=report.xml
