@@ -43,6 +43,10 @@ name = "Features"
 
         # FIXME link to GCU
 
+        [feature.portal.custom_css]
+        # NB: this is wrote into "/usr/share/yunohost/portal/customassets/{domain}.custom.css"
+        type = "text"
+
     [feature.app]
         [feature.app.default_app]
         type = "app"

@@ -29,6 +29,7 @@ from moulinette.utils.filesystem import (
     read_json,
     read_yaml,
     rm,
+    read_file,
     write_to_file,
     write_to_json,
     write_to_yaml,
@@ -735,6 +736,15 @@ def _get_DomainConfigPanel():
 
             return raw_config
 
+        def _get_raw_settings(self) -> "RawSettings":
+            raw_settings = super()._get_raw_settings()
+
+            custom_css = Path(f"/usr/share/yunohost/portal/customassets/{self.entity}.custom.css")
+            if custom_css.exists():
+                raw_settings["custom_css"] = read_file(str(custom_css))
+
+            return raw_settings
+
         def _apply(
             self,
             form: "FormModel",
@@ -760,6 +770,12 @@ def _get_DomainConfigPanel():
                 domain_dyndns_set_recovery_password(
                     self.entity, next_settings["recovery_password"]
                 )
+
+            custom_css = next_settings.pop("custom_css", "").strip()
+            if custom_css:
+                write_to_file(f"/usr/share/yunohost/portal/customassets/{self.entity}.custom.css", custom_css)
+            # Make sure the value doesnt get written in the yml
+            form.custom_css = ""
 
             portal_options = [
                 "default_app",
