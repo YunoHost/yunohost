@@ -1672,7 +1672,6 @@ class AppOption(BaseChoicesOption):
 
     type: Literal[OptionType.app] = OptionType.app
     filter: Union[JSExpression, None] = None
-    add_yunohost_portal_to_choices: bool = False
     choices: Union[dict[str, str], None]
 
     @validator("choices", pre=True, always=True)
@@ -1692,10 +1691,6 @@ class AppOption(BaseChoicesOption):
             ]
 
         value = {"_none": "---"}
-
-        if values.get("add_yunohost_portal_to_choices", False):
-            value["_yunohost_portal_with_public_apps"] = "YunoHost's portal with public apps"
-
         value.update(
             {
                 app["id"]: f"{app['label']} ({app.get('domain_path', app['id'])})"

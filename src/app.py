@@ -1657,9 +1657,7 @@ def app_ssowatconf():
     for domain in domains:
         default_app = _get_raw_domain_settings(domain).get("default_app")
 
-        if default_app == "_yunohost_portal_with_public_apps":
-            redirected_urls[domain + "/"] = domain_portal_dict[domain]
-        elif default_app not in ["_none", None] and _is_installed(default_app):
+        if default_app not in ["_none", None] and _is_installed(default_app):
             app_settings = _get_app_settings(default_app)
             app_domain = app_settings["domain"]
             app_path = app_settings["path"]
@@ -1667,6 +1665,8 @@ def app_ssowatconf():
             # Prevent infinite redirect loop...
             if domain + "/" != app_domain + app_path:
                 redirected_urls[domain + "/"] = app_domain + app_path
+        elif bool(_get_raw_domain_settings(domain).get("enable_public_apps_page", False)):
+            redirected_urls[domain + "/"] = domain_portal_dict[domain]
 
     # Will organize apps by portal domain
     portal_domains_apps = {domain: {} for domain in portal_domains}

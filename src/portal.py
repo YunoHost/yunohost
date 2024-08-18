@@ -81,9 +81,7 @@ def _get_portal_settings(
     if portal_settings_path.exists():
         settings.update(read_json(str(portal_settings_path)))
         # Portal may be public (no login required)
-        settings["public"] = (
-            settings.pop("default_app", None) == "_yunohost_portal_with_public_apps"
-        )
+        settings["public"] = bool(settings.pop("enable_public_apps_page", False))
 
     # First clear apps since it may contains private apps
     apps: dict[str, Any] = settings.pop("apps", {})

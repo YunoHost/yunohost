@@ -778,7 +778,7 @@ def _get_DomainConfigPanel():
             form.custom_css = ""
 
             portal_options = [
-                "default_app",
+                "enable_public_apps_page",
                 "show_other_domains_apps",
                 "portal_title",
                 "portal_logo",
@@ -832,7 +832,7 @@ def _get_DomainConfigPanel():
             super()._apply(form, previous_settings, exclude={"recovery_password"})
 
             # Reload ssowat if default app changed
-            if "default_app" in next_settings:
+            if "default_app" in next_settings or "enable_public_apps_page" in next_settings:
                 from yunohost.app import app_ssowatconf
 
                 app_ssowatconf()

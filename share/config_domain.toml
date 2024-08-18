@@ -8,6 +8,10 @@ name = "Features"
     # Only available for "topest" domains
     name = "Portal"
 
+        [feature.portal.enable_public_apps_page]
+        type = "boolean"
+        default = false
+
         [feature.portal.show_other_domains_apps]
         type = "boolean"
         default = false
@@ -52,7 +56,6 @@ name = "Features"
         type = "app"
         filter = "is_webapp"
         default = "_none"
-        add_yunohost_portal_to_choices = true
 
     [feature.mail]
     name = "Email"
