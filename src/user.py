@@ -1302,12 +1302,7 @@ def user_group_update(
 
             hook_callback(
                 "post_app_addaccess",
-                args=[
-                    app,
-                    ",".join(users_to_add),
-                    sub_permission,
-                    ""
-                ],
+                args=[app, ",".join(users_to_add), sub_permission, ""],
             )
 
     if remove and users_to_remove:
@@ -1317,12 +1312,7 @@ def user_group_update(
 
             hook_callback(
                 "post_app_removeaccess",
-                args=[
-                    app,
-                    ",".join(users_to_remove),
-                    sub_permission,
-                    ""
-                ],
+                args=[app, ",".join(users_to_remove), sub_permission, ""],
             )
 
     if not from_import:
