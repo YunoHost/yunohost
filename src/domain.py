@@ -44,6 +44,7 @@ if TYPE_CHECKING:
 
     from yunohost.utils.configpanel import RawConfig
     from yunohost.utils.form import FormModel
+    from yunohost.utils.configpanel import RawSettings
 
 logger = getLogger("yunohost.domain")
 
