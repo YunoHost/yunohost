@@ -709,14 +709,14 @@ def _get_DomainConfigPanel():
                     self.entity
                 ]
 
-                raw_config["cert"]["cert"]["cert_summary"]["style"] = status["style"]
+                raw_config["cert"]["cert_"]["cert_summary"]["style"] = status["style"]
 
                 # i18n: domain_config_cert_summary_expired
                 # i18n: domain_config_cert_summary_selfsigned
                 # i18n: domain_config_cert_summary_abouttoexpire
                 # i18n: domain_config_cert_summary_ok
                 # i18n: domain_config_cert_summary_letsencrypt
-                raw_config["cert"]["cert"]["cert_summary"]["ask"] = m18n.n(
+                raw_config["cert"]["cert_"]["cert_summary"]["ask"] = m18n.n(
                     f"domain_config_cert_summary_{status['summary']}"
                 )
 
@@ -727,7 +727,7 @@ def _get_DomainConfigPanel():
                     # FIXME not sure why "summary" was injected in settings values
                     # ("summary", "summary")
                 ]:
-                    raw_config["cert"]["cert"][option_id]["default"] = status[
+                    raw_config["cert"]["cert_"][option_id]["default"] = status[
                         status_key
                     ]
 
@@ -850,9 +850,9 @@ def _get_DomainConfigPanel():
 def domain_action_run(domain, action, args=None):
     import urllib.parse
 
-    if action == "cert.cert.cert_install":
+    if action == "cert.cert_.cert_install":
         from yunohost.certificate import certificate_install as action_func
-    elif action == "cert.cert.cert_renew":
+    elif action == "cert.cert_.cert_renew":
         from yunohost.certificate import certificate_renew as action_func
 
     args = dict(urllib.parse.parse_qsl(args or "", keep_blank_values=True))

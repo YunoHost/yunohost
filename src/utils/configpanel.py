@@ -84,8 +84,8 @@ class ContainerModel(BaseModel):
             value = getattr(self, key)
             if value:
                 setattr(self, key, _value_for_locale(value))
-            elif key == "help" and m18n.key_exists(f"{i18n_key}_{self.id}_help"):
-                setattr(self, key, m18n.n(f"{i18n_key}_{self.id}_help"))
+            elif m18n.key_exists(f"{i18n_key}_{self.id}_{key}"):
+                setattr(self, key, m18n.n(f"{i18n_key}_{self.id}_{key}"))
 
 
 class SectionModel(ContainerModel, OptionsModel):

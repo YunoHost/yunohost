@@ -2,7 +2,6 @@ version = "1.0"
 i18n = "domain_config"
 
 [feature]
-name = "Features"
 
     [feature.mail]
         [feature.mail.mail_out]
@@ -21,7 +20,6 @@ name = "Features"
 
     [feature.portal]
     # Only available for "topest" domains
-    name = "Portal customization"
 
         [feature.portal.enable_public_apps_page]
         type = "boolean"
@@ -67,54 +65,53 @@ name = "Features"
         type = "text"
 
 [dns]
-name = "DNS"
 
     [dns.registrar]
     # This part is automatically generated in DomainConfigPanel
 
 [cert]
-name = "Certificate"
 
-    [cert.cert]
+    [cert.cert_]
+    # The section has a different id than 'cert' otherwise it ends up with an unecessary "name" because it's defined for the panel (in i18n.json)
 
-        [cert.cert.cert_summary]
+        [cert.cert_.cert_summary]
         type = "alert"
         # Automatically filled by DomainConfigPanel
 
-        [cert.cert.cert_validity]
+        [cert.cert_.cert_validity]
         type = "number"
         readonly = true
         visible = "false"
         # Automatically filled by DomainConfigPanel
 
-        [cert.cert.cert_issuer]
+        [cert.cert_.cert_issuer]
         type = "string"
         visible = false
         # Automatically filled by DomainConfigPanel
 
-        [cert.cert.acme_eligible]
+        [cert.cert_.acme_eligible]
         type = "boolean"
         visible = false
         # Automatically filled by DomainConfigPanel
 
-        [cert.cert.acme_eligible_explain]
+        [cert.cert_.acme_eligible_explain]
         type = "alert"
         style = "warning"
         visible = "acme_eligible == false || acme_eligible == null"
 
-        [cert.cert.cert_no_checks]
+        [cert.cert_.cert_no_checks]
         type = "boolean"
         default = false
         visible = "acme_eligible == false || acme_eligible == null"
 
-        [cert.cert.cert_install]
+        [cert.cert_.cert_install]
         type = "button"
         icon = "star"
         style = "success"
         visible = "cert_issuer != 'letsencrypt'"
         enabled = "acme_eligible || cert_no_checks"
 
-        [cert.cert.cert_renew]
+        [cert.cert_.cert_renew]
         type = "button"
         icon = "refresh"
         style = "warning"

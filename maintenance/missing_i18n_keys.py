@@ -142,13 +142,20 @@ def find_expected_string_keys():
         "portal_theme",
         "portal_user_intro",
         "search_engine",
+        "custom_css",
+        "dns",
+        "enable_public_apps_page",
     ]
-    for panel in domain_config.values():
+    domain_section_with_no_name = ["app", "cert_", "mail", "registrar"]
+    for panel_key, panel in domain_config.items():
         if not isinstance(panel, dict):
             continue
-        for section in panel.values():
+        yield f"domain_config_{panel_key}_name"
+        for section_key, section in panel.items():
             if not isinstance(section, dict):
                 continue
+            if section_key not in domain_section_with_no_name:
+                yield f"domain_config_{section_key}_name"
             for key, values in section.items():
                 if not isinstance(values, dict):
                     continue
@@ -171,12 +178,14 @@ def find_expected_string_keys():
         "root_password_confirm",
     ]
 
-    for panel in global_config.values():
+    for panel_key, panel in global_config.items():
         if not isinstance(panel, dict):
             continue
-        for section in panel.values():
+        yield f"global_settings_setting_{panel_key}_name"
+        for section_key, section in panel.items():
             if not isinstance(section, dict):
                 continue
+            yield f"global_settings_setting_{section_key}_name"
             for key, values in section.items():
                 if not isinstance(values, dict):
                     continue
