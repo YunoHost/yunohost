@@ -803,5 +803,11 @@
     "migration_0027_modified_files": "Detectamos que os seguintes ficheiros semella foron modificados manualmente e poderían ser sobreescritos durante a actualización: {manually_modified_files}",
     "migration_0027_not_enough_free_space": "Hai moi pouco espazo en /var/! Deberías ter polo menos 1GB libre para realizar a migración.",
     "migration_0027_patch_yunohost_conflicts": "Aplicando a solución para resolver o problema conflictivo…",
-    "migration_0027_system_not_fully_up_to_date": "O teu sistema non está totalmente actualizado. Fai unha actualización corrente antes de iniciar a migración a Bookworm."
+    "migration_0027_system_not_fully_up_to_date": "O teu sistema non está totalmente actualizado. Fai unha actualización corrente antes de iniciar a migración a Bookworm.",
+    "global_settings_setting_smtp_backup_mx_domains": "Dominios que actúan como MX secundario para",
+    "global_settings_setting_smtp_backup_mx_emails_whitelisted": "Lista de enderezos para apoio MX de SMTP",
+    "diagnosis_rfkill_wifi": "A tarxeta Wi-Fi está desactivada e un aviso do sistema podería previr a instalación de apps",
+    "diagnosis_rfkill_wifi_details": "Este aviso aparece na saída de varias ordes, estragando algunhas apps. Normalmente require indicar o código de país coa orde <code>sudo raspi-config</code>. Aquí tes o erro:<br>{rfkill_wifi_error}",
+    "global_settings_setting_smtp_backup_mx_domains_help": "Permitir a este servidor actuar como un dominio MX *secundario* de apoio para o dominio da lista. Así se o MX principal para o dominio non está accesible (por exemplo por quedar ser electricidade), os correos seguirán enviándose ao servidor, que os gardará un máximo de 20 días e intentará entregalos ao destino real unha vez volva ser accesible. Pódense indicar varios dominios, separados por comas.",
+    "global_settings_setting_smtp_backup_mx_emails_whitelisted_help": "Para actuar como MX secundario, hai que proporcionar unha lista detallada de enderezos de correspondentes permitidos (doutro xeito os correos serán rexeitados e desbotados). Pódense indicar varias entradas, separadas por comas."
 }
