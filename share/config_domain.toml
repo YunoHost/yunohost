@@ -43,7 +43,7 @@ name = "Features"
 
         [feature.portal.portal_theme]
         type = "select"
-        choices = ["system", "light", "dark", "cupcake", "bumblebee", "emerald", "corporate", "synthwave", "retro", "cyberpunk", "valentine", "halloween", "garden", "forest", "aqua", "lofi", "pastel", "fantasy", "wireframe", "black", "luxury", "dracula", "cmyk", "autumn", "business", "acid", "lemonade", "night", "coffee", "winter"]
+        choices = ["system", "light", "dark", "omg", "legacy", "black", "synthwave", "halloween", "coffee", "cupcake", "cyberpunk", "valentine", "nord"]
         default = "system"
 
         [feature.portal.search_engine]
