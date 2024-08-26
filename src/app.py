@@ -2018,7 +2018,7 @@ ynh_app_config_run $1
 
     def _get_config_panel(self):
 
-        ret  = super()._get_config_panel()
+        ret = super()._get_config_panel()
 
         app = self.entity
         settings = _get_app_settings(self.entity)
