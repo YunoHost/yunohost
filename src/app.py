@@ -2036,7 +2036,11 @@ ynh_app_config_run $1
         return ret
 
 
-def _get_app_settings(app):
+app_settings_cache: Dict[str, Dict[str, Any]] = {}
+app_settings_cache_timestamp: Dict[str, int] = {}
+
+
+def _get_app_settings(app: str) -> Dict[str, Any]:
     """
     Get settings of an installed app
 
@@ -2044,12 +2048,22 @@ def _get_app_settings(app):
         app -- The app id (like nextcloud__2)
 
     """
-    if not _is_installed(app):
-        raise YunohostValidationError(
-            "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
-        )
+    _assert_is_installed(app)
+
+    global app_settings_cache
+    global app_settings_cache_timestamp
+
+    app_setting_path = os.path.join(APPS_SETTING_PATH, app, "settings.yml")
+    app_setting_timestamp = os.path.getmtime(app_setting_path)
+
+    # perf: app settings are cached using the settings.yml's modification date,
+    # such that we don't have to worry too much about calling this function
+    # too many times (because ultimately parsing yml is not free)
+    if app_settings_cache_timestamp.get(app) == app_setting_timestamp:
+        return app_settings_cache[app].copy()
+
     try:
-        with open(os.path.join(APPS_SETTING_PATH, app, "settings.yml")) as f:
+        with open(app_setting_path) as f:
             settings = yaml.safe_load(f) or {}
         # If label contains unicode char, this may later trigger issues when building strings...
         # FIXME: this should be propagated to read_yaml so that this fix applies everywhere I think...
@@ -2081,8 +2095,15 @@ def _get_app_settings(app):
         # Make the app id available as $app too
         settings["app"] = app
 
-        if app == settings["id"]:
-            return settings
+        # FIXME: it's not clear why this code exists... Shouldn't we hard-define 'id' as $app ...?
+        if app != settings["id"]:
+            return {}
+
+        # Cache the settings
+        app_settings_cache[app] = settings.copy()
+        app_settings_cache_timestamp[app] = app_setting_timestamp
+
+        return settings
     except (IOError, TypeError, KeyError):
         logger.error(m18n.n("app_not_correctly_installed", app=app))
     return {}
