@@ -2020,7 +2020,6 @@ ynh_app_config_run $1
 
         ret = super()._get_config_panel()
 
-        app = self.entity
         settings = _get_app_settings(self.entity)
 
         for _, _, option in self._iterate():
@@ -2114,6 +2113,11 @@ def _set_app_settings(app, settings):
     """
     with open(os.path.join(APPS_SETTING_PATH, app, "settings.yml"), "w") as f:
         yaml.safe_dump(settings, f, default_flow_style=False)
+
+    if app in app_settings_cache_timestamp:
+        del app_settings_cache_timestamp[app]
+    if app in app_settings_cache:
+        del app_settings_cache[app]
 
 
 def _get_manifest_of_app(path):
