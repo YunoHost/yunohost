@@ -22,7 +22,7 @@ _ynh_app_config_get_one() {
         if [[ "$bind" == "settings" ]]; then
             ynh_die "File '${short_setting}' can't be stored in settings"
         fi
-        old[$short_setting]="$(ls "$(echo $bind | sed s@__INSTALL_DIR__@${install_dir:-}@ | sed s/__APP__/$app/)" 2>/dev/null || echo YNH_NULL)"
+        old[$short_setting]="$(ls "$bind" 2>/dev/null || echo YNH_NULL)"
         file_hash[$short_setting]="true"
 
     # Get multiline text from settings or from a full file
@@ -32,7 +32,7 @@ _ynh_app_config_get_one() {
         elif [[ "$bind" == *":"* ]]; then
             ynh_die "For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
         else
-            old[$short_setting]="$(cat $(echo $bind | sed s@__INSTALL_DIR__@${install_dir:-}@ | sed s/__APP__/$app/) 2>/dev/null || echo YNH_NULL)"
+            old[$short_setting]="$(cat "$bind" 2>/dev/null || echo YNH_NULL)"
         fi
 
     # Get value from a kind of key/value file
@@ -47,7 +47,7 @@ _ynh_app_config_get_one() {
             bind_after="$(echo "${bind_key_}" | cut -d'>' -f1)"
             bind_key_="$(echo "${bind_key_}" | cut -d'>' -f2)"
         fi
-        local bind_file="$(echo "$bind" | cut -d: -f2 | sed s@__INSTALL_DIR__@${install_dir:-}@ | sed s/__APP__/$app/)"
+        local bind_file="$(echo "$bind" | cut -d: -f2)"
         old[$short_setting]="$(ynh_read_var_in_file --file="${bind_file}" --key="${bind_key_}" --after="${bind_after}")"
 
     fi
@@ -73,7 +73,7 @@ _ynh_app_config_apply_one() {
             if [[ "$bind" == "settings" ]]; then
                 ynh_die "File '${short_setting}' can't be stored in settings"
             fi
-            local bind_file="$(echo "$bind" | sed s@__INSTALL_DIR__@${install_dir:-}@ | sed s/__APP__/$app/)"
+            local bind_file="$bind"
             if [[ "${!short_setting}" == "" ]]; then
                 ynh_backup_if_checksum_is_different "$bind_file"
                 ynh_safe_rm "$bind_file"
@@ -101,7 +101,7 @@ _ynh_app_config_apply_one() {
             if [[ "$bind" == *":"* ]]; then
                 ynh_die "For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
             fi
-            local bind_file="$(echo "$bind" | sed s@__INSTALL_DIR__@${install_dir:-}@ | sed s/__APP__/$app/)"
+            local bind_file="$bind"
             ynh_backup_if_checksum_is_different "$bind_file"
             echo "${!short_setting}" >"$bind_file"
             if _ynh_file_checksum_exists "$bind_file"
@@ -119,7 +119,7 @@ _ynh_app_config_apply_one() {
                 bind_key_="$(echo "${bind_key_}" | cut -d'>' -f2)"
             fi
             bind_key_=${bind_key_:-$short_setting}
-            local bind_file="$(echo "$bind" | cut -d: -f2 | sed s@__INSTALL_DIR__@${install_dir:-}@ | sed s/__APP__/$app/)"
+            local bind_file="$(echo "$bind" | cut -d: -f2)"
 
             ynh_backup_if_checksum_is_different "$bind_file"
             ynh_write_var_in_file --file="${bind_file}" --key="${bind_key_}" --value="${!short_setting}" --after="${bind_after}"

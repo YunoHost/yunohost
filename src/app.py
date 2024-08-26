@@ -2022,6 +2022,19 @@ ynh_app_config_run $1
                 raise YunohostError("app_action_failed", action=action, app=app)
         return values
 
+    def _get_config_panel(self):
+
+        ret  = super()._get_config_panel()
+
+        app = self.entity
+        settings = _get_app_settings(self.entity)
+
+        for _, _, option in self._iterate():
+            if "bind" in option:
+                option["bind"] = _hydrate_app_template(option["bind"], settings)
+
+        return ret
+
 
 def _get_app_settings(app):
     """
