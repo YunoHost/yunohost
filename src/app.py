@@ -328,10 +328,7 @@ def app_map(app=None, raw=False, user=None):
     result = {}
 
     if app is not None:
-        if not _is_installed(app):
-            raise YunohostValidationError(
-                "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
-            )
+        _assert_is_installed(app)
         apps = [
             app,
         ]
@@ -1424,10 +1421,7 @@ def app_remove(operation_logger, app, purge=False, force_workdir=None):
     )
     from yunohost.domain import domain_list, domain_config_get, domain_config_set
 
-    if not _is_installed(app):
-        raise YunohostValidationError(
-            "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
-        )
+    _assert_is_installed(app)
 
     operation_logger.start()
 
@@ -2728,16 +2722,6 @@ def _list_upgradable_apps():
 
 
 def _is_installed(app: str) -> bool:
-    """
-    Check if application is installed
-
-    Keyword arguments:
-        app -- id of App to check
-
-    Returns:
-        Boolean
-
-    """
     return os.path.isdir(APPS_SETTING_PATH + app)
 
 
