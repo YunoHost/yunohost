@@ -1921,63 +1921,63 @@ ynh_app_config_run $1
                     raise YunohostError("app_action_failed", action=action, app=app)
             return values
 
+        def _get_config_panel(self):
+
+            ret = super()._get_config_panel()
+
+            self._compute_binds()
+
+            return ret
+
+        def _compute_binds(self):
+            """
+            This compute the 'bind' statement for every option
+            In particular to handle __FOOBAR__ syntax
+            and to handle the fact that bind statements may be defined panel-wide or section-wide
+            """
+
+            settings = _get_app_settings(self.entity)
+
+            for panel, section, option in self._iterate():
+
+                bind_panel = panel.get("bind")
+
+                bind_section = section.get("bind")
+                if not bind_section:
+                    bind_section = bind_panel
+                elif bind_section[-1] == ":" and bind_panel and ":" in bind_panel:
+                    selector, bind_panel_file = bind_panel.split(":")
+                    if ">" in bind_section:
+                        bind_section = bind_section + bind_panel_file
+                    else:
+                        bind_section = selector + bind_section + bind_panel_file
+
+                bind = option.get("bind")
+                if not bind:
+                    if bind_section:
+                        bind = bind_section
+                    else:
+                        bind = "settings"
+                elif bind[-1] == ":" and bind_section and ":" in bind_section:
+                    selector, bind_file = bind_section.split(":")
+                    if ">" in bind:
+                        bind = bind + bind_file
+                    else:
+                        bind = selector + bind + bind_file
+                if bind == "settings" and option.get("type", "string") == "file":
+                    bind = "null"
+
+                option["bind"] = _hydrate_app_template(bind, settings)
+
+        def _dump_options_types_and_binds(self):
+            lines = []
+            for _, _, option in self._iterate():
+                lines.append(
+                    "|".join([option["id"], option.get("type", "string"), option["bind"]])
+                )
+            return "\n".join(lines)
+
     return AppConfigPanel
-
-    def _get_config_panel(self):
-
-        ret = super()._get_config_panel()
-
-        self._compute_binds()
-
-        return ret
-
-    def _compute_binds(self):
-        """
-        This compute the 'bind' statement for every option
-        In particular to handle __FOOBAR__ syntax
-        and to handle the fact that bind statements may be defined panel-wide or section-wide
-        """
-
-        settings = _get_app_settings(self.entity)
-
-        for panel, section, option in self._iterate():
-
-            bind_panel = panel.get("bind")
-
-            bind_section = section.get("bind")
-            if not bind_section:
-                bind_section = bind_panel
-            elif bind_section[-1] == ":" and bind_panel and ":" in bind_panel:
-                selector, bind_panel_file = bind_panel.split(":")
-                if ">" in bind_section:
-                    bind_section = bind_section + bind_panel_file
-                else:
-                    bind_section = selector + bind_section + bind_panel_file
-
-            bind = option.get("bind")
-            if not bind:
-                if bind_section:
-                    bind = bind_section
-                else:
-                    bind = "settings"
-            elif bind[-1] == ":" and bind_section and ":" in bind_section:
-                selector, bind_file = bind_section.split(":")
-                if ">" in bind:
-                    bind = bind + bind_file
-                else:
-                    bind = selector + bind + bind_file
-            if bind == "settings" and option.get("type", "string") == "file":
-                bind = "null"
-
-            option["bind"] = _hydrate_app_template(bind, settings)
-
-    def _dump_options_types_and_binds(self):
-        lines = []
-        for _, _, option in self._iterate():
-            lines.append(
-                "|".join([option["id"], option.get("type", "string"), option["bind"]])
-            )
-        return "\n".join(lines)
 
 
 app_settings_cache: Dict[str, Dict[str, Any]] = {}
