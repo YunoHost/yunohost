@@ -2007,7 +2007,6 @@ ynh_app_config_run $1
         app_script_env.update(env)
         env = app_script_env
 
-
         ret, values = hook_exec(config_script, args=[action], env=env)
         if ret != 0:
             if action == "show":
@@ -2037,9 +2036,9 @@ ynh_app_config_run $1
 
         for panel, section, option in self._iterate():
 
-            bind_panel = panel.get('bind')
+            bind_panel = panel.get("bind")
 
-            bind_section = section.get('bind')
+            bind_section = section.get("bind")
             if not bind_section:
                 bind_section = bind_panel
             elif bind_section[-1] == ":" and bind_panel and ":" in bind_panel:
@@ -2049,28 +2048,30 @@ ynh_app_config_run $1
                 else:
                     bind_section = selector + bind_section + bind_panel_file
 
-            bind = option.get('bind')
+            bind = option.get("bind")
             if not bind:
                 if bind_section:
                     bind = bind_section
                 else:
-                    bind = 'settings'
+                    bind = "settings"
             elif bind[-1] == ":" and bind_section and ":" in bind_section:
                 selector, bind_file = bind_section.split(":")
                 if ">" in bind:
                     bind = bind + bind_file
                 else:
                     bind = selector + bind + bind_file
-            if bind == "settings" and option.get('type', 'string') == 'file':
-                bind = 'null'
+            if bind == "settings" and option.get("type", "string") == "file":
+                bind = "null"
 
             option["bind"] = _hydrate_app_template(bind, settings)
 
     def _dump_options_types_and_binds(self):
         lines = []
         for _, _, option in self._iterate():
-            lines.append('|'.join([option['id'], option.get('type', 'string'), option["bind"]]))
-        return '\n'.join(lines)
+            lines.append(
+                "|".join([option["id"], option.get("type", "string"), option["bind"]])
+            )
+        return "\n".join(lines)
 
 
 app_settings_cache: Dict[str, Dict[str, Any]] = {}
