@@ -1,3 +1,15 @@
+yunohost (11.2.29) stable; urgency=low
+
+  - apps: generalize replacing __INSTALL_DIR__ and __APP__ in config panel 'bind' statement to any setting (9b0553580)
+  - apps/config panels: move the computation of the actual 'bind' value to the python core (a6785d34b)
+  - perf: add cache for _get_app_settings() (c14ebc8be, 7c7906046)
+  - quality: use _assert_is_installed for consistency instead of if not _is_intalled(app): raise (c409888a4)
+  - i18n: Translations updated for Basque, French, Galician, Greek, Indonesian
+
+  Thanks to all contributors <3 ! (cjdw, craftrac, José M, ppr, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 27 Aug 2024 14:46:26 +0200
+
 yunohost (11.2.28) stable; urgency=low
 
   - ci: various changes due to CI infrastructure changes (200f0272d, 764fe6a7b, 9083a5cc3, d0df3caed, 6733526be, df320a44c, 92f4a605b, f02d4a437, c5953b542)
