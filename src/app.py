@@ -1998,6 +1998,7 @@ ynh_app_config_run $1
                 "install_dir": settings.get("install_dir", ""),
                 "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, app),
                 "YNH_APP_PACKAGING_FORMAT": str(manifest["packaging_format"]),
+                "YNH_APP_CONFIG_PANEL_OPTIONS_TYPES_AND_BINDS": self._dump_options_types_and_binds(),
             }
         )
         app_script_env = _make_environment_for_app_script(app)
@@ -2005,6 +2006,7 @@ ynh_app_config_run $1
         # The settings from config panel should be keep as it is
         app_script_env.update(env)
         env = app_script_env
+
 
         ret, values = hook_exec(config_script, args=[action], env=env)
         if ret != 0:
@@ -2020,13 +2022,55 @@ ynh_app_config_run $1
 
         ret = super()._get_config_panel()
 
-        settings = _get_app_settings(self.entity)
-
-        for _, _, option in self._iterate():
-            if "bind" in option:
-                option["bind"] = _hydrate_app_template(option["bind"], settings)
+        self._compute_binds()
 
         return ret
+
+    def _compute_binds(self):
+        """
+        This compute the 'bind' statement for every option
+        In particular to handle __FOOBAR__ syntax
+        and to handle the fact that bind statements may be defined panel-wide or section-wide
+        """
+
+        settings = _get_app_settings(self.entity)
+
+        for panel, section, option in self._iterate():
+
+            bind_panel = panel.get('bind')
+
+            bind_section = section.get('bind')
+            if not bind_section:
+                bind_section = bind_panel
+            elif bind_section[-1] == ":" and bind_panel and ":" in bind_panel:
+                selector, bind_panel_file = bind_panel.split(":")
+                if ">" in bind_section:
+                    bind_section = bind_section + bind_panel_file
+                else:
+                    bind_section = selector + bind_section + bind_panel_file
+
+            bind = option.get('bind')
+            if not bind:
+                if bind_section:
+                    bind = bind_section
+                else:
+                    bind = 'settings'
+            elif bind[-1] == ":" and bind_section and ":" in bind_section:
+                selector, bind_file = bind_section.split(":")
+                if ">" in bind:
+                    bind = bind + bind_file
+                else:
+                    bind = selector + bind + bind_file
+            if bind == "settings" and option.get('type', 'string') == 'file':
+                bind = 'null'
+
+            option["bind"] = _hydrate_app_template(bind, settings)
+
+    def _dump_options_types_and_binds(self):
+        lines = []
+        for _, _, option in self._iterate():
+            lines.append('|'.join([option['id'], option.get('type', 'string'), option["bind"]]))
+        return '\n'.join(lines)
 
 
 app_settings_cache: Dict[str, Dict[str, Any]] = {}
