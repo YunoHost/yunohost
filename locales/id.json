@@ -469,7 +469,7 @@
     "config_unknown_filter_key": "Kunci filter '{filter_key}' tidak sesuai.",
     "backup_permission": "Izin pencadangan untuk {app}",
     "config_forbidden_keyword": "Kata kunci '{keyword}' sudah ada, Anda tidak dapat membuat atau menggunakan panel konfigurasi disertai pertanyaan dengan id ini.",
-    "good_practices_about_user_password": "Sekarang Anda akan menentukan kata sandi pengguna baru. Kata sandi harus terdiri dari minimal 8 karakter - meskipun sebaiknya menggunakan kata sandi yang lebih panjang (misalnya parafrasa) dan/atau menggunakan beragam karakter (huruf besar, huruf kecil, angka, dan karakter khusus).",
+    "good_practices_about_user_password": "Sekarang Anda akan menentukan kata sandi pengguna baru. Kata sandi harus terdiri dari minimal 8 karakter—meskipun sebaiknya menggunakan kata sandi yang lebih panjang (misalnya parafrasa) dan/atau menggunakan beragam karakter (huruf besar, huruf kecil, angka, dan karakter khusus).",
     "domain_dns_push_failed_to_authenticate": "Autentikasi gagal pada API registrar untuk domain '{domain}'. Besar kemungkinan karena kredensial tidak sesuai? (Galat: {error})",
     "certmanager_domain_dns_ip_differs_from_public_ip": "Rekaman DNS untuk domain '{domain}' berbeda dengan IP server ini. Silakan periksa kategori 'Catatan DNS' (dasar) dalam diagnosis untuk info lebih lanjut. Jika Anda baru saja memodifikasi rekaman A, silakan menunggu hingga rekaman tersebut disebarkan (beberapa pemeriksa sebaran DNS tersedia online). (Jika Anda tahu apa yang Anda lakukan, gunakan '--no-checks' untuk mematikan pemeriksaan ini.)",
     "certmanager_hit_rate_limit": "Terlalu banyak sertifikat yang telah diterbitkan untuk kumpulan domain {domain} ini baru-baru ini. Silakan coba lagi nanti. Lihat https://letsencrypt.org/docs/rate-limits/ untuk detail lebih lanjut",
@@ -483,7 +483,7 @@
     "config_cant_set_value_on_section": "Anda tidak dapat menetapkan satu nilai pun di seluruh bagian konfigurasi.",
     "backup_applying_method_custom": "Memanggil metode pencadangan khusus '{method}'…",
     "backup_ask_for_copying_if_needed": "Apakah Anda ingin melakukan pencadangan menggunakan {size}MB untuk sementara? (Cara ini digunakan karena beberapa berkas tidak dapat disiapkan menggunakan metode yang lebih efisien.)",
-    "good_practices_about_admin_password": "Sekarang Anda akan menentukan kata sandi administrasi baru. Kata sandi harus terdiri dari minimal 8 karakter - meskipun sebaiknya menggunakan kata sandi yang lebih panjang (misalnya parafrasa) dan/atau menggunakan beragam karakter (huruf besar, huruf kecil, angka, dan karakter khusus).",
+    "good_practices_about_admin_password": "Sekarang Anda akan menentukan kata sandi administrasi baru. Kata sandi harus terdiri dari minimal 8 karakter—meskipun sebaiknya menggunakan kata sandi yang lebih panjang (misalnya parafrasa) dan/atau menggunakan beragam karakter (huruf besar, huruf kecil, angka, dan karakter khusus).",
     "certmanager_acme_not_configured_for_domain": "Tantangan ACME tidak dapat dijalankan untuk {domain} saat ini karena konfigurasi pada nginx tidak memiliki potongan kode yang sesuai… Pastikan konfigurasi nginx Anda mutakhir menggunakan `yunohost tools regen-conf nginx --dry-run --with-diff`.",
     "diagnosis_http_special_use_tld": "Domain {domain} berdasarkan pada domain tingkat atas (TLD) penggunaan khusus seperti .local atau .test dan oleh karena itu tidak diharapkan untuk diekspos di luar jaringan lokal.",
     "certmanager_self_ca_conf_file_not_found": "Tidak dapat menemukan berkas konfigurasi untuk otoritas teken mandiri (berkas: {file})",
@@ -803,5 +803,11 @@
     "service_description_redis-server": "Basis data khusus yang digunakan untuk akses data cepat, antrian tugas, dan komunikasi antar program",
     "update_apt_cache_warning": "Ada yang tidak sesuai saat memperbarui cache APT (manajer paket Debian). Berikut ini adalah kumpulan baris source.list, yang mungkin membantu mengidentifikasi baris yang bermasalah:\n{sourceslist}",
     "user_import_missing_columns": "Kehilangan kolom berikut: {columns}",
-    "user_import_nothing_to_do": "Tidak ada pengguna yang perlu diimpor"
+    "user_import_nothing_to_do": "Tidak ada pengguna yang perlu diimpor",
+    "global_settings_setting_smtp_backup_mx_domains": "Domain yang digunakan sebagai MX sekunder",
+    "global_settings_setting_smtp_backup_mx_domains_help": "Izinkan server ini digunakan sebagai domain MX *sekunder* cadangan pada domain yang terdaftar. Ini berarti bahwa jika MX utama untuk domain tersebut tidak dapat dijangkau (misalnya karena gangguan), surel akan tetap dikirim ke server ini, yang akan menyimpannya selama maksimal 20 hari dan mencoba meneruskannya ke tujuan yang sebenarnya setelah kembali aktif. Beberapa domain dapat disediakan, dipisahkan dengan koma.",
+    "global_settings_setting_smtp_backup_mx_emails_whitelisted": "Daftar surel yang diperbolehkan sebagai MX cadangan SMTP",
+    "diagnosis_rfkill_wifi": "Kartu Wi-Fi dinonaktifkan dan peringatan sistem mungkin akan mencegah pemasangan aplikasi",
+    "diagnosis_rfkill_wifi_details": "Peringatan ini muncul di banyak keluaran perintah, sehingga merusak beberapa aplikasi. Biasanya Anda diminta untuk menentukan kode negara dengan perintah <code>sudo raspi-config</code>. Galat yang muncul:<br>{rfkill_wifi_error}",
+    "global_settings_setting_smtp_backup_mx_emails_whitelisted_help": "Bila digunakan sebagai MX sekunder, daftar lengkap alamat surel penerima yang diizinkan harus disediakan (sebaliknya surel akan ditolak dan dibuang). Beberapa alamat dapat diberikan, dipisahkan dengan koma."
 }
