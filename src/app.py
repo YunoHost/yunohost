@@ -2075,7 +2075,7 @@ ynh_app_config_run $1
 
 
 app_settings_cache: Dict[str, Dict[str, Any]] = {}
-app_settings_cache_timestamp: Dict[str, int] = {}
+app_settings_cache_timestamp: Dict[str, float] = {}
 
 
 def _get_app_settings(app: str) -> Dict[str, Any]:
