@@ -332,6 +332,8 @@ def reconfigure_ssh_and_fail2ban(setting_name, old_value, new_value):
 @post_change_hook("smtp_relay_port")
 @post_change_hook("smtp_relay_user")
 @post_change_hook("smtp_relay_password")
+@post_change_hook("smtp_backup_mx_domains")
+@post_change_hook("smtp_backup_mx_emails_whitelisted")
 @post_change_hook("postfix_compatibility")
 def reconfigure_postfix(setting_name, old_value, new_value):
     if old_value != new_value:

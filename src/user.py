@@ -1135,6 +1135,7 @@ def user_group_update(
 ) -> None | dict[str, Any]:
     from yunohost.permission import permission_sync_to_user
     from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
+    from yunohost.hook import hook_callback
 
     existing_users = list(user_list()["users"].keys())
 
@@ -1173,6 +1174,11 @@ def user_group_update(
     ]
     new_group_members = copy.copy(current_group_members)
     new_attr_dict: dict[str, list] = {}
+
+    # Group permissions
+    current_group_permissions = [
+        _ldap_path_extract(p, "cn") for p in group.get("permission", [])
+    ]
 
     if add:
         users_to_add = [add] if not isinstance(add, list) else add
@@ -1291,6 +1297,26 @@ def user_group_update(
 
     if sync_perm:
         permission_sync_to_user()
+
+    if add and users_to_add:
+        for permission in current_group_permissions:
+            app = permission.split(".")[0]
+            sub_permission = permission.split(".")[1]
+
+            hook_callback(
+                "post_app_addaccess",
+                args=[app, ",".join(users_to_add), sub_permission, ""],
+            )
+
+    if remove and users_to_remove:
+        for permission in current_group_permissions:
+            app = permission.split(".")[0]
+            sub_permission = permission.split(".")[1]
+
+            hook_callback(
+                "post_app_removeaccess",
+                args=[app, ",".join(users_to_remove), sub_permission, ""],
+            )
 
     if not from_import:
         if groupname != "all_users":
