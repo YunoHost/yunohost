@@ -1921,15 +1921,15 @@ ynh_app_config_run $1
                     raise YunohostError("app_action_failed", action=action, app=app)
             return values
 
-        def _get_config_panel(self):
+        def _get_partial_raw_config(self) -> "RawConfig":
 
-            ret = super()._get_config_panel()
+            raw_config = super()._get_partial_raw_config()
 
-            self._compute_binds()
+            self._compute_binds(raw_config)
 
-            return ret
+            return raw_config
 
-        def _compute_binds(self):
+        def _compute_binds(self, raw_config):
             """
             This compute the 'bind' statement for every option
             In particular to handle __FOOBAR__ syntax
@@ -1938,43 +1938,59 @@ ynh_app_config_run $1
 
             settings = _get_app_settings(self.entity)
 
-            for panel, section, option in self._iterate():
-
+            for panel_id, panel in raw_config.items():
+                if not isinstance(panel, dict):
+                    continue
                 bind_panel = panel.get("bind")
+                for section_id, section in panel.items():
+                    if not isinstance(section, dict):
+                        continue
+                    bind_section = section.get("bind")
+                    if not bind_section:
+                        bind_section = bind_panel
+                    elif bind_section[-1] == ":" and bind_panel and ":" in bind_panel:
+                        selector, bind_panel_file = bind_panel.split(":")
+                        if ">" in bind_section:
+                            bind_section = bind_section + bind_panel_file
+                        else:
+                            bind_section = selector + bind_section + bind_panel_file
+                    for option_id, option in section.items():
+                        if not isinstance(option, dict):
+                            continue
+                        bind = option.get("bind")
+                        if not bind:
+                            if bind_section:
+                                bind = bind_section
+                            else:
+                                bind = "settings"
+                        elif bind[-1] == ":" and bind_section and ":" in bind_section:
+                            selector, bind_file = bind_section.split(":")
+                            if ">" in bind:
+                                bind = bind + bind_file
+                            else:
+                                bind = selector + bind + bind_file
+                        if bind == "settings" and option.get("type", "string") == "file":
+                            bind = "null"
+                        if option.get("type", "string") == "button":
+                            bind = "null"
 
-                bind_section = section.get("bind")
-                if not bind_section:
-                    bind_section = bind_panel
-                elif bind_section[-1] == ":" and bind_panel and ":" in bind_panel:
-                    selector, bind_panel_file = bind_panel.split(":")
-                    if ">" in bind_section:
-                        bind_section = bind_section + bind_panel_file
-                    else:
-                        bind_section = selector + bind_section + bind_panel_file
-
-                bind = option.get("bind")
-                if not bind:
-                    if bind_section:
-                        bind = bind_section
-                    else:
-                        bind = "settings"
-                elif bind[-1] == ":" and bind_section and ":" in bind_section:
-                    selector, bind_file = bind_section.split(":")
-                    if ">" in bind:
-                        bind = bind + bind_file
-                    else:
-                        bind = selector + bind + bind_file
-                if bind == "settings" and option.get("type", "string") == "file":
-                    bind = "null"
-
-                option["bind"] = _hydrate_app_template(bind, settings)
+                        option["bind"] = _hydrate_app_template(bind, settings)
 
         def _dump_options_types_and_binds(self):
+            raw_config = self._get_partial_raw_config()
             lines = []
-            for _, _, option in self._iterate():
-                lines.append(
-                    "|".join([option["id"], option.get("type", "string"), option["bind"]])
-                )
+            for panel_id, panel in raw_config.items():
+                if not isinstance(panel, dict):
+                    continue
+                for section_id, section in panel.items():
+                    if not isinstance(section, dict):
+                        continue
+                    for option_id, option in section.items():
+                        if not isinstance(option, dict):
+                            continue
+                        lines.append(
+                            "|".join([option_id, option.get("type", "string"), option["bind"]])
+                        )
             return "\n".join(lines)
 
     return AppConfigPanel
