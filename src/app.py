@@ -1921,7 +1921,7 @@ ynh_app_config_run $1
                     raise YunohostError("app_action_failed", action=action, app=app)
             return values
 
-        def _get_partial_raw_config(self) -> "RawConfig":
+        def _get_partial_raw_config(self):
 
             raw_config = super()._get_partial_raw_config()
 
