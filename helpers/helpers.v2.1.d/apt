@@ -4,9 +4,9 @@ YNH_APT_INSTALL_DEPENDENCIES_REPLACE="true"
 
 # Define and install dependencies with a equivs control file
 #
-# example : ynh_install_app_dependencies dep1 dep2 "dep3|dep4|dep5"
+# example : ynh_apt_install_dependencies dep1 dep2 "dep3|dep4|dep5"
 #
-# usage: ynh_install_app_dependencies dep [dep [...]]
+# usage: ynh_apt_install_dependencies dep [dep [...]]
 # | arg: dep - the package name to install in dependence.
 # | arg: "dep1|dep2|…" - You can specify alternatives. It will require to install (dep1 or dep2, etc).
 #
@@ -72,9 +72,9 @@ ynh_apt_install_dependencies() {
     # Specific tweak related to Postgresql (cf end of the helper)
     local psql_installed="$(_ynh_apt_package_is_installed "postgresql-$PSQL_VERSION" && echo yes || echo no)"
 
-    # The first time we run ynh_install_app_dependencies, we will replace the
+    # The first time we run ynh_apt_install_dependencies, we will replace the
     # entire control file (This is in particular meant to cover the case of
-    # upgrade script where ynh_install_app_dependencies is called with this
+    # upgrade script where ynh_apt_install_dependencies is called with this
     # expected effect) Otherwise, any subsequent call will add dependencies
     # to those already present in the equivs control file.
     if [[ $YNH_APT_INSTALL_DEPENDENCIES_REPLACE == "true" ]]
