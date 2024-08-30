@@ -19,6 +19,7 @@ jobs:
         continue-on-error: true
 
       - name: Create Pull Request
+        if: ${{ !env.ACT }}
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
