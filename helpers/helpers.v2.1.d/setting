@@ -98,7 +98,7 @@ ynh_app_setting() {
     # Trick to only re-enable debugging if it was set before
     local xtrace_enable=$(set +o | grep xtrace)
     set +o xtrace # set +x
-    ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python3 - <<EOF
+    ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python3 - << EOF
 import os, yaml, sys
 app, action = os.environ['APP'], os.environ['ACTION'].lower()
 key, value = os.environ['KEY'], os.environ.get('VALUE', None)
@@ -125,15 +125,11 @@ EOF
 
 # Legacy: auto-convert phpversion to php_version (for consistency with nodejs_version, ruby_version, ...)
 # This has to be here and not in the "php" code file because ynh_app_setting_set/delete need to be defined @_@
-if [[ -n "${app:-}" ]] && [[ -n "${phpversion:-}" ]]
-then
-    if [[ -z "${php_version:-}" ]]
-    then
+if [[ -n "${app:-}" ]] && [[ -n "${phpversion:-}" ]]; then
+    if [[ -z "${php_version:-}" ]]; then
         php_version=$phpversion
         ynh_app_setting_set --key=php_version --value=$php_version
     fi
     ynh_app_setting_delete --key=phpversion
     unset phpversion
 fi
-
-

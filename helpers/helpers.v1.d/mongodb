@@ -6,20 +6,20 @@
 # example: ynh_mongo_exec --command="db.getMongo().getDBNames().indexOf(\"wekan\")"
 #
 # usage: ynh_mongo_exec [--user=user] [--password=password] [--authenticationdatabase=authenticationdatabase] [--database=database] [--host=host] [--port=port] --command="command" [--eval]
-# | arg: -u, --user=                    - The user name to connect as
-# | arg: -p, --password=                - The user password
-# | arg: -d, --authenticationdatabase=  - The authenticationdatabase to connect to
-# | arg: -d, --database=                - The database to connect to
-# | arg: -h, --host=                    - The host to connect to
-# | arg: -P, --port=                    - The port to connect to
-# | arg: -c, --command=                 - The command to evaluate
-# | arg: -e, --eval                     - Evaluate instead of execute the command.
+# | arg: -u, --user=                        - The user name to connect as
+# | arg: -p, --password=                    - The user password
+# | arg: -d, --authenticationdatabase=      - The authenticationdatabase to connect to
+# | arg: -d, --database=                    - The database to connect to
+# | arg: -h, --host=                        - The host to connect to
+# | arg: -P, --port=                        - The port to connect to
+# | arg: -c, --command=                     - The command to evaluate
+# | arg: -e, --eval                         - Evaluate instead of execute the command.
 #
 #
 ynh_mongo_exec() {
     # Declare an array to define the options of this helper.
     local legacy_args=upadhPce
-    local -A args_array=( [u]=user= [p]=password= [a]=authenticationdatabase= [d]=database= [h]=host= [P]=port= [c]=command= [e]=eval )
+    local -A args_array=([u]=user= [p]=password= [a]=authenticationdatabase= [d]=database= [h]=host= [P]=port= [c]=command= [e]=eval)
     local user
     local password
     local authenticationdatabase
@@ -39,19 +39,16 @@ ynh_mongo_exec() {
     eval=${eval:-0}
 
     # If user is provided
-    if [ -n "$user" ]
-    then
+    if [ -n "$user" ]; then
         user="--username=$user"
 
         # If password is provided
-        if [ -n "$password" ]
-        then
+        if [ -n "$password" ]; then
             password="--password=$password"
         fi
 
         # If authenticationdatabase is provided
-        if [ -n "$authenticationdatabase" ]
-        then
+        if [ -n "$authenticationdatabase" ]; then
             authenticationdatabase="--authenticationDatabase=$authenticationdatabase"
         else
             authenticationdatabase="--authenticationDatabase=admin"
@@ -62,37 +59,32 @@ ynh_mongo_exec() {
     fi
 
     # If host is provided
-    if [ -n "$host" ]
-    then
+    if [ -n "$host" ]; then
         host="--host=$host"
     fi
 
     # If port is provided
-    if [ -n "$port" ]
-    then
+    if [ -n "$port" ]; then
         port="--port=$port"
     fi
 
     # If eval is not provided
-    if [ $eval -eq 0 ]
-    then
+    if [ $eval -eq 0 ]; then
         # If database is provided
-        if [ -n "$database" ]
-        then
+        if [ -n "$database" ]; then
             database="use $database"
         else
             database=""
         fi
 
-        mongosh --quiet --username $user --password $password --authenticationDatabase $authenticationdatabase --host $host --port $port <<EOF
+        mongosh --quiet --username $user --password $password --authenticationDatabase $authenticationdatabase --host $host --port $port << EOF
 $database
 ${command}
 quit()
 EOF
     else
         # If database is provided
-        if [ -n "$database" ]
-        then
+        if [ -n "$database" ]; then
             database="$database"
         else
             database=""
@@ -116,7 +108,7 @@ EOF
 ynh_mongo_drop_db() {
     # Declare an array to define the options of this helper.
     local legacy_args=d
-    local -A args_array=( [d]=database= )
+    local -A args_array=([d]=database=)
     local database
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -136,7 +128,7 @@ ynh_mongo_drop_db() {
 ynh_mongo_dump_db() {
     # Declare an array to define the options of this helper.
     local legacy_args=d
-    local -A args_array=( [d]=database= )
+    local -A args_array=([d]=database=)
     local database
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -157,7 +149,7 @@ ynh_mongo_dump_db() {
 ynh_mongo_create_user() {
     # Declare an array to define the options of this helper.
     local legacy_args=unp
-    local -A args_array=( [u]=db_user= [n]=db_name= [p]=db_pwd= )
+    local -A args_array=([u]=db_user= [n]=db_name= [p]=db_pwd=)
     local db_user
     local db_name
     local db_pwd
@@ -186,8 +178,7 @@ ynh_mongo_database_exists() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if [ $(ynh_mongo_exec --command='db.getMongo().getDBNames().indexOf("'${database}'")' --eval) -lt 0 ]
-    then
+    if [ $(ynh_mongo_exec --command='db.getMongo().getDBNames().indexOf("'${database}'")' --eval) -lt 0 ]; then
         return 1
     else
         return 0
@@ -205,7 +196,7 @@ ynh_mongo_database_exists() {
 ynh_mongo_restore_db() {
     # Declare an array to define the options of this helper.
     local legacy_args=d
-    local -A args_array=( [d]=database= )
+    local -A args_array=([d]=database=)
     local database
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -225,7 +216,7 @@ ynh_mongo_restore_db() {
 ynh_mongo_drop_user() {
     # Declare an array to define the options of this helper.
     local legacy_args=un
-    local -A args_array=( [u]=db_user= [n]=db_name= )
+    local -A args_array=([u]=db_user= [n]=db_name=)
     local db_user
     local db_name
     # Manage arguments with getopts
@@ -248,7 +239,7 @@ ynh_mongo_drop_user() {
 ynh_mongo_setup_db() {
     # Declare an array to define the options of this helper.
     local legacy_args=unp
-    local -A args_array=( [u]=db_user= [n]=db_name= [p]=db_pwd= )
+    local -A args_array=([u]=db_user= [n]=db_name= [p]=db_pwd=)
     local db_user
     local db_name
     db_pwd=""
@@ -276,14 +267,14 @@ ynh_mongo_setup_db() {
 ynh_mongo_remove_db() {
     # Declare an array to define the options of this helper.
     local legacy_args=un
-    local -A args_array=( [u]=db_user= [n]=db_name= )
+    local -A args_array=([u]=db_user= [n]=db_name=)
     local db_user
     local db_name
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if ynh_mongo_database_exists --database=$db_name; then  # Check if the database exists
-        ynh_mongo_drop_db --database=$db_name  # Remove the database
+    if ynh_mongo_database_exists --database=$db_name; then # Check if the database exists
+        ynh_mongo_drop_db --database=$db_name              # Remove the database
     else
         ynh_print_warn --message="Database $db_name not found"
     fi
@@ -311,13 +302,13 @@ ynh_install_mongo() {
     local mongo_debian_release=$(ynh_get_debian_release)
 
     if [[ "$(grep '^flags' /proc/cpuinfo | uniq)" != *"avx"* && "$mongo_version" != "4.4" ]]; then
-    ynh_print_warn --message="Installing Mongo 4.4 as $mongo_version is not compatible with your cpu (see https://docs.mongodb.com/manual/administration/production-notes/#x86_64)."
-    mongo_version="4.4"
-  fi
-  if [[ "$mongo_version" == "4.4" ]]; then
-    ynh_print_warn --message="Switched to buster install as Mongo 4.4 is not compatible with $mongo_debian_release."
-    mongo_debian_release=buster
-  fi
+        ynh_print_warn --message="Installing Mongo 4.4 as $mongo_version is not compatible with your cpu (see https://docs.mongodb.com/manual/administration/production-notes/#x86_64)."
+        mongo_version="4.4"
+    fi
+    if [[ "$mongo_version" == "4.4" ]]; then
+        ynh_print_warn --message="Switched to buster install as Mongo 4.4 is not compatible with $mongo_debian_release."
+        mongo_debian_release=buster
+    fi
 
     ynh_install_extra_app_dependencies --repo="deb http://repo.mongodb.org/apt/debian $mongo_debian_release/mongodb-org/$mongo_version main" --package="mongodb-org mongodb-org-server mongodb-org-tools mongodb-mongosh" --key="https://www.mongodb.org/static/pgp/server-$mongo_version.asc"
     mongodb_servicename=mongod
@@ -343,8 +334,7 @@ ynh_install_mongo() {
 #
 ynh_remove_mongo() {
     # Only remove the mongodb service if it is not installed.
-    if ! ynh_package_is_installed --package="mongodb*"
-    then
+    if ! ynh_package_is_installed --package="mongodb*"; then
         ynh_print_info --message="Removing MongoDB service..."
         mongodb_servicename=mongod
         # Remove the mongodb service

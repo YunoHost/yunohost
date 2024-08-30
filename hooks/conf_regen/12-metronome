@@ -2,8 +2,7 @@
 
 set -e
 
-if ! dpkg --list | grep -q 'ii *metronome '
-then
+if ! dpkg --list | grep -q 'ii *metronome '; then
     echo 'metronome is not installed, skipping'
     exit 0
 fi
@@ -24,7 +23,7 @@ do_pre_regen() {
     # install main conf file
     cat metronome.cfg.lua \
         | sed "s/{{ main_domain }}/${main_domain}/g" \
-            >"${metronome_dir}/metronome.cfg.lua"
+            > "${metronome_dir}/metronome.cfg.lua"
 
     # Trick such that old conf files are flagged as to remove
     for domain in $YNH_DOMAINS; do
@@ -36,7 +35,7 @@ do_pre_regen() {
     for domain in $domain_list; do
         cat domain.tpl.cfg.lua \
             | sed "s/{{ domain }}/${domain}/g" \
-                >"${metronome_conf_dir}/${domain}.cfg.lua"
+                > "${metronome_conf_dir}/${domain}.cfg.lua"
     done
 
     # remove old domain conf files
@@ -74,16 +73,13 @@ do_post_regen() {
     chown -R metronome: /var/lib/metronome/
     chown -R metronome: /etc/metronome/conf.d/
 
-    if [[ -z "$(ls /etc/metronome/conf.d/*.cfg.lua 2>/dev/null)" ]]
-    then
-        if systemctl is-enabled metronome &>/dev/null
-        then
-            systemctl disable metronome --now 2>/dev/null
+    if [[ -z "$(ls /etc/metronome/conf.d/*.cfg.lua 2> /dev/null)" ]]; then
+        if systemctl is-enabled metronome &> /dev/null; then
+            systemctl disable metronome --now 2> /dev/null
         fi
     else
-        if ! systemctl is-enabled metronome &>/dev/null
-        then
-            systemctl enable metronome --now 2>/dev/null
+        if ! systemctl is-enabled metronome &> /dev/null; then
+            systemctl enable metronome --now 2> /dev/null
             sleep 3
         fi
 

@@ -13,10 +13,8 @@ ynh_redis_get_free_db() {
 
     db=0
     # default Debian setting is 15 databases
-    for i in $(seq 0 "$max")
-    do
-        if ! echo "$result" | grep -q "db$i"
-        then
+    for i in $(seq 0 "$max"); do
+        if ! echo "$result" | grep -q "db$i"; then
             db=$i
             break 1
         fi

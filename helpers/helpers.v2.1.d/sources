@@ -74,8 +74,7 @@ ynh_setup_source() {
     # ===========================================
 
     local sources_json=$(ynh_read_manifest "resources.sources[\"$source_id\"]")
-    if jq -re ".url" <<< "$sources_json"
-    then
+    if jq -re ".url" <<< "$sources_json"; then
         local arch_prefix=""
     else
         local arch_prefix=".$YNH_ARCH"
@@ -93,25 +92,18 @@ ynh_setup_source() {
     [[ -n "$src_url" ]] || ynh_die "No URL defined for source $source_id$arch_prefix ?"
     [[ -n "$src_sum" ]] || ynh_die "No sha256 sum defined for source $source_id$arch_prefix ?"
 
-    if [[ -z "$src_format" ]]
-    then
-        if [[ "$src_url" =~ ^.*\.zip$ ]] || [[ "$src_url" =~ ^.*/zipball/.*$ ]]
-        then
+    if [[ -z "$src_format" ]]; then
+        if [[ "$src_url" =~ ^.*\.zip$ ]] || [[ "$src_url" =~ ^.*/zipball/.*$ ]]; then
             src_format="zip"
-        elif [[ "$src_url" =~ ^.*\.tar\.gz$ ]] || [[ "$src_url" =~ ^.*\.tgz$ ]] || [[ "$src_url" =~ ^.*/tar\.gz/.*$ ]] || [[ "$src_url" =~ ^.*/tarball/.*$ ]]
-        then
+        elif [[ "$src_url" =~ ^.*\.tar\.gz$ ]] || [[ "$src_url" =~ ^.*\.tgz$ ]] || [[ "$src_url" =~ ^.*/tar\.gz/.*$ ]] || [[ "$src_url" =~ ^.*/tarball/.*$ ]]; then
             src_format="tar.gz"
-        elif [[ "$src_url" =~ ^.*\.tar\.xz$ ]]
-        then
+        elif [[ "$src_url" =~ ^.*\.tar\.xz$ ]]; then
             src_format="tar.xz"
-        elif [[ "$src_url" =~ ^.*\.tar\.bz2$ ]]
-        then
+        elif [[ "$src_url" =~ ^.*\.tar\.bz2$ ]]; then
             src_format="tar.bz2"
-        elif [[ "$src_url" =~ ^.*\.tar$ ]]
-        then
+        elif [[ "$src_url" =~ ^.*\.tar$ ]]; then
             src_format="tar"
-        elif [[ -z "$src_extract" ]]
-        then
+        elif [[ -z "$src_extract" ]]; then
             src_extract="false"
         fi
     fi
@@ -120,8 +112,7 @@ ynh_setup_source() {
     src_format=$(echo "$src_format" | tr '[:upper:]' '[:lower:]')
     src_extract=${src_extract:-true}
 
-    if [[ "$src_extract" != "true" ]] && [[ "$src_extract" != "false" ]]
-    then
+    if [[ "$src_extract" != "true" ]] && [[ "$src_extract" != "false" ]]; then
         ynh_die "For source $source_id, expected either 'true' or 'false' for the extract parameter"
     fi
 
@@ -135,14 +126,12 @@ ynh_setup_source() {
         [ -n "$src_url" ] || ynh_die "Couldn't parse SOURCE_URL from $src_file_path ?"
 
         # If the file was prefetched but somehow doesn't match the sum, rm and redownload it
-        if [ -e "$src_filename" ] && ! echo "${src_sum} ${src_filename}" | sha256sum --check --status
-        then
+        if [ -e "$src_filename" ] && ! echo "${src_sum} ${src_filename}" | sha256sum --check --status; then
             rm -f "$src_filename"
         fi
 
         # Only redownload the file if it wasnt prefetched
-        if [ ! -e "$src_filename" ]
-        then
+        if [ ! -e "$src_filename" ]; then
             # NB. we have to declare the var as local first,
             # otherwise 'local foo=$(false) || echo 'pwet'" does'nt work
             # because local always return 0 ...
@@ -153,8 +142,7 @@ ynh_setup_source() {
         fi
 
         # Check the control sum
-        if ! echo "${src_sum} ${src_filename}" | sha256sum --check --status
-        then
+        if ! echo "${src_sum} ${src_filename}" | sha256sum --check --status; then
             local actual_sum="$(sha256sum ${src_filename} | cut --delimiter=' ' --fields=1)"
             local actual_size="$(du -hs ${src_filename} | cut --fields=1)"
             rm -f ${src_filename}
@@ -185,8 +173,7 @@ ynh_setup_source() {
     mkdir --parents "$dest_dir"
 
     if [[ "$src_extract" == "false" ]]; then
-        if [[ -z "$src_rename" ]]
-        then
+        if [[ -z "$src_rename" ]]; then
             mv $src_filename $dest_dir
         else
             mv $src_filename $dest_dir/$src_rename

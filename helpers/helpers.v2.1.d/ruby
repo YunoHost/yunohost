@@ -25,7 +25,7 @@ _ynh_load_ruby_in_path_and_other_tweaks() {
 
     # Sets the local application-specific Ruby version
     pushd ${install_dir}
-        $RBENV_INSTALL_DIR/bin/rbenv local $ruby_version
+    $RBENV_INSTALL_DIR/bin/rbenv local $ruby_version
     popd
 }
 
@@ -41,7 +41,7 @@ _ynh_load_ruby_in_path_and_other_tweaks() {
 # - `$ruby_dir`, the directory containing the specific version of ruby, which may be used in the systemd config too (e.g. `ExecStart=__RUBY_DIR__/ruby foo bar`)
 #
 # This helper also creates a /etc/profile.d/rbenv.sh that configures PATH environment for rbenv
-ynh_ruby_install () {
+ynh_ruby_install() {
 
     [[ -n "${ruby_version:-}" ]] || ynh_die "\$ruby_version should be defined prior to calling ynh_ruby_install"
 
@@ -59,31 +59,31 @@ ynh_ruby_install () {
     rbenv="$(command -v rbenv $RBENV_INSTALL_DIR/bin/rbenv | grep "$RBENV_INSTALL_DIR/bin/rbenv" | head -1)"
     if [ -n "$rbenv" ]; then
         pushd "${rbenv%/*/*}"
-            if git remote -v 2>/dev/null | grep "https://github.com/rbenv/rbenv.git"; then
-                echo "Updating rbenv..."
-                git pull -q --tags origin master
-                _ynh_ruby_try_bash_extension
-            else
-                echo "Reinstalling rbenv..."
-                cd ..
-                ynh_safe_rm $RBENV_INSTALL_DIR
-                mkdir -p $RBENV_INSTALL_DIR
-                cd $RBENV_INSTALL_DIR
-                git init -q
-                git remote add -f -t master origin https://github.com/rbenv/rbenv.git > /dev/null 2>&1
-                git checkout -q -b master origin/master
-                _ynh_ruby_try_bash_extension
-                rbenv=$RBENV_INSTALL_DIR/bin/rbenv
-            fi
-        popd
-    else
-        echo "Installing rbenv..."
-        pushd $RBENV_INSTALL_DIR
+        if git remote -v 2> /dev/null | grep "https://github.com/rbenv/rbenv.git"; then
+            echo "Updating rbenv..."
+            git pull -q --tags origin master
+            _ynh_ruby_try_bash_extension
+        else
+            echo "Reinstalling rbenv..."
+            cd ..
+            ynh_safe_rm $RBENV_INSTALL_DIR
+            mkdir -p $RBENV_INSTALL_DIR
+            cd $RBENV_INSTALL_DIR
             git init -q
             git remote add -f -t master origin https://github.com/rbenv/rbenv.git > /dev/null 2>&1
             git checkout -q -b master origin/master
             _ynh_ruby_try_bash_extension
             rbenv=$RBENV_INSTALL_DIR/bin/rbenv
+        fi
+        popd
+    else
+        echo "Installing rbenv..."
+        pushd $RBENV_INSTALL_DIR
+        git init -q
+        git remote add -f -t master origin https://github.com/rbenv/rbenv.git > /dev/null 2>&1
+        git checkout -q -b master origin/master
+        _ynh_ruby_try_bash_extension
+        rbenv=$RBENV_INSTALL_DIR/bin/rbenv
         popd
     fi
 
@@ -92,10 +92,10 @@ ynh_ruby_install () {
     ruby_build="$(command -v "$RBENV_INSTALL_DIR"/plugins/*/bin/rbenv-install rbenv-install | head -1)"
     if [ -n "$ruby_build" ]; then
         pushd "${ruby_build%/*/*}"
-            if git remote -v 2>/dev/null | grep "https://github.com/rbenv/ruby-build.git"; then
-                echo "Updating ruby-build..."
-                git pull -q origin master
-            fi
+        if git remote -v 2> /dev/null | grep "https://github.com/rbenv/ruby-build.git"; then
+            echo "Updating ruby-build..."
+            git pull -q origin master
+        fi
         popd
     else
         echo "Installing ruby-build..."
@@ -105,10 +105,10 @@ ynh_ruby_install () {
     rbenv_alias="$(command -v "$RBENV_INSTALL_DIR"/plugins/*/bin/rbenv-alias rbenv-alias | head -1)"
     if [ -n "$rbenv_alias" ]; then
         pushd "${rbenv_alias%/*/*}"
-            if git remote -v 2>/dev/null | grep "https://github.com/tpope/rbenv-aliases.git"; then
-                echo "Updating rbenv-aliases..."
-                git pull -q origin master
-            fi
+        if git remote -v 2> /dev/null | grep "https://github.com/tpope/rbenv-aliases.git"; then
+            echo "Updating rbenv-aliases..."
+            git pull -q origin master
+        fi
         popd
     else
         echo "Installing rbenv-aliases..."
@@ -118,10 +118,10 @@ ynh_ruby_install () {
     rbenv_latest="$(command -v "$RBENV_INSTALL_DIR"/plugins/*/bin/rbenv-latest rbenv-latest | head -1)"
     if [ -n "$rbenv_latest" ]; then
         pushd "${rbenv_latest%/*/*}"
-            if git remote -v 2>/dev/null | grep "https://github.com/momo-lab/xxenv-latest.git"; then
-                echo "Updating xxenv-latest..."
-                git pull -q origin master
-            fi
+        if git remote -v 2> /dev/null | grep "https://github.com/momo-lab/xxenv-latest.git"; then
+            echo "Updating xxenv-latest..."
+            git pull -q origin master
+        fi
         popd
     else
         echo "Installing xxenv-latest..."
@@ -153,8 +153,7 @@ ynh_ruby_install () {
     ruby_version=$final_ruby_version
 
     # Remove app virtualenv
-    if rbenv alias --list | grep --quiet "$app "
-    then
+    if rbenv alias --list | grep --quiet "$app "; then
         rbenv alias $app --remove
     fi
 
@@ -165,7 +164,7 @@ ynh_ruby_install () {
     _ynh_ruby_cleanup
 
     # Set environment for Ruby users
-    echo  "#rbenv
+    echo "#rbenv
 export RBENV_ROOT=$RBENV_INSTALL_DIR
 export PATH=\"$RBENV_INSTALL_DIR/bin:$PATH\"
 eval \"\$(rbenv init -)\"
@@ -182,7 +181,7 @@ eval \"\$(rbenv init -)\"
 # This helper will also cleanup unused Ruby versions
 #
 # usage: ynh_ruby_remove
-ynh_ruby_remove () {
+ynh_ruby_remove() {
 
     [[ -n "${ruby_version:-}" ]] || ynh_die "\$ruby_version should be defined prior to calling ynh_ruby_remove"
 
@@ -208,34 +207,29 @@ ynh_ruby_remove () {
 # This helper will check what Ruby version are no more required,
 # and uninstall them
 # If no app uses Ruby, rbenv will be also removed.
-_ynh_ruby_cleanup () {
+_ynh_ruby_cleanup() {
 
     # List required Ruby versions
     local installed_apps=$(yunohost app list | grep -oP 'id: \K.*$')
     local required_ruby_versions=""
-    for installed_app in $installed_apps
-    do
+    for installed_app in $installed_apps; do
         local installed_app_ruby_version=$(ynh_app_setting_get --app=$installed_app --key="ruby_version")
-        if [[ -n "$installed_app_ruby_version" ]]
-        then
+        if [[ -n "$installed_app_ruby_version" ]]; then
             required_ruby_versions="${installed_app_ruby_version}\n${required_ruby_versions}"
         fi
     done
 
     # Remove no more needed Ruby versions
     local installed_ruby_versions=$(rbenv versions --bare --skip-aliases | grep -Ev '/')
-    for installed_ruby_version in $installed_ruby_versions
-    do
-        if ! echo ${required_ruby_versions} | grep -q "${installed_ruby_version}"
-        then
+    for installed_ruby_version in $installed_ruby_versions; do
+        if ! echo ${required_ruby_versions} | grep -q "${installed_ruby_version}"; then
             echo "Removing Ruby-$installed_ruby_version"
             $RBENV_INSTALL_DIR/bin/rbenv uninstall --force $installed_ruby_version
         fi
     done
 
     # If none Ruby version is required
-    if [[ -z "$required_ruby_versions" ]]
-    then
+    if [[ -z "$required_ruby_versions" ]]; then
         # Remove rbenv environment configuration
         echo "Removing rbenv"
         ynh_safe_rm "$RBENV_INSTALL_DIR"
@@ -244,9 +238,9 @@ _ynh_ruby_cleanup () {
 }
 
 _ynh_ruby_try_bash_extension() {
-  if [ -x src/configure ]; then
-    src/configure && make -C src 2>&1 || {
-      ynh_print_info "Optional bash extension failed to build, but things will still work normally."
-    }
-  fi
+    if [ -x src/configure ]; then
+        src/configure && make -C src 2>&1 || {
+            ynh_print_info "Optional bash extension failed to build, but things will still work normally."
+        }
+    fi
 }

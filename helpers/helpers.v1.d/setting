@@ -120,7 +120,7 @@ ynh_app_setting_delete() {
 #
 ynh_app_setting() {
     set +o xtrace # set +x
-    ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python3 - <<EOF
+    ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python3 - << EOF
 import os, yaml, sys
 app, action = os.environ['APP'], os.environ['ACTION'].lower()
 key, value = os.environ['KEY'], os.environ.get('VALUE', None)

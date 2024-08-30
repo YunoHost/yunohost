@@ -39,11 +39,11 @@
 # This option is meant for advanced use-cases where the "simple" templating
 # mode ain't enough because you need conditional blocks or loops.
 #
-# For a full documentation of jinja's syntax you can refer to: 
+# For a full documentation of jinja's syntax you can refer to:
 # https://jinja.palletsprojects.com/en/3.1.x/templates/
 #
 # Note that in YunoHost context, all variables are from shell variables and therefore are strings
-# 
+#
 # ##### Keeping track of manual changes by the admin
 #
 # The helper will verify the checksum and backup the destination file
@@ -83,10 +83,9 @@ ynh_add_config() {
     chmod 640 $destination
     _ynh_apply_default_permissions $destination
 
-    if [[ "$jinja" == 1 ]]
-    then
+    if [[ "$jinja" == 1 ]]; then
         # This is ran in a subshell such that the "export" does not "contaminate" the main process
-        (
+        (   
             export $(compgen -v)
             j2 "$template_path" -f env -o $destination
         )
@@ -403,5 +402,5 @@ ynh_render_template() {
     # Taken from https://stackoverflow.com/a/35009576
     python3 -c 'import os, sys, jinja2; sys.stdout.write(
                     jinja2.Template(sys.stdin.read()
-                    ).render(os.environ));' <$template_path >$output_path
+                    ).render(os.environ));' < $template_path > $output_path
 }

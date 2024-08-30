@@ -39,8 +39,7 @@ ynh_apt_install_dependencies() {
     # The (?<=php) syntax corresponds to lookbehind ;)
     local specific_php_version=$(grep -oP '(?<=php)[0-9.]+(?=-|\>|)' <<< "$dependencies" | sort -u)
 
-    if [[ -n "$specific_php_version" ]]
-    then
+    if [[ -n "$specific_php_version" ]]; then
         # Cover a small edge case where a packager could have specified "php7.4-pwet php5-gni" which is confusing
         [[ $(echo $specific_php_version | wc -l) -eq 1 ]] \
             || ynh_die "Inconsistent php versions in dependencies ... found : $specific_php_version"
@@ -51,8 +50,7 @@ ynh_apt_install_dependencies() {
 
         # If the PHP version changed, remove the old fpm conf
         if [ -n "$old_php_version" ] && [ "$old_php_version" != "$specific_php_version" ]; then
-            if [[ -f "/etc/php/$php_version/fpm/pool.d/$app.conf" ]]
-            then
+            if [[ -f "/etc/php/$php_version/fpm/pool.d/$app.conf" ]]; then
                 ynh_backup_if_checksum_is_different "/etc/php/$php_version/fpm/pool.d/$app.conf"
                 ynh_config_remove_phpfpm
             fi
@@ -61,8 +59,7 @@ ynh_apt_install_dependencies() {
         ynh_app_setting_set --key=php_version --value=$specific_php_version
 
         # Set the default php version back as the default version for php-cli.
-        if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION
-        then
+        if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION; then
             update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
         fi
     elif grep --quiet 'php' <<< "$dependencies"; then
@@ -77,13 +74,11 @@ ynh_apt_install_dependencies() {
     # upgrade script where ynh_apt_install_dependencies is called with this
     # expected effect) Otherwise, any subsequent call will add dependencies
     # to those already present in the equivs control file.
-    if [[ $YNH_APT_INSTALL_DEPENDENCIES_REPLACE == "true" ]]
-    then
+    if [[ $YNH_APT_INSTALL_DEPENDENCIES_REPLACE == "true" ]]; then
         YNH_APT_INSTALL_DEPENDENCIES_REPLACE="false"
     else
         local current_dependencies=""
-        if _ynh_apt_package_is_installed "${app_ynh_deps}"
-        then
+        if _ynh_apt_package_is_installed "${app_ynh_deps}"; then
             current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${app_ynh_deps}) "
             current_dependencies=${current_dependencies// | /|}
         fi
@@ -100,7 +95,7 @@ ynh_apt_install_dependencies() {
     # For some reason, dpkg-deb insists for folder perm to be 755 and sometimes it's 777 o_O?
     chmod -R 755 ${TMPDIR}/${app_ynh_deps}
 
-    cat >${TMPDIR}/${app_ynh_deps}/DEBIAN/control <<EOF
+    cat > ${TMPDIR}/${app_ynh_deps}/DEBIAN/control << EOF
 Section: misc
 Priority: optional
 Package: ${app_ynh_deps}
@@ -145,8 +140,7 @@ EOF
     # Specific tweak related to Postgresql
     # -> trigger postgresql regenconf if we may have just installed postgresql
     local psql_installed2="$(_ynh_apt_package_is_installed "postgresql-$PSQL_VERSION" && echo yes || echo no)"
-    if [[ "$psql_installed" != "$psql_installed2" ]]
-    then
+    if [[ "$psql_installed" != "$psql_installed2" ]]; then
         yunohost tools regen-conf postgresql
     fi
 
@@ -168,16 +162,14 @@ ynh_apt_remove_dependencies() {
 
     # Edge case where the app dep may be on hold,
     # cf https://forum.yunohost.org/t/migration-error-cause-of-ffsync/20675/4
-    if apt-mark showhold | grep -q -w ${app_ynh_deps}
-    then
+    if apt-mark showhold | grep -q -w ${app_ynh_deps}; then
         apt-mark unhold ${app_ynh_deps}
     fi
 
     # Remove the fake package and its dependencies if they not still used.
     # (except if dpkg doesn't know anything about the package,
     # which should be symptomatic of a failed install, and we don't want bash to report an error)
-    if dpkg-query --show ${app_ynh_deps} &>/dev/null
-    then
+    if dpkg-query --show ${app_ynh_deps} &> /dev/null; then
         _ynh_apt autoremove --purge ${app_ynh_deps}
     fi
 }
@@ -206,11 +198,13 @@ ynh_apt_install_dependencies_from_extra_repository() {
     if [[ "${repo_parts[0]}" == "deb" ]]; then
         index=1
     fi
-    uri="${repo_parts[$index]}" ; index=$((index+1))
-    suite="${repo_parts[$index]}" ; index=$((index+1))
+    uri="${repo_parts[$index]}"
+    index=$((index + 1))
+    suite="${repo_parts[$index]}"
+    index=$((index + 1))
 
     # Get the components
-    if (( "${#repo_parts[@]}" > 0 )); then
+    if (("${#repo_parts[@]}" > 0)); then
         component="${repo_parts[*]:$index}"
     fi
 
@@ -280,7 +274,7 @@ _ynh_wait_dpkg_free() {
     # With seq 1 17, timeout will be almost 30 minutes
     for try in $(seq 1 17); do
         # Check if /var/lib/dpkg/lock is used by another process
-        if lsof /var/lib/dpkg/lock >/dev/null; then
+        if lsof /var/lib/dpkg/lock > /dev/null; then
             echo "apt is already in use..."
             # Sleep an exponential time at each round
             sleep $((try * try))
@@ -298,7 +292,7 @@ _ynh_wait_dpkg_free() {
                     set -o xtrace # set -x
                     return 1
                 fi
-            done 9<<<"$(ls -1 $dpkg_dir)"
+            done 9<<< "$(ls -1 $dpkg_dir)"
             set -o xtrace # set -x
             return 0
         fi
@@ -310,14 +304,14 @@ _ynh_wait_dpkg_free() {
 # Check either a package is installed or not
 _ynh_apt_package_is_installed() {
     local package=$1
-    dpkg-query --show --showformat='${db:Status-Status}' "$package" 2>/dev/null \
-        | grep --quiet "^installed$" &>/dev/null
+    dpkg-query --show --showformat='${db:Status-Status}' "$package" 2> /dev/null \
+        | grep --quiet "^installed$" &> /dev/null
 }
 
 # Return the installed version of an apt package, if installed
 _ynh_apt_package_version() {
     if _ynh_apt_package_is_installed "$package"; then
-        dpkg-query --show --showformat='${Version}' "$package" 2>/dev/null
+        dpkg-query --show --showformat='${Version}' "$package" 2> /dev/null
     else
         echo ''
     fi

@@ -16,11 +16,9 @@ ynh_use_logrotate() {
 
     # Stupid patch to ignore legacy --non-append and --nonappend
     # which was never properly understood and improperly used and kind of bullshit
-    local all_args=( ${@} )
-    for I in $(seq 0 $(($# - 1)))
-    do
-        if [[ "${all_args[$I]}" == "--non-append" ]] || [[ "${all_args[$I]}" == "--nonappend" ]]
-        then
+    local all_args=(${@})
+    for I in $(seq 0 $(($# - 1))); do
+        if [[ "${all_args[$I]}" == "--non-append" ]] || [[ "${all_args[$I]}" == "--nonappend" ]]; then
             unset all_args[$I]
         fi
     done
@@ -43,8 +41,7 @@ ynh_use_logrotate() {
     fi
     set +o noglob
 
-    for stuff in $logfile
-    do
+    for stuff in $logfile; do
         mkdir --parents $(dirname "$stuff")
     done
 
@@ -54,7 +51,7 @@ ynh_use_logrotate() {
     fi
 
     local tempconf="$(mktemp)"
-    cat << EOF >$tempconf
+    cat << EOF > $tempconf
 $logfile {
     # Rotate if the logfile exceeds 100Mo
     size 100M
@@ -76,8 +73,7 @@ $logfile {
 }
 EOF
 
-    if [[ "$FIRST_CALL_TO_LOGROTATE" == "true" ]]
-    then
+    if [[ "$FIRST_CALL_TO_LOGROTATE" == "true" ]]; then
         cat $tempconf > /etc/logrotate.d/$app
     else
         cat $tempconf >> /etc/logrotate.d/$app

@@ -29,7 +29,7 @@
 # This option is meant for advanced use-cases where the "simple" templating
 # mode ain't enough because you need conditional blocks or loops.
 #
-# For a full documentation of jinja's syntax you can refer to: 
+# For a full documentation of jinja's syntax you can refer to:
 # https://jinja.palletsprojects.com/en/3.1.x/templates/
 #
 # Note that in YunoHost context, all variables are from shell variables and therefore are strings
@@ -70,10 +70,9 @@ ynh_config_add() {
     chmod 640 $destination
     _ynh_apply_default_permissions $destination
 
-    if [[ "$jinja" == 1 ]]
-    then
+    if [[ "$jinja" == 1 ]]; then
         # This is ran in a subshell such that the "export" does not "contaminate" the main process
-        (
+        (   
             export $(compgen -v)
             j2 "$template_path" -f env -o $destination
         )
