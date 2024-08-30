@@ -162,7 +162,7 @@ ynh_backup() {
     # ==============================================================================
     local src=$(echo "${src_path}" | sed --regexp-extended 's/"/\"\"/g')
     local dest=$(echo "${dest_path}" | sed --regexp-extended 's/"/\"\"/g')
-    echo "\"${src}\",\"${dest}\"" >>"${YNH_BACKUP_CSV}"
+    echo "\"${src}\",\"${dest}\"" >> "${YNH_BACKUP_CSV}"
 
     # ==============================================================================
 
@@ -289,8 +289,7 @@ ynh_restore_file() {
     # Boring hack for nginx conf file mapped to php7.3
     # Note that there's no need to patch the fpm config because most php apps
     # will call "ynh_add_fpm_config" during restore, effectively recreating the file from scratch
-    if [[ "${dest_path}" == "/etc/nginx/conf.d/"* ]] && grep 'php7.3.*sock' "${dest_path}"
-    then
+    if [[ "${dest_path}" == "/etc/nginx/conf.d/"* ]] && grep 'php7.3.*sock' "${dest_path}"; then
         sed -i 's/php7.3/php7.4/g' "${dest_path}"
     fi
 }
@@ -376,8 +375,7 @@ ynh_backup_if_checksum_is_different() {
             echo "$backup_file_checksum" # Return the name of the backup file
             if [ ${PACKAGE_CHECK_EXEC:-0} -eq 1 ]; then
                 local file_path_base64=$(echo "$file" | base64 -w0)
-                if test -e /var/cache/yunohost/appconfbackup/original_${file_path_base64}
-                then
+                if test -e /var/cache/yunohost/appconfbackup/original_${file_path_base64}; then
                     ynh_print_warn "Diff with the original file:"
                     diff --report-identical-files --unified --color=always /var/cache/yunohost/appconfbackup/original_${file_path_base64} $file >&2 || true
                 fi
@@ -412,7 +410,7 @@ ynh_delete_file_checksum() {
 #
 ynh_backup_archive_exists() {
     yunohost backup list --output-as json --quiet \
-        | jq -e --arg archive "$1" '.archives | index($archive)' >/dev/null
+        | jq -e --arg archive "$1" '.archives | index($archive)' > /dev/null
 }
 
 # Make a backup in case of failed upgrade
@@ -455,7 +453,7 @@ ynh_backup_before_upgrade() {
             # If the backup succeeded, remove the previous backup
             if ynh_backup_archive_exists "$app_bck-pre-upgrade$old_backup_number"; then
                 # Remove the previous backup only if it exists
-                yunohost backup delete $app_bck-pre-upgrade$old_backup_number >/dev/null
+                yunohost backup delete $app_bck-pre-upgrade$old_backup_number > /dev/null
             fi
         else
             ynh_die --message="Backup failed, the upgrade process was aborted."
@@ -494,8 +492,7 @@ ynh_restore_upgradebackup() {
             yunohost app remove $app
             # Restore the backup
             yunohost backup restore $app_bck-pre-upgrade$backup_number --apps $app --force --debug
-            if [[ -d /etc/yunohost/apps/$app ]]
-            then
+            if [[ -d /etc/yunohost/apps/$app ]]; then
                 ynh_die --message="The app was restored to the way it was before the failed upgrade."
             else
                 ynh_die --message="Uhoh ... Yunohost failed to restore the app to the way it was before the failed upgrade :|"

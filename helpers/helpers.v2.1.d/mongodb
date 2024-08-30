@@ -12,16 +12,15 @@
 #
 ynh_mongo_exec() {
     # ============ Argument parsing =============
-    local -A args_array=( [d]=database= [c]=command= )
+    local -A args_array=([d]=database= [c]=command=)
     local database
     local command
     ynh_handle_getopts_args "$@"
     database="${database:-}"
     # ===========================================
 
-    if [ -n "$database" ]
-    then
-        mongosh --quiet <<EOF
+    if [ -n "$database" ]; then
+        mongosh --quiet << EOF
 use $database
 ${command}
 quit()
@@ -44,7 +43,7 @@ EOF
 #
 ynh_mongo_drop_db() {
     # ============ Argument parsing =============
-    local -A args_array=( [d]=database= )
+    local -A args_array=([d]=database=)
     local database
     ynh_handle_getopts_args "$@"
     # ===========================================
@@ -63,7 +62,7 @@ ynh_mongo_drop_db() {
 #
 ynh_mongo_dump_db() {
     # ============ Argument parsing =============
-    local -A args_array=( [d]=database= )
+    local -A args_array=([d]=database=)
     local database
     ynh_handle_getopts_args "$@"
     # ===========================================
@@ -83,7 +82,7 @@ ynh_mongo_dump_db() {
 #
 ynh_mongo_create_user() {
     # ============ Argument parsing =============
-    local -A args_array=( [u]=db_user= [n]=db_name= [p]=db_pwd= )
+    local -A args_array=([u]=db_user= [n]=db_name= [p]=db_pwd=)
     local db_user
     local db_name
     local db_pwd
@@ -111,8 +110,7 @@ ynh_mongo_database_exists() {
     ynh_handle_getopts_args "$@"
     # ===========================================
 
-    if [ $(ynh_mongo_exec --command='db.getMongo().getDBNames().indexOf("'${database}'")') -lt 0 ]
-    then
+    if [ $(ynh_mongo_exec --command='db.getMongo().getDBNames().indexOf("'${database}'")') -lt 0 ]; then
         return 1
     else
         return 0
@@ -129,7 +127,7 @@ ynh_mongo_database_exists() {
 #
 ynh_mongo_restore_db() {
     # ============ Argument parsing =============
-    local -A args_array=( [d]=database= )
+    local -A args_array=([d]=database=)
     local database
     ynh_handle_getopts_args "$@"
     # ===========================================
@@ -148,7 +146,7 @@ ynh_mongo_restore_db() {
 #
 ynh_mongo_drop_user() {
     # ============ Argument parsing =============
-    local -A args_array=( [u]=db_user= [n]=db_name= )
+    local -A args_array=([u]=db_user= [n]=db_name=)
     local db_user
     local db_name
     ynh_handle_getopts_args "$@"
@@ -170,7 +168,7 @@ ynh_mongo_drop_user() {
 #
 ynh_mongo_setup_db() {
     # ============ Argument parsing =============
-    local -A args_array=( [u]=db_user= [n]=db_name= [p]=db_pwd= )
+    local -A args_array=([u]=db_user= [n]=db_name= [p]=db_pwd=)
     local db_user
     local db_name
     db_pwd=""
@@ -197,14 +195,14 @@ ynh_mongo_setup_db() {
 #
 ynh_mongo_remove_db() {
     # ============ Argument parsing =============
-    local -A args_array=( [u]=db_user= [n]=db_name= )
+    local -A args_array=([u]=db_user= [n]=db_name=)
     local db_user
     local db_name
     ynh_handle_getopts_args "$@"
     # ===========================================
 
-    if ynh_mongo_database_exists --database=$db_name; then  # Check if the database exists
-        ynh_mongo_drop_db --database=$db_name  # Remove the database
+    if ynh_mongo_database_exists --database=$db_name; then # Check if the database exists
+        ynh_mongo_drop_db --database=$db_name              # Remove the database
     else
         ynh_print_warn "Database $db_name not found"
     fi
@@ -262,8 +260,7 @@ ynh_install_mongo() {
 #
 ynh_remove_mongo() {
     # Only remove the mongodb service if it is not installed.
-    if ! _ynh_apt_package_is_installed "mongodb*"
-    then
+    if ! _ynh_apt_package_is_installed "mongodb*"; then
         ynh_print_info "Removing MongoDB service..."
         mongodb_servicename=mongod
         # Remove the mongodb service

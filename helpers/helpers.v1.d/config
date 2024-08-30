@@ -6,11 +6,11 @@ _ynh_app_config_get_one() {
     local bind="$3"
     local getter="get__${short_setting}"
     # Get value from getter if exists
-    if type -t $getter 2>/dev/null | grep -q '^function$' 2>/dev/null; then
+    if type -t $getter 2> /dev/null | grep -q '^function$' 2> /dev/null; then
         old[$short_setting]="$($getter)"
         formats[${short_setting}]="yaml"
 
-    elif [[ "$bind" == *"("* ]] && type -t "get__${bind%%(*}" 2>/dev/null | grep -q '^function$' 2>/dev/null; then
+    elif [[ "$bind" == *"("* ]] && type -t "get__${bind%%(*}" 2> /dev/null | grep -q '^function$' 2> /dev/null; then
         old[$short_setting]="$("get__${bind%%(*}" $short_setting $type $bind)"
         formats[${short_setting}]="yaml"
 
@@ -22,7 +22,7 @@ _ynh_app_config_get_one() {
         if [[ "$bind" == "settings" ]]; then
             ynh_die --message="File '${short_setting}' can't be stored in settings"
         fi
-        old[$short_setting]="$(ls "$bind" 2>/dev/null || echo YNH_NULL)"
+        old[$short_setting]="$(ls "$bind" 2> /dev/null || echo YNH_NULL)"
         file_hash[$short_setting]="true"
 
     # Get multiline text from settings or from a full file
@@ -32,7 +32,7 @@ _ynh_app_config_get_one() {
         elif [[ "$bind" == *":"* ]]; then
             ynh_die --message="For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
         else
-            old[$short_setting]="$(cat "$bind" 2>/dev/null || echo YNH_NULL)"
+            old[$short_setting]="$(cat "$bind" 2> /dev/null || echo YNH_NULL)"
         fi
 
     # Get value from a kind of key/value file
@@ -59,10 +59,10 @@ _ynh_app_config_apply_one() {
     local type="${types[$short_setting]}"
     if [ "${changed[$short_setting]}" == "true" ]; then
         # Apply setter if exists
-        if type -t $setter 2>/dev/null | grep -q '^function$' 2>/dev/null; then
+        if type -t $setter 2> /dev/null | grep -q '^function$' 2> /dev/null; then
             $setter
 
-        elif [[ "$bind" == *"("* ]] && type -t "set__${bind%%(*}" 2>/dev/null | grep -q '^function$' 2>/dev/null; then
+        elif [[ "$bind" == *"("* ]] && type -t "set__${bind%%(*}" 2> /dev/null | grep -q '^function$' 2> /dev/null; then
             "set__${bind%%(*}" $short_setting $type $bind
 
         elif [[ "$bind" == "null" ]]; then
@@ -100,7 +100,7 @@ _ynh_app_config_apply_one() {
             fi
             local bind_file="$bind"
             ynh_backup_if_checksum_is_different --file="$bind_file"
-            echo "${!short_setting}" >"$bind_file"
+            echo "${!short_setting}" > "$bind_file"
             ynh_store_file_checksum --file="$bind_file" --update_only
             ynh_print_info --message="File '$bind_file' overwritten with the content provided in question '${short_setting}'"
 
@@ -130,7 +130,7 @@ _ynh_app_config_apply_one() {
 _ynh_app_config_get() {
     for line in $YNH_APP_CONFIG_PANEL_OPTIONS_TYPES_AND_BINDS; do
         # Split line into short_setting, type and bind
-        IFS='|' read short_setting type bind <<<"$line"
+        IFS='|' read short_setting type bind <<< "$line"
         binds[${short_setting}]="$bind"
         types[${short_setting}]="$type"
         file_hash[${short_setting}]=""
@@ -206,9 +206,9 @@ _ynh_app_config_validate() {
     for short_setting in "${!old[@]}"; do
         [[ "${changed[$short_setting]}" == "false" ]] && continue
         local result=""
-        if type -t validate__$short_setting | grep -q '^function$' 2>/dev/null; then
+        if type -t validate__$short_setting | grep -q '^function$' 2> /dev/null; then
             result="$(validate__$short_setting)"
-        elif [[ "$bind" == *"("* ]] && type -t "validate__${bind%%(*}" 2>/dev/null | grep -q '^function$' 2>/dev/null; then
+        elif [[ "$bind" == *"("* ]] && type -t "validate__${bind%%(*}" 2> /dev/null | grep -q '^function$' 2> /dev/null; then
             "validate__${bind%%(*}" $short_setting
         fi
         if [ -n "$result" ]; then
@@ -263,7 +263,7 @@ ynh_app_config_apply() {
 ynh_app_action_run() {
     local runner="run__$1"
     # Get value from getter if exists
-    if type -t "$runner" 2>/dev/null | grep -q '^function$' 2>/dev/null; then
+    if type -t "$runner" 2> /dev/null | grep -q '^function$' 2> /dev/null; then
         $runner
         #ynh_return "result:"
         #ynh_return "$(echo "${result}" | sed 's/^/  /g')"
@@ -281,22 +281,23 @@ ynh_app_config_run() {
     declare -Ag formats=()
 
     case $1 in
-    show)
-        ynh_app_config_get
-        ynh_app_config_show
-        ;;
-    apply)
-        max_progression=4
-        ynh_script_progression --message="Reading config panel description and current configuration..."
-        ynh_app_config_get
+        show)
+            ynh_app_config_get
+            ynh_app_config_show
+            ;;
+        apply)
+            max_progression=4
+            ynh_script_progression --message="Reading config panel description and current configuration..."
+            ynh_app_config_get
 
-        ynh_app_config_validate
+            ynh_app_config_validate
 
-        ynh_script_progression --message="Applying the new configuration..."
-        ynh_app_config_apply
-        ynh_script_progression --message="Configuration of $app completed" --last
-        ;;
-    *)
-        ynh_app_action_run $1
+            ynh_script_progression --message="Applying the new configuration..."
+            ynh_app_config_apply
+            ynh_script_progression --message="Configuration of $app completed" --last
+            ;;
+        *)
+            ynh_app_action_run $1
+            ;;
     esac
 }

@@ -14,7 +14,7 @@ do_init_regen() {
 
     # set default current_host
     [[ -f /etc/yunohost/current_host ]] \
-        || echo "yunohost.org" >/etc/yunohost/current_host
+        || echo "yunohost.org" > /etc/yunohost/current_host
 
     # copy default services and firewall
     [[ -f /etc/yunohost/firewall.yml ]] \
@@ -45,7 +45,7 @@ do_init_regen() {
     chown root:root /home/yunohost.backup/archives # This is later changed to root:admins once the admins group exists
 
     # Empty ssowat json persistent conf
-    echo "{}" >'/etc/ssowat/conf.json.persistent'
+    echo "{}" > '/etc/ssowat/conf.json.persistent'
     chmod 644 /etc/ssowat/conf.json.persistent
     chown root:root /etc/ssowat/conf.json.persistent
 
@@ -74,8 +74,7 @@ do_init_regen() {
 
     # Change dpkg vendor
     # see https://wiki.debian.org/Derivatives/Guidelines#Vendor
-    if readlink -f /etc/dpkg/origins/default | grep -q debian;
-    then
+    if readlink -f /etc/dpkg/origins/default | grep -q debian; then
         rm -f /etc/dpkg/origins/default
         ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
     fi
@@ -93,19 +92,19 @@ do_pre_regen() {
     # add cron job for diagnosis to be ran at 7h and 19h + a random delay between
     # 0 and 20min, meant to avoid every instances running their diagnosis at
     # exactly the same time, which may overload the diagnosis server.
-    cat >$pending_dir/etc/cron.d/yunohost-diagnosis <<EOF
+    cat > $pending_dir/etc/cron.d/yunohost-diagnosis << EOF
 SHELL=/bin/bash
 0 7,19 * * * root : YunoHost Automatic Diagnosis; sleep \$((RANDOM\\%1200)); yunohost diagnosis run --email > /dev/null 2>/dev/null || echo "Running the automatic diagnosis failed miserably"
 EOF
 
     # Cron job that upgrade the app list everyday
-    cat >$pending_dir/etc/cron.daily/yunohost-fetch-apps-catalog <<EOF
+    cat > $pending_dir/etc/cron.daily/yunohost-fetch-apps-catalog << EOF
 #!/bin/bash
 sleep \$((RANDOM%3600)); yunohost tools update apps > /dev/null
 EOF
 
     # Cron job that renew lets encrypt certificates if there's any that needs renewal
-    cat >$pending_dir/etc/cron.daily/yunohost-certificate-renew <<EOF
+    cat > $pending_dir/etc/cron.daily/yunohost-certificate-renew << EOF
 #!/bin/bash
 yunohost domain cert renew --email
 EOF
@@ -113,8 +112,8 @@ EOF
     # If we subscribed to a dyndns domain, add the corresponding cron
     # - delay between 0 and 60 secs to spread the check over a 1 min window
     # - do not run the command if some process already has the lock, to avoid queuing hundreds of commands...
-    if ls -l /etc/yunohost/dyndns/K*.key 2>/dev/null; then
-        cat >$pending_dir/etc/cron.d/yunohost-dyndns <<EOF
+    if ls -l /etc/yunohost/dyndns/K*.key 2> /dev/null; then
+        cat > $pending_dir/etc/cron.d/yunohost-dyndns << EOF
 SHELL=/bin/bash
 # Every 10 minutes,
 #   - (sleep random 60 is here to spread requests over a 1-min window)
@@ -129,10 +128,9 @@ EOF
     fi
 
     # Skip ntp if inside a container (inspired from the conf of systemd-timesyncd)
-    if systemctl | grep -q 'ntp.service'
-    then
+    if systemctl | grep -q 'ntp.service'; then
         mkdir -p ${pending_dir}/etc/systemd/system/ntp.service.d/
-        cat >${pending_dir}/etc/systemd/system/ntp.service.d/ynh-override.conf <<EOF
+        cat > ${pending_dir}/etc/systemd/system/ntp.service.d/ynh-override.conf << EOF
 [Unit]
 ConditionCapability=CAP_SYS_TIME
 ConditionVirtualization=!container
@@ -141,7 +139,7 @@ EOF
 
     # Make nftable conflict with yunohost-firewall
     mkdir -p ${pending_dir}/etc/systemd/system/nftables.service.d/
-    cat >${pending_dir}/etc/systemd/system/nftables.service.d/ynh-override.conf <<EOF
+    cat > ${pending_dir}/etc/systemd/system/nftables.service.d/ynh-override.conf << EOF
 [Unit]
 # yunohost-firewall and nftables conflict with each other
 Conflicts=yunohost-firewall.service
@@ -151,7 +149,7 @@ EOF
 
     # Don't suspend computer on LidSwitch
     mkdir -p ${pending_dir}/etc/systemd/logind.conf.d/
-    cat >${pending_dir}/etc/systemd/logind.conf.d/ynh-override.conf <<EOF
+    cat > ${pending_dir}/etc/systemd/logind.conf.d/ynh-override.conf << EOF
 [Login]
 HandleLidSwitch=ignore
 HandleLidSwitchDocked=ignore
@@ -192,8 +190,7 @@ do_post_regen() {
     find /etc/systemd/system/*.service -type f | xargs -r chown root:root
     find /etc/systemd/system/*.service -type f | xargs -r chmod 0644
 
-    if ls -l /etc/php/*/fpm/pool.d/*.conf
-    then
+    if ls -l /etc/php/*/fpm/pool.d/*.conf; then
         chown root:root /etc/php/*/fpm/pool.d/*.conf
         chmod 644 /etc/php/*/fpm/pool.d/*.conf
     fi
@@ -222,8 +219,8 @@ do_post_regen() {
     mkdir -p /etc/yunohost/domains
 
     # Misc configuration / state files
-    chown root:root $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null | grep -vw mdns.yml)
-    chmod 600 $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null)
+    chown root:root $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2> /dev/null | grep -vw mdns.yml)
+    chmod 600 $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2> /dev/null)
 
     # Apps folder, custom hooks folder
     [[ ! -e /etc/yunohost/hooks.d ]] || (chown root /etc/yunohost/hooks.d && chmod 700 /etc/yunohost/hooks.d)
@@ -235,15 +232,14 @@ do_post_regen() {
     grep -q '^sftp.app:' /etc/group || groupadd sftp.app
 
     # Propagates changes in systemd service config overrides
-    if systemctl | grep -q 'ntp.service'
-    then
+    if systemctl | grep -q 'ntp.service'; then
         [[ ! "$regen_conf_files" =~ "ntp.service.d/ynh-override.conf" ]] || {
             systemctl daemon-reload
             systemctl restart ntp
         }
     fi
     [[ ! "$regen_conf_files" =~ "nftables.service.d/ynh-override.conf" ]] || systemctl daemon-reload
-    [[ ! "$regen_conf_files" =~ "login.conf.d/ynh-override.conf" ]] ||  {
+    [[ ! "$regen_conf_files" =~ "login.conf.d/ynh-override.conf" ]] || {
         systemctl daemon-reload
         systemctl restart systemd-logind
     }
@@ -263,14 +259,12 @@ do_post_regen() {
 
     # Change dpkg vendor
     # see https://wiki.debian.org/Derivatives/Guidelines#Vendor
-    if readlink -f /etc/dpkg/origins/default | grep -q debian;
-    then
+    if readlink -f /etc/dpkg/origins/default | grep -q debian; then
         rm -f /etc/dpkg/origins/default
         ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
     fi
 
-    if test -e /etc/yunohost/installed && test -e /etc/profile.d/check_yunohost_is_installed.sh
-    then
+    if test -e /etc/yunohost/installed && test -e /etc/profile.d/check_yunohost_is_installed.sh; then
         rm /etc/profile.d/check_yunohost_is_installed.sh
     fi
 }

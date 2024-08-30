@@ -32,7 +32,7 @@ do_init_regen() {
     cp "redirect_to_admin.conf" $nginx_conf_dir/default.d/
 
     # Restart nginx if conf looks good, otherwise display error and exit unhappy
-    nginx -t 2>/dev/null || {
+    nginx -t 2> /dev/null || {
         nginx -t
         exit 1
     }
@@ -58,7 +58,7 @@ do_pre_regen() {
     # remove the panel overlay if this is specified in settings
     panel_overlay=$(yunohost settings get 'misc.portal.ssowat_panel_overlay_enabled' | int_to_bool)
     if [ "$panel_overlay" == "False" ]; then
-        echo "#" >"${nginx_conf_dir}/yunohost_panel.conf.inc"
+        echo "#" > "${nginx_conf_dir}/yunohost_panel.conf.inc"
     fi
 
     # retrieve variables
@@ -86,22 +86,19 @@ do_pre_regen() {
         export domain_cert_ca=$(echo $cert_status \
             | jq ".certificates.\"$domain\".CA_type" \
             | tr -d '"')
-        if echo "$xmpp_domain_list" | grep -q "^$domain$"
-        then
+        if echo "$xmpp_domain_list" | grep -q "^$domain$"; then
             export xmpp_enabled="True"
         else
             export xmpp_enabled="False"
         fi
-        if echo "$mail_domain_list" | grep -q "^$domain$"
-        then
+        if echo "$mail_domain_list" | grep -q "^$domain$"; then
             export mail_enabled="True"
         else
             export mail_enabled="False"
         fi
 
         ynh_render_template "server.tpl.conf" "${nginx_conf_dir}/${domain}.conf"
-        if [ $mail_enabled == "True" ]
-        then
+        if [ $mail_enabled == "True" ]; then
             ynh_render_template "autoconfig.tpl.xml" "${mail_autoconfig_dir}/config-v1.1.xml"
         fi
 
@@ -129,7 +126,7 @@ do_pre_regen() {
     done
 
     # remove old mail-autoconfig files
-    autoconfig_files=$(ls -1 /var/www/.well-known/*/autoconfig/mail/config-v1.1.xml 2>/dev/null || true)
+    autoconfig_files=$(ls -1 /var/www/.well-known/*/autoconfig/mail/config-v1.1.xml 2> /dev/null || true)
     for file in $autoconfig_files; do
         domain=$(basename $(readlink -f $(dirname $file)/../..))
         [[ $YNH_DOMAINS =~ $domain ]] \
@@ -144,8 +141,7 @@ do_pre_regen() {
 do_post_regen() {
     regen_conf_files=$1
 
-    if ls -l /etc/nginx/conf.d/*.d/*.conf
-    then
+    if ls -l /etc/nginx/conf.d/*.d/*.conf; then
         chown root:root /etc/nginx/conf.d/*.d/*.conf
         chmod 644 /etc/nginx/conf.d/*.d/*.conf
     fi
@@ -158,7 +154,7 @@ do_post_regen() {
     done
 
     # Reload nginx if conf looks good, otherwise display error and exit unhappy
-    nginx -t 2>/dev/null || {
+    nginx -t 2> /dev/null || {
         nginx -t
         exit 1
     }

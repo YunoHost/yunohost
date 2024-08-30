@@ -22,8 +22,7 @@ YNH_APP_BASEDIR=${YNH_APP_BASEDIR:-$(realpath ..)}
 ynh_exit_properly() {
     local exit_code=$?
 
-    if [[ "${YNH_APP_ACTION:-}" =~ ^install$|^upgrade$|^restore$ ]]
-    then
+    if [[ "${YNH_APP_ACTION:-}" =~ ^install$|^upgrade$|^restore$ ]]; then
         rm -rf "/var/cache/yunohost/download/"
     fi
 
@@ -39,7 +38,7 @@ ynh_exit_properly() {
     # Small tempo to avoid the next message being mixed up with other DEBUG messages
     sleep 0.5
 
-    if type -t ynh_clean_setup >/dev/null; then # Check if the function exist in the app script.
+    if type -t ynh_clean_setup > /dev/null; then # Check if the function exist in the app script.
         ynh_clean_setup                         # Call the function to do specific cleaning for the app.
     fi
 
@@ -67,8 +66,7 @@ ynh_abort_if_errors() {
 }
 
 # When running an app script with packaging format >= 2, auto-enable ynh_abort_if_errors except for remove script
-if [[ "${YNH_CONTEXT:-}" != "regenconf" ]] && dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} ge 2 && [[ ${YNH_APP_ACTION} != "remove" ]]
-then
+if [[ "${YNH_CONTEXT:-}" != "regenconf" ]] && dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} ge 2 && [[ ${YNH_APP_ACTION} != "remove" ]]; then
     ynh_abort_if_errors
 fi
 
@@ -149,8 +147,7 @@ _acceptable_path_to_delete() {
     local forbidden_paths=$(ls -d / /* /{var,home,usr}/* /etc/{default,sudoers.d,yunohost,cron*} /etc/yunohost/{apps,domains,hooks.d} /opt/yunohost 2> /dev/null)
 
     # Legacy : A couple apps still have data in /home/$app ...
-    if [[ -n "${app:-}" ]]
-    then
+    if [[ -n "${app:-}" ]]; then
         forbidden_paths=$(echo "$forbidden_paths" | grep -v "/home/$app")
     fi
 
@@ -215,19 +212,16 @@ ynh_read_manifest() {
 
     if [ ! -e "${manifest:-}" ]; then
         # If the manifest isn't found, try the common place for backup and restore script.
-        if [ -e "$YNH_APP_BASEDIR/manifest.json" ]
-        then
+        if [ -e "$YNH_APP_BASEDIR/manifest.json" ]; then
             manifest="$YNH_APP_BASEDIR/manifest.json"
-        elif [ -e "$YNH_APP_BASEDIR/manifest.toml" ]
-        then
+        elif [ -e "$YNH_APP_BASEDIR/manifest.toml" ]; then
             manifest="$YNH_APP_BASEDIR/manifest.toml"
         else
             ynh_die --message "No manifest found !?"
         fi
     fi
 
-    if echo "$manifest" | grep -q '\.json$'
-    then
+    if echo "$manifest" | grep -q '\.json$'; then
         jq ".$manifest_key" "$manifest" --raw-output
     else
         cat "$manifest" | python3 -c 'import json, toml, sys; print(json.dumps(toml.load(sys.stdin)))' | jq ".$manifest_key" --raw-output
@@ -387,8 +381,7 @@ _ynh_apply_default_permissions() {
     # Crons should be owned by root
     # Also we don't want systemd conf, nginx conf or others stuff to be owned by the app,
     # otherwise they could self-edit their own systemd conf and escalate privilege
-    if grep -qE '^(/etc/cron|/etc/php|/etc/nginx/conf.d|/etc/fail2ban|/etc/systemd/system)' <<< "$target"
-    then
+    if grep -qE '^(/etc/cron|/etc/php|/etc/nginx/conf.d|/etc/fail2ban|/etc/systemd/system)' <<< "$target"; then
         chmod 400 $target
         chown root:root $target
     fi
@@ -419,7 +412,7 @@ ynh_user_exists() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    yunohost user list --output-as json --quiet | jq -e ".users.\"${username}\"" >/dev/null
+    yunohost user list --output-as json --quiet | jq -e ".users.\"${username}\"" > /dev/null
 }
 
 # Retrieve a YunoHost user information

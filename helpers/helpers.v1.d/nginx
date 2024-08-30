@@ -43,7 +43,6 @@ ynh_remove_nginx_config() {
     ynh_systemd_action --service_name=nginx --action=reload
 }
 
-
 # Regen the nginx config in a change url context
 #
 # usage: ynh_change_url_nginx_config
@@ -53,7 +52,7 @@ ynh_change_url_nginx_config() {
 
     # Make a backup of the original NGINX config file if manually modified
     # (nb: this is possibly different from the same instruction called by
-    # ynh_add_config inside ynh_add_nginx_config because the path may have 
+    # ynh_add_config inside ynh_add_nginx_config because the path may have
     # changed if we're changing the domain too...)
     local old_nginx_conf_path=/etc/nginx/conf.d/$old_domain.d/$app.conf
     ynh_backup_if_checksum_is_different --file="$old_nginx_conf_path"

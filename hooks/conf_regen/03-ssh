@@ -12,7 +12,7 @@ do_pre_regen() {
     # do not listen to IPv6 if unavailable
     [[ -f /proc/net/if_inet6 ]] && ipv6_enabled=true || ipv6_enabled=false
 
-    ssh_keys=$(ls /etc/ssh/ssh_host_{ed25519,rsa,ecdsa}_key 2>/dev/null || true)
+    ssh_keys=$(ls /etc/ssh/ssh_host_{ed25519,rsa,ecdsa}_key 2> /dev/null || true)
 
     # Support different strategy for security configurations
     export compatibility="$(yunohost settings get 'security.ssh.ssh_compatibility')"

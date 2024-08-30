@@ -47,7 +47,7 @@ ynh_mysql_execute_as_root() {
         database="--database=$database"
     fi
 
-    mysql -B "$database" <<<"$sql"
+    mysql -B "$database" <<< "$sql"
 }
 
 # Execute a command from a file as root user
@@ -71,7 +71,7 @@ ynh_mysql_execute_file_as_root() {
         database="--database=$database"
     fi
 
-    mysql -B "$database" <"$file"
+    mysql -B "$database" < "$file"
 }
 
 # Create a database and grant optionnaly privilegies to a user

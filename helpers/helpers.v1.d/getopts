@@ -180,7 +180,7 @@ ynh_handle_getopts_args() {
             # If not, enter in legacy mode and manage the arguments as positionnal ones..
             # Dot not echo, to prevent to go through a helper output. But print only in the log.
             set -x
-            echo "! Helper used in legacy mode !" >/dev/null
+            echo "! Helper used in legacy mode !" > /dev/null
             set +x
             local i
             for i in $(seq 0 $((${#arguments[@]} - 1))); do

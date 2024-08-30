@@ -27,13 +27,11 @@ ynh_backup() {
     local is_data=false
 
     # If the path starts with /var/log/$app or $data_dir
-    if ([[ -n "${app:-}" ]] && [[ "$target" == "/var/log/$app*" ]]) || ([[ -n "${data_dir:-}" ]] && [[ "$target" == "$data_dir*" ]])
-    then
+    if ([[ -n "${app:-}" ]] && [[ "$target" == "/var/log/$app*" ]]) || ([[ -n "${data_dir:-}" ]] && [[ "$target" == "$data_dir*" ]]); then
         is_data=true
     fi
 
-    if [[ -n "${app:-}" ]]
-    then
+    if [[ -n "${app:-}" ]]; then
         local do_not_backup_data=$(ynh_app_setting_get --key=do_not_backup_data)
     fi
 
@@ -83,7 +81,7 @@ ynh_backup() {
     # ==============================================================================
     local src=$(echo "${src_path}" | sed --regexp-extended 's/"/\"\"/g')
     local dest=$(echo "${dest_path}" | sed --regexp-extended 's/"/\"\"/g')
-    echo "\"${src}\",\"${dest}\"" >>"${YNH_BACKUP_CSV}"
+    echo "\"${src}\",\"${dest}\"" >> "${YNH_BACKUP_CSV}"
 
     # ==============================================================================
 
@@ -135,15 +133,13 @@ ynh_restore() {
 
     # If the path starts with /var/log/$app or $data_dir
     local is_data=false
-    if ([[ -n "${app:-}" ]] && [[ "$target" == "/var/log/$app*" ]]) || ([[ -n "${data_dir:-}" ]] && [[ "$target" == "$data_dir*" ]])
-    then
+    if ([[ -n "${app:-}" ]] && [[ "$target" == "/var/log/$app*" ]]) || ([[ -n "${data_dir:-}" ]] && [[ "$target" == "$data_dir*" ]]); then
         is_data=true
     fi
 
     # If archive_path doesn't exist, search for a corresponding path in CSV
     if [ ! -d "$archive_path" ] && [ ! -f "$archive_path" ] && [ ! -L "$archive_path" ]; then
-        if [[ "$is_data" == true ]]
-        then
+        if [[ "$is_data" == true ]]; then
             ynh_print_info "Skipping $target which doesn't exists in the archive, probably because restoring from a safety-backup-before-upgrade"
             # Assume it's not a big deal, we may be restoring a safety-backup-before-upgrade which doesnt contain those
             return 0
@@ -256,8 +252,7 @@ ynh_backup_if_checksum_is_different() {
             echo "$backup_file_checksum" # Return the name of the backup file
             if ynh_in_ci_tests; then
                 local file_path_base64=$(echo "$file" | base64 -w0)
-                if test -e /var/cache/yunohost/appconfbackup/original_${file_path_base64}
-                then
+                if test -e /var/cache/yunohost/appconfbackup/original_${file_path_base64}; then
                     ynh_print_warn "Diff with the original file:"
                     diff --report-identical-files --unified --color=always /var/cache/yunohost/appconfbackup/original_${file_path_base64} $file >&2 || true
                 fi
