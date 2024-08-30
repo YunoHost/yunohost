@@ -1,0 +1,14 @@
+name: shfmt
+on:
+  pull_request:
+    paths:
+      - "helpers/**"
+      - "hooks/**"
+jobs:
+  shfmt:
+    name: shfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: sudo apt install shfmt
+      - run: ./maintenance/shfmt.sh --diff
