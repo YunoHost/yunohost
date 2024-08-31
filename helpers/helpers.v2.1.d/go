@@ -23,7 +23,7 @@ _ynh_load_go_in_path_and_other_tweaks() {
 
     # Sets the local application-specific go version
     pushd ${install_dir}
-        $GOENV_INSTALL_DIR/bin/goenv local $go_version
+    $GOENV_INSTALL_DIR/bin/goenv local $go_version
     popd
 }
 
@@ -39,7 +39,7 @@ _ynh_load_go_in_path_and_other_tweaks() {
 # - `$go_dir` (the directory containing the specific go version)
 #
 # This helper also creates a /etc/profile.d/goenv.sh that configures PATH environment for goenv
-ynh_go_install () {
+ynh_go_install() {
 
     [[ -n "${go_version:-}" ]] || ynh_die "\$go_version should be defined prior to calling ynh_go_install"
 
@@ -55,33 +55,33 @@ ynh_go_install () {
     # Install or update goenv
     mkdir -p $GOENV_INSTALL_DIR
     pushd "$GOENV_INSTALL_DIR"
-        if ! [ -x "$GOENV_INSTALL_DIR/bin/goenv" ]; then
-            ynh_print_info "Downloading goenv..."
-            git init -q
-            git remote add origin https://github.com/syndbg/goenv.git 
-        else
-            ynh_print_info "Updating goenv..."
-        fi
-        git fetch -q --tags --prune origin
-        local git_latest_tag=$(git describe --tags "$(git rev-list --tags --max-count=1)")
-        git checkout -q "$git_latest_tag"
-        _ynh_go_try_bash_extension
-        goenv=$GOENV_INSTALL_DIR/bin/goenv
+    if ! [ -x "$GOENV_INSTALL_DIR/bin/goenv" ]; then
+        ynh_print_info "Downloading goenv..."
+        git init -q
+        git remote add origin https://github.com/syndbg/goenv.git
+    else
+        ynh_print_info "Updating goenv..."
+    fi
+    git fetch -q --tags --prune origin
+    local git_latest_tag=$(git describe --tags "$(git rev-list --tags --max-count=1)")
+    git checkout -q "$git_latest_tag"
+    _ynh_go_try_bash_extension
+    goenv=$GOENV_INSTALL_DIR/bin/goenv
     popd
 
     # Install or update xxenv-latest
     mkdir -p "$GOENV_INSTALL_DIR/plugins/xxenv-latest"
     pushd "$GOENV_INSTALL_DIR/plugins/xxenv-latest"
-        if ! [ -x "$GOENV_INSTALL_DIR/plugins/xxenv-latest/bin/goenv-latest" ]; then
-            ynh_print_info "Downloading xxenv-latest..."
-            git init -q
-            git remote add origin https://github.com/momo-lab/xxenv-latest.git 
-        else
-            ynh_print_info "Updating xxenv-latest..."
-        fi
-        git fetch -q --tags --prune origin
-        local git_latest_tag=$(git describe --tags "$(git rev-list --tags --max-count=1)")
-        git checkout -q "$git_latest_tag"
+    if ! [ -x "$GOENV_INSTALL_DIR/plugins/xxenv-latest/bin/goenv-latest" ]; then
+        ynh_print_info "Downloading xxenv-latest..."
+        git init -q
+        git remote add origin https://github.com/momo-lab/xxenv-latest.git
+    else
+        ynh_print_info "Updating xxenv-latest..."
+    fi
+    git fetch -q --tags --prune origin
+    local git_latest_tag=$(git describe --tags "$(git rev-list --tags --max-count=1)")
+    git checkout -q "$git_latest_tag"
     popd
 
     # Enable caching
@@ -109,7 +109,7 @@ ynh_go_install () {
     _ynh_go_cleanup
 
     # Set environment for Go users
-    echo  "#goenv
+    echo "#goenv
 export GOENV_ROOT=$GOENV_INSTALL_DIR
 export PATH=\"$GOENV_INSTALL_DIR/bin:$PATH\"
 eval \"\$(goenv init -)\"
@@ -126,7 +126,7 @@ eval \"\$(goenv init -)\"
 # This helper will also cleanup Go versions
 #
 # usage: ynh_go_remove
-ynh_go_remove () {
+ynh_go_remove() {
     local go_version=$(ynh_app_setting_get --key="go_version")
 
     # Load goenv path in PATH
@@ -151,34 +151,29 @@ ynh_go_remove () {
 # If no app uses Go, goenv will be also removed.
 #
 # usage: _ynh_go_cleanup
-_ynh_go_cleanup () {
+_ynh_go_cleanup() {
 
     # List required Go versions
     local installed_apps=$(yunohost app list --output-as json --quiet | jq -r .apps[].id)
     local required_go_versions=""
-    for installed_app in $installed_apps
-    do
+    for installed_app in $installed_apps; do
         local installed_app_go_version=$(ynh_app_setting_get --app=$installed_app --key="go_version")
-        if [[ $installed_app_go_version ]]
-        then
+        if [[ $installed_app_go_version ]]; then
             required_go_versions="${installed_app_go_version}\n${required_go_versions}"
         fi
     done
 
     # Remove no more needed Go versions
     local installed_go_versions=$(goenv versions --bare --skip-aliases | grep -Ev '/')
-    for installed_go_version in $installed_go_versions
-    do
-        if ! `echo ${required_go_versions} | grep "${installed_go_version}" 1>/dev/null 2>&1`
-        then
+    for installed_go_version in $installed_go_versions; do
+        if ! $(echo ${required_go_versions} | grep "${installed_go_version}" 1> /dev/null 2>&1); then
             ynh_print_info "Removing of Go-$installed_go_version"
             $GOENV_INSTALL_DIR/bin/goenv uninstall --force "$installed_go_version"
         fi
     done
 
     # If none Go version is required
-    if [[ ! $required_go_versions ]]
-    then
+    if [[ ! $required_go_versions ]]; then
         # Remove goenv environment configuration
         ynh_print_info "Removing of goenv"
         ynh_safe_rm "$GOENV_INSTALL_DIR"
@@ -187,9 +182,9 @@ _ynh_go_cleanup () {
 }
 
 _ynh_go_try_bash_extension() {
-  if [ -x src/configure ]; then
-    src/configure && make -C src || {
-      ynh_print_info "Optional bash extension failed to build, but things will still work normally."
-    }
-  fi
+    if [ -x src/configure ]; then
+        src/configure && make -C src || {
+            ynh_print_info "Optional bash extension failed to build, but things will still work normally."
+        }
+    fi
 }

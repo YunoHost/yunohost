@@ -9,8 +9,7 @@ YNH_APP_BASEDIR=${YNH_APP_BASEDIR:-$(realpath ..)}
 ynh_exit_properly() {
     local exit_code=$?
 
-    if [[ "${YNH_APP_ACTION:-}" =~ ^install$|^upgrade$|^restore$ ]]
-    then
+    if [[ "${YNH_APP_ACTION:-}" =~ ^install$|^upgrade$|^restore$ ]]; then
         rm -rf "/var/cache/yunohost/download/"
     fi
 
@@ -47,8 +46,7 @@ ynh_abort_if_errors() {
 }
 
 # When running an app script, auto-enable ynh_abort_if_errors except for remove script
-if [[ "${YNH_CONTEXT:-}" != "regenconf" ]] && [[ "${YNH_APP_ACTION}" != "remove" ]]
-then
+if [[ "${YNH_CONTEXT:-}" != "regenconf" ]] && [[ "${YNH_APP_ACTION}" != "remove" ]]; then
     ynh_abort_if_errors
 fi
 
@@ -124,8 +122,7 @@ _acceptable_path_to_delete() {
     local forbidden_paths=$(ls -d / /* /{var,home,usr}/* /etc/{default,sudoers.d,yunohost,cron*} /etc/yunohost/{apps,domains,hooks.d} /opt/yunohost 2> /dev/null)
 
     # Legacy : A couple apps still have data in /home/$app ...
-    if [[ -n "${app:-}" ]]
-    then
+    if [[ -n "${app:-}" ]]; then
         forbidden_paths=$(echo "$forbidden_paths" | grep -v "/home/$app")
     fi
 
@@ -223,31 +220,27 @@ _ynh_apply_default_permissions() {
     is_in_dir() {
         # Returns false if parent is empty
         [ -n "$2" ] || return 1
-        local child=$(realpath "$1" 2>/dev/null)
-        local parent=$(realpath "$2" 2>/dev/null)
+        local child=$(realpath "$1" 2> /dev/null)
+        local parent=$(realpath "$2" 2> /dev/null)
         [[ "${child}" =~ ^$parent ]]
     }
 
     # App files can have files of their own
     if ynh_system_user_exists --username="$app"; then
         # If this is a file in $install_dir or $data_dir : it should be owned and read+writable by $app only
-        if [ -f "$target" ] && (is_in_dir "$target" "${install_dir:-}" || is_in_dir "$target" "${data_dir:-}" || is_in_dir "$target" "/etc/$app")
-        then
+        if [ -f "$target" ] && (is_in_dir "$target" "${install_dir:-}" || is_in_dir "$target" "${data_dir:-}" || is_in_dir "$target" "/etc/$app"); then
             chmod 600 "$target"
             chown "$app:$app" "$target"
             return
         fi
         # If this is the install dir (so far this is the only way this helper is called with a directory)
-        if [ "$target" ==  "${install_dir:-}" ]
-        then
+        if [ "$target" == "${install_dir:-}" ]; then
             # Read the group from the install_dir manifest resource
             local group="$(ynh_read_manifest 'resources.install_dir.group' | sed 's/null//g' | sed "s/__APP__/$app/g" | cut -f1 -d:)"
-            if [[ -z "$group" ]]
-            then
+            if [[ -z "$group" ]]; then
                 # We set the group to www-data for webapps that do serve static assets, which therefore need to be readable by nginx ...
                 # The fact that the app needs this is infered by the existence of an nginx.conf and the presence of "alias" or "root" directive
-                if grep -q '^\s*alias\s\|^\s*root\s' "$YNH_APP_BASEDIR/conf/nginx.conf" 2>/dev/null;
-                then
+                if grep -q '^\s*alias\s\|^\s*root\s' "$YNH_APP_BASEDIR/conf/nginx.conf" 2> /dev/null; then
                     group="www-data"
                 # Or default to "$app"
                 else
@@ -292,7 +285,7 @@ ynh_validate_ip() {
     [ "$family" == "4" ] || [ "$family" == "6" ] || return 1
 
     # http://stackoverflow.com/questions/319279/how-to-validate-ip-address-in-python#319298
-    python3 /dev/stdin <<EOF
+    python3 /dev/stdin << EOF
 import socket
 import sys
 family = { "4" : socket.AF_INET, "6" : socket.AF_INET6 }
@@ -390,69 +383,201 @@ ynh_user_list() {
 # from the app's service configuration file (defaults to $app.service, overridable by the packager with `service` setting).
 # If the app relies on a specific PHP version, then `php` will be aliased that version. The PHP command will also be appended with the `phpflags` settings.
 ynh_spawn_app_shell() {
-        local app=$1
+    local app=$1
 
-        # Force Bash to be used to run this helper
-        [[ $0 =~ \/?bash$ ]] || ynh_die "Please use Bash as shell"
+    # Force Bash to be used to run this helper
+    [[ $0 =~ \/?bash$ ]] || ynh_die "Please use Bash as shell"
 
-        # Make sure the app is installed
-        test -d /etc/yunohost/apps/$app || ynh_die "$app is not an installed app ?!"
+    # Make sure the app is installed
+    test -d /etc/yunohost/apps/$app || ynh_die "$app is not an installed app ?!"
 
-        # Make sure the app has its own user
-        id -u "$app" &>/dev/null || ynh_die "There is no \"$app\" system user"
+    # Make sure the app has its own user
+    id -u "$app" &> /dev/null || ynh_die "There is no \"$app\" system user"
 
-        # Make sure the app has an install_dir setting
-        local install_dir=$(ynh_app_setting_get --app=$app --key=install_dir)
-        [ -n "$install_dir" ] || ynh_die "$app has no install_dir setting (does it use packaging format >=2?)"
+    # Make sure the app has an install_dir setting
+    local install_dir=$(ynh_app_setting_get --app=$app --key=install_dir)
+    [ -n "$install_dir" ] || ynh_die "$app has no install_dir setting (does it use packaging format >=2?)"
 
-        # Load the app's service name, or default to $app
-        local service=$(ynh_app_setting_get --app=$app --key=service)
-        [ -z "$service" ] && service=$app;
+    # Load the app's service name, or default to $app
+    local service=$(ynh_app_setting_get --app=$app --key=service)
+    [ -z "$service" ] && service=$app
 
-        # Export HOME variable
-        export HOME=$install_dir;
+    # Export HOME variable
+    export HOME=$install_dir
 
-        # Load the Environment variables from the app's service
-        local env_var=$(systemctl show $service.service -p "Environment" --value)
-        [ -n "$env_var" ] && export $env_var;
+    # Load the Environment variables from the app's service
+    local env_var=$(systemctl show $service.service -p "Environment" --value)
+    [ -n "$env_var" ] && export $env_var
 
-        # Force `php` to its intended version
-        # We use `eval`+`export` since `alias` is not propagated to subshells, even with `export`
-        local phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
-        local phpflags=$(ynh_app_setting_get --app=$app --key=phpflags)
-        if [ -n "$phpversion" ]
-        then
-            eval "php() { php${phpversion} ${phpflags} \"\$@\"; }"
-            export -f php
+    # Force `php` to its intended version
+    # We use `eval`+`export` since `alias` is not propagated to subshells, even with `export`
+    local phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
+    local phpflags=$(ynh_app_setting_get --app=$app --key=phpflags)
+    if [ -n "$phpversion" ]; then
+        eval "php() { php${phpversion} ${phpflags} \"\$@\"; }"
+        export -f php
+    fi
+
+    # Source the EnvironmentFiles from the app's service
+    local env_files=($(systemctl show $service.service -p "EnvironmentFiles" --value))
+    if [ ${#env_files[*]} -gt 0 ]; then
+        # set -/+a enables and disables new variables being automatically exported. Needed when using `source`.
+        set -a
+        for file in ${env_files[*]}; do
+            [[ $file = /* ]] && source $file
+        done
+        set +a
+    fi
+
+    # Activate the Python environment, if it exists
+    if [ -f $install_dir/venv/bin/activate ]; then
+        # set -/+a enables and disables new variables being automatically exported. Needed when using `source`.
+        set -a
+        source $install_dir/venv/bin/activate
+        set +a
+    fi
+
+    # cd into the WorkingDirectory set in the service, or default to the install_dir
+    local env_dir=$(systemctl show $service.service -p "WorkingDirectory" --value)
+    [ -z $env_dir ] && env_dir=$install_dir
+    cd $env_dir
+
+    # Spawn the app shell
+    su -s /bin/bash $app
+}
+
+# Add swap
+#
+# usage: ynh_add_swap --size=SWAP in Mb
+# | arg: -s, --size= - Amount of SWAP to add in Mb.
+ynh_add_swap() {
+    if systemd-detect-virt --container --quiet; then
+        ynh_print_warn --message="You are inside a container/VM. swap will not be added, but that can cause troubles for the app $app. Please make sure you have enough RAM available."
+        return
+    fi
+
+    # Declare an array to define the options of this helper.
+    declare -Ar args_array=([s]=size=)
+    local size
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    local swap_max_size=$(($size * 1024))
+
+    local free_space=$(df --output=avail / | sed 1d)
+    # Because we don't want to fill the disk with a swap file, divide by 2 the available space.
+    local usable_space=$(($free_space / 2))
+
+    SD_CARD_CAN_SWAP=${SD_CARD_CAN_SWAP:-0}
+
+    # Swap on SD card only if it's is specified
+    if ynh_is_main_device_a_sd_card && [ "$SD_CARD_CAN_SWAP" == "0" ]; then
+        ynh_print_warn --message="The main mountpoint of your system '/' is on an SD card, swap will not be added to prevent some damage of this one, but that can cause troubles for the app $app. If you still want activate the swap, you can relaunch the command preceded by 'SD_CARD_CAN_SWAP=1'"
+        return
+    fi
+
+    # Compare the available space with the size of the swap.
+    # And set a acceptable size from the request
+    if [ $usable_space -ge $swap_max_size ]; then
+        local swap_size=$swap_max_size
+    elif [ $usable_space -ge $(($swap_max_size / 2)) ]; then
+        local swap_size=$(($swap_max_size / 2))
+    elif [ $usable_space -ge $(($swap_max_size / 3)) ]; then
+        local swap_size=$(($swap_max_size / 3))
+    elif [ $usable_space -ge $(($swap_max_size / 4)) ]; then
+        local swap_size=$(($swap_max_size / 4))
+    else
+        echo "Not enough space left for a swap file" >&2
+        local swap_size=0
+    fi
+
+    # If there's enough space for a swap, and no existing swap here
+    if [ $swap_size -ne 0 ] && [ ! -e /swap_$app ]; then
+        # Create file
+        truncate -s 0 /swap_$app
+
+        # set the No_COW attribute on the swapfile with chattr
+        chattr +C /swap_$app
+
+        # Preallocate space for the swap file, fallocate may sometime not be used, use dd instead in this case
+        if ! fallocate -l ${swap_size}K /swap_$app; then
+            dd if=/dev/zero of=/swap_$app bs=1024 count=${swap_size}
         fi
+        chmod 0600 /swap_$app
+        # Create the swap
+        mkswap /swap_$app
+        # And activate it
+        swapon /swap_$app
+        # Then add an entry in fstab to load this swap at each boot.
+        echo -e "/swap_$app swap swap defaults 0 0 #Swap added by $app" >> /etc/fstab
+    fi
+}
 
-        # Source the EnvironmentFiles from the app's service
-        local env_files=($(systemctl show $service.service -p "EnvironmentFiles" --value))
-        if [ ${#env_files[*]} -gt 0 ]
-        then
-            # set -/+a enables and disables new variables being automatically exported. Needed when using `source`.
-            set -a
-            for file in ${env_files[*]}
-            do
-                [[ $file = /* ]] && source $file
-            done
-            set +a
-        fi
+ynh_del_swap() {
+    # If there a swap at this place
+    if [ -e /swap_$app ]; then
+        # Clean the fstab
+        sed -i "/#Swap added by $app/d" /etc/fstab
+        # Desactive the swap file
+        swapoff /swap_$app
+        # And remove it
+        rm /swap_$app
+    fi
+}
 
-        # Activate the Python environment, if it exists
-        if [ -f $install_dir/venv/bin/activate ]
-        then
-            # set -/+a enables and disables new variables being automatically exported. Needed when using `source`.
-            set -a
-            source $install_dir/venv/bin/activate
-            set +a
-        fi
+# Check if the device of the main mountpoint "/" is an SD card
+#
+# [internal]
+#
+# return 0 if it's an SD card, else 1
+ynh_is_main_device_a_sd_card() {
+    if [ "$(systemd-detect-virt)" != "none" ]; then
+        # Assume virtualization does not take place on SD card
+        return 1
+    fi
 
-        # cd into the WorkingDirectory set in the service, or default to the install_dir
-        local env_dir=$(systemctl show $service.service -p "WorkingDirectory" --value)
-        [ -z $env_dir ] && env_dir=$install_dir;
-        cd $env_dir
+    local main_device=$(lsblk --output PKNAME --noheadings $(findmnt / --nofsroot --uniq --output source --noheadings --first-only))
 
-        # Spawn the app shell
-        su -s /bin/bash $app
+    if echo $main_device | grep --quiet "mmc" && [ $(tail -n1 /sys/block/$main_device/queue/rotational) == "0" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Check available space before creating a temp directory.
+#
+# usage: ynh_smart_mktemp --min_size="Min size"
+#
+# | arg: -s, --min_size= - Minimal size needed for the temporary directory, in Mb
+ynh_smart_mktemp() {
+    # Declare an array to define the options of this helper.
+    declare -Ar args_array=([s]=min_size=)
+    local min_size
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    min_size="${min_size:-300}"
+    # Transform the minimum size from megabytes to kilobytes
+    min_size=$(($min_size * 1024))
+
+    # Check if there's enough free space in a directory
+    is_there_enough_space() {
+        local free_space=$(df --output=avail "$1" | sed 1d)
+        test $free_space -ge $min_size
+    }
+
+    if is_there_enough_space /tmp; then
+        local tmpdir=/tmp
+    elif is_there_enough_space /var; then
+        local tmpdir=/var
+    elif is_there_enough_space /; then
+        local tmpdir=/
+    elif is_there_enough_space /home; then
+        local tmpdir=/home
+    else
+        ynh_die "Insufficient free space to continue..."
+    fi
+
+    echo "$(mktemp --directory --tmpdir="$tmpdir")"
 }

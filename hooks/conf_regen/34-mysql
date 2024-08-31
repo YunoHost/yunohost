@@ -3,8 +3,7 @@
 set -e
 . /usr/share/yunohost/helpers
 
-if ! dpkg --list | grep -q 'ii *mariadb-server '
-then
+if ! dpkg --list | grep -q 'ii *mariadb-server '; then
     echo 'mysql/mariadb is not installed, skipping'
     exit 0
 fi

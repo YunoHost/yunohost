@@ -21,7 +21,7 @@ ynh_string_random() {
     length=${length:-24}
     filter=${filter:-'A-Za-z0-9'}
 
-    dd if=/dev/urandom bs=1 count=1000 2>/dev/null \
+    dd if=/dev/urandom bs=1 count=1000 2> /dev/null \
         | tr --complement --delete "$filter" \
         | sed --quiet 's/\(.\{'"$length"'\}\).*/\1/p'
 }

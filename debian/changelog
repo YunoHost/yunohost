@@ -37,6 +37,20 @@ yunohost (12.0.0) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
 
+yunohost (11.2.30) stable; urgency=low
+
+  - helpers v2.1: check if patches dir exists before getting realpath ([#1938](http://github.com/YunoHost/yunohost/pull/1938))
+  - helpers v2.1: ynh_add_swap and ynh_smart_mktemp (aff885e6b)
+  - helpers v2.1: fix ynh_restore_everything ([#1943](http://github.com/YunoHost/yunohost/pull/1943))
+  - helpers v2.1: fix typo in docs: ynh_install_app_dependencies -> ynh_apt_install_dependencies ([#1939](http://github.com/YunoHost/yunohost/pull/1939))
+  - helpers: fix syntax, disambiguate subshell syntax ([#1940](http://github.com/YunoHost/yunohost/pull/1940))
+  - quality: Add maintenante/shfmt.sh for shell script formatting (68f35831e)
+  - quality: Apply shfmt everywhere, fix tabs/space/indent (8a5f2808a, e3ddb1dc4, ef1708276, 38b39ebae, b91e9dd8f)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, Josué Tille, OniriCorpe, selfhoster1312)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 31 Aug 2024 19:26:59 +0200
+
 yunohost (11.2.29) stable; urgency=low
 
   - apps: generalize replacing __INSTALL_DIR__ and __APP__ in config panel 'bind' statement to any setting (9b0553580)
