@@ -135,28 +135,28 @@ function builder_methods:build()
 end
 
 local function new_builder(params)
-  local vcard_tag = st.stanza('vCard', { xmlns = VCARD_NS });
+    local vcard_tag = st.stanza('vCard', { xmlns = VCARD_NS });
 
-  local object = {
-      vcard   = vcard_tag,
-      __index = builder_methods,
-  };
+    local object = {
+        vcard   = vcard_tag,
+        __index = builder_methods,
+    };
 
-  for k, v in pairs(params) do
-      object[k] = v;
-  end
+    for k, v in pairs(params) do
+        object[k] = v;
+    end
 
-  setmetatable(object, object);
+    setmetatable(object, object);
 
-  return object;
+    return object;
 end
 
 local _M = {};
 
 function _M.create(params)
-  local builder = new_builder(params);
+    local builder = new_builder(params);
 
-  return builder:build();
+    return builder:build();
 end
 
 return _M;
