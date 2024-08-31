@@ -194,7 +194,7 @@ ynh_restore_everything() {
     # For each destination path begining by $REL_DIR
     cat ${YNH_BACKUP_CSV} | tr --delete $'\r' | grep --only-matching --no-filename --perl-regexp "^\".*\",\"$REL_DIR.*\"$" \
         | while read line; do
-            local ARCHIVE_PATH=$(echo "$line" | grep --only-matching --no-filename --perl-regexp "^\".*\",\"$REL_DIR\K.*(?=\"$)")
+            local ARCHIVE_PATH=$(echo "$line" | grep --only-matching --no-filename --perl-regexp "^\"\K.*(?=\",\"$REL_DIR.*\"$)")
             ynh_restore "$ARCHIVE_PATH"
         done
 }
