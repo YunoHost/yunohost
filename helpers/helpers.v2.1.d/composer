@@ -1,5 +1,7 @@
 #!/bin/bash
 
+composer_install_dir="/opt/yunohost/composer"
+
 # Install and initialize Composer in the given directory
 #
 # The installed version is defined by `$composer_version` which should be defined
@@ -13,16 +15,27 @@ ynh_composer_install() {
 
     [[ -n "${composer_version}" ]] || ynh_die "\$composer_version should be defined before calling ynh_composer_install. (In the past, this was called \$YNH_COMPOSER_VERSION)"
 
-    [[ ! -e "$workdir/composer.phar" ]] || ynh_safe_rm $workdir/composer.phar
-
     local composer_url="https://getcomposer.org/download/$composer_version/composer.phar"
+    local composer_phar_path="$composer_install_dir/composer_${composer_version}.phar"
+
+    # Remove legacy composer.phar in work directory
+    if [ -f "$workdir/composer.phar" ]; then
+        ynh_safe_rm "$workdir/composer.phar"
+    fi
+
+    # Early exit if already downloaded
+    if [ -f "$composer_phar_path" ]; then
+        return
+    fi
+
+    mkdir -p "$composer_install_dir"
 
     # NB. we have to declare the var as local first,
     # otherwise 'local foo=$(false) || echo 'pwet'" does'nt work
     # because local always return 0 ...
     local out
     # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
-    out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document=$workdir/composer.phar $composer_url 2>&1) \
+    out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document="$composer_phar_path" "$composer_url" 2>&1) \
         || ynh_die "$out"
 }
 
@@ -36,10 +49,11 @@ ynh_composer_install() {
 # usage: ynh_composer_exec commands
 ynh_composer_exec() {
     local workdir="${composer_workdir:-$install_dir}"
+    local composer_phar_path="$composer_install_dir/composer_${composer_version}.phar"
 
     COMPOSER_HOME="$workdir/.composer" \
     COMPOSER_MEMORY_LIMIT=-1 \
     sudo -E -u "${composer_user:-$app}" \
-    php${php_version} "$workdir/composer.phar" $@ \
+    "php${php_version}" "$composer_phar_path" $@ \
         -d "$workdir" --no-interaction --no-ansi 2>&1
 }

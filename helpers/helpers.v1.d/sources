@@ -60,7 +60,7 @@
 # - Uncompress the archive to `$dest_dir`.
 #   - If `in_subdir` is true, the first level directory of the archive will be removed.
 #   - If `in_subdir` is a numeric value, the N first level directories will be removed.
-# - Patches named `sources/patches/${src_id}-*.patch` will be applied to `$dest_dir`
+# - Patches named `sources/patches/${src_id}/*.patch` will be applied to `$dest_dir`
 # - Extra files in `sources/extra_files/$src_id` will be copied to dest_dir
 #
 # Requires YunoHost version 2.6.4 or higher.
@@ -261,16 +261,19 @@ ynh_setup_source() {
     fi
 
     # Apply patches
-    if [ -d "$YNH_APP_BASEDIR/sources/patches/" ]; then
-        local patches_folder=$(realpath $YNH_APP_BASEDIR/sources/patches/)
-        if (($(find $patches_folder -type f -name "${source_id}-*.patch" 2>/dev/null | wc --lines) > "0")); then
-            pushd "$dest_dir"
-            for p in $patches_folder/${source_id}-*.patch; do
-                echo $p
-                patch --strip=1 <$p || ynh_print_warn --message="Packagers /!\\ patch $p failed to apply"
-            done
-            popd
-        fi
+    local patches_folder=$(realpath "$YNH_APP_BASEDIR/patches/$source_id")
+    if [ -d "$patches_folder" ]; then
+        pushd "$dest_dir"
+        for patchfile in "$patches_folder/"*.patch; do
+            echo "$patchfile"
+            if ! patch --strip=1 < "$patchfile"; then
+                if ynh_in_ci_tests; then
+                    ynh_die --message"Patch $patchfile failed to apply!"
+                else
+                    ynh_print_warn --message="Warn your packagers /!\\ patch $patchfile failed to apply"
+                fi            fi
+        done
+        popd
     fi
 
     # Add supplementary files
