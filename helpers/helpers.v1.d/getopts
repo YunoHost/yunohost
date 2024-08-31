@@ -20,7 +20,7 @@
 # | arg: $@    - Simply "$@" to tranfert all the positionnal arguments to the function
 #
 # This helper need an array, named "args_array" with all the arguments used by the helper
-# 	that want to use ynh_handle_getopts_args
+# that want to use ynh_handle_getopts_args
 # Be carreful, this array has to be an associative array, as the following example:
 # local -A args_array=( [a]=arg1 [b]=arg2= [c]=arg3 )
 # Let's explain this array:
