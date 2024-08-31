@@ -372,7 +372,7 @@ ynh_add_app_dependencies() {
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_remove_app_dependencies() {
-    local dep_app=${app//_/-}	# Replace all '_' by '-'
+    local dep_app=${app//_/-}  # Replace all '_' by '-'
 
     local current_dependencies=""
     if ynh_package_is_installed --package="${dep_app}-ynh-deps"; then

@@ -271,9 +271,9 @@ ynh_script_progression() {
 
     # Always activate time when running inside CI tests
     if [ ${PACKAGE_CHECK_EXEC:-0} -eq 1 ]; then
-    	time=${time:-1}
+        time=${time:-1}
     else
-    	time=${time:-0}
+        time=${time:-0}
     fi
 
     last=${last:-0}
@@ -298,8 +298,8 @@ ynh_script_progression() {
         local weight_values=$(($(echo "$weight_valuesA" "$weight_valuesB" | grep -v -E '^\s*$' | tr '\n' '+' | sed 's/+$/+0/g')))
 
         # max_progression is a total number of calls to this helper.
-        # 	Less the number of calls with a weight value.
-        # 	Plus the total of weight values
+        #   Less the number of calls with a weight value.
+        #   Plus the total of weight values
         max_progression=$(($helper_calls - $weight_calls + $weight_values))
     fi
 

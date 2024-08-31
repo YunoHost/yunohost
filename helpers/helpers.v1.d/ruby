@@ -8,8 +8,8 @@ export RBENV_ROOT="$rbenv_install_dir"
 export rbenv_root="$rbenv_install_dir"
 
 if dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} lt 2; then
-	build_ruby_dependencies="libjemalloc-dev curl build-essential libreadline-dev zlib1g-dev libsqlite3-dev libssl-dev libxml2-dev libxslt-dev autoconf automake bison libtool"
-	build_pkg_dependencies="${build_pkg_dependencies:-} $build_ruby_dependencies"
+    build_ruby_dependencies="libjemalloc-dev curl build-essential libreadline-dev zlib1g-dev libsqlite3-dev libssl-dev libxml2-dev libxslt-dev autoconf automake bison libtool"
+    build_pkg_dependencies="${build_pkg_dependencies:-} $build_ruby_dependencies"
 fi
 
 # Load the version of Ruby for an app, and set variables.
@@ -275,7 +275,7 @@ ynh_cleanup_ruby () {
             required_ruby_versions="${installed_app_ruby_version}\n${required_ruby_versions}"
         fi
     done
-    
+
     # Remove no more needed Ruby versions
     local installed_ruby_versions=$(rbenv versions --bare --skip-aliases | grep -Ev '/')
     for installed_ruby_version in $installed_ruby_versions
