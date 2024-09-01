@@ -1231,6 +1231,10 @@ class AptDependenciesAppResource(AppResource):
         if self.packages:
             script += " ".join([ynh_apt_install_dependencies, *self.packages])
         for repo, values in self.extras.items():
+            # SPECIAL CASE: yarn is already preconfigured -> skip it
+            if "dl.yarnpkg.com/debian" in values["repo"]:
+                continue
+
             script += "\n" + " ".join(
                 [
                     ynh_apt_install_dependencies_from_extra_repository,
