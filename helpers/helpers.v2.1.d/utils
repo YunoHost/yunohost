@@ -52,11 +52,11 @@ fi
 
 # Execute a command after sudoing as $app
 #
-# Note that the $PATH variable is preserved (using --preserve-env=PATH)
+# Note that the $PATH variable is preserved (using env PATH=$PATH)
 #
 # usage: ynh_exec_as_app COMMAND [ARG ...]
 ynh_exec_as_app() {
-    sudo --preserve-env=PATH -u "$app" "$@"
+    sudo -u "$app" env PATH="$PATH" "$@"
 }
 
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
