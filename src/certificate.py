@@ -98,6 +98,15 @@ def certificate_status(domains, full=False):
                 else:
                     status["ACME_eligible"] = False
 
+            # Check if a wildcard is setup for the ipv4/ipv6 A/AAAA records
+            dns_extra = Diagnoser.get_cached_report(
+                "dnsrecords", item={"domain": domain, "category": "extra"}
+            ).get("data", {})
+            has_wildcards = [
+                v == "OK" for k, v in dns_extra.items() if k.startswith("A")
+            ]
+            status["has_wildcards"] = len(has_wildcards) > 0 and all(has_wildcards)
+
         del status["domain"]
         certificates[domain] = status
 
