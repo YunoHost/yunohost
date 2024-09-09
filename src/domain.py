@@ -245,7 +245,11 @@ def _get_parent_domain_of(domain, return_self=False, topest=False):
 
 @is_unit_operation(exclude=["dyndns_recovery_password"])
 def domain_add(
-    operation_logger, domain, dyndns_recovery_password=None, ignore_dyndns=False
+    operation_logger,
+    domain,
+    dyndns_recovery_password=None,
+    ignore_dyndns=False,
+    install_letsencrypt_cert=False,
 ):
     """
     Create a custom domain
@@ -255,12 +259,17 @@ def domain_add(
         dyndns -- Subscribe to DynDNS
         dyndns_recovery_password -- Password used to later unsubscribe from DynDNS
         ignore_dyndns -- If we want to just add the DynDNS domain to the list, without subscribing
+        install_letsencrypt_cert -- If adding a subdomain of an already added domain, try to install a Let's Encrypt certificate
     """
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.utils.password import assert_password_is_strong_enough
-    from yunohost.certificate import _certificate_install_selfsigned
+    from yunohost.certificate import (
+        _certificate_install_letsencrypt,
+        _certificate_install_selfsigned,
+        certificate_status,
+    )
     from yunohost.utils.dns import is_yunohost_dyndns_domain
 
     if dyndns_recovery_password:
@@ -302,7 +311,24 @@ def domain_add(
             domain=domain, recovery_password=dyndns_recovery_password
         )
 
-    _certificate_install_selfsigned([domain], True)
+    parent_domain = _get_parent_domain_of(domain)
+    can_install_letsencrypt = (
+        parent_domain
+        and certificate_status([parent_domain], full=True)["certificates"][
+            parent_domain
+        ]["has_wildcards"]
+    )
+    fallen_back_to_selfsigned = False
+
+    if install_letsencrypt_cert and can_install_letsencrypt:
+        try:
+            _certificate_install_letsencrypt([domain], force=True, no_checks=True)
+        except:
+            _certificate_install_selfsigned([domain], force=True)
+            fallen_back_to_selfsigned = True
+    else:
+        _certificate_install_selfsigned([domain], force=True)
+        fallen_back_to_selfsigned = install_letsencrypt_cert
 
     try:
         attr_dict = {
@@ -353,6 +379,9 @@ def domain_add(
     hook_callback("post_domain_add", args=[domain])
 
     logger.success(m18n.n("domain_created"))
+
+    if fallen_back_to_selfsigned:
+        logger.warning(m18n.n("domain_fallback_selfsigned"))
 
 
 @is_unit_operation(exclude=["dyndns_recovery_password"])
