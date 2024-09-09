@@ -52,11 +52,11 @@ fi
 
 # Execute a command after sudoing as $app
 #
-# Note that the $PATH variable is preserved (using --preserve-env=PATH)
+# Note that the $PATH variable is preserved (using env PATH=$PATH)
 #
 # usage: ynh_exec_as_app COMMAND [ARG ...]
 ynh_exec_as_app() {
-    sudo --preserve-env=PATH -u "$app" "$@"
+    sudo -u "$app" env PATH="$PATH" "$@"
 }
 
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
@@ -233,7 +233,7 @@ _ynh_apply_default_permissions() {
             chown "$app:$app" "$target"
             return
         fi
-        # If this is the install dir (so far this is the only way this helper is called with a directory)
+        # If this is the install dir (so far this is the only way this helper is called with a directory - along with $data_dir via ynh_restore?)
         if [ "$target" == "${install_dir:-}" ]; then
             # Read the group from the install_dir manifest resource
             local group="$(ynh_read_manifest 'resources.install_dir.group' | sed 's/null//g' | sed "s/__APP__/$app/g" | cut -f1 -d:)"
@@ -251,6 +251,12 @@ _ynh_apply_default_permissions() {
             # The group needs read/dirtraversal (in particular if it's www-data)
             chmod -R u=rwX,g=rX,o=--- "$target"
             chown -R "$app:$group" "$target"
+            return
+        elif [ "$target" == "${data_dir:-}" ]; then
+            # Read the group from the data manifest resource
+            local group="$(ynh_read_manifest 'resources.data_dir.group' | sed 's/null//g' | sed "s/__APP__/$app/g" | cut -f1 -d:)"
+            chmod 750 "$target"
+            chown -R "$app:${group:-$app}" "$target"
             return
         fi
     fi
