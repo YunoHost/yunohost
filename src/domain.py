@@ -776,7 +776,8 @@ def _get_DomainConfigPanel():
             if custom_css:
                 write_to_file(f"/usr/share/yunohost/portal/customassets/{self.entity}.custom.css", custom_css)
             # Make sure the value doesnt get written in the yml
-            form.custom_css = ""
+            if hasattr(form, "custom_css"):
+                form.custom_css = ""
 
             portal_options = [
                 "enable_public_apps_page",
