@@ -153,6 +153,7 @@ def tools_postinstall(
     )
     from yunohost.domain import domain_main_domain, domain_add
     from yunohost.user import user_create, ADMIN_ALIASES
+    from yunohost.app import _ask_confirmation
     from yunohost.app_catalog import _update_apps_catalog
     from yunohost.firewall import firewall_upnp
 
@@ -167,6 +168,10 @@ def tools_postinstall(
             "It looks like you're trying to re-postinstall a system that was already working previously ... If you recently had some bug or issues with your installation, please first discuss with the team on how to fix the situation instead of savagely re-running the postinstall ...",
             raw_msg=True,
         )
+
+    if Moulinette.interface.type == "cli" and os.isatty(1):
+        Moulinette.display(m18n.n("tos_postinstall_acknowledgement"), style="warning")
+        _ask_confirmation("confirm_tos_acknowledgement", kind="soft")
 
     # Crash early if the username is already a system user, which is
     # a common confusion. We don't want to crash later and end up in an half-configured state.
