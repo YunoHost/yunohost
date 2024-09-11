@@ -287,11 +287,17 @@ def domain_add(
         and len(domain.split(".")) == 3
     )
     if dyndns:
+        from yunohost.app import _ask_confirmation
         from yunohost.dyndns import is_subscribing_allowed
 
         # Do not allow to subscribe to multiple dyndns domains...
         if not is_subscribing_allowed():
             raise YunohostValidationError("domain_dyndns_already_subscribed")
+
+        if Moulinette.interface.type == "cli" and os.isatty(1):
+            Moulinette.display(m18n.n("tos_dyndns_acknowledgement"), style="warning")
+            _ask_confirmation("confirm_tos_acknowledgement", kind="soft")
+
         if dyndns_recovery_password:
             assert_password_is_strong_enough("admin", dyndns_recovery_password)
 
