@@ -8,7 +8,8 @@
 # | exit: Return 1 if dpkg is broken
 #
 # Requires YunoHost version 3.3.1 or higher.
-ynh_wait_dpkg_free() {
+ynh_wait_dpkg_free()
+{
     local try
     set +o xtrace # set +x
     # With seq 1 17, timeout will be almost 30 minutes
