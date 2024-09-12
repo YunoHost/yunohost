@@ -245,7 +245,7 @@ def _get_parent_domain_of(domain, return_self=False, topest=False):
 
 @is_unit_operation(exclude=["dyndns_recovery_password"])
 def domain_add(
-    operation_logger, domain, dyndns_recovery_password=None, ignore_dyndns=False
+    operation_logger, domain, dyndns_recovery_password=None, ignore_dyndns=False, skip_tos=False
 ):
     """
     Create a custom domain
@@ -294,7 +294,7 @@ def domain_add(
         if not is_subscribing_allowed():
             raise YunohostValidationError("domain_dyndns_already_subscribed")
 
-        if Moulinette.interface.type == "cli" and os.isatty(1):
+        if not skip_tos and Moulinette.interface.type == "cli" and os.isatty(1):
             Moulinette.display(m18n.n("tos_dyndns_acknowledgement"), style="warning")
             _ask_confirmation("confirm_tos_acknowledgement", kind="soft")
 

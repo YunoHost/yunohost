@@ -238,6 +238,7 @@ def tools_postinstall(
         domain,
         dyndns_recovery_password=dyndns_recovery_password,
         ignore_dyndns=ignore_dyndns,
+        skip_tos=True,   # skip_tos is here to prevent re-asking about the ToS when adding a dyndns service, because the ToS are already displayed right before in postinstall
     )
     domain_main_domain(domain)
 
