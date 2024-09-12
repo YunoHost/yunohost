@@ -1,4 +1,4 @@
-from moulinette import Moulinette, m18n
+from moulinette import m18n
 from yunohost.tools import Migration
 
 import logging
