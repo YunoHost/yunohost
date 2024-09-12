@@ -8,6 +8,9 @@ jobs:
   black:
     name: Check / auto apply black
     runs-on: ubuntu-latest
+    permissions:
+      # Give the default GITHUB_TOKEN write permission to commit and push the changed files back to the repository.
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -18,13 +21,6 @@ jobs:
           options: "."
         continue-on-error: true
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          title: "Format Python code with Black"
-          commit-message: ":art: Format Python code with Black"
-          body: |
-            This pull request uses the [psf/black](https://github.com/psf/black) formatter.
-          base: ${{ github.head_ref }} # Creates pull request onto pull request or commit branch
-          branch: actions/black
+    - uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit-message: ":art: Format Python code with Black"
