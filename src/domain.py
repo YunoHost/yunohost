@@ -372,7 +372,7 @@ def domain_add(
         if can_install_letsencrypt:
             try:
                 _certificate_install_letsencrypt([domain], force=True, no_checks=True)
-            except Exception as e:
+            except:
                 failed_letsencrypt_cert_install = True
         else:
             failed_letsencrypt_cert_install = True
