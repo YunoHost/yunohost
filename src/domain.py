@@ -311,24 +311,7 @@ def domain_add(
             domain=domain, recovery_password=dyndns_recovery_password
         )
 
-    parent_domain = _get_parent_domain_of(domain)
-    can_install_letsencrypt = (
-        parent_domain
-        and certificate_status([parent_domain], full=True)["certificates"][
-            parent_domain
-        ]["has_wildcards"]
-    )
-    fallen_back_to_selfsigned = False
-
-    if install_letsencrypt_cert and can_install_letsencrypt:
-        try:
-            _certificate_install_letsencrypt([domain], force=True, no_checks=True)
-        except:
-            _certificate_install_selfsigned([domain], force=True)
-            fallen_back_to_selfsigned = True
-    else:
-        _certificate_install_selfsigned([domain], force=True)
-        fallen_back_to_selfsigned = install_letsencrypt_cert
+    _certificate_install_selfsigned([domain], force=True)
 
     try:
         attr_dict = {
@@ -376,12 +359,30 @@ def domain_add(
             pass
         raise e
 
+    failed_letsencrypt_cert_install = False
+    if install_letsencrypt_cert:
+        parent_domain = _get_parent_domain_of(domain)
+        can_install_letsencrypt = (
+            parent_domain
+            and certificate_status([parent_domain], full=True)["certificates"][
+                parent_domain
+            ]["has_wildcards"]
+        )
+
+        if can_install_letsencrypt:
+            try:
+                _certificate_install_letsencrypt([domain], force=True, no_checks=True)
+            except Exception as e:
+                failed_letsencrypt_cert_install = True
+        else:
+            failed_letsencrypt_cert_install = True
+
     hook_callback("post_domain_add", args=[domain])
 
     logger.success(m18n.n("domain_created"))
 
-    if fallen_back_to_selfsigned:
-        logger.warning(m18n.n("domain_fallback_selfsigned"))
+    if failed_letsencrypt_cert_install:
+        logger.warning(m18n.n("certmanager_cert_install_failed"))
 
 
 @is_unit_operation(exclude=["dyndns_recovery_password"])

@@ -402,7 +402,6 @@
     "domain_dns_registrar_yunohost": "This domain is a nohost.me / nohost.st / ynh.fr and its DNS configuration is therefore automatically handled by YunoHost without any further configuration. (see the 'yunohost dyndns update' command)",
     "domain_dyndns_already_subscribed": "You have already subscribed to a DynDNS domain",
     "domain_exists": "The domain already exists",
-    "domain_fallback_selfsigned": "Could'nt install Let's Encrypt certificate, has fallen back to self-signed certificate.",
     "domain_hostname_failed": "Unable to set new hostname. This might cause an issue later (it might be fine).",
     "domain_registrar_is_not_configured": "The registrar is not yet configured for domain {domain}.",
     "domain_remove_confirm_apps_removal": "Removing this domain will remove those applications:\n{apps}\n\nAre you sure you want to do that? [{answers}]",
