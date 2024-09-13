@@ -703,7 +703,9 @@ domain:
                 ### certificate_status()
                 status:
                     action_help: List status of current certificates (all by default).
-                    api: GET /domains/<domain_list>/cert
+                    api: 
+                        - GET /domains/<domain_list>/cert
+                        - GET /domains/*/cert
                     arguments:
                         domain_list:
                             help: Domains to check
