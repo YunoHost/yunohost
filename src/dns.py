@@ -522,6 +522,8 @@ def _get_registrar_config_section(domain):
     elif is_special_use_tld(dns_zone):
         registrar_infos["infos"]["ask"] = m18n.n("domain_dns_conf_special_use_tld")
 
+        return registrar_infos
+
     try:
         registrar = _relevant_provider_for_domain(dns_zone)[0]
     except ValueError:
