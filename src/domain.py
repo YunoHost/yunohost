@@ -672,6 +672,7 @@ def domain_config_set(
 
 def _get_DomainConfigPanel():
     from yunohost.utils.configpanel import ConfigPanel
+    from yunohost.dns import _set_managed_dns_records_hashes
 
     class DomainConfigPanel(ConfigPanel):
         entity_type = "domain"
@@ -773,7 +774,8 @@ def _get_DomainConfigPanel():
                     self.entity, next_settings["recovery_password"]
                 )
 
-            if "use_auto_dns" in next_settings and not next_settings["use_auto_dns"]:
+            remove_auto_dns_feature = "use_auto_dns" in next_settings and not next_settings["use_auto_dns"]
+            if remove_auto_dns_feature:
                 # disable auto dns by reseting every registrar form values
                 options = [
                     option
@@ -847,6 +849,10 @@ def _get_DomainConfigPanel():
             super()._apply(
                 form, config, previous_settings, exclude={"recovery_password"}
             )
+
+            # Also remove `managed_dns_records_hashes` in settings which are not handled by the config panel
+            if remove_auto_dns_feature:
+                _set_managed_dns_records_hashes(self.entity, [])
 
             # Reload ssowat if default app changed
             if "default_app" in next_settings or "enable_public_apps_page" in next_settings:
