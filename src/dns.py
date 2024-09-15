@@ -591,8 +591,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     _assert_domain_exists(domain)
 
     if is_special_use_tld(domain):
-        logger.info(m18n.n("domain_dns_conf_special_use_tld"))
-        return {}
+        raise YunohostValidationError("domain_dns_conf_special_use_tld")
 
     if not registrar or registrar == "None":  # yes it's None as a string
         raise YunohostValidationError("domain_dns_push_not_applicable", domain=domain)
