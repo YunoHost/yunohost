@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
     from yunohost.utils.configpanel import RawConfig
-    from yunohost.utils.form import FormModel
+    from yunohost.utils.form import FormModel, ConfigPanelModel
     from yunohost.utils.configpanel import RawSettings
 
 logger = getLogger("yunohost.domain")
@@ -749,6 +749,7 @@ def _get_DomainConfigPanel():
         def _apply(
             self,
             form: "FormModel",
+            config: "ConfigPanelModel",
             previous_settings: dict[str, Any],
             exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
         ) -> None:
@@ -831,7 +832,9 @@ def _get_DomainConfigPanel():
                     str(portal_settings_path), portal_settings, sort_keys=True, indent=4
                 )
 
-            super()._apply(form, previous_settings, exclude={"recovery_password"})
+            super()._apply(
+                form, config, previous_settings, exclude={"recovery_password"}
+            )
 
             # Reload ssowat if default app changed
             if "default_app" in next_settings or "enable_public_apps_page" in next_settings:
