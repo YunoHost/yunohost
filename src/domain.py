@@ -773,6 +773,18 @@ def _get_DomainConfigPanel():
                     self.entity, next_settings["recovery_password"]
                 )
 
+            if "use_auto_dns" in next_settings and not next_settings["use_auto_dns"]:
+                # disable auto dns by reseting every registrar form values
+                options = [
+                    option
+                    for option in config.get_section("registrar").options
+                    if not option.readonly
+                    and option.id != "use_auto_dns"
+                    and hasattr(form, option.id)
+                ]
+                for option in options:
+                    setattr(form, option.id, option.default)
+
             custom_css = next_settings.pop("custom_css", "").strip()
             if custom_css:
                 write_to_file(f"/usr/share/yunohost/portal/customassets/{self.entity}.custom.css", custom_css)

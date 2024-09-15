@@ -556,9 +556,15 @@ def _get_registrar_config_section(domain):
                 f"Registrar {registrar} unknown / Should be added to YunoHost's registrar_list.toml by the development team!"
             )
             registrar_credentials = {}
+        else:
+            registrar_infos["use_auto_dns"] = {
+                "type": "boolean",
+                "ask": m18n.n("domain_dns_registrar_use_auto"),
+                "default": True
+            }
         for credential, infos in registrar_credentials.items():
             infos["default"] = infos.get("default", "")
-            infos["optional"] = infos.get("optional", "False")
+            infos["visible"] = "use_auto_dns == true"
         registrar_infos.update(registrar_credentials)
 
     return registrar_infos
