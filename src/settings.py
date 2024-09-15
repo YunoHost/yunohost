@@ -175,7 +175,7 @@ class SettingsConfigPanel(ConfigPanel):
         if operation_logger:
             operation_logger.start()
         try:
-            self._apply(self.form, previous_settings)
+            self._apply(self.form, self.config, previous_settings)
         except YunohostError:
             raise
         # Script got manually interrupted ...
