@@ -69,7 +69,11 @@ def certificate_status(domains, full=False):
         full        -- Display more info about the certificates
     """
 
-    from yunohost.domain import domain_list, _assert_domain_exists
+    from yunohost.domain import (
+        domain_list,
+        _assert_domain_exists,
+        _get_parent_domain_of,
+    )
 
     # If no domains given, consider all yunohost domains
     if domains == []:
@@ -97,6 +101,16 @@ def certificate_status(domains, full=False):
                     status["ACME_eligible"] = None  # = unknown status
                 else:
                     status["ACME_eligible"] = False
+
+            # Check if a wildcard is setup for the ipv4/ipv6 A/AAAA records on the topest domain
+            parent_domain = _get_parent_domain_of(domain, return_self=True, topest=True)
+            dns_extra = Diagnoser.get_cached_report(
+                "dnsrecords", item={"domain": parent_domain, "category": "extra"}
+            ).get("data", {})
+            has_wildcards = [
+                v == "OK" for k, v in dns_extra.items() if k.startswith("A")
+            ]
+            status["has_wildcards"] = len(has_wildcards) > 0 and all(has_wildcards)
 
         del status["domain"]
         certificates[domain] = status

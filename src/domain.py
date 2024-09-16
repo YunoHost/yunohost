@@ -245,7 +245,12 @@ def _get_parent_domain_of(domain, return_self=False, topest=False):
 
 @is_unit_operation(exclude=["dyndns_recovery_password"])
 def domain_add(
-    operation_logger, domain, dyndns_recovery_password=None, ignore_dyndns=False, skip_tos=False
+    operation_logger,
+    domain,
+    dyndns_recovery_password=None,
+    ignore_dyndns=False,
+    install_letsencrypt_cert=False,
+    skip_tos=False,
 ):
     """
     Create a custom domain
@@ -255,12 +260,17 @@ def domain_add(
         dyndns -- Subscribe to DynDNS
         dyndns_recovery_password -- Password used to later unsubscribe from DynDNS
         ignore_dyndns -- If we want to just add the DynDNS domain to the list, without subscribing
+        install_letsencrypt_cert -- If adding a subdomain of an already added domain, try to install a Let's Encrypt certificate
     """
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.utils.password import assert_password_is_strong_enough
-    from yunohost.certificate import _certificate_install_selfsigned
+    from yunohost.certificate import (
+        _certificate_install_letsencrypt,
+        _certificate_install_selfsigned,
+        certificate_status,
+    )
     from yunohost.utils.dns import is_yunohost_dyndns_domain
 
     if dyndns_recovery_password:
@@ -308,7 +318,7 @@ def domain_add(
             domain=domain, recovery_password=dyndns_recovery_password
         )
 
-    _certificate_install_selfsigned([domain], True)
+    _certificate_install_selfsigned([domain], force=True)
 
     try:
         attr_dict = {
@@ -356,9 +366,31 @@ def domain_add(
             pass
         raise e
 
+    failed_letsencrypt_cert_install = False
+    if install_letsencrypt_cert:
+        parent_domain = _get_parent_domain_of(domain)
+        can_install_letsencrypt = (
+            parent_domain
+            and certificate_status([parent_domain], full=True)["certificates"][
+                parent_domain
+            ]["has_wildcards"]
+        )
+
+        if can_install_letsencrypt:
+            try:
+                _certificate_install_letsencrypt([domain], force=True, no_checks=True)
+            except:
+                failed_letsencrypt_cert_install = True
+        else:
+            logger.warning("Skipping Let's Encrypt certificate attempt because there's no wildcard configured on the parent domain's DNS records.")
+            failed_letsencrypt_cert_install = True
+
     hook_callback("post_domain_add", args=[domain])
 
     logger.success(m18n.n("domain_created"))
+
+    if failed_letsencrypt_cert_install:
+        logger.warning(m18n.n("certmanager_cert_install_failed"))
 
 
 @is_unit_operation(exclude=["dyndns_recovery_password"])

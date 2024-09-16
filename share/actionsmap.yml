@@ -495,7 +495,10 @@ domain:
                     help: If adding a DynDNS domain, subscribe to the DynDNS service with a password, used to later delete the domain
                     extra:
                         pattern: *pattern_password
-
+                --install-letsencrypt-cert:
+                    help: If adding a subdomain of an already added domain, try to install a Let's Encrypt certificate
+                    action: store_true
+                    
         ### domain_remove()
         remove:
             action_help: Delete domains
@@ -700,7 +703,9 @@ domain:
                 ### certificate_status()
                 status:
                     action_help: List status of current certificates (all by default).
-                    api: GET /domains/<domain_list>/cert
+                    api: 
+                        - GET /domains/<domain_list>/cert
+                        - GET /domains/*/cert
                     arguments:
                         domain_list:
                             help: Domains to check
