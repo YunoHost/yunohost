@@ -433,7 +433,14 @@ def _get_dns_zone_for_domain(domain):
         zone = parent_list[-1]
 
     # Adding this otherwise the CI is flooding about those ...
-    if domain not in ["example.tld", "sub.example.tld", "domain.tld", "sub.domain.tld", "domain_a.dev", "domain_b.dev"]:
+    if domain not in [
+        "example.tld",
+        "sub.example.tld",
+        "domain.tld",
+        "sub.domain.tld",
+        "domain_a.dev",
+        "domain_b.dev",
+    ]:
         logger.warning(
             f"Could not identify correctly the dns zone for domain {domain}, returning {zone}"
         )
@@ -515,6 +522,8 @@ def _get_registrar_config_section(domain):
     elif is_special_use_tld(dns_zone):
         registrar_infos["infos"]["ask"] = m18n.n("domain_dns_conf_special_use_tld")
 
+        return registrar_infos
+
     try:
         registrar = _relevant_provider_for_domain(dns_zone)[0]
     except ValueError:
@@ -547,9 +556,15 @@ def _get_registrar_config_section(domain):
                 f"Registrar {registrar} unknown / Should be added to YunoHost's registrar_list.toml by the development team!"
             )
             registrar_credentials = {}
+        else:
+            registrar_infos["use_auto_dns"] = {
+                "type": "boolean",
+                "ask": m18n.n("domain_dns_registrar_use_auto"),
+                "default": True
+            }
         for credential, infos in registrar_credentials.items():
             infos["default"] = infos.get("default", "")
-            infos["optional"] = infos.get("optional", "False")
+            infos["visible"] = "use_auto_dns == true"
         registrar_infos.update(registrar_credentials)
 
     return registrar_infos
@@ -582,8 +597,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     _assert_domain_exists(domain)
 
     if is_special_use_tld(domain):
-        logger.info(m18n.n("domain_dns_conf_special_use_tld"))
-        return {}
+        raise YunohostValidationError("domain_dns_conf_special_use_tld")
 
     if not registrar or registrar == "None":  # yes it's None as a string
         raise YunohostValidationError("domain_dns_push_not_applicable", domain=domain)

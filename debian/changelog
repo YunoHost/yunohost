@@ -1,3 +1,26 @@
+yunohost (12.0.3) testing; urgency=low
+
+  - (sync bullseye changes since 12.0.2)
+  - apps: magically handle yarn as a regular package instead of an 'extra' repo now that yarn's repo is in the core ([#1888](http://github.com/YunoHost/yunohost/pull/1888))
+  - portalapi: we don't need absolute URLs for app logos ? (This ain't working when enabling the 'show other domains apps' because of CSP) (bc93a2e07)
+  - portalapi: fix portal_user_intro not being sent when authenticated, hence not displayed at all (cdf443c86)
+  - portal/domain settings: Improve explanation about search engine (24fb87725)
+  - portal/domain settings: Reduce theme list because there were too many (cf change in yunohost-portal) (9973cc703)
+  - portal/domain settings: add proper i18n string + help for new settings (831131476, ff0388556)
+  - domain settings: add a title to the Email section to have a separation w.r.t. the portal settings (279f33288)
+  - portal: fix extra app tiles not being displayed, gotta use the perm id as key, not just the app id (credit rodinux) (603c64e34)
+  - portal/sso: with the public app page, fix the root of the domain not redirecting to /yunohost/sso (a6b7ba843)
+  - portal: allow to configure custom CSS from the domain config panel (8f636561d)
+  - portal: change the way the new 'public apps' page in the portal is configured: add a simple bool toggle instead of having the 'public apps page' as a default app option, which allows to still configure a default app while the portal has the public apps page (748a20d86)
+  - ci: fix test_permission_propagation_on_ssowat, auth header tests (656e5c75d, 9e9313067, 44920d891)
+  - ci: optimizations, cleanups, partial refactor because of new CI image build process (fe9a4fba5, 059818254, a9e71e88d, 7f2da0af7, 94594e5a3, d639e1c42, 4f3b9df3f,  5a6a915af, 55e7e798f, 2fe24424f, 4fc929005, fd040b864, 0bbc14f54, 2976e7bf6)
+  - quality: add type hints to user.py (1ba75df0e, d4f39da20, 611846aa1, efce7f9f0, fe1c04fb2)
+  - i18n: Translations updated for Basque, French, Galician, Greek, Indonesian, Russian, Turkish
+
+  Thanks to all contributors <3 ! (Ali Çırçır, cjdw, craftrac, Emmanuel Averty, Félix Piédallu, Ivan Davydov, José M, Josué Tille, ljf, OniriCorpe, ppr, selfhoster1312, Tagada, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 31 Aug 2024 19:45:00 +0200
+
 yunohost (12.0.2) testing; urgency=low
 
   - Cleanup redis regen conf since redis ain't installed by default anymore (7b50c4eb6)
@@ -36,6 +59,62 @@ yunohost (12.0.0) unstable; urgency=low
   - Tmp changelog to prepare Bookworm
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
+
+yunohost (11.2.30.2) stable; urgency=low
+
+  - helpers2.1: fix automagic chmod/chown for data_dir during restore (46ddf1e67)
+  - i18n: Translations updated for Dutch
+
+  Thanks to all contributors <3 ! (Mer)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 09 Sep 2024 14:25:32 +0200
+
+yunohost (11.2.30.1) stable; urgency=low
+
+  - helpers2.1: turns out sudo --preserve-env=PATH still causes issues with 'command not found' despite the command being in the path and 'which' finding the proper executable ... using 'env PATH=$PATH' instead fixes the issue ... (589fda20b)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 06 Sep 2024 22:13:18 +0200
+
+yunohost (11.2.30) stable; urgency=low
+
+  - helpers v2.1: check if patches dir exists before getting realpath ([#1938](http://github.com/YunoHost/yunohost/pull/1938))
+  - helpers v2.1: ynh_add_swap and ynh_smart_mktemp (aff885e6b)
+  - helpers v2.1: fix ynh_restore_everything ([#1943](http://github.com/YunoHost/yunohost/pull/1943))
+  - helpers v2.1: fix typo in docs: ynh_install_app_dependencies -> ynh_apt_install_dependencies ([#1939](http://github.com/YunoHost/yunohost/pull/1939))
+  - helpers: fix syntax, disambiguate subshell syntax ([#1940](http://github.com/YunoHost/yunohost/pull/1940))
+  - quality: Add maintenante/shfmt.sh for shell script formatting (68f35831e)
+  - quality: Apply shfmt everywhere, fix tabs/space/indent (8a5f2808a, e3ddb1dc4, ef1708276, 38b39ebae, b91e9dd8f)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, Josué Tille, OniriCorpe, selfhoster1312)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 31 Aug 2024 19:26:59 +0200
+
+yunohost (11.2.29) stable; urgency=low
+
+  - apps: generalize replacing __INSTALL_DIR__ and __APP__ in config panel 'bind' statement to any setting (9b0553580)
+  - apps/config panels: move the computation of the actual 'bind' value to the python core (a6785d34b)
+  - perf: add cache for _get_app_settings() (c14ebc8be, 7c7906046)
+  - quality: use _assert_is_installed for consistency instead of if not _is_intalled(app): raise (c409888a4)
+  - i18n: Translations updated for Basque, French, Galician, Greek, Indonesian
+
+  Thanks to all contributors <3 ! (cjdw, craftrac, José M, ppr, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 27 Aug 2024 14:46:26 +0200
+
+yunohost (11.2.28) stable; urgency=low
+
+  - ci: various changes due to CI infrastructure changes (200f0272d, 764fe6a7b, 9083a5cc3, d0df3caed, 6733526be, df320a44c, 92f4a605b, f02d4a437, c5953b542)
+  - apps: exclude .well-known subpaths from conflict checks ([#1647](http://github.com/YunoHost/yunohost/pull/1647))
+  - apps: in apt resource, fix empty string in packages_from_raw_bash breaking dpkg-build (a76cd05e8)
+  - sftp: Tweak umask for SFTP ([#1384](http://github.com/YunoHost/yunohost/pull/1384))
+  - mail: Be able to use postfix as a backup ("secondary") MX hosts ([#1253](http://github.com/YunoHost/yunohost/pull/1253))
+  - diagnosis: Add check regarding rfkill blocking Wi-Fi card on RPi ([#1841](http://github.com/YunoHost/yunohost/pull/1841))
+  - users: trigger hooks when adding or removing user into group (51787a2f8)
+  - i18n: Translations updated for Basque, French, Indonesian, Russian
+
+  Thanks to all contributors <3 ! (cjdw, Emmanuel Averty, Ivan Davydov, ljf, ppr, Tagada, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 25 Aug 2024 13:17:43 +0200
 
 yunohost (11.2.27) stable; urgency=low
 

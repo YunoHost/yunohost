@@ -782,6 +782,8 @@
     "dyndns_too_many_requests": "Le service dyndns de YunoHost a reçu trop de requêtes/demandes de votre part, attendez environ 1 heure avant de réessayer.",
     "ask_dyndns_recovery_password_explain_unavailable": "Ce domaine DynDNS est déjà enregistré. Si vous êtes la personne qui a enregistré ce domaine lors de sa création, vous pouvez entrer le mot de passe de récupération pour récupérer ce domaine.",
     "global_settings_setting_ssh_port_help": "Il est préférable d'utiliser un port inférieur à 1024 pour éviter les tentatives d'usurpation par des services non administrateurs sur la machine distante. Vous devez également éviter d'utiliser un port déjà utilisé tel que le 80 ou le 443.",
+    "diagnosis_rfkill_wifi": "La carte Wi-Fi est désactivée et un avertissement du système pourrait empêcher d'installer des applications",
+    "diagnosis_rfkill_wifi_details": "Cet avertissement se glisse dans beaucoup de retours de commandes, cassant certaines applications. Il s'agit généralement de spécifier votre code pays avec la commande <code>sudo raspi-config</code>. Voici l'erreur:<br>{rfkill_wifi_error}",
     "diagnosis_ignore_already_filtered": "(Il y a déjà un filtre de diagnostic {category} qui correspond à ces critères)",
     "diagnosis_ignore_no_filter_found": "(Il n'y pas de filtre de diagnostic pour la catégorie {category} qui correspond à ces critères)",
     "diagnosis_ignore_filter_added": "Filtre de diagnostic pour {category} ajouté",
@@ -803,5 +805,9 @@
     "migration_0027_start": "Démarrage de la migration vers Bookworm…",
     "migration_0027_still_on_bullseye_after_main_upgrade": "Quelque chose s'est mal passé lors de la mise à jour du système, il semble que celui-ci soit toujours sous Debian Bullseye.",
     "migration_0027_system_not_fully_up_to_date": "Votre système n'est pas complètement à jour. Veuillez effectuer une mise à jour classique avant de procéder à la migration vers Bookworm.",
-    "migration_0027_yunohost_upgrade": "Démarrage de la mise à jour du cœur de YunoHost…"
+    "migration_0027_yunohost_upgrade": "Démarrage de la mise à jour du cœur de YunoHost…",
+    "global_settings_setting_smtp_backup_mx_domains": "Domaines à utiliser comme MX secondaire pour",
+    "global_settings_setting_smtp_backup_mx_emails_whitelisted": "Sauvegarde SMTP des emails sur liste blanche du MX",
+    "global_settings_setting_smtp_backup_mx_emails_whitelisted_help": "Dans le cas d'un MX secondaire, la liste exhaustive des adresses électroniques des destinataires autorisés doit être fournie (sinon les courriers seront refusés et rejetés). Plusieurs entrées peuvent être fournies, séparées par des virgules.",
+    "global_settings_setting_smtp_backup_mx_domains_help": "Autoriser ce serveur à agir en tant que domaine MX *secondaire* de secours pour le domaine listé. Cela signifie que si le MX principal pour le domaine n'est pas accessible (par exemple à cause d'une panne), les courriers électroniques seront quand même envoyés à ce serveur, qui les conservera pendant un maximum de 20 jours et essaiera de les relayer vers la destination réelle une fois qu'il sera rétabli. Plusieurs domaines peuvent être fournis, séparés par des virgules."
 }

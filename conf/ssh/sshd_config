@@ -84,7 +84,7 @@ Subsystem sftp internal-sftp
 
 # Apply following instructions to user with sftp perm only
 Match Group sftp.main,!ssh.main
-    ForceCommand internal-sftp
+    ForceCommand internal-sftp -u 0002
     # We can't restrict to /home/%u because the chroot base must be owned by root
     # So we chroot only on /home
     # See https://serverfault.com/questions/584986/bad-ownership-or-modes-for-chroot-directory-component
@@ -97,7 +97,7 @@ Match Group sftp.main,!ssh.main
     PermitUserRC no
 
 Match Group sftp.app,!ssh.app
-    ForceCommand internal-sftp
+    ForceCommand internal-sftp -u 0002
     ChrootDirectory %h
     AllowTcpForwarding no
     AllowStreamLocalForwarding no

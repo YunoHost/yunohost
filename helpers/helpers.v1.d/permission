@@ -174,7 +174,7 @@ ynh_permission_exists() {
     ynh_handle_getopts_args "$@"
 
     yunohost user permission list "$app" --output-as json --quiet \
-        | jq -e --arg perm "$app.$permission" '.permissions[$perm]' >/dev/null
+        | jq -e --arg perm "$app.$permission" '.permissions[$perm]' > /dev/null
 }
 
 # Redefine the url associated to a permission
@@ -342,7 +342,7 @@ ynh_permission_has_user() {
     # Check both allowed and corresponding_users sections in the json
     for section in "allowed" "corresponding_users"; do
         if yunohost user permission info "$app.$permission" --output-as json --quiet \
-            | jq -e --arg user $user --arg section $section '.[$section] | index($user)' >/dev/null; then
+            | jq -e --arg user $user --arg section $section '.[$section] | index($user)' > /dev/null; then
             return 0
         fi
     done

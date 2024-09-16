@@ -41,7 +41,7 @@ do_post_regen() {
     mkdir -p "/etc/dovecot/yunohost.d/post-ext.d"
 
     # create vmail user
-    id vmail >/dev/null 2>&1 \
+    id vmail > /dev/null 2>&1 \
         || { mkdir -p /var/vmail; adduser --system --ingroup mail --uid 500 vmail --home /var/vmail --no-create-home; }
 
     # Delete legacy home for vmail that existed in the past but was empty, poluting /home/

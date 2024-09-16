@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
     from yunohost.utils.configpanel import RawConfig
-    from yunohost.utils.form import FormModel
+    from yunohost.utils.form import FormModel, ConfigPanelModel
     from yunohost.utils.configpanel import RawSettings
 
 logger = getLogger("yunohost.domain")
@@ -250,6 +250,7 @@ def domain_add(
     dyndns_recovery_password=None,
     ignore_dyndns=False,
     install_letsencrypt_cert=False,
+    skip_tos=False,
 ):
     """
     Create a custom domain
@@ -296,11 +297,17 @@ def domain_add(
         and len(domain.split(".")) == 3
     )
     if dyndns:
+        from yunohost.app import _ask_confirmation
         from yunohost.dyndns import is_subscribing_allowed
 
         # Do not allow to subscribe to multiple dyndns domains...
         if not is_subscribing_allowed():
             raise YunohostValidationError("domain_dyndns_already_subscribed")
+
+        if not skip_tos and Moulinette.interface.type == "cli" and os.isatty(1):
+            Moulinette.display(m18n.n("tos_dyndns_acknowledgement"), style="warning")
+            _ask_confirmation("confirm_tos_acknowledgement", kind="soft")
+
         if dyndns_recovery_password:
             assert_password_is_strong_enough("admin", dyndns_recovery_password)
 
@@ -703,6 +710,7 @@ def domain_config_set(
 
 def _get_DomainConfigPanel():
     from yunohost.utils.configpanel import ConfigPanel
+    from yunohost.dns import _set_managed_dns_records_hashes
 
     class DomainConfigPanel(ConfigPanel):
         entity_type = "domain"
@@ -780,6 +788,7 @@ def _get_DomainConfigPanel():
         def _apply(
             self,
             form: "FormModel",
+            config: "ConfigPanelModel",
             previous_settings: dict[str, Any],
             exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
         ) -> None:
@@ -803,11 +812,26 @@ def _get_DomainConfigPanel():
                     self.entity, next_settings["recovery_password"]
                 )
 
+            # NB: this is subtlely different from just checking `next_settings.get("use_auto_dns") since we want to find the exact situation where the admin *disables* the autodns`
+            remove_auto_dns_feature = "use_auto_dns" in next_settings and not next_settings["use_auto_dns"]
+            if remove_auto_dns_feature:
+                # disable auto dns by reseting every registrar form values
+                options = [
+                    option
+                    for option in config.get_section("registrar").options
+                    if not option.readonly
+                    and option.id != "use_auto_dns"
+                    and hasattr(form, option.id)
+                ]
+                for option in options:
+                    setattr(form, option.id, option.default)
+
             custom_css = next_settings.pop("custom_css", "").strip()
             if custom_css:
                 write_to_file(f"/usr/share/yunohost/portal/customassets/{self.entity}.custom.css", custom_css)
             # Make sure the value doesnt get written in the yml
-            form.custom_css = ""
+            if hasattr(form, "custom_css"):
+                form.custom_css = ""
 
             portal_options = [
                 "enable_public_apps_page",
@@ -861,7 +885,13 @@ def _get_DomainConfigPanel():
                     str(portal_settings_path), portal_settings, sort_keys=True, indent=4
                 )
 
-            super()._apply(form, previous_settings, exclude={"recovery_password"})
+            super()._apply(
+                form, config, previous_settings, exclude={"recovery_password"}
+            )
+
+            # Also remove `managed_dns_records_hashes` in settings which are not handled by the config panel
+            if remove_auto_dns_feature:
+                _set_managed_dns_records_hashes(self.entity, [])
 
             # Reload ssowat if default app changed
             if "default_app" in next_settings or "enable_public_apps_page" in next_settings:

@@ -11,19 +11,19 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 #
 # Case 1 (recommended) : your provided a snippet conf/extra_php-fpm.conf
 #
-# The actual PHP configuration will be automatically generated, 
+# The actual PHP configuration will be automatically generated,
 # and your extra_php-fpm.conf will be appended (typically contains PHP upload limits)
 #
 # The resulting configuration will be deployed to the appropriate place, /etc/php/$phpversion/fpm/pool.d/$app.conf
 #
-# Performance-related options in the PHP conf, such as : 
+# Performance-related options in the PHP conf, such as :
 # pm.max_children, pm.start_servers, pm.min_spare_servers pm.max_spare_servers
 # are computed from two parameters called "usage" and "footprint" which can be set to low/medium/high. (cf details below)
 #
-# If you wish to tweak those, please initialize the settings `fpm_usage` and `fpm_footprint` 
+# If you wish to tweak those, please initialize the settings `fpm_usage` and `fpm_footprint`
 # *prior* to calling this helper. Otherwise, "low" will be used as a default for both values.
 #
-# Otherwise, if you want the user to have control over these, we encourage to create a config panel 
+# Otherwise, if you want the user to have control over these, we encourage to create a config panel
 # (which should ultimately be standardized by the core ...)
 #
 # Case 2 (deprecate) : you provided an entire conf/php-fpm.conf
@@ -33,7 +33,7 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 # The resulting configuration will be deployed to the appropriate place, /etc/php/$phpversion/fpm/pool.d/$app.conf
 #
 # ----------------------
-# 
+#
 # fpm_footprint: Memory footprint of the service (low/medium/high).
 # low    - Less than 20 MB of RAM by pool.
 # medium - Between 20 MB and 40 MB of RAM by pool.
@@ -89,16 +89,14 @@ ynh_add_fpm_config() {
 
         # If no usage provided, default to the value existing in setting ... or to low
         local fpm_usage_in_setting=$(ynh_app_setting_get --app=$app --key=fpm_usage)
-        if [ -z "$usage" ]
-        then
+        if [ -z "$usage" ]; then
             usage=${fpm_usage_in_setting:-low}
             ynh_app_setting_set --app=$app --key=fpm_usage --value=$usage
         fi
 
         # If no footprint provided, default to the value existing in setting ... or to low
         local fpm_footprint_in_setting=$(ynh_app_setting_get --app=$app --key=fpm_footprint)
-        if [ -z "$footprint" ]
-        then
+        if [ -z "$footprint" ]; then
             footprint=${fpm_footprint_in_setting:-low}
             ynh_app_setting_set --app=$app --key=fpm_footprint --value=$footprint
         fi
@@ -120,8 +118,7 @@ ynh_add_fpm_config() {
         local old_php_fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
         local old_php_finalphpconf="$old_php_fpm_config_dir/pool.d/$app.conf"
 
-        if [[ -f "$old_php_finalphpconf" ]]
-        then
+        if [[ -f "$old_php_finalphpconf" ]]; then
             ynh_backup_if_checksum_is_different --file="$old_php_finalphpconf"
             ynh_remove_fpm_config
         fi
@@ -166,24 +163,24 @@ pm = __PHP_PM__
 pm.max_children = __PHP_MAX_CHILDREN__
 pm.max_requests = 500
 request_terminate_timeout = 1d
-" >"$phpfpm_path"
+" > "$phpfpm_path"
 
         if [ "$php_pm" = "dynamic" ]; then
             echo "
 pm.start_servers = __PHP_START_SERVERS__
 pm.min_spare_servers = __PHP_MIN_SPARE_SERVERS__
 pm.max_spare_servers = __PHP_MAX_SPARE_SERVERS__
-" >>"$phpfpm_path"
+" >> "$phpfpm_path"
 
         elif [ "$php_pm" = "ondemand" ]; then
             echo "
 pm.process_idle_timeout = 10s
-" >>"$phpfpm_path"
+" >> "$phpfpm_path"
         fi
 
         # Concatene the extra config.
         if [ -e $YNH_APP_BASEDIR/conf/extra_php-fpm.conf ]; then
-            cat $YNH_APP_BASEDIR/conf/extra_php-fpm.conf >>"$phpfpm_path"
+            cat $YNH_APP_BASEDIR/conf/extra_php-fpm.conf >> "$phpfpm_path"
         fi
     fi
 
@@ -196,6 +193,7 @@ pm.process_idle_timeout = 10s
         ynh_secure_remove --file="$finalphpconf"
         ynh_die --message="The new configuration broke php-fpm?"
     fi
+
     ynh_systemd_action --service_name=$fpm_service --action=reload
 }
 

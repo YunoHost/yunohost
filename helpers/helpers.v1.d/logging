@@ -93,8 +93,7 @@ ynh_exec_err() {
     # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
     # (because in the past eval was used) ...
     # we detect this by checking that there's no 2nd arg, and $1 contains a space
-    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
-    then
+    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]; then
         ynh_print_err --message="$(eval $@)"
     else
         # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
@@ -114,8 +113,7 @@ ynh_exec_warn() {
     # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
     # (because in the past eval was used) ...
     # we detect this by checking that there's no 2nd arg, and $1 contains a space
-    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
-    then
+    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]; then
         ynh_print_warn --message="$(eval $@)"
     else
         # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
@@ -135,8 +133,7 @@ ynh_exec_warn_less() {
     # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
     # (because in the past eval was used) ...
     # we detect this by checking that there's no 2nd arg, and $1 contains a space
-    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
-    then
+    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]; then
         eval $@ 2>&1
     else
         # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
@@ -156,8 +153,7 @@ ynh_exec_quiet() {
     # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
     # (because in the past eval was used) ...
     # we detect this by checking that there's no 2nd arg, and $1 contains a space
-    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
-    then
+    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]; then
         eval $@ > /dev/null
     else
         # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
@@ -177,8 +173,7 @@ ynh_exec_fully_quiet() {
     # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
     # (because in the past eval was used) ...
     # we detect this by checking that there's no 2nd arg, and $1 contains a space
-    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
-    then
+    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]; then
         eval $@ > /dev/null 2>&1
     else
         # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
@@ -199,7 +194,7 @@ ynh_exec_and_print_stderr_only_if_error() {
     rc=0
     # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
     "$@" 2> "$logfile" || rc="$?"
-    if (( rc != 0 )); then
+    if ((rc != 0)); then
         ynh_exec_warn cat "$logfile"
         ynh_secure_remove "$logfile"
         return "$rc"
@@ -216,7 +211,7 @@ ynh_exec_and_print_stderr_only_if_error() {
 #
 # Requires YunoHost version 3.2.0 or higher.
 ynh_print_OFF() {
-    exec {BASH_XTRACEFD}>/dev/null
+    exec {BASH_XTRACEFD}> /dev/null
 }
 
 # Restore the logging after ynh_print_OFF
@@ -229,7 +224,7 @@ ynh_print_OFF() {
 ynh_print_ON() {
     exec {BASH_XTRACEFD}>&1
     # Print an echo only for the log, to be able to know that ynh_print_ON has been called.
-    echo ynh_print_ON >/dev/null
+    echo ynh_print_ON > /dev/null
 }
 
 # Initial definitions for ynh_script_progression
@@ -271,9 +266,9 @@ ynh_script_progression() {
 
     # Always activate time when running inside CI tests
     if [ ${PACKAGE_CHECK_EXEC:-0} -eq 1 ]; then
-    	time=${time:-1}
+        time=${time:-1}
     else
-    	time=${time:-0}
+        time=${time:-0}
     fi
 
     last=${last:-0}
@@ -298,8 +293,8 @@ ynh_script_progression() {
         local weight_values=$(($(echo "$weight_valuesA" "$weight_valuesB" | grep -v -E '^\s*$' | tr '\n' '+' | sed 's/+$/+0/g')))
 
         # max_progression is a total number of calls to this helper.
-        # 	Less the number of calls with a weight value.
-        # 	Plus the total of weight values
+        #  Less the number of calls with a weight value.
+        #  Plus the total of weight values
         max_progression=$(($helper_calls - $weight_calls + $weight_values))
     fi
 
@@ -329,7 +324,7 @@ ynh_script_progression() {
 
     local print_exec_time=""
     if [ $time -eq 1 ] && [ "$exec_time" -gt 10 ]; then
-        print_exec_time=" [$(bc <<< "scale=1; $exec_time / 60" ) minutes]"
+        print_exec_time=" [$(bc <<< "scale=1; $exec_time / 60") minutes]"
     fi
 
     ynh_print_info "[$progression_bar] > ${message}${print_exec_time}"
@@ -343,5 +338,5 @@ ynh_script_progression() {
 #
 # Requires YunoHost version 3.6.0 or higher.
 ynh_return() {
-    echo "$1" >>"$YNH_STDRETURN"
+    echo "$1" >> "$YNH_STDRETURN"
 }

@@ -12,7 +12,7 @@ ynh_system_user_exists() {
     ynh_handle_getopts_args "$@"
     # ===========================================
 
-    getent passwd "$username" &>/dev/null
+    getent passwd "$username" &> /dev/null
 }
 
 # Check if a group exists on the system
@@ -27,7 +27,7 @@ ynh_system_group_exists() {
     ynh_handle_getopts_args "$@"
     # ===========================================
 
-    getent group "$group" &>/dev/null
+    getent group "$group" &> /dev/null
 }
 
 # Create a system user

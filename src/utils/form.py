@@ -2112,6 +2112,10 @@ def prompt_or_validate_form(
                 # Normalize and validate
                 form[option.id] = option.normalize(value, option)
                 context[option.id] = form[option.id]
+                # In case of boolean option, yes/no may be custom, set a true boolean as context
+                if isinstance(option, BooleanOption) and form[option.id] is not None:
+                    context[option.id] = form[option.id] == option.yes
+
             except (ValidationError, YunohostValidationError) as e:
                 if isinstance(e, ValidationError):
                     # TODO: handle multiple errors

@@ -68,8 +68,7 @@ ynh_systemctl() {
     # ===========================================
 
     # On CI, use length=100 because it's sometime hell to debug otherwise for super-long output
-    if ynh_in_ci_tests && [ $length -le 20 ]
-    then
+    if ynh_in_ci_tests && [ $length -le 20 ]; then
         length=100
     fi
 
@@ -84,12 +83,12 @@ ynh_systemctl() {
         # Following the starting of the app in its log
         if [ "$log_path" == "systemd" ]; then
             # Read the systemd journal
-            journalctl --unit=$service --follow --since=-0 --quiet >"$templog" &
+            journalctl --unit=$service --follow --since=-0 --quiet > "$templog" &
             # Get the PID of the journalctl command
             local pid_tail=$!
         else
             # Read the specified log file
-            tail --follow=name --retry --lines=0 "$log_path" >"$templog" 2>&1 &
+            tail --follow=name --retry --lines=0 "$log_path" > "$templog" 2>&1 &
             # Get the PID of the tail command
             local pid_tail=$!
         fi
@@ -139,8 +138,7 @@ ynh_systemctl() {
             # Also check the timeout using actual timestamp, because sometimes for some reason,
             # journalctl may take a huge time to run, and we end up waiting literally an entire hour
             # instead of 5 min ...
-            if [[ "$(( $(date +%s) - $starttime))" -gt "$timeout" ]]
-            then
+            if [[ "$(($(date +%s) - $starttime))" -gt "$timeout" ]]; then
                 i=$timeout
                 break
             fi
@@ -160,8 +158,7 @@ ynh_systemctl() {
             fi
 
             # If we tried to reload/start/restart the service but systemctl consider it to be still inactive/broken, then handle it as a failure
-            if ([ "$action" == "reload" ] || [ "$action" == "start" ] || [ "$action" == "restart" ]) && ! systemctl --quiet is-active $service
-            then
+            if ([ "$action" == "reload" ] || [ "$action" == "start" ] || [ "$action" == "restart" ]) && ! systemctl --quiet is-active $service; then
                 _ynh_clean_check_starting
                 return 1
             fi

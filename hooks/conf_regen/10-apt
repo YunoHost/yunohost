@@ -2,7 +2,7 @@
 
 set -e
 
-readonly YNH_DEFAULT_PHP_VERSION=7.4
+readonly YNH_DEFAULT_PHP_VERSION=8.2
 
 do_pre_regen() {
     pending_dir=$1
@@ -17,14 +17,14 @@ do_pre_regen() {
     echo "
 Package: php-common
 Pin: origin \"packages.sury.org\"
-Pin-Priority: 500" >>"${pending_dir}/etc/apt/preferences.d/extra_php_version"
+Pin-Priority: 500" >> "${pending_dir}/etc/apt/preferences.d/extra_php_version"
 
     packages_to_refuse_from_sury="php php-* openssl libssl1.1 libssl-dev"
     for package in $packages_to_refuse_from_sury; do
         echo "
 Package: $package
 Pin: origin \"packages.sury.org\"
-Pin-Priority: -1" >>"${pending_dir}/etc/apt/preferences.d/extra_php_version"
+Pin-Priority: -1" >> "${pending_dir}/etc/apt/preferences.d/extra_php_version"
     done
 
     # Add yarn
@@ -68,8 +68,7 @@ Pin-Priority: -1
 Package: bind9
 Pin: release *
 Pin-Priority: -1
-" >>"${pending_dir}/etc/apt/preferences.d/ban_packages"
-
+" >> "${pending_dir}/etc/apt/preferences.d/ban_packages"
 
 }
 
@@ -77,14 +76,13 @@ do_post_regen() {
     regen_conf_files=$1
 
     # Purge expired keys (such as sury 95BD4743)
-    EXPIRED_KEYS="$(LC_ALL='en_US.UTF-8' apt-key list 2>/dev/null | grep -A1 'expired:' | grep -v 'expired\|^-' | sed 's/\s//g')"
-    for KEY in $EXPIRED_KEYS; do apt-key del $KEY 2>/dev/null; done
+    EXPIRED_KEYS="$(LC_ALL='en_US.UTF-8' apt-key list 2> /dev/null | grep -A1 'expired:' | grep -v 'expired\|^-' | sed 's/\s//g')"
+    for KEY in $EXPIRED_KEYS; do apt-key del $KEY 2> /dev/null; done
 
     # Add sury key
     # We do this only at the post regen and if the key doesn't already exists, because we don't want the regenconf to fuck everything up if the regenconf runs while the network is down
-    if [[ ! -s /etc/apt/trusted.gpg.d/extra_php_version.gpg ]]
-    then
-        wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"
+    if [[ ! -s /etc/apt/trusted.gpg.d/extra_php_version.gpg ]]; then
+        wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor > "/etc/apt/trusted.gpg.d/extra_php_version.gpg"
     fi
 
     # Similar to Sury
@@ -94,8 +92,7 @@ do_post_regen() {
     fi
 
     # Make sure php7.4 is the default version when using php in cli
-    if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION
-    then
+    if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION; then
         update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
     fi
 }

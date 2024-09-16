@@ -106,7 +106,7 @@ i18n = "global_settings_setting"
         [email.smtp.smtp_relay_enabled]
         type = "boolean"
         default = false
-        
+
         [email.smtp.smtp_relay_host]
         type = "string"
         default = ""
@@ -123,13 +123,24 @@ i18n = "global_settings_setting"
         default = ""
         optional = true
         visible="smtp_relay_enabled"
-        
+
         [email.smtp.smtp_relay_password]
         type = "password"
         default = ""
         optional = true
         visible="smtp_relay_enabled"
         help = ""  # This is empty string on purpose, otherwise the core automatically set the 'good_practice_admin_password' string here which is not relevant, because the admin is not actually "choosing" the password ...
+
+        [email.smtp.smtp_backup_mx_domains]
+        type = "string"
+        default = ""
+        optional = true
+
+        [email.smtp.smtp_backup_mx_emails_whitelisted]
+        type = "string"
+        default = ""
+        optional = true
+        visible = "smtp_backup_mx_domains"
 
 [misc]
 

@@ -38,8 +38,8 @@ ynh_composer_exec() {
     local workdir="${composer_workdir:-$install_dir}"
 
     COMPOSER_HOME="$workdir/.composer" \
-    COMPOSER_MEMORY_LIMIT=-1 \
-    sudo -E -u "${composer_user:-$app}" \
-    php${php_version} "$workdir/composer.phar" $@ \
+        COMPOSER_MEMORY_LIMIT=-1 \
+        sudo -E -u "${composer_user:-$app}" \
+        php${php_version} "$workdir/composer.phar" $@ \
         -d "$workdir" --no-interaction --no-ansi 2>&1
 }
