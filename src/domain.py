@@ -375,6 +375,7 @@ def domain_add(
             except:
                 failed_letsencrypt_cert_install = True
         else:
+            logger.warning("Skipping Let's Encrypt certificate attempt because there's no wildcard configured on the parent domain's DNS records.")
             failed_letsencrypt_cert_install = True
 
     hook_callback("post_domain_add", args=[domain])
