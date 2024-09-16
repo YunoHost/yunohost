@@ -1,3 +1,16 @@
+yunohost (12.0.4) testing; urgency=low
+
+  - general: add TOS acknowledgement during postinstall, dyndns domain creation, and migration for existing installs ([#1949](http://github.com/YunoHost/yunohost/pull/1949))
+  - domains: fix `custom_css` may not be in the the form when changing other domain panel values (d5d6fb87a)
+  - domains: add option to install a lets encrypt certificate when adding a subdomain of an already added domain ([#1936](http://github.com/YunoHost/yunohost/pull/1936))
+  - configpanels: fix boolean option in context evaluation for custom yes/no values (f19b6f84a)
+  - dns: make auto dns feature optional ([#1951](http://github.com/YunoHost/yunohost/pull/1951))
+  - cli: Add yunohost-portal to the --version output ([#1946](http://github.com/YunoHost/yunohost/pull/1946))
+
+  Thanks to all contributors <3 ! (axolotle, Kay0u, Mer, selfhoster1312)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 16 Sep 2024 18:18:14 +0200
+
 yunohost (12.0.3) testing; urgency=low
 
   - (sync bullseye changes since 12.0.2)
