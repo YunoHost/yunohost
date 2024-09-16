@@ -61,7 +61,7 @@ function n_grep() {
 # Setup and state
 #
 
-VERSION="v9.2.3"
+VERSION="v10.0.0"
 
 N_PREFIX="${N_PREFIX-/usr/local}"
 N_PREFIX=${N_PREFIX%/}
@@ -1084,9 +1084,14 @@ function get_package_engine_version() {
   g_target_node=
   local filepath="$1"
   verbose_log "found" "${filepath}"
-  command -v node &> /dev/null || abort "an active version of node is required to read 'engines' from package.json"
   local range
-  range="$(node -e "package = require('${filepath}'); if (package && package.engines && package.engines.node) console.log(package.engines.node)")"
+  if command -v jq &> /dev/null; then
+    range="$(jq -r '.engines.node // ""' < "${filepath}")"
+  elif command -v node &> /dev/null; then
+    range="$(node -e "package = require('${filepath}'); if (package && package.engines && package.engines.node) console.log(package.engines.node)")"
+  else
+    abort "either jq or an active version of node is required to read 'engines' from package.json"
+  fi
   verbose_log "read" "${range}"
   [[ -n "${range}" ]] || return 2
   if [[ "*" == "${range}" ]]; then
@@ -1200,6 +1205,16 @@ function get_auto_version() {
 function get_latest_resolved_version() {
   g_target_node=
   local version=${1}
+
+  # Transform some labels before processing further to allow fast-track for exact numeric versions.
+  if [[ "${version}" = "auto" ]]; then
+    get_auto_version || return 2
+    version="${g_target_node}"
+  elif [[ "${version}" = "engine" ]]; then
+    get_engine_version || return 2
+    version="${g_target_node}"
+  fi
+
   simple_version=${version#node/} # Only place supporting node/ [sic]
   if is_exact_numeric_version "${simple_version}"; then
     # Just numbers, already resolved, no need to lookup first.
@@ -1254,11 +1269,9 @@ function display_local_versions() {
     version="$(display_latest_node_support_alias "${version}")"
     match_count=1
   elif [[ "${version}" = "auto" ]]; then
-    # suppress stdout logging so lsr layout same as usual for scripting
     get_auto_version || return 2
     version="${g_target_node}"
   elif [[ "${version}" = "engine" ]]; then
-    # suppress stdout logging so lsr layout same as usual for scripting
     get_engine_version || return 2
     version="${g_target_node}"
   fi
@@ -1305,11 +1318,9 @@ function display_remote_versions() {
     version="$(display_latest_node_support_alias "${version}")"
     match_count=1
   elif [[ "${version}" = "auto" ]]; then
-    # suppress stdout logging so lsr layout same as usual for scripting
     get_auto_version || return 2
     version="${g_target_node}"
   elif [[ "${version}" = "engine" ]]; then
-    # suppress stdout logging so lsr layout same as usual for scripting
     get_engine_version || return 2
     version="${g_target_node}"
   fi
@@ -1451,7 +1462,7 @@ function show_diagnostics() {
 
   printf "\nnode\n"
   if command -v node &> /dev/null; then
-    command -v node && node --version
+    node --version
     node -e 'if (process.versions.v8) console.log("JavaScript engine: v8");'
 
     printf "\nnpm\n"
@@ -1460,19 +1471,22 @@ function show_diagnostics() {
 
   printf "\ntar\n"
   if command -v tar &> /dev/null; then
-    command -v tar && tar --version
+    tar --version
   else
     echo_red "tar not found. Needed for extracting downloads."
   fi
 
   printf "\ncurl or wget\n"
   if command -v curl &> /dev/null; then
-    command -v curl && curl --version
+    curl --version
   elif command -v wget &> /dev/null; then
-    command -v wget && wget --version
+    wget --version
   else
     echo_red "Neither curl nor wget found. Need one of them for downloads."
   fi
+
+  printf "\njq\n"
+  command -v jq && jq --version
 
   printf "\nuname\n"
   uname -a
