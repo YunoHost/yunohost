@@ -68,7 +68,7 @@ from yunohost.app_catalog import (  # noqa
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
-    from yunohost.utils.configpanel import RawSettings
+    from yunohost.utils.configpanel import RawSettings, ConfigPanelModel
     from yunohost.utils.form import FormModel
 
 logger = getLogger("yunohost.app")
@@ -1860,6 +1860,7 @@ def _get_AppConfigPanel():
         def _apply(
             self,
             form: "FormModel",
+            config: "ConfigPanelModel",
             previous_settings: dict[str, Any],
             exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
         ) -> None:

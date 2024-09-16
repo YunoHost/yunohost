@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
     from yunohost.utils.configpanel import RawConfig
-    from yunohost.utils.form import FormModel
+    from yunohost.utils.form import FormModel, ConfigPanelModel
     from yunohost.utils.configpanel import RawSettings
 
 logger = getLogger("yunohost.domain")
@@ -678,6 +678,7 @@ def domain_config_set(
 
 def _get_DomainConfigPanel():
     from yunohost.utils.configpanel import ConfigPanel
+    from yunohost.dns import _set_managed_dns_records_hashes
 
     class DomainConfigPanel(ConfigPanel):
         entity_type = "domain"
@@ -755,6 +756,7 @@ def _get_DomainConfigPanel():
         def _apply(
             self,
             form: "FormModel",
+            config: "ConfigPanelModel",
             previous_settings: dict[str, Any],
             exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
         ) -> None:
@@ -777,6 +779,20 @@ def _get_DomainConfigPanel():
                 domain_dyndns_set_recovery_password(
                     self.entity, next_settings["recovery_password"]
                 )
+
+            # NB: this is subtlely different from just checking `next_settings.get("use_auto_dns") since we want to find the exact situation where the admin *disables* the autodns`
+            remove_auto_dns_feature = "use_auto_dns" in next_settings and not next_settings["use_auto_dns"]
+            if remove_auto_dns_feature:
+                # disable auto dns by reseting every registrar form values
+                options = [
+                    option
+                    for option in config.get_section("registrar").options
+                    if not option.readonly
+                    and option.id != "use_auto_dns"
+                    and hasattr(form, option.id)
+                ]
+                for option in options:
+                    setattr(form, option.id, option.default)
 
             custom_css = next_settings.pop("custom_css", "").strip()
             if custom_css:
@@ -837,7 +853,13 @@ def _get_DomainConfigPanel():
                     str(portal_settings_path), portal_settings, sort_keys=True, indent=4
                 )
 
-            super()._apply(form, previous_settings, exclude={"recovery_password"})
+            super()._apply(
+                form, config, previous_settings, exclude={"recovery_password"}
+            )
+
+            # Also remove `managed_dns_records_hashes` in settings which are not handled by the config panel
+            if remove_auto_dns_feature:
+                _set_managed_dns_records_hashes(self.entity, [])
 
             # Reload ssowat if default app changed
             if "default_app" in next_settings or "enable_public_apps_page" in next_settings:
