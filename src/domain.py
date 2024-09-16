@@ -774,6 +774,7 @@ def _get_DomainConfigPanel():
                     self.entity, next_settings["recovery_password"]
                 )
 
+            # NB: this is subtlely different from just checking `next_settings.get("use_auto_dns") since we want to find the exact situation where the admin *disables* the autodns`
             remove_auto_dns_feature = "use_auto_dns" in next_settings and not next_settings["use_auto_dns"]
             if remove_auto_dns_feature:
                 # disable auto dns by reseting every registrar form values
