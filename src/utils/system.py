@@ -26,7 +26,7 @@ from yunohost.utils.error import YunohostError
 
 logger = logging.getLogger("yunohost.utils.packages")
 
-YUNOHOST_PACKAGES = ["yunohost", "yunohost-admin", "moulinette", "ssowat"]
+YUNOHOST_PACKAGES = ["yunohost", "yunohost-admin", "yunohost-portal", "moulinette", "ssowat"]
 
 
 def debian_version():

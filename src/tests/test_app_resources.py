@@ -44,6 +44,7 @@ def setup_function(function):
     os.system("echo 'id: testapp' > /etc/yunohost/apps/testapp/settings.yml")
     os.system("echo 'packaging_format = 2' > /etc/yunohost/apps/testapp/manifest.toml")
     os.system("echo 'id = \"testapp\"' >> /etc/yunohost/apps/testapp/manifest.toml")
+    os.system("echo 'description.en = \"A dummy app to test app resources\"' >> /etc/yunohost/apps/testapp/manifest.toml")
 
 
 def teardown_function(function):
@@ -55,7 +56,7 @@ def clean():
     os.system("rm -rf /etc/yunohost/apps/testapp")
     os.system("rm -rf /var/www/testapp")
     os.system("rm -rf /home/yunohost.app/testapp")
-    os.system("apt remove lolcat sl nyancat yarn >/dev/null 2>/dev/null")
+    os.system("apt remove lolcat sl nyancat influxdb2 >/dev/null 2>/dev/null")
     os.system("userdel testapp 2>/dev/null")
 
     for p in user_permission_list()["permissions"]:
@@ -294,17 +295,17 @@ def test_resource_apt():
     conf = {
         "packages": "nyancat, sl",
         "extras": {
-            "yarn": {
-                "repo": "deb https://dl.yarnpkg.com/debian/ stable main",
-                "key": "https://dl.yarnpkg.com/debian/pubkey.gpg",
-                "packages": "yarn",
+            "influxdb": {
+                "repo": "deb https://repos.influxdata.com/debian stable main",
+                "key": "https://repos.influxdata.com/influxdata-archive_compat.key",
+                "packages": "influxdb2",
             }
         },
     }
 
     assert os.system("dpkg --list | grep -q 'ii *nyancat '") != 0
     assert os.system("dpkg --list | grep -q 'ii *sl '") != 0
-    assert os.system("dpkg --list | grep -q 'ii *yarn '") != 0
+    assert os.system("dpkg --list | grep -q 'ii *influxdb2 '") != 0
     assert os.system("dpkg --list | grep -q 'ii *lolcat '") != 0
     assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps '") != 0
 
@@ -312,7 +313,7 @@ def test_resource_apt():
 
     assert os.system("dpkg --list | grep -q 'ii *nyancat '") == 0
     assert os.system("dpkg --list | grep -q 'ii *sl '") == 0
-    assert os.system("dpkg --list | grep -q 'ii *yarn '") == 0
+    assert os.system("dpkg --list | grep -q 'ii *influxdb2 '") == 0
     assert (
         os.system("dpkg --list | grep -q 'ii *lolcat '") != 0
     )  # Lolcat shouldnt be installed yet
@@ -323,7 +324,7 @@ def test_resource_apt():
 
     assert os.system("dpkg --list | grep -q 'ii *nyancat '") == 0
     assert os.system("dpkg --list | grep -q 'ii *sl '") == 0
-    assert os.system("dpkg --list | grep -q 'ii *yarn '") == 0
+    assert os.system("dpkg --list | grep -q 'ii *influxdb2 '") == 0
     assert os.system("dpkg --list | grep -q 'ii *lolcat '") == 0
     assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps '") == 0
 
@@ -331,7 +332,7 @@ def test_resource_apt():
 
     assert os.system("dpkg --list | grep -q 'ii *nyancat '") != 0
     assert os.system("dpkg --list | grep -q 'ii *sl '") != 0
-    assert os.system("dpkg --list | grep -q 'ii *yarn '") != 0
+    assert os.system("dpkg --list | grep -q 'ii *influxdb2 '") != 0
     assert os.system("dpkg --list | grep -q 'ii *lolcat '") != 0
     assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps '") != 0
 
