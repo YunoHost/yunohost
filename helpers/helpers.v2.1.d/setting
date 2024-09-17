@@ -44,11 +44,13 @@ ynh_app_setting_set() {
 #
 # Hence it's meant as a replacement for this legacy overly complex syntax:
 #
+# ```
 # if [ -z "${foo:-}" ]
 # then
 #     foo="bar"
 #     ynh_app_setting_set --key="foo" --value="$foo"
 # fi
+# ```
 #
 # usage: ynh_app_setting_set_default --key=key --value=value
 # | arg: --app=     - the application id (global $app by default)
