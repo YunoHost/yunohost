@@ -4,9 +4,9 @@ YNH_APT_INSTALL_DEPENDENCIES_REPLACE="true"
 
 # Define and install dependencies with a equivs control file
 #
-# example : ynh_install_app_dependencies dep1 dep2 "dep3|dep4|dep5"
+# example : ynh_apt_install_dependencies dep1 dep2 "dep3|dep4|dep5"
 #
-# usage: ynh_install_app_dependencies dep [dep [...]]
+# usage: ynh_apt_install_dependencies dep [dep [...]]
 # | arg: dep - the package name to install in dependence.
 # | arg: "dep1|dep2|…" - You can specify alternatives. It will require to install (dep1 or dep2, etc).
 #
@@ -39,8 +39,7 @@ ynh_apt_install_dependencies() {
     # The (?<=php) syntax corresponds to lookbehind ;)
     local specific_php_version=$(grep -oP '(?<=php)[0-9.]+(?=-|\>|)' <<< "$dependencies" | sort -u)
 
-    if [[ -n "$specific_php_version" ]]
-    then
+    if [[ -n "$specific_php_version" ]]; then
         # Cover a small edge case where a packager could have specified "php7.4-pwet php5-gni" which is confusing
         [[ $(echo $specific_php_version | wc -l) -eq 1 ]] \
             || ynh_die "Inconsistent php versions in dependencies ... found : $specific_php_version"
@@ -51,18 +50,16 @@ ynh_apt_install_dependencies() {
 
         # If the PHP version changed, remove the old fpm conf
         if [ -n "$old_php_version" ] && [ "$old_php_version" != "$specific_php_version" ]; then
-            if [[ -f "/etc/php/$php_version/fpm/pool.d/$app.conf" ]]
-            then
+            if [[ -f "/etc/php/$php_version/fpm/pool.d/$app.conf" ]]; then
                 ynh_backup_if_checksum_is_different "/etc/php/$php_version/fpm/pool.d/$app.conf"
-                ynh_remove_fpm_config
+                ynh_config_remove_phpfpm
             fi
         fi
         # Store php_version into the config of this app
         ynh_app_setting_set --key=php_version --value=$specific_php_version
 
         # Set the default php version back as the default version for php-cli.
-        if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION
-        then
+        if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION; then
             update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
         fi
     elif grep --quiet 'php' <<< "$dependencies"; then
@@ -72,56 +69,55 @@ ynh_apt_install_dependencies() {
     # Specific tweak related to Postgresql (cf end of the helper)
     local psql_installed="$(_ynh_apt_package_is_installed "postgresql-$PSQL_VERSION" && echo yes || echo no)"
 
-    # The first time we run ynh_install_app_dependencies, we will replace the
+    # The first time we run ynh_apt_install_dependencies, we will replace the
     # entire control file (This is in particular meant to cover the case of
-    # upgrade script where ynh_install_app_dependencies is called with this
+    # upgrade script where ynh_apt_install_dependencies is called with this
     # expected effect) Otherwise, any subsequent call will add dependencies
     # to those already present in the equivs control file.
-    if [[ $YNH_APT_INSTALL_DEPENDENCIES_REPLACE == "true" ]]
-    then
+    if [[ $YNH_APT_INSTALL_DEPENDENCIES_REPLACE == "true" ]]; then
         YNH_APT_INSTALL_DEPENDENCIES_REPLACE="false"
     else
         local current_dependencies=""
-        if _ynh_apt_package_is_installed "${app_ynh_deps}"
-        then
+        if _ynh_apt_package_is_installed "${app_ynh_deps}"; then
             current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${app_ynh_deps}) "
             current_dependencies=${current_dependencies// | /|}
         fi
         dependencies="$current_dependencies, $dependencies"
     fi
 
-    # #############################
-    # Actual install using equivs #
-    # #############################
+    # ################
+    # Actual install #
+    # ################
 
-    # Prepare the virtual-dependency control file for equivs
+    # Prepare the virtual-dependency control file for dpkg-deb --build
     local TMPDIR=$(mktemp --directory)
-    cat >${TMPDIR}/control <<EOF # Make a control file for equivs-build
+    mkdir -p ${TMPDIR}/${app_ynh_deps}/DEBIAN
+    # For some reason, dpkg-deb insists for folder perm to be 755 and sometimes it's 777 o_O?
+    chmod -R 755 ${TMPDIR}/${app_ynh_deps}
+
+    cat > ${TMPDIR}/${app_ynh_deps}/DEBIAN/control << EOF
 Section: misc
 Priority: optional
 Package: ${app_ynh_deps}
 Version: ${version}
-Depends: ${dependencies}
+Depends: ${dependencies//,,/,}
 Architecture: all
+Maintainer: root@localhost
 Description: Fake package for ${app} (YunoHost app) dependencies
  This meta-package is only responsible of installing its dependencies.
 EOF
-
-    # Make sure to delete equivs' legacy compat file
-    # It's now handle somewhat magically through the control file
-    rm -f /usr/share/equivs/template/debian/compat
 
     _ynh_apt update
 
     _ynh_wait_dpkg_free
 
-    (
-        # NB: this is in a subshell (though not sure why exactly not just use pushd/popd...)
-        cd "$TMPDIR"
-        # Install the fake package without its dependencies with dpkg --force-depends
-        LC_ALL=C equivs-build ./control > ./equivs_log 2>&1 || { cat ./equivs_log; false; }
-        LC_ALL=C dpkg --force-depends --install "./${app_ynh_deps}_${version}_all.deb" > ./dpkg_log 2>&1
-    )
+    # Install the fake package without its dependencies with dpkg --force-depends
+    if ! LC_ALL=C dpkg-deb --build "${TMPDIR}/${app_ynh_deps}" "${TMPDIR}/${app_ynh_deps}.deb" > "${TMPDIR}/dpkg_log" 2>&1; then
+        cat "${TMPDIR}/dpkg_log" >&2
+        ynh_die --message="Unable to install dependencies"
+    fi
+    # Don't crash in case of error, because is nicely covered by the following line
+    LC_ALL=C dpkg --force-depends --install "${TMPDIR}/${app_ynh_deps}.deb" 2>&1 | tee "${TMPDIR}/dpkg_log" || true
 
     # Then install the missing dependencies with apt install
     _ynh_apt_install --fix-broken || {
@@ -134,18 +130,17 @@ EOF
         # Fake an install of those dependencies to see the errors
         # The sed command here is, Print only from 'Reading state info' to the end.
         [[ -n "$problematic_dependencies" ]] && _ynh_apt_install $problematic_dependencies --dry-run 2>&1 | sed --quiet '/Reading state info/,$p' | grep -v "fix-broken\|Reading state info" >&2
-        ynh_die "Unable to install dependencies"
+        ynh_die "Unable to install apt dependencies"
     }
     rm --recursive --force "$TMPDIR" # Remove the temp dir.
 
     # check if the package is actually installed
-    _ynh_apt_package_is_installed "${app_ynh_deps}" || ynh_die "Unable to install dependencies"
+    _ynh_apt_package_is_installed "${app_ynh_deps}" || ynh_die "Unable to install apt dependencies"
 
     # Specific tweak related to Postgresql
     # -> trigger postgresql regenconf if we may have just installed postgresql
     local psql_installed2="$(_ynh_apt_package_is_installed "postgresql-$PSQL_VERSION" && echo yes || echo no)"
-    if [[ "$psql_installed" != "$psql_installed2" ]]
-    then
+    if [[ "$psql_installed" != "$psql_installed2" ]]; then
         yunohost tools regen-conf postgresql
     fi
 
@@ -167,16 +162,14 @@ ynh_apt_remove_dependencies() {
 
     # Edge case where the app dep may be on hold,
     # cf https://forum.yunohost.org/t/migration-error-cause-of-ffsync/20675/4
-    if apt-mark showhold | grep -q -w ${app_ynh_deps}
-    then
+    if apt-mark showhold | grep -q -w ${app_ynh_deps}; then
         apt-mark unhold ${app_ynh_deps}
     fi
 
     # Remove the fake package and its dependencies if they not still used.
     # (except if dpkg doesn't know anything about the package,
     # which should be symptomatic of a failed install, and we don't want bash to report an error)
-    if dpkg-query --show ${app_ynh_deps} &>/dev/null
-    then
+    if dpkg-query --show ${app_ynh_deps} &> /dev/null; then
         _ynh_apt autoremove --purge ${app_ynh_deps}
     fi
 }
@@ -198,14 +191,32 @@ ynh_apt_install_dependencies_from_extra_repository() {
     # ===========================================
 
     # Split the repository into uri, suite and components.
-    repo="${repo#deb }"
-    local uri="$(echo "$repo" | awk '{ print $1 }')"
-    local suite="$(echo "$repo" | awk '{ print $2 }')"
-    local component="${repo##$uri $suite }"
+    IFS=', ' read -r -a repo_parts <<< "$repo"
+    index=0
+
+    # Remove "deb " at the beginning of the repo.
+    if [[ "${repo_parts[0]}" == "deb" ]]; then
+        index=1
+    fi
+    uri="${repo_parts[$index]}"
+    index=$((index + 1))
+    suite="${repo_parts[$index]}"
+    index=$((index + 1))
+
+    # Get the components
+    if (("${#repo_parts[@]}" > 0)); then
+        component="${repo_parts[*]:$index}"
+    fi
+
+    if [[ "$key" == "trusted=yes" ]]; then
+        trust="[trusted=yes]"
+    else
+        trust=""
+    fi
 
     # Add the new repo in sources.list.d
     mkdir --parents "/etc/apt/sources.list.d"
-    echo "deb $uri $suite $component" > "/etc/apt/sources.list.d/$app.list"
+    echo "deb $trust $uri $suite $component" > "/etc/apt/sources.list.d/$app.list"
 
     # Pin the new repo with the default priority, so it won't be used for upgrades.
     # Build $pin from the uri without http and any sub path
@@ -220,9 +231,11 @@ Pin: origin $pin
 Pin-Priority: 995
 EOF
 
-    mkdir --parents "/etc/apt/trusted.gpg.d"
-    # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
-    wget --timeout 900 --quiet "$key" --output-document=- | gpg --dearmor > /etc/apt/trusted.gpg.d/$app.gpg
+    if [ -n "$key" ] && [[ "$key" != "trusted=yes" ]]; then
+        mkdir --parents "/etc/apt/trusted.gpg.d"
+        # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
+        wget --timeout 900 --quiet "$key" --output-document=- | gpg --dearmor > /etc/apt/trusted.gpg.d/$app.gpg
+    fi
 
     # Update the list of package with the new repo NB: we use -o
     # Dir::Etc::sourcelist to only refresh this repo, because
@@ -261,7 +274,7 @@ _ynh_wait_dpkg_free() {
     # With seq 1 17, timeout will be almost 30 minutes
     for try in $(seq 1 17); do
         # Check if /var/lib/dpkg/lock is used by another process
-        if lsof /var/lib/dpkg/lock >/dev/null; then
+        if lsof /var/lib/dpkg/lock > /dev/null; then
             echo "apt is already in use..."
             # Sleep an exponential time at each round
             sleep $((try * try))
@@ -279,7 +292,7 @@ _ynh_wait_dpkg_free() {
                     set -o xtrace # set -x
                     return 1
                 fi
-            done 9<<<"$(ls -1 $dpkg_dir)"
+            done 9<<< "$(ls -1 $dpkg_dir)"
             set -o xtrace # set -x
             return 0
         fi
@@ -291,14 +304,14 @@ _ynh_wait_dpkg_free() {
 # Check either a package is installed or not
 _ynh_apt_package_is_installed() {
     local package=$1
-    dpkg-query --show --showformat='${db:Status-Status}' "$package" 2>/dev/null \
-        | grep --quiet "^installed$" &>/dev/null
+    dpkg-query --show --showformat='${db:Status-Status}' "$package" 2> /dev/null \
+        | grep --quiet "^installed$" &> /dev/null
 }
 
 # Return the installed version of an apt package, if installed
 _ynh_apt_package_version() {
     if _ynh_apt_package_is_installed "$package"; then
-        dpkg-query --show --showformat='${Version}' "$package" 2>/dev/null
+        dpkg-query --show --showformat='${Version}' "$package" 2> /dev/null
     else
         echo ''
     fi

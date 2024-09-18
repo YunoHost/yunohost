@@ -4,7 +4,13 @@
 #
 # usage: ynh_die "Some message"
 ynh_die() {
-    echo "$1" 1>&2
+    set +o xtrace # set +x
+    if [[ -n "${1:-}" ]]; then
+        if [[ -n "${YNH_STDRETURN:-}" ]]; then
+            python3 -c 'import yaml, sys; print(yaml.dump({"error": sys.stdin.read()}))' <<< "${1:-}" >> "$YNH_STDRETURN"
+        fi
+        echo "${1:-}" 1>&2
+    fi
     exit 1
 }
 
@@ -43,19 +49,18 @@ ynh_exec_and_print_stderr_only_if_error() {
     rc=0
     # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
     "$@" 2> "$logfile" || rc="$?"
-    if (( rc != 0 )); then
+    if ((rc != 0)); then
         cat "$logfile" >&2
         ynh_safe_rm "$logfile"
         return "$rc"
     fi
 }
 
-# Return data to the YunoHost core for later processing
-# (to be used by special hooks like app config panel and core diagnosis)
+# Return data to the YunoHost core for later processing (to be used by special hooks like app config panel and core diagnosis)
 #
 # usage: ynh_return somedata
 ynh_return() {
-    echo "$1" >>"$YNH_STDRETURN"
+    echo "$1" >> "$YNH_STDRETURN"
 }
 
 # Initial definitions for ynh_script_progression
@@ -97,10 +102,9 @@ ynh_script_progression() {
     local expected_progression="$((($increment_progression + 1) * $progress_scale / $max_progression - $effective_progression))"
 
     # Hack for the "--last" message
-    if grep -qw 'completed' <<< "$1";
-    then
-         effective_progression=$progress_scale
-         expected_progression=0
+    if grep -qw 'completed' <<< "$1"; then
+        effective_progression=$progress_scale
+        expected_progression=0
     fi
     # left_progression is the progression not yet done
     local left_progression="$(($progress_scale - $effective_progression - $expected_progression))"

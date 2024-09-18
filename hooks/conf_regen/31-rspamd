@@ -13,8 +13,8 @@ do_pre_regen() {
         "${pending_dir}/etc/rspamd/local.d/dkim_signing.conf"
     install -D -m 644 rspamd.sieve \
         "${pending_dir}/etc/dovecot/global_script/rspamd.sieve"
-	install -D -m 644 redis.conf \
-		"${pending_dir}/etc/rspamd/local.d/redis.conf"
+    install -D -m 644 redis.conf \
+        "${pending_dir}/etc/rspamd/local.d/redis.conf"
 }
 
 do_post_regen() {

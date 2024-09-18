@@ -1,11 +1,9 @@
 .install_debs: &install_debs
-    - apt-get update -o Acquire::Retries=3
     - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ${CI_PROJECT_DIR}/*.deb
-    - pip3 install -U mock pip pytest pytest-cov pytest-mock pytest-sugar requests-mock tox ansi2html black jinja2 "packaging<22"
 
 .test-stage:
   stage: test
-  image: "after-install"
+  image: "core-tests"
   variables:
     PYTEST_ADDOPTS: "--color=yes"
   before_script:
@@ -34,6 +32,7 @@ full-tests:
     PYTEST_ADDOPTS: "--color=yes"
   before_script:
     - *install_debs
+    - pip install mock pip pyOpenSSL pytest pytest-cov pytest-mock pytest-sugar requests-mock "packaging<22"
     - yunohost tools postinstall -d domain.tld -u syssa -F 'Syssa Mine' -p the_password --ignore-dyndns --force-diskspace
   script:
     - python3 -m pytest --cov=yunohost tests/ src/tests/ --junitxml=report.xml
@@ -57,14 +56,17 @@ test-actionmap:
     changes:
       - share/actionsmap.yml
 
-test-helpers:
+test-helpers2:
   extends: .test-stage
   script:
     - cd tests
     - bash test_helpers.sh
-#  only:
-#    changes:
-#      - helpers/*
+
+test-helpers2.1:
+  extends: .test-stage
+  script:
+    - cd tests
+    - bash test_helpers.sh 2.1
 
 test-domains:
   extends: .test-stage

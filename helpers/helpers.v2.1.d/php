@@ -59,9 +59,9 @@ ynh_config_add_phpfpm() {
     # Apps willing to tweak these should use ynh_setting_set_default_value (in install and upgrade?)
     #
     local php_upload_max_filesize=${php_upload_max_filesize:-50M}
-    local php_process_management=${php_process_management:-ondemand}  # alternatively 'dynamic' or 'static'
+    local php_process_management=${php_process_management:-ondemand} # alternatively 'dynamic' or 'static'
     local php_max_children=${php_max_children:-$(_default_php_max_children)}
-    local php_memory_limit=${php_memory_limit:-128M}  # default value is from global php.ini
+    local php_memory_limit=${php_memory_limit:-128M} # default value is from global php.ini
 
     local phpfpm_template=$(mktemp)
     cat << EOF > $phpfpm_template
@@ -102,7 +102,7 @@ EOF
 
     # Concatene the extra config
     if [ -e $YNH_APP_BASEDIR/conf/extra_php-fpm.conf ]; then
-        cat $YNH_APP_BASEDIR/conf/extra_php-fpm.conf >>"$phpfpm_template"
+        cat $YNH_APP_BASEDIR/conf/extra_php-fpm.conf >> "$phpfpm_template"
     fi
 
     # Make sure the fpm pool dir exists
@@ -111,7 +111,7 @@ EOF
     ynh_config_add --template="$phpfpm_template" --destination="/etc/php/$php_version/fpm/pool.d/$app.conf"
 
     # Validate that the new php conf doesn't break php-fpm entirely
-    if ! php-fpm${php_version} --test 2>/dev/null; then
+    if ! php-fpm${php_version} --test 2> /dev/null; then
         php-fpm${php_version} --test || true
         ynh_safe_rm "/etc/php/$php_version/fpm/pool.d/$app.conf"
         ynh_die "The new configuration broke php-fpm?"

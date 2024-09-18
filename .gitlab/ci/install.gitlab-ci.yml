@@ -14,9 +14,8 @@
 
 upgrade:
   extends: .install-stage
-  image: "after-install"
+  image: "core-tests"
   script:
-    - apt-get update -o Acquire::Retries=3
     - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ${CI_PROJECT_DIR}/*.deb
 
 
@@ -24,6 +23,5 @@ install-postinstall:
   extends: .install-stage
   image: "before-install"
   script:
-    - apt-get update -o Acquire::Retries=3
     - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ${CI_PROJECT_DIR}/*.deb
     - yunohost tools postinstall -d domain.tld -u syssa -F 'Syssa Mine' -p the_password --ignore-dyndns --force-diskspace

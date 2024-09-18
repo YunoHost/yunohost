@@ -1170,7 +1170,10 @@ class AptDependenciesAppResource(AppResource):
         super().__init__(properties, *args, **kwargs)
 
         if isinstance(self.packages, str):
-            self.packages = [value.strip() for value in self.packages.split(",")]
+            if self.packages.strip() == "":
+                self.packages = []
+            else:
+                self.packages = [value.strip() for value in self.packages.split(",")]
 
         if self.packages_from_raw_bash:
             out, err = self.check_output_bash_snippet(self.packages_from_raw_bash)
@@ -1194,7 +1197,7 @@ class AptDependenciesAppResource(AppResource):
                         f"Error while running apt resource packages_from_raw_bash snippet for '{key}' extras:"
                     )
                     logger.error(err)
-                values["packages"] = values.get("packages", []) + [value.strip() for value in out.split("\n")]  # type: ignore
+                values["packages"] = values.get("packages", []) + [value.strip() for value in out.split("\n") if value.strip()]  # type: ignore
 
             if (
                 not isinstance(values.get("repo"), str)
@@ -1224,7 +1227,9 @@ class AptDependenciesAppResource(AppResource):
                 "ynh_install_extra_app_dependencies"
             )
 
-        script = " ".join([ynh_apt_install_dependencies, *self.packages])
+        script = ""
+        if self.packages:
+            script += " ".join([ynh_apt_install_dependencies, *self.packages])
         for repo, values in self.extras.items():
             script += "\n" + " ".join(
                 [

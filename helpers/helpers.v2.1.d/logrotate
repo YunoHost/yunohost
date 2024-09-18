@@ -22,8 +22,7 @@ ynh_config_add_logrotate() {
     fi
     set +o noglob
 
-    for stuff in $logfile
-    do
+    for stuff in $logfile; do
         # Make sure the permissions of the parent dir are correct (otherwise the config file could be ignored and the corresponding logs never rotated)
         local dir=$(dirname "$stuff")
         mkdir --parents $dir
@@ -32,7 +31,7 @@ ynh_config_add_logrotate() {
     done
 
     local tempconf="$(mktemp)"
-    cat << EOF >$tempconf
+    cat << EOF > $tempconf
 $logfile {
     # Rotate if the logfile exceeds 100Mo
     size 100M
@@ -53,8 +52,7 @@ $logfile {
 }
 EOF
 
-    if [[ "$FIRST_CALL_TO_LOGROTATE" == "true" ]]
-    then
+    if [[ "$FIRST_CALL_TO_LOGROTATE" == "true" ]]; then
         cat $tempconf > /etc/logrotate.d/$app
     else
         cat $tempconf >> /etc/logrotate.d/$app
@@ -67,7 +65,7 @@ EOF
 
 # Remove the app's logrotate config.
 #
-# usage: ynh_remove_logrotate
+# usage:ynh_config_remove_logrotate
 ynh_config_remove_logrotate() {
     if [ -e "/etc/logrotate.d/$app" ]; then
         rm "/etc/logrotate.d/$app"

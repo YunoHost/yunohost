@@ -68,7 +68,7 @@ port = http,https
 filter = __APP__
 logpath = __LOGPATH__
 maxretry = 5
-" >"$YNH_APP_BASEDIR/conf/f2b_jail.conf"
+" > "$YNH_APP_BASEDIR/conf/f2b_jail.conf"
 
         echo "
 [INCLUDES]
@@ -76,7 +76,7 @@ before = common.conf
 [Definition]
 failregex = __FAILREGEX__
 ignoreregex =
-" >"$YNH_APP_BASEDIR/conf/f2b_filter.conf"
+" > "$YNH_APP_BASEDIR/conf/f2b_filter.conf"
     fi
 
     ynh_config_add --template="f2b_jail.conf" --destination="/etc/fail2ban/jail.d/$app.conf"

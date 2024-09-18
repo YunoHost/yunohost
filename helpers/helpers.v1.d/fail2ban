@@ -82,7 +82,7 @@ port = __PORTS__
 filter = __APP__
 logpath = __LOGPATH__
 maxretry = __MAX_RETRY__
-" >"$YNH_APP_BASEDIR/conf/f2b_jail.conf"
+" > "$YNH_APP_BASEDIR/conf/f2b_jail.conf"
 
         echo "
 [INCLUDES]
@@ -90,7 +90,7 @@ before = common.conf
 [Definition]
 failregex = __FAILREGEX__
 ignoreregex =
-" >"$YNH_APP_BASEDIR/conf/f2b_filter.conf"
+" > "$YNH_APP_BASEDIR/conf/f2b_filter.conf"
     fi
 
     ynh_add_config --template="f2b_jail.conf" --destination="/etc/fail2ban/jail.d/$app.conf"

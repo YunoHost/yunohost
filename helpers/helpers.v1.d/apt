@@ -14,7 +14,7 @@ ynh_wait_dpkg_free() {
     # With seq 1 17, timeout will be almost 30 minutes
     for try in $(seq 1 17); do
         # Check if /var/lib/dpkg/lock is used by another process
-        if lsof /var/lib/dpkg/lock >/dev/null; then
+        if lsof /var/lib/dpkg/lock > /dev/null; then
             echo "apt is already in use..."
             # Sleep an exponential time at each round
             sleep $((try * try))
@@ -32,7 +32,7 @@ ynh_wait_dpkg_free() {
                     set -o xtrace # set -x
                     return 1
                 fi
-            done 9<<<"$(ls -1 $dpkg_dir)"
+            done 9<<< "$(ls -1 $dpkg_dir)"
             set -o xtrace # set -x
             return 0
         fi
@@ -58,8 +58,8 @@ ynh_package_is_installed() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    dpkg-query --show --showformat='${Status}' "$package" 2>/dev/null \
-        | grep --count "ok installed" &>/dev/null
+    dpkg-query --show --showformat='${Status}' "$package" 2> /dev/null \
+        | grep --count "ok installed" &> /dev/null
 }
 
 # Get the version of an installed package
@@ -82,7 +82,7 @@ ynh_package_version() {
     ynh_handle_getopts_args "$@"
 
     if ynh_package_is_installed "$package"; then
-        dpkg-query --show --showformat='${Version}' "$package" 2>/dev/null
+        dpkg-query --show --showformat='${Version}' "$package" 2> /dev/null
     else
         echo ''
     fi
@@ -186,22 +186,25 @@ ynh_package_install_from_equivs() {
 
     # Build and install the package
     local TMPDIR=$(mktemp --directory)
-
-    # Make sure to delete the legacy compat file
-    # It's now handle somewhat magically through the control file
-    rm -f /usr/share/equivs/template/debian/compat
+    mkdir -p ${TMPDIR}/${pkgname}/DEBIAN/
+    # For some reason, dpkg-deb insists for folder perm to be 755 and sometimes it's 777 o_O?
+    chmod -R 755 ${TMPDIR}/${pkgname}
 
     # Note that the cd executes into a sub shell
     # Create a fake deb package with equivs-build and the given control file
     # Install the fake package without its dependencies with dpkg
     # Install missing dependencies with ynh_package_install
     ynh_wait_dpkg_free
-    cp "$controlfile" "${TMPDIR}/control"
-    (
-        cd "$TMPDIR"
-        LC_ALL=C equivs-build ./control 2>&1
-        LC_ALL=C dpkg --force-depends --install "./${pkgname}_${pkgversion}_all.deb" 2>&1 | tee ./dpkg_log
-    )
+
+    cp "$controlfile" "${TMPDIR}/${pkgname}/DEBIAN/control"
+
+    # Install the fake package without its dependencies with dpkg --force-depends
+    if ! LC_ALL=C dpkg-deb --build "${TMPDIR}/${pkgname}" "${TMPDIR}/${pkgname}.deb" > "${TMPDIR}/dpkg_log" 2>&1; then
+        cat "${TMPDIR}/dpkg_log" >&2
+        ynh_die --message="Unable to install dependencies"
+    fi
+    # Don't crash in case of error, because is nicely covered by the following line
+    LC_ALL=C dpkg --force-depends --install "${TMPDIR}/${pkgname}.deb" 2>&1 | tee "${TMPDIR}/dpkg_log" || true
 
     ynh_package_install --fix-broken \
         || { # If the installation failed
@@ -263,8 +266,7 @@ ynh_install_app_dependencies() {
     # The (?<=php) syntax corresponds to lookbehind ;)
     local specific_php_version=$(echo $dependencies | grep -oP '(?<=php)[0-9.]+(?=-|\>|)' | sort -u)
 
-    if [[ -n "$specific_php_version" ]]
-    then
+    if [[ -n "$specific_php_version" ]]; then
         # Cover a small edge case where a packager could have specified "php7.4-pwet php5-gni" which is confusing
         [[ $(echo $specific_php_version | wc -l) -eq 1 ]] \
             || ynh_die --message="Inconsistent php versions in dependencies ... found : $specific_php_version"
@@ -278,8 +280,7 @@ ynh_install_app_dependencies() {
             local old_php_fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
             local old_php_finalphpconf="$old_php_fpm_config_dir/pool.d/$app.conf"
 
-            if [[ -f "$old_php_finalphpconf" ]]
-            then
+            if [[ -f "$old_php_finalphpconf" ]]; then
                 ynh_backup_if_checksum_is_different --file="$old_php_finalphpconf"
                 ynh_remove_fpm_config
             fi
@@ -288,8 +289,7 @@ ynh_install_app_dependencies() {
         ynh_app_setting_set --app=$app --key=phpversion --value=$specific_php_version
 
         # Set the default php version back as the default version for php-cli.
-        if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION
-        then
+        if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION; then
             update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
         fi
     elif grep --quiet 'php' <<< "$dependencies"; then
@@ -303,26 +303,25 @@ ynh_install_app_dependencies() {
     # upgrade script where ynh_install_app_dependencies is called with this
     # expected effect) Otherwise, any subsequent call will add dependencies
     # to those already present in the equivs control file.
-    if [[ $YNH_INSTALL_APP_DEPENDENCIES_REPLACE == "true" ]]
-    then
+    if [[ $YNH_INSTALL_APP_DEPENDENCIES_REPLACE == "true" ]]; then
         YNH_INSTALL_APP_DEPENDENCIES_REPLACE="false"
     else
         local current_dependencies=""
-        if ynh_package_is_installed --package="${dep_app}-ynh-deps"
-        then
+        if ynh_package_is_installed --package="${dep_app}-ynh-deps"; then
             current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${dep_app}-ynh-deps) "
             current_dependencies=${current_dependencies// | /|}
         fi
         dependencies="$current_dependencies, $dependencies"
     fi
 
-    cat >/tmp/${dep_app}-ynh-deps.control <<EOF # Make a control file for equivs-build
+    cat > /tmp/${dep_app}-ynh-deps.control << EOF # Make a control file for equivs-build
 Section: misc
 Priority: optional
 Package: ${dep_app}-ynh-deps
 Version: ${version}
-Depends: ${dependencies}
+Depends: ${dependencies//,,/,}
 Architecture: all
+Maintainer: root@localhost
 Description: Fake package for ${app} (YunoHost app) dependencies
  This meta-package is only responsible of installing its dependencies.
 EOF
@@ -333,8 +332,7 @@ EOF
 
     # Trigger postgresql regenconf if we may have just installed postgresql
     local psql_installed2="$(ynh_package_is_installed "postgresql-$PSQL_VERSION" && echo yes || echo no)"
-    if [[ "$psql_installed" != "$psql_installed2" ]]
-    then
+    if [[ "$psql_installed" != "$psql_installed2" ]]; then
         yunohost tools regen-conf postgresql
     fi
 
@@ -368,7 +366,7 @@ ynh_add_app_dependencies() {
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_remove_app_dependencies() {
-    local dep_app=${app//_/-}	# Replace all '_' by '-'
+    local dep_app=${app//_/-} # Replace all '_' by '-'
 
     local current_dependencies=""
     if ynh_package_is_installed --package="${dep_app}-ynh-deps"; then
@@ -378,16 +376,14 @@ ynh_remove_app_dependencies() {
 
     # Edge case where the app dep may be on hold,
     # cf https://forum.yunohost.org/t/migration-error-cause-of-ffsync/20675/4
-    if apt-mark showhold | grep -q -w ${dep_app}-ynh-deps
-    then
+    if apt-mark showhold | grep -q -w ${dep_app}-ynh-deps; then
         apt-mark unhold ${dep_app}-ynh-deps
     fi
 
     # Remove the fake package and its dependencies if they not still used.
     # (except if dpkg doesn't know anything about the package,
     # which should be symptomatic of a failed install, and we don't want bash to report an error)
-    if dpkg-query --show ${dep_app}-ynh-deps &>/dev/null
-    then
+    if dpkg-query --show ${dep_app}-ynh-deps &> /dev/null; then
         ynh_package_autopurge ${dep_app}-ynh-deps
     fi
 }
@@ -470,21 +466,31 @@ ynh_install_extra_repo() {
         wget_append="tee"
     fi
 
-    # Split the repository into uri, suite and components.
+    if [[ "$key" == "trusted=yes" ]]; then
+        trusted="--trusted"
+    else
+        trusted=""
+    fi
+
+    IFS=', ' read -r -a repo_parts <<< "$repo"
+    index=0
+
     # Remove "deb " at the beginning of the repo.
-    repo="${repo#deb }"
-
-    # Get the uri
-    local uri="$(echo "$repo" | awk '{ print $1 }')"
-
-    # Get the suite
-    local suite="$(echo "$repo" | awk '{ print $2 }')"
+    if [[ "${repo_parts[0]}" == "deb" ]]; then
+        index=1
+    fi
+    uri="${repo_parts[$index]}"
+    index=$((index + 1))
+    suite="${repo_parts[$index]}"
+    index=$((index + 1))
 
     # Get the components
-    local component="${repo##$uri $suite }"
+    if (("${#repo_parts[@]}" > 0)); then
+        component="${repo_parts[*]:$index}"
+    fi
 
     # Add the repository into sources.list.d
-    ynh_add_repo --uri="$uri" --suite="$suite" --component="$component" --name="$name" $append
+    ynh_add_repo --uri="$uri" --suite="$suite" --component="$component" --name="$name" $append $trusted
 
     # Pin the new repo with the default priority, so it won't be used for upgrades.
     # Build $pin from the uri without http and any sub path
@@ -497,10 +503,10 @@ ynh_install_extra_repo() {
     ynh_pin_repo --package="*" --pin="origin \"$pin\"" $priority --name="$name" $append
 
     # Get the public key for the repo
-    if [ -n "$key" ]; then
+    if [ -n "$key" ] && [[ "$key" != "trusted=yes" ]]; then
         mkdir --parents "/etc/apt/trusted.gpg.d"
         # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
-        wget --timeout 900 --quiet "$key" --output-document=- | gpg --dearmor | $wget_append /etc/apt/trusted.gpg.d/$name.gpg >/dev/null
+        wget --timeout 900 --quiet "$key" --output-document=- | gpg --dearmor | $wget_append /etc/apt/trusted.gpg.d/$name.gpg > /dev/null
     fi
 
     # Update the list of package with the new repo
@@ -550,6 +556,7 @@ ynh_remove_extra_repo() {
 # | arg: -c, --component=   - Component of the repository.
 # | arg: -n, --name=        - Name for the files for this repo, $app as default value.
 # | arg: -a, --append       - Do not overwrite existing files.
+# | arg: -t, --trusted      - Add trusted=yes to the repository (not recommended)
 #
 # Example for a repo like deb http://forge.yunohost.org/debian/ stretch stable
 #                             uri                               suite   component
@@ -558,27 +565,34 @@ ynh_remove_extra_repo() {
 # Requires YunoHost version 3.8.1 or higher.
 ynh_add_repo() {
     # Declare an array to define the options of this helper.
-    local legacy_args=uscna
-    local -A args_array=([u]=uri= [s]=suite= [c]=component= [n]=name= [a]=append)
+    local legacy_args=uscnat
+    local -A args_array=([u]=uri= [s]=suite= [c]=component= [n]=name= [a]=append [t]=trusted)
     local uri
     local suite
     local component
     local name
     local append
+    local trusted
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     name="${name:-$app}"
     append=${append:-0}
+    trusted=${trusted:-0}
 
     if [ $append -eq 1 ]; then
         append="tee --append"
     else
         append="tee"
     fi
+    if [[ "$trusted" -eq 1 ]]; then
+        trust="[trusted=yes]"
+    else
+        trust=""
+    fi
 
     mkdir --parents "/etc/apt/sources.list.d"
     # Add the new repo in sources.list.d
-    echo "deb $uri $suite $component" \
+    echo "deb $trust $uri $suite $component" \
         | $append "/etc/apt/sources.list.d/$name.list"
 }
 

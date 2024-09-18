@@ -43,35 +43,35 @@ end
 local get_alias_for_user;
 
 do
-  local user_cache;
-  local last_fetch_time;
+    local user_cache;
+    local last_fetch_time;
 
-  local function populate_user_cache()
-      local user_c = get_config(module.host, 'ldap').user;
-      if not user_c then return; end
+    local function populate_user_cache()
+        local user_c = get_config(module.host, 'ldap').user;
+        if not user_c then return; end
 
-      local ld = ldap.getconnection();
+        local ld = ldap.getconnection();
 
-      local usernamefield = user_c.usernamefield;
-      local namefield     = user_c.namefield;
+        local usernamefield = user_c.usernamefield;
+        local namefield     = user_c.namefield;
 
-      user_cache = {};
+        user_cache = {};
 
-      for _, attrs in ld:search { base = user_c.basedn, scope = 'onelevel', filter = user_c.filter } do
-          user_cache[attrs[usernamefield]] = attrs[namefield];
-      end
-      last_fetch_time = gettime();
-  end
+        for _, attrs in ld:search { base = user_c.basedn, scope = 'onelevel', filter = user_c.filter } do
+            user_cache[attrs[usernamefield]] = attrs[namefield];
+        end
+        last_fetch_time = gettime();
+    end
 
-  function get_alias_for_user(user)
-      if last_fetch_time and last_fetch_time + CACHE_EXPIRY < gettime() then
-          user_cache = nil;
-      end
-      if not user_cache then
-          populate_user_cache();
-      end
-      return user_cache[user];
-  end
+    function get_alias_for_user(user)
+        if last_fetch_time and last_fetch_time + CACHE_EXPIRY < gettime() then
+            user_cache = nil;
+        end
+        if not user_cache then
+            populate_user_cache();
+        end
+        return user_cache[user];
+    end
 end
 
 ----------------------------------------
@@ -79,18 +79,18 @@ end
 ----------------------------------------
 
 local function ldap_store(config)
-  local self = {};
-  local config = config;
+    local self = {};
+    local config = config;
 
-  function self:get(username)
-      return nil, "Data getting is not available for this storage backend";
-  end
+    function self:get(username)
+        return nil, "Data getting is not available for this storage backend";
+    end
 
-  function self:set(username, data)
-      return nil, "Data setting is not available for this storage backend";
-  end
+    function self:set(username, data)
+        return nil, "Data setting is not available for this storage backend";
+    end
 
-  return self;
+    return self;
 end
 
 local adapters = {};
@@ -100,60 +100,60 @@ local adapters = {};
 ----------------------------------------
 
 adapters.roster = function (config)
-  -- Validate configuration requirements
-  if not config.groups then return nil; end
+    -- Validate configuration requirements
+    if not config.groups then return nil; end
 
-  local self = ldap_store(config)
+    local self = ldap_store(config)
 
-  function self:get(username)
-      local ld = ldap.getconnection();
-      local contacts = {};
+    function self:get(username)
+        local ld = ldap.getconnection();
+        local contacts = {};
 
-      local memberfield = config.groups.memberfield;
-      local namefield   = config.groups.namefield;
-      local filter      = memberfield .. '=' .. tostring(username);
+        local memberfield = config.groups.memberfield;
+        local namefield   = config.groups.namefield;
+        local filter      = memberfield .. '=' .. tostring(username);
 
-      local groups = {};
-      for _, config in ipairs(config.groups) do
-          groups[ config[namefield] ] = config.name;
-      end
+        local groups = {};
+        for _, config in ipairs(config.groups) do
+            groups[ config[namefield] ] = config.name;
+        end
 
-      log("debug", "Found %d group(s) for user %s", select('#', groups), username)
+        log("debug", "Found %d group(s) for user %s", select('#', groups), username)
 
-      -- XXX this kind of relies on the way we do groups at INOC
-      for _, attrs in ld:search { base = config.groups.basedn, scope = 'onelevel', filter = filter } do
-          if groups[ attrs[namefield] ] then
-              local members = attrs[memberfield];
+        -- XXX this kind of relies on the way we do groups at INOC
+        for _, attrs in ld:search { base = config.groups.basedn, scope = 'onelevel', filter = filter } do
+            if groups[ attrs[namefield] ] then
+                local members = attrs[memberfield];
 
-              for _, user in ipairs(members) do
-                  if user ~= username then
-                      local jid    = user .. '@' .. module.host;
-                      local record = contacts[jid];
+                for _, user in ipairs(members) do
+                    if user ~= username then
+                        local jid    = user .. '@' .. module.host;
+                        local record = contacts[jid];
 
-                      if not record then
-                          record = {
-                              subscription = 'both',
-                              groups       = {},
-                              name         = get_alias_for_user(user),
-                          };
-                          contacts[jid] = record;
-                      end
+                        if not record then
+                            record = {
+                                subscription = 'both',
+                                groups       = {},
+                                name         = get_alias_for_user(user),
+                            };
+                            contacts[jid] = record;
+                        end
 
-                      record.groups[ groups[ attrs[namefield] ] ] = true;
-                  end
-              end
-          end
-      end
+                        record.groups[ groups[ attrs[namefield] ] ] = true;
+                    end
+                end
+            end
+        end
 
-      return contacts;
-  end
+        return contacts;
+    end
 
-  function self:set(username, data)
-      log("warn", "Setting data in Roster LDAP storage is not supported yet")
-      return nil, "not supported";
-  end
+    function self:set(username, data)
+        log("warn", "Setting data in Roster LDAP storage is not supported yet")
+        return nil, "not supported";
+    end
 
-  return self;
+    return self;
 end
 
 ----------------------------------------
@@ -161,35 +161,35 @@ end
 ----------------------------------------
 
 adapters.vcard = function (config)
-  -- Validate configuration requirements
-  if not config.vcard_format or not config.user then return nil; end
+    -- Validate configuration requirements
+    if not config.vcard_format or not config.user then return nil; end
 
-  local self = ldap_store(config)
+    local self = ldap_store(config)
 
-  function self:get(username)
-      local ld     = ldap.getconnection();
-      local filter = config.user.usernamefield .. '=' .. tostring(username);
+    function self:get(username)
+        local ld     = ldap.getconnection();
+        local filter = config.user.usernamefield .. '=' .. tostring(username);
 
-      log("debug", "Retrieving vCard for user '%s'", username);
+        log("debug", "Retrieving vCard for user '%s'", username);
 
-      local match = ldap.singlematch {
-          base   = config.user.basedn,
-          filter = filter,
-      };
-      if match then
-          match.jid = username .. '@' .. module.host
-          return st.preserialize(ldap_record_to_vcard(match, config.vcard_format));
-      else
-          return nil, "username not found";
-      end
-  end
+        local match = ldap.singlematch {
+            base   = config.user.basedn,
+            filter = filter,
+        };
+        if match then
+            match.jid = username .. '@' .. module.host
+            return st.preserialize(ldap_record_to_vcard(match, config.vcard_format));
+        else
+            return nil, "username not found";
+        end
+    end
 
-  function self:set(username, data)
-      log("warn", "Setting data in vCard LDAP storage is not supported yet")
-      return nil, "not supported";
-  end
+    function self:set(username, data)
+        log("warn", "Setting data in vCard LDAP storage is not supported yet")
+        return nil, "not supported";
+    end
 
-  return self;
+    return self;
 end
 
 ----------------------------------------

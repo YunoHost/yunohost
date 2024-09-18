@@ -4,10 +4,9 @@
 
 generate-helpers-doc:
   stage: doc
-  image: "before-install"
+  image: "build-and-lint"
   needs: []
   before_script:
-    - apt-get update -y && apt-get install git hub -y
     - git config --global user.email "yunohost@yunohost.org"
     - git config --global user.name "$GITHUB_USER"
   script:

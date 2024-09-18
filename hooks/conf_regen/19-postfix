@@ -43,8 +43,21 @@ do_pre_regen() {
         chown postfix ${pending_dir}/etc/postfix
         chown postfix ${pending_dir}/etc/postfix/sasl_passwd
 
-        cat <<<"[${relay_host}]:${relay_port} ${relay_user}:${relay_password}" >${postfix_dir}/sasl_passwd
+        cat <<< "[${relay_host}]:${relay_port} ${relay_user}:${relay_password}" > ${postfix_dir}/sasl_passwd
     fi
+
+    # Use this postfix server as a backup MX
+    export backup_mx_domains="$(yunohost settings get 'email.smtp.smtp_backup_mx_domains' | sed "s/,/ /g")"
+    export backup_mx_emails="$(yunohost settings get 'email.smtp.smtp_backup_mx_emails_whitelisted' | sed "s/,/ /g")"
+    rm -f ${postfix_dir}/relay_recipients
+    touch ${postfix_dir}/relay_recipients
+    if [ -n "${backup_mx_domains}" ] && [ -n "${backup_mx_emails}" ]; then
+        for mail in ${backup_mx_emails}; do
+            echo "$mail OK" >> ${postfix_dir}/relay_recipients
+        done
+        postmap ${postfix_dir}/relay_recipients
+    fi
+
     export main_domain
     export domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]" | tr '\n' ' ')"
     ynh_render_template "main.cf" "${postfix_dir}/main.cf"
@@ -53,7 +66,7 @@ do_pre_regen() {
     cat postsrsd \
         | sed "s/{{ main_domain }}/${main_domain}/g" \
         | sed "s/{{ domain_list }}/${domain_list}/g" \
-            >"${default_dir}/postsrsd"
+            > "${default_dir}/postsrsd"
 
     # adapt it for IPv4-only hosts
     ipv6="$(yunohost settings get 'email.smtp.smtp_allow_ipv6' | int_to_bool)"
@@ -76,6 +89,11 @@ do_post_regen() {
         chmod 750 /etc/postfix/sasl_passwd*
         chown postfix:root /etc/postfix/sasl_passwd*
         postmap /etc/postfix/sasl_passwd
+    fi
+
+    if [ -e /etc/postfix/relay_recipients ]; then
+        chmod 750 /etc/postfix/relay_recipients*
+        chown postfix:root /etc/postfix/relay_recipients*
     fi
 
     postmap -F hash:/etc/postfix/sni

@@ -5,7 +5,7 @@
 
 lint39:
   stage: lint
-  image: "before-install"
+  image: "build-and-lint"
   needs: []
   allow_failure: true
   script:
@@ -13,14 +13,14 @@ lint39:
 
 invalidcode39:
   stage: lint
-  image: "before-install"
+  image: "build-and-lint"
   needs: []
   script:
     - tox -e py39-invalidcode
 
 mypy:
   stage: lint
-  image: "before-install"
+  image: "build-and-lint"
   needs: []
   script:
     - tox -e py39-mypy
