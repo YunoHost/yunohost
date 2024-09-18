@@ -1704,7 +1704,7 @@ def app_ssowatconf():
         protect_against_basic_auth_spoofing = app_settings.get("protect_against_basic_auth_spoofing")
         if protect_against_basic_auth_spoofing is not None:
             permissions[perm_name]["protect_against_basic_auth_spoofing"] = protect_against_basic_auth_spoofing not in [False, "False", "false", "0", 0]
-        elif app_id in apps_that_need_external_auth_maybe:
+        elif app_id.split("__")[0] in apps_that_need_external_auth_maybe:
             permissions[perm_name]["protect_against_basic_auth_spoofing"] = False
 
         # Next: portal related
