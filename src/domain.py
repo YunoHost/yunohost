@@ -390,7 +390,7 @@ def domain_add(
     logger.success(m18n.n("domain_created"))
 
     if failed_letsencrypt_cert_install:
-        logger.warning(m18n.n("certmanager_cert_install_failed"))
+        logger.warning(m18n.n("certmanager_cert_install_failed", domains=domain))
 
 
 @is_unit_operation(exclude=["dyndns_recovery_password"])
