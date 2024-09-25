@@ -1,3 +1,12 @@
+yunohost (12.0.4.1) testing; urgency=low
+
+  - ssowat: allow secondaries instances of apps_that_need_external_auth_maybe to be recognized ([#1954](http://github.com/YunoHost/yunohost/pull/1954))
+  - domains: fix missing translation param in domain add (cebd8864c)
+
+  Thanks to all contributors <3 ! (axolotle, Nathanaël H.)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 25 Sep 2024 21:04:38 +0200
+
 yunohost (12.0.4) testing; urgency=low
 
   - general: add TOS acknowledgement during postinstall, dyndns domain creation, and migration for existing installs ([#1949](http://github.com/YunoHost/yunohost/pull/1949))
