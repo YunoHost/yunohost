@@ -43,7 +43,7 @@ ynh_backup() {
         else
             ynh_print_info "$target will not be saved, because 'do_not_backup_data' is set."
         fi
-        return 1
+        return 0
     fi
 
     # ==============================================================================
