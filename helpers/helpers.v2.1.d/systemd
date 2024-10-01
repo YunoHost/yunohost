@@ -46,7 +46,7 @@ ynh_config_remove_systemd() {
 # | arg: --service=      - Name of the service to start. Default : `$app`
 # | arg: --action=       - Action to perform with systemctl. Default: start
 # | arg: --wait_until=   - The pattern to find in the log to attest the service is effectively fully started.
-# | arg: --log_path=     - Log file - Path to the log file. Default : `/var/log/$app/$app.log`
+# | arg: --log_path=     - Log file - Path to the log file. Default : `/var/log/$app/$app.log`; `systemd` to listen on `journalctl --unit=$service`
 # | arg: --timeout=      - Timeout - The maximum time to wait before ending the watching. Default : 60 seconds.
 # | arg: --length=       - Length of the error log displayed for debugging : Default : 20
 ynh_systemctl() {
