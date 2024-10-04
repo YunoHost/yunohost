@@ -766,9 +766,18 @@ class BackupManager:
         """Apply backup methods"""
 
         for method in self.methods:
-            logger.debug(m18n.n("backup_applying_method_" + method.method_name, method=method.method))
+            logger.debug(
+                m18n.n(
+                    "backup_applying_method_" + method.method_name, method=method.method
+                )
+            )
             method.mount_and_backup()
-            logger.debug(m18n.n("backup_method_" + method.method_name + "_finished", method=method.method))
+            logger.debug(
+                m18n.n(
+                    "backup_method_" + method.method_name + "_finished",
+                    method=method.method,
+                )
+            )
 
     def _compute_backup_size(self):
         """
