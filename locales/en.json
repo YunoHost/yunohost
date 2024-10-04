@@ -436,7 +436,7 @@
     "global_settings_reset_success": "Reset global settings",
     "global_settings_setting_admin_strength": "Admin password strength requirements",
     "global_settings_setting_tls_passthrough_enabled": "Enable TLS-passthrough / SNI-based forwarding",
-    "global_settings_setting_tls_passthrough_enabled_help": "This is an advanced feature to reverse-proxy an entire domain to another machine *without* decrypting the traffic. Useful when you want to expose several machines behind the same IP but still allow each machine to handle the SSL termination.",
+    "global_settings_setting_tls_passthrough_enabled_help": "This is an advanced feature to reverse-proxy an entire domain to another machine *without* decrypting the traffic. Useful when you want to expose several machines behind the same IP but still allow each machine to handle the SSL termination. BUT you must be absolutely aware that no fail2ban protection will work on the proxied machines (iptables cannot ban malicious traffic as all IP packets appear as coming from the front server)",
     "global_settings_setting_tls_passthrough_list": "List of forwarding",
     "global_settings_setting_tls_passthrough_list_help": "Should be a list of DOMAIN:IPv4, such as domain.tld:1.2.3.4",
     "global_settings_setting_admin_strength_help": "These requirements are only enforced when initializing or changing the password",
