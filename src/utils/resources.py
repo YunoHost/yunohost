@@ -422,7 +422,7 @@ class SourcesResource(AppResource):
 
     You can make sure that your autoupdate strategy is working well immediately (without waiting for the next check on the infra) by doing the following:
     1. Clone this repo: https://github.com/YunoHost/apps_tools
-    2. In `apps_tools` open a terminal to run the following commands: 
+    2. In `apps_tools` open a terminal to run the following commands:
         ```sh
         # Create test branch
         git checkout -b localtest
@@ -433,7 +433,7 @@ class SourcesResource(AppResource):
 
         # Install dependencies (if you don't have pip already installed on your system, check https://pip.pypa.io/en/stable/installation)
         pip install -r requirements.txt
-      
+
         # Run autoupdate script - replace '/path/to/myapp_ynh' with your actual local app path
         ./autoupdate_app_sources/autoupdate_app_sources.py '/path/to/myapp_ynh'
         ```
