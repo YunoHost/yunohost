@@ -766,7 +766,9 @@ class BackupManager:
         """Apply backup methods"""
 
         for method in self.methods:
-            method_name=method.method if hasattr(method, "method") else method.method_name
+            method_name = (
+                method.method if hasattr(method, "method") else method.method_name
+            )
             logger.debug(
                 m18n.n(
                     "backup_applying_method_" + method.method_name,
