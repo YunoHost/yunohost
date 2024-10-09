@@ -766,35 +766,20 @@ class BackupManager:
         """Apply backup methods"""
 
         for method in self.methods:
-            try:
-                logger.debug(
-                    m18n.n(
-                        "backup_applying_method_" + method.method_name,
-                        method=method.method,
-                    )
+            method_name=method.method if hasattr(method, "method") else method.method_name
+            logger.debug(
+                m18n.n(
+                    "backup_applying_method_" + method.method_name,
+                    method=method_name,
                 )
-            except AttributeError:
-                logger.debug(
-                    m18n.n(
-                        "backup_applying_method_" + method.method_name,
-                        method=method.method_name,
-                    )
-                )
+            )
             method.mount_and_backup()
-            try:
-                logger.debug(
-                    m18n.n(
-                        "backup_method_" + method.method_name + "_finished",
-                        method=method.method,
-                    )
+            logger.debug(
+                m18n.n(
+                    "backup_method_" + method.method_name + "_finished",
+                    method=method_name,
                 )
-            except AttributeError:
-                logger.debug(
-                    m18n.n(
-                        "backup_method_" + method.method_name + "_finished",
-                        method=method.method_name,
-                    )
-                )
+            )
 
     def _compute_backup_size(self):
         """
