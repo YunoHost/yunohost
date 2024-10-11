@@ -143,6 +143,7 @@ def tools_postinstall(
     ignore_dyndns=False,
     force_diskspace=False,
     overwrite_root_password=True,
+    i_have_read_terms_and_services=False
 ):
     from yunohost.service import _run_service_command
     from yunohost.dyndns import _dyndns_available, dyndns_unsubscribe
@@ -171,7 +172,8 @@ def tools_postinstall(
 
     if Moulinette.interface.type == "cli" and os.isatty(1):
         Moulinette.display(m18n.n("tos_postinstall_acknowledgement"), style="warning")
-        _ask_confirmation("confirm_tos_acknowledgement", kind="soft")
+        if not i_have_read_terms_and_services:
+            _ask_confirmation("confirm_tos_acknowledgement", kind="soft")
 
     # Crash early if the username is already a system user, which is
     # a common confusion. We don't want to crash later and end up in an half-configured state.
