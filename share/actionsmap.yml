@@ -1619,8 +1619,8 @@ tools:
                 --force-diskspace:
                     help: Use this if you really want to install YunoHost on a setup with less than 10 GB on the root filesystem
                     action: store_true
-                --i-have-read-terms-and-services:
-                    help: Automatically reply to the terms and services prompt, for example for non-interactive installations
+                --i-have-read-terms-of-services:
+                    help: Automatically reply to the terms of services prompt, for example for non-interactive installations
                     action: store_true
 
         ### tools_update()
