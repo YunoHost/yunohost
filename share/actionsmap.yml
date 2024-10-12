@@ -104,7 +104,7 @@ user:
                     full: --loginShell
                     help: The login shell used
                     default: "/bin/bash"
-                    
+
 
         ### user_delete()
         delete:
@@ -186,12 +186,12 @@ user:
             arguments:
                 username:
                     help: Username or email to get information
-        
+
         ### user_export()
         export:
             action_help: Export users into CSV
             api: GET /users/export
-        
+
         ### user_import()
         import:
             action_help: Import several users from CSV
@@ -498,7 +498,7 @@ domain:
                 --install-letsencrypt-cert:
                     help: If adding a subdomain of an already added domain, try to install a Let's Encrypt certificate
                     action: store_true
-                    
+
         ### domain_remove()
         remove:
             action_help: Delete domains
@@ -526,7 +526,7 @@ domain:
                     help: If removing a DynDNS domain, unsubscribe from the DynDNS service with a password
                     extra:
                         pattern: *pattern_password
-        
+
         ### domain_maindomain()
         main-domain:
             action_help: Check the current main domain, or change it
@@ -552,7 +552,7 @@ domain:
                         pattern: *pattern_domain
                 path:
                     help: The path to check (e.g. /coffee)
-        
+
 
         ### domain_action_run()
         action-run:
@@ -587,7 +587,7 @@ domain:
                             help: Password used to later recover the domain if needed
                             extra:
                                 pattern: *pattern_password
-                
+
                 ### domain_dyndns_unsubscribe()
                 unsubscribe:
                     action_help: Unsubscribe from a DynDNS service
@@ -653,7 +653,7 @@ domain:
                       domain:
                           help: Domain name
                       key:
-                          help: The question or form key 
+                          help: The question or form key
                           nargs: '?'
                       -v:
                           full: --value
@@ -668,7 +668,7 @@ domain:
                 ### domain_dns_conf()
                 suggest:
                     action_help: Generate sample DNS configuration for a domain
-                    api: 
+                    api:
                       - GET /domains/<domain>/dns
                       - GET /domains/<domain>/dns/suggest
                     arguments:
@@ -676,7 +676,7 @@ domain:
                             help: Target domain
                             extra:
                                 pattern: *pattern_domain
-                
+
                 ### domain_dns_push()
                 push:
                     action_help: Push DNS records to registrar
@@ -703,7 +703,7 @@ domain:
                 ### certificate_status()
                 status:
                     action_help: List status of current certificates (all by default).
-                    api: 
+                    api:
                         - GET /domains/<domain_list>/cert
                         - GET /domains/*/cert
                     arguments:
@@ -1060,7 +1060,7 @@ app:
                     app:
                         help: App name
                     key:
-                        help: The question or panel key 
+                        help: The question or panel key
                         nargs: '?'
                     -v:
                         full: --value
@@ -1217,7 +1217,7 @@ settings:
             api: PUT /settings/<key>
             arguments:
                 key:
-                    help: The question or form key 
+                    help: The question or form key
                     nargs: '?'
                 -v:
                     full: --value
@@ -1519,7 +1519,7 @@ dyndns:
                     help: Password used to later recover the domain if needed
                     extra:
                         pattern: *pattern_password
-        
+
         ### dyndns_update()
         update:
             action_help: Update IP on DynDNS platform
@@ -1618,6 +1618,9 @@ tools:
                         pattern: *pattern_password
                 --force-diskspace:
                     help: Use this if you really want to install YunoHost on a setup with less than 10 GB on the root filesystem
+                    action: store_true
+                --i-have-read-terms-and-services:
+                    help: Automatically reply to the terms and services prompt, for example for non-interactive installations
                     action: store_true
 
         ### tools_update()
