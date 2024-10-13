@@ -49,19 +49,13 @@ def user_permission_list(
     from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
 
     ldap = _get_ldap_interface()
-    permissions_infos = ldap.search(
+    ldap_permissions_infos = ldap.search(
         "ou=permission",
         "(objectclass=permissionYnh)",
         [
             "cn",
             "groupPermission",
             "inheritPermission",
-            "URL",
-            "additionalUrls",
-            "authHeader",
-            "label",
-            "showTile",
-            "isProtected",
         ],
     )
 
@@ -78,9 +72,9 @@ def user_permission_list(
     }
 
     permissions = {}
-    for infos in permissions_infos:
+    for infos in ldap_permissions_infos:
         name = infos["cn"][0]
-        app = name.split(".")[0]
+        app, subperm = name.split(".")
 
         if ignore_system_perms and app in SYSTEM_PERMS:
             continue
@@ -88,20 +82,19 @@ def user_permission_list(
             continue
 
         perm = {}
-        perm["allowed"] = [
-            _ldap_path_extract(p, "cn") for p in infos.get("groupPermission", [])
-        ]
-
-        if full:
-            perm["corresponding_users"] = [
-                _ldap_path_extract(p, "uid") for p in infos.get("inheritPermission", [])
-            ]
-            perm["auth_header"] = infos.get("authHeader", [False])[0] == "TRUE"
-            perm["label"] = infos.get("label", [None])[0]
-            perm["show_tile"] = infos.get("showTile", [False])[0] == "TRUE"
-            perm["protected"] = infos.get("isProtected", [False])[0] == "TRUE"
-            perm["url"] = infos.get("URL", [None])[0]
-            perm["additional_urls"] = infos.get("additionalUrls", [])
+        if full and app not in SYSTEM_PERMS:
+            # Default stuff
+            perm = {
+                "url": None,
+                "additional_urls": [],
+                "auth_header": True,
+                "show_tile": None,  # To be automagically set to True by default if an url is defined and show_tile not provided
+                "protected": False,
+            }
+            perm_settings = (app_setting(app, "_permissions") or {}).get(subperm, {})
+            perm.update(perm_settings)
+            if perm["show_tile"] is None and perm["url"] is not None:
+                perm["show_tile"] = True
 
             if absolute_urls:
                 app_base_path = (
@@ -112,6 +105,14 @@ def user_permission_list(
                     _get_absolute_url(url, app_base_path)
                     for url in perm["additional_urls"]
                 ]
+
+        perm["allowed"] = [
+            _ldap_path_extract(p, "cn") for p in infos.get("groupPermission", [])
+        ]
+        if full:
+            perm["corresponding_users"] = [
+                _ldap_path_extract(p, "uid") for p in infos.get("inheritPermission", [])
+            ]
 
         permissions[name] = perm
 
@@ -414,16 +415,6 @@ def permission_create(
         "objectClass": ["top", "permissionYnh", "posixGroup"],
         "cn": str(permission),
         "gidNumber": gid,
-        "authHeader": ["TRUE"],
-        "label": [
-            str(label) if label else (subperm if subperm != "main" else app.title())
-        ],
-        "showTile": [
-            "FALSE"
-        ],  # Dummy value, it will be fixed when we call '_update_ldap_group_permission'
-        "isProtected": [
-            "FALSE"
-        ],  # Dummy value, it will be fixed when we call '_update_ldap_group_permission'
     }
 
     if allowed is not None:
@@ -446,6 +437,8 @@ def permission_create(
             "permission_creation_failed", permission=permission, error=e
         )
 
+    label = str(label) if label else (subperm if subperm != "main" else app.title())
+
     try:
         permission_url(
             permission,
@@ -463,6 +456,7 @@ def permission_create(
             protected=protected,
             sync_perm=sync_perm,
         )
+
     except Exception:
         permission_delete(permission, force=True)
         raise
@@ -496,15 +490,15 @@ def permission_url(
         clear_urls  -- (optional) Clean all urls (url and additional_urls)
     """
     from yunohost.app import app_setting
-    from yunohost.utils.ldap import _get_ldap_interface
-
-    ldap = _get_ldap_interface()
 
     # By default, manipulate main permission
     if "." not in permission:
         permission = permission + ".main"
 
-    app = permission.split(".")[0]
+    app, sub_permission = permission.split(".")
+
+    if app in SYSTEM_PERMS:
+        logger.warning(f"Cannot change urls / auth_header for system perm {permission}")
 
     if url or add_url:
         domain = app_setting(app, "domain")
@@ -573,19 +567,20 @@ def permission_url(
 
     # Actually commit the change
 
-    operation_logger.related_to.append(("app", permission.split(".")[0]))
+    operation_logger.related_to.append(("app", app))
     operation_logger.start()
 
     try:
-        ldap.update(
-            f"cn={permission},ou=permission",
-            {
-                "URL": [url] if url is not None else [],
-                "additionalUrls": new_additional_urls,
-                "authHeader": [str(auth_header).upper()],
-                "showTile": [str(show_tile).upper()],
-            },
-        )
+        perm_settings = app_setting(app, "_permissions") or {}
+        if sub_permission not in perm_settings:
+            perm_settings[sub_permission] = {}
+        perm_settings[sub_permission].update({
+            "url": url,
+            "additional_urls": new_additional_urls,
+            "auth_header": auth_header,
+            "show_tile": show_tile,
+        })
+        app_setting(app, "_permissions", perm_settings)
     except Exception as e:
         raise YunohostError("permission_update_failed", permission=permission, error=e)
 
@@ -714,31 +709,42 @@ def _update_ldap_group_permission(
     - the 'allowed' list contains *existing* groups.
     """
 
+    from yunohost.app import app_setting
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
 
+    app, sub_permission = permission.split(".")
     existing_permission = user_permission_info(permission)
 
-    update = {}
+    update_ldap = {}
+    update_settings = {}
 
     if allowed is not None:
         allowed = [allowed] if not isinstance(allowed, list) else allowed
         # Guarantee uniqueness of values in allowed, which would otherwise make ldap.update angry.
         allowed = set(allowed)
-        update["groupPermission"] = [
+        update_ldap["groupPermission"] = [
             "cn=" + g + ",ou=groups,dc=yunohost,dc=org" for g in allowed
         ]
 
     if label is not None:
-        update["label"] = [str(label)]
+        if app in SYSTEM_PERMS:
+            logger.warning(f"Can't change 'label' for system permission {permission}")
+        else:
+            update_settings["label"] = str(label)
 
     if protected is not None:
-        update["isProtected"] = [str(protected).upper()]
+        if app in SYSTEM_PERMS:
+            logger.warning(f"Can't change 'protected' for system permission {permission}")
+        else:
+            update_settings["protected"] = protected
 
     if show_tile is not None:
-        if show_tile is True:
+        if app in SYSTEM_PERMS:
+            logger.warning(f"Can't change 'show_tile' for system permission {permission}")
+        elif show_tile is True:
             if not existing_permission["url"]:
                 logger.warning(
                     m18n.n(
@@ -746,16 +752,22 @@ def _update_ldap_group_permission(
                         permission=permission,
                     )
                 )
-                show_tile = False
+                update_settings["show_tile"] = False
             elif existing_permission["url"].startswith("re:"):
                 logger.warning(
                     m18n.n("show_tile_cant_be_enabled_for_regex", permission=permission)
                 )
-                show_tile = False
-        update["showTile"] = [str(show_tile).upper()]
+                update_settings["show_tile"] = False
+
+    if app not in SYSTEM_PERMS:
+        perm_settings = app_setting(app, "_permissions") or {}
+        if sub_permission not in perm_settings:
+            perm_settings[sub_permission] = {}
+        perm_settings[sub_permission].update(update_settings)
+        app_setting(app, "_permissions", perm_settings)
 
     try:
-        ldap.update(f"cn={permission},ou=permission", update)
+        ldap.update(f"cn={permission},ou=permission", update_ldap)
     except Exception as e:
         raise YunohostError("permission_update_failed", permission=permission, error=e)
 
@@ -767,9 +779,6 @@ def _update_ldap_group_permission(
     new_permission = user_permission_info(permission)
 
     # Trigger app callbacks
-
-    app = permission.split(".")[0]
-    sub_permission = permission.split(".")[1]
 
     old_corresponding_users = set(existing_permission["corresponding_users"])
     new_corresponding_users = set(new_permission["corresponding_users"])
