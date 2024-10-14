@@ -50,8 +50,8 @@ olcPidFile: /var/run/slapd/slapd.pid
 olcReverseLookup: FALSE
 olcThreads: 16
 # TLS Support
-olcTLSCertificateFile: /etc/yunohost/certs/yunohost.org/crt.pem
-olcTLSCertificateKeyFile: /etc/yunohost/certs/yunohost.org/key.pem
+olcTLSCertificateFile: /etc/yunohost/certs/yunohost/crt.pem
+olcTLSCertificateKeyFile: /etc/yunohost/certs/yunohost/key.pem
 olcTLSVerifyClient: never
 olcTLSProtocolMin: 0.0
 # The tool-threads parameter sets the actual amount of cpu's that is used
