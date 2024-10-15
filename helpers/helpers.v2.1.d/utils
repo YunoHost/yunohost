@@ -230,7 +230,7 @@ _ynh_apply_default_permissions() {
         # If this is a file in $install_dir or $data_dir : it should be owned and read+writable by $app only
         if (is_in_dir "$target" "${install_dir:-}" || is_in_dir "$target" "${data_dir:-}" || is_in_dir "$target" "/etc/$app"); then
             if [ -d "$target" ]; then
-              chmod -R o+rwX "$target"
+              chmod -R u+rwX "$target"
               chown -R "$app:$app" "$target"
             else
               chmod 600 "$target"
