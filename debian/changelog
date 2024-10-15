@@ -1,3 +1,20 @@
+yunohost (11.2.31) stable; urgency=low
+
+  - apps/helpers2.1: Properly detect 'is_data' (data dir or log folder) when calling ynh_backup ([#1957](http://github.com/YunoHost/yunohost/pull/1957))
+  - users/mail: Allow to force-adding aliases for special groups ([#1850](http://github.com/YunoHost/yunohost/pull/1850))
+  - helpers/nodejs: Upgrade n to v10.0.0 ([#1948](http://github.com/YunoHost/yunohost/pull/1948))
+  - backups: fix messages for custom methods ([#1959](http://github.com/YunoHost/yunohost/pull/1959), [#1963](http://github.com/YunoHost/yunohost/pull/1963))
+  - doc: fix escaping in generate helpers doc template & v2.1 helpers comments ([#1952](http://github.com/YunoHost/yunohost/pull/1952))
+  - doc: fix link to autoupdate_app_sources.py in resources documentation ([#1956](http://github.com/YunoHost/yunohost/pull/1956))
+  - doc: document the 'systemd' option for 'ynh_systemctl --line_match' ([#1958](http://github.com/YunoHost/yunohost/pull/1958))
+  - doc: document how to check locally whether app autoupdate is working ([#1960](http://github.com/YunoHost/yunohost/pull/1960))
+  - doc: in autoupgrade doc, double slash ends up as single slash in the doc, but double slash is really needed, so further escape the slashes ([#1965](http://github.com/YunoHost/yunohost/pull/1965))
+  - i18n: Translations updated for Basque, Chinese (Simplified), French
+
+  Thanks to all contributors <3 ! (Éric Gaspar, Jinx, Mateusz, oleole39, OniriCorpe, selfhoster1312, Thatoo, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 15 Oct 2024 19:50:33 +0200
+
 yunohost (11.2.30.2) stable; urgency=low
 
   - helpers2.1: fix automagic chmod/chown for data_dir during restore (46ddf1e67)
