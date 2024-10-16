@@ -4,9 +4,9 @@ set -e
 
 ssl_dir="/usr/share/yunohost/ssl"
 template_dir="/usr/share/yunohost/conf/ssl"
-ynh_ca="/etc/yunohost/certs/yunohost.org/ca.pem"
-ynh_crt="/etc/yunohost/certs/yunohost.org/crt.pem"
-ynh_key="/etc/yunohost/certs/yunohost.org/key.pem"
+ynh_ca="/etc/yunohost/certs/yunohost/ca.pem"
+ynh_crt="/etc/yunohost/certs/yunohost/crt.pem"
+ynh_key="/etc/yunohost/certs/yunohost/key.pem"
 
 regen_local_ca() {
 
@@ -15,7 +15,7 @@ regen_local_ca() {
     echo -e "\n# Creating local certification authority with domain=$domain\n"
 
     # create certs and SSL directories
-    mkdir -p "/etc/yunohost/certs/yunohost.org"
+    mkdir -p "/etc/yunohost/certs/yunohost"
     mkdir -p "${ssl_dir}/"{ca,certs,crl,newcerts}
 
     pushd ${ssl_dir}
