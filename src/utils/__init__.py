@@ -16,3 +16,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+
+def bytearray_to_string(ba):
+    return bytearray(ba).decode("utf-8").removesuffix("\x00")
