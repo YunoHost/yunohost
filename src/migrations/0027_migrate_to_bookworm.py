@@ -99,7 +99,7 @@ class MyMigration(Migration):
         # Add new apt .deb signing key
         #
 
-        new_apt_key = "https://forge.yunohost.org/yunohost_bookworm.asc"
+        new_apt_key = "https://repo.yunohost.org/keys/yunohost_bookworm.asc"
         os.system(f'wget --timeout 900 --quiet "{new_apt_key}" --output-document=- | gpg --dearmor >"/usr/share/keyrings/yunohost-bookworm.gpg"')
 
         # Add Sury key even if extra_php_version.list was already there,
@@ -419,7 +419,7 @@ class MyMigration(Migration):
                 "-e 's@ bullseye/updates @ bookworm-security @g' "
                 "-e 's@ bullseye-@ bookworm-@g' "
                 "-e '/non-free-firmware/!s@ non-free@ non-free non-free-firmware@g' "
-                "-e 's@deb.*http://forge.yunohost.org@deb [signed-by=/usr/share/keyrings/yunohost-bookworm.gpg] http://forge.yunohost.org@g' "
+                "-e 's@deb.*http://repo.yunohost.org@deb [signed-by=/usr/share/keyrings/yunohost-bookworm.gpg] http://repo.yunohost.org@g' "
             )
             os.system(command)
 
