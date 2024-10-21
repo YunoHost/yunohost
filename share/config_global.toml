@@ -189,6 +189,12 @@ name = "Other"
         type = "boolean"
         default = false
 
+        [misc.tls_passthrough.tls_passthrough_explain]
+        type = "alert"
+        style = "info"
+        icon = "info"
+        visible = "tls_passthrough_enabled"
+
         [misc.tls_passthrough.tls_passthrough_list]
         type = "tags"
         # Regex is just <domain regex>;<destination>;<port>
