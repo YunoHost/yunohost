@@ -260,8 +260,40 @@ class LDAPInterface:
 
         """
         dn = f"{rdn},{BASEDN}"
-        actual_entry = self.search(rdn, attrs=None)
-        ldif = modlist.modifyModlist(actual_entry[0], attr_dict, ignore_oldexistent=1)
+        current_entry = self.search(rdn, attrs=None)
+        ldif = modlist.modifyModlist(current_entry[0], attr_dict, ignore_oldexistent=1)
+
+        # Previously, we used modifyModlist, which directly uses the lib system libldap
+        # supplied with openldap. Unfortunately, the output of this command was not
+        # optimal with attributes containing lists (complete deletion then complete
+        # rewriting of the list). In view of the major performance problems associated
+        # with our inherited permissions system, we decided to rewrite this part to
+        # optimize the output.
+        # ldif = modlist.modifyModlist(current_entry[0], attr_dict, ignore_oldexistent=1)
+        ldif = []
+        for attribute, value in attr_dict.items():
+            if attribute in current_entry[0]:
+                current_value = current_entry[0][attribute]
+                if value == current_value:
+                    continue
+
+                # Add or/and delete only needed values in set or list
+                if isinstance(value, (set, list)) and isinstance(current_value, (set, list)):
+                    values_to_add = list(set(value) - set(current_value))
+                    if values_to_add:
+                        ldif.append((ldap.MOD_ADD, attribute, values_to_add))
+                    values_to_del = list(set(current_value) - set(value))
+                    if values_to_del:
+                        ldif.append((ldap.MOD_DELETE, attribute, values_to_del))
+                else:
+                    # Use MOD_REPLACE instead of MOD_DELETE and next MOD_ADD
+                    if isinstance(value, set):
+                        value = list(value)
+                    ldif.append((ldap.MOD_REPLACE, attribute, value))
+            else:
+                if isinstance(value, set):
+                    value = list(value)
+                ldif.append((ldap.MOD_ADD, attribute, value))
 
         if ldif == []:
             logger.debug("Nothing to update in LDAP")
@@ -273,12 +305,13 @@ class LDAPInterface:
                 new_base = dn.split(",", 1)[1]
                 dn = new_rdn + "," + new_base
 
-            for i, (a, k, vs) in enumerate(ldif):
-                if isinstance(vs, list):
-                    vs = [v.encode("utf-8") for v in vs]
-                elif isinstance(vs, str):
-                    vs = [vs.encode("utf-8")]
-                ldif[i] = (a, k, vs)
+            # mod_op : 0 ADD, 1 DELETE, 2 REPLACE
+            for i, (mod_op, attribute, values) in enumerate(ldif):
+                if isinstance(values, list):
+                    values = [v.encode("utf-8") for v in values]
+                elif isinstance(values, str):
+                    values = [values.encode("utf-8")]
+                ldif[i] = (mod_op, attribute, values)
 
             self.con.modify_ext_s(dn, ldif)
         except Exception as e:
