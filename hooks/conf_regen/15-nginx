@@ -68,11 +68,38 @@ do_pre_regen() {
     export redirect_to_https="$(yunohost settings get 'security.nginx.nginx_redirect_to_https' | int_to_bool)"
     export compatibility="$(yunohost settings get 'security.nginx.nginx_compatibility')"
     export experimental="$(yunohost settings get 'security.experimental.security_experimental_enabled' | int_to_bool)"
+    export tls_passthrough_enabled="$(yunohost settings get 'misc.tls_passthrough.tls_passthrough_enabled' | int_to_bool)"
+    export tls_passthrough_list="$(yunohost settings get 'misc.tls_passthrough.tls_passthrough_list')"
+
+    local tls_passthrough_module="${pending_dir}/etc/nginx/modules-enabled/tls_passthrough.conf"
+    mkdir -p "${pending_dir}/etc/nginx/modules-enabled/"
+
+    if [[ "$tls_passthrough_enabled" == "True" ]]
+    then
+        ynh_render_template "tls_passthrough.conf" "${tls_passthrough_module}"
+        for tls_passthrough_domain_and_ip in $(echo "$tls_passthrough_list" | sed 's/,/\n/g')
+        do
+            export tls_passthrough_domain=$(echo $tls_passthrough_domain_and_ip | awk -F; '{print $1}')
+            export tls_passthrough_ip=$(echo $tls_passthrough_domain_and_ip | awk -F; '{print $2}')
+            export tls_passthrough_port=$(echo $tls_passthrough_domain_and_ip | awk -F; '{print $3}')
+            ynh_render_template "tls_passthrough_server.conf" "${nginx_conf_dir}/${tls_passthrough_domain}.forward80.conf"
+        done
+    else
+        touch "${tls_passthrough_module}"
+    fi
+
     ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
 
-    cert_status=$(yunohost domain cert status --json)
+    # "Touch" every known .conf file for every domain,
+    # meaning it should be removed by the regen conf
+    # - For real 'existing' domains, this file will be overwritten with an actual conf right after using ynh_render_template
+    # - For old domains, this will tell the regen conf that it is "to be deleted"
+    ls -1 /etc/nginx/conf.d \
+        | awk '/^[^\.]+\.[^\.]+.*\.conf$/ { print $1 }' \
+        | xargs --replace={} touch ${nginx_conf_dir}/{}
 
     # add domain conf files
+    cert_status=$(yunohost domain cert status --json)
     xmpp_domain_list="$(yunohost domain list --features xmpp --output-as json | jq -r ".domains[]")"
     mail_domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]")"
     for domain in $YNH_DOMAINS; do
@@ -115,15 +142,6 @@ do_pre_regen() {
     ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
     mkdir -p $nginx_conf_dir/default.d/
     cp "redirect_to_admin.conf" $nginx_conf_dir/default.d/
-
-    # remove old domain conf files
-    conf_files=$(ls -1 /etc/nginx/conf.d \
-        | awk '/^[^\.]+\.[^\.]+.*\.conf$/ { print $1 }')
-    for file in $conf_files; do
-        domain=${file%.conf}
-        [[ $YNH_DOMAINS =~ $domain ]] \
-            || touch "${nginx_conf_dir}/${file}"
-    done
 
     # remove old mail-autoconfig files
     autoconfig_files=$(ls -1 /var/www/.well-known/*/autoconfig/mail/config-v1.1.xml 2> /dev/null || true)
