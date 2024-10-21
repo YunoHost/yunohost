@@ -90,9 +90,16 @@ do_pre_regen() {
 
     ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
 
-    cert_status=$(yunohost domain cert status --json)
+    # "Touch" every known .conf file for every domain,
+    # meaning it should be removed by the regen conf
+    # - For real 'existing' domains, this file will be overwritten with an actual conf right after using ynh_render_template
+    # - For old domains, this will tell the regen conf that it is "to be deleted"
+    ls -1 /etc/nginx/conf.d \
+        | awk '/^[^\.]+\.[^\.]+.*\.conf$/ { print $1 }' \
+        | xargs --replace={} touch ${nginx_conf_dir}/{}
 
     # add domain conf files
+    cert_status=$(yunohost domain cert status --json)
     xmpp_domain_list="$(yunohost domain list --features xmpp --output-as json | jq -r ".domains[]")"
     mail_domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]")"
     for domain in $YNH_DOMAINS; do
@@ -135,17 +142,6 @@ do_pre_regen() {
     ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
     mkdir -p $nginx_conf_dir/default.d/
     cp "redirect_to_admin.conf" $nginx_conf_dir/default.d/
-
-    # remove old domain conf files
-    conf_files=$(ls -1 /etc/nginx/conf.d \
-        | awk '/^[^\.]+\.[^\.]+.*\.conf$/ { print $1 }')
-    for file in $conf_files; do
-        domain=${file%.conf}
-        [[ $YNH_DOMAINS =~ $domain ]] \
-            || touch "${nginx_conf_dir}/${file}"
-    done
-
-    # FIXME : also add the .forward80 files
 
     # remove old mail-autoconfig files
     autoconfig_files=$(ls -1 /var/www/.well-known/*/autoconfig/mail/config-v1.1.xml 2> /dev/null || true)
