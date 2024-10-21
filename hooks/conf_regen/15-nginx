@@ -74,14 +74,21 @@ do_pre_regen() {
     local tls_passthrough_module="${pending_dir}/etc/nginx/modules-enabled/tls_passthrough.conf"
     mkdir -p "${pending_dir}/etc/nginx/modules-enabled/"
 
-    if [[ "$tls_passthrough_enabled" == "True" ]]
-    then
+    if [[ "$tls_passthrough_enabled" == "True" ]]; then
         ynh_render_template "tls_passthrough.conf" "${tls_passthrough_module}"
-        for tls_passthrough_domain_and_ip in $(echo "$tls_passthrough_list" | sed 's/,/\n/g')
-        do
-            export tls_passthrough_domain=$(echo $tls_passthrough_domain_and_ip | awk -F; '{print $1}')
-            export tls_passthrough_ip=$(echo $tls_passthrough_domain_and_ip | awk -F; '{print $2}')
-            export tls_passthrough_port=$(echo $tls_passthrough_domain_and_ip | awk -F; '{print $3}')
+        for tls_passthrough_domain_and_ip in $(echo "$tls_passthrough_list" | sed 's/,/\n/g'); do
+            export tls_passthrough_domain=$(
+                                            echo $tls_passthrough_domain_and_ip | awk -F
+                                                                                          '{print $1}'
+            )
+            export tls_passthrough_ip=$(
+                                        echo $tls_passthrough_domain_and_ip | awk -F
+                                                                                      '{print $2}'
+            )
+            export tls_passthrough_port=$(
+                                          echo $tls_passthrough_domain_and_ip | awk -F
+                                                                                        '{print $3}'
+            )
             ynh_render_template "tls_passthrough_server.conf" "${nginx_conf_dir}/${tls_passthrough_domain}.forward80.conf"
         done
     else
