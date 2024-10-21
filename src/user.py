@@ -296,9 +296,9 @@ def user_create(
 
     # Create group for user and add to group 'all_users'
     user_group_create(groupname=username, gid=uid, primary_group=True, sync_perm=False)
-    user_group_update(groupname="all_users", add=username, force=True, sync_perm=True)
     if admin:
-        user_group_update(groupname="admins", add=username, sync_perm=True)
+        user_group_update(groupname="admins", add=username, sync_perm=False)
+    user_group_update(groupname="all_users", add=username, force=True, sync_perm=True)
 
     # Trigger post_user_create hooks
     env_dict = {
