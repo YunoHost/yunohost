@@ -1573,7 +1573,8 @@ class RestoreManager:
                 if "hooks" in os.listdir(app_settings_in_archive):
                     for hook in os.listdir(app_settings_in_archive + "/hooks"):
                         hook_add(
-                            app_instance_name, app_settings_in_archive + "/hooks/" + hook
+                            app_instance_name,
+                            app_settings_in_archive + "/hooks/" + hook,
                         )
 
                 # Cleaning temporary scripts directory
