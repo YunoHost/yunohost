@@ -261,7 +261,46 @@ class LDAPInterface:
         """
         dn = f"{rdn},{BASEDN}"
         current_entry = self.search(rdn, attrs=None)
-        ldif = modlist.modifyModlist(current_entry[0], attr_dict, ignore_oldexistent=1)
+
+        def modifyModlist_finegrained(old_entry: dict, new_entry: dict) -> list:
+            """
+            Prepare an optimized modification list to give to ldap.modify_ext()
+            """
+            ldif = []
+            for attribute, value in attr_dict.items():
+                old_value = old_entry.get(attribute, [])
+                if value == old_value:
+                    continue
+
+                # Add or/and delete only needed values with unordered set
+                if isinstance(value, set) and isinstance(old_value, (set, list)):
+                    values_to_add = list(set(value) - set(old_value))
+                    if values_to_add:
+                        ldif.append((ldap.MOD_ADD, attribute, values_to_add))
+                    values_to_del = list(set(old_value) - set(value))
+                    if values_to_del:
+                        ldif.append((ldap.MOD_DELETE, attribute, values_to_del))
+
+                # Add or/and delete only needed values with ordered list
+                elif isinstance(value, list) and isinstance(old_value, list):
+                    for i, v in enumerate(value):
+                        if i >= len(old_value) or old_value[i] != v:
+                            break
+                    if i == 0:
+                        ldif.append((ldap.MOD_REPLACE, attribute, value))
+                    else:
+                        if old_value[i:]:
+                            ldif.append((ldap.MOD_DELETE, attribute, old_value[i:]))
+                        if value[i:]:
+                            ldif.append((ldap.MOD_ADD, attribute, value[i:]))
+
+                else:
+                    # Use MOD_REPLACE instead of MOD_DELETE and next MOD_ADD
+                    if isinstance(value, set):
+                        value = list(value)
+                    mod_op = ldap.MOD_ADD if not old_value else ldap.MOD_REPLACE
+                    ldif.append((mod_op, attribute, value))
+            return ldif
 
         # Previously, we used modifyModlist, which directly uses the lib system libldap
         # supplied with openldap. Unfortunately, the output of this command was not
@@ -270,32 +309,9 @@ class LDAPInterface:
         # with our inherited permissions system, we decided to rewrite this part to
         # optimize the output.
         # ldif = modlist.modifyModlist(current_entry[0], attr_dict, ignore_oldexistent=1)
-        ldif = []
-        for attribute, value in attr_dict.items():
-            if attribute in current_entry[0]:
-                current_value = current_entry[0][attribute]
-                if value == current_value:
-                    continue
+        ldif = modifyModlist_finegrained(current_entry[0], attr_dict)
 
-                # Add or/and delete only needed values in set or list
-                if isinstance(value, (set, list)) and isinstance(current_value, (set, list)):
-                    values_to_add = list(set(value) - set(current_value))
-                    if values_to_add:
-                        ldif.append((ldap.MOD_ADD, attribute, values_to_add))
-                    values_to_del = list(set(current_value) - set(value))
-                    if values_to_del:
-                        ldif.append((ldap.MOD_DELETE, attribute, values_to_del))
-                else:
-                    # Use MOD_REPLACE instead of MOD_DELETE and next MOD_ADD
-                    if isinstance(value, set):
-                        value = list(value)
-                    ldif.append((ldap.MOD_REPLACE, attribute, value))
-            else:
-                if isinstance(value, set):
-                    value = list(value)
-                ldif.append((ldap.MOD_ADD, attribute, value))
-
-        if ldif == []:
+        if not ldif:
             logger.debug("Nothing to update in LDAP")
             return True
 

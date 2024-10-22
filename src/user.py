@@ -443,23 +443,23 @@ def user_update(
     # Get modifications from arguments
     new_attr_dict = {}
     if firstname:
-        new_attr_dict["givenName"] = [firstname]  # TODO: Validate
-        new_attr_dict["cn"] = new_attr_dict["displayName"] = [
+        new_attr_dict["givenName"] = {firstname}  # TODO: Validate
+        new_attr_dict["cn"] = new_attr_dict["displayName"] = {
             (firstname + " " + user["sn"][0]).strip()
-        ]
+        }
         env_dict["YNH_USER_FIRSTNAME"] = firstname
 
     if lastname:
-        new_attr_dict["sn"] = [lastname]  # TODO: Validate
-        new_attr_dict["cn"] = new_attr_dict["displayName"] = [
+        new_attr_dict["sn"] = {lastname}  # TODO: Validate
+        new_attr_dict["cn"] = new_attr_dict["displayName"] = {
             (user["givenName"][0] + " " + lastname).strip()
-        ]
+        }
         env_dict["YNH_USER_LASTNAME"] = lastname
 
     if lastname and firstname:
-        new_attr_dict["cn"] = new_attr_dict["displayName"] = [
+        new_attr_dict["cn"] = new_attr_dict["displayName"] = {
             (firstname + " " + lastname).strip()
-        ]
+        }
 
     # change_password is None if user_update is not called to change the password
     if change_password is not None and change_password != "":
@@ -481,13 +481,14 @@ def user_update(
             "admin" if is_admin else "user", change_password
         )
 
-        new_attr_dict["userPassword"] = [_hash_user_password(change_password)]
+        new_attr_dict["userPassword"] = {_hash_user_password(change_password)}
         env_dict["YNH_USER_PASSWORD"] = change_password
 
     if mail:
         # If the requested mail address is already as main address or as an alias by this user
         if mail in user["mail"]:
-            user["mail"].remove(mail)
+            if mail != user["mail"][0]:
+                user["mail"].remove(mail)
         # Othewise, check that this mail address is not already used by this user
         else:
             try:
@@ -513,7 +514,7 @@ def user_update(
 
             # (c.f. similar stuff as before)
             if mail in user["mail"]:
-                user["mail"].remove(mail)
+                continue
             else:
                 try:
                     ldap.validate_uniqueness({"mail": mail})
@@ -542,33 +543,27 @@ def user_update(
     if add_mailforward:
         if not isinstance(add_mailforward, list):
             add_mailforward = [add_mailforward]
-        for mail in add_mailforward:
-            if mail in user["maildrop"][1:]:
-                continue
-            user["maildrop"].append(mail)
-        new_attr_dict["maildrop"] = user["maildrop"]
+        new_attr_dict["maildrop"] = set(user["maildrop"]) + set(add_mailforward)
 
     if remove_mailforward:
         if not isinstance(remove_mailforward, list):
             remove_mailforward = [remove_mailforward]
-        for mail in remove_mailforward:
-            if len(user["maildrop"]) > 1 and mail in user["maildrop"][1:]:
-                user["maildrop"].remove(mail)
-            else:
-                raise YunohostValidationError("mail_forward_remove_failed", mail=mail)
-        new_attr_dict["maildrop"] = user["maildrop"]
+        new_attr_dict["maildrop"] = set(user["maildrop"]) - set(remove_mailforward)
+
+        if len(user["maildrop"]) - len(remove_mailforward) != len(new_attr_dict["maildrop"]):
+            raise YunohostValidationError("mail_forward_remove_failed", mail=mail)
 
     if "maildrop" in new_attr_dict:
         env_dict["YNH_USER_MAILFORWARDS"] = ",".join(new_attr_dict["maildrop"])
 
     if mailbox_quota is not None:
-        new_attr_dict["mailuserquota"] = [mailbox_quota]
+        new_attr_dict["mailuserquota"] = {mailbox_quota}
         env_dict["YNH_USER_MAILQUOTA"] = mailbox_quota
 
     if loginShell is not None:
         if not shellexists(loginShell) or loginShell not in list_shells():
             raise YunohostValidationError("invalid_shell", shell=loginShell)
-        new_attr_dict["loginShell"] = [loginShell]
+        new_attr_dict["loginShell"] = {loginShell}
         env_dict["YNH_USER_LOGINSHELL"] = loginShell
 
     if not from_import:
@@ -637,7 +632,8 @@ def user_info(username: str) -> dict[str, str]:
         result_dict["mail-aliases"] = user["mail"][1:]
 
     if len(user["maildrop"]) > 1:
-        result_dict["mail-forward"] = user["maildrop"][1:]
+        user["maildrop"].remove(username)
+        result_dict["mail-forward"] = user["maildrop"]
 
     if "mailuserquota" in user:
         userquota = user["mailuserquota"][0]
@@ -1344,14 +1340,10 @@ def user_group_update(
         logger.info(m18n.n("group_update_aliases", group=groupname))
         new_attr_dict["mail"] = list(set(new_group_mail))
 
-        if new_attr_dict["mail"] and "mailGroup" not in group["objectClass"]:
-            new_attr_dict["objectClass"] = group["objectClass"] + ["mailGroup"]
-        if not new_attr_dict["mail"] and "mailGroup" in group["objectClass"]:
-            new_attr_dict["objectClass"] = [
-                c
-                for c in group["objectClass"]
-                if c != "mailGroup" and c != "mailAccount"
-            ]
+        if new_attr_dict["mail"]:
+            new_attr_dict["objectClass"] = set(group["objectClass"]) + {"mailGroup"}
+        else:
+            new_attr_dict["objectClass"] = set(group["objectClass"]) - {"mailGroup", "mailAccount"}
 
     if new_attr_dict:
         if not from_import:
