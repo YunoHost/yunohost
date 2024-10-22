@@ -240,7 +240,7 @@ class SettingsConfigPanel(ConfigPanel):
             ldap = _get_ldap_interface()
             ldap.update(
                 "cn=admins,ou=sudo",
-                {"sudoOption": ["!authenticate"] if passwordless_sudo else []},
+                {"sudoOption": "!authenticate" if passwordless_sudo else set()},
             )
 
         super()._apply()
