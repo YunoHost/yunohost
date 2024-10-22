@@ -26,15 +26,20 @@ ynh_config_add_systemd() {
     systemctl daemon-reload
 }
 
-# Remove the dedicated systemd config
+# Remove the dedicated systemd config, and if configured into YunoHost, removes the service.
 #
 # usage: ynh_config_remove_systemd service
 # | arg: service   - Service name (optionnal, $app by default)
 ynh_config_remove_systemd() {
     local service="${1:-$app}"
+
+    if ynh_exec_warn_less yunohost service status "$app" >/dev/null; then
+        yunohost service remove "$app"
+    fi
+
     if [ -e "/etc/systemd/system/$service.service" ]; then
-        ynh_systemctl --service=$service --action=stop
-        systemctl disable $service --quiet
+        ynh_systemctl --service="$service" --action=stop
+        systemctl disable "$service" --quiet
         ynh_safe_rm "/etc/systemd/system/$service.service"
         systemctl daemon-reload
     fi
