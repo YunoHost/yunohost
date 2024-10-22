@@ -76,6 +76,50 @@ BASEDN = "dc=yunohost,dc=org"
 ROOTDN = "gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth"
 USERDN = "uid={username},ou=users,dc=yunohost,dc=org"
 
+def modifyModlist_finegrained(old_entry: dict, new_entry: dict) -> list:
+    """
+    Prepare an optimized modification list to give to ldap.modify_ext()
+    """
+    ldif = []
+    for attribute, value in new_entry.items():
+        if not isinstance(value, (set, list)):
+            value = {value}
+        old_value = old_entry.get(attribute, set())
+        if not isinstance(old_value, (set, list)):
+            old_value = {old_value}
+        if value == set(old_value):
+            continue
+
+        if not old_value:
+            ldif.append((ldap.MOD_ADD, attribute, list(value)))
+        # Add or/and delete only needed values with unordered set
+        elif isinstance(value, set):
+            values_to_del = set(old_value) - value
+            if values_to_del == set(old_value):
+                ldif.append((ldap.MOD_REPLACE, attribute, list(value)))
+                continue
+            elif values_to_del:
+                ldif.append((ldap.MOD_DELETE, attribute, list(values_to_del)))
+
+            values_to_add = value - set(old_value)
+            if values_to_add:
+                ldif.append((ldap.MOD_ADD, attribute, list(values_to_add)))
+
+        # Add or/and delete only needed values with ordered list
+        else:
+            for i, v in enumerate(value):
+                if i >= len(old_value) or old_value[i] != v:
+                    break
+            if i == 0:
+                ldif.append((ldap.MOD_REPLACE, attribute, value))
+            else:
+                if old_value[i:]:
+                    ldif.append((ldap.MOD_DELETE, attribute, old_value[i:]))
+                if value[i:]:
+                    ldif.append((ldap.MOD_ADD, attribute, value[i:]))
+
+    return ldif
+
 
 class LDAPInterface:
 
@@ -262,47 +306,6 @@ class LDAPInterface:
         dn = f"{rdn},{BASEDN}"
         current_entry = self.search(rdn, attrs=None)
 
-        def modifyModlist_finegrained(old_entry: dict, new_entry: dict) -> list:
-            """
-            Prepare an optimized modification list to give to ldap.modify_ext()
-            """
-            ldif = []
-            for attribute, value in attr_dict.items():
-                if not isinstance(value, (set, list)):
-                    value = {value}
-                old_value = old_entry.get(attribute, set())
-                if value == old_value:
-                    continue
-
-                # Add or/and delete only needed values with unordered set
-                if isinstance(value, set) and isinstance(old_value, (set, list)):
-                    values_to_add = list(set(value) - set(old_value))
-                    if values_to_add:
-                        ldif.append((ldap.MOD_ADD, attribute, values_to_add))
-                    values_to_del = list(set(old_value) - set(value))
-                    if values_to_del:
-                        ldif.append((ldap.MOD_DELETE, attribute, values_to_del))
-
-                # Add or/and delete only needed values with ordered list
-                elif isinstance(value, list) and isinstance(old_value, list):
-                    for i, v in enumerate(value):
-                        if i >= len(old_value) or old_value[i] != v:
-                            break
-                    if i == 0:
-                        ldif.append((ldap.MOD_REPLACE, attribute, value))
-                    else:
-                        if old_value[i:]:
-                            ldif.append((ldap.MOD_DELETE, attribute, old_value[i:]))
-                        if value[i:]:
-                            ldif.append((ldap.MOD_ADD, attribute, value[i:]))
-
-                else:
-                    # Use MOD_REPLACE instead of MOD_DELETE and next MOD_ADD
-                    if isinstance(value, set):
-                        value = list(value)
-                    mod_op = ldap.MOD_ADD if not old_value else ldap.MOD_REPLACE
-                    ldif.append((mod_op, attribute, value))
-            return ldif
 
         # Previously, we used modifyModlist, which directly uses the lib system libldap
         # supplied with openldap. Unfortunately, the output of this command was not
