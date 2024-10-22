@@ -76,9 +76,6 @@ def find_expected_string_keys():
             continue
         yield "migration_description_" + os.path.basename(path)[:-3]
 
-    # FIXME: to be removed in bookworm branch
-    yield "migration_description_0027_migrate_to_bookworm"
-
     # For each default service, expect to find "service_description_<name>"
     for service, info in yaml.safe_load(
         open(ROOT + "conf/yunohost/services.yml")
@@ -139,16 +136,32 @@ def find_expected_string_keys():
 
     # Domain config panel
     domain_config = toml.load(open(ROOT + "share/config_domain.toml"))
-    for panel in domain_config.values():
+    domain_settings_with_help_key = [
+        "portal_logo",
+        "portal_public_intro",
+        "portal_theme",
+        "portal_user_intro",
+        "search_engine",
+        "custom_css",
+        "dns",
+        "enable_public_apps_page",
+    ]
+    domain_section_with_no_name = ["app", "cert_", "mail", "registrar"]
+    for panel_key, panel in domain_config.items():
         if not isinstance(panel, dict):
             continue
-        for section in panel.values():
+        yield f"domain_config_{panel_key}_name"
+        for section_key, section in panel.items():
             if not isinstance(section, dict):
                 continue
+            if section_key not in domain_section_with_no_name:
+                yield f"domain_config_{section_key}_name"
             for key, values in section.items():
                 if not isinstance(values, dict):
                     continue
                 yield f"domain_config_{key}"
+                if key in domain_settings_with_help_key:
+                    yield f"domain_config_{key}_help"
 
     # Global settings
     global_config = toml.load(open(ROOT + "share/config_global.toml"))
@@ -165,12 +178,14 @@ def find_expected_string_keys():
         "root_password_confirm",
     ]
 
-    for panel in global_config.values():
+    for panel_key, panel in global_config.items():
         if not isinstance(panel, dict):
             continue
-        for section in panel.values():
+        yield f"global_settings_setting_{panel_key}_name"
+        for section_key, section in panel.items():
             if not isinstance(section, dict):
                 continue
+            yield f"global_settings_setting_{section_key}_name"
             for key, values in section.items():
                 if not isinstance(values, dict):
                     continue

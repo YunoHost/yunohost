@@ -23,11 +23,11 @@ import random
 import tempfile
 import subprocess
 from typing import Dict, Any, List, Union, Callable
+from logging import getLogger
 
 from moulinette import m18n
 from moulinette.utils.text import random_ascii
 from moulinette.utils.process import check_output
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import mkdir, chown, chmod, write_to_file
 from moulinette.utils.filesystem import (
     rm,
@@ -35,7 +35,7 @@ from moulinette.utils.filesystem import (
 from yunohost.utils.system import system_arch, debian_version, debian_version_id
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
-logger = getActionLogger("yunohost.app_resources")
+logger = getLogger("yunohost.utils.resources")
 
 
 class AppResourceManager:
@@ -1235,6 +1235,14 @@ class AptDependenciesAppResource(AppResource):
         self.extras = {
             key: values for key, values in self.extras.items() if values["packages"]
         }
+
+        # Yarn repository is now provided by the core.
+        # Let's "move" any extra apt resources depending on yarn to the standard packages list.
+        for key in list(self.extras.keys()):
+            if self.extras[key]["repo"] == "deb https://dl.yarnpkg.com/debian/ stable main" \
+                    and self.extras[key]["packages"] == ["yarn"]:
+                self.packages.append("yarn")
+                del self.extras[key]
 
     def provision_or_update(self, context: Dict = {}):
 

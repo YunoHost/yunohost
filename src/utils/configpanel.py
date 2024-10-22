@@ -19,29 +19,390 @@
 import glob
 import os
 import re
-import urllib.parse
 from collections import OrderedDict
-from typing import Union
+from logging import getLogger
+from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union, cast
+
+from pydantic import BaseModel, Extra, validator
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
 from moulinette.utils.filesystem import mkdir, read_toml, read_yaml, write_to_yaml
-from moulinette.utils.log import getActionLogger
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.form import (
-    OPTIONS,
-    BaseChoicesOption,
+    AnyOption,
     BaseInputOption,
-    BaseOption,
+    BaseReadonlyOption,
     FileOption,
+    OptionsModel,
     OptionType,
-    ask_questions_and_parse_answers,
+    Translation,
+    build_form,
     evaluate_simple_js_expression,
+    parse_prefilled_values,
+    prompt_or_validate_form,
 )
 from yunohost.utils.i18n import _value_for_locale
 
-logger = getActionLogger("yunohost.configpanel")
+if TYPE_CHECKING:
+    from pydantic.fields import ModelField
+    from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
+
+    from yunohost.utils.form import FormModel, Hooks
+    from yunohost.log import OperationLogger
+
+if TYPE_CHECKING:
+    from moulinette.utils.log import MoulinetteLogger
+
+    logger = cast(MoulinetteLogger, getLogger("yunohost.configpanel"))
+else:
+    logger = getLogger("yunohost.configpanel")
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │  ╭╮╮╭─╮┌─╮┌─╴╷  ╭─╴                                   │
+# │  ││││ ││ │├─╴│  ╰─╮                                   │
+# │  ╵╵╵╰─╯└─╯╰─╴╰─╴╶─╯                                   │
+# ╰───────────────────────────────────────────────────────╯
+
 CONFIG_PANEL_VERSION_SUPPORTED = 1.0
+
+
+class ContainerModel(BaseModel):
+    id: str
+    name: Union[Translation, None] = None
+    services: list[str] = []
+    help: Union[Translation, None] = None
+
+    def translate(self, i18n_key: Union[str, None] = None) -> None:
+        """
+        Translate `ask` and `name` attributes of panels and section.
+        This is in place mutation.
+        """
+
+        for key in ("help", "name"):
+            value = getattr(self, key)
+            if value:
+                setattr(self, key, _value_for_locale(value))
+            elif m18n.key_exists(f"{i18n_key}_{self.id}_{key}"):
+                setattr(self, key, m18n.n(f"{i18n_key}_{self.id}_{key}"))
+
+
+class SectionModel(ContainerModel, OptionsModel):
+    """
+    Sections are, basically, options grouped together. Sections are `dict`s defined inside a Panel and require a unique id (in the below example, the id is `customization` prepended by the panel's id `main`). Keep in mind that this combined id will be used in CLI to refer to the section, so choose something short and meaningfull. Also make sure to not make a typo in the panel id, which would implicitly create an other entire panel.
+
+    If at least one `button` is present it then become an action section.
+    Options in action sections are not considered settings and therefor are not saved, they are more like parameters that exists only during the execution of an action.
+    FIXME i'm not sure we have this in code.
+
+    #### Examples
+    ```toml
+    [main]
+
+        [main.customization]
+        name.en = "Advanced configuration"
+        name.fr = "Configuration avancée"
+        help = "Every form items in this section are not saved."
+        services = ["__APP__", "nginx"]
+
+            [main.customization.option_id]
+            type = "string"
+            # …refer to Options doc
+    ```
+
+    #### Properties
+    - `name` (optional): `Translation` or `str`, displayed as the section's title if any
+    - `help`: `Translation` or `str`, text to display before the first option
+    - `services` (optional): `list` of services names to `reload-or-restart` when any option's value contained in the section changes
+        - `"__APP__` will refer to the app instance name
+    - `optional`: `bool` (default: `true`), set the default `optional` prop of all Options in the section
+    - `visible`: `bool` or `JSExpression` (default: `true`), allow to conditionally display a section depending on user's answers to previous questions.
+        - Be careful that the `visible` property should only refer to **previous** options's value. Hence, it should not make sense to have a `visible` property on the very first section.
+    """
+
+    visible: Union[bool, str] = True
+    optional: bool = True
+    is_action_section: bool = False
+    bind: Union[str, None] = None
+
+    class Config:
+        @staticmethod
+        def schema_extra(schema: dict[str, Any]) -> None:
+            del schema["properties"]["id"]
+            options = schema["properties"].pop("options")
+            del schema["required"]
+            schema["additionalProperties"] = options["items"]
+
+    # Don't forget to pass arguments to super init
+    def __init__(
+        self,
+        id: str,
+        name: Union[Translation, None] = None,
+        services: list[str] = [],
+        help: Union[Translation, None] = None,
+        visible: Union[bool, str] = True,
+        optional: bool = True,
+        bind: Union[str, None] = None,
+        **kwargs,
+    ) -> None:
+        options = self.options_dict_to_list(kwargs, optional=optional)
+        is_action_section = any(
+            [option["type"] == OptionType.button for option in options]
+        )
+        ContainerModel.__init__(  # type: ignore
+            self,
+            id=id,
+            name=name,
+            services=services,
+            help=help,
+            visible=visible,
+            bind=bind,
+            options=options,
+            is_action_section=is_action_section,
+        )
+
+    def is_visible(self, context: dict[str, Any]) -> bool:
+        if isinstance(self.visible, bool):
+            return self.visible
+
+        return evaluate_simple_js_expression(self.visible, context=context)
+
+    def translate(self, i18n_key: Union[str, None] = None) -> None:
+        """
+        Call to `Container`'s `translate` for self translation
+        + Call to `OptionsContainer`'s `translate_options` for options translation
+        """
+        super().translate(i18n_key)
+        self.translate_options(i18n_key)
+
+
+class PanelModel(ContainerModel):
+    """
+    Panels are, basically, sections grouped together. Panels are `dict`s defined inside a ConfigPanel file and require a unique id (in the below example, the id is `main`). Keep in mind that this id will be used in CLI to refer to the panel, so choose something short and meaningfull.
+
+    #### Examples
+    ```toml
+    [main]
+    name.en = "Main configuration"
+    name.fr = "Configuration principale"
+    help = ""
+    services = ["__APP__", "nginx"]
+
+        [main.customization]
+        # …refer to Sections doc
+    ```
+    #### Properties
+    - `name`: `Translation` or `str`, displayed as the panel title
+    - `help` (optional): `Translation` or `str`, text to display before the first section
+    - `services` (optional): `list` of services names to `reload-or-restart` when any option's value contained in the panel changes
+        - `"__APP__` will refer to the app instance name
+    - `actions`: FIXME not sure what this does
+    """
+
+    # FIXME what to do with `actions?
+    actions: dict[str, Translation] = {"apply": {"en": "Apply"}}
+    bind: Union[str, None] = None
+    sections: list[SectionModel]
+
+    class Config:
+        extra = Extra.allow
+
+        @staticmethod
+        def schema_extra(schema: dict[str, Any]) -> None:
+            del schema["properties"]["id"]
+            del schema["properties"]["sections"]
+            del schema["required"]
+            schema["additionalProperties"] = {"$ref": "#/definitions/SectionModel"}
+
+    # Don't forget to pass arguments to super init
+    def __init__(
+        self,
+        id: str,
+        name: Union[Translation, None] = None,
+        services: list[str] = [],
+        help: Union[Translation, None] = None,
+        bind: Union[str, None] = None,
+        **kwargs,
+    ) -> None:
+        sections = [data | {"id": name} for name, data in kwargs.items()]
+        super().__init__(  # type: ignore
+            id=id, name=name, services=services, help=help, bind=bind, sections=sections
+        )
+
+    def translate(self, i18n_key: Union[str, None] = None) -> None:
+        """
+        Recursivly mutate translatable attributes to their translation
+        """
+        super().translate(i18n_key)
+
+        for section in self.sections:
+            section.translate(i18n_key)
+
+
+class ConfigPanelModel(BaseModel):
+    """
+    This is the 'root' level of the config panel toml file
+
+    #### Examples
+
+    ```toml
+    version = 1.0
+
+    [config]
+    # …refer to Panels doc
+    ```
+
+    #### Properties
+
+    - `version`: `float` (default: `1.0`), version that the config panel supports in terms of features.
+    - `i18n` (optional): `str`, an i18n property that let you internationalize options text.
+        - However this feature is only available in core configuration panel (like `yunohost domain config`), prefer the use `Translation` in `name`, `help`, etc.
+
+    """
+
+    version: float = CONFIG_PANEL_VERSION_SUPPORTED
+    i18n: Union[str, None] = None
+    panels: list[PanelModel]
+
+    class Config:
+        arbitrary_types_allowed = True
+        extra = Extra.allow
+
+        @staticmethod
+        def schema_extra(schema: dict[str, Any]) -> None:
+            """Update the schema to the expected input
+            In actual TOML definition, schema is like:
+            ```toml
+            [panel_1]
+                [panel_1.section_1]
+                    [panel_1.section_1.option_1]
+            ```
+            Which is equivalent to `{"panel_1": {"section_1": {"option_1": {}}}}`
+            so `section_id` (and `option_id`) are additional property of `panel_id`,
+            which is convinient to write but not ideal to iterate.
+            In ConfigPanelModel we gather additional properties of panels, sections
+            and options as lists so that structure looks like:
+            `{"panels`: [{"id": "panel_1", "sections": [{"id": "section_1", "options": [{"id": "option_1"}]}]}]
+            """
+            del schema["properties"]["panels"]
+            del schema["required"]
+            schema["additionalProperties"] = {"$ref": "#/definitions/PanelModel"}
+
+    # Don't forget to pass arguments to super init
+    def __init__(
+        self,
+        version: float,
+        i18n: Union[str, None] = None,
+        **kwargs,
+    ) -> None:
+        panels = [data | {"id": name} for name, data in kwargs.items()]
+        super().__init__(version=version, i18n=i18n, panels=panels)
+
+    @property
+    def sections(self) -> Iterator[SectionModel]:
+        """Convinient prop to iter on all sections"""
+        for panel in self.panels:
+            for section in panel.sections:
+                yield section
+
+    @property
+    def options(self) -> Iterator[AnyOption]:
+        """Convinient prop to iter on all options"""
+        for section in self.sections:
+            for option in section.options:
+                yield option
+
+    def get_panel(self, panel_id: str) -> Union[PanelModel, None]:
+        for panel in self.panels:
+            if panel.id == panel_id:
+                return panel
+        return None
+
+    def get_section(self, section_id: str) -> Union[SectionModel, None]:
+        for section in self.sections:
+            if section.id == section_id:
+                return section
+        return None
+
+    def get_option(self, option_id: str) -> Union[AnyOption, None]:
+        for option in self.options:
+            if option.id == option_id:
+                return option
+        # FIXME raise error?
+        return None
+
+    @property
+    def services(self) -> list[str]:
+        services = set()
+        for panel in self.panels:
+            services |= set(panel.services)
+            for section in panel.sections:
+                services |= set(section.services)
+
+        services_ = list(services)
+        services_.sort(key="nginx".__eq__)
+        return services_
+
+    def iter_children(
+        self,
+        trigger: list[Literal["panel", "section", "option", "action"]] = ["option"],
+    ):
+        for panel in self.panels:
+            if "panel" in trigger:
+                yield (panel, None, None)
+            for section in panel.sections:
+                if "section" in trigger:
+                    yield (panel, section, None)
+                if "action" in trigger:
+                    for option in section.options:
+                        if option.type is OptionType.button:
+                            yield (panel, section, option)
+                if "option" in trigger:
+                    for option in section.options:
+                        yield (panel, section, option)
+
+    def translate(self) -> None:
+        """
+        Recursivly mutate translatable attributes to their translation
+        """
+        for panel in self.panels:
+            panel.translate(self.i18n)
+
+    @validator("version", always=True)
+    def check_version(cls, value: float, field: "ModelField") -> float:
+        if value < CONFIG_PANEL_VERSION_SUPPORTED:
+            raise ValueError(
+                f"Config panels version '{value}' are no longer supported."
+            )
+
+        return value
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │  ╭─╴╭─╮╭╮╷┌─╴╶┬╴╭─╮   ╶┬╴╭╮╮┌─╮╷                      │
+# │  │  │ ││││├─╴ │ │╶╮    │ │││├─╯│                      │
+# │  ╰─╴╰─╯╵╰╯╵  ╶┴╴╰─╯   ╶┴╴╵╵╵╵  ╰─╴                    │
+# ╰───────────────────────────────────────────────────────╯
+
+if TYPE_CHECKING:
+    FilterKey = Sequence[Union[str, None]]
+    RawConfig = OrderedDict[str, Any]
+    RawSettings = dict[str, Any]
+    ConfigPanelGetMode = Literal["classic", "full", "export"]
+
+
+def parse_filter_key(key: Union[str, None] = None) -> "FilterKey":
+    if key and key.count(".") > 2:
+        raise YunohostError(
+            f"The filter key {key} has too many sub-levels, the max is 3.",
+            raw_msg=True,
+        )
+
+    if not key:
+        return (None, None, None)
+    keys = key.split(".")
+    return tuple(keys[i] if len(keys) > i else None for i in range(3))
 
 
 class ConfigPanel:
@@ -49,6 +410,12 @@ class ConfigPanel:
     save_path_tpl: Union[str, None] = None
     config_path_tpl = "/usr/share/yunohost/config_{entity_type}.toml"
     save_mode = "full"
+    settings_must_be_defined: bool = False
+    filter_key: "FilterKey" = (None, None, None)
+    config: Union[ConfigPanelModel, None] = None
+    form: Union["FormModel", None] = None
+    raw_settings: "RawSettings" = {}
+    hooks: "Hooks" = {}
 
     @classmethod
     def list(cls):
@@ -67,7 +434,9 @@ class ConfigPanel:
             entities = []
         return entities
 
-    def __init__(self, entity, config_path=None, save_path=None, creation=False):
+    def __init__(
+        self, entity, config_path=None, save_path=None, creation=False
+    ) -> None:
         self.entity = entity
         self.config_path = config_path
         if not config_path:
@@ -77,9 +446,6 @@ class ConfigPanel:
         self.save_path = save_path
         if not save_path and self.save_path_tpl:
             self.save_path = self.save_path_tpl.format(entity=entity)
-        self.config = {}
-        self.values = {}
-        self.new_values = {}
 
         if (
             self.save_path
@@ -103,91 +469,87 @@ class ConfigPanel:
             and re.match("^(validate|post_ask)__", func)
         }
 
-    def get(self, key="", mode="classic"):
-        self.filter_key = key or ""
+    def get(
+        self, key: Union[str, None] = None, mode: "ConfigPanelGetMode" = "classic"
+    ) -> Any:
+        self.filter_key = parse_filter_key(key)
+        self.config, self.form = self._get_config_panel(prevalidate=False)
 
-        # Read config panel toml
-        self._get_config_panel()
-
-        if not self.config:
-            raise YunohostValidationError("config_no_panel")
-
-        # Read or get values and hydrate the config
-        self._get_raw_settings()
-        self._hydrate()
+        panel_id, section_id, option_id = self.filter_key
 
         # In 'classic' mode, we display the current value if key refer to an option
-        if self.filter_key.count(".") == 2 and mode == "classic":
-            option = self.filter_key.split(".")[-1]
-            value = self.values.get(option, None)
+        if option_id and mode == "classic":
+            option = self.config.get_option(option_id)
 
-            option_type = None
-            for _, _, option_ in self._iterate():
-                if option_["id"] == option:
-                    option_type = OPTIONS[option_["type"]]
-                    break
+            if option is None:
+                # FIXME i18n
+                raise YunohostValidationError(
+                    f"Couldn't find any option with id {option_id}", raw_msg=True
+                )
 
-            return option_type.normalize(value) if option_type else value
+            if isinstance(option, BaseReadonlyOption):
+                return None
+
+            return option.normalize(self.form[option_id], option)
 
         # Format result in 'classic' or 'export' mode
+        self.config.translate()
         logger.debug(f"Formating result in '{mode}' mode")
-        result = {}
-        for panel, section, option in self._iterate():
-            if section["is_action_section"] and mode != "full":
-                continue
-
-            key = f"{panel['id']}.{section['id']}.{option['id']}"
-            if mode == "export":
-                result[option["id"]] = option.get("current_value")
-                continue
-
-            ask = None
-            if "ask" in option:
-                ask = _value_for_locale(option["ask"])
-            elif "i18n" in self.config:
-                ask = m18n.n(self.config["i18n"] + "_" + option["id"])
-
-            if mode == "full":
-                option["ask"] = ask
-                question_class = OPTIONS[option.get("type", OptionType.string)]
-                # FIXME : maybe other properties should be taken from the question, not just choices ?.
-                if issubclass(question_class, BaseChoicesOption):
-                    option["choices"] = question_class(option).choices
-                if issubclass(question_class, BaseInputOption):
-                    option["default"] = question_class(option).default
-                    option["pattern"] = question_class(option).pattern
-            else:
-                result[key] = {"ask": ask}
-                if "current_value" in option:
-                    question_class = OPTIONS[option.get("type", OptionType.string)]
-                    if hasattr(question_class, "humanize"):
-                        result[key]["value"] = question_class.humanize(
-                            option["current_value"], option
-                        )
-                    else:
-                        result[key]["value"] = option["current_value"]
-
-                    # FIXME: semantics, technically here this is not about a prompt...
-                    if getattr(question_class, "hide_user_input_in_prompt", None):
-                        result[key][
-                            "value"
-                        ] = "**************"  # Prevent displaying password in `config get`
 
         if mode == "full":
-            return self.config
-        else:
+            result = self.config.dict(exclude_none=True)
+
+            for panel in result["panels"]:
+                for section in panel["sections"]:
+                    for opt in section["options"]:
+                        instance = self.config.get_option(opt["id"])
+                        if isinstance(instance, BaseInputOption):
+                            opt["value"] = instance.normalize(
+                                self.form[opt["id"]], instance
+                            )
             return result
 
+        result = OrderedDict()
+
+        for panel in self.config.panels:
+            for section in panel.sections:
+                if section.is_action_section and mode != "full":
+                    continue
+
+                for option in section.options:
+                    # FIXME not sure why option resolves as possibly `None`
+                    option = cast(AnyOption, option)
+
+                    if mode == "export":
+                        if isinstance(option, BaseInputOption):
+                            result[option.id] = self.form[option.id]
+                        continue
+
+                    if mode == "classic":
+                        key = f"{panel.id}.{section.id}.{option.id}"
+                        result[key] = {"ask": option.ask}
+
+                        if isinstance(option, BaseInputOption):
+                            result[key]["value"] = option.humanize(
+                                self.form[option.id], option
+                            )
+                            if option.type is OptionType.password:
+                                result[key][
+                                    "value"
+                                ] = "**************"  # Prevent displaying password in `config get`
+
+        return result
+
     def set(
-        self, key=None, value=None, args=None, args_file=None, operation_logger=None
-    ):
-        self.filter_key = key or ""
-
-        # Read config panel toml
-        self._get_config_panel()
-
-        if not self.config:
-            raise YunohostValidationError("config_no_panel")
+        self,
+        key: Union[str, None] = None,
+        value: Any = None,
+        args: Union[str, None] = None,
+        args_file: Union[str, None] = None,
+        operation_logger: Union["OperationLogger", None] = None,
+    ) -> None:
+        self.filter_key = parse_filter_key(key)
+        panel_id, section_id, option_id = self.filter_key
 
         if (args is not None or args_file is not None) and value is not None:
             raise YunohostValidationError(
@@ -195,24 +557,35 @@ class ConfigPanel:
                 raw_msg=True,
             )
 
-        if self.filter_key.count(".") != 2 and value is not None:
+        if not option_id and value is not None:
             raise YunohostValidationError("config_cant_set_value_on_section")
 
         # Import and parse pre-answered options
         logger.debug("Import and parse pre-answered options")
-        self._parse_pre_answered(args, value, args_file)
+        if option_id and value is not None:
+            prefilled_answers = {option_id: value}
+        else:
+            prefilled_answers = parse_prefilled_values(args, args_file)
 
-        # Read or get values and hydrate the config
-        self._get_raw_settings()
-        self._hydrate()
-        BaseOption.operation_logger = operation_logger
-        self._ask()
+        self.config, self.form = self._get_config_panel()
+        # FIXME find a better way to exclude previous settings
+        previous_settings = self.form.dict()
+
+        # FIXME Not sure if this is need (redact call to operation logger does it on all the instances)
+        # BaseOption.operation_logger = operation_logger
+
+        self.form = self._ask(
+            self.config,
+            self.form,
+            prefilled_answers=prefilled_answers,
+            hooks=self.hooks,
+        )
 
         if operation_logger:
             operation_logger.start()
 
         try:
-            self._apply()
+            self._apply(self.form, self.config, previous_settings)
         except YunohostError:
             raise
         # Script got manually interrupted ...
@@ -238,46 +611,59 @@ class ConfigPanel:
         self._reload_services()
 
         logger.success("Config updated as expected")
-        operation_logger.success()
 
-    def list_actions(self):
+        if operation_logger:
+            operation_logger.success()
+
+    def list_actions(self) -> dict[str, str]:
         actions = {}
 
         # FIXME : meh, loading the entire config panel is again going to cause
         # stupid issues for domain (e.g loading registrar stuff when willing to just list available actions ...)
-        self.filter_key = ""
-        self._get_config_panel()
-        for panel, section, option in self._iterate():
-            if option["type"] == OptionType.button:
-                key = f"{panel['id']}.{section['id']}.{option['id']}"
-                actions[key] = _value_for_locale(option["ask"])
+        self.config, self.form = self._get_config_panel()
+
+        for panel, section, option in self.config.iter_children():
+            if option.type == OptionType.button:
+                key = f"{panel.id}.{section.id}.{option.id}"
+                actions[key] = _value_for_locale(option.ask)
 
         return actions
 
-    def run_action(self, action=None, args=None, args_file=None, operation_logger=None):
+    def run_action(
+        self,
+        key: Union[str, None] = None,
+        args: Union[str, None] = None,
+        args_file: Union[str, None] = None,
+        operation_logger: Union["OperationLogger", None] = None,
+    ) -> None:
         #
         # FIXME : this stuff looks a lot like set() ...
         #
+        panel_id, section_id, action_id = parse_filter_key(key)
+        # since an action may require some options from its section,
+        # remove the action_id from the filter
+        self.filter_key = (panel_id, section_id, None)
 
-        self.filter_key = ".".join(action.split(".")[:2])
-        action_id = action.split(".")[2]
-
-        # Read config panel toml
-        self._get_config_panel()
+        self.config, self.form = self._get_config_panel()
 
         # FIXME: should also check that there's indeed a key called action
-        if not self.config:
-            raise YunohostValidationError(f"No action named {action}", raw_msg=True)
+        if not action_id or not self.config.get_option(action_id):
+            raise YunohostValidationError(f"No action named {action_id}", raw_msg=True)
 
         # Import and parse pre-answered options
         logger.debug("Import and parse pre-answered options")
-        self._parse_pre_answered(args, None, args_file)
+        prefilled_answers = parse_prefilled_values(args, args_file)
 
-        # Read or get values and hydrate the config
-        self._get_raw_settings()
-        self._hydrate()
-        BaseOption.operation_logger = operation_logger
-        self._ask(action=action_id)
+        self.form = self._ask(
+            self.config,
+            self.form,
+            prefilled_answers=prefilled_answers,
+            action_id=action_id,
+            hooks=self.hooks,
+        )
+
+        # FIXME Not sure if this is need (redact call to operation logger does it on all the instances)
+        # BaseOption.operation_logger = operation_logger
 
         # FIXME: here, we could want to check constrains on
         # the action's visibility / requirements wrt to the answer to questions ...
@@ -286,21 +672,21 @@ class ConfigPanel:
             operation_logger.start()
 
         try:
-            self._run_action(action_id)
+            self._run_action(self.form, action_id)
         except YunohostError:
             raise
         # Script got manually interrupted ...
         # N.B. : KeyboardInterrupt does not inherit from Exception
         except (KeyboardInterrupt, EOFError):
             error = m18n.n("operation_interrupted")
-            logger.error(m18n.n("config_action_failed", action=action, error=error))
+            logger.error(m18n.n("config_action_failed", action=key, error=error))
             raise
         # Something wrong happened in Yunohost's code (most probably hook_exec)
         except Exception:
             import traceback
 
             error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
-            logger.error(m18n.n("config_action_failed", action=action, error=error))
+            logger.error(m18n.n("config_action_failed", action=key, error=error))
             raise
         finally:
             # Delete files uploaded from API
@@ -311,382 +697,241 @@ class ConfigPanel:
 
         # FIXME: i18n
         logger.success(f"Action {action_id} successful")
-        operation_logger.success()
 
-    def _get_raw_config(self):
+        if operation_logger:
+            operation_logger.success()
+
+    def _get_raw_config(self) -> "RawConfig":
+        if not os.path.exists(self.config_path):
+            raise YunohostValidationError("config_no_panel")
+
         return read_toml(self.config_path)
 
-    def _get_config_panel(self):
-        # Split filter_key
-        filter_key = self.filter_key.split(".") if self.filter_key != "" else []
-        if len(filter_key) > 3:
-            raise YunohostError(
-                f"The filter key {filter_key} has too many sub-levels, the max is 3.",
-                raw_msg=True,
+    def _get_raw_settings(self) -> "RawSettings":
+        if not self.save_path or not os.path.exists(self.save_path):
+            return {}
+
+        return read_yaml(self.save_path) or {}
+
+    def _get_partial_raw_config(self) -> "RawConfig":
+        def filter_keys(
+            data: "RawConfig",
+            key: str,
+            model: Union[Type[ConfigPanelModel], Type[PanelModel], Type[SectionModel]],
+        ) -> "RawConfig":
+            # filter in keys defined in model, filter out panels/sections/options that aren't `key`
+            return OrderedDict(
+                {k: v for k, v in data.items() if k in model.__fields__ or k == key}
             )
 
-        if not os.path.exists(self.config_path):
-            logger.debug(f"Config panel {self.config_path} doesn't exists")
-            return None
+        raw_config = self._get_raw_config()
 
-        toml_config_panel = self._get_raw_config()
-
-        # Check TOML config panel is in a supported version
-        if float(toml_config_panel["version"]) < CONFIG_PANEL_VERSION_SUPPORTED:
-            logger.error(
-                f"Config panels version {toml_config_panel['version']} are not supported"
-            )
-            return None
-
-        # Transform toml format into internal format
-        format_description = {
-            "root": {
-                "properties": ["version", "i18n"],
-                "defaults": {"version": 1.0},
-            },
-            "panels": {
-                "properties": ["name", "services", "actions", "help", "bind"],
-                "defaults": {
-                    "services": [],
-                    "actions": {"apply": {"en": "Apply"}},
-                },
-            },
-            "sections": {
-                "properties": [
-                    "name",
-                    "services",
-                    "optional",
-                    "help",
-                    "visible",
-                    "bind",
-                ],
-                "defaults": {
-                    "name": "",
-                    "services": [],
-                    "optional": True,
-                    "is_action_section": False,
-                },
-            },
-            "options": {
-                "properties": [
-                    "ask",
-                    "type",
-                    "bind",
-                    "help",
-                    "example",
-                    "default",
-                    "style",
-                    "icon",
-                    "placeholder",
-                    "visible",
-                    "optional",
-                    "choices",
-                    "yes",
-                    "no",
-                    "pattern",
-                    "limit",
-                    "min",
-                    "max",
-                    "step",
-                    "accept",
-                    "redact",
-                    "filter",
-                    "readonly",
-                    "enabled",
-                    # "confirm", # TODO: to ask confirmation before running an action
-                ],
-                "defaults": {},
-            },
-        }
-
-        def _build_internal_config_panel(raw_infos, level):
-            """Convert TOML in internal format ('full' mode used by webadmin)
-            Here are some properties of 1.0 config panel in toml:
-            - node properties and node children are mixed,
-            - text are in english only
-            - some properties have default values
-            This function detects all children nodes and put them in a list
-            """
-
-            defaults = format_description[level]["defaults"]
-            properties = format_description[level]["properties"]
-
-            # Start building the ouput (merging the raw infos + defaults)
-            out = {key: raw_infos.get(key, value) for key, value in defaults.items()}
-
-            # Now fill the sublevels (+ apply filter_key)
-            i = list(format_description).index(level)
-            sublevel = list(format_description)[i + 1] if level != "options" else None
-            search_key = filter_key[i] if len(filter_key) > i else False
-
-            for key, value in raw_infos.items():
-                # Key/value are a child node
-                if (
-                    isinstance(value, OrderedDict)
-                    and key not in properties
-                    and sublevel
-                ):
-                    # We exclude all nodes not referenced by the filter_key
-                    if search_key and key != search_key:
-                        continue
-                    subnode = _build_internal_config_panel(value, sublevel)
-                    subnode["id"] = key
-                    if level == "root":
-                        subnode.setdefault("name", {"en": key.capitalize()})
-                    elif level == "sections":
-                        subnode["name"] = key  # legacy
-                        subnode.setdefault("optional", raw_infos.get("optional", True))
-                        # If this section contains at least one button, it becomes an "action" section
-                        if subnode.get("type") == OptionType.button:
-                            out["is_action_section"] = True
-                    out.setdefault(sublevel, []).append(subnode)
-                # Key/value are a property
-                else:
-                    if key not in properties:
-                        logger.warning(f"Unknown key '{key}' found in config panel")
-                    # Todo search all i18n keys
-                    out[key] = (
-                        value
-                        if key not in ["ask", "help", "name"] or isinstance(value, dict)
-                        else {"en": value}
-                    )
-            return out
-
-        self.config = _build_internal_config_panel(toml_config_panel, "root")
+        panel_id, section_id, option_id = self.filter_key
 
         try:
-            self.config["panels"][0]["sections"][0]["options"][0]
+            if panel_id:
+                raw_config = filter_keys(raw_config, panel_id, ConfigPanelModel)
+
+                if section_id:
+                    raw_config[panel_id] = filter_keys(
+                        raw_config[panel_id], section_id, PanelModel
+                    )
+
+                    if option_id:
+                        raw_config[panel_id][section_id] = filter_keys(
+                            raw_config[panel_id][section_id], option_id, SectionModel
+                        )
+        except KeyError:
+            raise YunohostValidationError(
+                "config_unknown_filter_key",
+                filter_key=".".join([k for k in self.filter_key if k]),
+            )
+
+        return raw_config
+
+    def _get_partial_raw_settings_and_mutate_config(
+        self, config: ConfigPanelModel
+    ) -> tuple[ConfigPanelModel, "RawSettings"]:
+        raw_settings = self._get_raw_settings()
+        # Save `raw_settings` for diff at `_apply`
+        self.raw_settings = raw_settings
+        values = {}
+
+        for _, section, option in config.iter_children():
+            value = data = raw_settings.get(option.id, getattr(option, "default", None))
+
+            if isinstance(option, BaseInputOption) and option.id not in raw_settings:
+                if option.default is not None:
+                    value = option.default
+                elif option.type is OptionType.file or option.bind == "null":
+                    continue
+                elif self.settings_must_be_defined:
+                    raise YunohostError(
+                        f"Config panel question '{option.id}' should be initialized with a value during install or upgrade.",
+                        raw_msg=True,
+                    )
+
+            if isinstance(data, dict):
+                # Settings data if gathered from bash "ynh_app_config_show"
+                # may be a custom getter that returns a dict with `value` or `current_value`
+                # and other attributes meant to override those of the option.
+
+                if "value" in data:
+                    value = data.pop("value")
+
+                # Allow to use value instead of current_value in app config script.
+                # e.g. apps may write `echo 'value: "foobar"'` in the config file (which is more intuitive that `echo 'current_value: "foobar"'`
+                # For example hotspot used it...
+                # See https://github.com/YunoHost/yunohost/pull/1546
+                # FIXME do we still need the `current_value`?
+                if "current_value" in data:
+                    value = data.pop("current_value")
+
+                # Mutate other possible option attributes
+                for k, v in data.items():
+                    setattr(option, k, v)
+
+            if isinstance(option, BaseInputOption):  # or option.bind == "null":
+                values[option.id] = value
+
+        return (config, values)
+
+    def _get_config_panel(
+        self, prevalidate: bool = False
+    ) -> tuple[ConfigPanelModel, "FormModel"]:
+        raw_config = self._get_partial_raw_config()
+        config = ConfigPanelModel(**raw_config)
+        config, raw_settings = self._get_partial_raw_settings_and_mutate_config(config)
+        config.translate()
+        Settings = build_form(config.options)
+        settings = (
+            Settings(**raw_settings)
+            if prevalidate
+            else Settings.construct(**raw_settings)
+        )
+
+        try:
+            config.panels[0].sections[0].options[0]
         except (KeyError, IndexError):
             raise YunohostValidationError(
                 "config_unknown_filter_key", filter_key=self.filter_key
             )
 
-        # List forbidden keywords from helpers and sections toml (to avoid conflict)
-        forbidden_keywords = [
-            "old",
-            "app",
-            "changed",
-            "file_hash",
-            "binds",
-            "types",
-            "formats",
-            "getter",
-            "setter",
-            "short_setting",
-            "type",
-            "bind",
-            "nothing_changed",
-            "changes_validated",
-            "result",
-            "max_progression",
-        ]
-        forbidden_keywords += format_description["sections"]
+        return (config, settings)
 
-        for _, _, option in self._iterate():
-            if option["id"] in forbidden_keywords:
-                raise YunohostError("config_forbidden_keyword", keyword=option["id"])
-
-        return self.config
-
-    def _get_default_values(self):
-        return {
-            option["id"]: option["default"]
-            for _, _, option in self._iterate()
-            if "default" in option
-        }
-
-    def _get_raw_settings(self):
-        """
-        Retrieve entries in YAML file
-        And set default values if needed
-        """
-
-        # Inject defaults if needed (using the magic .update() ;))
-        self.values = self._get_default_values()
-
-        # Retrieve entries in the YAML
-        if os.path.exists(self.save_path) and os.path.isfile(self.save_path):
-            self.values.update(read_yaml(self.save_path) or {})
-
-    def _hydrate(self):
-        # Hydrating config panel with current value
-        for _, section, option in self._iterate():
-            if option["id"] not in self.values:
-                allowed_empty_types = {
-                    OptionType.alert,
-                    OptionType.display_text,
-                    OptionType.markdown,
-                    OptionType.file,
-                    OptionType.button,
-                }
-
-                if section["is_action_section"] and option.get("default") is not None:
-                    self.values[option["id"]] = option["default"]
-                elif (
-                    option["type"] in allowed_empty_types
-                    or option.get("bind") == "null"
-                ):
-                    continue
-                else:
-                    raise YunohostError(
-                        f"Config panel question '{option['id']}' should be initialized with a value during install or upgrade. (Or maybe the bind key wasn't found?)",
-                        raw_msg=True,
-                    )
-            value = self.values[option["id"]]
-
-            # Allow to use value instead of current_value in app config script.
-            # e.g. apps may write `echo 'value: "foobar"'` in the config file (which is more intuitive that `echo 'current_value: "foobar"'`
-            # For example hotspot used it...
-            # See https://github.com/YunoHost/yunohost/pull/1546
-            if (
-                isinstance(value, dict)
-                and "value" in value
-                and "current_value" not in value
-            ):
-                value["current_value"] = value["value"]
-
-            # In general, the value is just a simple value.
-            # Sometimes it could be a dict used to overwrite the option itself
-            value = value if isinstance(value, dict) else {"current_value": value}
-            option.update(value)
-
-            self.values[option["id"]] = value.get("current_value")
-
-        return self.values
-
-    def _ask(self, action=None):
+    def _ask(
+        self,
+        config: ConfigPanelModel,
+        form: "FormModel",
+        prefilled_answers: dict[str, Any] = {},
+        action_id: Union[str, None] = None,
+        hooks: "Hooks" = {},
+    ) -> "FormModel":
+        # FIXME could be turned into a staticmethod
         logger.debug("Ask unanswered question and prevalidate data")
 
-        if "i18n" in self.config:
-            for panel, section, option in self._iterate():
-                if "ask" not in option:
-                    option["ask"] = m18n.n(self.config["i18n"] + "_" + option["id"])
-                # auto add i18n help text if present in locales
-                if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
-                    option["help"] = m18n.n(
-                        self.config["i18n"] + "_" + option["id"] + "_help"
-                    )
+        interactive = Moulinette.interface.type == "cli" and os.isatty(1)
+        verbose = action_id is None or len(list(config.options)) > 1
 
-        def display_header(message):
-            """CLI panel/section header display"""
-            if Moulinette.interface.type == "cli" and self.filter_key.count(".") < 2:
-                Moulinette.display(colorize(message, "purple"))
+        if interactive:
+            config.translate()
 
-        for panel, section, obj in self._iterate(["panel", "section"]):
-            if (
-                section
-                and section.get("visible")
-                and not evaluate_simple_js_expression(
-                    section["visible"], context=self.future_values
+        for panel in config.panels:
+            if interactive and verbose:
+                Moulinette.display(
+                    colorize(f"\n{'='*40}\n>>>> {panel.name}\n{'='*40}", "purple")
                 )
-            ):
-                continue
 
-            # Ugly hack to skip action section ... except when when explicitly running actions
-            if not action:
-                if section and section["is_action_section"]:
+            # A section or option may only evaluate its conditions (`visible`
+            # and `enabled`) with its panel's local context that is built
+            # prompt after prompt.
+            # That means that a condition can only reference options of its
+            # own panel and options that are previously defined.
+            context: dict[str, Any] = {}
+
+            for section in panel.sections:
+                if (
+                    action_id is None and section.is_action_section
+                ) or not section.is_visible(context):
                     continue
 
-                if panel == obj:
-                    name = _value_for_locale(panel["name"])
-                    display_header(f"\n{'='*40}\n>>>> {name}\n{'='*40}")
-                else:
-                    name = _value_for_locale(section["name"])
-                    if name:
-                        display_header(f"\n# {name}")
-            elif section:
+                if interactive and verbose and section.name:
+                    Moulinette.display(colorize(f"\n# {section.name}", "purple"))
+
                 # filter action section options in case of multiple buttons
-                section["options"] = [
+                options = [
                     option
-                    for option in section["options"]
-                    if option.get("type", OptionType.string) != OptionType.button
-                    or option["id"] == action
+                    for option in section.options
+                    if option.type is not OptionType.button or option.id == action_id
                 ]
 
-            if panel == obj:
-                continue
+                form = prompt_or_validate_form(
+                    options,
+                    form,
+                    prefilled_answers=prefilled_answers,
+                    context=context,
+                    hooks=hooks,
+                )
 
-            # Check and ask unanswered questions
-            prefilled_answers = self.args.copy()
-            prefilled_answers.update(self.new_values)
+        return form
 
-            questions = ask_questions_and_parse_answers(
-                {question["id"]: question for question in section["options"]},
-                prefilled_answers=prefilled_answers,
-                current_values=self.values,
-                hooks=self.hooks,
-            )
-            self.new_values.update(
-                {
-                    question.id: question.value
-                    for question in questions
-                    if not question.readonly and question.value is not None
-                }
-            )
-
-    @property
-    def future_values(self):
-        return {**self.values, **self.new_values}
-
-    def __getattr__(self, name):
-        if "new_values" in self.__dict__ and name in self.new_values:
-            return self.new_values[name]
-
-        if "values" in self.__dict__ and name in self.values:
-            return self.values[name]
-
-        return self.__dict__[name]
-
-    def _parse_pre_answered(self, args, value, args_file):
-        args = urllib.parse.parse_qs(args or "", keep_blank_values=True)
-        self.args = {key: ",".join(value_) for key, value_ in args.items()}
-
-        if args_file:
-            # Import YAML / JSON file but keep --args values
-            self.args = {**read_yaml(args_file), **self.args}
-
-        if value is not None:
-            self.args = {self.filter_key.split(".")[-1]: value}
-
-    def _apply(self):
+    def _apply(
+        self,
+        form: "FormModel",
+        config: ConfigPanelModel,
+        previous_settings: dict[str, Any],
+        exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
+    ) -> None:
+        """
+        Save settings in yaml file.
+        If `save_mode` is `"diff"` (which is the default), only values that are
+        different from their default value will be saved.
+        """
         logger.info("Saving the new configuration...")
+
         dir_path = os.path.dirname(os.path.realpath(self.save_path))
         if not os.path.exists(dir_path):
             mkdir(dir_path, mode=0o700)
 
-        values_to_save = self.future_values
-        if self.save_mode == "diff":
-            defaults = self._get_default_values()
-            values_to_save = {
-                k: v for k, v in values_to_save.items() if defaults.get(k) != v
+        exclude_defaults = self.save_mode == "diff"
+        # get settings keys filtered by filter_key
+        partial_settings_keys = form.__fields__.keys()
+        # get filtered settings
+        partial_settings = form.dict(exclude_defaults=exclude_defaults, exclude=exclude)  # type: ignore
+        # get previous settings that we will updated with new settings
+        current_settings = self.raw_settings.copy()
+
+        if exclude:
+            current_settings = {
+                key: value
+                for key, value in current_settings.items()
+                if key not in exclude
             }
 
-        # Save the settings to the .yaml file
-        write_to_yaml(self.save_path, values_to_save)
+        for key in partial_settings_keys:
+            if (
+                exclude_defaults
+                and key not in partial_settings
+                and key in current_settings
+            ):
+                del current_settings[key]
+            elif key in partial_settings:
+                current_settings[key] = partial_settings[key]
 
-    def _reload_services(self):
+        # Save the settings to the .yaml file
+        write_to_yaml(self.save_path, current_settings)
+
+    def _run_action(self, form: "FormModel", action_id: str) -> None:
+        raise NotImplementedError()
+
+    def _reload_services(self) -> None:
         from yunohost.service import service_reload_or_restart
 
-        services_to_reload = set()
-        for panel, section, obj in self._iterate(["panel", "section", "option"]):
-            services_to_reload |= set(obj.get("services", []))
+        services_to_reload = self.config.services if self.config else []
 
-        services_to_reload = list(services_to_reload)
-        services_to_reload.sort(key="nginx".__eq__)
         if services_to_reload:
             logger.info("Reloading services...")
         for service in services_to_reload:
             if hasattr(self, "entity"):
                 service = service.replace("__APP__", self.entity)
             service_reload_or_restart(service)
-
-    def _iterate(self, trigger=["option"]):
-        for panel in self.config.get("panels", []):
-            if "panel" in trigger:
-                yield (panel, None, panel)
-            for section in panel.get("sections", []):
-                if "section" in trigger:
-                    yield (panel, section, section)
-                if "option" in trigger:
-                    for option in section.get("options", []):
-                        yield (panel, section, option)

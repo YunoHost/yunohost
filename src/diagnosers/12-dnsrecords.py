@@ -18,11 +18,11 @@
 #
 import os
 import re
+import logging
 from typing import List
 from datetime import datetime, timedelta
 from publicsuffix2 import PublicSuffixList
 
-from moulinette.utils import log
 from moulinette.utils.process import check_output
 
 from yunohost.utils.dns import (
@@ -39,7 +39,7 @@ from yunohost.dns import (
     _get_relative_name_for_dns_zone,
 )
 
-logger = log.getActionLogger("yunohost.diagnosis")
+logger = logging.getLogger("yunohost.diagnosis")
 
 
 class MyDiagnoser(Diagnoser):
@@ -91,7 +91,7 @@ class MyDiagnoser(Diagnoser):
             domain, include_empty_AAAA_if_no_ipv6=True
         )
 
-        categories = ["basic", "mail", "xmpp", "extra"]
+        categories = ["basic", "mail", "extra"]
 
         for category in categories:
             records = expected_configuration[category]

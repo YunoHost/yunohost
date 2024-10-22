@@ -87,7 +87,7 @@ def test_ssh_conf_unmanaged():
     assert SSHD_CONFIG in _get_conf_hashes("ssh")
 
 
-def test_ssh_conf_unmanaged_and_manually_modified(mocker):
+def test_ssh_conf_unmanaged_and_manually_modified():
     _force_clear_hashes([SSHD_CONFIG])
     os.system("echo ' ' >> %s" % SSHD_CONFIG)
 
@@ -98,7 +98,7 @@ def test_ssh_conf_unmanaged_and_manually_modified(mocker):
     assert SSHD_CONFIG in _get_conf_hashes("ssh")
     assert SSHD_CONFIG in manually_modified_files()
 
-    with message(mocker, "regenconf_need_to_explicitly_specify_ssh"):
+    with message("regenconf_need_to_explicitly_specify_ssh"):
         regen_conf(force=True)
 
     assert SSHD_CONFIG in _get_conf_hashes("ssh")

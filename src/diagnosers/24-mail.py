@@ -19,11 +19,11 @@
 import os
 import dns.resolver
 import re
+import logging
 from typing import List
 
 from subprocess import CalledProcessError
 
-from moulinette.utils import log
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_yaml
 
@@ -34,7 +34,7 @@ from yunohost.utils.dns import dig
 
 DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/dnsbl_list.yml"
 
-logger = log.getActionLogger("yunohost.diagnosis")
+logger = logging.getLogger("yunohost.diagnosis")
 
 
 class MyDiagnoser(Diagnoser):
