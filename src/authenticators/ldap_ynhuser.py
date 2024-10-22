@@ -273,6 +273,8 @@ class Authenticator(BaseAuthenticator):
         # Otherwise, we 'touch' the file to extend the validity
         session_file.touch()
 
+        is_dev = Path("/etc/yunohost/.portal-api-allowed-cors-origins").exists()
+
         # We also re-set the cookie such that validity is also extended on browser side
         response.set_cookie(
             "yunohost.portal",
