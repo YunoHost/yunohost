@@ -1563,7 +1563,6 @@ firewall:
                         - enable
                         - disable
                         - status
-                        - reload
                     nargs: "?"
                     default: status
                 --no-refresh:
