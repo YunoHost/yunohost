@@ -232,9 +232,9 @@ class Authenticator(BaseAuthenticator):
             secure=True,
             httponly=True,
             path="/",
-            # Doesn't this cause issues ? May cause issue if the portal is on different subdomain than the portal API ? Will surely cause issue for development similar to CORS ?
             samesite="strict" if not is_dev else None,
             domain=f".{request.get_header('host')}",
+            maxage=SESSION_VALIDITY - 600 # remove 1 minute such that cookie expires on the browser slightly sooner on browser side, just to help desimbuigate edge case near the expiration limit
         )
 
         # Create the session file (expiration mechanism)
@@ -272,6 +272,18 @@ class Authenticator(BaseAuthenticator):
 
         # Otherwise, we 'touch' the file to extend the validity
         session_file.touch()
+
+        # We also re-set the cookie such that validity is also extended on browser side
+        response.set_cookie(
+            "yunohost.portal",
+            request.get_cookie("yunohost.portal"),  # Reuse the same token to avoid recomputing stuff (saves a bit of CPU / delay I suppose?)
+            secure=True,
+            httponly=True,
+            path="/",
+            samesite="strict" if not is_dev else None,
+            domain=f".{request.get_header('host')}",
+            maxage=SESSION_VALIDITY - 600 # remove 1 minute such that cookie expires on the browser slightly sooner on browser side, just to help desimbuigate edge case near the expiration limit
+        )
 
         if decrypt_pwd:
             infos["pwd"] = decrypt(infos["pwd"])
