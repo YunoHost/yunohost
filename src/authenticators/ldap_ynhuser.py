@@ -234,7 +234,7 @@ class Authenticator(BaseAuthenticator):
             path="/",
             samesite="strict" if not is_dev else None,
             domain=f".{request.get_header('host')}",
-            maxage=SESSION_VALIDITY - 600 # remove 1 minute such that cookie expires on the browser slightly sooner on browser side, just to help desimbuigate edge case near the expiration limit
+            maxage=SESSION_VALIDITY - 600  # remove 1 minute such that cookie expires on the browser slightly sooner on browser side, just to help desimbuigate edge case near the expiration limit
         )
 
         # Create the session file (expiration mechanism)
@@ -284,7 +284,7 @@ class Authenticator(BaseAuthenticator):
             path="/",
             samesite="strict" if not is_dev else None,
             domain=f".{request.get_header('host')}",
-            maxage=SESSION_VALIDITY - 600 # remove 1 minute such that cookie expires on the browser slightly sooner on browser side, just to help desimbuigate edge case near the expiration limit
+            maxage=SESSION_VALIDITY - 600  # remove 1 minute such that cookie expires on the browser slightly sooner on browser side, just to help desimbuigate edge case near the expiration limit
         )
 
         if decrypt_pwd:
