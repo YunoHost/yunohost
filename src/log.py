@@ -388,15 +388,17 @@ def log_show(
 def log_share(path):
     return log_show(path, share=True)
 
+
 from typing import TypeVar, Callable, Concatenate, ParamSpec
 
-#FuncT = TypeVar("FuncT", bound=Callable[..., Any])
+# FuncT = TypeVar("FuncT", bound=Callable[..., Any])
 Param = ParamSpec("Param")
 RetType = TypeVar("RetType")
 
+
 def is_unit_operation(
-    entities = ["app", "domain", "group", "service", "user"],
-    exclude = ["password"],
+    entities=["app", "domain", "group", "service", "user"],
+    exclude=["password"],
 ) -> Callable[[Callable[Concatenate["OperationLogger", Param], RetType]], Callable[Param, RetType]]:
 
     """

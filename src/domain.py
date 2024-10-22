@@ -379,7 +379,7 @@ def domain_add(
         if can_install_letsencrypt:
             try:
                 _certificate_install_letsencrypt([domain], force=True, no_checks=True)
-            except:
+            except Exception:
                 failed_letsencrypt_cert_install = True
         else:
             logger.warning("Skipping Let's Encrypt certificate attempt because there's no wildcard configured on the parent domain's DNS records.")
