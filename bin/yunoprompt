@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Fetch x509 fingerprint
-x509_fingerprint=$(openssl x509  -in /etc/yunohost/certs/yunohost.org/crt.pem -noout -fingerprint -sha256 | cut -d= -f2)
+x509_fingerprint=$(openssl x509  -in /etc/yunohost/certs/yunohost/crt.pem -noout -fingerprint -sha256 | cut -d= -f2)
 
 
 # Fetch SSH fingerprints
