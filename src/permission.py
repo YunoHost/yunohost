@@ -583,10 +583,10 @@ def permission_url(
         ldap.update(
             f"cn={permission},ou=permission",
             {
-                "URL": {url} if url is not None else set(),
+                "URL": url if url is not None else set(),
                 "additionalUrls": new_additional_urls,
-                "authHeader": {str(auth_header).upper()},
-                "showTile": {str(show_tile).upper()},
+                "authHeader": str(auth_header).upper(),
+                "showTile": str(show_tile).upper(),
             },
         )
     except Exception as e:
@@ -736,10 +736,10 @@ def _update_ldap_group_permission(
         }
 
     if label is not None:
-        update["label"] = {str(label)}
+        update["label"] = str(label)
 
     if protected is not None:
-        update["isProtected"] = {str(protected).upper()}
+        update["isProtected"] = str(protected).upper()
 
     if show_tile is not None:
         if show_tile is True:
@@ -756,7 +756,7 @@ def _update_ldap_group_permission(
                     m18n.n("show_tile_cant_be_enabled_for_regex", permission=permission)
                 )
                 show_tile = False
-        update["showTile"] = {str(show_tile).upper()}
+        update["showTile"] = str(show_tile).upper()
 
     try:
         ldap.update(f"cn={permission},ou=permission", update)

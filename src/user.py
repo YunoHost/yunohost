@@ -443,23 +443,23 @@ def user_update(
     # Get modifications from arguments
     new_attr_dict = {}
     if firstname:
-        new_attr_dict["givenName"] = {firstname}  # TODO: Validate
-        new_attr_dict["cn"] = new_attr_dict["displayName"] = {
-            (firstname + " " + user["sn"][0]).strip()
-        }
+        new_attr_dict["givenName"] = firstname  # TODO: Validate
+        new_attr_dict["cn"] = new_attr_dict["displayName"] = (
+            firstname + " " + user["sn"][0]
+        ).strip()
         env_dict["YNH_USER_FIRSTNAME"] = firstname
 
     if lastname:
-        new_attr_dict["sn"] = {lastname}  # TODO: Validate
-        new_attr_dict["cn"] = new_attr_dict["displayName"] = {
-            (user["givenName"][0] + " " + lastname).strip()
-        }
+        new_attr_dict["sn"] = lastname  # TODO: Validate
+        new_attr_dict["cn"] = new_attr_dict["displayName"] = (
+            user["givenName"][0] + " " + lastname
+        ).strip()
         env_dict["YNH_USER_LASTNAME"] = lastname
 
     if lastname and firstname:
-        new_attr_dict["cn"] = new_attr_dict["displayName"] = {
-            (firstname + " " + lastname).strip()
-        }
+        new_attr_dict["cn"] = new_attr_dict["displayName"] = (
+            firstname + " " + lastname
+        ).strip()
 
     # change_password is None if user_update is not called to change the password
     if change_password is not None and change_password != "":
@@ -481,7 +481,7 @@ def user_update(
             "admin" if is_admin else "user", change_password
         )
 
-        new_attr_dict["userPassword"] = {_hash_user_password(change_password)}
+        new_attr_dict["userPassword"] = _hash_user_password(change_password)
         env_dict["YNH_USER_PASSWORD"] = change_password
 
     if mail:
@@ -557,13 +557,13 @@ def user_update(
         env_dict["YNH_USER_MAILFORWARDS"] = ",".join(new_attr_dict["maildrop"])
 
     if mailbox_quota is not None:
-        new_attr_dict["mailuserquota"] = {mailbox_quota}
+        new_attr_dict["mailuserquota"] = mailbox_quota
         env_dict["YNH_USER_MAILQUOTA"] = mailbox_quota
 
     if loginShell is not None:
         if not shellexists(loginShell) or loginShell not in list_shells():
             raise YunohostValidationError("invalid_shell", shell=loginShell)
-        new_attr_dict["loginShell"] = {loginShell}
+        new_attr_dict["loginShell"] = loginShell
         env_dict["YNH_USER_LOGINSHELL"] = loginShell
 
     if not from_import:

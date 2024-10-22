@@ -268,7 +268,9 @@ class LDAPInterface:
             """
             ldif = []
             for attribute, value in attr_dict.items():
-                old_value = old_entry.get(attribute, [])
+                if not isinstance(value, (set, list)):
+                    value = {value}
+                old_value = old_entry.get(attribute, set())
                 if value == old_value:
                     continue
 
