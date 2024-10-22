@@ -94,6 +94,7 @@ APP_FILES_TO_COPY = [
     "conf",
     "hooks",
     "doc",
+    "sources",
 ]
 
 
