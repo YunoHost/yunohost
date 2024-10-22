@@ -57,7 +57,8 @@ FIELDS_FOR_IMPORT = {
 
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
-def user_list(fields: Optional[list[str]] = None) -> dict[str, dict[str, Any]] :
+
+def user_list(fields: Optional[list[str]] = None) -> dict[str, dict[str, Any]]:
     from yunohost.utils.ldap import _get_ldap_interface
 
     ldap_attrs = {
@@ -125,8 +126,8 @@ def user_list(fields: Optional[list[str]] = None) -> dict[str, dict[str, Any]] :
         username: str = user["uid"][0]
         users[username] = entry
 
-# Dict entry 0 has incompatible type "str": "dict[Any, dict[str, Any]]";
-                          # expected "str": "dict[str, str]"  [dict-item]
+    # Dict entry 0 has incompatible type "str": "dict[Any, dict[str, Any]]";
+    #                           expected "str": "dict[str, str]"  [dict-item]
     return {"users": users}
 
 
@@ -312,7 +313,7 @@ def user_create(
 
 
 @is_unit_operation([("username", "user")])
-def user_delete(operation_logger: "OperationLogger", username: str, purge: bool = False, from_import: bool =False):
+def user_delete(operation_logger: "OperationLogger", username: str, purge: bool = False, from_import: bool = False):
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
@@ -836,8 +837,8 @@ def user_import(operation_logger: "OperationLogger", csvfile: TextIO, update: bo
         progress.old = bar
         logger.info(bar)
 
-    progress.nb = 0 # type: ignore[attr-defined]
-    progress.old = "" # type: ignore[attr-defined]
+    progress.nb = 0  # type: ignore[attr-defined]
+    progress.old = ""  # type: ignore[attr-defined]
 
     def _on_failure(user, exception):
         result["errors"] += 1

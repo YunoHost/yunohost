@@ -1218,10 +1218,9 @@ class AptDependenciesAppResource(AppResource):
         # Let's "move" any extra apt resources depending on yarn to the standard packages list.
         for key in list(self.extras.keys()):
             if self.extras[key]["repo"] == "deb https://dl.yarnpkg.com/debian/ stable main" \
-            and self.extras[key]["packages"] == [ "yarn" ]:
+                    and self.extras[key]["packages"] == ["yarn"]:
                 self.packages.append("yarn")
                 del self.extras[key]
-
 
     def provision_or_update(self, context: Dict = {}):
 

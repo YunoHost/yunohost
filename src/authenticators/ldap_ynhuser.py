@@ -45,6 +45,7 @@ USERDN = "uid={username},ou=users,dc=yunohost,dc=org"
 DOMAIN_USER_ACL_DICT: dict[str, dict] = {}
 PORTAL_SETTINGS_DIR = "/etc/yunohost/portal"
 
+
 # Should a user have *minimal* access to a domain?
 # - if the user has permission for an application with a URI on the domain, yes
 # - if the user is an admin, yes
@@ -61,7 +62,7 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
             return False
         parent_domain = domain.split(".", 1)[-1]
         return user_is_allowed_on_domain(user, parent_domain)
-    
+
     # Check that the domain permissions haven't changed on-disk since we read them
     # by comparing file mtime. If we haven't read the file yet, read it for the first time.
     # We compare mtime by equality not superiority because maybe the system clock has changed.
@@ -93,7 +94,7 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
         return True
 
     try:
-        user_result = _get_ldap_interface().search("ou=users", f"uid={user}", [ "mail" ])
+        user_result = _get_ldap_interface().search("ou=users", f"uid={user}", ["mail"])
         if len(user_result) != 1:
             logger.error(f"User not found or many users found for {user}. How is this possible after so much validation?")
             return False
@@ -104,7 +105,7 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
             return False
 
         user_mail = user_mail[0]
-        if not "@" in user_mail:
+        if "@" not in user_mail:
             logger.error(f"Invalid email address for {user}: {user_mail}")
             return False
 
@@ -117,6 +118,7 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
     except Exception as e:
         logger.error(f"Failed to get email info for {user}: {e}")
         return False
+
 
 # We want to save the password in the cookie, but we should do so in an encrypted fashion
 # This is needed because the SSO later needs to possibly inject the Basic Auth header

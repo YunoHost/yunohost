@@ -4,7 +4,7 @@ import subprocess
 from time import sleep
 
 # Explicitly import _strptime to prevent an issue that may arise later because of python3.9 being replaced by 3.11 in the middle of the upgrade etc
-import _strptime # noqa: F401
+import _strptime  # noqa: F401
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.process import call_async_output
@@ -165,13 +165,13 @@ class MyMigration(Migration):
         #
         # FIXME : this is from buster->bullseye, do we still needed it ?
         #
-        #if os.system("systemctl | grep -q dhcpcd") == 0:
-        #    logger.info("Applying fix for DHCPCD ...")
-        #    os.system("mkdir -p /etc/systemd/system/dhcpcd.service.d")
-        #    write_to_file(
-        #        "/etc/systemd/system/dhcpcd.service.d/wait.conf",
-        #        "[Service]\nExecStart=\nExecStart=/usr/sbin/dhcpcd -w",
-        #    )
+        # if os.system("systemctl | grep -q dhcpcd") == 0:
+        #     logger.info("Applying fix for DHCPCD ...")
+        #     os.system("mkdir -p /etc/systemd/system/dhcpcd.service.d")
+        #     write_to_file(
+        #         "/etc/systemd/system/dhcpcd.service.d/wait.conf",
+        #         "[Service]\nExecStart=\nExecStart=/usr/sbin/dhcpcd -w",
+        #     )
 
         #
         # Main upgrade
@@ -224,16 +224,15 @@ class MyMigration(Migration):
         #
         # FIXME : this is from buster->bullseye, do we still needed it ?
         #
-        #if os.path.exists("/etc/init.d/dnsmasq.dpkg-dist"):
-        #    logger.info("Copying new version for /etc/init.d/dnsmasq ...")
-        #    os.system("cp /etc/init.d/dnsmasq.dpkg-dist /etc/init.d/dnsmasq")
+        # if os.path.exists("/etc/init.d/dnsmasq.dpkg-dist"):
+        #     logger.info("Copying new version for /etc/init.d/dnsmasq ...")
+        #     os.system("cp /etc/init.d/dnsmasq.dpkg-dist /etc/init.d/dnsmasq")
 
         #
         # Yunohost upgrade
         #
         logger.info(m18n.n("migration_0027_yunohost_upgrade"))
         aptitude_with_progress_bar("unhold yunohost moulinette ssowat yunohost-admin")
-
 
         full_upgrade_cmd = "full-upgrade --show-why -o Dpkg::Options::='--force-confold' "
         full_upgrade_cmd += "yunohost yunohost-admin yunohost-portal moulinette ssowat "
