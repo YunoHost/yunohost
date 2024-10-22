@@ -56,6 +56,8 @@ from yunohost.app import (
 )
 from yunohost.hook import (
     hook_list,
+    hook_remove,
+    hook_add,
     hook_info,
     hook_callback,
     hook_exec,
@@ -1562,18 +1564,29 @@ class RestoreManager:
                 ),
             )
         finally:
-            # Cleaning temporary scripts directory
-            shutil.rmtree(tmp_workdir_for_app, ignore_errors=True)
-
             if not restore_failed:
                 self.targets.set_result("apps", app_instance_name, "Success")
                 operation_logger.success()
+
+                # Clean hooks and add new ones
+                hook_remove(app_instance_name)
+                if "hooks" in os.listdir(app_settings_in_archive):
+                    for hook in os.listdir(app_settings_in_archive + "/hooks"):
+                        hook_add(
+                            app_instance_name, app_settings_in_archive + "/hooks/" + hook
+                        )
+
+                # Cleaning temporary scripts directory
+                shutil.rmtree(tmp_workdir_for_app, ignore_errors=True)
 
                 # Call post_app_restore hook
                 env_dict = _make_environment_for_app_script(app_instance_name)
                 hook_callback("post_app_restore", env=env_dict)
             else:
                 self.targets.set_result("apps", app_instance_name, "Error")
+
+                # Cleaning temporary scripts directory
+                shutil.rmtree(tmp_workdir_for_app, ignore_errors=True)
 
                 app_remove(app_instance_name, force_workdir=app_workdir)
 
