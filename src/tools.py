@@ -579,7 +579,7 @@ def tools_shell(command=None):
         from IPython import embed
 
         embed()
-    except ImportError:
+    except (ImportError, ModuleNotFoundError):
         logger.warn(
             "You don't have IPython installed, consider installing it as it is way better than the standard shell."
         )

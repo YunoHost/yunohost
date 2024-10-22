@@ -300,6 +300,16 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 # ===========================================
 
 
+@post_change_hook("portal_theme")
+def regen_ssowatconf(setting_name, old_value, new_value):
+    if old_value != new_value:
+        from yunohost.app import app_ssowatconf
+
+        app_ssowatconf()
+
+
+@post_change_hook("tls_passthrough_enabled")
+@post_change_hook("tls_passthrough_list")
 @post_change_hook("nginx_redirect_to_https")
 @post_change_hook("nginx_compatibility")
 @post_change_hook("webadmin_allowlist_enabled")

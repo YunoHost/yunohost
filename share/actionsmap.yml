@@ -292,6 +292,7 @@ user:
                             extra:
                                 pattern: *pattern_username
 
+                ### user_group_add_mailalias()
                 add-mailalias:
                     action_help: Add mail aliases to group
                     api: PUT /users/groups/<groupname>/aliases/<aliases>
@@ -306,6 +307,11 @@ user:
                           metavar: MAIL
                           extra:
                               pattern: *pattern_email
+                        --force:
+                            help: Ignore warnings about special groups
+                            action: store_true
+
+                ### user_group_remove_mailalias()
                 remove-mailalias:
                     action_help: Remove mail aliases to group
                     api: DELETE /users/groups/<groupname>/aliases/<aliases>
@@ -318,8 +324,9 @@ user:
                           help: Mail aliases to remove
                           nargs: "+"
                           metavar: MAIL
-
-
+                        --force:
+                            help: Ignore warnings about special groups
+                            action: store_true
 
         permission:
             subcategory_help: Manage permissions

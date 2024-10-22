@@ -355,9 +355,9 @@ class SourcesResource(AppResource):
         armhf.sha256 = "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
 
         autoupdate.strategy = "latest_github_release"
-        autoupdate.asset.amd64 = ".*\\.amd64.tar.gz"
-        autoupdate.asset.i386 = ".*\\.386.tar.gz"
-        autoupdate.asset.armhf = ".*\\.arm.tar.gz"
+        autoupdate.asset.amd64 = ".*\\\\.amd64.tar.gz"
+        autoupdate.asset.i386 = ".*\\\\.386.tar.gz"
+        autoupdate.asset.armhf = ".*\\\\.arm.tar.gz"
 
         [resources.sources.zblerg]
         url = "https://zblerg.com/download/zblerg"
@@ -388,7 +388,7 @@ class SourcesResource(AppResource):
 
     Strictly speaking, this has nothing to do with the actual app install. `autoupdate` is expected to contain metadata for automatic maintenance / update of the app sources info in the manifest. It is meant to be a simpler replacement for "autoupdate" Github workflow mechanism.
 
-    The infos are used by this script : <https://github.com/YunoHost/apps/blob/master/tools/autoupdate_app_sources/autoupdate_app_sources.py> which is ran by the YunoHost infrastructure periodically and will create the corresponding pull request automatically.
+    The infos are used by this script : <https://github.com/YunoHost/apps_tools/blob/main/autoupdate_app_sources/autoupdate_app_sources.py> which is ran by the YunoHost infrastructure periodically and will create the corresponding pull request automatically.
 
     The script will rely on the code repo specified in `code` in the upstream section of the manifest.
 
@@ -419,6 +419,28 @@ class SourcesResource(AppResource):
     ```
 
     And the autoupdater will use the matched group (here: `4.1`) as the version.
+
+    You can make sure that your autoupdate strategy is working well immediately (without waiting for the next check on the infra) by doing the following:
+    1. Clone this repo: https://github.com/YunoHost/apps_tools
+    2. In `apps_tools` open a terminal to run the following commands:
+        ```sh
+        # Create test branch
+        git checkout -b localtest
+
+        # Create a Python virtual environment
+        python -m venv venv
+        source venv/bin/activate
+
+        # Install dependencies (if you don't have pip already installed on your system, check https://pip.pypa.io/en/stable/installation)
+        pip install -r requirements.txt
+
+        # Run autoupdate script - replace '/path/to/myapp_ynh' with your actual local app path
+        ./autoupdate_app_sources/autoupdate_app_sources.py '/path/to/myapp_ynh'
+        ```
+    3. If the return output includes:
+    - `Apps udpated`, it ran successfully. Note that it will automatically make local changes in your app's `manifest.toml` (which can be discarded as they will be made automatically later online by the YNH infra);
+    - `Apps failed`, the autoupdate stragegy is not working properly - check the debug info;
+    - none of the above but `apps -> Autoupdater just ran, here are the results:`, it ran successfully but the app was already up to date.
 
     ### Provision/Update
     - For elements with `prefetch = true`, will download the asset (for the appropriate architecture) and store them in `/var/cache/yunohost/download/$app/$source_id`, to be later picked up by `ynh_setup_source`. (NB: this only happens during install and upgrade, not restore)

@@ -144,9 +144,9 @@
     "app_change_url_no_script": "应用'{app_name}'尚不支持URL修改. 也许您应该升级它。",
     "app_change_url_identical_domains": "新旧domain / url_path是相同的('{domain}{path}'),无需执行任何操作。",
     "app_argument_required": "参数'{name}'为必填项",
-    "app_argument_password_no_default": "解析密码参数'{name}'时出错:出于安全原因,密码参数不能具有默认值",
+    "app_argument_password_no_default": "解析密码参数“{name}”时出错：出于安全原因，密码参数不能有默认值",
     "app_argument_invalid": "为参数'{name}'选择一个有效值: {error}",
-    "app_argument_choice_invalid": "对参数'{name}'使用以下选项之一'{choices}'",
+    "app_argument_choice_invalid": "为参数“{name}”选择有效值：“{value}”不在可用选项之列 ({choices})",
     "app_already_up_to_date": "{app} 已经是最新的",
     "app_already_installed": "{app}已安装",
     "app_action_broke_system": "该操作似乎破坏了以下重要服务：{services}",
@@ -586,5 +586,8 @@
     "app_manifest_install_ask_init_main_permission": "谁应该有权访问此应用？（此配置稍后可以更改）",
     "ask_admin_fullname": "管理员全名",
     "ask_admin_username": "管理员用户名",
-    "ask_fullname": "全名"
+    "ask_fullname": "全名",
+    "app_arch_not_supported": "此应用只能安装在{required}架构上，但您的服务器架构为{current}",
+    "app_change_url_failed": "无法更改 {app}的 URL：{error}",
+    "app_change_url_require_full_domain": "{app} 无法移动到新的 URL，因为它需要全部域名（即路径 为 \"/\"）"
 }

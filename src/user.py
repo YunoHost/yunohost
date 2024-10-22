@@ -1395,12 +1395,12 @@ def user_group_remove(groupname: str, usernames: list[str], force: bool = False,
     )
 
 
-def user_group_add_mailalias(groupname: str, aliases: list[str]) -> Optional[dict[str, Any]]:
-    return user_group_update(groupname, add_mailalias=aliases, sync_perm=False)
+def user_group_add_mailalias(groupname: str, aliases: list[str], force: bool=False) -> Optional[dict[str, Any]]:
+    return user_group_update(groupname, add_mailalias=aliases, force=force, sync_perm=False)
 
 
-def user_group_remove_mailalias(groupname: str, aliases: list[str]) -> Optional[dict[str, Any]]:
-    return user_group_update(groupname, remove_mailalias=aliases, sync_perm=False)
+def user_group_remove_mailalias(groupname: str, aliases: list[str], force: bool=False) -> Optional[dict[str, Any]]:
+    return user_group_update(groupname, remove_mailalias=aliases, force=force, sync_perm=False)
 
 
 #

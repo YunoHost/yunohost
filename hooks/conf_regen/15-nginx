@@ -68,12 +68,37 @@ do_pre_regen() {
     export redirect_to_https="$(jq -r '.nginx_redirect_to_https' <<< "$YNH_SETTINGS" | int_to_bool)"
     export compatibility="$(jq -r '.nginx_compatibility' <<< "$YNH_SETTINGS" | int_to_bool)"
     export experimental="$(jq -r '.security_experimental_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
+    export tls_passthrough_enabled="$(jq -r '.tls_passthrough_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
+    export tls_passthrough_list="$(jq -r '.tls_passthrough_list' <<< "$YNH_SETTINGS" | int_to_bool)"
 
     do_base_regen "${pending_dir}"
 
-    cert_status=$(yunohost domain cert status --json)
+
+    local tls_passthrough_module="${pending_dir}/etc/nginx/modules-enabled/tls_passthrough.conf"
+    mkdir -p "${pending_dir}/etc/nginx/modules-enabled/"
+
+    if [[ "$tls_passthrough_enabled" == "True" ]]; then
+        ynh_render_template "tls_passthrough.conf" "${tls_passthrough_module}"
+        for tls_passthrough_domain_and_ip in $(echo "$tls_passthrough_list" | sed 's/,/\n/g'); do
+            export tls_passthrough_domain=$(echo $tls_passthrough_domain_and_ip | awk -F';' '{print $1}')
+            export tls_passthrough_ip=$(echo $tls_passthrough_domain_and_ip | awk -F';' '{print $2}')
+            export tls_passthrough_port=$(echo $tls_passthrough_domain_and_ip | awk -F';' '{print $3}')
+            ynh_render_template "tls_passthrough_server.conf" "${nginx_conf_dir}/${tls_passthrough_domain}.forward80.conf"
+        done
+    else
+        touch "${tls_passthrough_module}"
+    fi
+
+    # "Touch" every known .conf file for every domain,
+    # meaning it should be removed by the regen conf
+    # - For real 'existing' domains, this file will be overwritten with an actual conf right after using ynh_render_template
+    # - For old domains, this will tell the regen conf that it is "to be deleted"
+    ls -1 /etc/nginx/conf.d \
+        | awk '/^[^\.]+\.[^\.]+.*\.conf$/ { print $1 }' \
+        | xargs --replace={} touch ${nginx_conf_dir}/{}
 
     # add domain conf files
+    cert_status=$(yunohost domain cert status --json)
     mail_domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]")"
     for domain in $YNH_DOMAINS; do
         domain_conf_dir="${nginx_conf_dir}/${domain}.d"
@@ -103,15 +128,6 @@ do_pre_regen() {
 
     # Legacy file to remove, but we can't really remove it because it may be included by app confs...
     echo "# The old yunohost panel/tile/button doesn't exists anymore" > "$nginx_conf_dir"/yunohost_panel.conf.inc
-
-    # remove old domain conf files
-    conf_files=$(ls -1 /etc/nginx/conf.d \
-        | awk '/^[^\.]+\.[^\.]+.*\.conf$/ { print $1 }')
-    for file in $conf_files; do
-        domain=${file%.conf}
-        [[ $YNH_DOMAINS =~ $domain ]] \
-            || touch "${nginx_conf_dir}/${file}"
-    done
 
     # remove old mail-autoconfig files
     autoconfig_files=$(ls -1 /var/www/.well-known/*/autoconfig/mail/config-v1.1.xml 2> /dev/null || true)

@@ -27,7 +27,7 @@ ynh_backup() {
     local is_data=false
 
     # If the path starts with /var/log/$app or $data_dir
-    if ([[ -n "${app:-}" ]] && [[ "$target" == "/var/log/$app*" ]]) || ([[ -n "${data_dir:-}" ]] && [[ "$target" == "$data_dir*" ]]); then
+    if ([[ -n "${app:-}" ]] && [[ "$target" =~ ^/var/log/$app/?\*?$ ]]) || ([[ -n "${data_dir:-}" ]] && [[ "$target" =~ ^$data_dir ]]); then
         is_data=true
     fi
 
@@ -43,7 +43,7 @@ ynh_backup() {
         else
             ynh_print_info "$target will not be saved, because 'do_not_backup_data' is set."
         fi
-        return 1
+        return 0
     fi
 
     # ==============================================================================
