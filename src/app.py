@@ -2881,12 +2881,22 @@ def _check_manifest_requirements(
     # Is "include_swap" really useful ? We should probably decide wether to always include it or not instead
     if ram_requirement.get("include_swap", False):
         ram += swap
+
+    # During upgrade build operations, the service is stopped
     can_build = ram_requirement["build"] == "?" or ram > human_to_binary(
         ram_requirement["build"]
+    ) or (
+        action == "upgrade" and 
+        ram_requirement["runtime"] != "?" and 
+        ram + human_to_binary(ram_requirement["runtime"]) > human_to_binary(ram_requirement["build"])
     )
+          
+    # Before upgrading, the application is probably already running, 
+    # and RAM rarely increases significantly from one version to the next.
+    # FIXME: during upgrade compare old ram runtime with the new one
     can_run = ram_requirement["runtime"] == "?" or ram > human_to_binary(
         ram_requirement["runtime"]
-    )
+    ) or action == "upgrade"
 
     # Some apps have a higher runtime value than build ...
     if ram_requirement["build"] != "?" and ram_requirement["runtime"] != "?":
@@ -2896,8 +2906,10 @@ def _check_manifest_requirements(
             > human_to_binary(ram_requirement["runtime"])
             else ram_requirement["runtime"]
         )
-    else:
+    elif ram_requirement["build"] != "?":
         max_build_runtime = ram_requirement["build"]
+    else:
+        max_build_runtime = ram_requirement["runtime"]
 
     yield (
         "ram",
