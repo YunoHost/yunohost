@@ -558,9 +558,9 @@ ynh_remove_extra_repo() {
 # | arg: -a, --append       - Do not overwrite existing files.
 # | arg: -t, --trusted      - Add trusted=yes to the repository (not recommended)
 #
-# Example for a repo like deb http://forge.yunohost.org/debian/ stretch stable
+# Example for a repo like deb http://repo.yunohost.org/debian/ stretch stable
 #                             uri                               suite   component
-# ynh_add_repo --uri=http://forge.yunohost.org/debian/ --suite=stretch --component=stable
+# ynh_add_repo --uri=http://repo.yunohost.org/debian/ --suite=stretch --component=stable
 #
 # Requires YunoHost version 3.8.1 or higher.
 ynh_add_repo() {
