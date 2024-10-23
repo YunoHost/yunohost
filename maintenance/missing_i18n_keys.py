@@ -26,7 +26,7 @@ def find_expected_string_keys():
     #    # i18n: foo
     p1 = re.compile(r"m18n\.n\(\n*\s*[\"\'](\w+)[\"\']")
     p2 = re.compile(r"YunohostError\(\n*\s*[\'\"](\w+)[\'\"]")
-    p3 = re.compile(r"YunohostValidationError\(\n*\s*[\'\"](\w+)[\'\"]")
+    p3 = re.compile(r"Yunohost(Validation|Authentication)Error\(\n*\s*[\'\"](\w+)[\'\"]")
     p4 = re.compile(r"# i18n: [\'\"]?(\w+)[\'\"]?")
 
     python_files = glob.glob(ROOT + "src/*.py")
@@ -47,7 +47,7 @@ def find_expected_string_keys():
             if m.endswith("_"):
                 continue
             yield m
-        for m in p3.findall(content):
+        for _, m in p3.findall(content):
             if m.endswith("_"):
                 continue
             yield m
