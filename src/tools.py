@@ -296,6 +296,15 @@ def tools_regen_conf(
     names=[], with_diff=False, force=False, dry_run=False, list_pending=False
 ):
 
+    # Make sure the permission infos are migrated before running the regenconf,
+    # which may otherwise fuck things up because the slapd conf will be regenerated etc
+    # We do this here because the regen-conf is called before the migration in debian/postinst
+    if os.system(f"grep --quiet 0031_rework_permission_infos {MIGRATIONS_STATE_PATH}") != 0:
+        try:
+            tools_migrations_run(["0031_rework_permission_infos"])
+        except Exception as e:
+            logger.error(e)
+
     from yunohost.regenconf import regen_conf
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
