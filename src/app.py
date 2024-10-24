@@ -1700,7 +1700,7 @@ def app_ssowatconf():
         # Apps can opt out of the auth spoofing protection using this if they really need to,
         # but that's a huge security hole and ultimately should never happen...
         # ... But some apps live caldav/webdav need this to not break external clients x_x
-        apps_that_need_external_auth_maybe = ["agendav", "baikal", "ihatemoney", "keeweb", "monica", "nextcloud", "paheko", "radicale", "tracim", "vikunja", "z-push"]
+        apps_that_need_external_auth_maybe = ["agendav", "baikal", "ihatemoney", "keeweb", "monica", "nextcloud", "owncloud", "paheko", "radicale", "tracim", "vikunja", "z-push"]
         protect_against_basic_auth_spoofing = app_settings.get("protect_against_basic_auth_spoofing")
         if protect_against_basic_auth_spoofing is not None:
             permissions[perm_name]["protect_against_basic_auth_spoofing"] = protect_against_basic_auth_spoofing not in [False, "False", "false", "0", 0]
