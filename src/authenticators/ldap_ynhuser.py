@@ -206,14 +206,12 @@ class Authenticator(BaseAuthenticator):
                 con.unbind_s()
 
             ldap_user_infos = _get_ldap_interface().search("ou=users", "uid=" + username, attrs=["cn", "mail"])[0]
-            http_headers = {"YNH_USER": username,
-                            "YNH_USER_FULLNAME": ldap_user_infos["cn"],
-                            "YNH_USER_EMAIL": ldap_user_infos["mail"]}
 
         if not user_is_allowed_on_domain(username, request.get_header("host")):
             raise YunohostAuthenticationError("unable_authenticate")
 
-        return {"user": username, "pwd": encrypt(password), "http_headers": http_headers}
+        return {"user": username, "pwd": encrypt(password), "email": ldap_user_infos["mail"],
+                "user_fullname": ldap_user_infos["cn"]}
 
     def set_session_cookie(self, infos):
         from bottle import response, request
@@ -221,7 +219,8 @@ class Authenticator(BaseAuthenticator):
         assert isinstance(infos, dict)
         assert "user" in infos
         assert "pwd" in infos
-        assert "http_headers" in infos
+        assert "email" in infos
+        assert "user_fullname" in infos
 
         # Create a session id, built as <user_hash> + some random ascii
         # Prefixing with the user hash is meant to provide the ability to invalidate all this user's session
