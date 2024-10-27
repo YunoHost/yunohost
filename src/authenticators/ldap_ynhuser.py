@@ -210,8 +210,11 @@ class Authenticator(BaseAuthenticator):
         if not user_is_allowed_on_domain(username, request.get_header("host")):
             raise YunohostAuthenticationError("unable_authenticate")
 
-        return {"user": username, "pwd": encrypt(password), "email": ldap_user_infos["mail"][0],
-                "fullname": ldap_user_infos["cn"][0]}
+        return {"user": username, 
+                      "pwd": encrypt(password),
+                      "email": ldap_user_infos["mail"][0],
+                      "fullname": ldap_user_infos["cn"][0]
+        }
 
     def set_session_cookie(self, infos):
         from bottle import response, request
