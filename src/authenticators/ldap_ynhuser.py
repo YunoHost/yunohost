@@ -205,7 +205,7 @@ class Authenticator(BaseAuthenticator):
             if con:
                 con.unbind_s()
 
-            ldap_user_infos = _get_ldap_interface().search("ou=users", "uid=" + username, attrs=["cn", "mail"])[0]
+            ldap_user_infos = _get_ldap_interface().search("ou=users", f"uid={username}", attrs=["cn", "mail"])[0]
 
         if not user_is_allowed_on_domain(username, request.get_header("host")):
             raise YunohostAuthenticationError("unable_authenticate")
