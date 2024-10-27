@@ -173,7 +173,7 @@ def tools_postinstall(
     if Moulinette.interface.type == "cli" and os.isatty(1):
         Moulinette.display(m18n.n("tos_postinstall_acknowledgement"), style="warning")
         if not i_have_read_terms_of_services:
-            _ask_confirmation(m18n.n("confirm_tos_acknowledgement"), kind="soft")
+            _ask_confirmation("confirm_tos_acknowledgement", kind="soft")
 
     # Crash early if the username is already a system user, which is
     # a common confusion. We don't want to crash later and end up in an half-configured state.
