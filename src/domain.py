@@ -306,7 +306,7 @@ def domain_add(
 
         if not skip_tos and Moulinette.interface.type == "cli" and os.isatty(1):
             Moulinette.display(m18n.n("tos_dyndns_acknowledgement"), style="warning")
-            _ask_confirmation(m18n.n("confirm_tos_acknowledgement"), kind="soft")
+            _ask_confirmation("confirm_tos_acknowledgement", kind="soft")
 
         if dyndns_recovery_password:
             assert_password_is_strong_enough("admin", dyndns_recovery_password)
