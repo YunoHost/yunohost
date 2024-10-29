@@ -146,7 +146,7 @@ do_post_regen() {
     regen_conf_files=$1
 
     # Make sure fastcgi / PHP uses the YNH_USER auth header instead of $remote_user from the Authorization header
-    sed 's/$remote_user;/$http_ynh_user if_not_empty;/g' /etc/nginx/fastcgi_params
+    sed -i 's/$remote_user;/$http_ynh_user if_not_empty;/g' /etc/nginx/fastcgi_params
 
     if ls -l /etc/nginx/conf.d/*.d/*.conf; then
         chown root:root /etc/nginx/conf.d/*.d/*.conf
