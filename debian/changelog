@@ -82,6 +82,19 @@ yunohost (12.0.0) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
 
+yunohost (11.2.32) stable; urgency=low
+
+  - configpanel: fix error message to hint if the bind key wasn't found ([#1972](http://github.com/YunoHost/yunohost/pull/1972))
+  - tools_shell: Bad catch IPython missing ([#1974](http://github.com/YunoHost/yunohost/pull/1974))
+  - nginx: new global setting options to enable TLS passthrough and reverse proxy to external domains ([#1697](http://github.com/YunoHost/yunohost/pull/1697))
+  - backups: app hooks were not recreated when restoring backups ([#1962](http://github.com/YunoHost/yunohost/pull/1962))
+  - migrate-to-bookworm: improve disclaimer (e755401ea)
+  - i18n: Translations updated for Kabyle, Turkish
+
+  Thanks to all contributors <3 ! (Aksel Azwaw, Félix Piédallu, Furkan Samed Acet, ljf, oleole39, OniriCorpe)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 29 Oct 2024 23:48:07 +0100
+
 yunohost (11.2.31) stable; urgency=low
 
   - apps/helpers2.1: Properly detect 'is_data' (data dir or log folder) when calling ynh_backup ([#1957](http://github.com/YunoHost/yunohost/pull/1957))

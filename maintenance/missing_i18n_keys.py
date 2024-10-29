@@ -176,6 +176,7 @@ def find_expected_string_keys():
         "root_password",
         "root_access_explain",
         "root_password_confirm",
+        "tls_passthrough_explain",
     ]
 
     for panel_key, panel in global_config.items():
