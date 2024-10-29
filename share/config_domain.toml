@@ -46,6 +46,7 @@ i18n = "domain_config"
 
         [feature.portal.portal_tile_theme]
         type = "select"
+        optional = false
         choices = ["descriptive", "simple", "periodic"]
         default = "simple"
 
