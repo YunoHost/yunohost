@@ -826,9 +826,11 @@ def _get_DomainConfigPanel():
                 for option in options:
                     setattr(form, option.id, option.default)
 
-            custom_css = next_settings.pop("custom_css", "").strip()
-            if custom_css:
-                write_to_file(f"/usr/share/yunohost/portal/customassets/{self.entity}.custom.css", custom_css)
+            if "custom_css" in next_settings:
+                write_to_file(
+                    f"/usr/share/yunohost/portal/customassets/{self.entity}.custom.css",
+                    next_settings.pop("custom_css", "").strip(),
+                )
             # Make sure the value doesnt get written in the yml
             if hasattr(form, "custom_css"):
                 form.custom_css = ""
