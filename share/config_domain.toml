@@ -44,6 +44,11 @@ i18n = "domain_config"
         choices = ["system", "light", "dark", "omg", "legacy", "black", "synthwave", "halloween", "coffee", "cupcake", "cyberpunk", "valentine", "nord"]
         default = "system"
 
+        [feature.portal.portal_tile_theme]
+        type = "select"
+        choices = ["descriptive", "simple", "periodic"]
+        default = "simple"
+
         [feature.portal.search_engine]
         type = "url"
         default = ""

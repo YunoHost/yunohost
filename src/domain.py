@@ -839,6 +839,7 @@ def _get_DomainConfigPanel():
                 "portal_title",
                 "portal_logo",
                 "portal_theme",
+                "portal_tile_theme",
                 "search_engine",
                 "search_engine_name",
                 "portal_user_intro",
