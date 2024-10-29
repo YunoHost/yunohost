@@ -1,3 +1,7 @@
+yunohost (11.3) stable; urgency=low
+
+  - Enable migration to YunoHost 12 / Debian Bookworm
+
 yunohost (11.2.32) stable; urgency=low
 
   - configpanel: fix error message to hint if the bind key wasn't found ([#1972](http://github.com/YunoHost/yunohost/pull/1972))
