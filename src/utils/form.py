@@ -1347,7 +1347,7 @@ class FileOption(BaseInputOption):
 
         if accept_list and mimetype not in accept_list:
             raise YunohostValidationError(
-                f"Unsupported image type : {mimetype}", raw=True
+                 f"Unsupported file type '{mimetype}', expected a type among '{', '.join(accept_list)}'.", raw_msg=True
             )
 
         ext = mimetypes.guess_extension(mimetype)
