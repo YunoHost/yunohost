@@ -1,3 +1,12 @@
+yunohost (12.0.5.3) stable; urgency=low
+
+  - typo in generate-helpers-doc (ab7bbefe5)
+  - Merge branch 'dev' into bookworm (9d24a071d)
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, Kayou)
+
+ -- tituspijean <tituspijean@yunohost.org>  Wed, 30 Oct 2024 21:46:48 +0100
+
 yunohost (12.0.5.2) testing; urgency=low
 
   - typo² x_x
