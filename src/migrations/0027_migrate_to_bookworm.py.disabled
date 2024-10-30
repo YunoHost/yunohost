@@ -1,4 +1,3 @@
-import textwrap
 import glob
 import os
 import subprocess
@@ -382,29 +381,13 @@ class MyMigration(Migration):
 
 
         message = (
-            (textwrap.dedent("""
-                N.B.: This migration has been tested by the community over the last few months
-                but has only been declared stable recently. If your server hosts critical
-                services and if you are not too confident with debugging possible issues, we
-                recommend you to wait a little bit more while we gather more feedback and
-                polish things up. If on the other hand you are relatively confident with
-                debugging small issues that may arise, you are encouraged to run this migration
-                ;)!\n\n
-            """) if date.today() < date(2025, 3, 30) else "")
-            + textwrap.dedent("""
-                You can read the full release note, remaining known issues and feedback from
-                the community here: <https://forum.yunohost.org/t/31673>
-
-                In particular, we encourage you to pay attention to the fact that:
-                - Packages 'metronome' (xmpp server) and 'rspamd' (mail antispam) are now
-                  independent applications available in the catalog. Make sure to explicitly
-                  install these applications after the migration if you care about those!
-                - The user portal / SSO system was totally reworked. You may lose custom
-                  theming if you have any. However, the new system also has plenty of
-                  customization capabilities (more details in the release note).
-            """)
-            + "\n\n"
-            + message
+           ("N.B.: This migration has been tested by the community over the last few months but has only been declared stable recently. If your server hosts critical services and if you are not too confident with debugging possible issues, we recommend you to wait a little bit more while we gather more feedback and polish things up. If on the other hand you are relatively confident with debugging small issues that may arise, you are encouraged to run this migration 😉!" if date.today() < date(2025, 3, 30) else "")
+           + "\n\n"
+           + "You can read the full release note, remaining known issues and feedback from the community here: <https://forum.yunohost.org/t/31673>. In particular, we encourage you to pay attention to the fact that:\n"
+           + "- Packages `metronome` (xmpp server) and `rspamd` (mail antispam) are now independent applications available in the catalog. Make sure to explicitly install these applications after the migration if you care about those!\n"
+           + "- The user portal / SSO system was totally reworked. You may lose custom theming if you have any. However, the new system also has plenty of customization capabilities (more details in the release note).\n"
+           + "\n"
+           + message
         )
 
         if problematic_apps:
