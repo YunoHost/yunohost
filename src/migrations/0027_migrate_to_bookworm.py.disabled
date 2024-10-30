@@ -382,7 +382,7 @@ class MyMigration(Migration):
 
 
         message = (
-            textwrap.dedent("""
+            (textwrap.dedent("""
                 N.B.: This migration has been tested by the community over the last few months
                 but has only been declared stable recently. If your server hosts critical
                 services and if you are not too confident with debugging possible issues, we
@@ -390,7 +390,7 @@ class MyMigration(Migration):
                 polish things up. If on the other hand you are relatively confident with
                 debugging small issues that may arise, you are encouraged to run this migration
                 ;)!\n\n
-            """) if date.today() < date(2025, 3, 30) else ""
+            """) if date.today() < date(2025, 3, 30) else "")
             + textwrap.dedent("""
                 You can read the full release note, remaining known issues and feedback from
                 the community here: <https://forum.yunohost.org/t/31673>
