@@ -1,3 +1,9 @@
+yunohost (12.0.5.1) testing; urgency=low
+
+  - typo x_x
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 30 Oct 2024 01:21:37 +0100
+
 yunohost (12.0.5) testing; urgency=low
 
   - sso: ihatemoney and owncloud needs the basic auth workaround ([#1984](http://github.com/YunoHost/yunohost/pull/1984))
