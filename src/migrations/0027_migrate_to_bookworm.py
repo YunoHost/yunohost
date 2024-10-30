@@ -401,7 +401,7 @@ class MyMigration(Migration):
                 - The user portal / SSO system was totally reworked. You may lose custom
                   theming if you have any. However, the new system also has plenty of
                   customization capabilities (more details in the release note).
-            """
+            """)
             + "\n\n"
             + message
         )
