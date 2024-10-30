@@ -3,7 +3,7 @@ import glob
 import os
 import subprocess
 from time import sleep
-import datetime import date
+from datetime import date
 
 # Explicitly import _strptime to prevent an issue that may arise later because of python3.9 being replaced by 3.11 in the middle of the upgrade etc
 import _strptime  # noqa: F401
