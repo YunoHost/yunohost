@@ -43,8 +43,10 @@
     "app_location_unavailable": "Bu link ya kullanılamıyor ya da indirilmiş olan uygulama(lar) ile çakışıyor :{apps}",
     "app_manifest_install_ask_init_admin_permission": "Kime bu uygulamanın yönetici özelliklerine erişim hakkı verilmeli?( Bu daha sonra değiştirilebilir)",
     "app_install_files_invalid": "Bu dosyalar indirilemez",
-    "app_make_default_location_already_used": "{app} uygulamaya varsayılan alan adı yapılamıyor ,{domain} zaten{other_app} tarafından kullanılıyor.",
+    "app_make_default_location_already_used": "'{app}' uygulaması varsayılan yapılamıyor; '{domain}' zaten '{other_app}' tarafından kullanılıyor.",
     "app_manifest_install_ask_admin": "Bu uygulamayı kullanmak için bir yönetici seç",
     "app_manifest_install_ask_domain": "Bu uygulamanın yüklenmesi gereken alan adını seçin",
-    "app_manifest_install_ask_path": "Bu uygulamanın yüklenmesi gereken URL yolunu (alan adından sonra) seçin"
+    "app_manifest_install_ask_path": "Bu uygulamanın yüklenmesi gereken URL yolunu (alan adından sonra) seçin",
+    "app_not_enough_disk": "Bu uygulama {required} boş alan gerektirir.",
+    "app_not_correctly_installed": "{app} yanlış kurulmuş gibi görünüyor"
 }
