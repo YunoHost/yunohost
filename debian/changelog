@@ -1,3 +1,12 @@
+yunohost (11.3.0) stable; urgency=low
+
+  - Enable migration to Bookworm
+  - i18n: Translations updated for Basque, French, Turkish
+
+  Thanks to all contributors <3 ! (Atalay Daban, ppr, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 31 Oct 2024 13:51:33 +0100
+
 yunohost (11.2.32) stable; urgency=low
 
   - configpanel: fix error message to hint if the bind key wasn't found ([#1972](http://github.com/YunoHost/yunohost/pull/1972))
