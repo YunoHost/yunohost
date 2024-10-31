@@ -38,7 +38,7 @@ Pin-Priority: -1
 
 Package: yarn
 Pin: origin \"dl.yarnpkg.com\"
-Pin-Priority: 500" >>"${pending_dir}/etc/apt/preferences.d/yarn"
+Pin-Priority: 500" >> "${pending_dir}/etc/apt/preferences.d/yarn"
 
     # Ban apache2, bind9
     echo "
@@ -86,9 +86,8 @@ do_post_regen() {
     fi
 
     # Similar to Sury
-    if [[ ! -s /etc/apt/trusted.gpg.d/yarn.gpg ]]
-    then
-        wget --timeout 900 --quiet "https://dl.yarnpkg.com/debian/pubkey.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/yarn.gpg"
+    if [[ ! -s /etc/apt/trusted.gpg.d/yarn.gpg ]]; then
+        wget --timeout 900 --quiet "https://dl.yarnpkg.com/debian/pubkey.gpg" --output-document=- | gpg --dearmor > "/etc/apt/trusted.gpg.d/yarn.gpg"
     fi
 
     # Make sure php7.4 is the default version when using php in cli

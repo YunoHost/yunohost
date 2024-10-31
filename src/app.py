@@ -220,7 +220,9 @@ def app_info(app, full=False, upgradable=False):
                 rendered_notifications[name][lang] = rendered_content
         ret["manifest"]["notifications"][step] = rendered_notifications
 
-    ret["is_webapp"] = "domain" in settings and settings["domain"] and "path" in settings
+    ret["is_webapp"] = (
+        "domain" in settings and settings["domain"] and "path" in settings
+    )
 
     if ret["is_webapp"]:
         ret["is_default"] = (
@@ -623,7 +625,9 @@ def app_upgrade(
         app_current_version_raw = app_dict.get("version", "?")
         app_new_version = _parse_app_version(app_new_version_raw)
         app_current_version = _parse_app_version(app_current_version_raw)
-        if "~ynh" in str(app_current_version_raw) and "~ynh" in str(app_new_version_raw):
+        if "~ynh" in str(app_current_version_raw) and "~ynh" in str(
+            app_new_version_raw
+        ):
             if app_current_version >= app_new_version and not force:
                 # In case of upgrade from file or custom repository
                 # No new version available
@@ -643,7 +647,9 @@ def app_upgrade(
             elif app_current_version == app_new_version:
                 upgrade_type = "UPGRADE_SAME"
             else:
-                app_current_version_upstream, _ = str(app_current_version_raw).split("~ynh")
+                app_current_version_upstream, _ = str(app_current_version_raw).split(
+                    "~ynh"
+                )
                 app_new_version_upstream, _ = str(app_new_version_raw).split("~ynh")
                 if app_current_version_upstream == app_new_version_upstream:
                     upgrade_type = "UPGRADE_PACKAGE"
@@ -1659,7 +1665,9 @@ def app_ssowatconf():
             # Prevent infinite redirect loop...
             if domain + "/" != app_domain + app_path:
                 redirected_urls[domain + "/"] = app_domain + app_path
-        elif bool(_get_raw_domain_settings(domain).get("enable_public_apps_page", False)):
+        elif bool(
+            _get_raw_domain_settings(domain).get("enable_public_apps_page", False)
+        ):
             redirected_urls[domain + "/"] = domain_portal_dict[domain]
 
     # Will organize apps by portal domain
@@ -1700,10 +1708,28 @@ def app_ssowatconf():
         # Apps can opt out of the auth spoofing protection using this if they really need to,
         # but that's a huge security hole and ultimately should never happen...
         # ... But some apps live caldav/webdav need this to not break external clients x_x
-        apps_that_need_external_auth_maybe = ["agendav", "baikal", "ihatemoney", "keeweb", "monica", "nextcloud", "owncloud", "paheko", "radicale", "tracim", "vikunja", "z-push"]
-        protect_against_basic_auth_spoofing = app_settings.get("protect_against_basic_auth_spoofing")
+        apps_that_need_external_auth_maybe = [
+            "agendav",
+            "baikal",
+            "ihatemoney",
+            "keeweb",
+            "monica",
+            "nextcloud",
+            "owncloud",
+            "paheko",
+            "radicale",
+            "tracim",
+            "vikunja",
+            "z-push",
+        ]
+        protect_against_basic_auth_spoofing = app_settings.get(
+            "protect_against_basic_auth_spoofing"
+        )
         if protect_against_basic_auth_spoofing is not None:
-            permissions[perm_name]["protect_against_basic_auth_spoofing"] = protect_against_basic_auth_spoofing not in [False, "False", "false", "0", 0]
+            permissions[perm_name]["protect_against_basic_auth_spoofing"] = (
+                protect_against_basic_auth_spoofing
+                not in [False, "False", "false", "0", 0]
+            )
         elif app_id.split("__")[0] in apps_that_need_external_auth_maybe:
             permissions[perm_name]["protect_against_basic_auth_spoofing"] = False
 
@@ -1733,7 +1759,9 @@ def app_ssowatconf():
         # Also related to "people will want to customize those.."
         app_catalog_info = apps_catalog.get(app_id.split("__")[0])
         if app_catalog_info and "logo_hash" in app_catalog_info:
-            app_portal_info["logo"] = f"/yunohost/sso/applogos/{app_catalog_info['logo_hash']}.png"
+            app_portal_info["logo"] = (
+                f"/yunohost/sso/applogos/{app_catalog_info['logo_hash']}.png"
+            )
 
         portal_domains_apps[app_portal_domain][perm_name] = app_portal_info
 
@@ -1767,7 +1795,7 @@ def app_ssowatconf():
     # Cleanup old files from possibly old domains
     for setting_file in Path(PORTAL_SETTINGS_DIR).iterdir():
         if setting_file.name.endswith(".json"):
-            domain = setting_file.name[:-len(".json")]
+            domain = setting_file.name[: -len(".json")]
             if domain not in portal_domains_apps:
                 setting_file.unlink()
 
@@ -1908,9 +1936,13 @@ ynh_app_config_run $1
             logger.debug(f"Calling '{action}' action from config script")
             app = self.entity
             app_setting_path = os.path.join(APPS_SETTING_PATH, self.entity)
-            app_script_env = _make_environment_for_app_script(app, workdir=app_setting_path)
+            app_script_env = _make_environment_for_app_script(
+                app, workdir=app_setting_path
+            )
             app_script_env.update(env)
-            app_script_env["YNH_APP_CONFIG_PANEL_OPTIONS_TYPES_AND_BINDS"] = self._dump_options_types_and_binds()
+            app_script_env["YNH_APP_CONFIG_PANEL_OPTIONS_TYPES_AND_BINDS"] = (
+                self._dump_options_types_and_binds()
+            )
 
             ret, values = hook_exec(config_script, args=[action], env=app_script_env)
             if ret != 0:
@@ -1970,7 +2002,10 @@ ynh_app_config_run $1
                                 bind = bind + bind_file
                             else:
                                 bind = selector + bind + bind_file
-                        if bind == "settings" and option.get("type", "string") == "file":
+                        if (
+                            bind == "settings"
+                            and option.get("type", "string") == "file"
+                        ):
                             bind = "null"
                         if option.get("type", "string") == "button":
                             bind = "null"
@@ -1990,7 +2025,13 @@ ynh_app_config_run $1
                         if not isinstance(option, dict):
                             continue
                         lines.append(
-                            "|".join([option_id, option.get("type", "string"), option["bind"]])
+                            "|".join(
+                                [
+                                    option_id,
+                                    option.get("type", "string"),
+                                    option["bind"],
+                                ]
+                            )
                         )
             return "\n".join(lines)
 
@@ -2081,7 +2122,10 @@ def _parse_app_version(v):
 
     try:
         if "~" in v:
-            return (version.parse(v.split("~")[0]), int(v.split("~")[1].replace("ynh", "")))
+            return (
+                version.parse(v.split("~")[0]),
+                int(v.split("~")[1].replace("ynh", "")),
+            )
         else:
             return (version.parse(v), 0)
     except Exception as e:

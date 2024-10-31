@@ -97,9 +97,7 @@ class LDAPInterface:
     def connect(self):
 
         def _reconnect():
-            con = ldap.ldapobject.ReconnectLDAPObject(
-                URI, retry_max=10, retry_delay=2
-            )
+            con = ldap.ldapobject.ReconnectLDAPObject(URI, retry_max=10, retry_delay=2)
             self._connect(con)
             return con
 

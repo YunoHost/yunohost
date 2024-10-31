@@ -399,8 +399,9 @@ RetType = TypeVar("RetType")
 def is_unit_operation(
     entities=["app", "domain", "group", "service", "user"],
     exclude=["password"],
-) -> Callable[[Callable[Concatenate["OperationLogger", Param], RetType]], Callable[Param, RetType]]:
-
+) -> Callable[
+    [Callable[Concatenate["OperationLogger", Param], RetType]], Callable[Param, RetType]
+]:
     """
     Configure quickly a unit operation
 
@@ -419,7 +420,9 @@ def is_unit_operation(
 
     """
 
-    def decorate(func: Callable[Concatenate["OperationLogger", Param], RetType]) -> Callable[Param, RetType]:
+    def decorate(
+        func: Callable[Concatenate["OperationLogger", Param], RetType]
+    ) -> Callable[Param, RetType]:
         def func_wrapper(*args, **kwargs):
 
             # If the function is called directly from an other part of the code

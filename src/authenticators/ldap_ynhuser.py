@@ -29,7 +29,9 @@ def SESSION_SECRET():
     # "secret doesnt exists yet" (before postinstall) and therefore service
     # miserably fail to start
     if not SESSION_SECRET.value:
-        SESSION_SECRET.value = open("/etc/yunohost/.ssowat_cookie_secret").read().strip()
+        SESSION_SECRET.value = (
+            open("/etc/yunohost/.ssowat_cookie_secret").read().strip()
+        )
     assert SESSION_SECRET.value
     return SESSION_SECRET.value
 
@@ -67,7 +69,10 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
     # by comparing file mtime. If we haven't read the file yet, read it for the first time.
     # We compare mtime by equality not superiority because maybe the system clock has changed.
     mtime = portal_settings_path.stat().st_mtime
-    if domain not in DOMAIN_USER_ACL_DICT or DOMAIN_USER_ACL_DICT[domain]["mtime"] != mtime:
+    if (
+        domain not in DOMAIN_USER_ACL_DICT
+        or DOMAIN_USER_ACL_DICT[domain]["mtime"] != mtime
+    ):
         users: set[str] = set()
         for infos in read_json(str(portal_settings_path))["apps"].values():
             users = users.union(infos["users"])
@@ -96,12 +101,16 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
     try:
         user_result = _get_ldap_interface().search("ou=users", f"uid={user}", ["mail"])
         if len(user_result) != 1:
-            logger.error(f"User not found or many users found for {user}. How is this possible after so much validation?")
+            logger.error(
+                f"User not found or many users found for {user}. How is this possible after so much validation?"
+            )
             return False
 
         user_mail = user_result[0]["mail"]
         if len(user_mail) != 1:
-            logger.error(f"User {user} found, but has the wrong number of email addresses: {user_mail}")
+            logger.error(
+                f"User {user} found, but has the wrong number of email addresses: {user_mail}"
+            )
             return False
 
         user_mail = user_mail[0]
@@ -205,15 +214,18 @@ class Authenticator(BaseAuthenticator):
             if con:
                 con.unbind_s()
 
-            ldap_user_infos = _get_ldap_interface().search("ou=users", f"uid={username}", attrs=["cn", "mail"])[0]
+            ldap_user_infos = _get_ldap_interface().search(
+                "ou=users", f"uid={username}", attrs=["cn", "mail"]
+            )[0]
 
         if not user_is_allowed_on_domain(username, request.get_header("host")):
             raise YunohostAuthenticationError("unable_authenticate")
 
-        return {"user": username, 
-                      "pwd": encrypt(password),
-                      "email": ldap_user_infos["mail"][0],
-                      "fullname": ldap_user_infos["cn"][0]
+        return {
+            "user": username,
+            "pwd": encrypt(password),
+            "email": ldap_user_infos["mail"][0],
+            "fullname": ldap_user_infos["cn"][0],
         }
 
     def set_session_cookie(self, infos):
@@ -229,7 +241,7 @@ class Authenticator(BaseAuthenticator):
         # Prefixing with the user hash is meant to provide the ability to invalidate all this user's session
         # (eg because the user gets deleted, or password gets changed)
         # User hashing not really meant for security, just to sort of anonymize/pseudonymize the session file name
-        infos["id"] = short_hash(infos['user']) + random_ascii(20)
+        infos["id"] = short_hash(infos["user"]) + random_ascii(20)
         infos["host"] = request.get_header("host")
 
         is_dev = Path("/etc/yunohost/.portal-api-allowed-cors-origins").exists()
@@ -242,7 +254,8 @@ class Authenticator(BaseAuthenticator):
             path="/",
             samesite="strict" if not is_dev else None,
             domain=f".{request.get_header('host')}",
-            max_age=SESSION_VALIDITY - 600  # remove 1 minute such that cookie expires on the browser slightly sooner on browser side, just to help desimbuigate edge case near the expiration limit
+            max_age=SESSION_VALIDITY
+            - 600,  # remove 1 minute such that cookie expires on the browser slightly sooner on browser side, just to help desimbuigate edge case near the expiration limit
         )
 
         # Create the session file (expiration mechanism)
@@ -286,13 +299,16 @@ class Authenticator(BaseAuthenticator):
         # We also re-set the cookie such that validity is also extended on browser side
         response.set_cookie(
             "yunohost.portal",
-            request.get_cookie("yunohost.portal"),  # Reuse the same token to avoid recomputing stuff (saves a bit of CPU / delay I suppose?)
+            request.get_cookie(
+                "yunohost.portal"
+            ),  # Reuse the same token to avoid recomputing stuff (saves a bit of CPU / delay I suppose?)
             secure=True,
             httponly=True,
             path="/",
             samesite="strict" if not is_dev else None,
             domain=f".{request.get_header('host')}",
-            max_age=SESSION_VALIDITY - 600  # remove 1 minute such that cookie expires on the browser slightly sooner on browser side, just to help desimbuigate edge case near the expiration limit
+            max_age=SESSION_VALIDITY
+            - 600,  # remove 1 minute such that cookie expires on the browser slightly sooner on browser side, just to help desimbuigate edge case near the expiration limit
         )
 
         if decrypt_pwd:
@@ -308,7 +324,9 @@ class Authenticator(BaseAuthenticator):
             session_file = Path(SESSION_FOLDER) / infos["id"]
             session_file.unlink()
         except Exception as e:
-            logger.debug(f"User logged out, but failed to properly invalidate the session : {e}")
+            logger.debug(
+                f"User logged out, but failed to properly invalidate the session : {e}"
+            )
 
         response.delete_cookie("yunohost.portal", path="/")
 

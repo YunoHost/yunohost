@@ -372,7 +372,9 @@ class BaseOption(BaseModel):
 
     type: OptionType
     id: str
-    mode: Mode = "bash"  # TODO use "python" as default mode with AppConfigPanel setuping it to "bash"
+    mode: Mode = (
+        "bash"  # TODO use "python" as default mode with AppConfigPanel setuping it to "bash"
+    )
     ask: Union[Translation, None]
     readonly: bool = False
     visible: Union[JSExpression, bool] = True
@@ -1266,6 +1268,7 @@ class URLOption(BaseStringOption):
 
         return super()._value_post_validator(value, field)
 
+
 # ─ FILE ──────────────────────────────────────────────────
 
 
@@ -1347,7 +1350,8 @@ class FileOption(BaseInputOption):
 
         if accept_list and mimetype not in accept_list:
             raise YunohostValidationError(
-                 f"Unsupported file type '{mimetype}', expected a type among '{', '.join(accept_list)}'.", raw_msg=True
+                f"Unsupported file type '{mimetype}', expected a type among '{', '.join(accept_list)}'.",
+                raw_msg=True,
             )
 
         ext = mimetypes.guess_extension(mimetype)
@@ -2216,15 +2220,13 @@ def ask_questions_and_parse_answers(
 @overload
 def parse_raw_options(
     raw_options: dict[str, Any], serialize: Literal[True]
-) -> list[dict[str, Any]]:
-    ...
+) -> list[dict[str, Any]]: ...
 
 
 @overload
 def parse_raw_options(
     raw_options: dict[str, Any], serialize: Literal[False] = False
-) -> list[AnyOption]:
-    ...
+) -> list[AnyOption]: ...
 
 
 def parse_raw_options(

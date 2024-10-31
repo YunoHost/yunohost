@@ -374,9 +374,7 @@ def test_backup_app_with_no_backup_script(mocker):
     os.system("rm %s" % backup_script)
     assert not os.path.exists(backup_script)
 
-    with message(
-        "backup_with_no_backup_script_for_app", app="backup_recommended_app"
-    ):
+    with message("backup_with_no_backup_script_for_app", app="backup_recommended_app"):
         with raiseYunohostError(mocker, "backup_nothings_done"):
             backup_create(system=None, apps=["backup_recommended_app"])
 
@@ -390,9 +388,7 @@ def test_backup_app_with_no_restore_script():
     # Backuping an app with no restore script will only display a warning to the
     # user...
 
-    with message(
-        "backup_with_no_restore_script_for_app", app="backup_recommended_app"
-    ):
+    with message("backup_with_no_restore_script_for_app", app="backup_recommended_app"):
         backup_create(system=None, apps=["backup_recommended_app"])
 
 
@@ -438,6 +434,7 @@ def test_backup_using_copy_method():
 #
 # App restore                                                                #
 #
+
 
 @pytest.mark.with_wordpress_archive_from_11p2
 @pytest.mark.with_custom_domain("yolo.test")

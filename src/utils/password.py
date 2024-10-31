@@ -73,6 +73,7 @@ def assert_password_is_strong_enough(profile, password):
 
 def _hash_user_password(password):
     import passlib.hash
+
     # passlib will returns something like:
     # $6$rounds=656000$AwCIMolbTAyQhtev$46UvYfVgs.k0Bt6fLTekBHyCcCFkix/NNfgAWiICX.9YUPVYZ3PsIAwY99yP5/tXhg2sYBaAhKj6W3kuYWaR3.
     # cf https://passlib.readthedocs.io/en/stable/modular_crypt_format.html#modular-crypt-format

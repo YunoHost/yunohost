@@ -188,7 +188,7 @@ pm.process_idle_timeout = 10s
     ynh_add_config --template="$phpfpm_path" --destination="$finalphpconf"
 
     # Validate that the new php conf doesn't break php-fpm entirely
-    if ! php-fpm${phpversion} --test 2>/dev/null; then
+    if ! php-fpm${phpversion} --test 2> /dev/null; then
         php-fpm${phpversion} --test || true
         ynh_secure_remove --file="$finalphpconf"
         ynh_die --message="The new configuration broke php-fpm?"

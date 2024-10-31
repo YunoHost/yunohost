@@ -602,7 +602,9 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
                 crypto.X509Extension(
                     b"subjectAltName",
                     False,
-                    (", ".join([f"DNS:{sub}.{domain}" for sub in sanlist])).encode("utf-8"),
+                    (", ".join([f"DNS:{sub}.{domain}" for sub in sanlist])).encode(
+                        "utf-8"
+                    ),
                 )
             ]
         )

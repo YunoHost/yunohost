@@ -24,7 +24,7 @@ base_folder_and_perm_init() {
     # Portal folders #
     ##################
 
-    getent passwd ynh-portal &>/dev/null || useradd --no-create-home --shell /usr/sbin/nologin --system --user-group ynh-portal
+    getent passwd ynh-portal &> /dev/null || useradd --no-create-home --shell /usr/sbin/nologin --system --user-group ynh-portal
 
     mkdir -p /etc/yunohost/portal
     chmod 500 /etc/yunohost/portal
@@ -54,19 +54,18 @@ base_folder_and_perm_init() {
     chown root:root /var/cache/yunohost/sessions
     chmod 700 /var/cache/yunohost/sessions
 
-    if test -e /etc/yunohost/installed
-    then
+    if test -e /etc/yunohost/installed; then
         # Initialize session secrets
         # Obviously we only do this in the post_regen, ie during the postinstall, because we don't want every pre-installed instance to have the same secret
         if [ ! -e /etc/yunohost/.admin_cookie_secret ]; then
-            dd if=/dev/urandom bs=1 count=1000 2>/dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 64 > /etc/yunohost/.admin_cookie_secret
+            dd if=/dev/urandom bs=1 count=1000 2> /dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 64 > /etc/yunohost/.admin_cookie_secret
         fi
         chown root:root /etc/yunohost/.admin_cookie_secret
         chmod 400 /etc/yunohost/.admin_cookie_secret
 
         if [ ! -e /etc/yunohost/.ssowat_cookie_secret ]; then
             # NB: we need this to be exactly 32 char long, because it is later used as a key for AES256
-            dd if=/dev/urandom bs=1 count=1000 2>/dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 32 > /etc/yunohost/.ssowat_cookie_secret
+            dd if=/dev/urandom bs=1 count=1000 2> /dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 32 > /etc/yunohost/.ssowat_cookie_secret
         fi
         chown ynh-portal:root /etc/yunohost/.ssowat_cookie_secret
         chmod 400 /etc/yunohost/.ssowat_cookie_secret
@@ -114,8 +113,7 @@ base_folder_and_perm_init() {
     chmod 770 /home/yunohost.backup
     chmod 770 /home/yunohost.backup/archives
 
-    if test -e /etc/yunohost/installed
-    then
+    if test -e /etc/yunohost/installed; then
         # The admins group only exist after the postinstall
         chown root:admins /home/yunohost.backup
         chown root:admins /home/yunohost.backup/archives
@@ -138,8 +136,7 @@ base_folder_and_perm_init() {
 
     [ ! -e /var/www/.well-known/ynh-diagnosis/ ] || chmod 775 /var/www/.well-known/ynh-diagnosis/
 
-    if test -e /etc/yunohost/installed
-    then
+    if test -e /etc/yunohost/installed; then
         setfacl -m g:all_users:--- /var/www
         setfacl -m g:all_users:--- /var/log/nginx
         setfacl -m g:all_users:--- /etc/yunohost
@@ -154,10 +151,10 @@ do_init_regen() {
     base_folder_and_perm_init
 
     # Empty ssowat json persistent conf
-    echo "{}" >'/etc/ssowat/conf.json.persistent'
+    echo "{}" > '/etc/ssowat/conf.json.persistent'
     chmod 644 /etc/ssowat/conf.json.persistent
     chown root:root /etc/ssowat/conf.json.persistent
-    echo "{}" >'/etc/ssowat/conf.json'
+    echo "{}" > '/etc/ssowat/conf.json'
     chmod 644 /etc/ssowat/conf.json
     chown root:root /etc/ssowat/conf.json
 
@@ -301,12 +298,10 @@ do_post_regen() {
     base_folder_and_perm_init
 
     # Legacy log tree structure
-    if [ ! -e /var/log/yunohost/operations ]
-    then
+    if [ ! -e /var/log/yunohost/operations ]; then
         mkdir -p /var/log/yunohost/operations
     fi
-    if [ -d /var/log/yunohost/categories/operation ] && [ ! -L /var/log/yunohost/categories/operation ]
-    then
+    if [ -d /var/log/yunohost/categories/operation ] && [ ! -L /var/log/yunohost/categories/operation ]; then
         # (we use find -type f instead of mv /folder/* to make sure to also move hidden files which are not included in globs by default)
         find /var/log/yunohost/categories/operation/ -type f -print0 | xargs -0 -I {} mv {} /var/log/yunohost/operations/
         # Attempt to delete the old dir (because we want it to be a symlink) or just rename it if it can't be removed (not empty) for some reason
@@ -318,7 +313,7 @@ do_post_regen() {
     find /etc/systemd/system/*.service -type f | xargs -r chown root:root
     find /etc/systemd/system/*.service -type f | xargs -r chmod 0644
 
-    if ls -l /etc/php/*/fpm/pool.d/*.conf 2>/dev/null; then
+    if ls -l /etc/php/*/fpm/pool.d/*.conf 2> /dev/null; then
         chown root:root /etc/php/*/fpm/pool.d/*.conf
         chmod 644 /etc/php/*/fpm/pool.d/*.conf
     fi
@@ -326,7 +321,6 @@ do_post_regen() {
     find /etc/cron.*/yunohost-* -type f -exec chmod 755 {} \;
     find /etc/cron.d/yunohost-* -type f -exec chmod 644 {} \;
     find /etc/cron.*/yunohost-* -type f -exec chown root:root {} \;
-
 
     for USER in $(yunohost user list --quiet --output-as json | jq -r '.users | .[] | .username'); do
         [ ! -e "/home/$USER" ] || setfacl -m g:all_users:--- /home/$USER

@@ -122,7 +122,7 @@ def _get_domain_portal_dict():
                 parent = d
                 break
 
-        out[domain] = f'{parent or domain}/yunohost/sso'
+        out[domain] = f"{parent or domain}/yunohost/sso"
 
     # By default, redirect to $host/yunohost/admin for domains not listed in the dict
     # maybe in the future, we can allow to tweak this
@@ -382,7 +382,9 @@ def domain_add(
             except Exception:
                 failed_letsencrypt_cert_install = True
         else:
-            logger.warning("Skipping Let's Encrypt certificate attempt because there's no wildcard configured on the parent domain's DNS records.")
+            logger.warning(
+                "Skipping Let's Encrypt certificate attempt because there's no wildcard configured on the parent domain's DNS records."
+            )
             failed_letsencrypt_cert_install = True
 
     hook_callback("post_domain_add", args=[domain])
@@ -779,7 +781,9 @@ def _get_DomainConfigPanel():
         def _get_raw_settings(self) -> "RawSettings":
             raw_settings = super()._get_raw_settings()
 
-            custom_css = Path(f"/usr/share/yunohost/portal/customassets/{self.entity}.custom.css")
+            custom_css = Path(
+                f"/usr/share/yunohost/portal/customassets/{self.entity}.custom.css"
+            )
             if custom_css.exists():
                 raw_settings["custom_css"] = read_file(str(custom_css))
 
@@ -813,7 +817,9 @@ def _get_DomainConfigPanel():
                 )
 
             # NB: this is subtlely different from just checking `next_settings.get("use_auto_dns") since we want to find the exact situation where the admin *disables* the autodns`
-            remove_auto_dns_feature = "use_auto_dns" in next_settings and not next_settings["use_auto_dns"]
+            remove_auto_dns_feature = (
+                "use_auto_dns" in next_settings and not next_settings["use_auto_dns"]
+            )
             if remove_auto_dns_feature:
                 # disable auto dns by reseting every registrar form values
                 options = [
@@ -874,7 +880,9 @@ def _get_DomainConfigPanel():
                             portal_values["portal_logo"] = ""
 
                     if next_settings["portal_logo"]:
-                        portal_values["portal_logo"] = Path(next_settings["portal_logo"]).name
+                        portal_values["portal_logo"] = Path(
+                            next_settings["portal_logo"]
+                        ).name
 
                 portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{self.entity}.json")
                 portal_settings: dict[str, Any] = {"apps": {}}
@@ -897,7 +905,10 @@ def _get_DomainConfigPanel():
                 _set_managed_dns_records_hashes(self.entity, [])
 
             # Reload ssowat if default app changed
-            if "default_app" in next_settings or "enable_public_apps_page" in next_settings:
+            if (
+                "default_app" in next_settings
+                or "enable_public_apps_page" in next_settings
+            ):
                 from yunohost.app import app_ssowatconf
 
                 app_ssowatconf()

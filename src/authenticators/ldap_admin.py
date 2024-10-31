@@ -155,7 +155,7 @@ class Authenticator(BaseAuthenticator):
         # Prefixing with the user hash is meant to provide the ability to invalidate all this user's session
         # (eg because the user gets deleted, or password gets changed)
         # User hashing not really meant for security, just to sort of anonymize/pseudonymize the session file name
-        infos["id"] = short_hash(infos['user']) + random_ascii(20)
+        infos["id"] = short_hash(infos["user"]) + random_ascii(20)
 
         response.set_cookie(
             "yunohost.admin",
@@ -206,7 +206,9 @@ class Authenticator(BaseAuthenticator):
             session_file = f'{SESSION_FOLDER}/{infos["id"]}'
             os.remove(session_file)
         except Exception as e:
-            logger.debug(f"User logged out, but failed to properly invalidate the session : {e}")
+            logger.debug(
+                f"User logged out, but failed to properly invalidate the session : {e}"
+            )
 
         response.delete_cookie("yunohost.admin", path="/yunohost/api")
 

@@ -143,7 +143,7 @@ def tools_postinstall(
     ignore_dyndns=False,
     force_diskspace=False,
     overwrite_root_password=True,
-    i_have_read_terms_of_services=False
+    i_have_read_terms_of_services=False,
 ):
     from yunohost.service import _run_service_command
     from yunohost.dyndns import _dyndns_available, dyndns_unsubscribe
@@ -240,7 +240,7 @@ def tools_postinstall(
         domain,
         dyndns_recovery_password=dyndns_recovery_password,
         ignore_dyndns=ignore_dyndns,
-        skip_tos=True,   # skip_tos is here to prevent re-asking about the ToS when adding a dyndns service, because the ToS are already displayed right before in postinstall
+        skip_tos=True,  # skip_tos is here to prevent re-asking about the ToS when adding a dyndns service, because the ToS are already displayed right before in postinstall
     )
     domain_main_domain(domain)
 
@@ -297,6 +297,7 @@ def tools_regen_conf(
 ):
 
     from yunohost.regenconf import regen_conf
+
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 

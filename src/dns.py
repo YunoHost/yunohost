@@ -236,7 +236,9 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
     ##################
 
     # Defined by custom hooks shipped in apps for example ...
-    hook_results = hook_callback("custom_dns_rules", env={"base_domain": base_domain, "suffix": suffix})
+    hook_results = hook_callback(
+        "custom_dns_rules", env={"base_domain": base_domain, "suffix": suffix}
+    )
     for hook_name, results in hook_results.items():
         #
         # There can be multiple results per hook name, so results look like
@@ -560,7 +562,7 @@ def _get_registrar_config_section(domain):
             registrar_infos["use_auto_dns"] = {
                 "type": "boolean",
                 "ask": m18n.n("domain_dns_registrar_use_auto"),
-                "default": True
+                "default": True,
             }
         for credential, infos in registrar_credentials.items():
             infos["default"] = infos.get("default", "")

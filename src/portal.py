@@ -24,7 +24,10 @@ from typing import Any, Union
 
 import ldap
 from moulinette.utils.filesystem import read_json
-from yunohost.authenticators.ldap_ynhuser import Authenticator as Auth, user_is_allowed_on_domain
+from yunohost.authenticators.ldap_ynhuser import (
+    Authenticator as Auth,
+    user_is_allowed_on_domain,
+)
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract, LDAPInterface
 from yunohost.utils.password import (
@@ -220,9 +223,7 @@ def portal_update(
                 )
 
             if domain not in domains or not user_is_allowed_on_domain(username, domain):
-                raise YunohostValidationError(
-                    "mail_alias_unauthorized", domain=domain
-                )
+                raise YunohostValidationError("mail_alias_unauthorized", domain=domain)
 
             mails.append(mail)
 
@@ -260,7 +261,9 @@ def portal_update(
             raise YunohostValidationError("invalid_password", path="currentpassword")
     else:
         # Otherwise we use the encrypted password stored in the cookie
-        ldap_interface = LDAPInterface(username, Auth().get_session_cookie(decrypt_pwd=True)["pwd"])
+        ldap_interface = LDAPInterface(
+            username, Auth().get_session_cookie(decrypt_pwd=True)["pwd"]
+        )
 
     try:
         ldap_interface.update(f"uid={username},ou=users", new_attr_dict)

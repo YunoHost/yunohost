@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     from yunohost.log import OperationLogger
     from bottle import HTTPResponse as HTTPResponseType
     from moulinette.utils.log import MoulinetteLogger
+
     logger = cast(MoulinetteLogger, getLogger("yunohost.user"))
 else:
     logger = getLogger("yunohost.user")
@@ -281,7 +282,9 @@ def user_create(
     except subprocess.CalledProcessError:
         home = f"/home/{username}"
         if not os.path.isdir(home):
-            logger.warning(m18n.n("user_home_creation_failed", home=home), exc_info=True)
+            logger.warning(
+                m18n.n("user_home_creation_failed", home=home), exc_info=True
+            )
 
     try:
         subprocess.check_call(["setfacl", "-m", "g:all_users:---", f"/home/{username}"])
@@ -313,7 +316,12 @@ def user_create(
 
 
 @is_unit_operation([("username", "user")])
-def user_delete(operation_logger: "OperationLogger", username: str, purge: bool = False, from_import: bool = False):
+def user_delete(
+    operation_logger: "OperationLogger",
+    username: str,
+    purge: bool = False,
+    from_import: bool = False,
+):
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
@@ -439,9 +447,12 @@ def user_update(
         # without a specified value, change_password will be set to the const 0.
         # In this case we prompt for the new password.
         if Moulinette.interface.type == "cli" and not change_password:
-            change_password = cast(str, Moulinette.prompt(
-                m18n.n("ask_password"), is_password=True, confirm=True
-            ))
+            change_password = cast(
+                str,
+                Moulinette.prompt(
+                    m18n.n("ask_password"), is_password=True, confirm=True
+                ),
+            )
 
         # Ensure compatibility and sufficiently complex password
         assert_password_is_compatible(change_password)
@@ -551,6 +562,7 @@ def user_update(
     if "userPassword" in new_attr_dict:
         logger.info("Invalidating sessions")
         from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
+
         PortalAuth.invalidate_all_sessions_for_user(username)
 
     # Invalidate passwd and group to update the loginShell
@@ -695,7 +707,12 @@ def user_export() -> Union[str, "HTTPResponseType"]:
 
 
 @is_unit_operation()
-def user_import(operation_logger: "OperationLogger", csvfile: TextIO, update: bool = False, delete: bool = False) -> dict[str, int]:
+def user_import(
+    operation_logger: "OperationLogger",
+    csvfile: TextIO,
+    update: bool = False,
+    delete: bool = False,
+) -> dict[str, int]:
     """
     Import users from CSV
 
@@ -711,7 +728,11 @@ def user_import(operation_logger: "OperationLogger", csvfile: TextIO, update: bo
     from yunohost.domain import domain_list
 
     # Pre-validate data and prepare what should be done
-    actions: dict[str, list[dict[str, Any]]] = {"created": [], "updated": [], "deleted": []}
+    actions: dict[str, list[dict[str, Any]]] = {
+        "created": [],
+        "updated": [],
+        "deleted": [],
+    }
     is_well_formatted = True
 
     def to_list(str_list):
@@ -960,7 +981,9 @@ def user_import(operation_logger: "OperationLogger", csvfile: TextIO, update: bo
 #
 # Group subcategory
 #
-def user_group_list(full: bool = False, include_primary_groups: bool = True) -> dict[str, dict[str, dict]]:
+def user_group_list(
+    full: bool = False, include_primary_groups: bool = True
+) -> dict[str, dict[str, dict]]:
     """
     List users
 
@@ -1009,7 +1032,11 @@ def user_group_list(full: bool = False, include_primary_groups: bool = True) -> 
 
 @is_unit_operation([("groupname", "group")])
 def user_group_create(
-    operation_logger: "OperationLogger", groupname: str, gid: Optional[str] = None, primary_group: bool = False, sync_perm: bool = True
+    operation_logger: "OperationLogger",
+    groupname: str,
+    gid: Optional[str] = None,
+    primary_group: bool = False,
+    sync_perm: bool = True,
 ) -> dict[str, str]:
     """
     Create group
@@ -1082,7 +1109,12 @@ def user_group_create(
 
 
 @is_unit_operation([("groupname", "group")])
-def user_group_delete(operation_logger: "OperationLogger", groupname: str, force: bool = False, sync_perm: bool = True) -> None:
+def user_group_delete(
+    operation_logger: "OperationLogger",
+    groupname: str,
+    force: bool = False,
+    sync_perm: bool = True,
+) -> None:
     """
     Delete user
 
@@ -1293,6 +1325,7 @@ def user_group_update(
 
     if groupname == "admins" and remove:
         from yunohost.authenticators.ldap_admin import Authenticator as AdminAuth
+
         for user in users_to_remove:
             AdminAuth.invalidate_all_sessions_for_user(user)
 
@@ -1369,7 +1402,9 @@ def user_group_info(groupname: str) -> dict[str, Any]:
     }
 
 
-def user_group_add(groupname: str, usernames: list[str], force: bool = False, sync_perm: bool = True) -> Optional[dict[str, Any]]:
+def user_group_add(
+    groupname: str, usernames: list[str], force: bool = False, sync_perm: bool = True
+) -> Optional[dict[str, Any]]:
     """
     Add user(s) to a group
 
@@ -1381,7 +1416,9 @@ def user_group_add(groupname: str, usernames: list[str], force: bool = False, sy
     return user_group_update(groupname, add=usernames, force=force, sync_perm=sync_perm)
 
 
-def user_group_remove(groupname: str, usernames: list[str], force: bool = False, sync_perm: bool = True) -> Optional[dict[str, Any]]:
+def user_group_remove(
+    groupname: str, usernames: list[str], force: bool = False, sync_perm: bool = True
+) -> Optional[dict[str, Any]]:
     """
     Remove user(s) from a group
 
@@ -1395,17 +1432,26 @@ def user_group_remove(groupname: str, usernames: list[str], force: bool = False,
     )
 
 
-def user_group_add_mailalias(groupname: str, aliases: list[str], force: bool = False) -> Optional[dict[str, Any]]:
-    return user_group_update(groupname, add_mailalias=aliases, force=force, sync_perm=False)
+def user_group_add_mailalias(
+    groupname: str, aliases: list[str], force: bool = False
+) -> Optional[dict[str, Any]]:
+    return user_group_update(
+        groupname, add_mailalias=aliases, force=force, sync_perm=False
+    )
 
 
-def user_group_remove_mailalias(groupname: str, aliases: list[str], force: bool = False) -> Optional[dict[str, Any]]:
-    return user_group_update(groupname, remove_mailalias=aliases, force=force, sync_perm=False)
+def user_group_remove_mailalias(
+    groupname: str, aliases: list[str], force: bool = False
+) -> Optional[dict[str, Any]]:
+    return user_group_update(
+        groupname, remove_mailalias=aliases, force=force, sync_perm=False
+    )
 
 
 #
 # Permission subcategory
 #
+
 
 # FIXME: missing return type
 def user_permission_list(short: bool = False, full: bool = False, apps: list[str] = []):
@@ -1415,7 +1461,12 @@ def user_permission_list(short: bool = False, full: bool = False, apps: list[str
 
 
 # FIXME: missing return type
-def user_permission_update(permission: str, label: Optional[str] = None, show_tile: Optional[bool] = None, sync_perm: bool = True):
+def user_permission_update(
+    permission: str,
+    label: Optional[str] = None,
+    show_tile: Optional[bool] = None,
+    sync_perm: bool = True,
+):
     from yunohost.permission import user_permission_update
 
     return user_permission_update(
@@ -1424,7 +1475,13 @@ def user_permission_update(permission: str, label: Optional[str] = None, show_ti
 
 
 # FIXME: missing return type
-def user_permission_add(permission: str, names: list[str], protected: Optional[bool] = None, force: bool = False, sync_perm: bool = True):
+def user_permission_add(
+    permission: str,
+    names: list[str],
+    protected: Optional[bool] = None,
+    force: bool = False,
+    sync_perm: bool = True,
+):
     from yunohost.permission import user_permission_update
 
     return user_permission_update(
@@ -1434,7 +1491,11 @@ def user_permission_add(permission: str, names: list[str], protected: Optional[b
 
 # FIXME: missing return type
 def user_permission_remove(
-    permission: str, names: list[str], protected: Optional[bool] = None, force: bool = False, sync_perm: bool = True
+    permission: str,
+    names: list[str],
+    protected: Optional[bool] = None,
+    force: bool = False,
+    sync_perm: bool = True,
 ):
     from yunohost.permission import user_permission_update
 
@@ -1478,6 +1539,7 @@ def user_ssh_remove_key(username: str, key: str) -> None:
 #
 # End SSH subcategory
 #
+
 
 def _update_admins_group_aliases(old_main_domain: str, new_main_domain: str) -> None:
     current_admin_aliases = user_group_info("admins")["mail-aliases"]

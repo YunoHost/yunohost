@@ -13,7 +13,9 @@ def clone_test_app(request):
     cwd = os.path.split(os.path.realpath(__file__))[0]
 
     if not os.path.exists(cwd + "/apps"):
-        os.system(f"git clone https://github.com/YunoHost/test_apps {cwd}/apps --depth 1")
+        os.system(
+            f"git clone https://github.com/YunoHost/test_apps {cwd}/apps --depth 1"
+        )
     else:
         os.system("cd %s/apps && git pull > /dev/null 2>&1" % cwd)
 
@@ -33,6 +35,7 @@ def message(key, **kwargs):
         m.assert_any_call(key, **kwargs)
     finally:
         m18n.n = old_m18n
+
 
 @contextmanager
 def raiseYunohostError(mocker, key, **kwargs):
@@ -75,6 +78,7 @@ def pytest_cmdline_main(config):
     sys.path.insert(0, code_root)
 
     import yunohost
+
     yunohost.init()
 
     class DummyInterface:

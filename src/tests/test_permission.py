@@ -659,9 +659,7 @@ def test_permission_add_and_remove_group():
 
 
 def test_permission_add_group_already_allowed():
-    with message(
-        "permission_already_allowed", permission="blog.main", group="alice"
-    ):
+    with message("permission_already_allowed", permission="blog.main", group="alice"):
         user_permission_update("blog.main", add="alice")
 
     res = user_permission_list(full=True)["permissions"]
@@ -670,9 +668,7 @@ def test_permission_add_group_already_allowed():
 
 
 def test_permission_remove_group_already_not_allowed():
-    with message(
-        "permission_already_disallowed", permission="blog.main", group="bob"
-    ):
+    with message("permission_already_disallowed", permission="blog.main", group="bob"):
         user_permission_update("blog.main", remove="bob")
 
     res = user_permission_list(full=True)["permissions"]

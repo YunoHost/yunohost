@@ -8,8 +8,18 @@ from .conftest import message, raiseYunohostError, get_test_apps_dir
 
 from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
 from yunohost.user import user_create, user_list, user_delete, user_update
-from yunohost.authenticators.ldap_ynhuser import Authenticator, SESSION_FOLDER, short_hash
-from yunohost.app import app_install, app_remove, app_setting, app_ssowatconf, app_change_url
+from yunohost.authenticators.ldap_ynhuser import (
+    Authenticator,
+    SESSION_FOLDER,
+    short_hash,
+)
+from yunohost.app import (
+    app_install,
+    app_remove,
+    app_setting,
+    app_ssowatconf,
+    app_change_url,
+)
 from yunohost.permission import user_permission_list, user_permission_update
 
 
@@ -44,7 +54,9 @@ def setup_module(module):
     assert os.system("systemctl is-active yunohost-portal-api >/dev/null") == 0
 
     if "alice" not in user_list()["users"]:
-        user_create("alice", maindomain, dummy_password, fullname="Alice White", admin=True)
+        user_create(
+            "alice", maindomain, dummy_password, fullname="Alice White", admin=True
+        )
     if "bob" not in user_list()["users"]:
         user_create("bob", maindomain, dummy_password, fullname="Bob Marley")
 
@@ -108,7 +120,9 @@ def request(webpath, logged_as=None, session=None, inject_auth=None, logged_on=N
 
     headers = {}
     if inject_auth:
-        b64loginpassword = base64.b64encode((inject_auth[0] + ":" + inject_auth[1]).encode()).decode()
+        b64loginpassword = base64.b64encode(
+            (inject_auth[0] + ":" + inject_auth[1]).encode()
+        ).decode()
         headers["Authorization"] = f"Basic {b64loginpassword}"
 
     # Anonymous access
@@ -122,7 +136,9 @@ def request(webpath, logged_as=None, session=None, inject_auth=None, logged_on=N
             r = login(session, logged_as, logged_on)
             # We should have some cookies related to authentication now
             assert session.cookies
-            r = session.get(webpath, verify=False, allow_redirects=False, headers=headers)
+            r = session.get(
+                webpath, verify=False, allow_redirects=False, headers=headers
+            )
 
     return r
 
@@ -232,7 +248,7 @@ def test_permission_propagation_on_ssowat():
     # Visitors now get redirected to portal
     r = request(f"https://{maindomain}/")
     assert r.status_code == 302
-    assert r.headers['Location'].startswith(f"https://{maindomain}/yunohost/sso?r=")
+    assert r.headers["Location"].startswith(f"https://{maindomain}/yunohost/sso?r=")
 
     # Alice can still access the app fine
     r = request(f"https://{maindomain}/", logged_as="alice")
@@ -263,23 +279,25 @@ def test_login_right_depending_on_app_access_and_mail():
         r = login(session, "bob")
         assert not session.cookies
 
-    user_permission_update(
-        "hellopy.main", add="bob"
-    )
+    user_permission_update("hellopy.main", add="bob")
 
     # Bob should be allowed to login again (even though its mail is on secondarydomain)
     r = request(f"https://{maindomain}/", logged_as="bob")
     assert r.status_code == 200 and r.content.decode().strip() == "Hello world!"
 
 
-
 def test_sso_basic_auth_header():
 
     r = request(f"https://{maindomain}/show-auth")
-    assert r.status_code == 200 and r.content.decode().strip() == "User: None\nPwd: None"
+    assert (
+        r.status_code == 200 and r.content.decode().strip() == "User: None\nPwd: None"
+    )
 
     r = request(f"https://{maindomain}/show-auth", logged_as="alice")
-    assert r.status_code == 200 and r.content.decode().strip() == f"User: alice\nPwd: {dummy_password}"
+    assert (
+        r.status_code == 200
+        and r.content.decode().strip() == f"User: alice\nPwd: {dummy_password}"
+    )
 
     app_setting("hellopy", "auth_header", value="basic-without-password")
     app_ssowatconf()
@@ -291,10 +309,14 @@ def test_sso_basic_auth_header():
 def test_sso_basic_auth_header_spoofing():
 
     r = request(f"https://{maindomain}/show-auth")
-    assert r.status_code == 200 and r.content.decode().strip() == "User: None\nPwd: None"
+    assert (
+        r.status_code == 200 and r.content.decode().strip() == "User: None\nPwd: None"
+    )
 
     r = request(f"https://{maindomain}/show-auth", inject_auth=("foo", "bar"))
-    assert r.status_code == 200 and r.content.decode().strip() == "User: None\nPwd: None"
+    assert (
+        r.status_code == 200 and r.content.decode().strip() == "User: None\nPwd: None"
+    )
 
     app_setting("hellopy", "protect_against_basic_auth_spoofing", value="false")
     app_ssowatconf()
@@ -337,18 +359,19 @@ def test_sso_on_secondary_domain():
     # Getting 'User: None despite being logged on the main domain
     assert r.status_code == 200 and r.content.decode().strip().startswith("User: None")
 
-    r = request(f"https://{secondarydomain}/show-auth", logged_as="alice", logged_on=secondarydomain)
+    r = request(
+        f"https://{secondarydomain}/show-auth",
+        logged_as="alice",
+        logged_on=secondarydomain,
+    )
     assert r.status_code == 200 and r.content.decode().strip().startswith("User: alice")
 
 
-
-
-
 # accès à l'api portal
-    # -> test des routes
-    #    apps publique (seulement si activé ?)
-    #    /me
-    #    /update
+# -> test des routes
+#    apps publique (seulement si activé ?)
+#    /me
+#    /update
 
 
 # accès aux trucs précédent meme avec une app installée sur la racine ?
@@ -359,4 +382,3 @@ def test_sso_on_secondary_domain():
 # accès à un app sur un sous-domaine
 # pas loggué -> redirect vers sso sur domaine principal
 # se logger sur API sur domain principal, puis utilisation du cookie sur le sous-domaine
-

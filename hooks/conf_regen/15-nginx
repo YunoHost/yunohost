@@ -73,7 +73,6 @@ do_pre_regen() {
 
     do_base_regen "${pending_dir}"
 
-
     local tls_passthrough_module="${pending_dir}/etc/nginx/modules-enabled/tls_passthrough.conf"
     mkdir -p "${pending_dir}/etc/nginx/modules-enabled/"
 
