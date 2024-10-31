@@ -121,6 +121,31 @@ yunohost (12.0.0) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
 
+yunohost (11.3.0.2) stable; urgency=low
+
+  -  Fix migration by early-importing _ldap ([#1987](http://github.com/YunoHost/yunohost/pull/1987))
+
+  Thanks to all contributors <3 ! (Félix Piédallu)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 31 Oct 2024 18:01:44 +0100
+
+yunohost (11.3.0.1) stable; urgency=low
+
+  - (Forgot the commit that actually enabled the migration @_@) (00243961c)
+
+  Thanks to all contributors <3 ! (Félix Piédallu)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 31 Oct 2024 16:49:51 +0100
+
+yunohost (11.3.0) stable; urgency=low
+
+  - Enable migration to Bookworm
+  - i18n: Translations updated for Basque, French, Turkish
+
+  Thanks to all contributors <3 ! (Atalay Daban, ppr, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 31 Oct 2024 13:51:33 +0100
+
 yunohost (11.2.32) stable; urgency=low
 
   - configpanel: fix error message to hint if the bind key wasn't found ([#1972](http://github.com/YunoHost/yunohost/pull/1972))

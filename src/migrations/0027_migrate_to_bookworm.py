@@ -4,8 +4,9 @@ import subprocess
 from time import sleep
 from datetime import date
 
-# Explicitly import _strptime to prevent an issue that may arise later because of python3.9 being replaced by 3.11 in the middle of the upgrade etc
+# Explicitly import packages to prevent an issue that may arise later because of python3.9 being replaced by 3.11 in the middle of the upgrade etc
 import _strptime  # noqa: F401
+import _ldap  # noqa: F401
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.process import call_async_output
@@ -32,9 +33,11 @@ from yunohost.utils.system import (
 # otherwise this may trigger stupid issues
 try:
     from moulinette.utils.log import getActionLogger
+
     logger = getActionLogger("yunohost.migration")
 except ImportError:
     import logging
+
     logger = logging.getLogger("yunohost.migration")
 
 
@@ -101,7 +104,9 @@ class MyMigration(Migration):
         #
 
         new_apt_key = "https://forge.yunohost.org/yunohost_bookworm.asc"
-        os.system(f'wget --timeout 900 --quiet "{new_apt_key}" --output-document=- | gpg --dearmor >"/usr/share/keyrings/yunohost-bookworm.gpg"')
+        os.system(
+            f'wget --timeout 900 --quiet "{new_apt_key}" --output-document=- | gpg --dearmor >"/usr/share/keyrings/yunohost-bookworm.gpg"'
+        )
 
         # Add Sury key even if extra_php_version.list was already there,
         # because some old system may be using an outdated key not valid for Bookworm
@@ -167,12 +172,12 @@ class MyMigration(Migration):
         # FIXME : this is from buster->bullseye, do we still needed it ?
         #
         # if os.system("systemctl | grep -q dhcpcd") == 0:
-        #     logger.info("Applying fix for DHCPCD ...")
-        #     os.system("mkdir -p /etc/systemd/system/dhcpcd.service.d")
-        #     write_to_file(
-        #         "/etc/systemd/system/dhcpcd.service.d/wait.conf",
-        #         "[Service]\nExecStart=\nExecStart=/usr/sbin/dhcpcd -w",
-        #     )
+        #    logger.info("Applying fix for DHCPCD ...")
+        #    os.system("mkdir -p /etc/systemd/system/dhcpcd.service.d")
+        #    write_to_file(
+        #        "/etc/systemd/system/dhcpcd.service.d/wait.conf",
+        #        "[Service]\nExecStart=\nExecStart=/usr/sbin/dhcpcd -w",
+        #    )
 
         #
         # Main upgrade
@@ -181,28 +186,38 @@ class MyMigration(Migration):
 
         # Mark php, mariadb, metronome and rspamd as "auto" so that they may be uninstalled if they ain't explicitly wanted by app or admins
         php_packages = self.get_php_packages()
-        aptitude_with_progress_bar(f"markauto mariadb-server metronome rspamd {' '.join(php_packages)}")
+        aptitude_with_progress_bar(
+            f"markauto mariadb-server metronome rspamd {' '.join(php_packages)}"
+        )
 
         # Hold import yunohost packages
         apps_packages = self.get_apps_equivs_packages()
-        aptitude_with_progress_bar(f"hold yunohost moulinette ssowat yunohost-admin {' '.join(apps_packages)}")
+        aptitude_with_progress_bar(
+            f"hold yunohost moulinette ssowat yunohost-admin {' '.join(apps_packages)}"
+        )
 
         # Dirty hack to be able to remove rspamd because it's causing too many issues due to libluajit ...
         command = "sed -i /var/lib/dpkg/status -e 's@rspamd, @@g'"
         logger.debug(f"Running: {command}")
         os.system(command)
 
-        aptitude_with_progress_bar("full-upgrade cron rspamd- luajit- libluajit-5.1-2- --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'")
+        aptitude_with_progress_bar(
+            "full-upgrade cron rspamd- luajit- libluajit-5.1-2- --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'"
+        )
 
         # For some reason aptitude is derping about python3 / python3-venv so try to explicitly tell to install python3.11 to replace 3.9...
         # Note the '+M' prefix which is here to mark the packages as automatically installed
         python_upgrade_list = "python3 python3.11+M python3.9- "
         if os.system('dpkg --list | grep -q "^ii  python3.9-venv "') == 0:
             python_upgrade_list += "python3-venv+M python3.11-venv+M python3.9-venv-"
-        aptitude_with_progress_bar(f"full-upgrade {python_upgrade_list} --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'")
+        aptitude_with_progress_bar(
+            f"full-upgrade {python_upgrade_list} --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'"
+        )
 
         # Full upgrade of "every" packages except the yunohost ones which are held
-        aptitude_with_progress_bar("full-upgrade --show-why -o Dpkg::Options::='--force-confold'")
+        aptitude_with_progress_bar(
+            "full-upgrade --show-why -o Dpkg::Options::='--force-confold'"
+        )
 
         # Force regenconf of nsswitch because for some reason
         # /etc/nsswitch.conf is reset despite the --force-confold? It's a
@@ -226,8 +241,8 @@ class MyMigration(Migration):
         # FIXME : this is from buster->bullseye, do we still needed it ?
         #
         # if os.path.exists("/etc/init.d/dnsmasq.dpkg-dist"):
-        #     logger.info("Copying new version for /etc/init.d/dnsmasq ...")
-        #     os.system("cp /etc/init.d/dnsmasq.dpkg-dist /etc/init.d/dnsmasq")
+        #    logger.info("Copying new version for /etc/init.d/dnsmasq ...")
+        #    os.system("cp /etc/init.d/dnsmasq.dpkg-dist /etc/init.d/dnsmasq")
 
         #
         # Yunohost upgrade
@@ -235,7 +250,9 @@ class MyMigration(Migration):
         logger.info(m18n.n("migration_0027_yunohost_upgrade"))
         aptitude_with_progress_bar("unhold yunohost moulinette ssowat yunohost-admin")
 
-        full_upgrade_cmd = "full-upgrade --show-why -o Dpkg::Options::='--force-confold' "
+        full_upgrade_cmd = (
+            "full-upgrade --show-why -o Dpkg::Options::='--force-confold' "
+        )
         full_upgrade_cmd += "yunohost yunohost-admin yunohost-portal moulinette ssowat "
         # This one is needed to solve aptitude derping with nginx dependencies
         full_upgrade_cmd += "libluajit2-5.1-2 "
@@ -275,7 +292,10 @@ class MyMigration(Migration):
             subprocess.check_call(["bash", "-c", cmd])
 
         if self.yunohost_major_version() != N_CURRENT_YUNOHOST + 1:
-            raise YunohostError("Still on YunoHost 11.x at the end of the migration, eh? Sounds like the migration didn't really complete!?", raw_msg=True)
+            raise YunohostError(
+                "Still on YunoHost 11.x at the end of the migration, eh? Sounds like the migration didn't really complete!?",
+                raw_msg=True,
+            )
 
     def debian_major_version(self):
         # The python module "platform" and lsb_release are not reliable because
@@ -378,15 +398,18 @@ class MyMigration(Migration):
 
         message = m18n.n("migration_0027_general_warning")
 
-
         message = (
-           ("N.B.: This migration has been tested by the community over the last few months but has only been declared stable recently. If your server hosts critical services and if you are not too confident with debugging possible issues, we recommend you to wait a little bit more while we gather more feedback and polish things up. If on the other hand you are relatively confident with debugging small issues that may arise, you are encouraged to run this migration 😉!" if date.today() < date(2025, 3, 30) else "")
-           + "\n\n"
-           + "You can read the full release note, remaining known issues and feedback from the community here: <https://forum.yunohost.org/t/31673>. In particular, we encourage you to pay attention to the fact that:\n"
-           + "- Packages `metronome` (xmpp server) and `rspamd` (mail antispam) are now independent applications available in the catalog. Make sure to explicitly install these applications after the migration if you care about those!\n"
-           + "- The user portal / SSO system was totally reworked. You may lose custom theming if you have any. However, the new system also has plenty of customization capabilities (more details in the release note).\n"
-           + "\n"
-           + message
+            (
+                "N.B.: This migration has been tested by the community over the last few months but has only been declared stable recently. If your server hosts critical services and if you are not too confident with debugging possible issues, we recommend you to wait a little bit more while we gather more feedback and polish things up. If on the other hand you are relatively confident with debugging small issues that may arise, you are encouraged to run this migration 😉!"
+                if date.today() < date(2025, 3, 30)
+                else ""
+            )
+            + "\n\n"
+            + "You can read the full release note, remaining known issues and feedback from the community here: <https://forum.yunohost.org/t/31673>. In particular, we encourage you to pay attention to the fact that:\n"
+            + "- Packages `metronome` (xmpp server) and `rspamd` (mail antispam) are now independent applications available in the catalog. Make sure to explicitly install these applications after the migration if you care about those!\n"
+            + "- The user portal / SSO system was totally reworked. You may lose custom theming if you have any. However, the new system also has plenty of customization capabilities (more details in the release note).\n"
+            + "\n"
+            + message
         )
 
         if problematic_apps:
