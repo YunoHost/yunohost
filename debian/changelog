@@ -1,3 +1,11 @@
+yunohost (11.3.0.2) stable; urgency=low
+
+  -  Fix migration by early-importing _ldap ([#1987](http://github.com/YunoHost/yunohost/pull/1987))
+
+  Thanks to all contributors <3 ! (Félix Piédallu)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 31 Oct 2024 18:01:44 +0100
+
 yunohost (11.3.0.1) stable; urgency=low
 
   - (Forgot the commit that actually enabled the migration @_@) (00243961c)
