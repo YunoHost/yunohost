@@ -8,11 +8,6 @@ fail2ban:
   log: /var/log/fail2ban.log
   category: security
   test_conf: fail2ban-server --test
-metronome:
-  log: [/var/log/metronome/metronome.log,/var/log/metronome/metronome.err]
-  needs_exposed_ports: [5222, 5269]
-  category: xmpp
-  ignore_if_package_is_not_installed: metronome
 mysql:
   log: [/var/log/mysql.log,/var/log/mysql.err,/var/log/mysql/error.log]
   actual_systemd_service: mariadb
@@ -28,21 +23,22 @@ nginx:
 #  log: /var/log/php7.4-fpm.log
 #  test_conf: php-fpm7.4 --test
 #  category: web
+opendkim:
+  category: email
+  test_conf: opendkim -n
 postfix:
   log: [/var/log/mail.log,/var/log/mail.err]
   actual_systemd_service: postfix@-
   needs_exposed_ports: [25, 587]
   category: email
 postgresql:
-  actual_systemd_service: 'postgresql@13-main'
+  actual_systemd_service: 'postgresql@15-main'
   category: database
-  ignore_if_package_is_not_installed: postgresql-13
+  ignore_if_package_is_not_installed: postgresql-15
 redis-server:
   log: /var/log/redis/redis-server.log
   category: database
-rspamd:
-  log: /var/log/rspamd/rspamd.log
-  category: email
+  ignore_if_package_is_not_installed: redis-server
 slapd:
   category: database
   test_conf: slapd -Tt
@@ -51,6 +47,9 @@ ssh:
   test_conf: sshd -t
   needs_exposed_ports: [22]
   category: admin
+yunohost-portal-api:
+  log: /var/log/yunohost-portal-api.log
+  category: userportal
 yunohost-api:
   log: /var/log/yunohost/yunohost-api.log
   category: admin
@@ -60,21 +59,6 @@ yunohost-firewall:
   category: security
 yunomdns:
   category: mdns
-glances: null
-nsswitch: null
-ssl: null
-yunohost: null
-bind9: null
-tahoe-lafs: null
-memcached: null
-udisks2: null
-udisk-glue: null
-amavis: null
-postgrey: null
-spamassassin: null
-rmilter: null
 php5-fpm: null
 php7.0-fpm: null
 php7.3-fpm: null
-nslcd: null
-avahi-daemon: null

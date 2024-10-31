@@ -1,9 +1,14 @@
 .build-stage:
   stage: build
+  needs:
+    - job: actionsmap
+    - job: invalidcode311
   image: "build-and-lint"
   variables:
     YNH_BUILD_DIR: "$GIT_CLONE_PATH/build"
   before_script:
+    - echo $PWD
+    - echo $CI_PROJECT_DIR
     - mkdir -p $YNH_BUILD_DIR
   artifacts:
     paths:
@@ -31,7 +36,7 @@ build-yunohost:
     - mkdir -p $YNH_BUILD_DIR/$PACKAGE
     - cat archive.tar.gz | tar -xz -C $YNH_BUILD_DIR/$PACKAGE
     - rm archive.tar.gz
-    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE || { apt-get update && DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE; }
     - *build_script
 
 build-ssowat:
@@ -40,7 +45,7 @@ build-ssowat:
     PACKAGE: "ssowat"
   script:
     - git clone $YNH_SOURCE/$PACKAGE -b $CI_COMMIT_REF_NAME $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE -b $YNH_DEBIAN $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE $YNH_BUILD_DIR/$PACKAGE --depth 1
-    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE || { apt-get update && DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE; }
     - *build_script
 
 build-moulinette:
@@ -49,5 +54,5 @@ build-moulinette:
     PACKAGE: "moulinette"
   script:
     - git clone $YNH_SOURCE/$PACKAGE -b $CI_COMMIT_REF_NAME $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE -b $YNH_DEBIAN $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE $YNH_BUILD_DIR/$PACKAGE --depth 1
-    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE || { apt-get update && DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE; }
     - *build_script

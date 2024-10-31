@@ -5,13 +5,11 @@
   stage: test
   image: "core-tests"
   variables:
-    PYTEST_ADDOPTS: "--color=yes"
+    PYTEST_ADDOPTS: "--color=yes --cov=src"
+    COVERAGE_FILE: ".coverage_$CI_JOB_NAME"
   before_script:
     - *install_debs
-  cache:
-    paths: 
-      - src/tests/apps
-    key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
+    - ln -s src yunohost
   needs:
       - job: build-yunohost
         artifacts: true
@@ -20,41 +18,13 @@
       - job: build-moulinette
         artifacts: true
       - job: upgrade
+  artifacts:
+    paths:
+      - ./.coverage_*
 
 ########################################
 # TESTS
 ########################################
-
-full-tests:
-  stage: test
-  image: "before-install"
-  variables:
-    PYTEST_ADDOPTS: "--color=yes"
-  before_script:
-    - *install_debs
-    - pip install mock pip pyOpenSSL pytest pytest-cov pytest-mock pytest-sugar requests-mock "packaging<22"
-    - yunohost tools postinstall -d domain.tld -u syssa -F 'Syssa Mine' -p the_password --ignore-dyndns --force-diskspace
-  script:
-    - python3 -m pytest --cov=yunohost tests/ src/tests/ --junitxml=report.xml
-  needs:
-      - job: build-yunohost
-        artifacts: true
-      - job: build-ssowat
-        artifacts: true
-      - job: build-moulinette
-        artifacts: true
-  coverage: '/TOTAL.*\s+(\d+%)/'
-  artifacts:
-    reports:
-      junit: report.xml
-
-test-actionmap:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_actionmap.py
-  only:
-    changes:
-      - share/actionsmap.yml
 
 test-helpers2:
   extends: .test-stage
@@ -72,129 +42,130 @@ test-domains:
   extends: .test-stage
   script:
     - python3 -m pytest src/tests/test_domains.py
-  only:
-    changes:
-      - src/domain.py
 
 test-dns:
   extends: .test-stage
   script:
     - python3 -m pytest src/tests/test_dns.py
-  only:
-    changes:
-      - src/dns.py
-      - src/utils/dns.py
 
 test-apps:
   extends: .test-stage
   script:
     - python3 -m pytest src/tests/test_apps.py
-  only:
-    changes:
-      - src/app.py
 
 test-appscatalog:
   extends: .test-stage
   script:
     - python3 -m pytest src/tests/test_app_catalog.py
-  only:
-    changes:
-      - src/app_calalog.py
 
 test-appurl:
   extends: .test-stage
   script:
     - python3 -m pytest src/tests/test_appurl.py
-  only:
-    changes:
-      - src/app.py
 
 test-questions:
   extends: .test-stage
   script:
     - python3 -m pytest src/tests/test_questions.py
-  only:
-    changes:
-      - src/utils/config.py
 
 test-app-config:
   extends: .test-stage
   script:
     - python3 -m pytest src/tests/test_app_config.py
-  only:
-    changes:
-      - src/app.py
-      - src/utils/config.py
 
 test-app-resources:
   extends: .test-stage
   script:
     - python3 -m pytest src/tests/test_app_resources.py
-  only:
-    changes:
-      - src/app.py
-      - src/utils/resources.py
 
 test-changeurl:
   extends: .test-stage
   script:
     - python3 -m pytest src/tests/test_changeurl.py
-  only:
-    changes:
-      - src/app.py
 
 test-backuprestore:
   extends: .test-stage
   script:
     - python3 -m pytest src/tests/test_backuprestore.py
-  only:
-    changes:
-      - src/backup.py
 
 test-permission:
   extends: .test-stage
   script:
     - python3 -m pytest src/tests/test_permission.py
-  only:
-    changes:
-      - src/permission.py
 
 test-settings:
   extends: .test-stage
   script:
     - python3 -m pytest src/tests/test_settings.py
-  only:
-    changes:
-      - src/settings.py
 
 test-user-group:
   extends: .test-stage
   script:
     - python3 -m pytest src/tests/test_user-group.py
-  only:
-    changes:
-      - src/user.py
 
 test-regenconf:
   extends: .test-stage
   script:
     - python3 -m pytest src/tests/test_regenconf.py
-  only:
-    changes:
-      - src/regenconf.py
 
 test-service:
   extends: .test-stage
   script:
     - python3 -m pytest src/tests/test_service.py
-  only:
-    changes:
-      - src/service.py
 
 test-ldapauth:
   extends: .test-stage
   script:
     - python3 -m pytest src/tests/test_ldapauth.py
-  only:
-    changes:
-      - src/authenticators/*.py
+
+test-sso-and-portalapi:
+  extends: .test-stage
+  script:
+    - python3 -m pytest src/tests/test_sso_and_portalapi.py
+
+########################################
+# COVERAGE REPORT
+########################################
+
+coverage:
+  stage: test
+  image: "core-tests"
+  needs:
+    # Yeah ... gotta list all of those individually ... https://gitlab.com/gitlab-org/gitlab/-/issues/332326
+    - job: test-domains
+      artifacts: true
+    - job: test-dns
+      artifacts: true
+    - job: test-apps
+      artifacts: true
+    - job: test-appscatalog
+      artifacts: true
+    - job: test-appurl
+      artifacts: true
+    - job: test-questions
+      artifacts: true
+    - job: test-app-config
+      artifacts: true
+    - job: test-app-resources
+      artifacts: true
+    - job: test-changeurl
+      artifacts: true
+    - job: test-backuprestore
+      artifacts: true
+    - job: test-permission
+      artifacts: true
+    - job: test-settings
+      artifacts: true
+    - job: test-user-group
+      artifacts: true
+    - job: test-regenconf
+      artifacts: true
+    - job: test-service
+      artifacts: true
+    - job: test-ldapauth
+      artifacts: true
+    - job: test-sso-and-portalapi
+      artifacts: true
+  script:
+    - coverage combine ./.coverage_*
+    - coverage report

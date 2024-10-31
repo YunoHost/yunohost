@@ -132,12 +132,8 @@ def main() -> bool:
             )
             continue
 
-        # Only broadcast IPv4 because IPv6 is buggy ... because we ain't using python3-ifaddr >= 0.1.7
-        # Buster only ships 0.1.6
-        # Bullseye ships 0.1.7
-        # To be re-enabled once we're on bullseye...
-        # ips: List[str] = interfaces[interface]["ipv4"] + interfaces[interface]["ipv6"]
-        ips: List[str] = interfaces[interface]["ipv4"]
+        # Broadcast IPv4 and IPv6
+        ips: List[str] = interfaces[interface]["ipv4"] + interfaces[interface]["ipv6"]
 
         # If at least one IP is listed
         if not ips:

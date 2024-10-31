@@ -192,7 +192,7 @@ authorityKeyIdentifier=keyid,issuer
 basicConstraints = CA:FALSE
 keyUsage = nonRepudiation, digitalSignature, keyEncipherment
 
-subjectAltName=DNS:yunohost.org,DNS:www.yunohost.org,DNS:ns.yunohost.org,DNS:xmpp-upload.yunohost.org
+subjectAltName=DNS:yunohost.org,DNS:www.yunohost.org,DNS:ns.yunohost.org
 
 [ v3_ca ]
 

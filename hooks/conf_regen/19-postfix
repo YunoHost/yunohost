@@ -22,19 +22,19 @@ do_pre_regen() {
     main_domain=$(cat /etc/yunohost/current_host)
 
     # Support different strategy for security configurations
-    export compatibility="$(yunohost settings get 'security.postfix.postfix_compatibility')"
+    export compatibility="$(jq -r '.postfix_compatibility' <<< "$YNH_SETTINGS")"
 
     # Add possibility to specify a relay
     # Could be useful with some isp with no 25 port open or more complex setup
     export relay_port=""
     export relay_user=""
     export relay_host=""
-    export relay_enabled="$(yunohost settings get 'email.smtp.smtp_relay_enabled' | int_to_bool)"
+    export relay_enabled="$(jq -r '.smtp_relay_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
     if [ "${relay_enabled}" == "True" ]; then
-        relay_host="$(yunohost settings get 'email.smtp.smtp_relay_host')"
-        relay_port="$(yunohost settings get 'email.smtp.smtp_relay_port')"
-        relay_user="$(yunohost settings get 'email.smtp.smtp_relay_user')"
-        relay_password="$(yunohost settings get 'email.smtp.smtp_relay_password')"
+        relay_host="$(jq -r '.smtp_relay_host' <<< "$YNH_SETTINGS")"
+        relay_port="$(jq -r '.smtp_relay_port' <<< "$YNH_SETTINGS")"
+        relay_user="$(jq -r '.smtp_relay_user' <<< "$YNH_SETTINGS")"
+        relay_password="$(jq -r '.smtp_relay_password' <<< "$YNH_SETTINGS")"
 
         # Avoid to display "Relay account paswword" to other users
         touch ${postfix_dir}/sasl_passwd
@@ -69,7 +69,7 @@ do_pre_regen() {
             > "${default_dir}/postsrsd"
 
     # adapt it for IPv4-only hosts
-    ipv6="$(yunohost settings get 'email.smtp.smtp_allow_ipv6' | int_to_bool)"
+    ipv6="$(jq -r '.smtp_allow_ipv6' <<< "$YNH_SETTINGS" | int_to_bool)"
     if [ "$ipv6" == "False" ] || [ ! -f /proc/net/if_inet6 ]; then
         sed -i \
             's/ \[::ffff:127.0.0.0\]\/104 \[::1\]\/128//g' \

@@ -3,24 +3,39 @@
 ########################################
 # later we must fix lint and format-check jobs and remove "allow_failure"
 
-lint39:
+actionsmap:
+  stage: lint
+  image: "build-and-lint"
+  needs: []
+  script:
+    - python3 -c 'import yaml; yaml.safe_load(open("share/actionsmap.yml"))'
+    - python3 -c 'import yaml; yaml.safe_load(open("share/actionsmap-portal.yml"))'
+
+lint311:
   stage: lint
   image: "build-and-lint"
   needs: []
   allow_failure: true
   script:
-    - tox -e py39-lint
+    - tox -e py311-lint
 
-invalidcode39:
+invalidcode311:
   stage: lint
   image: "build-and-lint"
   needs: []
   script:
-    - tox -e py39-invalidcode
+    - tox -e py311-invalidcode
 
 mypy:
   stage: lint
   image: "build-and-lint"
   needs: []
   script:
-    - tox -e py39-mypy
+    - tox -e py311-mypy
+
+i18n-keys:
+  stage: lint
+  image: "build-and-lint"
+  needs: []
+  script:
+    - python3 maintenance/missing_i18n_keys.py --check

@@ -21,7 +21,7 @@ import os
 import time
 import yaml
 import subprocess
-
+from logging import getLogger
 from glob import glob
 from datetime import datetime
 
@@ -29,7 +29,6 @@ from moulinette import m18n
 from yunohost.diagnosis import diagnosis_ignore, diagnosis_unignore
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.process import check_output
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import (
     read_file,
     append_to_file,
@@ -43,7 +42,7 @@ MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 SERVICES_CONF = "/etc/yunohost/services.yml"
 SERVICES_CONF_BASE = "/usr/share/yunohost/conf/yunohost/services.yml"
 
-logger = getActionLogger("yunohost.service")
+logger = getLogger("yunohost.service")
 
 
 def service_add(
@@ -715,10 +714,6 @@ def _get_services():
             "test_conf": f"php-fpm{version} --test",  # ofc the service is phpx.y-fpm but the program is php-fpmx.y because why not ...
             "category": "web",
         }
-
-    # Ignore metronome entirely if XMPP was disabled on all domains
-    if "metronome" in services and not glob("/etc/metronome/conf.d/*.cfg.lua"):
-        del services["metronome"]
 
     # Remove legacy /var/log/daemon.log and /var/log/syslog from log entries
     # because they are too general. Instead, now the journalctl log is

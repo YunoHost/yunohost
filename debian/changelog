@@ -1,3 +1,132 @@
+yunohost (12.0.6) stable; urgency=low
+
+  - Sync with bullseye branch
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 31 Oct 2024 18:04:21 +0100
+
+yunohost (12.0.5.3) stable; urgency=low
+
+  - typo in generate-helpers-doc (ab7bbefe5)
+  - Merge branch 'dev' into bookworm (9d24a071d)
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, Kayou)
+
+ -- tituspijean <tituspijean@yunohost.org>  Wed, 30 Oct 2024 21:46:48 +0100
+
+yunohost (12.0.5.2) testing; urgency=low
+
+  - typo² x_x
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 30 Oct 2024 01:49:37 +0100
+
+yunohost (12.0.5.1) testing; urgency=low
+
+  - typo x_x
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 30 Oct 2024 01:21:37 +0100
+
+yunohost (12.0.5) testing; urgency=low
+
+  - sso: ihatemoney and owncloud needs the basic auth workaround ([#1984](http://github.com/YunoHost/yunohost/pull/1984))
+  - sso: pass email, username and fullname to ssowat via the JWT such that SSOwat can define custom HTTP headers ([#1981](http://github.com/YunoHost/yunohost/pull/1981))
+  - portal: fix backup and restore portal settings (d0005e66a)
+  - portal: fix cookie validity issues by defining 'maxage' + re-setting the cookie every time the validity is extended, such that the client always know wether the cookie is expired or not (deeabfabb)
+  - portal: support different style/theme for the app tiles via a portal setting ([#1986](http://github.com/YunoHost/yunohost/pull/1986))
+  - portal: custom css setting couldnt be emptied (f64cc3f46)
+  - postinstall/tos: Allow bypassing the terms of services at postinstall time ([#1966](http://github.com/YunoHost/yunohost/pull/1966))
+  - helpersv2.1/fail2ban: Fix reload-or-restart match line (4105df9d8)
+  - helpers/nginx: yoloremove the REMOTE_USER lines from app's conf because it's already provided by /etc/nginx/fastcgi_params + make sure it is mapped to the YNH_USER from SSOwat rather than $remote_user (cd367575f)
+  - configpanel: better error message when uploading a file from unsupported mimetype (d9f59f3c1)
+  - i18n: Translations updated for Basque, Chinese (Simplified), French, Kabyle, Turkish
+
+  Thanks to all contributors <3 ! (Aksel Azwaw, axolotle, Éric Gaspar, Félix Piédallu, Furkan Samed Acet, Jinx, Josué Tille, Kay0u, ljf, Mateusz, oleole39, OniriCorpe, Tagada, Thatoo, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 30 Oct 2024 00:12:27 +0100
+
+yunohost (12.0.4.1) testing; urgency=low
+
+  - ssowat: allow secondaries instances of apps_that_need_external_auth_maybe to be recognized ([#1954](http://github.com/YunoHost/yunohost/pull/1954))
+  - domains: fix missing translation param in domain add (cebd8864c)
+
+  Thanks to all contributors <3 ! (axolotle, Nathanaël H.)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 25 Sep 2024 21:04:38 +0200
+
+yunohost (12.0.4) testing; urgency=low
+
+  - general: add TOS acknowledgement during postinstall, dyndns domain creation, and migration for existing installs ([#1949](http://github.com/YunoHost/yunohost/pull/1949))
+  - domains: fix `custom_css` may not be in the the form when changing other domain panel values (d5d6fb87a)
+  - domains: add option to install a lets encrypt certificate when adding a subdomain of an already added domain ([#1936](http://github.com/YunoHost/yunohost/pull/1936))
+  - configpanels: fix boolean option in context evaluation for custom yes/no values (f19b6f84a)
+  - dns: make auto dns feature optional ([#1951](http://github.com/YunoHost/yunohost/pull/1951))
+  - cli: Add yunohost-portal to the --version output ([#1946](http://github.com/YunoHost/yunohost/pull/1946))
+
+  Thanks to all contributors <3 ! (axolotle, Kay0u, Mer, selfhoster1312)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 16 Sep 2024 18:18:14 +0200
+
+yunohost (12.0.3) testing; urgency=low
+
+  - (sync bullseye changes since 12.0.2)
+  - apps: magically handle yarn as a regular package instead of an 'extra' repo now that yarn's repo is in the core ([#1888](http://github.com/YunoHost/yunohost/pull/1888))
+  - portalapi: we don't need absolute URLs for app logos ? (This ain't working when enabling the 'show other domains apps' because of CSP) (bc93a2e07)
+  - portalapi: fix portal_user_intro not being sent when authenticated, hence not displayed at all (cdf443c86)
+  - portal/domain settings: Improve explanation about search engine (24fb87725)
+  - portal/domain settings: Reduce theme list because there were too many (cf change in yunohost-portal) (9973cc703)
+  - portal/domain settings: add proper i18n string + help for new settings (831131476, ff0388556)
+  - domain settings: add a title to the Email section to have a separation w.r.t. the portal settings (279f33288)
+  - portal: fix extra app tiles not being displayed, gotta use the perm id as key, not just the app id (credit rodinux) (603c64e34)
+  - portal/sso: with the public app page, fix the root of the domain not redirecting to /yunohost/sso (a6b7ba843)
+  - portal: allow to configure custom CSS from the domain config panel (8f636561d)
+  - portal: change the way the new 'public apps' page in the portal is configured: add a simple bool toggle instead of having the 'public apps page' as a default app option, which allows to still configure a default app while the portal has the public apps page (748a20d86)
+  - ci: fix test_permission_propagation_on_ssowat, auth header tests (656e5c75d, 9e9313067, 44920d891)
+  - ci: optimizations, cleanups, partial refactor because of new CI image build process (fe9a4fba5, 059818254, a9e71e88d, 7f2da0af7, 94594e5a3, d639e1c42, 4f3b9df3f,  5a6a915af, 55e7e798f, 2fe24424f, 4fc929005, fd040b864, 0bbc14f54, 2976e7bf6)
+  - quality: add type hints to user.py (1ba75df0e, d4f39da20, 611846aa1, efce7f9f0, fe1c04fb2)
+  - i18n: Translations updated for Basque, French, Galician, Greek, Indonesian, Russian, Turkish
+
+  Thanks to all contributors <3 ! (Ali Çırçır, cjdw, craftrac, Emmanuel Averty, Félix Piédallu, Ivan Davydov, José M, Josué Tille, ljf, OniriCorpe, ppr, selfhoster1312, Tagada, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 31 Aug 2024 19:45:00 +0200
+
+yunohost (12.0.2) testing; urgency=low
+
+  - Cleanup redis regen conf since redis ain't installed by default anymore (7b50c4eb6)
+  - bullseye->bookworm: add a trick to flag the migration as done if it's still marked as pending (0503a38a7)
+  - Sync with main branch
+
+  Thanks to all contributors <3 ! (Kayou)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 01 Aug 2024 18:08:33 +0200
+
+yunohost (12.0.1) testing; urgency=low
+
+  - The user portal and SSO system have been reworked and split into three distinct pieces
+     - SSOwat only handling only the SSO/ACL logic (nginx lua middleware)
+     - A new “portal API” (yunohost-portal-api) service delivering authentication cookies and allowing users to retrieve/update infos
+     - A new portal front end (yunohost-portal)
+     - More information on the release note on the forum
+  - The base system does not install Mysql/Mariadb and PHP anymore
+  - Rspamd (antispam system) and Metronome (XMPP server) are not part of the core anymore. Instead, they are now separate applications : rspamd_ynh and metronome_ynh
+  - webadmin: rework cookie/session expiration mechanism. Cookies are now still valid after restarting the API (preventing clumsy disconnect during self-upgrades) and the cookie validity is automatically extended every time an API request is performed.
+  - mail: DKIM email signing is now done using opendkim instead of rspamd
+  - various compatibility tweakings for Bookworm
+  - regenconf: update nginx and dovecot ciphers according to Mozilla recommendation
+  - regenconf: update fail2ban config
+  - configpanels: refactor to use pydantic for more typing and consistency, add proper autogenerated doc
+  - apps: Yarn third-party repo is now available by default in apt config just like Sury, no need for an extra apt resource thingy
+  - various legacy cleanups (more info on the release note on the forum)
+  - perf: minimize regen-conf calls to yunohost settings get, and other misc lazy-loading optimizations
+  - quality: simplify the logging mess
+  - quality: rework ci tests workflow
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 26 Jul 2024 22:40:16 +0200
+
+yunohost (12.0.0) unstable; urgency=low
+
+  - Tmp changelog to prepare Bookworm
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
+
 yunohost (11.3.0.2) stable; urgency=low
 
   -  Fix migration by early-importing _ldap ([#1987](http://github.com/YunoHost/yunohost/pull/1987))

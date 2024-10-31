@@ -30,10 +30,10 @@ from glob import glob
 from collections import OrderedDict
 from functools import reduce
 from packaging import version
+from logging import getLogger
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.text import random_ascii
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import (
     read_file,
     mkdir,
@@ -78,7 +78,6 @@ from yunohost.utils.system import (
     binary_to_human,
     space_used_by_directory,
 )
-from yunohost.settings import settings_get
 
 BACKUP_PATH = "/home/yunohost.backup"
 ARCHIVES_PATH = f"{BACKUP_PATH}/archives"
@@ -86,7 +85,7 @@ APP_MARGIN_SPACE_SIZE = 100  # In MB
 CONF_MARGIN_SPACE_SIZE = 10  # IN MB
 POSTINSTALL_ESTIMATE_SPACE_SIZE = 5  # In MB
 MB_ALLOWED_TO_ORGANIZE = 10
-logger = getActionLogger("yunohost.backup")
+logger = getLogger("yunohost.backup")
 
 
 class BackupRestoreTargetsManager:
@@ -1201,9 +1200,6 @@ class RestoreManager:
         try:
             self._postinstall_if_needed()
 
-            # Apply dirty patch to redirect php5 file on php7
-            self._patch_legacy_php_versions_in_csv_file()
-
             self._restore_system()
             self._restore_apps()
         except Exception as e:
@@ -1213,39 +1209,6 @@ class RestoreManager:
             )
         finally:
             self.clean()
-
-    def _patch_legacy_php_versions_in_csv_file(self):
-        """
-        Apply dirty patch to redirect php5 and php7.0 files to php7.4
-        """
-        from yunohost.utils.legacy import LEGACY_PHP_VERSION_REPLACEMENTS
-
-        backup_csv = os.path.join(self.work_dir, "backup.csv")
-
-        if not os.path.isfile(backup_csv):
-            return
-
-        replaced_something = False
-        with open(backup_csv) as csvfile:
-            reader = csv.DictReader(csvfile, fieldnames=["source", "dest"])
-            newlines = []
-            for row in reader:
-                for pattern, replace in LEGACY_PHP_VERSION_REPLACEMENTS:
-                    if pattern in row["source"]:
-                        replaced_something = True
-                        row["source"] = row["source"].replace(pattern, replace)
-
-                newlines.append(row)
-
-        if not replaced_something:
-            return
-
-        with open(backup_csv, "w") as csvfile:
-            writer = csv.DictWriter(
-                csvfile, fieldnames=["source", "dest"], quoting=csv.QUOTE_ALL
-            )
-            for row in newlines:
-                writer.writerow(row)
 
     def _restore_system(self):
         """Restore user and system parts"""
@@ -1383,8 +1346,6 @@ class RestoreManager:
                              name should be already install)
         """
         from yunohost.utils.legacy import (
-            _patch_legacy_php_versions,
-            _patch_legacy_php_versions_in_settings,
             _patch_legacy_helpers,
         )
         from yunohost.user import user_group_list
@@ -1422,10 +1383,6 @@ class RestoreManager:
 
         # Attempt to patch legacy helpers...
         _patch_legacy_helpers(app_settings_in_archive)
-
-        # Apply dirty patch to make php5 apps compatible with php7
-        _patch_legacy_php_versions(app_settings_in_archive)
-        _patch_legacy_php_versions_in_settings(app_settings_in_archive)
 
         # Delete _common.sh file in backup
         common_file = os.path.join(app_backup_in_archive, "_common.sh")
@@ -1950,6 +1907,8 @@ class TarBackupMethod(BackupMethod):
 
     @property
     def _archive_file(self):
+        from yunohost.settings import settings_get
+
         if isinstance(self.manager, RestoreManager):
             return self.manager.archive_path
 
@@ -2581,9 +2540,6 @@ def backup_info(name, with_details=False, human_readable=False):
             for category in ["apps", "system"]:
                 for name, key_info in info[category].items():
                     if category == "system":
-                        # Stupid legacy fix for weird format between 3.5 and 3.6
-                        if isinstance(key_info, dict):
-                            key_info = key_info.keys()
                         info[category][name] = key_info = {"paths": key_info}
                     else:
                         info[category][name] = key_info

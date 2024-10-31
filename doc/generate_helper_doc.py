@@ -2,7 +2,6 @@
 
 import sys
 import os
-import glob
 import datetime
 import subprocess
 
@@ -269,7 +268,7 @@ def main():
         for subsection in section["subsections"]:
             print(f"Parsing {subsection} ...")
             helper_file = f"../helpers/helpers.v{version}.d/{subsection}"
-            assert os.path.isfile(helper_file), f"Uhoh, {file} doesn't exists?"
+            assert os.path.isfile(helper_file), f"Uhoh, {helper_file} doesn't exists?"
             p = Parser(helper_file)
             p.parse_blocks()
             for b in p.blocks:

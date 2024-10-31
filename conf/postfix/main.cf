@@ -30,8 +30,8 @@ smtpd_tls_chain_files =
 tls_server_sni_maps = hash:/etc/postfix/sni
 
 {% if compatibility == "intermediate" %}
-# generated 2020-08-18, Mozilla Guideline v5.6, Postfix 3.4.14, OpenSSL 1.1.1d, intermediate configuration
-# https://ssl-config.mozilla.org/#server=postfix&version=3.4.14&config=intermediate&openssl=1.1.1d&guideline=5.6
+# generated 2023-06-13, Mozilla Guideline v5.7, Postfix 3.7.5, OpenSSL 3.0.9, intermediate configuration
+# https://ssl-config.mozilla.org/#server=postfix&version=3.7.5&config=intermediate&openssl=3.0.9&guideline=5.7
 
 smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1
 smtpd_tls_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1
@@ -41,10 +41,10 @@ smtpd_tls_mandatory_ciphers = medium
 # not actually 1024 bits, this applies to all DHE >= 1024 bits
 smtpd_tls_dh1024_param_file = /usr/share/yunohost/ffdhe2048.pem
 
-tls_medium_cipherlist = ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
+tls_medium_cipherlist = ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305
 {% else %}
-# generated 2020-08-18, Mozilla Guideline v5.6, Postfix 3.4.14, OpenSSL 1.1.1d, modern configuration
-# https://ssl-config.mozilla.org/#server=postfix&version=3.4.14&config=modern&openssl=1.1.1d&guideline=5.6
+# generated 2023-06-13, Mozilla Guideline v5.7, Postfix 3.7.5, OpenSSL 3.0.9, modern configuration
+# https://ssl-config.mozilla.org/#server=postfix&version=3.7.5&config=modern&openssl=3.0.9&guideline=5.7
 
 smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1, !TLSv1.2
 smtpd_tls_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1, !TLSv1.2
@@ -182,9 +182,10 @@ smtp_header_checks = regexp:/etc/postfix/header_checks
 smtp_reply_filter = pcre:/etc/postfix/smtp_reply_filter
 
 # Rmilter
-milter_mail_macros =  i {mail_addr} {client_addr} {client_name} {auth_authen}
+milter_mail_macros = i {mail_addr} {client_addr} {client_name} {auth_authen} {auth_type}
 milter_protocol = 6
-smtpd_milters = inet:localhost:11332
+smtpd_milters = inet:localhost:8891
+non_smtpd_milters = inet:localhost:8891
 
 # Skip email without checking if milter has died
 milter_default_action = accept

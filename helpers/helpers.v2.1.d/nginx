@@ -26,6 +26,11 @@ ynh_config_add_nginx() {
         ynh_replace --match="^#root_path_only" --replace="" --file="$finalnginxconf"
     fi
 
+    # Delete REMOTE_USER mapping, it's already provided by
+    # /etc/nginx/fastcgi_params which all PHP apps include, and maps to the
+    # appropriate YNH_USER HTTP header instead of $remote_user
+    sed -i '/fastcgi_param\s*REMOTE_USER/d' "$finalnginxconf"
+
     ynh_store_file_checksum "$finalnginxconf"
 
     ynh_systemctl --service=nginx --action=reload

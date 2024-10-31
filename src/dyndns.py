@@ -22,10 +22,10 @@ import glob
 import base64
 import subprocess
 import hashlib
+from logging import getLogger
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import write_to_file, rm, chown, chmod
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -35,7 +35,7 @@ from yunohost.utils.dns import dig, is_yunohost_dyndns_domain
 from yunohost.log import is_unit_operation
 from yunohost.regenconf import regen_conf
 
-logger = getActionLogger("yunohost.dyndns")
+logger = getLogger("yunohost.dyndns")
 
 DYNDNS_PROVIDER = "dyndns.yunohost.org"
 DYNDNS_DNS_AUTH = ["ns0.yunohost.org", "ns1.yunohost.org"]
@@ -471,7 +471,7 @@ def dyndns_update(
     # Delete custom DNS records, we don't support them (have to explicitly
     # authorize them on dynette)
     for category in dns_conf.keys():
-        if category not in ["basic", "mail", "xmpp", "extra"]:
+        if category not in ["basic", "mail", "extra"]:
             del dns_conf[category]
 
     # Delete the old records for all domain/subdomains

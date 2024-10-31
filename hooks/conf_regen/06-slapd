@@ -8,10 +8,6 @@ config="/usr/share/yunohost/conf/slapd/config.ldif"
 db_init="/usr/share/yunohost/conf/slapd/db_init.ldif"
 
 do_init_regen() {
-    if [[ $EUID -ne 0 ]]; then
-        echo "You must be root to run this script" 1>&2
-        exit 1
-    fi
 
     do_pre_regen ""
 
