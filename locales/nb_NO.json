@@ -4,7 +4,6 @@
     "app_already_installed": "{app} er allerede installert",
     "app_already_up_to_date": "{app} er allerede oppdatert",
     "app_argument_invalid": "Velg en gydlig verdi for argumentet '{name}': {error}",
-    "app_argument_required": "Argumentet '{name}' er påkrevd",
     "app_id_invalid": "Ugyldig program-ID",
     "dyndns_key_not_found": "Fant ikke DNS-nøkkel for domenet",
     "app_not_correctly_installed": "{app} ser ikke ut til å ha blitt installert på riktig måte",
