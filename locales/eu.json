@@ -149,7 +149,7 @@
     "app_manifest_install_ask_path": "Aukeratu aplikazio hau instalatzeko URLaren bidea (domeinuaren atzeko aldean)",
     "app_manifest_install_ask_admin": "Aukeratu administratzaile bat aplikazio honetarako",
     "app_manifest_install_ask_password": "Aukeratu administrazio-pasahitz bat aplikazio honetarako",
-    "ask_user_domain": "Erabiltzailearen posta elektroniko eta XMPP konturako erabiliko den domeinua",
+    "ask_user_domain": "Erabiltzailearen posta elektronikorako erabiliko den domeinua",
     "app_action_cannot_be_ran_because_required_services_down": "{services} zerbitzuak martxan egon beharko lirateke eragiketa hau exekutatu ahal izateko. Saia zaitez zerbitzuok berrabiarazten (eta ikertu zergatik ez diren abiarazi).",
     "apps_already_up_to_date": "Aplikazio guztiak egunean daude lehendik ere",
     "app_full_domain_unavailable": "Aplikazio honek bere domeinu propioa behar du, baina beste aplikazio batzuk daude instalatuta lehendik ere '{domain}' domeinuan. Azpidomeinu bat erabil zenezake instalatu nahi duzun aplikaziorako.",
@@ -648,7 +648,7 @@
     "global_settings_reset_success": "Berrezarri defektuzko ezarpenak",
     "global_settings_setting_backup_compress_tar_archives": "Konprimatu babeskopiak",
     "config_forbidden_readonly_type": "'{type}' mota ezin da ezarri readonly bezala; beste mota bat erabili balio hau emateko (argudioaren ida: '{id}').",
-    "diagnosis_using_stable_codename": "<cmd>apt</cmd> (sistemaren pakete kudeatzailea) 'stable' (egonkorra) izen kodea duten paketeak instalatzeko ezarrita dago une honetan, eta ez uneko Debianen bertsioaren (bullseye) izen kodea.",
+    "diagnosis_using_stable_codename": "<cmd>apt</cmd> (sistemaren pakete kudeatzailea) 'stable' (egonkorra) izen-kodea duten paketeak instalatzeko ezarrita dago une honetan, eta ez uneko Debianen bertsioaren (bookworm) izen-kodea.",
     "diagnosis_using_yunohost_testing": "<cmd>apt</cmd> (sistemaren pakete kudeatzailea) YunoHosten muinerako 'testing' (proba) izen kodea duten paketeak instalatzeko ezarrita dago une honetan.",
     "diagnosis_using_yunohost_testing_details": "Ez dago arazorik zertan ari zaren baldin badakizu, baina arretaz irakurri oharrak YunoHosten eguneraketak instalatu baino lehen! 'testing' (proba) bertsioak ezgaitu nahi badituzu, kendu <cmd>testing</cmd> gakoa <cmd>/etc/apt/sources.list.d/yunohost.list</cmd> fitxategitik.",
     "global_settings_setting_smtp_allow_ipv6": "Gaitu IPv6",
@@ -682,7 +682,7 @@
     "log_settings_set": "Aplikatu ezarpenak",
     "password_confirmation_not_the_same": "Pasahitzak ez datoz bat",
     "password_too_long": "Aukeratu 127 karaktere baino laburragoa den pasahitz bat",
-    "diagnosis_using_stable_codename_details": "Ostatatzaileak zerbait oker ezarri duenean gertatu ohi da hau. Arriskutsua da, Debianen datorren bertsioa 'estable' (egonkorra) bilakatzen denean, <cmd>apt</cmd>-k sistemaren pakete guztiak bertsio-berritzen saiatuko da, beharrezko migrazio-prozedurarik burutu gabe. Debianen gordailuan apt iturria editatzen konpontzea da gomendioa, <cmd>stable</cmd> gakoa <cmd>bullseye</cmd> gakoarekin ordezkatuz. Ezarpen-fitxategia <cmd>/etc/apt/sources.list</cmd> izan beharko litzateke, edo <cmd>/etc/apt/sources.list.d/</cmd> direktorioko fitxategiren bat.",
+    "diagnosis_using_stable_codename_details": "Ostatatzaileak zerbait oker ezarri duenean gertatu ohi da hau. Arriskutsua da, Debianen datorren bertsioa 'estable' (egonkorra) bilakatzen denean, <cmd>apt</cmd>-k sistemaren pakete guztiak bertsio-berritzen saiatuko da, beharrezko migrazio-prozedurarik burutu gabe. Debianen gordailuan apt iturria editatzen konpontzea da gomendioa, <cmd>stable</cmd> gakoa <cmd>bookworm</cmd> gakoarekin ordezkatuta. Ezarpen-fitxategia <cmd>/etc/apt/sources.list</cmd> izan beharko litzateke, edo <cmd>/etc/apt/sources.list.d/</cmd> direktorioko fitxategiren bat.",
     "group_update_aliases": "'{group}' taldearen aliasak eguneratzen",
     "group_no_change": "Ez da ezer aldatu behar '{group}' talderako",
     "app_not_enough_ram": "Aplikazio honek {required} RAM behar ditu instalatu edo bertsio-berritzeko, baina {current} bakarrik daude erabilgarri une honetan.",
@@ -764,5 +764,10 @@
     "global_settings_setting_tls_passthrough_enabled_help": "Funtzio aurreratua da reverse-proxy erabiliz domeinu oso bat beste makina batera desbideratzeko *trafikoa deszifratu gabe*. Erabilgarria da IP berarekin makina bat baino gehiago zerbitzatu nahi dituzunean, makina bakoitzak dagozkion SSL amaierak kudeatzeko aukera mantenduz.",
     "global_settings_setting_tls_passthrough_list": "Birbidalketen zerrenda",
     "global_settings_setting_tls_passthrough_list_help": "Zerrendak DOMEINUA;HELBURUA;ATAKA egitura izan behar du. Adibidez: domeinua.eus;192.168.1.42;443 edo domeinua.eus;zerbitzaria.local;8123",
-    "global_settings_setting_tls_passthrough_explain": "Ezaugarri hau AURRERATUA eta ESPERIMENTALA da, eta aldaketa handiak eragingo ditu zerbitzari honen nginx konfigurazioan. EZ erabili ez badakizu zertan ari zaren! Kontuan izan fail2ban ezin dela inplementatu proxy atzeko zerbitzarian (iptables-ek ezin dute trafiko maltzurra debekatu, IP pakete guztiak zerbitzari nagusitik datozelaren itxura dutelako). Horrez gain, oraingoz, proxy atzeko zerbitzariaren nginx konfigurazioa eskuz moldatu behar da `proxy_protocol` onartzeko."
+    "global_settings_setting_tls_passthrough_explain": "Ezaugarri hau AURRERATUA eta ESPERIMENTALA da, eta aldaketa handiak eragingo ditu zerbitzari honen nginx konfigurazioan. EZ erabili ez badakizu zertan ari zaren! Kontuan izan fail2ban ezin dela inplementatu proxy atzeko zerbitzarian (iptables-ek ezin dute trafiko maltzurra debekatu, IP pakete guztiak zerbitzari nagusitik datozelaren itxura dutelako). Horrez gain, oraingoz, proxy atzeko zerbitzariaren nginx konfigurazioa eskuz moldatu behar da `proxy_protocol` onartzeko.",
+    "confirm_tos_acknowledgement": "Zerbitzuaren baldintzak irakurri eta ulertzen ditut [{answers}]",
+    "domain_config_cert_name": "Ziurtagiria",
+    "domain_config_custom_css": "CSS estilo-orri pertsonalizatua",
+    "domain_config_dns_name": "DNSa",
+    "domain_config_enable_public_apps_page": "Erakutsi bisitariei aplikazio publikoen zerrenda"
 }
