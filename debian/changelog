@@ -1,3 +1,11 @@
+yunohost (11.3.0.1) stable; urgency=low
+
+  - (Forgot the commit that actually enabled the migration @_@) (00243961c)
+
+  Thanks to all contributors <3 ! (Félix Piédallu)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 31 Oct 2024 16:49:51 +0100
+
 yunohost (11.3.0) stable; urgency=low
 
   - Enable migration to Bookworm
