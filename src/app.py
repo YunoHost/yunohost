@@ -250,7 +250,7 @@ def app_info(app, full=False, upgradable=False):
     ret["label"] = permissions.get(app + ".main", {}).get("label")
 
     if not ret["label"]:
-        logger.warning(f"Failed to get label for app {app} ?")
+        logger.debug(f"Failed to get label for app {app}, maybe it is not a webapp?")
         ret["label"] = local_manifest["name"]
     return ret
 
