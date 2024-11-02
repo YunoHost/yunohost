@@ -327,7 +327,7 @@ ynh_install_mongo() {
         if (($(bc <<< "$current_version < $mongo_version"))); then
             if (($(bc <<< "scale = 0 ; x = $mongo_version / 1 - $current_version / 1; x > 1.0"))); then
                 # Mongo only support upgrading a major version to another
-                ynh_print_err --message="Upgrading Mongo from version  $current_version to $mongo_version is not supported"
+                ynh_die "Upgrading Mongo from version  $current_version to $mongo_version is not supported"
                 install_package=false
             else
                 ynh_print_info --message="Upgrading Mongo from version $current_version to $mongo_version"
