@@ -597,12 +597,15 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
                 sanlist += result["stdreturn"]
 
     if sanlist:
+        subsanlist = [f"DNS:{sub}.{domain}" for sub in sanlist if "." not in sub]
+        domainsanlist = [f"DNS:{domain}" for domain in sanlist if "." in domain]
+        sanlist = ", ".join(subsanlist+domainsanlist)
         csr.add_extensions(
             [
                 crypto.X509Extension(
                     b"subjectAltName",
                     False,
-                    (", ".join([f"DNS:{sub}.{domain}" for sub in sanlist])).encode(
+                    sanlist.encode(
                         "utf-8"
                     ),
                 )
