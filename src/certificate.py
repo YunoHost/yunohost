@@ -598,6 +598,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
 
     if sanlist:
         subsanlist = [f"DNS:{sub}.{domain}" for sub in sanlist if "." not in sub]
+        # This is meant for situation such as cryptpad where we need to be able to have a cert for sandbox-domain.tld (with a dash, not just sandbox.domain.tld)
         domainsanlist = [f"DNS:{domain}" for domain in sanlist if "." in domain]
         sanlist = ", ".join(subsanlist+domainsanlist)
         csr.add_extensions(
