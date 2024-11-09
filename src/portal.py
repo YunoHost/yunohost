@@ -35,6 +35,7 @@ from yunohost.utils.password import (
     assert_password_is_strong_enough,
     _hash_user_password,
 )
+from yunohost.settings import settings_get
 
 logger = logging.getLogger("portal")
 
@@ -150,6 +151,10 @@ def portal_me():
     for infos in apps.values():
         del infos["users"]
 
+    is_allowed_to_edit_main_email = settings_get("security.portal.portal_allow_edit_email")
+    is_allowed_to_edit_mail_alias = settings_get("security.portal.portal_allow_edit_email_alias")
+    is_allowed_to_edit_mail_forward = settings_get("security.portal.portal_allow_edit_email_forward")
+
     result_dict = {
         "username": username,
         "fullname": user["cn"][0],
@@ -158,6 +163,9 @@ def portal_me():
         "mailforward": user["maildrop"][1:],
         "groups": groups,
         "apps": apps,
+        "can_edit_main_email": is_allowed_to_edit_main_email,
+        "can_edit_email_alias": is_allowed_to_edit_mail_alias,
+        "can_edit_email_forward": is_allowed_to_edit_mail_forward,
     }
 
     # FIXME / TODO : add mail quota status ?
@@ -173,6 +181,7 @@ def portal_me():
 
 def portal_update(
     fullname: Union[str, None] = None,
+    mainemail: Union[str, None] = None,
     mailforward: Union[list[str], None] = None,
     mailalias: Union[list[str], None] = None,
     currentpassword: Union[str, None] = None,
@@ -198,14 +207,47 @@ def portal_update(
             (firstname + " " + lastname).strip()
         ]
 
+    new_mails = current_user["mail"]
+
+    if mainemail is not None:
+        is_allowed_to_edit_main_email = settings_get("security.portal.portal_allow_edit_email")
+        if is_allowed_to_edit_main_email != 1:
+            raise YunohostValidationError("mail_edit_operation_unauthorized")
+
+        if mainemail not in new_mails:
+            local_part, domain = mainemail.split("@")
+            if local_part in ADMIN_ALIASES:
+                raise YunohostValidationError("mail_unavailable")
+
+            try:
+                _get_ldap_interface().validate_uniqueness({"mail": mainemail})
+            except YunohostError:
+                raise YunohostValidationError(
+                    "mail_already_exists", mail=mainemail
+                )
+
+            if domain not in domains or not user_is_allowed_on_domain(username, domain):
+                raise YunohostValidationError("mail_alias_unauthorized", domain=domain)
+            new_mails[0] = mainemail
+        else:
+            # email already exist in the list we just move it on the first place
+            new_mails.remove(mainemail)
+            new_mails.insert(0, mainemail)
+
+        new_attr_dict["mail"] = new_mails
+
     if mailalias is not None:
+        is_allowed_to_edit_mail_alias = settings_get("security.portal.portal_allow_edit_email_alias")
+        if is_allowed_to_edit_mail_alias != 1:
+            raise YunohostValidationError("mail_edit_operation_unauthorized")
+
         mailalias = [mail.strip() for mail in mailalias if mail and mail.strip()]
         # keep first current mail unaltered
-        mails = [current_user["mail"][0]]
+        mails = [new_mails[0]]
 
         for index, mail in enumerate(mailalias):
-            if mail in current_user["mail"]:
-                if mail != current_user["mail"][0] and mail not in mails:
+            if mail in new_mails:
+                if mail != new_mails[0] and mail not in mails:
                     mails.append(mail)
                 continue  # already in mails, skip validation
 
@@ -230,6 +272,10 @@ def portal_update(
         new_attr_dict["mail"] = mails
 
     if mailforward is not None:
+        is_allowed_to_edit_mail_forward = settings_get("security.portal.portal_allow_edit_email_forward")
+        if is_allowed_to_edit_mail_forward != 1:
+            raise YunohostValidationError("mail_edit_operation_unauthorized")
+
         new_attr_dict["maildrop"] = [current_user["maildrop"][0]] + [
             mail.strip()
             for mail in mailforward

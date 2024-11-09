@@ -71,6 +71,18 @@ i18n = "global_settings_setting"
         optional = true
         default = ""
 
+    [security.portal]
+        [security.portal.portal_allow_edit_email]
+        type = "boolean"
+
+        [security.portal.portal_allow_edit_email_alias]
+        type = "boolean"
+        default = 1
+
+        [security.portal.portal_allow_edit_email_forward]
+        type = "boolean"
+        default = 1
+
     [security.root_access]
         [security.root_access.root_access_explain]
         type = "alert"
