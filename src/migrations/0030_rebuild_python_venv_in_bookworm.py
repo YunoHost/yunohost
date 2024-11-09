@@ -57,6 +57,8 @@ class MyMigration(Migration):
 
     ignored_python_apps = [
         "diacamma",  # Does an ugly sed in the sites-packages/django_auth_ldap3_ad
+        "homeassistant", # uses a custom version of Python
+        "immich", # uses a custom version of Python
         "kresus",  # uses virtualenv instead of venv, with --system-site-packages (?)
         "librephotos",  # runs a setup.py ? not sure pip freeze / pip install -r requirements.txt is gonna be equivalent ..
         "mautrix",  # install stuff from a .tar.gz
