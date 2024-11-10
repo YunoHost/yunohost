@@ -40,7 +40,8 @@ more_set_headers "X-Frame-Options : SAMEORIGIN";
 {% if experimental == "True" %}
 more_set_headers "Permissions-Policy : fullscreen=(), geolocation=(), payment=(), accelerometer=(), battery=(), magnetometer=(), usb=(), interest-cohort=()";
 # Force HTTPOnly and Secure for all cookies
-proxy_cookie_path ~$ "; HTTPOnly; Secure;";
+# Disabled because incompatible with the new cookie management system
+# proxy_cookie_path ~$ "; HTTPOnly; Secure;";
 {% else %}
 more_set_headers "Permissions-Policy : interest-cohort=()";
 {% endif %}
