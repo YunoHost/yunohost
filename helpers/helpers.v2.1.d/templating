@@ -1,0 +1,332 @@
+#!/bin/bash
+
+# Create a dedicated config file from a template
+#
+# usage: ynh_config_add --template="template" --destination="destination"
+# | arg: --template=     - Template config file to use
+# | arg: --destination=  - Destination of the config file
+# | arg: --jinja         - Use jinja template instead of the simple `__MY_VAR__` templating format
+#
+# examples:
+# ynh_add_config --template=".env" --destination="$install_dir/.env"   # (use the template file "conf/.env" from the app's package)
+# ynh_add_config --jinja --template="config.j2" --destination="$install_dir/config"    # (use the template file "conf/config.j2" from the app's package)
+#
+# The template can be 1) the name of a file in the `conf` directory of
+# the app, 2) a relative path or 3) an absolute path.
+#
+# This applies a simple templating format which covers a good 95% of cases,
+# where patterns like `__FOO__` are replaced by the bash variable `$foo`, for example:
+#   `__DOMAIN__`   by `$domain`
+#   `__PATH__`     by `$path`
+#   `__APP__`      by `$app`
+#   `__VAR_1__`    by `$var_1`
+#   `__VAR_2__`    by `$var_2`
+#
+# Special case for `__PATH__/` which is replaced by `/` instead of `//` if `$path` is `/`
+#
+# ##### When --jinja is enabled
+#
+# This option is meant for advanced use-cases where the "simple" templating
+# mode ain't enough because you need conditional blocks or loops.
+#
+# For a full documentation of jinja's syntax you can refer to:
+# https://jinja.palletsprojects.com/en/3.1.x/templates/
+#
+# Note that in YunoHost context, all variables are from shell variables and therefore are strings
+#
+# ##### Keeping track of manual changes by the admin
+#
+# The helper will verify the checksum and backup the destination file
+# if it's different before applying the new template.
+#
+# And it will calculate and store the destination file checksum
+# into the app settings when configuration is done.
+ynh_config_add() {
+    # ============ Argument parsing =============
+    local -A args_array=([t]=template= [d]=destination= [j]=jinja)
+    local template
+    local destination
+    local jinja
+    ynh_handle_getopts_args "$@"
+    jinja="${jinja:-0}"
+    # ===========================================
+
+    local template_path
+    if [ -f "$YNH_APP_BASEDIR/conf/$template" ]; then
+        template_path="$YNH_APP_BASEDIR/conf/$template"
+    elif [ -f "$template" ]; then
+        template_path=$template
+    else
+        ynh_die "The provided template $template doesn't exist"
+    fi
+
+    ynh_backup_if_checksum_is_different "$destination"
+
+    # Make sure to set the permissions before we copy the file
+    # This is to cover a case where an attacker could have
+    # created a file beforehand to have control over it
+    # (cp won't overwrite ownership / modes by default...)
+    touch $destination
+    chmod 640 $destination
+    _ynh_apply_default_permissions $destination
+
+    if [[ "$jinja" == 1 ]]; then
+        # This is ran in a subshell such that the "export" does not "contaminate" the main process
+        (   
+            export $(compgen -v)
+            j2 "$template_path" -f env -o $destination
+        )
+    else
+        cp -f "$template_path" "$destination"
+        _ynh_replace_vars "$destination"
+    fi
+
+    ynh_store_file_checksum "$destination"
+}
+
+# Replace `__FOO__` patterns in file with bash variable `$foo`
+#
+# [internal]
+#
+# usage: ynh_replace_vars "/path/to/file"
+# | arg: /path/to/file     - File where to replace variables
+#
+# This applies a simple templating format which covers a good 95% of cases,
+# where patterns like `__FOO__` are replaced by the bash variable `$foo`, for example:
+#   `__DOMAIN__`   by `$domain`
+#   `__PATH__`     by `$path`
+#   `__APP__`      by `$app`
+#   `__VAR_1__`    by `$var_1`
+#   `__VAR_2__`    by `$var_2`
+#
+# Special case for `__PATH__/` which is replaced by `/` instead of `//` if `$path` is `/`
+_ynh_replace_vars() {
+    local file=$1
+
+    # List unique (__ __) variables in $file
+    local uniques_vars=($(grep -oP '__[A-Z0-9]+?[A-Z0-9_]*?[A-Z0-9]*?__' $file | sort --unique | sed "s@__\([^.]*\)__@\L\1@g"))
+
+    set +o xtrace # set +x
+
+    # Specific trick to make sure that __PATH__/ doesn't end up in "//" if $path=/
+    if [[ "${path:-}" == "/" ]] && grep -q '__PATH__/' $file; then
+        sed --in-place "s@__PATH__/@/@g" "$file"
+    fi
+
+    # Do the replacement
+    local delimit=@
+    for one_var in "${uniques_vars[@]}"; do
+        # Validate that one_var is indeed defined
+        # -v checks if the variable is defined, for example:
+        #     -v FOO  tests if $FOO is defined
+        #     -v $FOO tests if ${!FOO} is defined
+        # More info: https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash/17538964#comment96392525_17538964
+        [[ -v "${one_var:-}" ]] || ynh_die "Variable \$$one_var wasn't initialized when trying to replace __${one_var^^}__ in $file"
+
+        # Escape delimiter in match/replace string
+        match_string="__${one_var^^}__"
+        match_string=${match_string//${delimit}/"\\${delimit}"}
+        replace_string="${!one_var}"
+        replace_string=${replace_string//\\/\\\\}
+        replace_string=${replace_string//${delimit}/"\\${delimit}"}
+
+        # Actually replace (sed is used instead of ynh_replace_string to avoid triggering an epic amount of debug logs)
+        sed --in-place "s${delimit}${match_string}${delimit}${replace_string}${delimit}g" "$file"
+    done
+    set -o xtrace # set -x
+}
+
+# Get a value from heterogeneous file (yaml, json, php, python...)
+#
+# usage: ynh_read_var_in_file --file=PATH --key=KEY
+# | arg: --file=    - the path to the file
+# | arg: --key=     - the key to get
+# | arg: --after=   - the line just before the key (in case of multiple lines with the name of the key in the file)
+#
+# This helpers match several var affectation use case in several languages
+# We don't use jq or equivalent to keep comments and blank space in files
+# This helpers work line by line, it is not able to work correctly
+# if you have several identical keys in your files
+#
+# Example of line this helpers can managed correctly
+# .yml
+#     title: YunoHost documentation
+#     email: 'yunohost@yunohost.org'
+# .json
+#     "theme": "colib'ris",
+#     "port": 8102
+#     "some_boolean":     false,
+#     "user": null
+# .ini
+#     some_boolean = On
+#     action = "Clear"
+#     port = 20
+# .php
+#     $user=
+#     user => 20
+# .py
+#     USER = 8102
+#     user = 'https://donate.local'
+#     CUSTOM['user'] = 'YunoHost'
+ynh_read_var_in_file() {
+    # ============ Argument parsing =============
+    local -A args_array=([f]=file= [k]=key= [a]=after=)
+    local file
+    local key
+    local after
+    ynh_handle_getopts_args "$@"
+    after="${after:-}"
+    # ===========================================
+
+    [[ -f $file ]] || ynh_die "File $file does not exists"
+
+    set +o xtrace # set +x
+
+    # Get the line number after which we search for the variable
+    local line_number=1
+    if [[ -n "$after" ]]; then
+        line_number=$(grep -m1 -n $after $file | cut -d: -f1)
+        if [[ -z "$line_number" ]]; then
+            set -o xtrace # set -x
+            return 1
+        fi
+    fi
+
+    local filename="$(basename -- "$file")"
+    local ext="${filename##*.}"
+    local endline=',;'
+    local assign="=>|:|="
+    local comments="#"
+    local string="\"'"
+    if [[ "$ext" =~ ^ini|env|toml|yml|yaml$ ]]; then
+        endline='#'
+    fi
+    if [[ "$ext" =~ ^ini|env$ ]]; then
+        comments="[;#]"
+    fi
+    if [[ "php" == "$ext" ]] || [[ "$ext" == "js" ]]; then
+        comments="//"
+    fi
+    local list='\[\s*['$string']?\w+['$string']?\]'
+    local var_part='^\s*((const|var|let)\s+)?\$?(\w+('$list')*(->|\.|\[))*\s*'
+    var_part+="[$string]?${key}[$string]?"
+    var_part+='\s*\]?\s*'
+    var_part+="($assign)"
+    var_part+='\s*'
+
+    # Extract the part after assignation sign
+    local expression_with_comment="$( (tail +$line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL) | head -n1)"
+    if [[ "$expression_with_comment" == "YNH_NULL" ]]; then
+        set -o xtrace # set -x
+        echo YNH_NULL
+        return 0
+    fi
+
+    # Remove comments if needed
+    local expression="$(echo "$expression_with_comment" | sed "s@${comments}[^$string]*\$@@g" | sed "s@\s*[$endline]*\s*]*\$@@")"
+
+    local first_char="${expression:0:1}"
+    if [[ "$first_char" == '"' ]]; then
+        echo "$expression" | grep -m1 -o -P '"\K([^"](\\")?)*[^\\](?=")' | head -n1 | sed 's/\\"/"/g'
+    elif [[ "$first_char" == "'" ]]; then
+        echo "$expression" | grep -m1 -o -P "'\K([^'](\\\\')?)*[^\\\\](?=')" | head -n1 | sed "s/\\\\'/'/g"
+    else
+        echo "$expression"
+    fi
+    set -o xtrace # set -x
+}
+
+# Set a value into heterogeneous file (yaml, json, php, python...)
+#
+# usage: ynh_write_var_in_file --file=PATH --key=KEY --value=VALUE
+# | arg: --file=    - the path to the file
+# | arg: --key=     - the key to set
+# | arg: --value=   - the value to set
+# | arg: --after=   - the line just before the key (in case of multiple lines with the name of the key in the file)
+ynh_write_var_in_file() {
+    # ============ Argument parsing =============
+    local -A args_array=([f]=file= [k]=key= [v]=value= [a]=after=)
+    local file
+    local key
+    local value
+    local after
+    ynh_handle_getopts_args "$@"
+    after="${after:-}"
+    # ===========================================
+
+    [[ -f $file ]] || ynh_die "File $file does not exists"
+
+    set +o xtrace # set +x
+
+    # Get the line number after which we search for the variable
+    local after_line_number=1
+    if [[ -n "$after" ]]; then
+        after_line_number=$(grep -m1 -n $after $file | cut -d: -f1)
+        if [[ -z "$after_line_number" ]]; then
+            set -o xtrace # set -x
+            return 1
+        fi
+    fi
+
+    local filename="$(basename -- "$file")"
+    local ext="${filename##*.}"
+    local endline=',;'
+    local assign="=>|:|="
+    local comments="#"
+    local string="\"'"
+    if [[ "$ext" =~ ^ini|env|toml|yml|yaml$ ]]; then
+        endline='#'
+    fi
+    if [[ "$ext" =~ ^ini|env$ ]]; then
+        comments="[;#]"
+    fi
+    if [[ "php" == "$ext" ]] || [[ "$ext" == "js" ]]; then
+        comments="//"
+    fi
+    local list='\[\s*['$string']?\w+['$string']?\]'
+    local var_part='^\s*((const|var|let)\s+)?\$?(\w+('$list')*(->|\.|\[))*\s*'
+    var_part+="[$string]?${key}[$string]?"
+    var_part+='\s*\]?\s*'
+    var_part+="($assign)"
+    var_part+='\s*'
+
+    # Extract the part after assignation sign
+    local expression_with_comment="$( (tail +$after_line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL) | head -n1)"
+    if [[ "$expression_with_comment" == "YNH_NULL" ]]; then
+        set -o xtrace # set -x
+        return 1
+    fi
+    local value_line_number="$(tail +$after_line_number ${file} | grep -m1 -n -i -P $var_part'\K.*$' | cut -d: -f1)"
+    value_line_number=$((after_line_number + value_line_number))
+    local range="${after_line_number},${value_line_number} "
+
+    # Remove comments if needed
+    local expression="$(echo "$expression_with_comment" | sed "s@${comments}[^$string]*\$@@g" | sed "s@\s*[$endline]*\s*]*\$@@")"
+    endline=${expression_with_comment#"$expression"}
+    endline="$(echo "$endline" | sed 's/\\/\\\\/g')"
+    value="$(echo "$value" | sed 's/\\/\\\\/g')"
+    value=${value//&/"\&"}
+    local first_char="${expression:0:1}"
+    delimiter=$'\001'
+    if [[ "$first_char" == '"' ]]; then
+        # \ and sed is quite complex you need 2 \\ to get one in a sed
+        # So we need \\\\ to go through 2 sed
+        value="$(echo "$value" | sed 's/"/\\\\"/g')"
+        sed -ri "${range}s$delimiter"'(^'"${var_part}"'")([^"]|\\")*("[\s;,]*)(\s*'$comments'.*)?$'$delimiter'\1'"${value}"'"'"${endline}${delimiter}i" ${file}
+    elif [[ "$first_char" == "'" ]]; then
+        # \ and sed is quite complex you need 2 \\ to get one in a sed
+        # However double quotes implies to double \\ to
+        # So we need \\\\\\\\ to go through 2 sed and 1 double quotes str
+        value="$(echo "$value" | sed "s/'/\\\\\\\\'/g")"
+        sed -ri "${range}s$delimiter(^${var_part}')([^']|\\')*('"'[\s,;]*)(\s*'$comments'.*)?$'$delimiter'\1'"${value}'${endline}${delimiter}i" ${file}
+    else
+        if [[ "$value" == *"'"* ]] || [[ "$value" == *'"'* ]] || [[ "$ext" =~ ^php|py|json|js$ ]]; then
+            value='\"'"$(echo "$value" | sed 's/"/\\\\"/g')"'\"'
+        fi
+        if [[ "$ext" =~ ^yaml|yml$ ]]; then
+            value=" $value"
+        fi
+        sed -ri "${range}s$delimiter(^${var_part}).*\$$delimiter\1${value}${endline}${delimiter}i" ${file}
+    fi
+    set -o xtrace # set -x
+}

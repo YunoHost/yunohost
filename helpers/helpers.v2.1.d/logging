@@ -1,0 +1,116 @@
+#!/bin/bash
+
+# Print a message to stderr and terminate the current script
+#
+# usage: ynh_die "Some message"
+ynh_die() {
+    set +o xtrace # set +x
+    if [[ -n "${1:-}" ]]; then
+        if [[ -n "${YNH_STDRETURN:-}" ]]; then
+            python3 -c 'import yaml, sys; print(yaml.dump({"error": sys.stdin.read()}))' <<< "${1:-}" >> "$YNH_STDRETURN"
+        fi
+        echo "${1:-}" 1>&2
+    fi
+    exit 1
+}
+
+# Print an "INFO" message
+#
+# usage: ynh_print_info "Some message"
+ynh_print_info() {
+    echo "$1" >&$YNH_STDINFO
+}
+
+# Print a warning on stderr
+#
+# usage: ynh_print_warn "Some message"
+ynh_print_warn() {
+    echo "$1" >&2
+}
+
+# Execute a command and redirect stderr to stdout
+#
+# usage: ynh_hide_warnings your command and args
+# | arg: command - command to execute
+#
+ynh_hide_warnings() {
+    # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
+    "$@" 2>&1
+}
+
+# Execute a command and redirect stderr in /dev/null. Print stderr on error.
+#
+# usage: ynh_exec_and_print_stderr_only_if_error your command and args
+# | arg: command - command to execute
+#
+# Note that you should NOT quote the command but only prefix it with ynh_exec_and_print_stderr_only_if_error
+ynh_exec_and_print_stderr_only_if_error() {
+    logfile="$(mktemp)"
+    rc=0
+    # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
+    "$@" 2> "$logfile" || rc="$?"
+    if ((rc != 0)); then
+        cat "$logfile" >&2
+        ynh_safe_rm "$logfile"
+        return "$rc"
+    fi
+}
+
+# Return data to the YunoHost core for later processing (to be used by special hooks like app config panel and core diagnosis)
+#
+# usage: ynh_return somedata
+ynh_return() {
+    echo "$1" >> "$YNH_STDRETURN"
+}
+
+# Initial definitions for ynh_script_progression
+increment_progression=0
+previous_weight=0
+max_progression=-1
+# Set the scale of the progression bar
+# progress_string(0,1,2) should have the size of the scale.
+progress_scale=20
+progress_string2="####################"
+progress_string1="++++++++++++++++++++"
+progress_string0="...................."
+
+# Print a progress bar showing the progression of an app script
+#
+# usage: ynh_script_progression "Some message"
+ynh_script_progression() {
+    set +o xtrace # set +x
+
+    # Compute $max_progression (if we didn't already)
+    if [ "$max_progression" = -1 ]; then
+        # Get the number of occurrences of 'ynh_script_progression' in the script. Except those are commented.
+        local helper_calls=
+        max_progression="$(grep --count "^[^#]*ynh_script_progression" $0)"
+    fi
+
+    # Increment each execution of ynh_script_progression in this script by the weight of the previous call.
+    increment_progression=$(($increment_progression + $previous_weight))
+    # Store the weight of the current call in $previous_weight for next call
+    previous_weight=1
+
+    # Reduce $increment_progression to the size of the scale
+    local effective_progression=$(($increment_progression * $progress_scale / $max_progression))
+
+    # If last is specified, fill immediately the progression_bar
+
+    # Build $progression_bar from progress_string(0,1,2) according to $effective_progression and the weight of the current task
+    # expected_progression is the progression expected after the current task
+    local expected_progression="$((($increment_progression + 1) * $progress_scale / $max_progression - $effective_progression))"
+
+    # Hack for the "--last" message
+    if grep -qw 'completed' <<< "$1"; then
+        effective_progression=$progress_scale
+        expected_progression=0
+    fi
+    # left_progression is the progression not yet done
+    local left_progression="$(($progress_scale - $effective_progression - $expected_progression))"
+    # Build the progression bar with $effective_progression, work done, $expected_progression, current work and $left_progression, work to be done.
+    local progression_bar="${progress_string2:0:$effective_progression}${progress_string1:0:$expected_progression}${progress_string0:0:$left_progression}"
+
+    echo "[$progression_bar] > ${1}" >&$YNH_STDINFO
+    set -o xtrace # set -x
+}

@@ -8,10 +8,6 @@ config="/usr/share/yunohost/conf/slapd/config.ldif"
 db_init="/usr/share/yunohost/conf/slapd/db_init.ldif"
 
 do_init_regen() {
-    if [[ $EUID -ne 0 ]]; then
-        echo "You must be root to run this script" 1>&2
-        exit 1
-    fi
 
     do_pre_regen ""
 
@@ -20,7 +16,7 @@ do_init_regen() {
     rm -rf /var/backups/*.ldapdb
     rm -rf /var/backups/slapd-*
 
-    debconf-set-selections <<EOF
+    debconf-set-selections << EOF
 slapd slapd/password1 password yunohost
 slapd slapd/password2 password yunohost
 slapd slapd/domain string yunohost.org
@@ -58,14 +54,6 @@ EOF
     nscd -i passwd || true
 
     systemctl restart slapd
-
-    # We don't use mkhomedir_helper because 'admin' may not be recognized
-    # when this script is ran in a chroot (e.g. ISO install)
-    # We also refer to admin as uid 1007 for the same reason
-    if [ ! -d /home/admin ]; then
-        cp -r /etc/skel /home/admin
-        chown -R 1007:1007 /home/admin
-    fi
 }
 
 _regenerate_slapd_conf() {
@@ -95,13 +83,13 @@ do_pre_regen() {
     rm -f "$tmp_backup_dir_file"
 
     # Define if we need to migrate from hdb to mdb
-    curr_backend=$(grep '^database' /etc/ldap/slapd.conf 2>/dev/null | awk '{print $2}')
+    curr_backend=$(grep '^database' /etc/ldap/slapd.conf 2> /dev/null | awk '{print $2}')
     if [ -e /etc/ldap/slapd.conf ] && [ -n "$curr_backend" ] \
         && [ $curr_backend != 'mdb' ]; then
         backup_dir="/var/backups/dc=yunohost,dc=org-${curr_backend}-$(date +%s)"
         mkdir -p "$backup_dir"
         slapcat -b dc=yunohost,dc=org -l "${backup_dir}/dc=yunohost-dc=org.ldif"
-        echo "$backup_dir" >"$tmp_backup_dir_file"
+        echo "$backup_dir" > "$tmp_backup_dir_file"
     fi
 
     # create needed directories
@@ -131,6 +119,10 @@ do_post_regen() {
     chown -R openldap:openldap /etc/ldap/schema/
     chown -R openldap:openldap /etc/ldap/slapd.d/
 
+    # Fix weird scenarios where /etc/sudo-ldap.conf doesn't exists (yet is supposed to be
+    # created by the sudo-ldap package) : https://github.com/YunoHost/issues/issues/2091
+    [ -e /etc/sudo-ldap.conf ] || ln -s /etc/ldap/ldap.conf /etc/sudo-ldap.conf
+
     # If we changed the systemd ynh-override conf
     if echo "$regen_conf_files" | sed 's/,/\n/g' | grep -q "^/etc/systemd/system/slapd.service.d/ynh-override.conf$"; then
         systemctl daemon-reload
@@ -139,7 +131,7 @@ do_post_regen() {
     fi
 
     # For some reason, old setups don't have the admins group defined...
-    if ! slapcat | grep -q 'cn=admins,ou=groups,dc=yunohost,dc=org'; then
+    if ! slapcat -H "ldap:///cn=admins,ou=groups,dc=yunohost,dc=org" | grep -q 'cn=admins,ou=groups,dc=yunohost,dc=org'; then
         slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org <<< \
             "dn: cn=admins,ou=groups,dc=yunohost,dc=org
 cn: admins
@@ -159,7 +151,7 @@ objectClass: top"
     _regenerate_slapd_conf
 
     # If there's a backup, re-import its data
-    backup_dir=$(cat "$tmp_backup_dir_file" 2>/dev/null || true)
+    backup_dir=$(cat "$tmp_backup_dir_file" 2> /dev/null || true)
     if [[ -n "$backup_dir" && -f "${backup_dir}/dc=yunohost-dc=org.ldif" ]]; then
         # regenerate LDAP config directory and import database as root
         echo "Import the database using slapadd"
@@ -172,22 +164,6 @@ objectClass: top"
 
     echo "Reloading slapd"
     systemctl force-reload slapd
-
-    # on slow hardware/vm this regen conf would exit before the admin user that
-    # is stored in ldap is available because ldap seems to slow to restart
-    # so we'll wait either until we are able to log as admin or until a timeout
-    # is reached
-    # we need to do this because the next hooks executed after this one during
-    # postinstall requires to run as admin thus breaking postinstall on slow
-    # hardware which mean yunohost can't be correctly installed on those hardware
-    # and this sucks
-    # wait a maximum time of 5 minutes
-    # yes, force-reload behave like a restart
-    number_of_wait=0
-    while ! su admin -c '' && ((number_of_wait < 60)); do
-        sleep 5
-        ((number_of_wait += 1))
-    done
 }
 
 do_$1_regen ${@:2}

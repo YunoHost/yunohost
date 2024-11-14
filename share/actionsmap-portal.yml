@@ -1,0 +1,92 @@
+_global:
+    namespace: yunohost
+    authentication:
+        api: ldap_ynhuser
+        cli: null
+    lock: false
+    cache: false
+
+portal:
+    category_help: Portal routes
+    actions:
+
+        ### portal_me()
+        me:
+            action_help: Allow user to fetch their own infos
+            api: GET /me
+
+        ### portal_apps()
+        apps:
+            action_help: Allow users to fetch lit of apps they have access to
+            api: GET /me/apps
+
+        ### portal_update()
+        update:
+            action_help: Allow user to update their infos (display name, mail aliases/forward, password, ...)
+            api: PUT /update
+            arguments:
+                --fullname:
+                    help: The full name of the user. For example 'Camille Dupont'
+                    extra:
+                        pattern: &pattern_fullname
+                            - !!str ^([^\W_]{1,30}[ ,.'-]{0,3})+$
+                            - "pattern_fullname"
+                --mailforward:
+                    help: Mailforward addresses to add
+                    nargs: "*"
+                    metavar: MAIL
+                    extra:
+                        pattern: &pattern_email_forward
+                            - !!str ^[\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
+                            - "pattern_email_forward"
+                --mailalias:
+                    help: Mail aliases to add
+                    nargs: "*"
+                    metavar: MAIL
+                    extra:
+                        pattern: &pattern_email
+                            - !!str ^[\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
+                            - "pattern_email"
+                --currentpassword:
+                    help: Current password
+                    nargs: "?"
+                --newpassword:
+                    help: New password to set
+                    nargs: "?"
+
+        ### portal_update_password()
+        # update_password:
+        #     action_help: Allow user to change their password
+        #     api: PUT /me/update_password
+        #     arguments:
+        #         -c:
+        #             full: --current
+        #             help: Current password
+        #         -p:
+        #             full: --password
+        #             help: New password to set
+
+        ### portal_reset_password()
+        reset_password:
+            action_help: Allow user to update their infos (display name, mail aliases/forward, ...)
+            api: PUT /me/reset_password
+            authentication:
+                # FIXME: to be implemented ?
+                api: reset_password_token
+            # FIXME: add args etc
+
+        ### portal_register()
+        register:
+            action_help: Allow user to register using an invite token or ???
+            api: POST /me
+            authentication:
+                # FIXME: to be implemented ?
+                api: register_invite_token
+            # FIXME: add args etc
+
+        ### portal_public()
+        public:
+            action_help: Allow anybody to list public apps and other infos regarding the public portal
+            api: GET /public
+            authentication:
+                api: null

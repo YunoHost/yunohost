@@ -1,0 +1,184 @@
+#!/bin/bash
+
+# Get an application setting
+#
+# usage: ynh_app_setting_get --app=app --key=key
+# | arg: -a, --app=     - the application id
+# | arg: -k, --key=     - the setting to get
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_app_setting_get() {
+    local _globalapp=${app-:}
+    # Declare an array to define the options of this helper.
+    local legacy_args=ak
+    local -A args_array=([a]=app= [k]=key=)
+    local app
+    local key
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    app="${app:-$_globalapp}"
+
+    ynh_app_setting "get" "$app" "$key"
+}
+
+# Set an application setting
+#
+# usage: ynh_app_setting_set --app=app --key=key --value=value
+# | arg: -a, --app=     - the application id
+# | arg: -k, --key=     - the setting name to set
+# | arg: -v, --value=   - the setting value to set
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_app_setting_set() {
+    local _globalapp=${app-:}
+    # Declare an array to define the options of this helper.
+    local legacy_args=akv
+    local -A args_array=([a]=app= [k]=key= [v]=value=)
+    local app
+    local key
+    local value
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    app="${app:-$_globalapp}"
+
+    ynh_app_setting "set" "$app" "$key" "$value"
+}
+
+# Set an application setting but only if the "$key" variable ain't set yet
+#
+# Note that it doesn't just define the setting but ALSO define the $foobar variable
+#
+# Hence it's meant as a replacement for this legacy overly complex syntax:
+#
+# if [ -z "${foo:-}" ]
+# then
+#     foo="bar"
+#     ynh_app_setting_set --key="foo" --value="$foo"
+# fi
+#
+# usage: ynh_app_setting_set_default --app=app --key=key --value=value
+# | arg: -a, --app=     - the application id
+# | arg: -k, --key=     - the setting name to set
+# | arg: -v, --value=   - the default setting value to set
+#
+# Requires YunoHost version 11.1.16 or higher.
+ynh_app_setting_set_default() {
+    local _globalapp=${app-:}
+    # Declare an array to define the options of this helper.
+    local legacy_args=akv
+    local -A args_array=([a]=app= [k]=key= [v]=value=)
+    local app
+    local key
+    local value
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    app="${app:-$_globalapp}"
+
+    if [ -z "${!key:-}" ]; then
+        eval $key=\$value
+        ynh_app_setting "set" "$app" "$key" "$value"
+    fi
+}
+
+# Delete an application setting
+#
+# usage: ynh_app_setting_delete --app=app --key=key
+# | arg: -a, --app=     - the application id
+# | arg: -k, --key=     - the setting to delete
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_app_setting_delete() {
+    local _globalapp=${app-:}
+    # Declare an array to define the options of this helper.
+    local legacy_args=ak
+    local -A args_array=([a]=app= [k]=key=)
+    local app
+    local key
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    app="${app:-$_globalapp}"
+
+    ynh_app_setting "delete" "$app" "$key"
+}
+
+# Small "hard-coded" interface to avoid calling "yunohost app" directly each
+# time dealing with a setting is needed (which may be so slow on ARM boards)
+#
+# [internal]
+#
+ynh_app_setting() {
+    set +o xtrace # set +x
+    ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python3 - << EOF
+import os, yaml, sys
+app, action = os.environ['APP'], os.environ['ACTION'].lower()
+key, value = os.environ['KEY'], os.environ.get('VALUE', None)
+setting_file = "/etc/yunohost/apps/%s/settings.yml" % app
+assert os.path.exists(setting_file), "Setting file %s does not exists ?" % setting_file
+with open(setting_file) as f:
+    settings = yaml.safe_load(f)
+if action == "get":
+    if key in settings:
+        print(settings[key])
+else:
+    if action == "delete":
+        if key in settings:
+            del settings[key]
+    elif action == "set":
+        if key in ['redirected_urls', 'redirected_regex']:
+            value = yaml.safe_load(value)
+        settings[key] = value
+    else:
+        raise ValueError("action should either be get, set or delete")
+    with open(setting_file, "w") as f:
+        yaml.safe_dump(settings, f, default_flow_style=False)
+EOF
+    set -o xtrace # set -x
+}
+
+# Check availability of a web path
+#
+# [packagingv1]
+#
+# usage: ynh_webpath_available --domain=domain --path_url=path
+# | arg: -d, --domain=      - the domain/host of the url
+# | arg: -p, --path_url=    - the web path to check the availability of
+#
+# example: ynh_webpath_available --domain=some.domain.tld --path_url=/coffee
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_webpath_available() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=dp
+    local -A args_array=([d]=domain= [p]=path_url=)
+    local domain
+    local path_url
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    yunohost domain url-available $domain $path_url
+}
+
+# Register/book a web path for an app
+#
+# [packagingv1]
+#
+# usage: ynh_webpath_register --app=app --domain=domain --path_url=path
+# | arg: -a, --app=         - the app for which the domain should be registered
+# | arg: -d, --domain=      - the domain/host of the web path
+# | arg: -p, --path_url=    - the web path to be registered
+#
+# example: ynh_webpath_register --app=wordpress --domain=some.domain.tld --path_url=/coffee
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_webpath_register() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=adp
+    local -A args_array=([a]=app= [d]=domain= [p]=path_url=)
+    local app
+    local domain
+    local path_url
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    yunohost app register-url $app $domain $path_url
+}

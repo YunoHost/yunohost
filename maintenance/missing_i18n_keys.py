@@ -19,7 +19,6 @@ REFERENCE_FILE = LOCALE_FOLDER + "en.json"
 
 
 def find_expected_string_keys():
-
     # Try to find :
     #    m18n.n(   "foo"
     #    YunohostError("foo"
@@ -27,12 +26,15 @@ def find_expected_string_keys():
     #    # i18n: foo
     p1 = re.compile(r"m18n\.n\(\n*\s*[\"\'](\w+)[\"\']")
     p2 = re.compile(r"YunohostError\(\n*\s*[\'\"](\w+)[\'\"]")
-    p3 = re.compile(r"YunohostValidationError\(\n*\s*[\'\"](\w+)[\'\"]")
+    p3 = re.compile(
+        r"Yunohost(Validation|Authentication)Error\(\n*\s*[\'\"](\w+)[\'\"]"
+    )
     p4 = re.compile(r"# i18n: [\'\"]?(\w+)[\'\"]?")
 
     python_files = glob.glob(ROOT + "src/*.py")
     python_files.extend(glob.glob(ROOT + "src/utils/*.py"))
     python_files.extend(glob.glob(ROOT + "src/migrations/*.py"))
+    python_files.extend(glob.glob(ROOT + "src/migrations/*.py.disabled"))
     python_files.extend(glob.glob(ROOT + "src/authenticators/*.py"))
     python_files.extend(glob.glob(ROOT + "src/diagnosers/*.py"))
     python_files.append(ROOT + "bin/yunohost")
@@ -47,7 +49,7 @@ def find_expected_string_keys():
             if m.endswith("_"):
                 continue
             yield m
-        for m in p3.findall(content):
+        for _, m in p3.findall(content):
             if m.endswith("_"):
                 continue
             yield m
@@ -99,15 +101,6 @@ def find_expected_string_keys():
         for m in ("log_" + match for match in p4.findall(content)):
             yield m
 
-    # Global settings descriptions
-    # Will be on a line like : ("service.ssh.allow_deprecated_dsa_hostkey", {"type": "bool", ...
-    p5 = re.compile(r" \(\n*\s*[\"\'](\w[\w\.]+)[\"\'],")
-    content = open(ROOT + "src/settings.py").read()
-    for m in (
-        "global_settings_setting_" + s.replace(".", "_") for s in p5.findall(content)
-    ):
-        yield m
-
     # Keys for the actionmap ...
     for category in yaml.safe_load(open(ROOT + "share/actionsmap.yml")).values():
         if "actions" not in category.keys():
@@ -143,17 +136,65 @@ def find_expected_string_keys():
         for key in registrars[registrar].keys():
             yield f"domain_config_{key}"
 
+    # Domain config panel
     domain_config = toml.load(open(ROOT + "share/config_domain.toml"))
-    for panel in domain_config.values():
+    domain_settings_with_help_key = [
+        "portal_logo",
+        "portal_public_intro",
+        "portal_theme",
+        "portal_user_intro",
+        "search_engine",
+        "custom_css",
+        "dns",
+        "enable_public_apps_page",
+    ]
+    domain_section_with_no_name = ["app", "cert_", "mail", "registrar"]
+    for panel_key, panel in domain_config.items():
         if not isinstance(panel, dict):
             continue
-        for section in panel.values():
+        yield f"domain_config_{panel_key}_name"
+        for section_key, section in panel.items():
             if not isinstance(section, dict):
                 continue
+            if section_key not in domain_section_with_no_name:
+                yield f"domain_config_{section_key}_name"
             for key, values in section.items():
                 if not isinstance(values, dict):
                     continue
                 yield f"domain_config_{key}"
+                if key in domain_settings_with_help_key:
+                    yield f"domain_config_{key}_help"
+
+    # Global settings
+    global_config = toml.load(open(ROOT + "share/config_global.toml"))
+    # Boring hard-coding because there's no simple other way idk
+    settings_without_help_key = [
+        "passwordless_sudo",
+        "smtp_relay_host",
+        "smtp_relay_password",
+        "smtp_relay_port",
+        "smtp_relay_user",
+        "ssowat_panel_overlay_enabled",
+        "root_password",
+        "root_access_explain",
+        "root_password_confirm",
+        "tls_passthrough_explain",
+    ]
+
+    for panel_key, panel in global_config.items():
+        if not isinstance(panel, dict):
+            continue
+        yield f"global_settings_setting_{panel_key}_name"
+        for section_key, section in panel.items():
+            if not isinstance(section, dict):
+                continue
+            yield f"global_settings_setting_{section_key}_name"
+            for key, values in section.items():
+                if not isinstance(values, dict):
+                    continue
+                yield f"global_settings_setting_{key}"
+                if key not in settings_without_help_key:
+                    yield f"global_settings_setting_{key}_help"
 
 
 ###############################################################################
@@ -176,7 +217,6 @@ undefined_keys = sorted(undefined_keys)
 
 mode = sys.argv[1].strip("-")
 if mode == "check":
-
     # Unused keys are not too problematic, will be automatically
     # removed by the other autoreformat script,
     # but still informative to display them

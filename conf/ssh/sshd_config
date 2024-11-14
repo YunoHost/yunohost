@@ -3,7 +3,7 @@
 
 Protocol 2
 # PLEASE: if you wish to change the ssh port properly in YunoHost, use this command:
-# yunohost settings set security.ssh.port -v <port>
+# yunohost settings set security.ssh.ssh_port -v <port>
 Port {{ port }}
 
 {% if ipv6_enabled == "true" %}ListenAddress ::{% endif %}
@@ -56,7 +56,7 @@ ChallengeResponseAuthentication no
 UsePAM yes
 
 # PLEASE: if you wish to force everybody to authenticate using ssh keys, run this command:
-# yunohost settings set security.ssh.password_authentication -v no
+# yunohost settings set security.ssh.ssh_password_authentication -v no
 {% if password_authentication == "False" %}
 PasswordAuthentication no
 {% else %}
@@ -64,7 +64,7 @@ PasswordAuthentication no
 {% endif %}
 
 # Post-login stuff
-Banner /etc/issue.net
+# Banner none
 PrintMotd no
 PrintLastLog yes
 ClientAliveInterval 60
@@ -84,7 +84,7 @@ Subsystem sftp internal-sftp
 
 # Apply following instructions to user with sftp perm only
 Match Group sftp.main,!ssh.main
-    ForceCommand internal-sftp
+    ForceCommand internal-sftp -u 0002
     # We can't restrict to /home/%u because the chroot base must be owned by root
     # So we chroot only on /home
     # See https://serverfault.com/questions/584986/bad-ownership-or-modes-for-chroot-directory-component
@@ -97,7 +97,7 @@ Match Group sftp.main,!ssh.main
     PermitUserRC no
 
 Match Group sftp.app,!ssh.app
-    ForceCommand internal-sftp
+    ForceCommand internal-sftp -u 0002
     ChrootDirectory %h
     AllowTcpForwarding no
     AllowStreamLocalForwarding no

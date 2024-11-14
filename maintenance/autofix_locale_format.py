@@ -32,7 +32,6 @@ def autofix_i18n_placeholders():
 
         # We iterate over all keys/string in en.json
         for key, string in reference.items():
-
             # Ignore check if there's no translation yet for this key
             if key not in this_locale:
                 continue
@@ -89,7 +88,6 @@ Please fix it manually !
 
 def autofix_orthotypography_and_standardized_words():
     def reformat(lang, transformations):
-
         locale = open(f"{LOCALE_FOLDER}{lang}.json").read()
         for pattern, replace in transformations.items():
             locale = re.compile(pattern).sub(replace, locale)
@@ -111,15 +109,16 @@ def autofix_orthotypography_and_standardized_words():
         "\u2008",
         "\u2009",
         "\u200A",
-        "\u202f",
-        "\u202F",
+        # "\u202f",
+        # "\u202F",
         "\u3000",
     ]
 
     transformations = {s: " " for s in godamn_spaces_of_hell}
     transformations.update(
         {
-            "…": "...",
+            r"\.\.\.": "…",
+            "https ://": "https://",
         }
     )
 
@@ -146,11 +145,9 @@ def autofix_orthotypography_and_standardized_words():
 
 
 def remove_stale_translated_strings():
-
     reference = json.loads(open(LOCALE_FOLDER + "en.json").read())
 
     for locale_file in TRANSLATION_FILES:
-
         print(locale_file)
         this_locale = json.loads(
             open(LOCALE_FOLDER + locale_file).read(), object_pairs_hook=OrderedDict

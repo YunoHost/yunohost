@@ -1,36 +1,51 @@
-#!/usr/bin/env python
-
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import json
 import subprocess
+import logging
 from typing import List
 
-from moulinette.utils import log
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file, read_json, write_to_json
 from yunohost.diagnosis import Diagnoser
-from yunohost.utils.packages import ynh_packages_version
+from yunohost.utils.system import (
+    ynh_packages_version,
+    system_virt,
+    system_arch,
+)
 
-logger = log.getActionLogger("yunohost.diagnosis")
+logger = logging.getLogger("yunohost.diagnosis")
 
 
 class MyDiagnoser(Diagnoser):
-
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
     dependencies: List[str] = []
 
     def run(self):
-
-        # Detect virt technology (if not bare metal) and arch
-        # Gotta have this "|| true" because it systemd-detect-virt return 'none'
-        # with an error code on bare metal ~.~
-        virt = check_output("systemd-detect-virt || true", shell=True)
+        virt = system_virt()
         if virt.lower() == "none":
             virt = "bare-metal"
 
         # Detect arch
-        arch = check_output("dpkg --print-architecture")
+        arch = system_arch()
         hardware = dict(
             meta={"test": "hardware"},
             status="INFO",
@@ -103,9 +118,11 @@ class MyDiagnoser(Diagnoser):
                 "repo": ynh_packages["yunohost"]["repo"],
             },
             status="INFO" if consistent_versions else "ERROR",
-            summary="diagnosis_basesystem_ynh_main_version"
-            if consistent_versions
-            else "diagnosis_basesystem_ynh_inconsistent_versions",
+            summary=(
+                "diagnosis_basesystem_ynh_main_version"
+                if consistent_versions
+                else "diagnosis_basesystem_ynh_inconsistent_versions"
+            ),
             details=ynh_version_details,
         )
 
@@ -137,6 +154,37 @@ class MyDiagnoser(Diagnoser):
                 summary="diagnosis_backports_in_sources_list",
             )
 
+        # Using yunohost testing channel
+        if (
+            os.system(
+                "grep -q '^\\s*deb\\s*.*yunohost.org.*\\stesting' /etc/apt/sources.list /etc/apt/sources.list.d/*"
+            )
+            == 0
+        ):
+            yield dict(
+                meta={"test": "apt_yunohost_channel"},
+                status="WARNING",
+                summary="diagnosis_using_yunohost_testing",
+                details=["diagnosis_using_yunohost_testing_details"],
+            )
+
+        # Apt being mapped to 'stable' (instead of 'buster/bullseye/bookworm/trixie/...')
+        # will cause the machine to spontaenously upgrade everything as soon as next debian is released ...
+        # Note that we grep this from the policy for libc6, because it's hard to know exactly which apt repo
+        # is configured (it may not be simply debian.org)
+        if (
+            os.system(
+                "apt policy libc6 2>/dev/null | grep '^\\s*500' | awk '{print $3}' | tr '/' ' ' | awk '{print $1}' | grep -q 'stable'"
+            )
+            == 0
+        ):
+            yield dict(
+                meta={"test": "apt_debian_codename"},
+                status="WARNING",
+                summary="diagnosis_using_stable_codename",
+                details=["diagnosis_using_stable_codename_details"],
+            )
+
         if self.number_of_recent_auth_failure() > 750:
             yield dict(
                 meta={"test": "high_number_auth_failure"},
@@ -144,8 +192,17 @@ class MyDiagnoser(Diagnoser):
                 summary="diagnosis_high_number_auth_failures",
             )
 
-    def bad_sury_packages(self):
+        rfkill_wifi = self.rfkill_wifi()
+        if len(rfkill_wifi) > 0:
+            yield dict(
+                meta={"test": "rfkill_wifi"},
+                status="ERROR",
+                summary="diagnosis_rfkill_wifi",
+                details=["diagnosis_rfkill_wifi_details"],
+                data={"rfkill_wifi_error": rfkill_wifi},
+            )
 
+    def bad_sury_packages(self):
         packages_to_check = ["openssl", "libssl1.1", "libssl-dev"]
         for package in packages_to_check:
             cmd = "dpkg --list | grep '^ii' | grep gbp | grep -q -w %s" % package
@@ -161,12 +218,10 @@ class MyDiagnoser(Diagnoser):
             yield (package, version_to_downgrade_to)
 
     def backports_in_sources_list(self):
-
         cmd = "grep -q -nr '^ *deb .*-backports' /etc/apt/sources.list*"
         return os.system(cmd) == 0
 
     def number_of_recent_auth_failure(self):
-
         # Those syslog facilities correspond to auth and authpriv
         # c.f. https://unix.stackexchange.com/a/401398
         # and https://wiki.archlinux.org/title/Systemd/Journal#Facility
@@ -256,3 +311,10 @@ class MyDiagnoser(Diagnoser):
         )
         write_to_json(cache_file, CVEs)
         return CVEs[0]["VULNERABLE"]
+
+    def rfkill_wifi(self):
+        if os.path.isfile("/etc/profile.d/wifi-check.sh"):
+            cmd = "bash /etc/profile.d/wifi-check.sh"
+            return check_output(cmd)
+        else:
+            return ""

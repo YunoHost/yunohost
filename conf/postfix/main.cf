@@ -27,11 +27,11 @@ smtpd_tls_chain_files =
     /etc/yunohost/certs/{{ main_domain }}/key.pem,
     /etc/yunohost/certs/{{ main_domain }}/crt.pem
 
-tls_server_chain_sni_maps = hash:/etc/postfix/sni
+tls_server_sni_maps = hash:/etc/postfix/sni
 
 {% if compatibility == "intermediate" %}
-# generated 2020-08-18, Mozilla Guideline v5.6, Postfix 3.4.14, OpenSSL 1.1.1d, intermediate configuration
-# https://ssl-config.mozilla.org/#server=postfix&version=3.4.14&config=intermediate&openssl=1.1.1d&guideline=5.6
+# generated 2023-06-13, Mozilla Guideline v5.7, Postfix 3.7.5, OpenSSL 3.0.9, intermediate configuration
+# https://ssl-config.mozilla.org/#server=postfix&version=3.7.5&config=intermediate&openssl=3.0.9&guideline=5.7
 
 smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1
 smtpd_tls_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1
@@ -41,10 +41,10 @@ smtpd_tls_mandatory_ciphers = medium
 # not actually 1024 bits, this applies to all DHE >= 1024 bits
 smtpd_tls_dh1024_param_file = /usr/share/yunohost/ffdhe2048.pem
 
-tls_medium_cipherlist = ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
+tls_medium_cipherlist = ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305
 {% else %}
-# generated 2020-08-18, Mozilla Guideline v5.6, Postfix 3.4.14, OpenSSL 1.1.1d, modern configuration
-# https://ssl-config.mozilla.org/#server=postfix&version=3.4.14&config=modern&openssl=1.1.1d&guideline=5.6
+# generated 2023-06-13, Mozilla Guideline v5.7, Postfix 3.7.5, OpenSSL 3.0.9, modern configuration
+# https://ssl-config.mozilla.org/#server=postfix&version=3.7.5&config=modern&openssl=3.0.9&guideline=5.7
 
 smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1, !TLSv1.2
 smtpd_tls_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1, !TLSv1.2
@@ -81,7 +81,7 @@ alias_maps = hash:/etc/aliases
 alias_database = hash:/etc/aliases
 mydomain = {{ main_domain }}
 mydestination = localhost
-{% if relay_host == "" %}
+{% if relay_enabled != "True" %}
 relayhost =
 {% else %}
 relayhost = [{{ relay_host }}]:{{ relay_port }}
@@ -93,21 +93,25 @@ recipient_delimiter = +
 inet_interfaces = all
 
 #### Fit to the maximum message size to 25mb, more than allowed by GMail or Yahoo ####
-# /!\ This size is the size of the attachment in base64. 
+# /!\ This size is the size of the attachment in base64.
 # BASE64_SIZE_IN_BYTE = ORIGINAL_SIZE_IN_MEGABYTE * 1,37 *1024*1024 + 980
 # See https://serverfault.com/questions/346895/postfix-mail-size-counting
 message_size_limit = 35914708
 
 # Virtual Domains Control
 virtual_mailbox_domains = ldap:/etc/postfix/ldap-domains.cf
-virtual_mailbox_maps = ldap:/etc/postfix/ldap-accounts.cf
+virtual_mailbox_maps = ldap:/etc/postfix/ldap-accounts.cf,hash:/etc/postfix/app_senders_login_maps
 virtual_mailbox_base =
-virtual_alias_maps = ldap:/etc/postfix/ldap-aliases.cf
+virtual_alias_maps = ldap:/etc/postfix/ldap-aliases.cf,ldap:/etc/postfix/ldap-groups.cf
 virtual_alias_domains =
 virtual_minimum_uid = 100
 virtual_uid_maps = static:vmail
 virtual_gid_maps = static:mail
-smtpd_sender_login_maps= ldap:/etc/postfix/ldap-accounts.cf
+smtpd_sender_login_maps = unionmap:{
+   # Regular Yunohost accounts
+   ldap:/etc/postfix/ldap-accounts.cf,
+   # Extra maps for app system users who need to send emails
+   hash:/etc/postfix/app_senders_login_maps }
 
 # Dovecot LDA
 virtual_transport = dovecot
@@ -178,9 +182,10 @@ smtp_header_checks = regexp:/etc/postfix/header_checks
 smtp_reply_filter = pcre:/etc/postfix/smtp_reply_filter
 
 # Rmilter
-milter_mail_macros =  i {mail_addr} {client_addr} {client_name} {auth_authen}
+milter_mail_macros = i {mail_addr} {client_addr} {client_name} {auth_authen} {auth_type}
 milter_protocol = 6
-smtpd_milters = inet:localhost:11332
+smtpd_milters = inet:localhost:8891
+non_smtpd_milters = inet:localhost:8891
 
 # Skip email without checking if milter has died
 milter_default_action = accept
@@ -198,7 +203,7 @@ smtpd_client_recipient_rate_limit=150
 # and after to send spam
 disable_vrfy_command = yes
 
-{% if relay_user != "" %}
+{% if relay_enabled == "True" %}
 # Relay email through an other smtp account
 # enable SASL authentication
 smtp_sasl_auth_enable = yes
@@ -207,3 +212,11 @@ smtp_sasl_security_options = noanonymous
 # where to find sasl_passwd
 smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
 {% endif %}
+
+{% if backup_mx_domains != "" %}
+# Backup MX (secondary MX)
+relay_domains = $mydestination {{backup_mx_domains}}
+relay_recipient_maps = hash:/etc/postfix/relay_recipients
+maximal_queue_lifetime = 20d
+{% endif %}
+

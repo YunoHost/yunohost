@@ -1,42 +1,34 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2013 YunoHost
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
-
-""" yunohost_service.py
-
-    Manage services
-"""
-
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import re
 import os
 import time
 import yaml
 import subprocess
-
+from logging import getLogger
 from glob import glob
 from datetime import datetime
 
 from moulinette import m18n
+from yunohost.diagnosis import diagnosis_ignore, diagnosis_unignore
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.process import check_output
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import (
     read_file,
     append_to_file,
@@ -50,7 +42,7 @@ MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 SERVICES_CONF = "/etc/yunohost/services.yml"
 SERVICES_CONF_BASE = "/usr/share/yunohost/conf/yunohost/services.yml"
 
-logger = getActionLogger("yunohost.service")
+logger = getLogger("yunohost.service")
 
 
 def service_add(
@@ -257,12 +249,10 @@ def service_reload_or_restart(names, test_conf=True):
     services = _get_services()
 
     for name in names:
-
         logger.debug(f"Reloading service {name}")
 
         test_conf_cmd = services.get(name, {}).get("test_conf")
         if test_conf and test_conf_cmd:
-
             p = subprocess.Popen(
                 test_conf_cmd,
                 shell=True,
@@ -306,6 +296,7 @@ def service_enable(names):
         names = [names]
     for name in names:
         if _run_service_command("enable", name):
+            diagnosis_unignore(["services", f"service={name}"])
             logger.success(m18n.n("service_enabled", service=name))
         else:
             raise YunohostError(
@@ -325,6 +316,7 @@ def service_disable(names):
         names = [names]
     for name in names:
         if _run_service_command("disable", name):
+            diagnosis_ignore(["services", f"service={name}"])
             logger.success(m18n.n("service_disabled", service=name))
         else:
             raise YunohostError(
@@ -401,7 +393,6 @@ def _get_service_information_from_systemd(service):
 
 
 def _get_and_format_service_status(service, infos):
-
     systemd_service = infos.get("actual_systemd_service", service)
     raw_status, raw_service = _get_service_information_from_systemd(systemd_service)
 
@@ -422,7 +413,6 @@ def _get_and_format_service_status(service, infos):
 
     # If no description was there, try to get it from the .json locales
     if not description:
-
         translation_key = f"service_description_{service}"
         if m18n.key_exists(translation_key):
             description = m18n.n(translation_key)
@@ -529,7 +519,6 @@ def service_log(name, number=50):
     result["journalctl"] = _get_journalctl_logs(name, number).splitlines()
 
     for log_path in log_list:
-
         if not os.path.exists(log_path):
             continue
 
@@ -628,7 +617,6 @@ def _run_service_command(action, service):
 
 
 def _give_lock(action, service, p):
-
     # Depending of the action, systemctl calls the PID differently :/
     if action == "start" or action == "restart":
         systemctl_PID_name = "MainPID"
@@ -702,14 +690,25 @@ def _get_services():
     ]
     for name in services_with_package_condition:
         package = services[name]["ignore_if_package_is_not_installed"]
-        if os.system(f"dpkg --list | grep -q 'ii *{package}'") != 0:
+        if (
+            check_output(
+                f"dpkg-query --show --showformat='${{db:Status-Status}}' '{package}' 2>/dev/null || true"
+            )
+            != "installed"
+        ):
             del services[name]
 
     php_fpm_versions = check_output(
-        r"dpkg --list | grep -P 'ii  php\d.\d-fpm' | awk '{print $2}' | grep -o -P '\d.\d' || true"
+        r"dpkg --list | grep -P 'ii  php\d.\d-fpm' | awk '{print $2}' | grep -o -P '\d.\d' || true",
+        cwd="/tmp",
     )
     php_fpm_versions = [v for v in php_fpm_versions.split("\n") if v.strip()]
+
     for version in php_fpm_versions:
+        # Skip php 7.3 which is most likely dead after buster->bullseye migration
+        # because users get spooked
+        if version == "7.3":
+            continue
         services[f"php{version}-fpm"] = {
             "log": f"/var/log/php{version}-fpm.log",
             "test_conf": f"php-fpm{version} --test",  # ofc the service is phpx.y-fpm but the program is php-fpmx.y because why not ...
@@ -744,7 +743,6 @@ def _save_services(services):
     diff = {}
 
     for service_name, service_infos in services.items():
-
         # Ignore php-fpm services, they are to be added dynamically by the core,
         # but not actually saved
         if service_name.startswith("php") and service_name.endswith("-fpm"):
@@ -782,7 +780,7 @@ def _tail(file, n):
             f = gzip.open(file)
             lines = f.read().splitlines()
         else:
-            f = open(file)
+            f = open(file, errors="replace")
             pos = 1
             lines = []
             while len(lines) < to_read and pos > 0:

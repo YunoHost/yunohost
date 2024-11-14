@@ -1,31 +1,45 @@
-#!/usr/bin/env python
-
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import random
 import requests
 from typing import List
 
-from moulinette.utils.filesystem import read_file
+from moulinette.utils.filesystem import read_file, mkdir, rm
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list
 from yunohost.utils.dns import is_special_use_tld
+from yunohost.settings import settings_get
 
 DIAGNOSIS_SERVER = "diagnosis.yunohost.org"
 
 
 class MyDiagnoser(Diagnoser):
-
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
     dependencies: List[str] = ["ip"]
 
     def run(self):
-
         all_domains = domain_list()["domains"]
         domains_to_check = []
         for domain in all_domains:
-
             # If the diagnosis location ain't defined, can't do diagnosis,
             # probably because nginx conf manually modified...
             nginx_conf = "/etc/nginx/conf.d/%s.conf" % domain
@@ -46,9 +60,9 @@ class MyDiagnoser(Diagnoser):
                 domains_to_check.append(domain)
 
         self.nonce = "".join(random.choice("0123456789abcedf") for i in range(16))
-        os.system("rm -rf /tmp/.well-known/ynh-diagnosis/")
-        os.system("mkdir -p /tmp/.well-known/ynh-diagnosis/")
-        os.system("touch /tmp/.well-known/ynh-diagnosis/%s" % self.nonce)
+        rm("/var/www/.well-known/ynh-diagnosis/", recursive=True, force=True)
+        mkdir("/var/www/.well-known/ynh-diagnosis/", parents=True, mode=0o0775)
+        os.system("touch /var/www/.well-known/ynh-diagnosis/%s" % self.nonce)
 
         if not domains_to_check:
             return
@@ -60,7 +74,9 @@ class MyDiagnoser(Diagnoser):
 
         ipversions = []
         ipv4 = Diagnoser.get_cached_report("ip", item={"test": "ipv4"}) or {}
-        if ipv4.get("status") == "SUCCESS":
+        if ipv4.get("status") == "SUCCESS" and settings_get(
+            "misc.network.dns_exposure"
+        ) in ["both", "ipv4"]:
             ipversions.append(4)
 
         # To be discussed: we could also make this check dependent on the
@@ -80,7 +96,10 @@ class MyDiagnoser(Diagnoser):
         # "curl --head the.global.ip" will simply timeout...
         if self.do_hairpinning_test:
             global_ipv4 = ipv4.get("data", {}).get("global", None)
-            if global_ipv4:
+            if global_ipv4 and settings_get("misc.network.dns_exposure") in [
+                "both",
+                "ipv4",
+            ]:
                 try:
                     requests.head("http://" + global_ipv4, timeout=5)
                 except requests.exceptions.Timeout:
@@ -97,7 +116,6 @@ class MyDiagnoser(Diagnoser):
                     pass
 
     def test_http(self, domains, ipversions):
-
         results = {}
         for ipversion in ipversions:
             try:
@@ -122,7 +140,6 @@ class MyDiagnoser(Diagnoser):
             return
 
         for domain in domains:
-
             # i18n: diagnosis_http_bad_status_code
             # i18n: diagnosis_http_connection_error
             # i18n: diagnosis_http_timeout
@@ -131,7 +148,10 @@ class MyDiagnoser(Diagnoser):
             if all(
                 results[ipversion][domain]["status"] == "ok" for ipversion in ipversions
             ):
-                if 4 in ipversions:
+                if 4 in ipversions and settings_get("misc.network.dns_exposure") in [
+                    "both",
+                    "ipv4",
+                ]:
                     self.do_hairpinning_test = True
                 yield dict(
                     meta={"domain": domain},
@@ -169,7 +189,9 @@ class MyDiagnoser(Diagnoser):
                     )
                     AAAA_status = dnsrecords.get("data", {}).get("AAAA:@")
 
-                    return AAAA_status in ["OK", "WRONG"]
+                    return AAAA_status in ["OK", "WRONG"] or settings_get(
+                        "misc.network.dns_exposure"
+                    ) in ["both", "ipv6"]
 
                 if failed == 4 or ipv6_is_important_for_this_domain():
                     yield dict(

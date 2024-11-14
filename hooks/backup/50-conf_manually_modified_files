@@ -6,7 +6,7 @@ YNH_CWD="${YNH_BACKUP_DIR%/}/conf/manually_modified_files"
 mkdir -p "$YNH_CWD"
 cd "$YNH_CWD"
 
-yunohost tools shell -c "from yunohost.regenconf import manually_modified_files; print('\n'.join(manually_modified_files()))" >./manually_modified_files_list
+yunohost tools shell -c "from yunohost.regenconf import manually_modified_files; print('\n'.join(manually_modified_files()))" > ./manually_modified_files_list
 
 ynh_backup --src_path="./manually_modified_files_list"
 

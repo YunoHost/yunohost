@@ -1,37 +1,29 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2018 YunoHost
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
-
-""" diagnosis.py
-
-    Look for possible issues on the server
-"""
-
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import re
 import os
 import time
 import glob
 from importlib import import_module
+from logging import getLogger
 
 from moulinette import m18n, Moulinette
-from moulinette.utils import log
 from moulinette.utils.filesystem import (
     read_json,
     write_to_json,
@@ -41,7 +33,7 @@ from moulinette.utils.filesystem import (
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
-logger = log.getActionLogger("yunohost.diagnosis")
+logger = getLogger("yunohost.diagnosis")
 
 DIAGNOSIS_CACHE = "/var/cache/yunohost/diagnosis/"
 DIAGNOSIS_CONFIG_FILE = "/etc/yunohost/diagnosis.yml"
@@ -53,7 +45,6 @@ def diagnosis_list():
 
 
 def diagnosis_get(category, item):
-
     # Get all the categories
     all_categories_names = _list_diagnosis_categories()
 
@@ -77,7 +68,6 @@ def diagnosis_get(category, item):
 def diagnosis_show(
     categories=[], issues=False, full=False, share=False, human_readable=False
 ):
-
     if not os.path.exists(DIAGNOSIS_CACHE):
         logger.warning(m18n.n("diagnosis_never_ran_yet"))
         return
@@ -98,7 +88,6 @@ def diagnosis_show(
     # Fetch all reports
     all_reports = []
     for category in categories:
-
         try:
             report = Diagnoser.get_cached_report(category)
         except Exception as e:
@@ -147,7 +136,6 @@ def diagnosis_show(
 
 
 def _dump_human_readable_reports(reports):
-
     output = ""
 
     for report in reports:
@@ -167,7 +155,6 @@ def _dump_human_readable_reports(reports):
 def diagnosis_run(
     categories=[], force=False, except_if_never_ran_yet=False, email=False
 ):
-
     if (email or except_if_never_ran_yet) and not os.path.exists(DIAGNOSIS_CACHE):
         return
 
@@ -271,22 +258,17 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
         return {"ignore_filters": configuration.get("ignore_filters", {})}
 
     def validate_filter_criterias(filter_):
-
         # Get all the categories
         all_categories_names = _list_diagnosis_categories()
 
         # Sanity checks for the provided arguments
         if len(filter_) == 0:
-            raise YunohostValidationError(
-                "You should provide at least one criteria being the diagnosis category to ignore"
-            )
+            raise YunohostValidationError(m18n.n("diagnosis_ignore_missing_criteria"))
         category = filter_[0]
         if category not in all_categories_names:
             raise YunohostValidationError(f"{category} is not a diagnosis category")
         if any("=" not in criteria for criteria in filter_[1:]):
-            raise YunohostValidationError(
-                "Criterias should be of the form key=value (e.g. domain=yolo.test)"
-            )
+            raise YunohostValidationError(m18n.n("diagnosis_ignore_criteria_error"))
 
         # Convert the provided criteria into a nice dict
         criterias = {c.split("=")[0]: c.split("=")[1] for c in filter_[1:]}
@@ -294,7 +276,6 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
         return category, criterias
 
     if add_filter:
-
         category, criterias = validate_filter_criterias(add_filter)
 
         # Fetch current issues for the requested category
@@ -310,7 +291,7 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
             issue_matches_criterias(i, criterias)
             for i in current_issues_for_this_category
         ):
-            raise YunohostError("No issues was found matching the given criteria.")
+            raise YunohostError(m18n.n("diagnosis_ignore_no_issue_found"))
 
         # Make sure the subdicts/lists exists
         if "ignore_filters" not in configuration:
@@ -319,16 +300,17 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
             configuration["ignore_filters"][category] = []
 
         if criterias in configuration["ignore_filters"][category]:
-            logger.warning("This filter already exists.")
+            logger.warning(
+                m18n.n("diagnosis_ignore_already_filtered", category=category)
+            )
             return
 
         configuration["ignore_filters"][category].append(criterias)
         _diagnosis_write_configuration(configuration)
-        logger.success("Filter added")
+        logger.success(m18n.n("diagnosis_ignore_filter_added", category=category))
         return
 
     if remove_filter:
-
         category, criterias = validate_filter_criterias(remove_filter)
 
         # Make sure the subdicts/lists exists
@@ -338,11 +320,14 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
             configuration["ignore_filters"][category] = []
 
         if criterias not in configuration["ignore_filters"][category]:
-            raise YunohostValidationError("This filter does not exists.")
+            logger.warning(
+                m18n.n("diagnosis_ignore_no_filter_found", category=category)
+            )
+            return
 
         configuration["ignore_filters"][category].remove(criterias)
         _diagnosis_write_configuration(configuration)
-        logger.success("Filter removed")
+        logger.success(m18n.n("diagnosis_ignore_filter_removed", category=category))
         return
 
 
@@ -402,12 +387,10 @@ def add_ignore_flag_to_issues(report):
 
 class Diagnoser:
     def __init__(self):
-
         self.cache_file = Diagnoser.cache_file(self.id_)
         self.description = Diagnoser.get_description(self.id_)
 
     def cached_time_ago(self):
-
         if not os.path.exists(self.cache_file):
             return 99999999
         return time.time() - os.path.getmtime(self.cache_file)
@@ -418,7 +401,6 @@ class Diagnoser:
         return write_to_json(self.cache_file, report)
 
     def diagnose(self, force=False):
-
         if not force and self.cached_time_ago() < self.cache_duration:
             logger.debug(f"Cache still valid : {self.cache_file}")
             logger.info(
@@ -556,7 +538,6 @@ class Diagnoser:
 
     @staticmethod
     def i18n(report, force_remove_html_tags=False):
-
         # "Render" the strings with m18n.n
         # N.B. : we do those m18n.n right now instead of saving the already-translated report
         # because we can't be sure we'll redisplay the infos with the same locale as it
@@ -566,7 +547,6 @@ class Diagnoser:
         report["description"] = Diagnoser.get_description(report["id"])
 
         for item in report["items"]:
-
             # For the summary and each details, we want to call
             # m18n() on the string, with the appropriate data for string
             # formatting which can come from :
@@ -605,7 +585,6 @@ class Diagnoser:
 
     @staticmethod
     def remote_diagnosis(uri, data, ipversion, timeout=30):
-
         # Lazy loading for performance
         import requests
         import socket
@@ -654,7 +633,6 @@ class Diagnoser:
 
 
 def _list_diagnosis_categories():
-
     paths = glob.glob(os.path.dirname(__file__) + "/diagnosers/??-*.py")
     names = [
         name.split("-")[-1]
@@ -665,7 +643,6 @@ def _list_diagnosis_categories():
 
 
 def _load_diagnoser(diagnoser_name):
-
     logger.debug(f"Loading diagnoser {diagnoser_name}")
 
     paths = glob.glob(os.path.dirname(__file__) + f"/diagnosers/??-{diagnoser_name}.py")

@@ -7,9 +7,11 @@ location /yunohost/admin/ {
     index index.html;
 
     {% if webadmin_allowlist_enabled == "True" %}
-    {% for ip in webadmin_allowlist.split(',') %}
-    allow {{ ip }};
-    {% endfor %}
+    {% if webadmin_allowlist.strip() -%}
+    {% for ip in webadmin_allowlist.strip().split(',') -%}
+    allow {{ ip.strip() }};
+    {% endfor -%}
+    {% endif -%}
     deny all;
     {% endif %}
 
@@ -17,6 +19,10 @@ location /yunohost/admin/ {
         etag off;
         expires off;
         more_set_headers "Cache-Control: no-store, no-cache, must-revalidate";
+    }
+
+    location /yunohost/admin/applogos/ {
+        alias /usr/share/yunohost/applogos/;
     }
 
     more_set_headers "Content-Security-Policy: upgrade-insecure-requests; default-src 'self'; connect-src 'self' https://paste.yunohost.org wss://$host; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'; object-src 'none'; img-src 'self' data:;";

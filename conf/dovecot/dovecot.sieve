@@ -1,4 +1,4 @@
 require "fileinto"; 
-    if header :contains "X-Spam-Flag" "YES" { 
+    if header :contains "X-Spam-Flag" "Yes" { 
         fileinto "Junk"; 
     }

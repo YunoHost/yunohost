@@ -1,34 +1,32 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2019 YunoHost
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
-
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import yaml
 import shutil
 import hashlib
-
+import json
+from logging import getLogger
 from difflib import unified_diff
 from datetime import datetime
 
 from moulinette import m18n
-from moulinette.utils import log, filesystem
+from moulinette.utils.filesystem import mkdir
 from moulinette.utils.process import check_output
 
 from yunohost.utils.error import YunohostError
@@ -40,7 +38,7 @@ BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, "backup")
 PENDING_CONF_DIR = os.path.join(BASE_CONF_PATH, "pending")
 REGEN_CONF_FILE = "/etc/yunohost/regenconf.yml"
 
-logger = log.getActionLogger("yunohost.regenconf")
+logger = getLogger("yunohost.regenconf")
 
 
 # FIXME : those ain't just services anymore ... what are we supposed to do with this ...
@@ -66,6 +64,8 @@ def regen_conf(
 
     """
 
+    from yunohost.settings import settings_get
+
     if names is None:
         names = []
 
@@ -80,7 +80,6 @@ def regen_conf(
 
         for category, conf_files in pending_conf.items():
             for system_path, pending_path in conf_files.items():
-
                 pending_conf[category][system_path] = {
                     "pending_conf": pending_path,
                     "diff": _get_files_diff(system_path, pending_path, True),
@@ -106,7 +105,7 @@ def regen_conf(
             for name in names:
                 shutil.rmtree(os.path.join(PENDING_CONF_DIR, name), ignore_errors=True)
     else:
-        filesystem.mkdir(PENDING_CONF_DIR, 0o755, True)
+        mkdir(PENDING_CONF_DIR, 0o755, True)
 
     # Execute hooks for pre-regen
     # element 2 and 3 with empty string is because of legacy...
@@ -115,7 +114,7 @@ def regen_conf(
     def _pre_call(name, priority, path, args):
         # create the pending conf directory for the category
         category_pending_path = os.path.join(PENDING_CONF_DIR, name)
-        filesystem.mkdir(category_pending_path, 0o755, True, uid="root")
+        mkdir(category_pending_path, 0o755, True, uid="root")
 
         # return the arguments to pass to the script
         return pre_args + [
@@ -140,6 +139,14 @@ def regen_conf(
     # though kinda tight-coupled to the postinstall logic :s
     if os.path.exists("/etc/yunohost/installed"):
         env["YNH_DOMAINS"] = " ".join(domain_list()["domains"])
+        env["YNH_MAIN_DOMAINS"] = " ".join(
+            domain_list(exclude_subdomains=True)["domains"]
+        )
+    env["YNH_CONTEXT"] = "regenconf"
+    # perf: Export all global settings as a environment variable
+    # so that scripts dont have to call 'yunohost settings get' manually
+    # which is painful performance-wise
+    env["YNH_SETTINGS"] = json.dumps(settings_get("", export=True))
 
     pre_result = hook_callback("conf_regen", names, pre_callback=_pre_call, env=env)
 
@@ -432,7 +439,13 @@ def _get_regenconf_infos():
     """
     try:
         with open(REGEN_CONF_FILE, "r") as f:
-            return yaml.safe_load(f)
+            data = yaml.safe_load(f)
+        # Cleanup legacy
+        if "metronome" in data:
+            del data["metronome"]
+        if "rspamd" in data:
+            del data["rspamd"]
+        return data
     except Exception:
         return {}
 
@@ -595,7 +608,6 @@ def _update_conf_hashes(category, hashes):
 
 
 def _force_clear_hashes(paths):
-
     categories = _get_regenconf_infos()
     for path in paths:
         for category in categories.keys():
@@ -623,7 +635,7 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
         backup_dir = os.path.dirname(backup_path)
 
         if not os.path.isdir(backup_dir):
-            filesystem.mkdir(backup_dir, 0o755, True)
+            mkdir(backup_dir, 0o755, True)
 
         shutil.copy2(system_conf, backup_path)
         logger.debug(
@@ -638,7 +650,7 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
             system_dir = os.path.dirname(system_conf)
 
             if not os.path.isdir(system_dir):
-                filesystem.mkdir(system_dir, 0o755, True)
+                mkdir(system_dir, 0o755, True)
 
             shutil.copyfile(new_conf, system_conf)
             logger.debug(m18n.n("regenconf_file_updated", conf=system_conf))
@@ -675,7 +687,6 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
 
 
 def manually_modified_files():
-
     output = []
     regenconf_categories = _get_regenconf_infos()
     for category, infos in regenconf_categories.items():
@@ -690,7 +701,6 @@ def manually_modified_files():
 def manually_modified_files_compared_to_debian_default(
     ignore_handled_by_regenconf=False,
 ):
-
     # from https://serverfault.com/a/90401
     files = check_output(
         "dpkg-query -W -f='${Conffiles}\n' '*' \

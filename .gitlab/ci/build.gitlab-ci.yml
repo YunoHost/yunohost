@@ -1,22 +1,27 @@
 .build-stage:
   stage: build
-  image: "before-install"
+  needs:
+    - job: actionsmap
+    - job: invalidcode311
+  image: "build-and-lint"
   variables:
-    YNH_SOURCE: "https://github.com/yunohost"
+    YNH_BUILD_DIR: "$GIT_CLONE_PATH/build"
   before_script:
+    - echo $PWD
+    - echo $CI_PROJECT_DIR
     - mkdir -p $YNH_BUILD_DIR
-    - DEBIAN_FRONTEND=noninteractive apt update
   artifacts:
     paths:
-      - $YNH_BUILD_DIR/*.deb
+      - ./*.deb
 
 .build_script: &build_script
-  - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" install devscripts --no-install-recommends
   - cd $YNH_BUILD_DIR/$PACKAGE
   - VERSION=$(dpkg-parsechangelog -S Version 2>/dev/null)
-  - VERSION_NIGHTLY="${VERSION}+$(date +%Y%m%d%H%M)"
-  - dch --package "${PACKAGE}" --force-bad-version -v "${VERSION_NIGHTLY}" -D "unstable" --force-distribution "Daily build."
+  - VERSION_TIMESTAMPED="${VERSION}+$(date +%Y%m%d%H%M)"
+  - dch --package "${PACKAGE}" --force-bad-version -v "${VERSION_TIMESTAMPED}" -D "unstable" --force-distribution "CI build."
   - debuild --no-lintian -us -uc
+  - cp $YNH_BUILD_DIR/*.deb ${CI_PROJECT_DIR}/
+  - cd ${CI_PROJECT_DIR}
 
 ########################################
 # BUILD DEB
@@ -31,18 +36,16 @@ build-yunohost:
     - mkdir -p $YNH_BUILD_DIR/$PACKAGE
     - cat archive.tar.gz | tar -xz -C $YNH_BUILD_DIR/$PACKAGE
     - rm archive.tar.gz
-    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $(pwd)/$YNH_BUILD_DIR/$PACKAGE
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE || { apt-get update && DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE; }
     - *build_script
-
 
 build-ssowat:
   extends: .build-stage
   variables:
     PACKAGE: "ssowat"
   script:
-    - DEBIAN_DEPENDS=$(cat debian/control | tr "," "\n" | grep -Po "ssowat \([>,=,<]+ .*\)" | grep -Po "[0-9\.]+")
-    - git clone $YNH_SOURCE/$PACKAGE -b $CI_COMMIT_REF_NAME $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE -b $DEBIAN_DEPENDS $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE $YNH_BUILD_DIR/$PACKAGE --depth 1
-    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $(pwd)/$YNH_BUILD_DIR/$PACKAGE
+    - git clone $YNH_SOURCE/$PACKAGE -b $CI_COMMIT_REF_NAME $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE -b $YNH_DEBIAN $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE $YNH_BUILD_DIR/$PACKAGE --depth 1
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE || { apt-get update && DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE; }
     - *build_script
 
 build-moulinette:
@@ -50,7 +53,6 @@ build-moulinette:
   variables:
     PACKAGE: "moulinette"
   script:
-    - DEBIAN_DEPENDS=$(cat debian/control | tr "," "\n" | grep -Po "moulinette \([>,=,<]+ .*\)" | grep -Po "[0-9\.]+")
-    - git clone $YNH_SOURCE/$PACKAGE -b $CI_COMMIT_REF_NAME $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE -b $DEBIAN_DEPENDS $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE $YNH_BUILD_DIR/$PACKAGE --depth 1
-    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $(pwd)/$YNH_BUILD_DIR/$PACKAGE
+    - git clone $YNH_SOURCE/$PACKAGE -b $CI_COMMIT_REF_NAME $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE -b $YNH_DEBIAN $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE $YNH_BUILD_DIR/$PACKAGE --depth 1
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE || { apt-get update && DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE; }
     - *build_script

@@ -1,4 +1,21 @@
-# encoding: utf-8
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 import re
 import os
@@ -64,7 +81,7 @@ def user_ssh_add_key(username, key, comment):
             parents=True,
             uid=user["uid"][0],
         )
-        chmod(os.path.join(user["homeDirectory"][0], ".ssh"), 0o600)
+        chmod(os.path.join(user["homeDirectory"][0], ".ssh"), 0o700)
 
         # create empty file to set good permissions
         write_to_file(authorized_keys_file, "")
@@ -155,16 +172,7 @@ def _get_user_for_ssh(username, attrs=None):
             "username": "root",
             "fullname": "",
             "mail": "",
-            "home_path": root_unix.pw_dir,
-        }
-
-    if username == "admin":
-        admin_unix = pwd.getpwnam("admin")
-        return {
-            "username": "admin",
-            "fullname": "",
-            "mail": "",
-            "home_path": admin_unix.pw_dir,
+            "homeDirectory": root_unix.pw_dir,
         }
 
     # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html

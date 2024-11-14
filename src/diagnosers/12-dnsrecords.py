@@ -1,12 +1,28 @@
-#!/usr/bin/env python
-
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import re
+import logging
 from typing import List
 from datetime import datetime, timedelta
 from publicsuffix2 import PublicSuffixList
 
-from moulinette.utils import log
 from moulinette.utils.process import check_output
 
 from yunohost.utils.dns import (
@@ -17,19 +33,21 @@ from yunohost.utils.dns import (
 )
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _get_maindomain
-from yunohost.dns import _build_dns_conf, _get_dns_zone_for_domain
+from yunohost.dns import (
+    _build_dns_conf,
+    _get_dns_zone_for_domain,
+    _get_relative_name_for_dns_zone,
+)
 
-logger = log.getActionLogger("yunohost.diagnosis")
+logger = logging.getLogger("yunohost.diagnosis")
 
 
 class MyDiagnoser(Diagnoser):
-
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
     dependencies: List[str] = ["ip"]
 
     def run(self):
-
         main_domain = _get_maindomain()
 
         major_domains = domain_list(exclude_subdomains=True)["domains"]
@@ -57,7 +75,6 @@ class MyDiagnoser(Diagnoser):
             yield report
 
     def check_domain(self, domain, is_main_domain):
-
         if is_special_use_tld(domain):
             yield dict(
                 meta={"domain": domain},
@@ -68,22 +85,20 @@ class MyDiagnoser(Diagnoser):
             return
 
         base_dns_zone = _get_dns_zone_for_domain(domain)
-        basename = domain.replace(base_dns_zone, "").rstrip(".") or "@"
+        basename = _get_relative_name_for_dns_zone(domain, base_dns_zone)
 
         expected_configuration = _build_dns_conf(
             domain, include_empty_AAAA_if_no_ipv6=True
         )
 
-        categories = ["basic", "mail", "xmpp", "extra"]
+        categories = ["basic", "mail", "extra"]
 
         for category in categories:
-
             records = expected_configuration[category]
             discrepancies = []
             results = {}
 
             for r in records:
-
                 id_ = r["type"] + ":" + r["name"]
                 fqdn = r["name"] + "." + base_dns_zone if r["name"] != "@" else domain
 
@@ -101,7 +116,7 @@ class MyDiagnoser(Diagnoser):
                 if r["value"] == "@":
                     r["value"] = domain + "."
                 elif r["type"] == "CNAME":
-                    r["value"] = r["value"] + f".{base_dns_zone}."
+                    r["value"] = r["value"]  # + f".{base_dns_zone}."
 
                 if self.current_record_match_expected(r):
                     results[id_] = "OK"
@@ -162,12 +177,15 @@ class MyDiagnoser(Diagnoser):
             yield output
 
     def get_current_record(self, fqdn, type_):
-
         success, answers = dig(fqdn, type_, resolvers="force_external")
 
         if success != "ok":
             return None
         else:
+            if type_ == "TXT" and isinstance(answers, list):
+                for part in answers:
+                    if part.startswith('"v=spf1'):
+                        return part
             return answers[0] if len(answers) == 1 else answers
 
     def current_record_match_expected(self, r):
@@ -197,9 +215,21 @@ class MyDiagnoser(Diagnoser):
                     for part in current
                     if not part.startswith("ip4:") and not part.startswith("ip6:")
                 }
+            if "v=DMARC1" in r["value"]:
+                for param in current:
+                    if "=" not in param:
+                        return False
+                    key, value = param.split("=", 1)
+                    if key == "p":
+                        return value in ["none", "quarantine", "reject"]
             return expected == current
         elif r["type"] == "MX":
             # For MX, we want to ignore the priority
+            expected = r["value"].split()[-1]
+            current = r["current"].split()[-1]
+            return expected == current
+        elif r["type"] == "CAA":
+            # For CAA, check only the last item, ignore the 0 / 128 nightmare
             expected = r["value"].split()[-1]
             current = r["current"].split()[-1]
             return expected == current
@@ -263,9 +293,9 @@ class MyDiagnoser(Diagnoser):
                 yield dict(
                     meta=meta,
                     data={},
-                    status=alert_type.upper()
-                    if alert_type != "not_found"
-                    else "WARNING",
+                    status=(
+                        alert_type.upper() if alert_type != "not_found" else "WARNING"
+                    ),
                     summary="diagnosis_domain_expiration_" + alert_type,
                     details=details[alert_type],
                 )

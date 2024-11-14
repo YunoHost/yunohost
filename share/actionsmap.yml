@@ -37,14 +37,6 @@ _global:
     authentication:
         api: ldap_admin
         cli: null
-    arguments:
-        -v:
-            full: --version
-            help: Display YunoHost packages versions
-            action: callback
-            callback:
-                method: yunohost.utils.packages.ynh_packages_version
-                return: true
 
 #############################
 #           User            #
@@ -71,24 +63,17 @@ user:
                     help: The unique username to create
                     extra:
                         pattern: &pattern_username
-                            - !!str ^[a-z0-9_]+$
+                            - !!str ^[a-z0-9_\.]+$
                             - "pattern_username"
-                -f:
-                    full: --firstname
+                -F:
+                    full: --fullname
+                    help: The full name of the user. For example 'Camille Dupont'
                     extra:
-                        ask: ask_firstname
+                        ask: ask_fullname
                         required: True
-                        pattern: &pattern_firstname
-                            - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
-                            - "pattern_firstname"
-                -l:
-                    full: --lastname
-                    extra:
-                        ask: ask_lastname
-                        required: True
-                        pattern: &pattern_lastname
-                            - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
-                            - "pattern_lastname"
+                        pattern: &pattern_fullname
+                            - !!str ^([^\W_]{1,30}[ ,.'-]{0,3})+$
+                            - "pattern_fullname"
                 -p:
                     full: --password
                     help: User password
@@ -101,7 +86,7 @@ user:
                         comment: good_practices_about_user_password
                 -d:
                     full: --domain
-                    help: Domain for the email address and xmpp account
+                    help: Domain for the email address
                     extra:
                         pattern: &pattern_domain
                             - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
@@ -115,6 +100,11 @@ user:
                         pattern: &pattern_mailbox_quota
                             - !!str ^(\d+[bkMGT])|0$
                             - "pattern_mailbox_quota"
+                -s:
+                    full: --loginShell
+                    help: The login shell used
+                    default: "/bin/bash"
+
 
         ### user_delete()
         delete:
@@ -136,14 +126,11 @@ user:
             arguments:
                 username:
                     help: Username to update
-                -f:
-                    full: --firstname
+                -F:
+                    full: --fullname
+                    help: The full name of the user. For example 'Camille Dupont'
                     extra:
-                        pattern: *pattern_firstname
-                -l:
-                    full: --lastname
-                    extra:
-                        pattern: *pattern_lastname
+                        pattern: *pattern_fullname
                 -m:
                     full: --mail
                     extra:
@@ -187,6 +174,10 @@ user:
                     metavar: "{SIZE|0}"
                     extra:
                         pattern: *pattern_mailbox_quota
+                -s:
+                    full: --loginShell
+                    help: The login shell used
+                    default: "/bin/bash"
 
         ### user_info()
         info:
@@ -195,12 +186,12 @@ user:
             arguments:
                 username:
                     help: Username or email to get information
-        
+
         ### user_export()
         export:
             action_help: Export users into CSV
             api: GET /users/export
-        
+
         ### user_import()
         import:
             action_help: Import several users from CSV
@@ -227,10 +218,6 @@ user:
                     action_help: List existing groups
                     api: GET /users/groups
                     arguments:
-                        -s:
-                            full: --short
-                            help: List only the names of groups
-                            action: store_true
                         -f:
                             full: --full
                             help: Display all informations known about each groups
@@ -304,6 +291,42 @@ user:
                             metavar: USERNAME
                             extra:
                                 pattern: *pattern_username
+
+                ### user_group_add_mailalias()
+                add-mailalias:
+                    action_help: Add mail aliases to group
+                    api: PUT /users/groups/<groupname>/aliases/<aliases>
+                    arguments:
+                        groupname:
+                            help: Name of the group to add user(s) to
+                            extra:
+                                pattern: *pattern_groupname
+                        aliases:
+                          help: Mail aliases to add
+                          nargs: "+"
+                          metavar: MAIL
+                          extra:
+                              pattern: *pattern_email
+                        --force:
+                            help: Ignore warnings about special groups
+                            action: store_true
+
+                ### user_group_remove_mailalias()
+                remove-mailalias:
+                    action_help: Remove mail aliases to group
+                    api: DELETE /users/groups/<groupname>/aliases/<aliases>
+                    arguments:
+                        groupname:
+                            help: Name of the group to add user(s) to
+                            extra:
+                                pattern: *pattern_groupname
+                        aliases:
+                          help: Mail aliases to remove
+                          nargs: "+"
+                          metavar: MAIL
+                        --force:
+                            help: Ignore warnings about special groups
+                            action: store_true
 
         permission:
             subcategory_help: Manage permissions
@@ -443,6 +466,22 @@ domain:
                 --exclude-subdomains:
                     help: Filter out domains that are obviously subdomains of other declared domains
                     action: store_true
+                --tree:
+                    help: Display domains as a tree
+                    action: store_true
+                --features:
+                    help: List only domains with features enabled (mail_in, mail_out)
+                    nargs: "*"
+
+        ### domain_info()
+        info:
+            action_help: Get domain aggredated data
+            api: GET /domains/<domain>
+            arguments:
+                domain:
+                    help: Domain to check
+                    extra:
+                        pattern: *pattern_domain
 
         ### domain_add()
         add:
@@ -453,9 +492,18 @@ domain:
                     help: Domain name to add
                     extra:
                         pattern: *pattern_domain
-                -d:
-                    full: --dyndns
-                    help: Subscribe to the DynDNS service
+                --ignore-dyndns:
+                    help: If adding a DynDNS domain, only add the domain, without subscribing to the DynDNS service
+                    action: store_true
+                --dyndns-recovery-password:
+                    metavar: PASSWORD
+                    nargs: "?"
+                    const: 0
+                    help: If adding a DynDNS domain, subscribe to the DynDNS service with a password, used to later delete the domain
+                    extra:
+                        pattern: *pattern_password
+                --install-letsencrypt-cert:
+                    help: If adding a subdomain of an already added domain, try to install a Let's Encrypt certificate
                     action: store_true
 
         ### domain_remove()
@@ -475,26 +523,23 @@ domain:
                     full: --force
                     help: Do not ask confirmation to remove apps
                     action: store_true
-
-
-        ### domain_dns_conf()
-        dns-conf:
-            deprecated: true
-            action_help: Generate sample DNS configuration for a domain
-            arguments:
-                domain:
-                    help: Target domain
+                --ignore-dyndns:
+                    help: If removing a DynDNS domain, only remove the domain, without unsubscribing from the DynDNS service
+                    action: store_true
+                --dyndns-recovery-password:
+                    metavar: PASSWORD
+                    nargs: "?"
+                    const: 0
+                    help: If removing a DynDNS domain, unsubscribe from the DynDNS service with a password
                     extra:
-                        pattern: *pattern_domain
-        
+                        pattern: *pattern_password
+
         ### domain_maindomain()
         main-domain:
             action_help: Check the current main domain, or change it
             deprecated_alias:
                 - maindomain
-            api:
-                - GET /domains/main
-                - PUT /domains/<new_main_domain>/main
+            api: PUT /domains/<new_main_domain>/main
             arguments:
                 -n:
                     full: --new-main-domain
@@ -502,56 +547,9 @@ domain:
                     extra:
                         pattern: *pattern_domain
 
-        ### certificate_status()
-        cert-status:
-            deprecated: true
-            action_help: List status of current certificates (all by default).
-            arguments:
-                domain_list:
-                    help: Domains to check
-                    nargs: "*"
-                --full:
-                    help: Show more details
-                    action: store_true
-
-        ### certificate_install()
-        cert-install:
-            deprecated: true
-            action_help: Install Let's Encrypt certificates for given domains (all by default).
-            arguments:
-                domain_list:
-                    help: Domains for which to install the certificates
-                    nargs: "*"
-                --force:
-                    help: Install even if current certificate is not self-signed
-                    action: store_true
-                --no-checks:
-                    help: Does not perform any check that your domain seems correctly configured (DNS, reachability) before attempting to install. (Not recommended)
-                    action: store_true
-                --self-signed:
-                    help: Install self-signed certificate instead of Let's Encrypt
-                    action: store_true
-
-        ### certificate_renew()
-        cert-renew:
-            deprecated: true
-            action_help: Renew the Let's Encrypt certificates for given domains (all by default).
-            arguments:
-                domain_list:
-                    help: Domains for which to renew the certificates
-                    nargs: "*"
-                --force:
-                    help: Ignore the validity threshold (30 days)
-                    action: store_true
-                --email:
-                    help: Send an email to root with logs if some renewing fails
-                    action: store_true
-                --no-checks:
-                    help: Does not perform any check that your domain seems correctly configured (DNS, reachability) before attempting to renew. (Not recommended)
-                    action: store_true
-
         ### domain_url_available()
         url-available:
+            hide_in_help: True
             action_help: Check availability of a web path
             api: GET /domain/<domain>/urlavailable
             arguments:
@@ -562,16 +560,83 @@ domain:
                 path:
                     help: The path to check (e.g. /coffee)
 
+
+        ### domain_action_run()
+        action-run:
+            hide_in_help: True
+            action_help: Run domain action
+            api: PUT /domain/<domain>/actions/<action>
+            arguments:
+              domain:
+                  help: Domain name
+              action:
+                  help: action id
+              -a:
+                  full: --args
+                  help: Serialized arguments for action (i.e. "foo=bar&lorem=ipsum")
+
     subcategories:
+        dyndns:
+            subcategory_help: Subscribe and Update DynDNS Hosts
+            actions:
+                ### domain_dyndns_subscribe()
+                subscribe:
+                    action_help: Subscribe to a DynDNS service
+                    arguments:
+                        domain:
+                            help: Domain to subscribe to the DynDNS service
+                            extra:
+                                pattern: *pattern_domain
+                        -p:
+                            full: --recovery-password
+                            nargs: "?"
+                            const: 0
+                            help: Password used to later recover the domain if needed
+                            extra:
+                                pattern: *pattern_password
+
+                ### domain_dyndns_unsubscribe()
+                unsubscribe:
+                    action_help: Unsubscribe from a DynDNS service
+                    arguments:
+                        domain:
+                            help: Domain to unsubscribe from the DynDNS service
+                            extra:
+                                pattern: *pattern_domain
+                                required: True
+                        -p:
+                            full: --recovery-password
+                            nargs: "?"
+                            const: 0
+                            help: Recovery password used to delete the domain
+                            extra:
+                                pattern: *pattern_password
+
+                ### domain_dyndns_set_recovery_password()
+                set-recovery-password:
+                    action_help: Set recovery password
+                    arguments:
+                        domain:
+                            help: Domain to set recovery password for
+                            extra:
+                                pattern: *pattern_domain
+                                required: True
+                        -p:
+                            full: --recovery-password
+                            help: The new recovery password
+                            extra:
+                                password: ask_dyndns_recovery_password
+                                pattern: *pattern_password
 
         config:
             subcategory_help: Domain settings
             actions:
-
                 ### domain_config_get()
                 get:
                     action_help: Display a domain configuration
-                    api: GET /domains/<domain>/config
+                    api:
+                      - GET /domains/<domain>/config
+                      - GET /domains/<domain>/config/<key>
                     arguments:
                       domain:
                           help: Domain name
@@ -590,12 +655,12 @@ domain:
                 ### domain_config_set()
                 set:
                     action_help: Apply a new configuration
-                    api: PUT /domains/<domain>/config
+                    api: PUT /domains/<domain>/config/<key>
                     arguments:
                       domain:
                           help: Domain name
                       key:
-                          help: The question or form key 
+                          help: The question or form key
                           nargs: '?'
                       -v:
                           full: --value
@@ -610,7 +675,7 @@ domain:
                 ### domain_dns_conf()
                 suggest:
                     action_help: Generate sample DNS configuration for a domain
-                    api: 
+                    api:
                       - GET /domains/<domain>/dns
                       - GET /domains/<domain>/dns/suggest
                     arguments:
@@ -618,7 +683,7 @@ domain:
                             help: Target domain
                             extra:
                                 pattern: *pattern_domain
-                
+
                 ### domain_dns_push()
                 push:
                     action_help: Push DNS records to registrar
@@ -645,7 +710,9 @@ domain:
                 ### certificate_status()
                 status:
                     action_help: List status of current certificates (all by default).
-                    api: GET /domains/<domain_list>/cert
+                    api:
+                        - GET /domains/<domain_list>/cert
+                        - GET /domains/*/cert
                     arguments:
                         domain_list:
                             help: Domains to check
@@ -681,7 +748,7 @@ domain:
                             help: Domains for which to renew the certificates
                             nargs: "*"
                         --force:
-                            help: Ignore the validity threshold (30 days)
+                            help: Ignore the validity threshold (15 days)
                             action: store_true
                         --email:
                             help: Send an email to root with logs if some renewing fails
@@ -710,6 +777,10 @@ app:
                     full: --with-categories
                     help: Also return a list of app categories
                     action: store_true
+                -a:
+                    full: --with-antifeatures
+                    help: Also return a list of antifeatures categories
+                    action: store_true
 
         ### app_search()
         search:
@@ -725,6 +796,10 @@ app:
             arguments:
                 app:
                     help: Name, local path or git URL of the app to fetch the manifest of
+                -s:
+                    full: --with-screenshot
+                    help: Also return a base64 screenshot if any (API only)
+                    action: store_true
 
         ### app_list()
         list:
@@ -734,6 +809,10 @@ app:
                 -f:
                     full: --full
                     help: Display all details, including the app manifest and various other infos
+                    action: store_true
+                -u:
+                    full: --upgradable
+                    help: List only apps that can upgrade to a newer version
                     action: store_true
 
         ### app_info()
@@ -778,14 +857,14 @@ app:
                     help: Custom name for the app
                 -a:
                     full: --args
-                    help: Serialized arguments for app script (i.e. "domain=domain.tld&path=/path")
+                    help: Serialized arguments for app script (i.e. "domain=domain.tld&path=/path&init_main_permission=visitors")
                 -n:
                     full: --no-remove-on-failure
                     help: Debug option to avoid removing the app on a failed installation
                     action: store_true
                 -f:
                     full: --force
-                    help: Do not ask confirmation if the app is not safe to use (low quality, experimental or 3rd party)
+                    help: Do not ask confirmation if the app is not safe to use (low quality, experimental or 3rd party), or when the app displays a post-install notification
                     action: store_true
 
         ### app_remove()
@@ -821,6 +900,10 @@ app:
                 -b:
                     full: --no-safety-backup
                     help: Disable the safety backup during upgrade
+                    action: store_true
+                -c:
+                    full: --continue-on-failure
+                    help: Continue to upgrade apps even if one or more upgrade failed
                     action: store_true
 
         ### app_change_url()
@@ -861,9 +944,18 @@ app:
                     help: Delete the key
                     action: store_true
 
+        ### app_shell()
+        shell:
+            action_help: Open an interactive shell with the app environment already loaded
+            # Here we set a GET only not to lock the command line. There is no actual API endpoint for app_shell()
+            api: GET /apps/<app>/shell
+            arguments:
+                app:
+                    help: App ID
 
         ### app_register_url()
         register-url:
+            hide_in_help: True
             action_help: Book/register a web path for a given app
             arguments:
                 app:
@@ -876,6 +968,7 @@ app:
 
         ### app_makedefault()
         makedefault:
+            hide_in_help: True
             action_help: Redirect domain root to an app
             api: PUT /apps/<app>/default
             arguments:
@@ -888,6 +981,17 @@ app:
                     full: --undo
                     help: Undo redirection
                     action: store_true
+
+        ### app_dismiss_notification
+        dismiss-notification:
+            hide_in_help: True
+            action_help: Dismiss post_install or post_upgrade notification
+            api: PUT /apps/<app>/dismiss_notification/<name>
+            arguments:
+                app:
+                    help: App ID to dismiss notification for
+                name:
+                    help: Notification name, either post_install or post_upgrade
 
         ### app_ssowatconf()
         ssowatconf:
@@ -937,7 +1041,9 @@ app:
               ### app_config_get()
               get:
                   action_help: Display an app configuration
-                  api: GET /apps/<app>/config-panel
+                  api:
+                    - GET /apps/<app>/config
+                    - GET /apps/<app>/config/<key>
                   arguments:
                     app:
                         help: App name
@@ -956,12 +1062,12 @@ app:
               ### app_config_set()
               set:
                   action_help: Apply a new configuration
-                  api: PUT /apps/<app>/config
+                  api: PUT /apps/<app>/config/<key>
                   arguments:
                     app:
                         help: App name
                     key:
-                        help: The question or panel key 
+                        help: The question or panel key
                         nargs: '?'
                     -v:
                         full: --value
@@ -1018,7 +1124,7 @@ backup:
             api: PUT /backups/<name>/restore
             arguments:
                 name:
-                    help: Name of the local backup archive
+                    help: Name or path of the backup archive
                 --system:
                     help: List of system parts to restore (or all if none is given)
                     nargs: "*"
@@ -1049,7 +1155,7 @@ backup:
             api: GET /backups/<name>
             arguments:
                 name:
-                    help: Name of the local backup archive
+                    help: Name or path of the backup archive
                 -d:
                     full: --with-details
                     help: Show additional backup information
@@ -1061,6 +1167,7 @@ backup:
 
         ### backup_download()
         download:
+            hide_in_help: True
             action_help: (API only) Request to download the file
             api: GET /backups/<name>/download
             arguments:
@@ -1089,6 +1196,11 @@ settings:
         list:
             action_help: list all entries of the settings
             api: GET /settings
+            arguments:
+                -f:
+                    full: --full
+                    help: Display all details (meant to be used by the API)
+                    action: store_true
 
         ### settings_get()
         get:
@@ -1097,22 +1209,29 @@ settings:
             arguments:
                 key:
                     help: Settings key
-                --full:
-                    help: Show more details
+                -f:
+                    full: --full
+                    help: Display all details (meant to be used by the API)
+                    action: store_true
+                -e:
+                    full: --export
+                    help: Only export key/values, meant to be reimported using "config set --args-file"
                     action: store_true
 
         ### settings_set()
         set:
             action_help: set an entry value in the settings
-            api: POST /settings/<key>
+            api: PUT /settings/<key>
             arguments:
                 key:
-                    help: Settings key
+                    help: The question or form key
+                    nargs: '?'
                 -v:
                     full: --value
                     help: new value
-                    extra:
-                        required: True
+                -a:
+                    full: --args
+                    help: Serialized arguments for new configuration (i.e. "mail_in=0&mail_out=0")
 
         ### settings_reset_all()
         reset-all:
@@ -1386,21 +1505,26 @@ firewall:
 #          DynDNS           #
 #############################
 dyndns:
-    category_help: Subscribe and Update DynDNS Hosts
+    category_help: Subscribe and Update DynDNS Hosts ( deprecated, use 'yunohost domain dyndns' instead )
     actions:
 
         ### dyndns_subscribe()
         subscribe:
             action_help: Subscribe to a DynDNS service
+            deprecated: true
             arguments:
                 -d:
                     full: --domain
-                    help: Full domain to subscribe with
+                    help: Full domain to subscribe with ( deprecated, use 'yunohost domain dyndns subscribe' instead )
                     extra:
                         pattern: *pattern_domain
-                -k:
-                    full: --key
-                    help: Public DNS key
+                -p:
+                    full: --recovery-password
+                    nargs: "?"
+                    const: 0
+                    help: Password used to later recover the domain if needed
+                    extra:
+                        pattern: *pattern_password
 
         ### dyndns_update()
         update:
@@ -1428,10 +1552,10 @@ tools:
     category_help: Specific tools
     actions:
 
-        ### tools_adminpw()
-        adminpw:
-            action_help: Change password of admin and root users
-            api: PUT /adminpw
+        ### tools_rootpw()
+        rootpw:
+            action_help: Change root password
+            api: PUT /rootpw
             arguments:
                 -n:
                     full: --new-password
@@ -1466,6 +1590,20 @@ tools:
                         ask: ask_main_domain
                         pattern: *pattern_domain
                         required: True
+                -u:
+                    full: --username
+                    help: Username for the first (admin) user. For example 'camille'
+                    extra:
+                        ask: ask_admin_username
+                        pattern: *pattern_username
+                        required: True
+                -F:
+                    full: --fullname
+                    help: The full name for the first (admin) user. For example 'Camille Dupont'
+                    extra:
+                        ask: ask_admin_fullname
+                        required: True
+                        pattern: *pattern_fullname
                 -p:
                     full: --password
                     help: YunoHost admin password
@@ -1475,15 +1613,21 @@ tools:
                         required: True
                         comment: good_practices_about_admin_password
                 --ignore-dyndns:
-                    help: Do not subscribe domain to a DynDNS service
+                    help: If adding a DynDNS domain, only add the domain, without subscribing to the DynDNS service
                     action: store_true
-                --force-password:
-                    help: Use this if you really want to set a weak password
-                    action: store_true
+                --dyndns-recovery-password:
+                    metavar: PASSWORD
+                    nargs: "?"
+                    const: 0
+                    help: If adding a DynDNS domain, subscribe to the DynDNS service with a password, used to later recover the domain if needed
+                    extra:
+                        pattern: *pattern_password
                 --force-diskspace:
                     help: Use this if you really want to install YunoHost on a setup with less than 10 GB on the root filesystem
                     action: store_true
-
+                --i-have-read-terms-of-services:
+                    help: Automatically reply to the terms of services prompt, for example for non-interactive installations
+                    action: store_true
 
         ### tools_update()
         update:
@@ -1519,6 +1663,10 @@ tools:
                 -c:
                     help: python command to execute
                     full: --command
+
+        ### tools_basic_space_cleanup()
+        basic-space-cleanup:
+            action_help: Basic space cleanup (apt, journalctl, logs, ...)
 
         ### tools_shutdown()
         shutdown:
@@ -1646,6 +1794,7 @@ hook:
 
         ### hook_info()
         info:
+            hide_in_help: True
             action_help: Get information about a given hook
             arguments:
                 action:
@@ -1675,6 +1824,7 @@ hook:
 
         ### hook_callback()
         callback:
+            hide_in_help: True
             action_help: Execute all scripts binded to an action
             arguments:
                 action:
@@ -1697,6 +1847,7 @@ hook:
 
         ### hook_exec()
         exec:
+            hide_in_help: True
             action_help: Execute hook from a file with arguments
             arguments:
                 path:
@@ -1750,7 +1901,7 @@ log:
                 - display
             arguments:
                 path:
-                    help: Log file which to display the content
+                    help: Log file which to display the content. 'last' or 'last-X' selects the last but X log file
                 -n:
                     full: --number
                     help: Number of lines to display
@@ -1841,7 +1992,7 @@ diagnosis:
             api: PUT /diagnosis/ignore
             arguments:
                 --filter:
-                    help: "Add a filter. The first element should be a diagnosis category, and other criterias can be provided using the infos from the 'meta' sections in 'yunohost diagnosis show'. For example: 'dnsrecords domain=yolo.test category=xmpp'"
+                    help: "Add a filter. The first element should be a diagnosis category, and other criterias can be provided using the infos from the 'meta' sections in 'yunohost diagnosis show'. For example: 'dnsrecords domain=yolo.test category=mail'"
                     nargs: "*"
                     metavar: CRITERIA
                 --list:
@@ -1853,6 +2004,6 @@ diagnosis:
             api: PUT /diagnosis/unignore
             arguments:
                 --filter:
-                    help: Remove a filter (it should be an existing filter as listed with --list)
+                    help: Remove a filter (it should be an existing filter as listed with "ignore --list")
                     nargs: "*"
                     metavar: CRITERIA

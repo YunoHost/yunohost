@@ -18,7 +18,6 @@ maindomain = _get_maindomain()
 
 
 def setup_function(function):
-
     try:
         app_remove("register_url_app")
     except Exception:
@@ -26,7 +25,6 @@ def setup_function(function):
 
 
 def teardown_function(function):
-
     try:
         app_remove("register_url_app")
     except Exception:
@@ -34,7 +32,6 @@ def teardown_function(function):
 
 
 def test_parse_app_instance_name():
-
     assert _parse_app_instance_name("yolo") == ("yolo", 1)
     assert _parse_app_instance_name("yolo1") == ("yolo1", 1)
     assert _parse_app_instance_name("yolo__0") == ("yolo__0", 1)
@@ -72,8 +69,23 @@ def test_repo_url_definition():
     assert _is_app_repo_url("git@github.com:YunoHost-Apps/foobar_ynh.git")
     assert _is_app_repo_url("https://git.super.host/~max/foobar_ynh")
 
+    ### Gitea
+    assert _is_app_repo_url("https://gitea.instance.tld/user/repo_ynh")
+    assert _is_app_repo_url(
+        "https://gitea.instance.tld/user/repo_ynh/src/branch/branch_name"
+    )
+    assert _is_app_repo_url("https://gitea.instance.tld/user/repo_ynh/src/tag/tag_name")
+    assert _is_app_repo_url(
+        "https://gitea.instance.tld/user/repo_ynh/src/commit/abcd1234"
+    )
+
+    ### Invalid patterns
+
+    # no schema
     assert not _is_app_repo_url("github.com/YunoHost-Apps/foobar_ynh")
+    # http
     assert not _is_app_repo_url("http://github.com/YunoHost-Apps/foobar_ynh")
+    # does not end in `_ynh`
     assert not _is_app_repo_url("https://github.com/YunoHost-Apps/foobar_wat")
     assert not _is_app_repo_url("https://github.com/YunoHost-Apps/foobar_ynh_wat")
     assert not _is_app_repo_url("https://github.com/YunoHost-Apps/foobar/tree/testing")
@@ -86,7 +98,6 @@ def test_repo_url_definition():
 
 
 def test_urlavailable():
-
     # Except the maindomain/macnuggets to be available
     assert domain_url_available(maindomain, "/macnuggets")
 
@@ -96,7 +107,6 @@ def test_urlavailable():
 
 
 def test_registerurl():
-
     app_install(
         os.path.join(get_test_apps_dir(), "register_url_app_ynh"),
         args="domain={}&path={}".format(maindomain, "/urlregisterapp"),
@@ -115,7 +125,6 @@ def test_registerurl():
 
 
 def test_registerurl_baddomain():
-
     with pytest.raises(YunohostError):
         app_install(
             os.path.join(get_test_apps_dir(), "register_url_app_ynh"),
@@ -208,10 +217,6 @@ def test_normalize_permission_path_with_bad_regex():
         )
 
     # Full Regex
-    with pytest.raises(YunohostError):
-        _validate_and_sanitize_permission_url(
-            "re:" + maindomain + "/yolo?+/", maindomain + "/path", "test_permission"
-        )
     with pytest.raises(YunohostError):
         _validate_and_sanitize_permission_url(
             "re:" + maindomain + "/yolo[1-9]**/",

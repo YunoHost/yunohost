@@ -10,7 +10,7 @@
 # Config database customization:
 # 1. Edit this file as you want.
 # 2. Apply your modifications. For this just run this following command in a shell:
-#    $ /usr/share/yunohost/hooks/conf_regen/06-slapd apply_config
+#    $ /usr/share/yunohost/hooks/conf_regen/06-slapd post true
 #
 # Note that if you customize this file, YunoHost's regen-conf will NOT
 # overwrite this file. But that also means that you should be careful about
@@ -130,7 +130,6 @@ olcSuffix: dc=yunohost,dc=org
 # admin entry below
 # These access lines apply to database #1 only
 olcAccess: {0}to attrs=userPassword,shadowLastChange
-    by dn.base="cn=admin,dc=yunohost,dc=org" write
     by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" write
     by anonymous auth
     by self write
@@ -140,7 +139,6 @@ olcAccess: {0}to attrs=userPassword,shadowLastChange
 # owning it if they are authenticated.
 # Others should be able to see it.
 olcAccess: {1}to attrs=cn,gecos,givenName,mail,maildrop,displayName,sn
-    by dn.base="cn=admin,dc=yunohost,dc=org" write
     by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" write
     by self write
     by * read
@@ -160,9 +158,8 @@ olcAccess: {2}to dn.base=""
 # The admin dn has full write access, everyone else
 # can read everything.
 olcAccess: {3}to *
-    by dn.base="cn=admin,dc=yunohost,dc=org" write
     by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" write
-    by group/groupOfNames/member.exact="cn=admin,ou=groups,dc=yunohost,dc=org" write
+    by group/groupOfNamesYnh/member.exact="cn=admins,ou=groups,dc=yunohost,dc=org" write
     by * read
 #
 olcAddContentAcl: FALSE

@@ -1,28 +1,21 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2013 YunoHost
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
-
-""" yunohost_hook.py
-
-    Manage hooks
-"""
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import re
 import sys
@@ -30,16 +23,16 @@ import tempfile
 import mimetypes
 from glob import iglob
 from importlib import import_module
+from logging import getLogger
 
 from moulinette import m18n, Moulinette
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from moulinette.utils import log
 from moulinette.utils.filesystem import read_yaml, cp
 
 HOOK_FOLDER = "/usr/share/yunohost/hooks/"
 CUSTOM_HOOK_FOLDER = "/etc/yunohost/hooks.d/"
 
-logger = log.getActionLogger("yunohost.hook")
+logger = getLogger("yunohost.hook")
 
 
 def hook_add(app, file):
@@ -346,7 +339,6 @@ def hook_exec(
         raise YunohostError("file_does_not_exist", path=path)
 
     def is_relevant_warning(msg):
-
         # Ignore empty warning messages...
         if not msg:
             return False
@@ -360,15 +352,48 @@ def hook_exec(
             r"dpkg: warning: while removing .* not empty so not removed",
             r"apt-key output should not be parsed",
             r"update-rc.d: ",
+            r"update-alternatives: ",
+            # Postgresql boring messages -_-
+            r"Adding user postgres to group ssl-cert",
+            r"Building PostgreSQL dictionaries from .*",
+            r"Removing obsolete dictionary files",
+            r"Creating new PostgreSQL cluster",
+            r"/usr/lib/postgresql/13/bin/initdb",
+            r"/usr/lib/postgresql/15/bin/initdb",
+            r"The files belonging to this database system will be owned by user",
+            r"This user must also own the server process.",
+            r"The database cluster will be initialized with locale",
+            r"The default database encoding has accordingly been set to",
+            r"The default text search configuration will be set to",
+            r"Data page checksums are disabled.",
+            r"fixing permissions on existing directory /var/lib/postgresql/13/main ... ok",
+            r"fixing permissions on existing directory /var/lib/postgresql/15/main ... ok",
+            r"creating subdirectories \.\.\. ok",
+            r"selecting dynamic .* \.\.\. ",
+            r"selecting default .* \.\.\. ",
+            r"creating configuration files \.\.\. ok",
+            r"running bootstrap script \.\.\. ok",
+            r"performing post-bootstrap initialization \.\.\. ok",
+            r"syncing data to disk \.\.\. ok",
+            r"Success. You can now start the database server using:",
+            r"pg_ctlcluster \d\d main start",
+            r"Ver\s*Cluster\s*Port\s*Status\s*Owner\s*Data\s*directory",
+            r"/var/lib/postgresql/\d\d/main /var/log/postgresql/postgresql-\d\d-main.log",
+            # Java boring messages
+            r"cannot open '/etc/ssl/certs/java/cacerts'",
+            # Misc
+            r"update-binfmts: warning:",
         ]
         return all(not re.search(w, msg) for w in irrelevant_warnings)
 
     # Define output loggers and call command
     loggers = (
         lambda l: logger.debug(l.rstrip() + "\r"),
-        lambda l: logger.warning(l.rstrip())
-        if is_relevant_warning(l.rstrip())
-        else logger.debug(l.rstrip()),
+        lambda l: (
+            logger.warning(l.rstrip())
+            if is_relevant_warning(l.rstrip())
+            else logger.debug(l.rstrip())
+        ),
         lambda l: logger.info(l.rstrip()),
     )
 
@@ -396,7 +421,6 @@ def hook_exec(
 
 
 def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
-
     from moulinette.utils.process import call_async_output
 
     # Construct command variables
@@ -436,6 +460,8 @@ def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
     logger.debug("Executing command '%s'" % command)
 
     _env = os.environ.copy()
+    if "YNH_CONTEXT" in _env:
+        del _env["YNH_CONTEXT"]
     _env.update(env)
 
     # Remove the 'HOME' var which is causing some inconsistencies between
@@ -484,7 +510,6 @@ def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
 
 
 def _hook_exec_python(path, args, env, loggers):
-
     dir_ = os.path.dirname(path)
     name = os.path.splitext(os.path.basename(path))[0]
 
@@ -504,7 +529,6 @@ def _hook_exec_python(path, args, env, loggers):
 
 
 def hook_exec_with_script_debug_if_failure(*args, **kwargs):
-
     operation_logger = kwargs.pop("operation_logger")
     error_message_if_failed = kwargs.pop("error_message_if_failed")
     error_message_if_script_failed = kwargs.pop("error_message_if_script_failed")
@@ -516,6 +540,9 @@ def hook_exec_with_script_debug_if_failure(*args, **kwargs):
         failed = True if retcode != 0 else False
         if failed:
             error = error_message_if_script_failed
+            # check more specific error message added by ynh_die in $YNH_STDRETURN
+            if isinstance(retpayload, dict) and "error" in retpayload:
+                error += " : " + retpayload["error"].strip()
             logger.error(error_message_if_failed(error))
             failure_message_with_debug_instructions = operation_logger.error(error)
             if Moulinette.interface.type != "api":

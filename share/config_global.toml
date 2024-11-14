@@ -1,0 +1,179 @@
+version = "1.0"
+i18n = "global_settings_setting"
+
+[security]
+    [security.password]
+
+        [security.password.admin_strength]
+        type = "select"
+        choices.1 = "Require at least 8 chars"
+        choices.2 = "ditto, but also require at least one digit, one lower and one upper char"
+        choices.3 = "ditto, but also require at least one special char"
+        choices.4 = "ditto, but also require at least 12 chars"
+        default = "1"
+
+        [security.password.user_strength]
+        type = "select"
+        choices.1 = "Require at least 8 chars"
+        choices.2 = "ditto, but also require at least one digit, one lower and one upper char"
+        choices.3 = "ditto, but also require at least one special char"
+        choices.4 = "ditto, but also require at least 12 chars"
+        default = "1"
+
+        [security.password.passwordless_sudo]
+        type = "boolean"
+        # The actual value is dynamically computed by checking the sudoOption of cn=admins,ou=sudo
+        default = false
+
+    [security.ssh]
+
+        [security.ssh.ssh_compatibility]
+        type = "select"
+        choices.intermediate = "Intermediate (compatible with older softwares)"
+        choices.modern = "Modern (recommended)"
+        default = "modern"
+
+        [security.ssh.ssh_port]
+        type = "number"
+        default = 22
+
+        [security.ssh.ssh_password_authentication]
+        type = "boolean"
+        default = true
+
+    [security.nginx]
+        [security.nginx.nginx_redirect_to_https]
+        type = "boolean"
+        default = true
+
+        [security.nginx.nginx_compatibility]
+        type = "select"
+        choices.intermediate = "Intermediate (compatible with Firefox 27, Android 4.4.2, Chrome 31, Edge, IE 11, Opera 20, and Safari 9)"
+        choices.modern = "Modern (compatible with Firefox 63, Android 10.0, Chrome 70, Edge 75, Opera 57, and Safari 12.1)"
+        default = "intermediate"
+
+    [security.postfix]
+
+        [security.postfix.postfix_compatibility]
+        type = "select"
+        choices.intermediate = "Intermediate (allows TLS 1.2)"
+        choices.modern = "Modern (TLS 1.3 only)"
+        default = "intermediate"
+
+    [security.webadmin]
+        [security.webadmin.webadmin_allowlist_enabled]
+        type = "boolean"
+        default = false
+
+        [security.webadmin.webadmin_allowlist]
+        type = "tags"
+        visible = "webadmin_allowlist_enabled"
+        optional = true
+        default = ""
+
+    [security.root_access]
+        [security.root_access.root_access_explain]
+        type = "alert"
+        style = "info"
+        icon = "info"
+
+        [security.root_access.root_password]
+        type = "password"
+        optional = true
+        default = ""
+
+        [security.root_access.root_password_confirm]
+        type = "password"
+        optional = true
+        default = ""
+
+    [security.experimental]
+        [security.experimental.security_experimental_enabled]
+        type = "boolean"
+        default = false
+
+[email]
+    [email.pop3]
+        [email.pop3.pop3_enabled]
+        type = "boolean"
+        default = false
+
+    [email.smtp]
+        [email.smtp.smtp_allow_ipv6]
+        type = "boolean"
+        default = true
+
+        [email.smtp.smtp_relay_enabled]
+        type = "boolean"
+        default = false
+
+        [email.smtp.smtp_relay_host]
+        type = "string"
+        default = ""
+        optional = true
+        visible="smtp_relay_enabled"
+
+        [email.smtp.smtp_relay_port]
+        type = "number"
+        default = 587
+        visible="smtp_relay_enabled"
+
+        [email.smtp.smtp_relay_user]
+        type = "string"
+        default = ""
+        optional = true
+        visible="smtp_relay_enabled"
+
+        [email.smtp.smtp_relay_password]
+        type = "password"
+        default = ""
+        optional = true
+        visible="smtp_relay_enabled"
+        help = ""  # This is empty string on purpose, otherwise the core automatically set the 'good_practice_admin_password' string here which is not relevant, because the admin is not actually "choosing" the password ...
+
+        [email.smtp.smtp_backup_mx_domains]
+        type = "string"
+        default = ""
+        optional = true
+
+        [email.smtp.smtp_backup_mx_emails_whitelisted]
+        type = "string"
+        default = ""
+        optional = true
+        visible = "smtp_backup_mx_domains"
+
+[misc]
+
+    [misc.backup]
+        [misc.backup.backup_compress_tar_archives]
+        type = "boolean"
+        default = false
+
+    [misc.network]
+        [misc.network.dns_exposure]
+        type = "select"
+        choices.both = "Both"
+        choices.ipv4 = "IPv4 Only"
+        choices.ipv6 = "IPv6 Only"
+        default = "both"
+
+    [misc.tls_passthrough]
+    visible = "security_experimental_enabled"
+
+        [misc.tls_passthrough.tls_passthrough_enabled]
+        type = "boolean"
+        default = false
+
+        [misc.tls_passthrough.tls_passthrough_explain]
+        type = "alert"
+        style = "info"
+        icon = "info"
+        visible = "tls_passthrough_enabled"
+
+        [misc.tls_passthrough.tls_passthrough_list]
+        type = "tags"
+        # Regex is just <domain regex>;<destination>;<port>
+        pattern.regexp = '^(([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}));(([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?([^\W_]{2,}|[0-9]{1,3})));[0-9]{1,}$'
+        pattern.error = "You should specify a list of items formatted as DOMAIN;DESTINATION;DESTPORT, such as yolo.test;192.168.1.42;443"
+        default = ""
+        visible = "tls_passthrough_enabled"

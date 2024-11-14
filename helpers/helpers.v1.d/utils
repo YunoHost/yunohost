@@ -1,0 +1,446 @@
+#!/bin/bash
+
+YNH_APP_BASEDIR=${YNH_APP_BASEDIR:-$(realpath ..)}
+
+# Handle script crashes / failures
+#
+# [internal]
+#
+# usage:
+# ynh_exit_properly is used only by the helper ynh_abort_if_errors.
+# You should not use it directly.
+# Instead, add to your script:
+# ynh_clean_setup () {
+#        instructions...
+# }
+#
+# This function provide a way to clean some residual of installation that not managed by remove script.
+#
+# It prints a warning to inform that the script was failed, and execute the ynh_clean_setup function if used in the app script
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_exit_properly() {
+    local exit_code=$?
+
+    if [[ "${YNH_APP_ACTION:-}" =~ ^install$|^upgrade$|^restore$ ]]; then
+        rm -rf "/var/cache/yunohost/download/"
+    fi
+
+    if [ "$exit_code" -eq 0 ]; then
+        exit 0 # Exit without error if the script ended correctly
+    fi
+
+    trap '' EXIT # Ignore new exit signals
+    # Do not exit anymore if a command fail or if a variable is empty
+    set +o errexit # set +e
+    set +o nounset # set +u
+
+    # Small tempo to avoid the next message being mixed up with other DEBUG messages
+    sleep 0.5
+
+    if type -t ynh_clean_setup > /dev/null; then # Check if the function exist in the app script.
+        ynh_clean_setup                         # Call the function to do specific cleaning for the app.
+    fi
+
+    # Exit with error status
+    # We don't call ynh_die basically to avoid unecessary 10-ish
+    # debug lines about parsing args and stuff just to exit 1..
+    exit 1
+}
+
+# Exits if an error occurs during the execution of the script.
+#
+# [packagingv1]
+#
+# usage: ynh_abort_if_errors
+#
+# This configure the rest of the script execution such that, if an error occurs
+# or if an empty variable is used, the execution of the script stops immediately
+# and a call to `ynh_clean_setup` is triggered if it has been defined by your script.
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_abort_if_errors() {
+    set -o errexit              # set -e; Exit if a command fail
+    set -o nounset              # set -u; And if a variable is used unset
+    trap ynh_exit_properly EXIT # Capturing exit signals on shell script
+}
+
+# When running an app script with packaging format >= 2, auto-enable ynh_abort_if_errors except for remove script
+if [[ "${YNH_CONTEXT:-}" != "regenconf" ]] && dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} ge 2 && [[ ${YNH_APP_ACTION} != "remove" ]]; then
+    ynh_abort_if_errors
+fi
+
+# Curl abstraction to help with POST requests to local pages (such as installation forms)
+#
+# usage: ynh_local_curl "page_uri" "key1=value1" "key2=value2" ...
+# | arg: page_uri    - Path (relative to `$path_url`) of the page where POST data will be sent
+# | arg: key1=value1 - (Optionnal) POST key and corresponding value
+# | arg: key2=value2 - (Optionnal) Another POST key and corresponding value
+# | arg: ...         - (Optionnal) More POST keys and values
+#
+# example: ynh_local_curl "/install.php?installButton" "foo=$var1" "bar=$var2"
+#
+# For multiple calls, cookies are persisted between each call for the same app
+#
+# `$domain` and `$path_url` should be defined externally (and correspond to the domain.tld and the /path (of the app?))
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_local_curl() {
+    # Define url of page to curl
+    local local_page=$(ynh_normalize_url_path $1)
+    local full_path=$path_url$local_page
+
+    if [ "${path_url}" == "/" ]; then
+        full_path=$local_page
+    fi
+
+    local full_page_url=https://localhost$full_path
+
+    # Concatenate all other arguments with '&' to prepare POST data
+    local POST_data=""
+    local arg=""
+    for arg in "${@:2}"; do
+        POST_data="${POST_data}${arg}&"
+    done
+    if [ -n "$POST_data" ]; then
+        # Add --data arg and remove the last character, which is an unecessary '&'
+        POST_data="--data ${POST_data::-1}"
+    fi
+
+    # Wait untils nginx has fully reloaded (avoid curl fail with http2)
+    sleep 2
+
+    local cookiefile=/tmp/ynh-$app-cookie.txt
+    touch $cookiefile
+    chown root $cookiefile
+    chmod 700 $cookiefile
+
+    # Temporarily enable visitors if needed...
+    local visitors_enabled=$(ynh_permission_has_user "main" "visitors" && echo yes || echo no)
+    if [[ $visitors_enabled == "no" ]]; then
+        ynh_permission_update --permission "main" --add "visitors"
+    fi
+
+    # Curl the URL
+    curl --silent --show-error --insecure --location --header "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url" --cookie-jar $cookiefile --cookie $cookiefile
+
+    if [[ $visitors_enabled == "no" ]]; then
+        ynh_permission_update --permission "main" --remove "visitors"
+    fi
+}
+
+# Fetch the Debian release codename
+#
+# [packagingv1]
+#
+# usage: ynh_get_debian_release
+# | ret: The Debian release codename (i.e. jessie, stretch, ...)
+#
+# Requires YunoHost version 2.7.12 or higher.
+ynh_get_debian_release() {
+    echo $(lsb_release --codename --short)
+}
+
+_acceptable_path_to_delete() {
+    local file=$1
+
+    local forbidden_paths=$(ls -d / /* /{var,home,usr}/* /etc/{default,sudoers.d,yunohost,cron*} /etc/yunohost/{apps,domains,hooks.d} /opt/yunohost 2> /dev/null)
+
+    # Legacy : A couple apps still have data in /home/$app ...
+    if [[ -n "${app:-}" ]]; then
+        forbidden_paths=$(echo "$forbidden_paths" | grep -v "/home/$app")
+    fi
+
+    # Use realpath to normalize the path ..
+    # i.e convert ///foo//bar//..///baz//// to /foo/baz
+    file=$(realpath --no-symlinks "$file")
+    if [ -z "$file" ] || grep -q -x -F "$file" <<< "$forbidden_paths"; then
+        return 1
+    else
+        return 0
+    fi
+}
+
+# Remove a file or a directory securely
+#
+# usage: ynh_secure_remove --file=path_to_remove
+# | arg: -f, --file=    - File or directory to remove
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_secure_remove() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=f
+    local -A args_array=([f]=file=)
+    local file
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    set +o xtrace # set +x
+
+    if [ $# -ge 2 ]; then
+        ynh_print_warn --message="/!\ Packager ! You provided more than one argument to ynh_secure_remove but it will be ignored... Use this helper with one argument at time."
+    fi
+
+    if [[ -z "$file" ]]; then
+        ynh_print_warn --message="ynh_secure_remove called with empty argument, ignoring."
+    elif [[ ! -e $file ]]; then
+        ynh_print_info --message="'$file' wasn't deleted because it doesn't exist."
+    elif ! _acceptable_path_to_delete "$file"; then
+        ynh_print_warn --message="Not deleting '$file' because it is not an acceptable path to delete."
+    else
+        rm --recursive "$file"
+    fi
+
+    set -o xtrace # set -x
+}
+
+# Read the value of a key in a ynh manifest file
+#
+# usage: ynh_read_manifest --manifest="manifest.json" --manifest_key="key"
+# | arg: -m, --manifest=      - Path of the manifest to read
+# | arg: -k, --manifest_key=  - Name of the key to find
+# | ret: the value associate to that key
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_read_manifest() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=mk
+    local -A args_array=([m]=manifest= [k]=manifest_key=)
+    local manifest
+    local manifest_key
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    if [ ! -e "${manifest:-}" ]; then
+        # If the manifest isn't found, try the common place for backup and restore script.
+        if [ -e "$YNH_APP_BASEDIR/manifest.json" ]; then
+            manifest="$YNH_APP_BASEDIR/manifest.json"
+        elif [ -e "$YNH_APP_BASEDIR/manifest.toml" ]; then
+            manifest="$YNH_APP_BASEDIR/manifest.toml"
+        else
+            ynh_die --message "No manifest found !?"
+        fi
+    fi
+
+    if echo "$manifest" | grep -q '\.json$'; then
+        jq ".$manifest_key" "$manifest" --raw-output
+    else
+        cat "$manifest" | python3 -c 'import json, toml, sys; print(json.dumps(toml.load(sys.stdin)))' | jq ".$manifest_key" --raw-output
+    fi
+}
+
+# Read the upstream version from the manifest or `$YNH_APP_MANIFEST_VERSION`
+#
+# usage: ynh_app_upstream_version [--manifest="manifest.json"]
+# | arg: -m, --manifest=    - Path of the manifest to read
+# | ret: the version number of the upstream app
+#
+# If the `manifest` is not specified, the envvar `$YNH_APP_MANIFEST_VERSION` will be used.
+#
+# The version number in the manifest is defined by `<upstreamversion>~ynh<packageversion>`.
+#
+# For example, if the manifest contains `4.3-2~ynh3` the function will return `4.3-2`
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_app_upstream_version() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=m
+    local -A args_array=([m]=manifest=)
+    local manifest
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    manifest="${manifest:-}"
+
+    if [[ "$manifest" != "" ]] && [[ -e "$manifest" ]]; then
+        version_key_=$(ynh_read_manifest --manifest="$manifest" --manifest_key="version")
+    else
+        version_key_=$YNH_APP_MANIFEST_VERSION
+    fi
+
+    echo "${version_key_/~ynh*/}"
+}
+
+# Read package version from the manifest
+#
+# [internal]
+#
+# usage: ynh_app_package_version [--manifest="manifest.json"]
+# | arg: -m, --manifest=    - Path of the manifest to read
+# | ret: the version number of the package
+#
+# The version number in the manifest is defined by `<upstreamversion>~ynh<packageversion>`.
+#
+# For example, if the manifest contains `4.3-2~ynh3` the function will return `3`
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_app_package_version() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=m
+    local -A args_array=([m]=manifest=)
+    local manifest
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    version_key_=$YNH_APP_MANIFEST_VERSION
+    echo "${version_key_/*~ynh/}"
+}
+
+# Checks the app version to upgrade with the existing app version and returns:
+#
+# usage: ynh_check_app_version_changed
+# | ret: `UPGRADE_APP` if the upstream version changed, `UPGRADE_PACKAGE` otherwise.
+#
+# This helper should be used to avoid an upgrade of an app, or the upstream part
+# of it, when it's not needed
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_check_app_version_changed() {
+    local return_value=${YNH_APP_UPGRADE_TYPE}
+
+    if [ "$return_value" == "UPGRADE_SAME" ] || [ "$return_value" == "DOWNGRADE" ]; then
+        return_value="UPGRADE_APP"
+    fi
+
+    echo $return_value
+}
+
+# Compare the current package version against another version given as an argument.
+#
+# usage: ynh_compare_current_package_version --comparison (lt|le|eq|ne|ge|gt) --version <X~ynhY>
+# | arg: --comparison - Comparison type. Could be : `lt` (lower than), `le` (lower or equal), `eq` (equal), `ne` (not equal), `ge` (greater or equal), `gt` (greater than)
+# | arg: --version - The version to compare. Need to be a version in the yunohost package version type (like `2.3.1~ynh4`)
+# | ret: 0 if the evaluation is true, 1 if false.
+#
+# example: ynh_compare_current_package_version --comparison lt --version 2.3.2~ynh1
+#
+# This helper is usually used when we need to do some actions only for some old package versions.
+#
+# Generally you might probably use it as follow in the upgrade script :
+# ```
+# if ynh_compare_current_package_version --comparison lt --version 2.3.2~ynh1
+# then
+#     # Do something that is needed for the package version older than 2.3.2~ynh1
+# fi
+# ```
+#
+# Requires YunoHost version 3.8.0 or higher.
+ynh_compare_current_package_version() {
+    local legacy_args=cv
+    declare -Ar args_array=([c]=comparison= [v]=version=)
+    local version
+    local comparison
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    local current_version=$YNH_APP_CURRENT_VERSION
+
+    # Check the syntax of the versions
+    if [[ ! $version =~ '~ynh' ]] || [[ ! $current_version =~ '~ynh' ]]; then
+        ynh_die --message="Invalid argument for version."
+    fi
+
+    # Check validity of the comparator
+    if [[ ! $comparison =~ (lt|le|eq|ne|ge|gt) ]]; then
+        ynh_die --message="Invalid comparator must be : lt, le, eq, ne, ge, gt"
+    fi
+
+    # Return the return value of dpkg --compare-versions
+    dpkg --compare-versions $current_version $comparison $version
+}
+
+# Check if we should enforce sane default permissions (= disable rwx for 'others')
+# on file/folders handled with ynh_setup_source and ynh_add_config
+#
+# [internal]
+#
+# Having a file others-readable or a folder others-executable(=enterable)
+# is a security risk comparable to "chmod 777"
+#
+# Configuration files may contain secrets. Or even just being able to enter a
+# folder may allow an attacker to do nasty stuff (maybe a file or subfolder has
+# some write permission enabled for 'other' and the attacker may edit the
+# content or create files as leverage for priviledge escalation ...)
+#
+# The sane default should be to set ownership to $app:$app.
+# In specific case, you may want to set the ownership to $app:www-data
+# for example if nginx needs access to static files.
+#
+_ynh_apply_default_permissions() {
+    local target=$1
+
+    chmod o-rwx $target
+    chmod g-w $target
+    chown -R root:root $target
+    if ynh_system_user_exists $app; then
+        chown $app:$app $target
+    fi
+
+    # Crons should be owned by root
+    # Also we don't want systemd conf, nginx conf or others stuff to be owned by the app,
+    # otherwise they could self-edit their own systemd conf and escalate privilege
+    if grep -qE '^(/etc/cron|/etc/php|/etc/nginx/conf.d|/etc/fail2ban|/etc/systemd/system)' <<< "$target"; then
+        chmod 400 $target
+        chown root:root $target
+    fi
+}
+
+int_to_bool() {
+    sed -e 's/^1$/True/g' -e 's/^0$/False/g' -e 's/^true$/True/g' -e 's/^false$/False/g'
+}
+
+toml_to_json() {
+    python3 -c 'import toml, json, sys; print(json.dumps(toml.load(sys.stdin)))'
+}
+
+# Check if a YunoHost user exists
+#
+# usage: ynh_user_exists --username=username
+# | arg: -u, --username=    - the username to check
+# | ret: 0 if the user exists, 1 otherwise.
+#
+# example: ynh_user_exists 'toto' || echo "User does not exist"
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_user_exists() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=u
+    local -A args_array=([u]=username=)
+    local username
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    yunohost user list --output-as json --quiet | jq -e ".users.\"${username}\"" > /dev/null
+}
+
+# Retrieve a YunoHost user information
+#
+# usage: ynh_user_get_info --username=username --key=key
+# | arg: -u, --username=    - the username to retrieve info from
+# | arg: -k, --key=         - the key to retrieve
+# | ret: the value associate to that key
+#
+# example: mail=$(ynh_user_get_info --username="toto" --key=mail)
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_user_get_info() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=uk
+    local -A args_array=([u]=username= [k]=key=)
+    local username
+    local key
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    yunohost user info "$username" --output-as json --quiet | jq -r ".$key"
+}
+
+# Get the list of YunoHost users
+#
+# usage: ynh_user_list
+# | ret: one username per line as strings
+#
+# example: for u in $(ynh_user_list); do ... ; done
+#
+# Requires YunoHost version 2.4.0 or higher.
+ynh_user_list() {
+    yunohost user list --output-as json --quiet | jq -r ".users | keys[]"
+}

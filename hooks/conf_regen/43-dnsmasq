@@ -18,12 +18,12 @@ do_pre_regen() {
     cp plain/etcdefault ${pending_dir}/etc/default/dnsmasq
 
     # add resolver file
-    cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf >${pending_dir}/etc/resolv.dnsmasq.conf
+    cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf > ${pending_dir}/etc/resolv.dnsmasq.conf
 
     # retrieve variables
-    ipv4=$(curl -s -4 https://ip.yunohost.org 2>/dev/null || true)
+    ipv4=$(curl --max-time 10 -s -4 https://ip.yunohost.org 2> /dev/null || true)
     ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
-    ipv6=$(curl -s -6 https://ip6.yunohost.org 2>/dev/null || true)
+    ipv6=$(curl --max-time 10 -s -6 https://ip6.yunohost.org 2> /dev/null || true)
     ynh_validate_ip6 "$ipv6" || ipv6=''
     interfaces="$(ip -j addr show | jq -r '[.[].ifname]|join(" ")')"
     wireless_interfaces="lo"
@@ -51,8 +51,7 @@ do_pre_regen() {
     conf_files=$(ls -1 /etc/dnsmasq.d \
         | awk '/^[^\.]+\.[^\.]+.*$/ { print $1 }')
     for domain in $conf_files; do
-        if [[ ! $YNH_DOMAINS =~ $domain ]] && [[ ! $domain =~ \.local$ ]]
-        then
+        if [[ ! $YNH_DOMAINS =~ $domain ]] && [[ ! $domain =~ \.local$ ]]; then
             touch "${dnsmasq_dir}/${domain}"
         fi
     done
@@ -62,32 +61,33 @@ do_post_regen() {
     regen_conf_files=$1
 
     # Force permission (to cover some edge cases where root's umask is like 027 and then dnsmasq cant read this file)
-    chown 644 /etc/resolv.dnsmasq.conf
+    chown root /etc/resolv.dnsmasq.conf
+    chmod 644 /etc/resolv.dnsmasq.conf
 
     # Fuck it, those domain/search entries from dhclient are usually annoying
     # lying shit from the ISP trying to MiTM
     if grep -q -E "^ *(domain|search)" /run/resolvconf/resolv.conf; then
-        if grep -q -E "^ *(domain|search)" /run/resolvconf/interface/*.dhclient 2>/dev/null; then
+        if grep -q -E "^ *(domain|search)" /run/resolvconf/interface/*.dhclient 2> /dev/null; then
             sed -E "s/^(domain|search)/#\1/g" -i /run/resolvconf/interface/*.dhclient
         fi
 
-        grep -q '^supersede domain-name "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede domain-name "";' >>/etc/dhcp/dhclient.conf
-        grep -q '^supersede domain-search "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede domain-search "";' >>/etc/dhcp/dhclient.conf
-        grep -q '^supersede name "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede name "";' >>/etc/dhcp/dhclient.conf
+        grep -q '^supersede domain-name "";' /etc/dhcp/dhclient.conf 2> /dev/null || echo 'supersede domain-name "";' >> /etc/dhcp/dhclient.conf
+        grep -q '^supersede domain-search "";' /etc/dhcp/dhclient.conf 2> /dev/null || echo 'supersede domain-search "";' >> /etc/dhcp/dhclient.conf
+        grep -q '^supersede search "";' /etc/dhcp/dhclient.conf 2> /dev/null || echo 'supersede search "";' >> /etc/dhcp/dhclient.conf
         systemctl restart resolvconf
     fi
 
     # Some stupid things like rabbitmq-server used by onlyoffice won't work if
     # the *short* hostname doesn't exists in /etc/hosts -_-
     short_hostname=$(hostname -s)
-    grep -q "127.0.0.1.*$short_hostname" /etc/hosts || echo -e "\n127.0.0.1\t$short_hostname" >>/etc/hosts
+    grep -q "127.0.0.1.*$short_hostname" /etc/hosts || echo -e "\n127.0.0.1\t$short_hostname" >> /etc/hosts
 
     [[ -n "$regen_conf_files" ]] || return 0
 
     # Remove / disable services likely to conflict with dnsmasq
     for SERVICE in systemd-resolved bind9; do
-        systemctl is-enabled $SERVICE &>/dev/null && systemctl disable $SERVICE 2>/dev/null
-        systemctl is-active $SERVICE &>/dev/null && systemctl stop $SERVICE
+        systemctl is-enabled $SERVICE &> /dev/null && systemctl disable $SERVICE 2> /dev/null
+        systemctl is-active $SERVICE &> /dev/null && systemctl stop $SERVICE
     done
 
     systemctl restart dnsmasq

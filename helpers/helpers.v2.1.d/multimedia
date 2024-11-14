@@ -1,0 +1,89 @@
+#!/bin/bash
+
+readonly MEDIA_GROUP=multimedia
+readonly MEDIA_DIRECTORY=/home/yunohost.multimedia
+
+# Initialize the multimedia directory system
+#
+# usage: ynh_multimedia_build_main_dir
+ynh_multimedia_build_main_dir() {
+
+    ## Création du groupe multimedia
+    groupadd -f $MEDIA_GROUP
+
+    ## Création des dossiers génériques
+    mkdir -p "$MEDIA_DIRECTORY"
+    mkdir -p "$MEDIA_DIRECTORY/share"
+    mkdir -p "$MEDIA_DIRECTORY/share/Music"
+    mkdir -p "$MEDIA_DIRECTORY/share/Picture"
+    mkdir -p "$MEDIA_DIRECTORY/share/Video"
+    mkdir -p "$MEDIA_DIRECTORY/share/eBook"
+
+    ## Création des dossiers utilisateurs
+    for user in $(yunohost user list --output-as json | jq -r '.users | keys[]'); do
+        mkdir -p "$MEDIA_DIRECTORY/$user"
+        mkdir -p "$MEDIA_DIRECTORY/$user/Music"
+        mkdir -p "$MEDIA_DIRECTORY/$user/Picture"
+        mkdir -p "$MEDIA_DIRECTORY/$user/Video"
+        mkdir -p "$MEDIA_DIRECTORY/$user/eBook"
+        ln -sfn "$MEDIA_DIRECTORY/share" "$MEDIA_DIRECTORY/$user/Share"
+        # Création du lien symbolique dans le home de l'utilisateur.
+        #link will only be created if the home directory of the user exists and if it's located in '/home' folder
+        local user_home="$(getent passwd $user | cut -d: -f6 | grep '^/home/')"
+        if [[ -d "$user_home" ]]; then
+            ln -sfn "$MEDIA_DIRECTORY/$user" "$user_home/Multimedia"
+        fi
+        # Propriétaires des dossiers utilisateurs.
+        chown -R $user "$MEDIA_DIRECTORY/$user"
+    done
+    # Default yunohost hooks for post_user_create,delete will take care
+    # of creating/deleting corresponding multimedia folders when users
+    # are created/deleted in the future...
+
+    ## Application des droits étendus sur le dossier multimedia.
+    # Droit d'écriture pour le groupe et le groupe multimedia en acl et droit de lecture pour other:
+    setfacl -RnL -m g:$MEDIA_GROUP:rwX,g::rwX,o:r-X "$MEDIA_DIRECTORY" || true
+    # Application de la même règle que précédemment, mais par défaut pour les nouveaux fichiers.
+    setfacl -RnL -m d:g:$MEDIA_GROUP:rwX,g::rwX,o:r-X "$MEDIA_DIRECTORY" || true
+    # Réglage du masque par défaut. Qui garantie (en principe...) un droit maximal à rwx. Donc pas de restriction de droits par l'acl.
+    setfacl -RL -m m::rwx "$MEDIA_DIRECTORY" || true
+}
+
+# Add a directory in yunohost.multimedia
+#
+# usage: ynh_multimedia_addfolder --source_dir="source_dir" --dest_dir="dest_dir"
+#
+# | arg: --source_dir= - Source directory - The real directory which contains your medias.
+# | arg: --dest_dir= - Destination directory - The name and the place of the symbolic link, relative to "/home/yunohost.multimedia"
+#
+# This "directory" will be a symbolic link to a existing directory.
+ynh_multimedia_addfolder() {
+
+    # ============ Argument parsing =============
+    local -A args_array=([s]=source_dir= [d]=dest_dir=)
+    local source_dir
+    local dest_dir
+    ynh_handle_getopts_args "$@"
+    # ===========================================
+
+    # Ajout d'un lien symbolique vers le dossier à partager
+    ln -sfn "$source_dir" "$MEDIA_DIRECTORY/$dest_dir"
+
+    ## Application des droits étendus sur le dossier ajouté
+    # Droit d'écriture pour le groupe et le groupe multimedia en acl et droit de lecture pour other:
+    setfacl -RnL -m g:$MEDIA_GROUP:rwX,g::rwX,o:r-X "$source_dir"
+    # Application de la même règle que précédemment, mais par défaut pour les nouveaux fichiers.
+    setfacl -RnL -m d:g:$MEDIA_GROUP:rwX,g::rwX,o:r-X "$source_dir"
+    # Réglage du masque par défaut. Qui garantie (en principe...) un droit maximal à rwx. Donc pas de restriction de droits par l'acl.
+    setfacl -RL -m m::rwx "$source_dir"
+}
+
+# Add an user to the multimedia group, in turn having write permission in multimedia directories
+#
+# usage: ynh_multimedia_addaccess user_name
+#
+# | arg: user_name   - The name of the user which gain this access.
+ynh_multimedia_addaccess() {
+    groupadd -f $MEDIA_GROUP
+    usermod -a -G $MEDIA_GROUP $1
+}

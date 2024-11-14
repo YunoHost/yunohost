@@ -5,12 +5,13 @@ import requests_mock
 import glob
 import shutil
 
+from .conftest import message
+
 from moulinette import m18n
 from moulinette.utils.filesystem import read_json, write_to_json, write_to_yaml
 
 from yunohost.utils.error import YunohostError
 from yunohost.app_catalog import (
-    _initialize_apps_catalog_system,
     _read_apps_catalog_list,
     _update_apps_catalog,
     _actual_apps_catalog_api_url,
@@ -44,7 +45,6 @@ class AnyStringWith(str):
 
 
 def setup_function(function):
-
     # Clear apps catalog cache
     shutil.rmtree(APPS_CATALOG_CACHE, ignore_errors=True)
 
@@ -54,7 +54,6 @@ def setup_function(function):
 
 
 def teardown_function(function):
-
     # Clear apps catalog cache
     # Otherwise when using apps stuff after running the test,
     # we'll still have the dummy unusable list
@@ -66,54 +65,23 @@ def teardown_function(function):
 #
 
 
-def test_apps_catalog_init(mocker):
-
-    # Cache is empty
-    assert not glob.glob(APPS_CATALOG_CACHE + "/*")
-    # Conf doesn't exist yet
-    assert not os.path.exists(APPS_CATALOG_CONF)
-
-    # Initialize ...
-    mocker.spy(m18n, "n")
-    _initialize_apps_catalog_system()
-    m18n.n.assert_any_call("apps_catalog_init_success")
-
-    # And a conf with at least one list
-    assert os.path.exists(APPS_CATALOG_CONF)
-    apps_catalog_list = _read_apps_catalog_list()
-    assert len(apps_catalog_list)
-
-    # Cache is expected to still be empty though
-    # (if we did update the apps_catalog during init,
-    # we couldn't differentiate easily exceptions
-    # related to lack of network connectivity)
-    assert not glob.glob(APPS_CATALOG_CACHE + "/*")
-
-
 def test_apps_catalog_emptylist():
-
-    # Initialize ...
-    _initialize_apps_catalog_system()
 
     # Let's imagine somebody removed the default apps catalog because uh idk they dont want to use our default apps catalog
     os.system("rm %s" % APPS_CATALOG_CONF)
     os.system("touch %s" % APPS_CATALOG_CONF)
 
     apps_catalog_list = _read_apps_catalog_list()
-    assert not len(apps_catalog_list)
+    assert len(apps_catalog_list) == 0
 
 
 def test_apps_catalog_update_nominal(mocker):
-
-    # Initialize ...
-    _initialize_apps_catalog_system()
 
     # Cache is empty
     assert not glob.glob(APPS_CATALOG_CACHE + "/*")
 
     # Update
     with requests_mock.Mocker() as m:
-
         _actual_apps_catalog_api_url,
         # Mock the server response with a dummy apps catalog
         m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, text=DUMMY_APP_CATALOG)
@@ -140,11 +108,7 @@ def test_apps_catalog_update_nominal(mocker):
 
 def test_apps_catalog_update_404(mocker):
 
-    # Initialize ...
-    _initialize_apps_catalog_system()
-
     with requests_mock.Mocker() as m:
-
         # 404 error
         m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, status_code=404)
 
@@ -156,11 +120,7 @@ def test_apps_catalog_update_404(mocker):
 
 def test_apps_catalog_update_timeout(mocker):
 
-    # Initialize ...
-    _initialize_apps_catalog_system()
-
     with requests_mock.Mocker() as m:
-
         # Timeout
         m.register_uri(
             "GET", APPS_CATALOG_DEFAULT_URL_FULL, exc=requests.exceptions.ConnectTimeout
@@ -174,11 +134,7 @@ def test_apps_catalog_update_timeout(mocker):
 
 def test_apps_catalog_update_sslerror(mocker):
 
-    # Initialize ...
-    _initialize_apps_catalog_system()
-
     with requests_mock.Mocker() as m:
-
         # SSL error
         m.register_uri(
             "GET", APPS_CATALOG_DEFAULT_URL_FULL, exc=requests.exceptions.SSLError
@@ -192,11 +148,7 @@ def test_apps_catalog_update_sslerror(mocker):
 
 def test_apps_catalog_update_corrupted(mocker):
 
-    # Initialize ...
-    _initialize_apps_catalog_system()
-
     with requests_mock.Mocker() as m:
-
         # Corrupted json
         m.register_uri(
             "GET", APPS_CATALOG_DEFAULT_URL_FULL, text=DUMMY_APP_CATALOG[:-2]
@@ -210,15 +162,11 @@ def test_apps_catalog_update_corrupted(mocker):
 
 def test_apps_catalog_load_with_empty_cache(mocker):
 
-    # Initialize ...
-    _initialize_apps_catalog_system()
-
     # Cache is empty
     assert not glob.glob(APPS_CATALOG_CACHE + "/*")
 
     # Update
     with requests_mock.Mocker() as m:
-
         # Mock the server response with a dummy apps catalog
         m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, text=DUMMY_APP_CATALOG)
 
@@ -238,9 +186,6 @@ def test_apps_catalog_load_with_empty_cache(mocker):
 
 def test_apps_catalog_load_with_conflicts_between_lists(mocker):
 
-    # Initialize ...
-    _initialize_apps_catalog_system()
-
     conf = [
         {"id": "default", "url": APPS_CATALOG_DEFAULT_URL},
         {
@@ -253,7 +198,6 @@ def test_apps_catalog_load_with_conflicts_between_lists(mocker):
 
     # Update
     with requests_mock.Mocker() as m:
-
         # Mock the server response with a dummy apps catalog
         # + the same apps catalog for the second list
         m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, text=DUMMY_APP_CATALOG)
@@ -276,15 +220,10 @@ def test_apps_catalog_load_with_conflicts_between_lists(mocker):
     assert "bar" in app_dict.keys()
 
 
-def test_apps_catalog_load_with_oudated_api_version(mocker):
-
-    # Initialize ...
-    _initialize_apps_catalog_system()
+def test_apps_catalog_load_with_outdated_api_version():
 
     # Update
     with requests_mock.Mocker() as m:
-
-        mocker.spy(m18n, "n")
         m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, text=DUMMY_APP_CATALOG)
         _update_apps_catalog()
 
@@ -300,13 +239,10 @@ def test_apps_catalog_load_with_oudated_api_version(mocker):
 
     # Update
     with requests_mock.Mocker() as m:
-
         # Mock the server response with a dummy apps catalog
         m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, text=DUMMY_APP_CATALOG)
-
-        mocker.spy(m18n, "n")
-        app_dict = _load_apps_catalog()["apps"]
-        m18n.n.assert_any_call("apps_catalog_update_success")
+        with message("apps_catalog_update_success"):
+            app_dict = _load_apps_catalog()["apps"]
 
     assert "foo" in app_dict.keys()
     assert "bar" in app_dict.keys()
