@@ -49,19 +49,19 @@ def test_registrar_list_integrity():
 
 
 def test_magic_guess_registrar_weird_domain():
-    assert _get_registrar_config_section("yolo.tld")["registrar"]["value"] is None
+    assert _get_registrar_config_section("yolo.tld")["registrar"]["default"] is None
 
 
 def test_magic_guess_registrar_ovh():
     assert (
-        _get_registrar_config_section("yolo.yunohost.org")["registrar"]["value"]
+        _get_registrar_config_section("yolo.yunohost.org")["registrar"]["default"]
         == "ovh"
     )
 
 
 def test_magic_guess_registrar_yunodyndns():
     assert (
-        _get_registrar_config_section("yolo.nohost.me")["registrar"]["value"]
+        _get_registrar_config_section("yolo.nohost.me")["registrar"]["default"]
         == "yunohost"
     )
 

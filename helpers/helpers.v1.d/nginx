@@ -28,6 +28,11 @@ ynh_add_nginx_config() {
         ynh_replace_string --match_string="^#root_path_only" --replace_string="" --target_file="$finalnginxconf"
     fi
 
+    # Delete REMOTE_USER mapping, it's already provided by
+    # /etc/nginx/fastcgi_params which all PHP apps include, and maps to the
+    # appropriate YNH_USER HTTP header instead of $remote_user
+    sed -i '/fastcgi_param\s*REMOTE_USER/d' "$finalnginxconf"
+
     ynh_store_file_checksum --file="$finalnginxconf"
 
     ynh_systemd_action --service_name=nginx --action=reload
@@ -43,7 +48,6 @@ ynh_remove_nginx_config() {
     ynh_systemd_action --service_name=nginx --action=reload
 }
 
-
 # Regen the nginx config in a change url context
 #
 # usage: ynh_change_url_nginx_config
@@ -53,7 +57,7 @@ ynh_change_url_nginx_config() {
 
     # Make a backup of the original NGINX config file if manually modified
     # (nb: this is possibly different from the same instruction called by
-    # ynh_add_config inside ynh_add_nginx_config because the path may have 
+    # ynh_add_config inside ynh_add_nginx_config because the path may have
     # changed if we're changing the domain too...)
     local old_nginx_conf_path=/etc/nginx/conf.d/$old_domain.d/$app.conf
     ynh_backup_if_checksum_is_different --file="$old_nginx_conf_path"

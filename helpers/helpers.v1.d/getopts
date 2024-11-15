@@ -20,7 +20,7 @@
 # | arg: $@    - Simply "$@" to tranfert all the positionnal arguments to the function
 #
 # This helper need an array, named "args_array" with all the arguments used by the helper
-# 	that want to use ynh_handle_getopts_args
+# that want to use ynh_handle_getopts_args
 # Be carreful, this array has to be an associative array, as the following example:
 # local -A args_array=( [a]=arg1 [b]=arg2= [c]=arg3 )
 # Let's explain this array:
@@ -180,7 +180,7 @@ ynh_handle_getopts_args() {
             # If not, enter in legacy mode and manage the arguments as positionnal ones..
             # Dot not echo, to prevent to go through a helper output. But print only in the log.
             set -x
-            echo "! Helper used in legacy mode !" >/dev/null
+            echo "! Helper used in legacy mode !" > /dev/null
             set +x
             local i
             for i in $(seq 0 $((${#arguments[@]} - 1))); do

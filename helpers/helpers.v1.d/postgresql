@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PSQL_ROOT_PWD_FILE=/etc/yunohost/psql
-PSQL_VERSION=13
+PSQL_VERSION=15
 
 # Open a connection as a user
 #
@@ -51,7 +51,7 @@ ynh_psql_execute_as_root() {
     fi
 
     ynh_psql_connect_as --user="postgres" --password="$(cat $PSQL_ROOT_PWD_FILE)" \
-        $database <<<"$sql"
+        $database <<< "$sql"
 }
 
 # Execute a command from a file as root user
@@ -76,7 +76,7 @@ ynh_psql_execute_file_as_root() {
     fi
 
     ynh_psql_connect_as --user="postgres" --password="$(cat $PSQL_ROOT_PWD_FILE)" \
-        $database <"$file"
+        $database < "$file"
 }
 
 # Create a database and grant optionnaly privilegies to a user
@@ -199,10 +199,9 @@ ynh_psql_database_exists() {
 
     # if psql is not there, we cannot check the db
     # though it could exists.
-    if ! command -v psql
-    then
-      ynh_print_err -m "PostgreSQL is not installed, impossible to check for db existence."
-      return 1
+    if ! command -v psql; then
+        ynh_print_err -m "PostgreSQL is not installed, impossible to check for db existence."
+        return 1
     elif ! sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT datname FROM pg_database WHERE datname='$database';" | grep --quiet "$database"; then
         return 1
     else

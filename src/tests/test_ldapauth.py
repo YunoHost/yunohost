@@ -59,7 +59,7 @@ def test_authenticate_with_wrong_password():
     assert expected_msg in str(exception)
 
 
-def test_authenticate_server_down(mocker):
+def test_authenticate_server_down():
     os.system("systemctl stop slapd && sleep 5")
 
     LDAPAuth().authenticate_credentials(credentials="alice:Yunohost")

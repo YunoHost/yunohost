@@ -1,11 +1,11 @@
 VERSION="?"
-RELEASE="testing"
+RELEASE="stable"
 REPO=$(basename $(git rev-parse --show-toplevel))
 REPO_URL=$(git remote get-url origin)
 ME=$(git config --get user.name)
 EMAIL=$(git config --get user.email)
 
-LAST_RELEASE=$(git tag --list 'debian/11.*'  --sort="v:refname" | tail -n 1)
+LAST_RELEASE=$(git tag --list 'debian/12.*'  --sort="v:refname" | tail -n 1)
 
 echo "$REPO ($VERSION) $RELEASE; urgency=low"
 echo ""

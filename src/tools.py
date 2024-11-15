@@ -24,38 +24,26 @@ import time
 from importlib import import_module
 from packaging import version
 from typing import List
+from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import call_async_output
 from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm, chown
 
-from yunohost.app import (
-    app_upgrade,
-    app_list,
-    _list_upgradable_apps,
-)
-from yunohost.app_catalog import (
-    _initialize_apps_catalog_system,
-    _update_apps_catalog,
-)
-from yunohost.domain import domain_add
-from yunohost.firewall import firewall_upnp
-from yunohost.service import service_start, service_enable
-from yunohost.regenconf import regen_conf
 from yunohost.utils.system import (
     _dump_sources_list,
     _list_upgradable_apt_packages,
     ynh_packages_version,
     dpkg_is_broken,
     dpkg_lock_available,
+    _apt_log_line_is_relevant,
 )
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation, OperationLogger
 
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
-logger = getActionLogger("yunohost.tools")
+logger = getLogger("yunohost.tools")
 
 
 def tools_versions():
@@ -63,10 +51,10 @@ def tools_versions():
 
 
 def tools_rootpw(new_password, check_strength=True):
-    from yunohost.user import _hash_user_password
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
         assert_password_is_compatible,
+        _hash_user_password,
     )
     import spwd
 
@@ -155,15 +143,21 @@ def tools_postinstall(
     ignore_dyndns=False,
     force_diskspace=False,
     overwrite_root_password=True,
+    i_have_read_terms_of_services=False,
 ):
+    from yunohost.service import _run_service_command
     from yunohost.dyndns import _dyndns_available, dyndns_unsubscribe
     from yunohost.utils.dns import is_yunohost_dyndns_domain
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
         assert_password_is_compatible,
     )
-    from yunohost.domain import domain_main_domain
+    from yunohost.domain import domain_main_domain, domain_add
     from yunohost.user import user_create, ADMIN_ALIASES
+    from yunohost.app import _ask_confirmation
+    from yunohost.app_catalog import _update_apps_catalog
+    from yunohost.firewall import firewall_upnp
+
     import psutil
 
     # Do some checks at first
@@ -175,6 +169,11 @@ def tools_postinstall(
             "It looks like you're trying to re-postinstall a system that was already working previously ... If you recently had some bug or issues with your installation, please first discuss with the team on how to fix the situation instead of savagely re-running the postinstall ...",
             raw_msg=True,
         )
+
+    if Moulinette.interface.type == "cli" and os.isatty(1):
+        Moulinette.display(m18n.n("tos_postinstall_acknowledgement"), style="warning")
+        if not i_have_read_terms_of_services:
+            _ask_confirmation("confirm_tos_acknowledgement", kind="soft")
 
     # Crash early if the username is already a system user, which is
     # a common confusion. We don't want to crash later and end up in an half-configured state.
@@ -241,6 +240,7 @@ def tools_postinstall(
         domain,
         dyndns_recovery_password=dyndns_recovery_password,
         ignore_dyndns=ignore_dyndns,
+        skip_tos=True,  # skip_tos is here to prevent re-asking about the ToS when adding a dyndns service, because the ToS are already displayed right before in postinstall
     )
     domain_main_domain(domain)
 
@@ -253,10 +253,7 @@ def tools_postinstall(
     # Enable UPnP silently and reload firewall
     firewall_upnp("enable", no_refresh=True)
 
-    # Initialize the apps catalog system
-    _initialize_apps_catalog_system()
-
-    # Try to update the apps catalog ...
+    # Try to fetch the apps catalog ...
     # we don't fail miserably if this fails,
     # because that could be for example an offline installation...
     try:
@@ -270,10 +267,10 @@ def tools_postinstall(
     os.system("touch /etc/yunohost/installed")
 
     # Enable and start YunoHost firewall at boot time
-    service_enable("yunohost-firewall")
-    service_start("yunohost-firewall")
+    _run_service_command("enable", "yunohost-firewall")
+    _run_service_command("start", "yunohost-firewall")
 
-    regen_conf(names=["ssh"], force=True)
+    tools_regen_conf(names=["ssh"], force=True)
 
     # Restore original ssh conf, as chosen by the
     # admin during the initial install
@@ -288,7 +285,7 @@ def tools_postinstall(
     if os.path.exists(original_sshd_conf):
         os.rename(original_sshd_conf, "/etc/ssh/sshd_config")
 
-    regen_conf(force=True)
+    tools_regen_conf(force=True)
 
     logger.success(m18n.n("yunohost_configured"))
 
@@ -298,16 +295,8 @@ def tools_postinstall(
 def tools_regen_conf(
     names=[], with_diff=False, force=False, dry_run=False, list_pending=False
 ):
-    # Make sure the settings are migrated before running the migration,
-    # which may otherwise fuck things up such as the ssh config ...
-    # We do this here because the regen-conf is called before the migration in debian/postinst
-    if os.path.exists("/etc/yunohost/settings.json") and not os.path.exists(
-        "/etc/yunohost/settings.yml"
-    ):
-        try:
-            tools_migrations_run(["0025_global_settings_to_configpanel"])
-        except Exception as e:
-            logger.error(e)
+
+    from yunohost.regenconf import regen_conf
 
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
@@ -316,6 +305,8 @@ def tools_update(target=None):
     """
     Update apps & system package cache
     """
+    from yunohost.app_catalog import _update_apps_catalog
+    from yunohost.app import _list_upgradable_apps
 
     if not target:
         target = "all"
@@ -424,6 +415,8 @@ def tools_upgrade(operation_logger, target=None):
        system -- True to upgrade system
     """
 
+    from yunohost.app import app_upgrade, app_list
+
     if dpkg_is_broken():
         raise YunohostValidationError("dpkg_is_broken")
 
@@ -530,32 +523,6 @@ def tools_upgrade(operation_logger, target=None):
         operation_logger.success()
 
 
-def _apt_log_line_is_relevant(line):
-    irrelevants = [
-        "service sudo-ldap already provided",
-        "Reading database ...",
-        "Preparing to unpack",
-        "Selecting previously unselected package",
-        "Created symlink /etc/systemd",
-        "Replacing config file",
-        "Creating config file",
-        "Installing new version of config file",
-        "Installing new config file as you requested",
-        ", does not exist on system.",
-        "unable to delete old directory",
-        "update-alternatives:",
-        "Configuration file '/etc",
-        "==> Modified (by you or by a script) since installation.",
-        "==> Package distributor has shipped an updated version.",
-        "==> Keeping old config file as default.",
-        "is a disabled or a static unit",
-        " update-rc.d: warning: start and stop actions are no longer supported; falling back to defaults",
-        "insserv: warning: current stop runlevel",
-        "insserv: warning: current start runlevel",
-    ]
-    return line.rstrip() and all(i not in line.rstrip() for i in irrelevants)
-
-
 @is_unit_operation()
 def tools_shutdown(operation_logger, force=False):
     shutdown = force
@@ -613,7 +580,7 @@ def tools_shell(command=None):
         from IPython import embed
 
         embed()
-    except ImportError:
+    except (ImportError, ModuleNotFoundError):
         logger.warn(
             "You don't have IPython installed, consider installing it as it is way better than the standard shell."
         )
@@ -712,6 +679,15 @@ def tools_migrations_run(
                 return m
 
         raise YunohostValidationError("migrations_no_such_migration", id=target)
+
+    # Dirty hack to mark the bullseye->bookworm as done ...
+    # it may still be marked as 'pending' if for some reason the migration crashed,
+    # but the admins ran 'apt full-upgrade' to manually finish the migration
+    # ... in which case it won't be magically flagged as 'done' until here
+    migrate_to_bookworm = get_matching_migration("migrate_to_bookworm")
+    if migrate_to_bookworm.state == "pending":
+        migrate_to_bookworm.state = "done"
+        _write_migration_state(migrate_to_bookworm.id, "done")
 
     # auto, skip and force are exclusive options
     if auto + skip + force_rerun > 1:

@@ -147,21 +147,19 @@ def test_change_main_domain():
 
 # Domain settings testing
 def test_domain_config_get_default():
-    assert domain_config_get(TEST_DOMAINS[0], "feature.xmpp.xmpp") == 1
-    assert domain_config_get(TEST_DOMAINS[1], "feature.xmpp.xmpp") == 0
+    assert domain_config_get(TEST_DOMAINS[0], "feature.mail.mail_out") == 1
 
 
 def test_domain_config_get_export():
-    assert domain_config_get(TEST_DOMAINS[0], export=True)["xmpp"] == 1
-    assert domain_config_get(TEST_DOMAINS[1], export=True)["xmpp"] == 0
+    assert domain_config_get(TEST_DOMAINS[0], export=True)["mail_out"] == 1
 
 
 def test_domain_config_set():
-    assert domain_config_get(TEST_DOMAINS[1], "feature.xmpp.xmpp") == 0
-    domain_config_set(TEST_DOMAINS[1], "feature.xmpp.xmpp", "yes")
-    assert domain_config_get(TEST_DOMAINS[1], "feature.xmpp.xmpp") == 1
+    assert domain_config_get(TEST_DOMAINS[1], "feature.mail.mail_out") == 1
+    domain_config_set(TEST_DOMAINS[1], "feature.mail.mail_out", "no")
+    assert domain_config_get(TEST_DOMAINS[1], "feature.mail.mail_out") == 0
 
 
 def test_domain_configs_unknown():
     with pytest.raises(YunohostError):
-        domain_config_get(TEST_DOMAINS[2], "feature.xmpp.xmpp.xmpp")
+        domain_config_get(TEST_DOMAINS[2], "feature.foo.bar.baz")

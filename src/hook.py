@@ -23,16 +23,16 @@ import tempfile
 import mimetypes
 from glob import iglob
 from importlib import import_module
+from logging import getLogger
 
 from moulinette import m18n, Moulinette
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from moulinette.utils import log
 from moulinette.utils.filesystem import read_yaml, cp
 
 HOOK_FOLDER = "/usr/share/yunohost/hooks/"
 CUSTOM_HOOK_FOLDER = "/etc/yunohost/hooks.d/"
 
-logger = log.getActionLogger("yunohost.hook")
+logger = getLogger("yunohost.hook")
 
 
 def hook_add(app, file):
@@ -359,6 +359,7 @@ def hook_exec(
             r"Removing obsolete dictionary files",
             r"Creating new PostgreSQL cluster",
             r"/usr/lib/postgresql/13/bin/initdb",
+            r"/usr/lib/postgresql/15/bin/initdb",
             r"The files belonging to this database system will be owned by user",
             r"This user must also own the server process.",
             r"The database cluster will be initialized with locale",
@@ -366,6 +367,7 @@ def hook_exec(
             r"The default text search configuration will be set to",
             r"Data page checksums are disabled.",
             r"fixing permissions on existing directory /var/lib/postgresql/13/main ... ok",
+            r"fixing permissions on existing directory /var/lib/postgresql/15/main ... ok",
             r"creating subdirectories \.\.\. ok",
             r"selecting dynamic .* \.\.\. ",
             r"selecting default .* \.\.\. ",
@@ -538,6 +540,9 @@ def hook_exec_with_script_debug_if_failure(*args, **kwargs):
         failed = True if retcode != 0 else False
         if failed:
             error = error_message_if_script_failed
+            # check more specific error message added by ynh_die in $YNH_STDRETURN
+            if isinstance(retpayload, dict) and "error" in retpayload:
+                error += " : " + retpayload["error"].strip()
             logger.error(error_message_if_failed(error))
             failure_message_with_debug_instructions = operation_logger.error(error)
             if Moulinette.interface.type != "api":

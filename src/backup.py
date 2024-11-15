@@ -30,10 +30,10 @@ from glob import glob
 from collections import OrderedDict
 from functools import reduce
 from packaging import version
+from logging import getLogger
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.text import random_ascii
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import (
     read_file,
     mkdir,
@@ -56,6 +56,8 @@ from yunohost.app import (
 )
 from yunohost.hook import (
     hook_list,
+    hook_remove,
+    hook_add,
     hook_info,
     hook_callback,
     hook_exec,
@@ -76,7 +78,6 @@ from yunohost.utils.system import (
     binary_to_human,
     space_used_by_directory,
 )
-from yunohost.settings import settings_get
 
 BACKUP_PATH = "/home/yunohost.backup"
 ARCHIVES_PATH = f"{BACKUP_PATH}/archives"
@@ -84,7 +85,7 @@ APP_MARGIN_SPACE_SIZE = 100  # In MB
 CONF_MARGIN_SPACE_SIZE = 10  # IN MB
 POSTINSTALL_ESTIMATE_SPACE_SIZE = 5  # In MB
 MB_ALLOWED_TO_ORGANIZE = 10
-logger = getActionLogger("yunohost.backup")
+logger = getLogger("yunohost.backup")
 
 
 class BackupRestoreTargetsManager:
@@ -766,9 +767,22 @@ class BackupManager:
         """Apply backup methods"""
 
         for method in self.methods:
-            logger.debug(m18n.n("backup_applying_method_" + method.method_name))
+            method_name = (
+                method.method if hasattr(method, "method") else method.method_name
+            )
+            logger.debug(
+                m18n.n(
+                    "backup_applying_method_" + method.method_name,
+                    method=method_name,
+                )
+            )
             method.mount_and_backup()
-            logger.debug(m18n.n("backup_method_" + method.method_name + "_finished"))
+            logger.debug(
+                m18n.n(
+                    "backup_method_" + method.method_name + "_finished",
+                    method=method_name,
+                )
+            )
 
     def _compute_backup_size(self):
         """
@@ -1186,9 +1200,6 @@ class RestoreManager:
         try:
             self._postinstall_if_needed()
 
-            # Apply dirty patch to redirect php5 file on php7
-            self._patch_legacy_php_versions_in_csv_file()
-
             self._restore_system()
             self._restore_apps()
         except Exception as e:
@@ -1198,39 +1209,6 @@ class RestoreManager:
             )
         finally:
             self.clean()
-
-    def _patch_legacy_php_versions_in_csv_file(self):
-        """
-        Apply dirty patch to redirect php5 and php7.0 files to php7.4
-        """
-        from yunohost.utils.legacy import LEGACY_PHP_VERSION_REPLACEMENTS
-
-        backup_csv = os.path.join(self.work_dir, "backup.csv")
-
-        if not os.path.isfile(backup_csv):
-            return
-
-        replaced_something = False
-        with open(backup_csv) as csvfile:
-            reader = csv.DictReader(csvfile, fieldnames=["source", "dest"])
-            newlines = []
-            for row in reader:
-                for pattern, replace in LEGACY_PHP_VERSION_REPLACEMENTS:
-                    if pattern in row["source"]:
-                        replaced_something = True
-                        row["source"] = row["source"].replace(pattern, replace)
-
-                newlines.append(row)
-
-        if not replaced_something:
-            return
-
-        with open(backup_csv, "w") as csvfile:
-            writer = csv.DictWriter(
-                csvfile, fieldnames=["source", "dest"], quoting=csv.QUOTE_ALL
-            )
-            for row in newlines:
-                writer.writerow(row)
 
     def _restore_system(self):
         """Restore user and system parts"""
@@ -1368,8 +1346,6 @@ class RestoreManager:
                              name should be already install)
         """
         from yunohost.utils.legacy import (
-            _patch_legacy_php_versions,
-            _patch_legacy_php_versions_in_settings,
             _patch_legacy_helpers,
         )
         from yunohost.user import user_group_list
@@ -1407,10 +1383,6 @@ class RestoreManager:
 
         # Attempt to patch legacy helpers...
         _patch_legacy_helpers(app_settings_in_archive)
-
-        # Apply dirty patch to make php5 apps compatible with php7
-        _patch_legacy_php_versions(app_settings_in_archive)
-        _patch_legacy_php_versions_in_settings(app_settings_in_archive)
 
         # Delete _common.sh file in backup
         common_file = os.path.join(app_backup_in_archive, "_common.sh")
@@ -1549,18 +1521,30 @@ class RestoreManager:
                 ),
             )
         finally:
-            # Cleaning temporary scripts directory
-            shutil.rmtree(tmp_workdir_for_app, ignore_errors=True)
-
             if not restore_failed:
                 self.targets.set_result("apps", app_instance_name, "Success")
                 operation_logger.success()
+
+                # Clean hooks and add new ones
+                hook_remove(app_instance_name)
+                if "hooks" in os.listdir(app_settings_in_archive):
+                    for hook in os.listdir(app_settings_in_archive + "/hooks"):
+                        hook_add(
+                            app_instance_name,
+                            app_settings_in_archive + "/hooks/" + hook,
+                        )
+
+                # Cleaning temporary scripts directory
+                shutil.rmtree(tmp_workdir_for_app, ignore_errors=True)
 
                 # Call post_app_restore hook
                 env_dict = _make_environment_for_app_script(app_instance_name)
                 hook_callback("post_app_restore", env=env_dict)
             else:
                 self.targets.set_result("apps", app_instance_name, "Error")
+
+                # Cleaning temporary scripts directory
+                shutil.rmtree(tmp_workdir_for_app, ignore_errors=True)
 
                 app_remove(app_instance_name, force_workdir=app_workdir)
 
@@ -1923,6 +1907,11 @@ class TarBackupMethod(BackupMethod):
 
     @property
     def _archive_file(self):
+        from yunohost.settings import settings_get
+
+        if isinstance(self.manager, RestoreManager):
+            return self.manager.archive_path
+
         if isinstance(self.manager, BackupManager) and settings_get(
             "misc.backup.backup_compress_tar_archives"
         ):
@@ -2314,11 +2303,6 @@ def backup_restore(name, system=[], apps=[], force=False):
     # Initialize                                                            #
     #
 
-    if name.endswith(".tar.gz"):
-        name = name[: -len(".tar.gz")]
-    elif name.endswith(".tar"):
-        name = name[: -len(".tar")]
-
     restore_manager = RestoreManager(name)
 
     restore_manager.set_system_targets(system)
@@ -2330,8 +2314,10 @@ def backup_restore(name, system=[], apps=[], force=False):
     # Add validation if restoring system parts on an already-installed system
     #
 
-    if restore_manager.targets.targets["system"] != [] and os.path.isfile(
-        "/etc/yunohost/installed"
+    if (
+        restore_manager.info["system"] != {}
+        and restore_manager.targets.targets["system"] != []
+        and os.path.isfile("/etc/yunohost/installed")
     ):
         logger.warning(m18n.n("yunohost_already_installed"))
         if not force:
@@ -2451,6 +2437,7 @@ def backup_info(name, with_details=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
+    original_name = name
 
     if name.endswith(".tar.gz"):
         name = name[: -len(".tar.gz")]
@@ -2463,7 +2450,10 @@ def backup_info(name, with_details=False, human_readable=False):
     if not os.path.lexists(archive_file):
         archive_file += ".gz"
         if not os.path.lexists(archive_file):
-            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+            # Maybe the user provided a path to the backup?
+            archive_file = original_name
+            if not os.path.lexists(archive_file):
+                raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
     # If symlink, retrieve the real path
     if os.path.islink(archive_file):
@@ -2550,9 +2540,6 @@ def backup_info(name, with_details=False, human_readable=False):
             for category in ["apps", "system"]:
                 for name, key_info in info[category].items():
                     if category == "system":
-                        # Stupid legacy fix for weird format between 3.5 and 3.6
-                        if isinstance(key_info, dict):
-                            key_info = key_info.keys()
                         info[category][name] = key_info = {"paths": key_info}
                     else:
                         info[category][name] = key_info

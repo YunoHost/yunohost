@@ -94,12 +94,12 @@ ynh_systemd_action() {
         # Following the starting of the app in its log
         if [ "$log_path" == "systemd" ]; then
             # Read the systemd journal
-            journalctl --unit=$service_name --follow --since=-0 --quiet >"$templog" &
+            journalctl --unit=$service_name --follow --since=-0 --quiet > "$templog" &
             # Get the PID of the journalctl command
             local pid_tail=$!
         else
             # Read the specified log file
-            tail --follow=name --retry --lines=0 "$log_path" >"$templog" 2>&1 &
+            tail --follow=name --retry --lines=0 "$log_path" > "$templog" 2>&1 &
             # Get the PID of the tail command
             local pid_tail=$!
         fi
@@ -149,8 +149,7 @@ ynh_systemd_action() {
             # Also check the timeout using actual timestamp, because sometimes for some reason,
             # journalctl may take a huge time to run, and we end up waiting literally an entire hour
             # instead of 5 min ...
-            if [[ "$(( $(date +%s) - $starttime))" -gt "$timeout" ]]
-            then
+            if [[ "$(($(date +%s) - $starttime))" -gt "$timeout" ]]; then
                 i=$timeout
                 break
             fi

@@ -1,4 +1,3 @@
-#
 # Copyright (c) 2024 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
@@ -22,6 +21,7 @@ import re
 import yaml
 import glob
 import psutil
+import time
 from typing import List
 
 from datetime import datetime, timedelta
@@ -32,25 +32,29 @@ from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import get_ynh_package_version
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, read_yaml
 
-logger = getActionLogger("yunohost.log")
+logger = getLogger("yunohost.log")
 
-CATEGORIES_PATH = "/var/log/yunohost/categories/"
-OPERATIONS_PATH = "/var/log/yunohost/categories/operation/"
+OPERATIONS_PATH = "/var/log/yunohost/operations/"
 METADATA_FILE_EXT = ".yml"
 LOG_FILE_EXT = ".log"
 
 BORING_LOG_LINES = [
     r"set [+-]x$",
     r"set [+-]o xtrace$",
+    r"\+ set \+o$",
+    r"\+ grep xtrace$",
+    r"local 'xtrace_enable=",
     r"set [+-]o errexit$",
     r"set [+-]o nounset$",
     r"trap '' EXIT",
     r"local \w+$",
     r"local exit_code=(1|0)$",
     r"local legacy_args=.*$",
+    r"local _globalapp=.*$",
+    r"local checksum_setting_name=.*$",
+    r"ynh_app_setting ",  # (note the trailing space to match the "low level" one called by other setting helpers)
     r"local -A args_array$",
     r"args_array=.*$",
     r"ret_code=1",
@@ -62,9 +66,50 @@ BORING_LOG_LINES = [
     r"\[?\['? -n '' '?\]\]?$",
     r"rm -rf /var/cache/yunohost/download/$",
     r"type -t ynh_clean_setup$",
+    r"DEBUG - \+ unset \S+$",
     r"DEBUG - \+ echo '",
+    r"DEBUG - \+ LC_ALL=C$",
+    r"DEBUG - \+ DEBIAN_FRONTEND=noninteractive$",
     r"DEBUG - \+ exit (1|0)$",
+    r"DEBUG - \+ app=\S+$",
+    r"DEBUG - \+\+ app=\S+$",
+    r"DEBUG - \+\+ jq -r .\S+$",
+    r"DEBUG - \+\+ sed 's/\^null\$//'$",
+    "DEBUG - \\+ sed --in-place \\$'s\\\\001",
+    "DEBUG - \\+ sed --in-place 's\u0001.*$",
 ]
+
+
+def _update_log_parent_symlinks():
+
+    one_year_ago = time.time() - 365 * 24 * 3600
+
+    logs = glob.iglob(OPERATIONS_PATH + "*" + METADATA_FILE_EXT)
+    for log_md in logs:
+        if os.path.getctime(log_md) < one_year_ago:
+            # Let's ignore files older than one year because hmpf reading a shitload of yml is not free
+            continue
+
+        name = log_md.split("/")[-1][: -len(METADATA_FILE_EXT)]
+        parent_symlink = os.path.join(OPERATIONS_PATH, f".{name}.parent.yml")
+        if os.path.islink(parent_symlink):
+            continue
+
+        try:
+            metadata = (
+                read_yaml(log_md) or {}
+            )  # Making sure this is a dict and not  None..?
+        except Exception as e:
+            # If we can't read the yaml for some reason, report an error and ignore this entry...
+            logger.error(m18n.n("log_corrupted_md_file", md_file=log_md, error=e))
+            continue
+
+        parent = metadata.get("parent")
+        parent = parent + METADATA_FILE_EXT if parent else "/dev/null"
+        try:
+            os.symlink(parent, parent_symlink)
+        except Exception as e:
+            logger.warning(f"Failed to create symlink {parent_symlink} ? {e}")
 
 
 def log_list(limit=None, with_details=False, with_suboperations=False):
@@ -83,30 +128,43 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
 
     operations = {}
 
-    logs = [x for x in os.listdir(OPERATIONS_PATH) if x.endswith(METADATA_FILE_EXT)]
+    _update_log_parent_symlinks()
+
+    one_year_ago = time.time() - 365 * 24 * 3600
+    logs = [
+        x.split("/")[-1]
+        for x in glob.iglob(OPERATIONS_PATH + "*" + METADATA_FILE_EXT)
+        if os.path.getctime(x) > one_year_ago
+    ]
     logs = list(reversed(sorted(logs)))
 
+    if not with_suboperations:
+
+        def parent_symlink_points_to_dev_null(log):
+            name = log[: -len(METADATA_FILE_EXT)]
+            parent_symlink = os.path.join(OPERATIONS_PATH, f".{name}.parent.yml")
+            return (
+                os.path.islink(parent_symlink)
+                and os.path.realpath(parent_symlink) == "/dev/null"
+            )
+
+        logs = [log for log in logs if parent_symlink_points_to_dev_null(log)]
+
     if limit is not None:
-        if with_suboperations:
-            logs = logs[:limit]
-        else:
-            # If we displaying only parent, we are still gonna load up to limit * 5 logs
-            # because many of them are suboperations which are not gonna be kept
-            # Yet we still want to obtain ~limit number of logs
-            logs = logs[: limit * 5]
+        logs = logs[:limit]
 
     for log in logs:
-        base_filename = log[: -len(METADATA_FILE_EXT)]
+        name = log[: -len(METADATA_FILE_EXT)]
         md_path = os.path.join(OPERATIONS_PATH, log)
 
         entry = {
-            "name": base_filename,
+            "name": name,
             "path": md_path,
-            "description": _get_description_from_name(base_filename),
+            "description": _get_description_from_name(name),
         }
 
         try:
-            entry["started_at"] = _get_datetime_from_name(base_filename)
+            entry["started_at"] = _get_datetime_from_name(name)
         except ValueError:
             pass
 
@@ -126,10 +184,8 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
         if with_suboperations:
             entry["parent"] = metadata.get("parent")
             entry["suboperations"] = []
-        elif metadata.get("parent") is not None:
-            continue
 
-        operations[base_filename] = entry
+        operations[name] = entry
 
     # When displaying suboperations, we build a tree-like structure where
     # "suboperations" is a list of suboperations (each of them may also have a list of
@@ -229,7 +285,7 @@ def log_show(
     infos = {}
 
     # If it's a unit operation, display the name and the description
-    if base_path.startswith(CATEGORIES_PATH):
+    if base_path.startswith(OPERATIONS_PATH):
         infos["description"] = _get_description_from_name(base_filename)
         infos["name"] = base_filename
 
@@ -333,11 +389,19 @@ def log_share(path):
     return log_show(path, share=True)
 
 
+from typing import TypeVar, Callable, Concatenate, ParamSpec
+
+# FuncT = TypeVar("FuncT", bound=Callable[..., Any])
+Param = ParamSpec("Param")
+RetType = TypeVar("RetType")
+
+
 def is_unit_operation(
     entities=["app", "domain", "group", "service", "user"],
     exclude=["password"],
-    operation_key=None,
-):
+) -> Callable[
+    [Callable[Concatenate["OperationLogger", Param], RetType]], Callable[Param, RetType]
+]:
     """
     Configure quickly a unit operation
 
@@ -354,17 +418,12 @@ def is_unit_operation(
     called 'password' are removed. If an argument is an object, you need to
     exclude it or create manually the unit operation without this decorator.
 
-    operation_key   A key to describe the unit operation log used to create the
-    filename and search a translation. Please ensure that this key prefixed by
-    'log_' is present in locales/en.json otherwise it won't be translatable.
-
     """
 
-    def decorate(func):
+    def decorate(
+        func: Callable[Concatenate["OperationLogger", Param], RetType]
+    ) -> Callable[Param, RetType]:
         def func_wrapper(*args, **kwargs):
-            op_key = operation_key
-            if op_key is None:
-                op_key = func.__name__
 
             # If the function is called directly from an other part of the code
             # and not by the moulinette framework, we need to complete kwargs
@@ -415,7 +474,7 @@ def is_unit_operation(
                         context[field] = value.name
                     except Exception:
                         context[field] = "IOBase"
-            operation_logger = OperationLogger(op_key, related_to, args=context)
+            operation_logger = OperationLogger(func.__name__, related_to, args=context)
 
             try:
                 # Start the actual function, and give the unit operation
@@ -483,7 +542,7 @@ class OperationLogger:
     This class record logs and metadata like context or start time/end time.
     """
 
-    _instances: List[object] = []
+    _instances: List["OperationLogger"] = []
 
     def __init__(self, operation, related_to=None, **kwargs):
         # TODO add a way to not save password on app installation
@@ -759,7 +818,7 @@ class OperationLogger:
         # 2019-10-19 16:10:27,611: DEBUG - + mysql -u piwigo --password=********** -B piwigo
         # And we just want the part starting by "DEBUG - "
         lines = [line for line in lines if ":" in line.strip()]
-        lines = [line.strip().split(": ", 1)[1] for line in lines]
+        lines = [line.strip().split(": ", 1)[-1] for line in lines]
         # And we ignore boring/irrelevant lines
         # Annnnnnd we also ignore lines matching [number] + such as
         # 72971 [37m[1mDEBUG [m29739 + ynh_exit_properly
@@ -776,7 +835,7 @@ class OperationLogger:
 
         # Get the 20 lines before the last 'ynh_exit_properly'
         rev_lines = list(reversed(lines))
-        for i, line in enumerate(rev_lines):
+        for i, line in enumerate(rev_lines[:50]):
             if line.endswith("+ ynh_exit_properly"):
                 lines_to_display = reversed(rev_lines[i : i + 20])
                 break

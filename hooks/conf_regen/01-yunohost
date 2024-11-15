@@ -2,19 +2,168 @@
 
 set -e
 
-do_init_regen() {
-    if [[ $EUID -ne 0 ]]; then
-        echo "You must be root to run this script" 1>&2
-        exit 1
+base_folder_and_perm_init() {
+
+    #############################
+    # Base yunohost conf folder #
+    #############################
+
+    mkdir -p /etc/yunohost
+    # NB: x permission for 'others' is important for ssl-cert (and maybe mdns), otherwise slapd will fail to start because can't access the certs
+    chmod 755 /etc/yunohost
+
+    ################
+    # Logs folders #
+    ################
+
+    mkdir -p /var/log/yunohost
+    chown root:root /var/log/yunohost
+    chmod 750 /var/log/yunohost
+
+    ##################
+    # Portal folders #
+    ##################
+
+    getent passwd ynh-portal &> /dev/null || useradd --no-create-home --shell /usr/sbin/nologin --system --user-group ynh-portal
+
+    mkdir -p /etc/yunohost/portal
+    chmod 500 /etc/yunohost/portal
+    chown ynh-portal:ynh-portal /etc/yunohost/portal
+
+    mkdir -p /usr/share/yunohost/portal/customassets
+    chmod 775 /usr/share/yunohost/portal/customassets
+    chown root:root /usr/share/yunohost/portal/customassets
+
+    touch /var/log/yunohost-portalapi.log
+    chown ynh-portal:root /var/log/yunohost-portalapi.log
+    chmod 600 /var/log/yunohost-portalapi.log
+
+    ###############################
+    # Sessions folder and secrets #
+    ###############################
+
+    # Portal
+    mkdir -p /var/cache/yunohost-portal/sessions
+    chown ynh-portal:www-data /var/cache/yunohost-portal
+    chmod 510 /var/cache/yunohost-portal
+    chown ynh-portal:www-data /var/cache/yunohost-portal/sessions
+    chmod 710 /var/cache/yunohost-portal/sessions
+
+    # Webadmin
+    mkdir -p /var/cache/yunohost/sessions
+    chown root:root /var/cache/yunohost/sessions
+    chmod 700 /var/cache/yunohost/sessions
+
+    if test -e /etc/yunohost/installed; then
+        # Initialize session secrets
+        # Obviously we only do this in the post_regen, ie during the postinstall, because we don't want every pre-installed instance to have the same secret
+        if [ ! -e /etc/yunohost/.admin_cookie_secret ]; then
+            dd if=/dev/urandom bs=1 count=1000 2> /dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 64 > /etc/yunohost/.admin_cookie_secret
+        fi
+        chown root:root /etc/yunohost/.admin_cookie_secret
+        chmod 400 /etc/yunohost/.admin_cookie_secret
+
+        if [ ! -e /etc/yunohost/.ssowat_cookie_secret ]; then
+            # NB: we need this to be exactly 32 char long, because it is later used as a key for AES256
+            dd if=/dev/urandom bs=1 count=1000 2> /dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 32 > /etc/yunohost/.ssowat_cookie_secret
+        fi
+        chown ynh-portal:root /etc/yunohost/.ssowat_cookie_secret
+        chmod 400 /etc/yunohost/.ssowat_cookie_secret
     fi
+
+    ##################
+    # Domain folders #
+    ##################
+
+    mkdir -p /etc/yunohost/domains
+    chown root /etc/yunohost/domains
+    chmod 700 /etc/yunohost/domains
+
+    ###############
+    # App folders #
+    ###############
+
+    mkdir -p /etc/yunohost/apps
+    chown root /etc/yunohost/apps
+    chmod 700 /etc/yunohost/apps
+
+    #####################
+    # Apps data folders #
+    #####################
+
+    mkdir -p /home/yunohost.app
+    chmod 755 /home/yunohost.app
+
+    ################
+    # Certs folder #
+    ################
+
+    mkdir -p /etc/yunohost/certs
+    chown -R root:ssl-cert /etc/yunohost/certs
+    chmod 750 /etc/yunohost/certs
+    # We do this with find because there could be a lot of them...
+    find /etc/yunohost/certs/ -type f -exec chmod 640 {} \;
+    find /etc/yunohost/certs/ -type d -exec chmod 750 {} \;
+
+    ##################
+    # Backup folders #
+    ##################
+
+    mkdir -p /home/yunohost.backup/archives
+    chmod 770 /home/yunohost.backup
+    chmod 770 /home/yunohost.backup/archives
+
+    if test -e /etc/yunohost/installed; then
+        # The admins group only exist after the postinstall
+        chown root:admins /home/yunohost.backup
+        chown root:admins /home/yunohost.backup/archives
+    else
+        chown root:root /home/yunohost.backup
+        chown root:root /home/yunohost.backup/archives
+    fi
+
+    ########
+    # Misc #
+    ########
+
+    mkdir -p /etc/yunohost/hooks.d
+    chown root /etc/yunohost/hooks.d
+    chmod 700 /etc/yunohost/hooks.d
+
+    mkdir -p /var/cache/yunohost/repo
+    chown root:root /var/cache/yunohost
+    chmod 700 /var/cache/yunohost
+
+    [ ! -e /var/www/.well-known/ynh-diagnosis/ ] || chmod 775 /var/www/.well-known/ynh-diagnosis/
+
+    if test -e /etc/yunohost/installed; then
+        setfacl -m g:all_users:--- /var/www
+        setfacl -m g:all_users:--- /var/log/nginx
+        setfacl -m g:all_users:--- /etc/yunohost
+        setfacl -m g:all_users:--- /etc/ssowat
+    fi
+}
+
+do_init_regen() {
 
     cd /usr/share/yunohost/conf/yunohost
 
-    [[ -d /etc/yunohost ]] || mkdir -p /etc/yunohost
+    base_folder_and_perm_init
+
+    # Empty ssowat json persistent conf
+    echo "{}" > '/etc/ssowat/conf.json.persistent'
+    chmod 644 /etc/ssowat/conf.json.persistent
+    chown root:root /etc/ssowat/conf.json.persistent
+    echo "{}" > '/etc/ssowat/conf.json'
+    chmod 644 /etc/ssowat/conf.json
+    chown root:root /etc/ssowat/conf.json
+
+    # Empty service conf
+    touch /etc/yunohost/services.yml
 
     # set default current_host
     [[ -f /etc/yunohost/current_host ]] \
-        || echo "yunohost.org" >/etc/yunohost/current_host
+        || echo "yunohost.org" > /etc/yunohost/current_host
 
     # copy default services and firewall
     [[ -f /etc/yunohost/firewall.yml ]] \
@@ -24,39 +173,9 @@ do_init_regen() {
     [[ -d /etc/skel/media ]] \
         || (mkdir -p /media && ln -s /media /etc/skel/media)
 
-    # Cert folders
-    mkdir -p /etc/yunohost/certs
-    chown -R root:ssl-cert /etc/yunohost/certs
-    chmod 750 /etc/yunohost/certs
-
-    # App folders
-    mkdir -p /etc/yunohost/apps
-    chmod 700 /etc/yunohost/apps
-    mkdir -p /home/yunohost.app
-    chmod 755 /home/yunohost.app
-
-    # Domain settings
-    mkdir -p /etc/yunohost/domains
-    chmod 700 /etc/yunohost/domains
-
-    # Backup folders
-    mkdir -p /home/yunohost.backup/archives
-    chmod 750 /home/yunohost.backup/archives
-    chown root:root /home/yunohost.backup/archives # This is later changed to root:admins once the admins group exists
-
-    # Empty ssowat json persistent conf
-    echo "{}" >'/etc/ssowat/conf.json.persistent'
-    chmod 644 /etc/ssowat/conf.json.persistent
-    chown root:root /etc/ssowat/conf.json.persistent
-
-    # Empty service conf
-    touch /etc/yunohost/services.yml
-
-    mkdir -p /var/cache/yunohost/repo
-    chown root:root /var/cache/yunohost
-    chmod 700 /var/cache/yunohost
-
+    # YunoHost services
     cp yunohost-api.service /etc/systemd/system/yunohost-api.service
+    cp yunohost-portal-api.service /etc/systemd/system/yunohost-portal-api.service
     cp yunohost-firewall.service /etc/systemd/system/yunohost-firewall.service
     cp yunoprompt.service /etc/systemd/system/yunoprompt.service
 
@@ -64,14 +183,20 @@ do_init_regen() {
 
     systemctl enable yunohost-api.service --quiet
     systemctl start yunohost-api.service
+
+    systemctl enable yunohost-portal-api.service --quiet
+    systemctl start yunohost-portal-api.service
+
+    # Enable yunoprompt (in particular for installs from ISO where we want this to show on first boot instead of asking for a login/password)
+    systemctl enable yunoprompt --quiet
+
     # Yunohost-firewall is enabled only during postinstall, not init, not 100% sure why
 
     cp dpkg-origins /etc/dpkg/origins/yunohost
 
     # Change dpkg vendor
     # see https://wiki.debian.org/Derivatives/Guidelines#Vendor
-    if readlink -f /etc/dpkg/origins/default | grep -q debian;
-    then
+    if readlink -f /etc/dpkg/origins/default | grep -q debian; then
         rm -f /etc/dpkg/origins/default
         ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
     fi
@@ -89,19 +214,19 @@ do_pre_regen() {
     # add cron job for diagnosis to be ran at 7h and 19h + a random delay between
     # 0 and 20min, meant to avoid every instances running their diagnosis at
     # exactly the same time, which may overload the diagnosis server.
-    cat >$pending_dir/etc/cron.d/yunohost-diagnosis <<EOF
+    cat > $pending_dir/etc/cron.d/yunohost-diagnosis << EOF
 SHELL=/bin/bash
 0 7,19 * * * root : YunoHost Automatic Diagnosis; sleep \$((RANDOM\\%1200)); yunohost diagnosis run --email > /dev/null 2>/dev/null || echo "Running the automatic diagnosis failed miserably"
 EOF
 
     # Cron job that upgrade the app list everyday
-    cat >$pending_dir/etc/cron.daily/yunohost-fetch-apps-catalog <<EOF
+    cat > $pending_dir/etc/cron.daily/yunohost-fetch-apps-catalog << EOF
 #!/bin/bash
 sleep \$((RANDOM%3600)); yunohost tools update apps > /dev/null
 EOF
 
     # Cron job that renew lets encrypt certificates if there's any that needs renewal
-    cat >$pending_dir/etc/cron.daily/yunohost-certificate-renew <<EOF
+    cat > $pending_dir/etc/cron.daily/yunohost-certificate-renew << EOF
 #!/bin/bash
 yunohost domain cert renew --email
 EOF
@@ -109,8 +234,8 @@ EOF
     # If we subscribed to a dyndns domain, add the corresponding cron
     # - delay between 0 and 60 secs to spread the check over a 1 min window
     # - do not run the command if some process already has the lock, to avoid queuing hundreds of commands...
-    if ls -l /etc/yunohost/dyndns/K*.key 2>/dev/null; then
-        cat >$pending_dir/etc/cron.d/yunohost-dyndns <<EOF
+    if ls -l /etc/yunohost/dyndns/K*.key 2> /dev/null; then
+        cat > $pending_dir/etc/cron.d/yunohost-dyndns << EOF
 SHELL=/bin/bash
 # Every 10 minutes,
 #   - (sleep random 60 is here to spread requests over a 1-min window)
@@ -125,10 +250,9 @@ EOF
     fi
 
     # Skip ntp if inside a container (inspired from the conf of systemd-timesyncd)
-    if systemctl | grep -q 'ntp.service'
-    then
+    if systemctl | grep -q 'ntp.service'; then
         mkdir -p ${pending_dir}/etc/systemd/system/ntp.service.d/
-        cat >${pending_dir}/etc/systemd/system/ntp.service.d/ynh-override.conf <<EOF
+        cat > ${pending_dir}/etc/systemd/system/ntp.service.d/ynh-override.conf << EOF
 [Unit]
 ConditionCapability=CAP_SYS_TIME
 ConditionVirtualization=!container
@@ -137,7 +261,7 @@ EOF
 
     # Make nftable conflict with yunohost-firewall
     mkdir -p ${pending_dir}/etc/systemd/system/nftables.service.d/
-    cat >${pending_dir}/etc/systemd/system/nftables.service.d/ynh-override.conf <<EOF
+    cat > ${pending_dir}/etc/systemd/system/nftables.service.d/ynh-override.conf << EOF
 [Unit]
 # yunohost-firewall and nftables conflict with each other
 Conflicts=yunohost-firewall.service
@@ -147,7 +271,7 @@ EOF
 
     # Don't suspend computer on LidSwitch
     mkdir -p ${pending_dir}/etc/systemd/logind.conf.d/
-    cat >${pending_dir}/etc/systemd/logind.conf.d/ynh-override.conf <<EOF
+    cat > ${pending_dir}/etc/systemd/logind.conf.d/ynh-override.conf << EOF
 [Login]
 HandleLidSwitch=ignore
 HandleLidSwitchDocked=ignore
@@ -155,6 +279,7 @@ HandleLidSwitchExternalPower=ignore
 EOF
 
     cp yunohost-api.service ${pending_dir}/etc/systemd/system/yunohost-api.service
+    cp yunohost-portal-api.service ${pending_dir}/etc/systemd/system/yunohost-portal-api.service
     cp yunohost-firewall.service ${pending_dir}/etc/systemd/system/yunohost-firewall.service
     cp yunoprompt.service ${pending_dir}/etc/systemd/system/yunoprompt.service
     cp proc-hidepid.service ${pending_dir}/etc/systemd/system/proc-hidepid.service
@@ -162,87 +287,69 @@ EOF
     mkdir -p ${pending_dir}/etc/dpkg/origins/
     cp dpkg-origins ${pending_dir}/etc/dpkg/origins/yunohost
 
+    # Remove legacy hackish/clumsy nodejs autoupdate which ends up filling up space with ambiguous upgrades >_>
+    touch "/etc/cron.daily/node_update"
 }
 
 do_post_regen() {
     regen_conf_files=$1
 
-    ######################
-    # Enfore permissions #
-    ######################
+    # Re-mkdir / apply permission to all basic folders etc
+    base_folder_and_perm_init
 
-    chmod 770 /home/yunohost.backup
-    chmod 770 /home/yunohost.backup/archives
-    chmod 700 /var/cache/yunohost
-    chown root:admins /home/yunohost.backup
-    chown root:admins /home/yunohost.backup/archives
-    chown root:root /var/cache/yunohost
+    # Legacy log tree structure
+    if [ ! -e /var/log/yunohost/operations ]; then
+        mkdir -p /var/log/yunohost/operations
+    fi
+    if [ -d /var/log/yunohost/categories/operation ] && [ ! -L /var/log/yunohost/categories/operation ]; then
+        # (we use find -type f instead of mv /folder/* to make sure to also move hidden files which are not included in globs by default)
+        find /var/log/yunohost/categories/operation/ -type f -print0 | xargs -0 -I {} mv {} /var/log/yunohost/operations/
+        # Attempt to delete the old dir (because we want it to be a symlink) or just rename it if it can't be removed (not empty) for some reason
+        rmdir /var/log/yunohost/categories/operation || mv /var/log/yunohost/categories/operation /var/log/yunohost/categories/operation.old
+        ln -s /var/log/yunohost/operations /var/log/yunohost/categories/operation
+    fi
 
-    [ ! -e /var/www/.well-known/ynh-diagnosis/ ] || chmod 775 /var/www/.well-known/ynh-diagnosis/
-
-    # NB: x permission for 'others' is important for ssl-cert (and maybe mdns), otherwise slapd will fail to start because can't access the certs
-    chmod 755 /etc/yunohost
-
+    # Make sure conf files why may be created by apps are owned and writable only by root
     find /etc/systemd/system/*.service -type f | xargs -r chown root:root
     find /etc/systemd/system/*.service -type f | xargs -r chmod 0644
 
-    if ls -l /etc/php/*/fpm/pool.d/*.conf
-    then
+    if ls -l /etc/php/*/fpm/pool.d/*.conf 2> /dev/null; then
         chown root:root /etc/php/*/fpm/pool.d/*.conf
         chmod 644 /etc/php/*/fpm/pool.d/*.conf
     fi
-
-    # Certs
-    # We do this with find because there could be a lot of them...
-    chown -R root:ssl-cert /etc/yunohost/certs
-    chmod 750 /etc/yunohost/certs
-    find /etc/yunohost/certs/ -type f -exec chmod 640 {} \;
-    find /etc/yunohost/certs/ -type d -exec chmod 750 {} \;
 
     find /etc/cron.*/yunohost-* -type f -exec chmod 755 {} \;
     find /etc/cron.d/yunohost-* -type f -exec chmod 644 {} \;
     find /etc/cron.*/yunohost-* -type f -exec chown root:root {} \;
 
-    setfacl -m g:all_users:--- /var/www
-    setfacl -m g:all_users:--- /var/log/nginx
-    setfacl -m g:all_users:--- /etc/yunohost
-    setfacl -m g:all_users:--- /etc/ssowat
-
     for USER in $(yunohost user list --quiet --output-as json | jq -r '.users | .[] | .username'); do
         [ ! -e "/home/$USER" ] || setfacl -m g:all_users:--- /home/$USER
     done
 
-    # Domain settings
-    mkdir -p /etc/yunohost/domains
-
     # Misc configuration / state files
-    chown root:root $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null | grep -vw mdns.yml)
-    chmod 600 $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null)
-
-    # Apps folder, custom hooks folder
-    [[ ! -e /etc/yunohost/hooks.d ]] || (chown root /etc/yunohost/hooks.d && chmod 700 /etc/yunohost/hooks.d)
-    [[ ! -e /etc/yunohost/apps ]] || (chown root /etc/yunohost/apps && chmod 700 /etc/yunohost/apps)
-    [[ ! -e /etc/yunohost/domains ]] || (chown root /etc/yunohost/domains && chmod 700 /etc/yunohost/domains)
+    chown root:root $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2> /dev/null | grep -vw mdns.yml)
+    chmod 600 $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2> /dev/null)
 
     # Create ssh.app and sftp.app groups if they don't exist yet
     grep -q '^ssh.app:' /etc/group || groupadd ssh.app
     grep -q '^sftp.app:' /etc/group || groupadd sftp.app
 
     # Propagates changes in systemd service config overrides
-    if systemctl | grep -q 'ntp.service'
-    then
+    if systemctl | grep -q 'ntp.service'; then
         [[ ! "$regen_conf_files" =~ "ntp.service.d/ynh-override.conf" ]] || {
             systemctl daemon-reload
             systemctl restart ntp
         }
     fi
+
     [[ ! "$regen_conf_files" =~ "nftables.service.d/ynh-override.conf" ]] || systemctl daemon-reload
-    [[ ! "$regen_conf_files" =~ "login.conf.d/ynh-override.conf" ]] ||  {
+    [[ ! "$regen_conf_files" =~ "login.conf.d/ynh-override.conf" ]] || {
         systemctl daemon-reload
         systemctl restart systemd-logind
     }
     [[ ! "$regen_conf_files" =~ "yunohost-firewall.service" ]] || systemctl daemon-reload
     [[ ! "$regen_conf_files" =~ "yunohost-api.service" ]] || systemctl daemon-reload
+    [[ ! "$regen_conf_files" =~ "yunohost-portal-api.service" ]] || systemctl daemon-reload
 
     if [[ "$regen_conf_files" =~ "yunoprompt.service" ]]; then
         systemctl daemon-reload
@@ -255,16 +362,17 @@ do_post_regen() {
         systemctl $action proc-hidepid --quiet --now
     fi
 
+    systemctl enable yunohost-portal-api.service --quiet
+    systemctl is-active yunohost-portal-api --quiet || systemctl start yunohost-portal-api.service
+
     # Change dpkg vendor
     # see https://wiki.debian.org/Derivatives/Guidelines#Vendor
-    if readlink -f /etc/dpkg/origins/default | grep -q debian;
-    then
+    if readlink -f /etc/dpkg/origins/default | grep -q debian; then
         rm -f /etc/dpkg/origins/default
         ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
     fi
 
-    if test -e /etc/yunohost/installed && test -e /etc/profile.d/check_yunohost_is_installed.sh
-    then
+    if test -e /etc/yunohost/installed && test -e /etc/profile.d/check_yunohost_is_installed.sh; then
         rm /etc/profile.d/check_yunohost_is_installed.sh
     fi
 }

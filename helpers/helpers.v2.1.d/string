@@ -1,0 +1,129 @@
+#!/bin/bash
+
+# Generate a random string
+#
+# usage: ynh_string_random [--length=string_length]
+# | arg: --length=  - the string length to generate (default: 24)
+# | arg: --filter=  - the kind of characters accepted in the output (default: 'A-Za-z0-9')
+# | ret: the generated string
+#
+# example: pwd=$(ynh_string_random --length=8)
+ynh_string_random() {
+    # ============ Argument parsing =============
+    local -A args_array=([l]=length= [f]=filter=)
+    local length
+    local filter
+    ynh_handle_getopts_args "$@"
+    length=${length:-24}
+    filter=${filter:-'A-Za-z0-9'}
+    # ===========================================
+
+    dd if=/dev/urandom bs=1 count=1000 2> /dev/null \
+        | tr --complement --delete "$filter" \
+        | sed --quiet 's/\(.\{'"$length"'\}\).*/\1/p'
+}
+
+# Substitute/replace a string (or expression) by another in a file
+#
+# usage: ynh_replace --match=match --replace=replace --file=file
+# | arg: --match=    - String to be searched and replaced in the file
+# | arg: --replace=  - String that will replace matches
+# | arg: --file=     - File in which the string will be replaced.
+#
+# As this helper is based on sed command, regular expressions and references to
+# sub-expressions can be used (see sed manual page for more information)
+ynh_replace() {
+    # ============ Argument parsing =============
+    local -A args_array=([m]=match= [r]=replace= [f]=file=)
+    local match
+    local replace
+    local file
+    ynh_handle_getopts_args "$@"
+    # ===========================================
+    set +o xtrace # set +x
+
+    local delimit=$'\001'
+    # Escape the delimiter if it's in the string.
+    match=${match//${delimit}/"\\${delimit}"}
+    replace=${replace//${delimit}/"\\${delimit}"}
+
+    set -o xtrace # set -x
+    sed --in-place "s${delimit}${match}${delimit}${replace}${delimit}g" "$file"
+}
+
+# Substitute/replace a regex in a file
+#
+# usage: ynh_replace_regex --match=match --replace=replace --file=file
+# | arg: --match=    - String to be searched and replaced in the file
+# | arg: --replace=  - String that will replace matches
+# | arg: --file=     - File in which the string will be replaced.
+#
+# This helper will use ynh_replace, but as you can use special
+# characters, you can't use some regular expressions and sub-expressions.
+ynh_replace_regex() {
+    # ============ Argument parsing =============
+    local -A args_array=([m]=match= [r]=replace= [f]=file=)
+    local match
+    local replace
+    local file
+    ynh_handle_getopts_args "$@"
+    # ===========================================
+
+    # Escape any backslash to preserve them as simple backslash.
+    match=${match//\\/"\\\\"}
+    replace=${replace//\\/"\\\\"}
+
+    # Escape the & character, who has a special function in sed.
+    match=${match//&/"\&"}
+    replace=${replace//&/"\&"}
+
+    ynh_replace --match="$match" --replace="$replace" --file="$file"
+}
+
+# Sanitize a string intended to be the name of a database
+#
+# [packagingv1]
+#
+# usage: ynh_sanitize_dbid --db_name=name
+# | arg: --db_name=     - name to correct/sanitize
+# | ret: the corrected name
+#
+# example: dbname=$(ynh_sanitize_dbid $app)
+#
+# Underscorify the string (replace - and . by _)
+ynh_sanitize_dbid() {
+    # ============ Argument parsing =============
+    local -A args_array=([n]=db_name=)
+    local db_name
+    ynh_handle_getopts_args "$@"
+    # ===========================================
+
+    # We should avoid having - and . in the name of databases. They are replaced by _
+    echo ${db_name//[-.]/_}
+}
+
+# Normalize the url path syntax
+#
+# Handle the slash at the beginning of path and its absence at ending
+# Return a normalized url path
+#
+# examples:
+#     url_path=$(ynh_normalize_url_path $url_path)
+#     ynh_normalize_url_path example    # -> /example
+#     ynh_normalize_url_path /example   # -> /example
+#     ynh_normalize_url_path /example/  # -> /example
+#     ynh_normalize_url_path /          # -> /
+#
+# usage: ynh_normalize_url_path path_to_normalize
+ynh_normalize_url_path() {
+    local path_url=$1
+
+    test -n "$path_url" || ynh_die "ynh_normalize_url_path expect a URL path as first argument and received nothing."
+    if [ "${path_url:0:1}" != "/" ]; then # If the first character is not a /
+        path_url="/$path_url"             # Add / at begin of path variable
+    fi
+    if [ "${path_url:${#path_url}-1}" == "/" ] && [ ${#path_url} -gt 1 ]; then # If the last character is a / and that not the only character.
+        path_url="${path_url:0:${#path_url}-1}"                                # Delete the last character
+    fi
+    echo $path_url
+}

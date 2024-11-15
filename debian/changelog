@@ -1,3 +1,483 @@
+yunohost (12.0.7) stable; urgency=low
+
+  - bullseye->bookworm: migration shouldnt rebuild venv for homeassistant and immich ([#1996](http://github.com/YunoHost/yunohost/pull/1996))
+  - regenconf: disable the experimental proxy_cookie_path setting in nginx security.conf ([#1998](http://github.com/YunoHost/yunohost/pull/1998))
+  - certificates: Support domains in cert_alternate_names hook ([#1994](http://github.com/YunoHost/yunohost/pull/1994))
+  - helpers2.1: fix is_data definition in ynh_restore (a6414dd84)
+  - helpers/nodejs: upgrade n to v10.1.0 ([#1995](http://github.com/YunoHost/yunohost/pull/1995))
+  - misc: lower logging about failure to retrieve app label ([#1993](http://github.com/YunoHost/yunohost/pull/1993))
+  - i18n: Translations updated for Basque, French, Galician
+
+  Thanks to all contributors <3 ! (Éric Gaspar, ewilly, Félix Piédallu, José M, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 13 Nov 2024 14:38:40 +0100
+
+yunohost (12.0.6) stable; urgency=low
+
+  - Sync with bullseye branch
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 31 Oct 2024 18:04:21 +0100
+
+yunohost (12.0.5.3) stable; urgency=low
+
+  - typo in generate-helpers-doc (ab7bbefe5)
+  - Merge branch 'dev' into bookworm (9d24a071d)
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, Kayou)
+
+ -- tituspijean <tituspijean@yunohost.org>  Wed, 30 Oct 2024 21:46:48 +0100
+
+yunohost (12.0.5.2) testing; urgency=low
+
+  - typo² x_x
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 30 Oct 2024 01:49:37 +0100
+
+yunohost (12.0.5.1) testing; urgency=low
+
+  - typo x_x
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 30 Oct 2024 01:21:37 +0100
+
+yunohost (12.0.5) testing; urgency=low
+
+  - sso: ihatemoney and owncloud needs the basic auth workaround ([#1984](http://github.com/YunoHost/yunohost/pull/1984))
+  - sso: pass email, username and fullname to ssowat via the JWT such that SSOwat can define custom HTTP headers ([#1981](http://github.com/YunoHost/yunohost/pull/1981))
+  - portal: fix backup and restore portal settings (d0005e66a)
+  - portal: fix cookie validity issues by defining 'maxage' + re-setting the cookie every time the validity is extended, such that the client always know wether the cookie is expired or not (deeabfabb)
+  - portal: support different style/theme for the app tiles via a portal setting ([#1986](http://github.com/YunoHost/yunohost/pull/1986))
+  - portal: custom css setting couldnt be emptied (f64cc3f46)
+  - postinstall/tos: Allow bypassing the terms of services at postinstall time ([#1966](http://github.com/YunoHost/yunohost/pull/1966))
+  - helpersv2.1/fail2ban: Fix reload-or-restart match line (4105df9d8)
+  - helpers/nginx: yoloremove the REMOTE_USER lines from app's conf because it's already provided by /etc/nginx/fastcgi_params + make sure it is mapped to the YNH_USER from SSOwat rather than $remote_user (cd367575f)
+  - configpanel: better error message when uploading a file from unsupported mimetype (d9f59f3c1)
+  - i18n: Translations updated for Basque, Chinese (Simplified), French, Kabyle, Turkish
+
+  Thanks to all contributors <3 ! (Aksel Azwaw, axolotle, Éric Gaspar, Félix Piédallu, Furkan Samed Acet, Jinx, Josué Tille, Kay0u, ljf, Mateusz, oleole39, OniriCorpe, Tagada, Thatoo, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 30 Oct 2024 00:12:27 +0100
+
+yunohost (12.0.4.1) testing; urgency=low
+
+  - ssowat: allow secondaries instances of apps_that_need_external_auth_maybe to be recognized ([#1954](http://github.com/YunoHost/yunohost/pull/1954))
+  - domains: fix missing translation param in domain add (cebd8864c)
+
+  Thanks to all contributors <3 ! (axolotle, Nathanaël H.)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 25 Sep 2024 21:04:38 +0200
+
+yunohost (12.0.4) testing; urgency=low
+
+  - general: add TOS acknowledgement during postinstall, dyndns domain creation, and migration for existing installs ([#1949](http://github.com/YunoHost/yunohost/pull/1949))
+  - domains: fix `custom_css` may not be in the the form when changing other domain panel values (d5d6fb87a)
+  - domains: add option to install a lets encrypt certificate when adding a subdomain of an already added domain ([#1936](http://github.com/YunoHost/yunohost/pull/1936))
+  - configpanels: fix boolean option in context evaluation for custom yes/no values (f19b6f84a)
+  - dns: make auto dns feature optional ([#1951](http://github.com/YunoHost/yunohost/pull/1951))
+  - cli: Add yunohost-portal to the --version output ([#1946](http://github.com/YunoHost/yunohost/pull/1946))
+
+  Thanks to all contributors <3 ! (axolotle, Kay0u, Mer, selfhoster1312)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 16 Sep 2024 18:18:14 +0200
+
+yunohost (12.0.3) testing; urgency=low
+
+  - (sync bullseye changes since 12.0.2)
+  - apps: magically handle yarn as a regular package instead of an 'extra' repo now that yarn's repo is in the core ([#1888](http://github.com/YunoHost/yunohost/pull/1888))
+  - portalapi: we don't need absolute URLs for app logos ? (This ain't working when enabling the 'show other domains apps' because of CSP) (bc93a2e07)
+  - portalapi: fix portal_user_intro not being sent when authenticated, hence not displayed at all (cdf443c86)
+  - portal/domain settings: Improve explanation about search engine (24fb87725)
+  - portal/domain settings: Reduce theme list because there were too many (cf change in yunohost-portal) (9973cc703)
+  - portal/domain settings: add proper i18n string + help for new settings (831131476, ff0388556)
+  - domain settings: add a title to the Email section to have a separation w.r.t. the portal settings (279f33288)
+  - portal: fix extra app tiles not being displayed, gotta use the perm id as key, not just the app id (credit rodinux) (603c64e34)
+  - portal/sso: with the public app page, fix the root of the domain not redirecting to /yunohost/sso (a6b7ba843)
+  - portal: allow to configure custom CSS from the domain config panel (8f636561d)
+  - portal: change the way the new 'public apps' page in the portal is configured: add a simple bool toggle instead of having the 'public apps page' as a default app option, which allows to still configure a default app while the portal has the public apps page (748a20d86)
+  - ci: fix test_permission_propagation_on_ssowat, auth header tests (656e5c75d, 9e9313067, 44920d891)
+  - ci: optimizations, cleanups, partial refactor because of new CI image build process (fe9a4fba5, 059818254, a9e71e88d, 7f2da0af7, 94594e5a3, d639e1c42, 4f3b9df3f,  5a6a915af, 55e7e798f, 2fe24424f, 4fc929005, fd040b864, 0bbc14f54, 2976e7bf6)
+  - quality: add type hints to user.py (1ba75df0e, d4f39da20, 611846aa1, efce7f9f0, fe1c04fb2)
+  - i18n: Translations updated for Basque, French, Galician, Greek, Indonesian, Russian, Turkish
+
+  Thanks to all contributors <3 ! (Ali Çırçır, cjdw, craftrac, Emmanuel Averty, Félix Piédallu, Ivan Davydov, José M, Josué Tille, ljf, OniriCorpe, ppr, selfhoster1312, Tagada, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 31 Aug 2024 19:45:00 +0200
+
+yunohost (12.0.2) testing; urgency=low
+
+  - Cleanup redis regen conf since redis ain't installed by default anymore (7b50c4eb6)
+  - bullseye->bookworm: add a trick to flag the migration as done if it's still marked as pending (0503a38a7)
+  - Sync with main branch
+
+  Thanks to all contributors <3 ! (Kayou)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 01 Aug 2024 18:08:33 +0200
+
+yunohost (12.0.1) testing; urgency=low
+
+  - The user portal and SSO system have been reworked and split into three distinct pieces
+     - SSOwat only handling only the SSO/ACL logic (nginx lua middleware)
+     - A new “portal API” (yunohost-portal-api) service delivering authentication cookies and allowing users to retrieve/update infos
+     - A new portal front end (yunohost-portal)
+     - More information on the release note on the forum
+  - The base system does not install Mysql/Mariadb and PHP anymore
+  - Rspamd (antispam system) and Metronome (XMPP server) are not part of the core anymore. Instead, they are now separate applications : rspamd_ynh and metronome_ynh
+  - webadmin: rework cookie/session expiration mechanism. Cookies are now still valid after restarting the API (preventing clumsy disconnect during self-upgrades) and the cookie validity is automatically extended every time an API request is performed.
+  - mail: DKIM email signing is now done using opendkim instead of rspamd
+  - various compatibility tweakings for Bookworm
+  - regenconf: update nginx and dovecot ciphers according to Mozilla recommendation
+  - regenconf: update fail2ban config
+  - configpanels: refactor to use pydantic for more typing and consistency, add proper autogenerated doc
+  - apps: Yarn third-party repo is now available by default in apt config just like Sury, no need for an extra apt resource thingy
+  - various legacy cleanups (more info on the release note on the forum)
+  - perf: minimize regen-conf calls to yunohost settings get, and other misc lazy-loading optimizations
+  - quality: simplify the logging mess
+  - quality: rework ci tests workflow
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 26 Jul 2024 22:40:16 +0200
+
+yunohost (12.0.0) unstable; urgency=low
+
+  - Tmp changelog to prepare Bookworm
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
+
+yunohost (11.3.0.2) stable; urgency=low
+
+  -  Fix migration by early-importing _ldap ([#1987](http://github.com/YunoHost/yunohost/pull/1987))
+
+  Thanks to all contributors <3 ! (Félix Piédallu)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 31 Oct 2024 18:01:44 +0100
+
+yunohost (11.3.0.1) stable; urgency=low
+
+  - (Forgot the commit that actually enabled the migration @_@) (00243961c)
+
+  Thanks to all contributors <3 ! (Félix Piédallu)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 31 Oct 2024 16:49:51 +0100
+
+yunohost (11.3.0) stable; urgency=low
+
+  - Enable migration to Bookworm
+  - i18n: Translations updated for Basque, French, Turkish
+
+  Thanks to all contributors <3 ! (Atalay Daban, ppr, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 31 Oct 2024 13:51:33 +0100
+
+yunohost (11.2.32) stable; urgency=low
+
+  - configpanel: fix error message to hint if the bind key wasn't found ([#1972](http://github.com/YunoHost/yunohost/pull/1972))
+  - tools_shell: Bad catch IPython missing ([#1974](http://github.com/YunoHost/yunohost/pull/1974))
+  - nginx: new global setting options to enable TLS passthrough and reverse proxy to external domains ([#1697](http://github.com/YunoHost/yunohost/pull/1697))
+  - backups: app hooks were not recreated when restoring backups ([#1962](http://github.com/YunoHost/yunohost/pull/1962))
+  - migrate-to-bookworm: improve disclaimer (e755401ea)
+  - i18n: Translations updated for Kabyle, Turkish
+
+  Thanks to all contributors <3 ! (Aksel Azwaw, Félix Piédallu, Furkan Samed Acet, ljf, oleole39, OniriCorpe)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 29 Oct 2024 23:48:07 +0100
+
+yunohost (11.2.31) stable; urgency=low
+
+  - apps/helpers2.1: Properly detect 'is_data' (data dir or log folder) when calling ynh_backup ([#1957](http://github.com/YunoHost/yunohost/pull/1957))
+  - users/mail: Allow to force-adding aliases for special groups ([#1850](http://github.com/YunoHost/yunohost/pull/1850))
+  - helpers/nodejs: Upgrade n to v10.0.0 ([#1948](http://github.com/YunoHost/yunohost/pull/1948))
+  - backups: fix messages for custom methods ([#1959](http://github.com/YunoHost/yunohost/pull/1959), [#1963](http://github.com/YunoHost/yunohost/pull/1963))
+  - doc: fix escaping in generate helpers doc template & v2.1 helpers comments ([#1952](http://github.com/YunoHost/yunohost/pull/1952))
+  - doc: fix link to autoupdate_app_sources.py in resources documentation ([#1956](http://github.com/YunoHost/yunohost/pull/1956))
+  - doc: document the 'systemd' option for 'ynh_systemctl --line_match' ([#1958](http://github.com/YunoHost/yunohost/pull/1958))
+  - doc: document how to check locally whether app autoupdate is working ([#1960](http://github.com/YunoHost/yunohost/pull/1960))
+  - doc: in autoupgrade doc, double slash ends up as single slash in the doc, but double slash is really needed, so further escape the slashes ([#1965](http://github.com/YunoHost/yunohost/pull/1965))
+  - i18n: Translations updated for Basque, Chinese (Simplified), French
+
+  Thanks to all contributors <3 ! (Éric Gaspar, Jinx, Mateusz, oleole39, OniriCorpe, selfhoster1312, Thatoo, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 15 Oct 2024 19:50:33 +0200
+
+yunohost (11.2.30.2) stable; urgency=low
+
+  - helpers2.1: fix automagic chmod/chown for data_dir during restore (46ddf1e67)
+  - i18n: Translations updated for Dutch
+
+  Thanks to all contributors <3 ! (Mer)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 09 Sep 2024 14:25:32 +0200
+
+yunohost (11.2.30.1) stable; urgency=low
+
+  - helpers2.1: turns out sudo --preserve-env=PATH still causes issues with 'command not found' despite the command being in the path and 'which' finding the proper executable ... using 'env PATH=$PATH' instead fixes the issue ... (589fda20b)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 06 Sep 2024 22:13:18 +0200
+
+yunohost (11.2.30) stable; urgency=low
+
+  - helpers v2.1: check if patches dir exists before getting realpath ([#1938](http://github.com/YunoHost/yunohost/pull/1938))
+  - helpers v2.1: ynh_add_swap and ynh_smart_mktemp (aff885e6b)
+  - helpers v2.1: fix ynh_restore_everything ([#1943](http://github.com/YunoHost/yunohost/pull/1943))
+  - helpers v2.1: fix typo in docs: ynh_install_app_dependencies -> ynh_apt_install_dependencies ([#1939](http://github.com/YunoHost/yunohost/pull/1939))
+  - helpers: fix syntax, disambiguate subshell syntax ([#1940](http://github.com/YunoHost/yunohost/pull/1940))
+  - quality: Add maintenante/shfmt.sh for shell script formatting (68f35831e)
+  - quality: Apply shfmt everywhere, fix tabs/space/indent (8a5f2808a, e3ddb1dc4, ef1708276, 38b39ebae, b91e9dd8f)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, Josué Tille, OniriCorpe, selfhoster1312)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 31 Aug 2024 19:26:59 +0200
+
+yunohost (11.2.29) stable; urgency=low
+
+  - apps: generalize replacing __INSTALL_DIR__ and __APP__ in config panel 'bind' statement to any setting (9b0553580)
+  - apps/config panels: move the computation of the actual 'bind' value to the python core (a6785d34b)
+  - perf: add cache for _get_app_settings() (c14ebc8be, 7c7906046)
+  - quality: use _assert_is_installed for consistency instead of if not _is_intalled(app): raise (c409888a4)
+  - i18n: Translations updated for Basque, French, Galician, Greek, Indonesian
+
+  Thanks to all contributors <3 ! (cjdw, craftrac, José M, ppr, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 27 Aug 2024 14:46:26 +0200
+
+yunohost (11.2.28) stable; urgency=low
+
+  - ci: various changes due to CI infrastructure changes (200f0272d, 764fe6a7b, 9083a5cc3, d0df3caed, 6733526be, df320a44c, 92f4a605b, f02d4a437, c5953b542)
+  - apps: exclude .well-known subpaths from conflict checks ([#1647](http://github.com/YunoHost/yunohost/pull/1647))
+  - apps: in apt resource, fix empty string in packages_from_raw_bash breaking dpkg-build (a76cd05e8)
+  - sftp: Tweak umask for SFTP ([#1384](http://github.com/YunoHost/yunohost/pull/1384))
+  - mail: Be able to use postfix as a backup ("secondary") MX hosts ([#1253](http://github.com/YunoHost/yunohost/pull/1253))
+  - diagnosis: Add check regarding rfkill blocking Wi-Fi card on RPi ([#1841](http://github.com/YunoHost/yunohost/pull/1841))
+  - users: trigger hooks when adding or removing user into group (51787a2f8)
+  - i18n: Translations updated for Basque, French, Indonesian, Russian
+
+  Thanks to all contributors <3 ! (cjdw, Emmanuel Averty, Ivan Davydov, ljf, ppr, Tagada, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 25 Aug 2024 13:17:43 +0200
+
+yunohost (11.2.27) stable; urgency=low
+
+  - apt resource: fix handling of empty 'packages' list breaking dpkg-deb call (3deffdbd5)
+  - i18n: Translations updated for Indonesian, Turkish
+
+  Thanks to all contributors <3 ! (Ali Çırçır, cjdw)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 03 Aug 2024 18:41:27 +0200
+
+yunohost (11.2.26) stable; urgency=low
+
+  - bullseye->bookworm: encourage apt to remove luajit if it's installed because for some reason it's causing issues (423e79bd5)
+  - bullseye->bookworm: have a specific step dedicated to upgrade python3.9 to 3.11 because apt(itude) is derping about it sometimes... (d766f7cdd)
+  - bullseye->bookworm: boring tweak to remove chattr +i from /etc/resolv.conf otherwise resolvconf will later explode and complain about it (65ea34d7c)
+  - Fix yunomprompt not being enable after ISO install (fe524dd86)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 01 Aug 2024 18:05:33 +0200
+
+yunohost (11.2.25) stable; urgency=low
+
+  - diagnosis: be more robust when diagnosis DMARC records not containing '=' (d376677db)
+  - bullseye->bookworm: explicitly import _strptime at the beginning to try to prevent "No module named '_strptime'" during migration (2d3dddc51)
+  - bullseye->bookworm: explicitly validate that we're on yunohost 12.x at the end of the migration (8b5698317)
+  - bullseye->bookworm: make sure the non-free / non-free-firmware stuff is idempotent (ad98a10fa)
+  - bullseye->bookworm: in debian control, add rule that moulinette and ssowat must be < 12 to prevent situation in bullseye->bookworm transition where moulinette gets upgrade but yunohost doesnt and everything explodes (8705dfcf5)
+  - bullseye->bookworm: more stuff to try to prevent aptitude derping about python dependencies (f4727d3cb)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 30 Jul 2024 17:12:12 +0200
+
+yunohost (11.2.24) stable; urgency=low
+
+  - ci: we don't care about mypy in tests/ folder (ebaecfcbd)
+  - helpers: fix install from equivs ([#1921](http://github.com/YunoHost/yunohost/pull/1921))
+  - bullseye->bookworm: re-add tweak about libluajit2 + be more robust about full-upgrade that may fail if python3.9-venv aint installed (9e1b0561e)
+  - i18n: Translations updated for Indonesian
+
+  Thanks to all contributors <3 ! (cjdw, Kayou)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 26 Jul 2024 21:01:23 +0200
+
+yunohost (11.2.23) stable; urgency=low
+
+  - helpers2.1: force sourcing getopts before the other helpers to prevent stupid issues (in particular when renaming phpversion to php_version) (3d53cf04)
+  - diagnosis: Remove SenderScore from the dnsbl_list.yml file ([#1918](http://github.com/YunoHost/yunohost/pull/1918))
+  - ldap: make slapd listen also on ipv6 ([#1916](http://github.com/YunoHost/yunohost/pull/1916))
+  - log: zzz fix log list again (b2492ffc)
+  - i18n: Translations updated for Galician, Indonesian, Slovak
+
+  Thanks to all contributors <3 ! (cjdw, Étienne Deparis, José M, Jose Riha, Josué Tille)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 23 Jul 2024 19:07:20 +0200
+
+yunohost (11.2.22) stable; urgency=low
+
+  - logs: fix "log list" : use root_dir for iglob / make sure we use absolute paths ([#1913](http://github.com/YunoHost/yunohost/pull/1913))
+  - bullseye->bookworm: remove pkg_resources from pip freeze ([#1912](http://github.com/YunoHost/yunohost/pull/1912))
+  - bullseye->bookworm: explicitly install yunohost-portal (4232fc7c)
+  - bullseye->bookworm: explicitly remove python3.9 and python3.9-venv which seems to confuse aptitude... (079cdc26)
+  - bullseye->bookworm: try the yunohost upgrade without unholding the app-ynh-deps virtual packages, then after unholding if it didnt work for some reason (a8fd6afe)
+  - bullseye->bookworm: automatically add non-free-firmware if non-free is enabled (97bb6bde)
+  - bullseye->bookworm: trigger the 'new' migrations from inside the bullseye->bookworm migration (f11f1197)
+  - i18n: Translations updated for Basque, French, Indonesian
+
+  Thanks to all contributors <3 ! (Anonymous, cjdw, Kayou, ppr, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 19 Jul 2024 16:51:55 +0200
+
+yunohost (11.2.21.2) stable; urgency=low
+
+  - bullseye->bookworm migration: tweak message to reflect the fact that metronome and rspamd will be applications starting with bookworm (64c8d9e8)
+  - helpers/apt: unbound variable (8a65053a)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 15 Jul 2024 23:07:08 +0200
+
+yunohost (11.2.21.1) stable; urgency=low
+
+  - helpers2.1: forgot to patch ynh_remove_fpm_config -> ynh_config_remove_phpfpm (bb20020c)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 15 Jul 2024 22:13:39 +0200
+
+yunohost (11.2.21) stable; urgency=low
+
+  - log: optimize log list perf by creating a 'cache' symlink pointing to the log's parent ([#1907](http://github.com/YunoHost/yunohost/pull/1907))
+  - log: small hack when dumping log right after script failure, prevent a weird edge case where it'll dump the log of the resource provisioning instead of the script (1bb81e8f)
+  - debian: Bullseye->Bookworm migration ('hidden' but easier to test) ([#1759](http://github.com/YunoHost/yunohost/pull/1759), ab8e0e66, e54e99bf)
+  - helpers/apt: rely on simpler dpkg-deb --build rather than equivs to create .deb for app virtual dependencies (f6fbd69c, 8be726b9)
+  - helpers/apt: Support apt repositories with [trusted=yes] ([#1903](http://github.com/YunoHost/yunohost/pull/1903))
+  - backups: one should be able to restore a backup archive by providing a path to the archive without moving it to /home/yunohost.backup/archives/ (c8a18129, b266e398)
+  - backups: yunohost should not ask confirmation that 'YunoHost is already installed' when restoring only apps (9c22d36c)
+  - i18n: translate _diagnosis_ignore function ([#1894](http://github.com/YunoHost/yunohost/pull/1894))
+  - i18n: Translations updated for Basque, Catalan, French, Galician, German, Indonesian, Japanese, Russian, Spanish, Ukrainian
+
+  Thanks to all contributors <3 ! (alexAubin, Anonymous, cjdw, Félix Piédallu, Ivan Davydov, José M, Kayou, OniriCorpe, ppr, Zwiebel)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 15 Jul 2024 16:22:26 +0200
+
+yunohost (11.2.20.2) stable; urgency=low
+
+  - Fix service enable/disable auto-ignoring diagnosis entries ([#1886](http://github.com/YunoHost/yunohost/pull/1886))
+
+  Thanks to all contributors <3 ! (OniriCorpe)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 03 Jul 2024 21:51:50 +0200
+
+yunohost (11.2.20.1) stable; urgency=low
+
+  - helpers2.1: typo (1ed56952e)
+  - helpers2.1: add unit tests (92807afb1)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 01 Jul 2024 23:38:29 +0200
+
+yunohost (11.2.20) stable; urgency=low
+
+  - helpers2.1: fix automigration of phpversion to php_version (3f973669)
+  - helpers2.1: change source patches location + raise an error instead of a warning when a patch fails to apply on CI (a48bfa67)
+  - helpers2.1: when using ynh_die, also return the error via YNH_STDRETURN such that it can be obtained from the python and displayed in the main error message, to increase the chance that people may read it and have something more useful than "An error happened in the script" (f2b5f0f2)
+  - helpers2.1: remove the ynh_clean_setup mechanism underused/useless.. (1c62960e)
+  - helpers2.1: switch to posisional args for ynh_multimedia_addaccess because that's what 99% of apps already do (ef622ffe)
+  - helpers2.1: add support for downloading .tar files ([#1889](http://github.com/YunoHost/yunohost/pull/1889))
+  - services/diagnosis: automatically ignore the service in diagnosis if it has been deactivated with the ynh cli ([#1886](http://github.com/YunoHost/yunohost/pull/1886))
+
+  Thanks to all contributors <3 ! (alexAubin, OniriCorpe, Sebastian Gumprich)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 01 Jul 2024 18:46:52 +0200
+
+yunohost (11.2.19) stable; urgency=low
+
+  - apps: tweaks to be more robust and prevent the stupid flood of 'sh: 0: getcwd() failed: No such file or directory' when running an app upgrade/remove from /var/www/$app, sometimes making it look like the upgrade failed when it didnt (a349fc03)
+  - apps: be more robust when an app upgrade succeeds but for some reason is marked with 'broke the system' ... ending up in inconsistent state between the app settings vs the app scritpts (for example in v1->v2 transitions but not only) (e5b57590)
+  - helpers2.1: Fix getopts error handling ... (3e1c9eba)
+  - helpers2.1: also run _ynh_apply_default_permissions in ynh_restore to be consistent (also because the user uid on the new system may be different than in the archive etc) (eee84c5f)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 29 Jun 2024 23:55:52 +0200
+
+yunohost (11.2.18) stable; urgency=low
+
+  - helpers2.1: Rework _ynh_apply_default_permissions to hopefully remove the necessity to chown/chmod in the app scripts ([#1883](http://github.com/YunoHost/yunohost/pull/1883))
+  - helpers2.1: in logrotate, make sure to also chown $app the log dir (1dfc47d1d)
+  - helpers2.1: forgot to rename the apt call in mongodb helpers (7b2959a3e)
+  - helpers2.1: in ynh_safe_rm, check if target is not a broken symlink before erorring out ([#1716](http://github.com/YunoHost/yunohost/pull/1716))
+
+  Thanks to all contributors <3 ! (Félix Piédallu)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 29 Jun 2024 18:05:04 +0200
+
+yunohost (11.2.17.1) stable; urgency=low
+
+  - helpers2.1: fix __PATH__/ handling (997388dc)
+  - ci: Fix helpers 2.1 doc location (7347b08e)
+  - helpers/doc: De-hide some helpers v1 in documentation now that the structure is less bloated sort of ? (2a7fefae)
+  - helpers/doc: fix detail block, cant use the HTML <details> because grav doesnt interpret markdown in it (feb9a095)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 25 Jun 2024 14:19:58 +0200
+
+yunohost (11.2.17) stable; urgency=low
+
+  - helpers: Misc cleaning / reorganizing to prepare new doc (2895d4d9)
+  - helpers: rework helper doc now that we have multiple versions of helpers in parallel + improve structure (group helper file in categories) (094cd9dd)
+  - helpers/mongo: less noisy output when checking the avx flag is here in /proc/cpuinfo (2af4c157)
+  - apps/helpers2.1: fix app env in resource upgrade context ending up in incorrect helper version being used (ed426f05)
+  - helpers2.1: forgot to propagate the 'goenv latest' fix from helpers v1 (d8c3ff4c)
+  - helpers2.1: drop ynh_apps helper because only a single app is using it ... (1fb80e5d)
+  - helpers2.1: other typo fixes
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 24 Jun 2024 22:36:32 +0200
+
+yunohost (11.2.16) stable; urgency=low
+
+  - apps/logs: fix some information not being redacted because of the packaging v2 flows (a25033bb)
+  - logs: misc ad-hoc tweaks to limit the noise in log sharing (06c8fbc8)
+  - helpers: (1/2/2.1) add a new ynh_app_setting_set_default to replace the unecessarily complex 'if [ -z ${foo:-} ]' trick ([#1873](http://github.com/YunoHost/yunohost/pull/1873))
+  - helpers2.1: drop unused 'local source' mechanism from ynh_setup_source (dd8db188)
+  - helpers2.1: fix positional arg parsing in ynh_psql_create_user (e5585136)
+  - helpers2.1: rework the fpm usage/footprint madness ([#1874](http://github.com/YunoHost/yunohost/pull/1874))
+  - helpers2.1: fix ynh_config_add_logrotate when no arg is passed (3942ea12)
+  - helpers2.1: sudo -u$app -> sudo -u $app (d4857834)
+  - helpers2.1: change default timeout of ynh_systemctl to 60s instead of 300s (262453f1)
+  - helpers2.1: display 100 lines instead of 20 in CI context when service fails to start (9298738d)
+  - helpers2.1: when using ynh_systemctl to reload/start/restart a service with a wait_until and it timesout, handle it as a failure rather than keep going (b3409729)
+  - helpers2.1: for some reason sudo -E doesn't preserve PATH even though it's exported, so we gotta explicitly use --preserve-env=PATH (5f6df6a8)
+  - helpers2.1: var rename / cosmetic etc for nodejs/ruby/go version and install directories (2b1f7426)
+  - i18n: Translations updated for Basque, Slovak
+
+  Thanks to all contributors <3 ! (alexAubin, Jose Riha, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 23 Jun 2024 15:30:22 +0200
+
+yunohost (11.2.15) stable; urgency=low
+
+  - apps: new experimentals "2.1" helpers ([#1855](http://github.com/YunoHost/yunohost/pull/1855))
+  - apps: when removing an app with --purge, also remove /var/log/{app}
+  - apps: drop clumsy auto-update of nodejs via cron job which fills up disk space with nodejs copies and doesnt actually restart the app services...
+  - apps: fix apt resources when multiple extras are set ([#1869](http://github.com/YunoHost/yunohost/pull/1869))
+  - mail: allow aliases for sender addresses of apps ([#1843](http://github.com/YunoHost/yunohost/pull/1843))
+
+  Thanks to all contributors <3 ! (alexAubin, Chris Vogel, Félix Piédallu)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 20 Jun 2024 21:20:47 +0200
+
+yunohost (11.2.14.1) stable; urgency=low
+
+  - helpers: Fix typo in ynh_read_manifest documentation ([#1866](http://github.com/YunoHost/yunohost/pull/1866))
+  - helpers/go: fix goenv call ([#1868](http://github.com/YunoHost/yunohost/pull/1868))
+
+  Thanks to all contributors <3 ! (Chris Vogel, clecle226, Félix Piédallu, OniriCorpe)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 10 Jun 2024 12:34:25 +0200
+
+yunohost (11.2.14) testing; urgency=low
+
+  - helpers/go: fix missing git fetch (5676a7275)
+
+ -- Félix Piédallu <felix@piedallu.me>  Wed, 05 Jun 2024 15:52:06 +0200
+
+yunohost (11.2.13) stable; urgency=low
+
+  - helpers: add a --jinja option to ynh_add_config ([#1851](http://github.com/YunoHost/yunohost/pull/1851))
+  - helpers: add mongodb helpers ([#1844](http://github.com/YunoHost/yunohost/pull/1844))
+  - helpers: update getopts to accept arguments that are valid arguments to echo ([#1847](http://github.com/YunoHost/yunohost/pull/1847))
+  - helpers: create versionned directories of the helpers ([#1717](http://github.com/YunoHost/yunohost/pull/1717))
+  - helpers: fix goenv broken when checking out latest master commit ([#1863](http://github.com/YunoHost/yunohost/pull/1863))
+
+  Thanks to all contributors <3 ! (alexAubin, Chris Vogel, Félix Piédallu, Josué Tille, Salamandar, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 04 Jun 2024 16:43:42 +0200
+
 yunohost (11.2.12) stable; urgency=low
 
   - doc: Remove internal/packagingv1 helpers from helpers doc ([#1832](http://github.com/YunoHost/yunohost/pull/1832))
@@ -5137,4 +5617,3 @@ moulinette-yunohost (1.0~megusta1) megusta; urgency=low
   * Init
 
  -- Adrien Beudin <beudbeud@yunohost.org>  Thu, 15 May 2014 13:16:03 +0200
-

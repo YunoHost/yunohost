@@ -18,28 +18,35 @@
 #
 import os
 import time
-from typing import List, Optional
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 from collections import OrderedDict
+from logging import getLogger
 
 from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
-from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import write_to_file, read_yaml, write_to_yaml, rm
-
-from yunohost.app import (
-    app_ssowatconf,
-    _installed_apps,
-    _get_app_settings,
-    _get_conflicting_apps,
+from moulinette.utils.filesystem import (
+    read_json,
+    read_yaml,
+    rm,
+    read_file,
+    write_to_file,
+    write_to_json,
+    write_to_yaml,
 )
+
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
-from yunohost.utils.configpanel import ConfigPanel
-from yunohost.utils.form import BaseOption
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.dns import is_yunohost_dyndns_domain
 from yunohost.log import is_unit_operation
 
-logger = getActionLogger("yunohost.domain")
+if TYPE_CHECKING:
+    from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
+
+    from yunohost.utils.configpanel import RawConfig
+    from yunohost.utils.form import FormModel, ConfigPanelModel
+    from yunohost.utils.configpanel import RawSettings
+
+logger = getLogger("yunohost.domain")
 
 DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
 
@@ -100,6 +107,30 @@ def _get_domains(exclude_subdomains=False):
     return domain_list_cache
 
 
+def _get_domain_portal_dict():
+
+    domains = _get_domains()
+    out = OrderedDict()
+
+    for domain in domains:
+
+        parent = None
+
+        # Use the topest parent domain if any
+        for d in out.keys():
+            if domain.endswith(f".{d}"):
+                parent = d
+                break
+
+        out[domain] = f"{parent or domain}/yunohost/sso"
+
+    # By default, redirect to $host/yunohost/admin for domains not listed in the dict
+    # maybe in the future, we can allow to tweak this
+    out["default"] = "/yunohost/admin"
+
+    return dict(out)
+
+
 def domain_list(exclude_subdomains=False, tree=False, features=[]):
     """
     List domains
@@ -153,13 +184,14 @@ def domain_info(domain):
         domain     -- Domain to be checked
     """
 
-    from yunohost.app import app_info
+    from yunohost.app import app_info, _installed_apps, _get_app_settings
     from yunohost.dns import _get_registar_settings
+    from yunohost.certificate import certificate_status
 
     _assert_domain_exists(domain)
 
     registrar, _ = _get_registar_settings(domain)
-    certificate = domain_cert_status([domain], full=True)["certificates"][domain]
+    certificate = certificate_status([domain], full=True)["certificates"][domain]
 
     apps = []
     for app in _installed_apps():
@@ -213,7 +245,12 @@ def _get_parent_domain_of(domain, return_self=False, topest=False):
 
 @is_unit_operation(exclude=["dyndns_recovery_password"])
 def domain_add(
-    operation_logger, domain, dyndns_recovery_password=None, ignore_dyndns=False
+    operation_logger,
+    domain,
+    dyndns_recovery_password=None,
+    ignore_dyndns=False,
+    install_letsencrypt_cert=False,
+    skip_tos=False,
 ):
     """
     Create a custom domain
@@ -223,21 +260,21 @@ def domain_add(
         dyndns -- Subscribe to DynDNS
         dyndns_recovery_password -- Password used to later unsubscribe from DynDNS
         ignore_dyndns -- If we want to just add the DynDNS domain to the list, without subscribing
+        install_letsencrypt_cert -- If adding a subdomain of an already added domain, try to install a Let's Encrypt certificate
     """
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.utils.password import assert_password_is_strong_enough
-    from yunohost.certificate import _certificate_install_selfsigned
+    from yunohost.certificate import (
+        _certificate_install_letsencrypt,
+        _certificate_install_selfsigned,
+        certificate_status,
+    )
+    from yunohost.utils.dns import is_yunohost_dyndns_domain
 
     if dyndns_recovery_password:
         operation_logger.data_to_redact.append(dyndns_recovery_password)
-
-    if domain.startswith("xmpp-upload."):
-        raise YunohostValidationError("domain_cannot_add_xmpp_upload")
-
-    if domain.startswith("muc."):
-        raise YunohostError("domain_cannot_add_muc_upload")
 
     ldap = _get_ldap_interface()
 
@@ -260,11 +297,17 @@ def domain_add(
         and len(domain.split(".")) == 3
     )
     if dyndns:
+        from yunohost.app import _ask_confirmation
         from yunohost.dyndns import is_subscribing_allowed
 
         # Do not allow to subscribe to multiple dyndns domains...
         if not is_subscribing_allowed():
             raise YunohostValidationError("domain_dyndns_already_subscribed")
+
+        if not skip_tos and Moulinette.interface.type == "cli" and os.isatty(1):
+            Moulinette.display(m18n.n("tos_dyndns_acknowledgement"), style="warning")
+            _ask_confirmation("confirm_tos_acknowledgement", kind="soft")
+
         if dyndns_recovery_password:
             assert_password_is_strong_enough("admin", dyndns_recovery_password)
 
@@ -275,7 +318,7 @@ def domain_add(
             domain=domain, recovery_password=dyndns_recovery_password
         )
 
-    _certificate_install_selfsigned([domain], True)
+    _certificate_install_selfsigned([domain], force=True)
 
     try:
         attr_dict = {
@@ -307,10 +350,8 @@ def domain_add(
             regen_conf(
                 names=[
                     "nginx",
-                    "metronome",
                     "dnsmasq",
                     "postfix",
-                    "rspamd",
                     "mdns",
                     "dovecot",
                 ]
@@ -325,9 +366,33 @@ def domain_add(
             pass
         raise e
 
+    failed_letsencrypt_cert_install = False
+    if install_letsencrypt_cert:
+        parent_domain = _get_parent_domain_of(domain)
+        can_install_letsencrypt = (
+            parent_domain
+            and certificate_status([parent_domain], full=True)["certificates"][
+                parent_domain
+            ]["has_wildcards"]
+        )
+
+        if can_install_letsencrypt:
+            try:
+                _certificate_install_letsencrypt([domain], force=True, no_checks=True)
+            except Exception:
+                failed_letsencrypt_cert_install = True
+        else:
+            logger.warning(
+                "Skipping Let's Encrypt certificate attempt because there's no wildcard configured on the parent domain's DNS records."
+            )
+            failed_letsencrypt_cert_install = True
+
     hook_callback("post_domain_add", args=[domain])
 
     logger.success(m18n.n("domain_created"))
+
+    if failed_letsencrypt_cert_install:
+        logger.warning(m18n.n("certmanager_cert_install_failed", domains=domain))
 
 
 @is_unit_operation(exclude=["dyndns_recovery_password"])
@@ -352,8 +417,15 @@ def domain_remove(
     """
     import glob
     from yunohost.hook import hook_callback
-    from yunohost.app import app_ssowatconf, app_info, app_remove
+    from yunohost.app import (
+        app_ssowatconf,
+        app_info,
+        app_remove,
+        _get_app_settings,
+        _installed_apps,
+    )
     from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.utils.dns import is_yunohost_dyndns_domain
 
     if dyndns_recovery_password:
         operation_logger.data_to_redact.append(dyndns_recovery_password)
@@ -474,7 +546,7 @@ def domain_remove(
             f"/etc/nginx/conf.d/{domain}.conf", new_conf=None, save=True
         )
 
-    regen_conf(names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd", "mdns"])
+    regen_conf(names=["nginx", "dnsmasq", "postfix", "mdns"])
     app_ssowatconf()
 
     hook_callback("post_domain_remove", args=[domain])
@@ -560,9 +632,6 @@ def domain_main_domain(operation_logger, new_main_domain=None):
         logger.warning(str(e), exc_info=1)
         raise YunohostError("main_domain_change_failed")
 
-    # Generate SSOwat configuration file
-    app_ssowatconf()
-
     # Regen configurations
     if os.path.exists("/etc/yunohost/installed"):
         regen_conf()
@@ -585,7 +654,23 @@ def domain_url_available(domain, path):
         path -- The path to check (e.g. /coffee)
     """
 
+    from yunohost.app import _get_conflicting_apps
+
     return len(_get_conflicting_apps(domain, path)) == 0
+
+
+def _get_raw_domain_settings(domain):
+    """Get domain settings directly from file.
+    Be carefull, domain settings are saved in `"diff"` mode (i.e. default settings are not saved)
+    so the file may be completely empty
+    """
+    _assert_domain_exists(domain)
+    # NB: this corresponds to save_path_tpl in DomainConfigPanel
+    path = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
+    if os.path.exists(path):
+        return read_yaml(path)
+
+    return {}
 
 
 def domain_config_get(domain, key="", full=False, export=False):
@@ -605,6 +690,7 @@ def domain_config_get(domain, key="", full=False, export=False):
     else:
         mode = "classic"
 
+    DomainConfigPanel = _get_DomainConfigPanel()
     config = DomainConfigPanel(domain)
     return config.get(key, mode)
 
@@ -616,161 +702,233 @@ def domain_config_set(
     """
     Apply a new domain configuration
     """
+    from yunohost.utils.form import BaseOption
+
+    DomainConfigPanel = _get_DomainConfigPanel()
     BaseOption.operation_logger = operation_logger
     config = DomainConfigPanel(domain)
     return config.set(key, value, args, args_file, operation_logger=operation_logger)
 
 
-class DomainConfigPanel(ConfigPanel):
-    entity_type = "domain"
-    save_path_tpl = f"{DOMAIN_SETTINGS_DIR}/{{entity}}.yml"
-    save_mode = "diff"
+def _get_DomainConfigPanel():
+    from yunohost.utils.configpanel import ConfigPanel
+    from yunohost.dns import _set_managed_dns_records_hashes
 
-    def get(self, key="", mode="classic"):
-        result = super().get(key=key, mode=mode)
+    class DomainConfigPanel(ConfigPanel):
+        entity_type = "domain"
+        save_path_tpl = f"{DOMAIN_SETTINGS_DIR}/{{entity}}.yml"
+        save_mode = "diff"
 
-        if mode == "full":
-            for panel, section, option in self._iterate():
-                # This injects:
+        # i18n: domain_config_cert_renew_help
+        # i18n: domain_config_default_app_help
+
+        def _get_raw_config(self) -> "RawConfig":
+            # TODO add mechanism to share some settings with other domains on the same zone
+            raw_config = super()._get_raw_config()
+
+            any_filter = all(self.filter_key)
+            panel_id, section_id, option_id = self.filter_key
+
+            # Portal settings are only available on "topest" domains
+            if _get_parent_domain_of(self.entity, topest=True) is not None:
+                del raw_config["feature"]["portal"]
+
+            # Optimize wether or not to load the DNS section,
+            # e.g. we don't want to trigger the whole _get_registary_config_section
+            # when just getting the current value from the feature section
+            if not any_filter or panel_id == "dns":
+                from yunohost.dns import _get_registrar_config_section
+
+                raw_config["dns"]["registrar"] = _get_registrar_config_section(
+                    self.entity
+                )
+
+            # Cert stuff
+            if not any_filter or panel_id == "cert":
+                from yunohost.certificate import certificate_status
+
+                status = certificate_status([self.entity], full=True)["certificates"][
+                    self.entity
+                ]
+
+                raw_config["cert"]["cert_"]["cert_summary"]["style"] = status["style"]
+
+                # i18n: domain_config_cert_summary_expired
+                # i18n: domain_config_cert_summary_selfsigned
+                # i18n: domain_config_cert_summary_abouttoexpire
+                # i18n: domain_config_cert_summary_ok
+                # i18n: domain_config_cert_summary_letsencrypt
+                raw_config["cert"]["cert_"]["cert_summary"]["ask"] = m18n.n(
+                    f"domain_config_cert_summary_{status['summary']}"
+                )
+
+                for option_id, status_key in [
+                    ("cert_validity", "validity"),
+                    ("cert_issuer", "CA_type"),
+                    ("acme_eligible", "ACME_eligible"),
+                    # FIXME not sure why "summary" was injected in settings values
+                    # ("summary", "summary")
+                ]:
+                    raw_config["cert"]["cert_"][option_id]["default"] = status[
+                        status_key
+                    ]
+
+                # Other specific strings used in config panels
                 # i18n: domain_config_cert_renew_help
-                # i18n: domain_config_default_app_help
-                # i18n: domain_config_xmpp_help
-                if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
-                    option["help"] = m18n.n(
-                        self.config["i18n"] + "_" + option["id"] + "_help"
+
+            return raw_config
+
+        def _get_raw_settings(self) -> "RawSettings":
+            raw_settings = super()._get_raw_settings()
+
+            custom_css = Path(
+                f"/usr/share/yunohost/portal/customassets/{self.entity}.custom.css"
+            )
+            if custom_css.exists():
+                raw_settings["custom_css"] = read_file(str(custom_css))
+
+            return raw_settings
+
+        def _apply(
+            self,
+            form: "FormModel",
+            config: "ConfigPanelModel",
+            previous_settings: dict[str, Any],
+            exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
+        ) -> None:
+            next_settings = {
+                k: v for k, v in form.dict().items() if previous_settings.get(k) != v
+            }
+
+            if "default_app" in next_settings:
+                from yunohost.app import app_map
+
+                if "/" in app_map(raw=True).get(self.entity, {}):
+                    raise YunohostValidationError(
+                        "app_make_default_location_already_used",
+                        app=next_settings["default_app"],
+                        domain=self.entity,
+                        other_app=app_map(raw=True)[self.entity]["/"]["id"],
                     )
-            return self.config
 
-        return result
+            if next_settings.get("recovery_password", None):
+                domain_dyndns_set_recovery_password(
+                    self.entity, next_settings["recovery_password"]
+                )
 
-    def _get_raw_config(self):
-        toml = super()._get_raw_config()
+            # NB: this is subtlely different from just checking `next_settings.get("use_auto_dns") since we want to find the exact situation where the admin *disables* the autodns`
+            remove_auto_dns_feature = (
+                "use_auto_dns" in next_settings and not next_settings["use_auto_dns"]
+            )
+            if remove_auto_dns_feature:
+                # disable auto dns by reseting every registrar form values
+                options = [
+                    option
+                    for option in config.get_section("registrar").options
+                    if not option.readonly
+                    and option.id != "use_auto_dns"
+                    and hasattr(form, option.id)
+                ]
+                for option in options:
+                    setattr(form, option.id, option.default)
 
-        toml["feature"]["xmpp"]["xmpp"]["default"] = (
-            1 if self.entity == _get_maindomain() else 0
-        )
+            if "custom_css" in next_settings:
+                write_to_file(
+                    f"/usr/share/yunohost/portal/customassets/{self.entity}.custom.css",
+                    next_settings.pop("custom_css", "").strip(),
+                )
+            # Make sure the value doesnt get written in the yml
+            if hasattr(form, "custom_css"):
+                form.custom_css = ""
 
-        # Optimize wether or not to load the DNS section,
-        # e.g. we don't want to trigger the whole _get_registary_config_section
-        # when just getting the current value from the feature section
-        filter_key = self.filter_key.split(".") if self.filter_key != "" else []
-        if not filter_key or filter_key[0] == "dns":
-            from yunohost.dns import _get_registrar_config_section
-
-            toml["dns"]["registrar"] = _get_registrar_config_section(self.entity)
-
-            # FIXME: Ugly hack to save the registar id/value and reinject it in _get_raw_settings ...
-            self.registar_id = toml["dns"]["registrar"]["registrar"]["value"]
-            del toml["dns"]["registrar"]["registrar"]["value"]
-
-        # Cert stuff
-        if not filter_key or filter_key[0] == "cert":
-            from yunohost.certificate import certificate_status
-
-            status = certificate_status([self.entity], full=True)["certificates"][
-                self.entity
+            portal_options = [
+                "enable_public_apps_page",
+                "show_other_domains_apps",
+                "portal_title",
+                "portal_logo",
+                "portal_theme",
+                "portal_tile_theme",
+                "search_engine",
+                "search_engine_name",
+                "portal_user_intro",
+                "portal_public_intro",
             ]
 
-            toml["cert"]["cert"]["cert_summary"]["style"] = status["style"]
+            if _get_parent_domain_of(self.entity, topest=True) is None and any(
+                option in next_settings for option in portal_options
+            ):
+                from yunohost.portal import PORTAL_SETTINGS_DIR
 
-            # i18n: domain_config_cert_summary_expired
-            # i18n: domain_config_cert_summary_selfsigned
-            # i18n: domain_config_cert_summary_abouttoexpire
-            # i18n: domain_config_cert_summary_ok
-            # i18n: domain_config_cert_summary_letsencrypt
-            toml["cert"]["cert"]["cert_summary"]["ask"] = m18n.n(
-                f"domain_config_cert_summary_{status['summary']}"
-            )
+                # Portal options are also saved in a `domain.portal.yml` file
+                # that can be read by the portal API.
+                # FIXME remove those from the config panel saved values?
 
-            # FIXME: Ugly hack to save the cert status and reinject it in _get_raw_settings ...
-            self.cert_status = status
+                portal_values = form.dict(include=set(portal_options))
+                # Remove logo from values else filename will replace b64 content
+                if "portal_logo" in portal_values:
+                    portal_values.pop("portal_logo")
 
-        return toml
+                if "portal_logo" in next_settings:
+                    if previous_settings.get("portal_logo"):
+                        try:
+                            os.remove(previous_settings["portal_logo"])
+                        except FileNotFoundError:
+                            logger.warning(
+                                f"Coulnd't remove previous logo file, maybe the file was already deleted, path: {previous_settings['portal_logo']}"
+                            )
+                        finally:
+                            portal_values["portal_logo"] = ""
 
-    def _get_raw_settings(self):
-        # TODO add mechanism to share some settings with other domains on the same zone
-        super()._get_raw_settings()
+                    if next_settings["portal_logo"]:
+                        portal_values["portal_logo"] = Path(
+                            next_settings["portal_logo"]
+                        ).name
 
-        # FIXME: Ugly hack to save the registar id/value and reinject it in _get_raw_settings ...
-        filter_key = self.filter_key.split(".") if self.filter_key != "" else []
-        if not filter_key or filter_key[0] == "dns":
-            self.values["registrar"] = self.registar_id
+                portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{self.entity}.json")
+                portal_settings: dict[str, Any] = {"apps": {}}
 
-        # FIXME: Ugly hack to save the cert status and reinject it in _get_raw_settings ...
-        if not filter_key or filter_key[0] == "cert":
-            self.values["cert_validity"] = self.cert_status["validity"]
-            self.values["cert_issuer"] = self.cert_status["CA_type"]
-            self.values["acme_eligible"] = self.cert_status["ACME_eligible"]
-            self.values["summary"] = self.cert_status["summary"]
+                if portal_settings_path.exists():
+                    portal_settings.update(read_json(str(portal_settings_path)))
 
-    def _apply(self):
-        if (
-            "default_app" in self.future_values
-            and self.future_values["default_app"] != self.values["default_app"]
-        ):
-            from yunohost.app import app_ssowatconf, app_map
-
-            if "/" in app_map(raw=True).get(self.entity, {}):
-                raise YunohostValidationError(
-                    "app_make_default_location_already_used",
-                    app=self.future_values["default_app"],
-                    domain=self.entity,
-                    other_app=app_map(raw=True)[self.entity]["/"]["id"],
+                # Merge settings since this config file is shared with `app_ssowatconf()` which populate the `apps` key.
+                portal_settings.update(portal_values)
+                write_to_json(
+                    str(portal_settings_path), portal_settings, sort_keys=True, indent=4
                 )
-        if (
-            "recovery_password" in self.new_values
-            and self.new_values["recovery_password"]
-        ):
-            domain_dyndns_set_recovery_password(
-                self.entity, self.new_values["recovery_password"]
+
+            super()._apply(
+                form, config, previous_settings, exclude={"recovery_password"}
             )
-        # Do not save password in yaml settings
-        if "recovery_password" in self.values:
-            del self.values["recovery_password"]
-        if "recovery_password" in self.new_values:
-            del self.new_values["recovery_password"]
-        assert "recovery_password" not in self.future_values
 
-        super()._apply()
+            # Also remove `managed_dns_records_hashes` in settings which are not handled by the config panel
+            if remove_auto_dns_feature:
+                _set_managed_dns_records_hashes(self.entity, [])
 
-        # Reload ssowat if default app changed
-        if (
-            "default_app" in self.future_values
-            and self.future_values["default_app"] != self.values["default_app"]
-        ):
-            app_ssowatconf()
+            # Reload ssowat if default app changed
+            if (
+                "default_app" in next_settings
+                or "enable_public_apps_page" in next_settings
+            ):
+                from yunohost.app import app_ssowatconf
 
-        stuff_to_regen_conf = []
-        if (
-            "xmpp" in self.future_values
-            and self.future_values["xmpp"] != self.values["xmpp"]
-        ):
-            stuff_to_regen_conf.append("nginx")
-            stuff_to_regen_conf.append("metronome")
+                app_ssowatconf()
 
-        if (
-            "mail_in" in self.future_values
-            and self.future_values["mail_in"] != self.values["mail_in"]
-        ) or (
-            "mail_out" in self.future_values
-            and self.future_values["mail_out"] != self.values["mail_out"]
-        ):
-            if "nginx" not in stuff_to_regen_conf:
-                stuff_to_regen_conf.append("nginx")
-            stuff_to_regen_conf.append("postfix")
-            stuff_to_regen_conf.append("dovecot")
-            stuff_to_regen_conf.append("rspamd")
+            stuff_to_regen_conf = set()
+            if "mail_in" in next_settings or "mail_out" in next_settings:
+                stuff_to_regen_conf.update({"nginx", "postfix", "dovecot"})
 
-        if stuff_to_regen_conf:
-            regen_conf(names=stuff_to_regen_conf)
+            if stuff_to_regen_conf:
+                regen_conf(names=list(stuff_to_regen_conf))
+
+    return DomainConfigPanel
 
 
 def domain_action_run(domain, action, args=None):
     import urllib.parse
 
-    if action == "cert.cert.cert_install":
+    if action == "cert.cert_.cert_install":
         from yunohost.certificate import certificate_install as action_func
-    elif action == "cert.cert.cert_renew":
+    elif action == "cert.cert_.cert_renew":
         from yunohost.certificate import certificate_renew as action_func
 
     args = dict(urllib.parse.parse_qsl(args or "", keep_blank_values=True))
@@ -817,10 +975,6 @@ def domain_cert_renew(domain_list, force=False, no_checks=False, email=False):
     from yunohost.certificate import certificate_renew
 
     return certificate_renew(domain_list, force, no_checks, email)
-
-
-def domain_dns_conf(domain):
-    return domain_dns_suggest(domain)
 
 
 def domain_dns_suggest(domain):

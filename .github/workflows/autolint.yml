@@ -1,0 +1,37 @@
+name: Check / auto apply Black
+
+on:
+  push:
+    branches: [ "dev" ]
+
+jobs:
+  autolint:
+    name: Check / auto apply black and shfmt
+    runs-on: ubuntu-latest
+    permissions:
+      # Give the default GITHUB_TOKEN write permission to commit and push the changed files back to the repository.
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Shfmt
+        uses: collin-miller/shfmt-action@v1
+        with:
+          # -i=4    # indent
+          # -kp     # keep column alignment paddings
+          # -sr     # redirect operators will be followed by a space
+          # -bn     # binary ops like && and | may start a line
+          # -ci     # switch cases will be indented
+          # -w      # write to file instead of stdout
+          args: -i=4 -kp -sr -bn -ci -w hooks/ helpers/helpers helpers/helpers.v1.d/ helpers/helpers.v2.1.d/
+        continue-on-error: true
+
+      - name: Check files using the black formatter
+        uses: psf/black@stable
+        with:
+          options: "."
+        continue-on-error: true
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: ":art: Format Python code with Black, and Bash code with Shfmt"

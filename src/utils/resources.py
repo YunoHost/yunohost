@@ -23,11 +23,11 @@ import random
 import tempfile
 import subprocess
 from typing import Dict, Any, List, Union, Callable
+from logging import getLogger
 
 from moulinette import m18n
 from moulinette.utils.text import random_ascii
 from moulinette.utils.process import check_output
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import mkdir, chown, chmod, write_to_file
 from moulinette.utils.filesystem import (
     rm,
@@ -35,14 +35,15 @@ from moulinette.utils.filesystem import (
 from yunohost.utils.system import system_arch, debian_version, debian_version_id
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
-logger = getActionLogger("yunohost.app_resources")
+logger = getLogger("yunohost.utils.resources")
 
 
 class AppResourceManager:
-    def __init__(self, app: str, current: Dict, wanted: Dict):
+    def __init__(self, app: str, current: Dict, wanted: Dict, workdir=None):
         self.app = app
         self.current = current
         self.wanted = wanted
+        self.workdir = workdir
 
         if "resources" not in self.current:
             self.current["resources"] = {}
@@ -155,6 +156,31 @@ class AppResource:
         elif manager and manager.current and "version" in manager.current:
             app_upstream_version = manager.current["version"].split("~")[0]
 
+        # FIXME : should use packaging.version to properly parse / compare versions >_>
+        self.helpers_version: float = 0
+        if (
+            manager
+            and manager.wanted
+            and manager.wanted.get("integration", {}).get("helpers_version")
+        ):
+            self.helpers_version = float(
+                manager.wanted.get("integration", {}).get("helpers_version")
+            )
+        elif (
+            manager
+            and manager.current
+            and manager.current.get("integration", {}).get("helpers_version")
+        ):
+            self.helpers_version = float(
+                manager.current.get("integration", {}).get("helpers_version")
+            )
+        elif manager and manager.wanted and manager.wanted.get("packaging_format"):
+            self.helpers_version = float(manager.wanted.get("packaging_format"))
+        elif manager and manager.current and manager.current.get("packaging_format"):
+            self.helpers_version = float(manager.current.get("packaging_format"))
+        if not self.helpers_version:
+            self.helpers_version = 1.0
+
         replacements: dict[str, str] = {
             "__APP__": self.app,
             "__YNH_ARCH__": system_arch(),
@@ -231,17 +257,21 @@ class AppResource:
         )
         from yunohost.hook import hook_exec_with_script_debug_if_failure
 
-        tmpdir = _make_tmp_workdir_for_app(app=self.app)
+        workdir = (
+            self.manager.workdir
+            if self.manager and self.manager.workdir
+            else _make_tmp_workdir_for_app(app=self.app)
+        )
 
         env_ = _make_environment_for_app_script(
             self.app,
-            workdir=tmpdir,
+            workdir=workdir,
             action=f"{action}_{self.type}",
             force_include_app_settings=True,
         )
         env_.update(env)
 
-        script_path = f"{tmpdir}/{action}_{self.type}"
+        script_path = f"{workdir}/{action}_{self.type}"
         script = f"""
 source /usr/share/yunohost/helpers
 ynh_abort_if_errors
@@ -325,9 +355,9 @@ class SourcesResource(AppResource):
         armhf.sha256 = "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
 
         autoupdate.strategy = "latest_github_release"
-        autoupdate.asset.amd64 = ".*\\.amd64.tar.gz"
-        autoupdate.asset.i386 = ".*\\.386.tar.gz"
-        autoupdate.asset.armhf = ".*\\.arm.tar.gz"
+        autoupdate.asset.amd64 = ".*\\\\.amd64.tar.gz"
+        autoupdate.asset.i386 = ".*\\\\.386.tar.gz"
+        autoupdate.asset.armhf = ".*\\\\.arm.tar.gz"
 
         [resources.sources.zblerg]
         url = "https://zblerg.com/download/zblerg"
@@ -358,7 +388,7 @@ class SourcesResource(AppResource):
 
     Strictly speaking, this has nothing to do with the actual app install. `autoupdate` is expected to contain metadata for automatic maintenance / update of the app sources info in the manifest. It is meant to be a simpler replacement for "autoupdate" Github workflow mechanism.
 
-    The infos are used by this script : <https://github.com/YunoHost/apps/blob/master/tools/autoupdate_app_sources/autoupdate_app_sources.py> which is ran by the YunoHost infrastructure periodically and will create the corresponding pull request automatically.
+    The infos are used by this script : <https://github.com/YunoHost/apps_tools/blob/main/autoupdate_app_sources/autoupdate_app_sources.py> which is ran by the YunoHost infrastructure periodically and will create the corresponding pull request automatically.
 
     The script will rely on the code repo specified in `code` in the upstream section of the manifest.
 
@@ -389,6 +419,28 @@ class SourcesResource(AppResource):
     ```
 
     And the autoupdater will use the matched group (here: `4.1`) as the version.
+
+    You can make sure that your autoupdate strategy is working well immediately (without waiting for the next check on the infra) by doing the following:
+    1. Clone this repo: https://github.com/YunoHost/apps_tools
+    2. In `apps_tools` open a terminal to run the following commands:
+        ```sh
+        # Create test branch
+        git checkout -b localtest
+
+        # Create a Python virtual environment
+        python -m venv venv
+        source venv/bin/activate
+
+        # Install dependencies (if you don't have pip already installed on your system, check https://pip.pypa.io/en/stable/installation)
+        pip install -r requirements.txt
+
+        # Run autoupdate script - replace '/path/to/myapp_ynh' with your actual local app path
+        ./autoupdate_app_sources/autoupdate_app_sources.py '/path/to/myapp_ynh'
+        ```
+    3. If the return output includes:
+    - `Apps udpated`, it ran successfully. Note that it will automatically make local changes in your app's `manifest.toml` (which can be discarded as they will be made automatically later online by the YNH infra);
+    - `Apps failed`, the autoupdate stragegy is not working properly - check the debug info;
+    - none of the above but `apps -> Autoupdater just ran, here are the results:`, it ran successfully but the app was already up to date.
 
     ### Provision/Update
     - For elements with `prefetch = true`, will download the asset (for the appropriate architecture) and store them in `/var/cache/yunohost/download/$app/$source_id`, to be later picked up by `ynh_setup_source`. (NB: this only happens during install and upgrade, not restore)
@@ -1140,7 +1192,10 @@ class AptDependenciesAppResource(AppResource):
         super().__init__(properties, *args, **kwargs)
 
         if isinstance(self.packages, str):
-            self.packages = [value.strip() for value in self.packages.split(",")]
+            if self.packages.strip() == "":
+                self.packages = []
+            else:
+                self.packages = [value.strip() for value in self.packages.split(",")]
 
         if self.packages_from_raw_bash:
             out, err = self.check_output_bash_snippet(self.packages_from_raw_bash)
@@ -1164,7 +1219,7 @@ class AptDependenciesAppResource(AppResource):
                         f"Error while running apt resource packages_from_raw_bash snippet for '{key}' extras:"
                     )
                     logger.error(err)
-                values["packages"] = values.get("packages", []) + [value.strip() for value in out.split("\n")]  # type: ignore
+                values["packages"] = values.get("packages", []) + [value.strip() for value in out.split("\n") if value.strip()]  # type: ignore
 
             if (
                 not isinstance(values.get("repo"), str)
@@ -1176,17 +1231,44 @@ class AptDependenciesAppResource(AppResource):
                     raw_msg=True,
                 )
 
-            # Drop 'extras' entries associated to no packages
-            self.extras = {
-                key: values for key, values in self.extras.items() if values["packages"]
-            }
+        # Drop 'extras' entries associated to no packages
+        self.extras = {
+            key: values for key, values in self.extras.items() if values["packages"]
+        }
+
+        # Yarn repository is now provided by the core.
+        # Let's "move" any extra apt resources depending on yarn to the standard packages list.
+        for key in list(self.extras.keys()):
+            if self.extras[key][
+                "repo"
+            ] == "deb https://dl.yarnpkg.com/debian/ stable main" and self.extras[key][
+                "packages"
+            ] == [
+                "yarn"
+            ]:
+                self.packages.append("yarn")
+                del self.extras[key]
 
     def provision_or_update(self, context: Dict = {}):
-        script = " ".join(["ynh_install_app_dependencies", *self.packages])
+
+        if self.helpers_version >= 2.1:
+            ynh_apt_install_dependencies = "ynh_apt_install_dependencies"
+            ynh_apt_install_dependencies_from_extra_repository = (
+                "ynh_apt_install_dependencies_from_extra_repository"
+            )
+        else:
+            ynh_apt_install_dependencies = "ynh_install_app_dependencies"
+            ynh_apt_install_dependencies_from_extra_repository = (
+                "ynh_install_extra_app_dependencies"
+            )
+
+        script = ""
+        if self.packages:
+            script += " ".join([ynh_apt_install_dependencies, *self.packages])
         for repo, values in self.extras.items():
             script += "\n" + " ".join(
                 [
-                    "ynh_install_extra_app_dependencies",
+                    ynh_apt_install_dependencies_from_extra_repository,
                     f"--repo='{values['repo']}'",
                     f"--key='{values['key']}'",
                     f"--package='{' '.join(values['packages'])}'",
@@ -1197,7 +1279,12 @@ class AptDependenciesAppResource(AppResource):
         self._run_script("provision_or_update", script)
 
     def deprovision(self, context: Dict = {}):
-        self._run_script("deprovision", "ynh_remove_app_dependencies")
+        if self.helpers_version >= 2.1:
+            ynh_apt_remove_dependencies = "ynh_apt_remove_dependencies"
+        else:
+            ynh_apt_remove_dependencies = "ynh_remove_app_dependencies"
+
+        self._run_script("deprovision", ynh_apt_remove_dependencies)
 
 
 class PortsResource(AppResource):
@@ -1455,13 +1542,19 @@ class DatabaseAppResource(AppResource):
         db_name = self.get_setting("db_name") or db_user
 
         if self.dbtype == "mysql":
-            self._run_script(
-                "deprovision", f"ynh_mysql_remove_db '{db_name}' '{db_user}'"
-            )
+            db_helper_name = "mysql"
         elif self.dbtype == "postgresql":
-            self._run_script(
-                "deprovision", f"ynh_psql_remove_db '{db_name}' '{db_user}'"
-            )
+            db_helper_name = "psql"
+        else:
+            raise RuntimeError(f"Invalid dbtype {self.dbtype}")
+
+        self._run_script(
+            "deprovision",
+            f"""
+ynh_{db_helper_name}_database_exists "{db_name}" && ynh_{db_helper_name}_drop_db "{db_name}" || true
+ynh_{db_helper_name}_user_exists "{db_user}" && ynh_{db_helper_name}_drop_user "{db_user}" || true
+""",
+        )
 
         self.delete_setting("db_name")
         self.delete_setting("db_user")

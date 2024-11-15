@@ -1,11 +1,10 @@
 ---
 stages:
+  - lint
   - build
   - install
   - test
-  - lint
-  - doc
-  - translation
+  - bot
 
 default:
   tags:
@@ -38,12 +37,17 @@ workflow:
     - if: $CI_COMMIT_TAG # For tags
     - if: $CI_COMMIT_REF_NAME == "ci-format-$CI_DEFAULT_BRANCH"  # Ignore black formatting branch created by the CI
       when: never
+    - if: $CI_COMMIT_REF_NAME == "actions/black"  # Ignore black formatting branch created by the CI
+      when: never
     - if: $CI_COMMIT_REF_NAME != $CI_DEFAULT_BRANCH  && $CI_PIPELINE_SOURCE == "push" # If it's not the default branch and if it's a push, then do not trigger a build
       when: never
     - when: always
 
 variables:
-  YNH_BUILD_DIR: "/ynh-build"
+  GIT_CLONE_PATH: '$CI_BUILDS_DIR/$CI_COMMIT_SHA/$CI_JOB_ID'
+  YNH_SOURCE: "https://github.com/yunohost"
+  YNH_DEBIAN: "bookworm"
+  YNH_SKIP_DIAGNOSIS_DURING_UPGRADE: "true"
 
 include:
   - template: Code-Quality.gitlab-ci.yml

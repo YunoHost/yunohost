@@ -1,5 +1,6 @@
 import os
 import pytest
+from unittest.mock import Mock
 
 import moulinette
 from moulinette import m18n, Moulinette
@@ -12,7 +13,9 @@ def clone_test_app(request):
     cwd = os.path.split(os.path.realpath(__file__))[0]
 
     if not os.path.exists(cwd + "/apps"):
-        os.system("git clone https://github.com/YunoHost/test_apps %s/apps" % cwd)
+        os.system(
+            f"git clone https://github.com/YunoHost/test_apps {cwd}/apps --depth 1"
+        )
     else:
         os.system("cd %s/apps && git pull > /dev/null 2>&1" % cwd)
 
@@ -23,10 +26,15 @@ def get_test_apps_dir():
 
 
 @contextmanager
-def message(mocker, key, **kwargs):
-    mocker.spy(m18n, "n")
+def message(key, **kwargs):
+    m = Mock(wraps=m18n.n)
+    old_m18n = m18n.n
+    m18n.n = m
     yield
-    m18n.n.assert_any_call(key, **kwargs)
+    try:
+        m.assert_any_call(key, **kwargs)
+    finally:
+        m18n.n = old_m18n
 
 
 @contextmanager
@@ -36,10 +44,6 @@ def raiseYunohostError(mocker, key, **kwargs):
     assert e_info._excinfo[1].key == key
     if kwargs:
         assert e_info._excinfo[1].kwargs == kwargs
-
-
-def pytest_addoption(parser):
-    parser.addoption("--yunodebug", action="store_true", default=False)
 
 
 #
@@ -67,11 +71,15 @@ moulinette.core.Translator.translate = new_translate
 
 def pytest_cmdline_main(config):
     import sys
+    from pathlib import Path
 
-    sys.path.insert(0, "/usr/lib/moulinette/")
+    # Tweak python path such that "import yunohost" imports "this" code and not the one from /usr/lib/python3/dist-packages
+    code_root = str(Path(__file__).parent.parent.parent)
+    sys.path.insert(0, code_root)
+
     import yunohost
 
-    yunohost.init(debug=config.option.yunodebug)
+    yunohost.init()
 
     class DummyInterface:
         type = "cli"

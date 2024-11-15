@@ -1,9 +1,53 @@
 #!/usr/env/python3
 
+import sys
 import os
-import glob
 import datetime
 import subprocess
+
+tree = {
+    "sources": {
+        "title": "Sources",
+        "notes": "This is coupled to the 'sources' resource in the manifest.toml",
+        "subsections": ["sources"],
+    },
+    "tech": {
+        "title": "App technologies",
+        "notes": "These allow to install specific version of the technology required to run some apps",
+        "subsections": ["nodejs", "ruby", "go", "composer"],
+    },
+    "db": {
+        "title": "Databases",
+        "notes": "This is coupled to the 'database' resource in the manifest.toml - at least for mysql/postgresql. Mongodb/redis may have better integration in the future.",
+        "subsections": ["mysql", "postgresql", "mongodb", "redis"],
+    },
+    "conf": {
+        "title": "Configurations / templating",
+        "subsections": [
+            "templating",
+            "nginx",
+            "php",
+            "systemd",
+            "fail2ban",
+            "logrotate",
+        ],
+    },
+    "misc": {
+        "title": "Misc tools",
+        "subsections": [
+            "utils",
+            "setting",
+            "string",
+            "backup",
+            "logging",
+            "multimedia",
+        ],
+    },
+    "meh": {
+        "title": "Deprecated or handled by the core / app resources since v2",
+        "subsections": ["permission", "apt", "systemuser"],
+    },
+}
 
 
 def get_current_commit():
@@ -19,14 +63,7 @@ def get_current_commit():
     return current_commit
 
 
-def render(helpers):
-    current_commit = get_current_commit()
-
-    data = {
-        "helpers": helpers,
-        "date": datetime.datetime.now().strftime("%d/%m/%Y"),
-        "version": open("../debian/changelog").readlines()[0].split()[1].strip("()"),
-    }
+def render(tree, helpers_version):
 
     from jinja2 import Template
     from ansi2html import Ansi2HTMLConverter
@@ -42,12 +79,15 @@ def render(helpers):
     t = Template(template)
     t.globals["now"] = datetime.datetime.utcnow
     result = t.render(
-        current_commit=current_commit,
-        data=data,
+        tree=tree,
+        date=datetime.datetime.now().strftime("%d/%m/%Y"),
+        version=open("../debian/changelog").readlines()[0].split()[1].strip("()"),
+        helpers_version=helpers_version,
+        current_commit=get_current_commit(),
         convert=shell_to_html,
         shell_css=shell_css,
     )
-    open("helpers.md", "w").write(result)
+    open(f"helpers.v{helpers_version}.md", "w").write(result)
 
 
 ##############################################################################
@@ -87,7 +127,7 @@ class Parser:
                     # We're still in a comment bloc
                     assert line.startswith("# ") or line == "#", malformed_error(i)
                     current_block["comments"].append(line[2:])
-                elif line.strip() == "":
+                elif line.strip() == "" or line.startswith("_ynh"):
                     # Well eh that was not an actual helper definition ... start over ?
                     current_reading = "void"
                     current_block = {
@@ -121,7 +161,11 @@ class Parser:
                     # (we ignore helpers containing [internal] ...)
                     if (
                         "[packagingv1]" not in current_block["comments"]
-                        and "[internal]" not in current_block["comments"]
+                        and not any(
+                            line.startswith("[internal]")
+                            for line in current_block["comments"]
+                        )
+                        and not current_block["name"].startswith("_")
                     ):
                         self.blocks.append(current_block)
                     current_block = {
@@ -212,23 +256,27 @@ def malformed_error(line_number):
 
 
 def main():
-    helper_files = sorted(glob.glob("../helpers/*"))
-    helpers = []
 
-    for helper_file in helper_files:
-        if not os.path.isfile(helper_file):
-            continue
+    if len(sys.argv) == 1:
+        print("This script needs the helper version (1, 2, 2.1) as an argument")
+        sys.exit(1)
 
-        category_name = os.path.basename(helper_file)
-        print("Parsing %s ..." % category_name)
-        p = Parser(helper_file)
-        p.parse_blocks()
-        for b in p.blocks:
-            p.parse_block(b)
+    version = sys.argv[1]
 
-        helpers.append((category_name, p.blocks))
+    for section in tree.values():
+        section["helpers"] = {}
+        for subsection in section["subsections"]:
+            print(f"Parsing {subsection} ...")
+            helper_file = f"../helpers/helpers.v{version}.d/{subsection}"
+            assert os.path.isfile(helper_file), f"Uhoh, {helper_file} doesn't exists?"
+            p = Parser(helper_file)
+            p.parse_blocks()
+            for b in p.blocks:
+                p.parse_block(b)
 
-    render(helpers)
+            section["helpers"][subsection] = p.blocks
+
+    render(tree, version)
 
 
 main()

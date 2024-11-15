@@ -1,0 +1,53 @@
+generate-helpers-doc:
+  stage: bot
+  image: "build-and-lint"
+  needs: []
+  before_script:
+    - git config --global user.email "yunohost@yunohost.org"
+    - git config --global user.name "$GITHUB_USER"
+  script:
+    - cd doc
+    - python3 generate_helper_doc.py 2
+    - python3 generate_helper_doc.py 2.1
+    - python3 generate_resource_doc.py > resources.md
+    - python3 generate_configpanel_and_formoptions_doc.py > forms.md
+    - hub clone https://$GITHUB_TOKEN:x-oauth-basic@github.com/YunoHost/doc.git doc_repo
+    - cp helpers.v2.md doc_repo/pages/06.contribute/10.packaging_apps/20.scripts/10.helpers/packaging_app_scripts_helpers.md
+    - cp helpers.v2.1.md doc_repo/pages/06.contribute/10.packaging_apps/20.scripts/12.helpers21/packaging_app_scripts_helpers_v21.md
+    - cp resources.md doc_repo/pages/06.contribute/10.packaging_apps/10.manifest/10.appresources/packaging_app_manifest_resources.md
+    - cp forms.md doc_repo/pages/06.contribute/15.dev/03.forms/forms.md
+    - cd doc_repo
+    # replace ${CI_COMMIT_REF_NAME} with ${CI_COMMIT_TAG} ?
+    - hub checkout -b "${CI_COMMIT_REF_NAME}"
+    - hub commit -am "[CI] Update app helpers/resources for ${CI_COMMIT_REF_NAME}"
+    - hub pull-request -m "[CI] Update app helpers/resources for ${CI_COMMIT_REF_NAME}" -p # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
+  artifacts:
+    paths:
+      - doc/helpers.md
+      - doc/resources.md
+  only:
+    - tags
+
+autofix-translated-strings:
+  stage: bot
+  image: "build-and-lint"
+  needs: []
+  before_script:
+    - git config --global user.email "yunohost@yunohost.org"
+    - git config --global user.name "$GITHUB_USER"
+    - hub clone --branch ${CI_COMMIT_REF_NAME} "https://$GITHUB_TOKEN:x-oauth-basic@github.com/YunoHost/yunohost.git" github_repo
+    - cd github_repo
+  script:
+    # create a local branch that will overwrite distant one
+    - git checkout -b "ci-autofix-translated-strings-${CI_COMMIT_REF_NAME}" --no-track
+    - python3 maintenance/missing_i18n_keys.py --fix
+    - python3 maintenance/autofix_locale_format.py
+    - '[ $(git diff --ignore-blank-lines --ignore-all-space --ignore-space-at-eol --ignore-cr-at-eol | wc -l) != 0 ] || exit 0'  # stop if there is nothing to commit
+    - git commit -am "[CI] Reformat / remove stale translated strings" || true
+    - git push -f origin "ci-autofix-translated-strings-${CI_COMMIT_REF_NAME}":"ci-remove-stale-translated-strings-${CI_COMMIT_REF_NAME}"
+    - hub pull-request -m "[CI] Reformat / remove stale translated strings" -b Yunohost:$CI_COMMIT_REF_NAME -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
+  only:
+    variables:
+      - $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+    changes:
+      - locales/*

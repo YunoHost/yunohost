@@ -70,26 +70,10 @@ user:
                     help: The full name of the user. For example 'Camille Dupont'
                     extra:
                         ask: ask_fullname
-                        required: False
+                        required: True
                         pattern: &pattern_fullname
                             - !!str ^([^\W_]{1,30}[ ,.'-]{0,3})+$
                             - "pattern_fullname"
-                -f:
-                    full: --firstname
-                    help: Deprecated. Use --fullname instead.
-                    extra:
-                        required: False
-                        pattern: &pattern_firstname
-                            - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
-                            - "pattern_firstname"
-                -l:
-                    full: --lastname
-                    help: Deprecated. Use --fullname instead.
-                    extra:
-                        required: False
-                        pattern: &pattern_lastname
-                            - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
-                            - "pattern_lastname"
                 -p:
                     full: --password
                     help: User password
@@ -102,7 +86,7 @@ user:
                         comment: good_practices_about_user_password
                 -d:
                     full: --domain
-                    help: Domain for the email address and xmpp account
+                    help: Domain for the email address
                     extra:
                         pattern: &pattern_domain
                             - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
@@ -120,7 +104,7 @@ user:
                     full: --loginShell
                     help: The login shell used
                     default: "/bin/bash"
-                    
+
 
         ### user_delete()
         delete:
@@ -147,16 +131,6 @@ user:
                     help: The full name of the user. For example 'Camille Dupont'
                     extra:
                         pattern: *pattern_fullname
-                -f:
-                    full: --firstname
-                    help: Deprecated. Use --fullname instead.
-                    extra:
-                        pattern: *pattern_firstname
-                -l:
-                    full: --lastname
-                    help: Deprecated. Use --fullname instead.
-                    extra:
-                        pattern: *pattern_lastname
                 -m:
                     full: --mail
                     extra:
@@ -212,12 +186,12 @@ user:
             arguments:
                 username:
                     help: Username or email to get information
-        
+
         ### user_export()
         export:
             action_help: Export users into CSV
             api: GET /users/export
-        
+
         ### user_import()
         import:
             action_help: Import several users from CSV
@@ -244,10 +218,6 @@ user:
                     action_help: List existing groups
                     api: GET /users/groups
                     arguments:
-                        -s:
-                            full: --short
-                            help: List only the names of groups
-                            action: store_true
                         -f:
                             full: --full
                             help: Display all informations known about each groups
@@ -322,6 +292,7 @@ user:
                             extra:
                                 pattern: *pattern_username
 
+                ### user_group_add_mailalias()
                 add-mailalias:
                     action_help: Add mail aliases to group
                     api: PUT /users/groups/<groupname>/aliases/<aliases>
@@ -336,6 +307,11 @@ user:
                           metavar: MAIL
                           extra:
                               pattern: *pattern_email
+                        --force:
+                            help: Ignore warnings about special groups
+                            action: store_true
+
+                ### user_group_remove_mailalias()
                 remove-mailalias:
                     action_help: Remove mail aliases to group
                     api: DELETE /users/groups/<groupname>/aliases/<aliases>
@@ -348,8 +324,9 @@ user:
                           help: Mail aliases to remove
                           nargs: "+"
                           metavar: MAIL
-
-
+                        --force:
+                            help: Ignore warnings about special groups
+                            action: store_true
 
         permission:
             subcategory_help: Manage permissions
@@ -493,7 +470,7 @@ domain:
                     help: Display domains as a tree
                     action: store_true
                 --features:
-                    help: List only domains with features enabled (xmpp, mail_in, mail_out)
+                    help: List only domains with features enabled (mail_in, mail_out)
                     nargs: "*"
 
         ### domain_info()
@@ -525,6 +502,9 @@ domain:
                     help: If adding a DynDNS domain, subscribe to the DynDNS service with a password, used to later delete the domain
                     extra:
                         pattern: *pattern_password
+                --install-letsencrypt-cert:
+                    help: If adding a subdomain of an already added domain, try to install a Let's Encrypt certificate
+                    action: store_true
 
         ### domain_remove()
         remove:
@@ -554,17 +534,6 @@ domain:
                     extra:
                         pattern: *pattern_password
 
-
-        ### domain_dns_conf()
-        dns-conf:
-            deprecated: true
-            action_help: Generate sample DNS configuration for a domain
-            arguments:
-                domain:
-                    help: Target domain
-                    extra:
-                        pattern: *pattern_domain
-        
         ### domain_maindomain()
         main-domain:
             action_help: Check the current main domain, or change it
@@ -578,54 +547,6 @@ domain:
                     extra:
                         pattern: *pattern_domain
 
-        ### certificate_status()
-        cert-status:
-            deprecated: true
-            action_help: List status of current certificates (all by default).
-            arguments:
-                domain_list:
-                    help: Domains to check
-                    nargs: "*"
-                --full:
-                    help: Show more details
-                    action: store_true
-
-        ### certificate_install()
-        cert-install:
-            deprecated: true
-            action_help: Install Let's Encrypt certificates for given domains (all by default).
-            arguments:
-                domain_list:
-                    help: Domains for which to install the certificates
-                    nargs: "*"
-                --force:
-                    help: Install even if current certificate is not self-signed
-                    action: store_true
-                --no-checks:
-                    help: Does not perform any check that your domain seems correctly configured (DNS, reachability) before attempting to install. (Not recommended)
-                    action: store_true
-                --self-signed:
-                    help: Install self-signed certificate instead of Let's Encrypt
-                    action: store_true
-
-        ### certificate_renew()
-        cert-renew:
-            deprecated: true
-            action_help: Renew the Let's Encrypt certificates for given domains (all by default).
-            arguments:
-                domain_list:
-                    help: Domains for which to renew the certificates
-                    nargs: "*"
-                --force:
-                    help: Ignore the validity threshold (15 days)
-                    action: store_true
-                --email:
-                    help: Send an email to root with logs if some renewing fails
-                    action: store_true
-                --no-checks:
-                    help: Does not perform any check that your domain seems correctly configured (DNS, reachability) before attempting to renew. (Not recommended)
-                    action: store_true
-
         ### domain_url_available()
         url-available:
             hide_in_help: True
@@ -638,7 +559,7 @@ domain:
                         pattern: *pattern_domain
                 path:
                     help: The path to check (e.g. /coffee)
-        
+
 
         ### domain_action_run()
         action-run:
@@ -673,7 +594,7 @@ domain:
                             help: Password used to later recover the domain if needed
                             extra:
                                 pattern: *pattern_password
-                
+
                 ### domain_dyndns_unsubscribe()
                 unsubscribe:
                     action_help: Unsubscribe from a DynDNS service
@@ -739,7 +660,7 @@ domain:
                       domain:
                           help: Domain name
                       key:
-                          help: The question or form key 
+                          help: The question or form key
                           nargs: '?'
                       -v:
                           full: --value
@@ -754,7 +675,7 @@ domain:
                 ### domain_dns_conf()
                 suggest:
                     action_help: Generate sample DNS configuration for a domain
-                    api: 
+                    api:
                       - GET /domains/<domain>/dns
                       - GET /domains/<domain>/dns/suggest
                     arguments:
@@ -762,7 +683,7 @@ domain:
                             help: Target domain
                             extra:
                                 pattern: *pattern_domain
-                
+
                 ### domain_dns_push()
                 push:
                     action_help: Push DNS records to registrar
@@ -789,7 +710,9 @@ domain:
                 ### certificate_status()
                 status:
                     action_help: List status of current certificates (all by default).
-                    api: GET /domains/<domain_list>/cert
+                    api:
+                        - GET /domains/<domain_list>/cert
+                        - GET /domains/*/cert
                     arguments:
                         domain_list:
                             help: Domains to check
@@ -825,7 +748,7 @@ domain:
                             help: Domains for which to renew the certificates
                             nargs: "*"
                         --force:
-                            help: Ignore the validity threshold (30 days)
+                            help: Ignore the validity threshold (15 days)
                             action: store_true
                         --email:
                             help: Send an email to root with logs if some renewing fails
@@ -1144,7 +1067,7 @@ app:
                     app:
                         help: App name
                     key:
-                        help: The question or panel key 
+                        help: The question or panel key
                         nargs: '?'
                     -v:
                         full: --value
@@ -1201,7 +1124,7 @@ backup:
             api: PUT /backups/<name>/restore
             arguments:
                 name:
-                    help: Name of the local backup archive
+                    help: Name or path of the backup archive
                 --system:
                     help: List of system parts to restore (or all if none is given)
                     nargs: "*"
@@ -1232,7 +1155,7 @@ backup:
             api: GET /backups/<name>
             arguments:
                 name:
-                    help: Name of the local backup archive
+                    help: Name or path of the backup archive
                 -d:
                     full: --with-details
                     help: Show additional backup information
@@ -1301,7 +1224,7 @@ settings:
             api: PUT /settings/<key>
             arguments:
                 key:
-                    help: The question or form key 
+                    help: The question or form key
                     nargs: '?'
                 -v:
                     full: --value
@@ -1603,7 +1526,7 @@ dyndns:
                     help: Password used to later recover the domain if needed
                     extra:
                         pattern: *pattern_password
-        
+
         ### dyndns_update()
         update:
             action_help: Update IP on DynDNS platform
@@ -1702,6 +1625,9 @@ tools:
                         pattern: *pattern_password
                 --force-diskspace:
                     help: Use this if you really want to install YunoHost on a setup with less than 10 GB on the root filesystem
+                    action: store_true
+                --i-have-read-terms-of-services:
+                    help: Automatically reply to the terms of services prompt, for example for non-interactive installations
                     action: store_true
 
         ### tools_update()
@@ -2067,7 +1993,7 @@ diagnosis:
             api: PUT /diagnosis/ignore
             arguments:
                 --filter:
-                    help: "Add a filter. The first element should be a diagnosis category, and other criterias can be provided using the infos from the 'meta' sections in 'yunohost diagnosis show'. For example: 'dnsrecords domain=yolo.test category=xmpp'"
+                    help: "Add a filter. The first element should be a diagnosis category, and other criterias can be provided using the infos from the 'meta' sections in 'yunohost diagnosis show'. For example: 'dnsrecords domain=yolo.test category=mail'"
                     nargs: "*"
                     metavar: CRITERIA
                 --list:
@@ -2079,6 +2005,6 @@ diagnosis:
             api: PUT /diagnosis/unignore
             arguments:
                 --filter:
-                    help: Remove a filter (it should be an existing filter as listed with --list)
+                    help: Remove a filter (it should be an existing filter as listed with "ignore --list")
                     nargs: "*"
                     metavar: CRITERIA

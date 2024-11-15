@@ -8,8 +8,8 @@ export RBENV_ROOT="$rbenv_install_dir"
 export rbenv_root="$rbenv_install_dir"
 
 if dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} lt 2; then
-	build_ruby_dependencies="libjemalloc-dev curl build-essential libreadline-dev zlib1g-dev libsqlite3-dev libssl-dev libxml2-dev libxslt-dev autoconf automake bison libtool"
-	build_pkg_dependencies="${build_pkg_dependencies:-} $build_ruby_dependencies"
+    build_ruby_dependencies="libjemalloc-dev curl build-essential libreadline-dev zlib1g-dev libsqlite3-dev libssl-dev libxml2-dev libxslt-dev autoconf automake bison libtool"
+    build_pkg_dependencies="${build_pkg_dependencies:-} $build_ruby_dependencies"
 fi
 
 # Load the version of Ruby for an app, and set variables.
@@ -50,11 +50,11 @@ fi
 # usage: ynh_use_ruby
 #
 # Requires YunoHost version 3.2.2 or higher.
-ynh_use_ruby () {
+ynh_use_ruby() {
     ruby_version=$(ynh_app_setting_get --app=$app --key=ruby_version)
 
     # Get the absolute path of this version of Ruby
-    ruby_path="$ruby_version_path/$YNH_APP_INSTANCE_NAME/bin"
+    ruby_path="$ruby_version_path/$app/bin"
 
     # Allow alias to be used into bash script
     shopt -s expand_aliases
@@ -75,7 +75,7 @@ ynh_use_ruby () {
 
     # Sets the local application-specific Ruby version
     pushd ${install_dir:-$final_path}
-        $rbenv_install_dir/bin/rbenv local $ruby_version
+    $rbenv_install_dir/bin/rbenv local $ruby_version
     popd
 }
 
@@ -95,10 +95,10 @@ ynh_use_ruby () {
 # | arg: -v, --ruby_version= - Version of ruby to install.
 #
 # Requires YunoHost version 3.2.2 or higher.
-ynh_install_ruby () {
+ynh_install_ruby() {
     # Declare an array to define the options of this helper.
     local legacy_args=v
-    local -A args_array=( [v]=ruby_version= )
+    local -A args_array=([v]=ruby_version=)
     local ruby_version
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -117,31 +117,31 @@ ynh_install_ruby () {
     rbenv="$(command -v rbenv $rbenv_install_dir/bin/rbenv | grep "$rbenv_install_dir/bin/rbenv" | head -1)"
     if [ -n "$rbenv" ]; then
         pushd "${rbenv%/*/*}"
-            if git remote -v 2>/dev/null | grep "https://github.com/rbenv/rbenv.git"; then
-                ynh_print_info --message="Updating rbenv..."
-                git pull -q --tags origin master
-                ynh_ruby_try_bash_extension
-            else
-                ynh_print_info --message="Reinstalling rbenv..."
-                cd ..
-                ynh_secure_remove --file=$rbenv_install_dir
-                mkdir -p $rbenv_install_dir
-                cd $rbenv_install_dir
-                git init -q
-                git remote add -f -t master origin https://github.com/rbenv/rbenv.git > /dev/null 2>&1
-                git checkout -q -b master origin/master
-                ynh_ruby_try_bash_extension
-                rbenv=$rbenv_install_dir/bin/rbenv
-            fi
-        popd
-    else
-        ynh_print_info --message="Installing rbenv..."
-        pushd $rbenv_install_dir
+        if git remote -v 2> /dev/null | grep "https://github.com/rbenv/rbenv.git"; then
+            ynh_print_info --message="Updating rbenv..."
+            git pull -q --tags origin master
+            ynh_ruby_try_bash_extension
+        else
+            ynh_print_info --message="Reinstalling rbenv..."
+            cd ..
+            ynh_secure_remove --file=$rbenv_install_dir
+            mkdir -p $rbenv_install_dir
+            cd $rbenv_install_dir
             git init -q
             git remote add -f -t master origin https://github.com/rbenv/rbenv.git > /dev/null 2>&1
             git checkout -q -b master origin/master
             ynh_ruby_try_bash_extension
             rbenv=$rbenv_install_dir/bin/rbenv
+        fi
+        popd
+    else
+        ynh_print_info --message="Installing rbenv..."
+        pushd $rbenv_install_dir
+        git init -q
+        git remote add -f -t master origin https://github.com/rbenv/rbenv.git > /dev/null 2>&1
+        git checkout -q -b master origin/master
+        ynh_ruby_try_bash_extension
+        rbenv=$rbenv_install_dir/bin/rbenv
         popd
     fi
 
@@ -150,10 +150,10 @@ ynh_install_ruby () {
     ruby_build="$(command -v "$rbenv_install_dir"/plugins/*/bin/rbenv-install rbenv-install | head -1)"
     if [ -n "$ruby_build" ]; then
         pushd "${ruby_build%/*/*}"
-            if git remote -v 2>/dev/null | grep "https://github.com/rbenv/ruby-build.git"; then
-                ynh_print_info --message="Updating ruby-build..."
-                git pull -q origin master
-            fi
+        if git remote -v 2> /dev/null | grep "https://github.com/rbenv/ruby-build.git"; then
+            ynh_print_info --message="Updating ruby-build..."
+            git pull -q origin master
+        fi
         popd
     else
         ynh_print_info --message="Installing ruby-build..."
@@ -163,10 +163,10 @@ ynh_install_ruby () {
     rbenv_alias="$(command -v "$rbenv_install_dir"/plugins/*/bin/rbenv-alias rbenv-alias | head -1)"
     if [ -n "$rbenv_alias" ]; then
         pushd "${rbenv_alias%/*/*}"
-            if git remote -v 2>/dev/null | grep "https://github.com/tpope/rbenv-aliases.git"; then
-                ynh_print_info --message="Updating rbenv-aliases..."
-                git pull -q origin master
-            fi
+        if git remote -v 2> /dev/null | grep "https://github.com/tpope/rbenv-aliases.git"; then
+            ynh_print_info --message="Updating rbenv-aliases..."
+            git pull -q origin master
+        fi
         popd
     else
         ynh_print_info --message="Installing rbenv-aliases..."
@@ -176,10 +176,10 @@ ynh_install_ruby () {
     rbenv_latest="$(command -v "$rbenv_install_dir"/plugins/*/bin/rbenv-latest rbenv-latest | head -1)"
     if [ -n "$rbenv_latest" ]; then
         pushd "${rbenv_latest%/*/*}"
-            if git remote -v 2>/dev/null | grep "https://github.com/momo-lab/xxenv-latest.git"; then
-                ynh_print_info --message="Updating xxenv-latest..."
-                git pull -q origin master
-            fi
+        if git remote -v 2> /dev/null | grep "https://github.com/momo-lab/xxenv-latest.git"; then
+            ynh_print_info --message="Updating xxenv-latest..."
+            git pull -q origin master
+        fi
         popd
     else
         ynh_print_info --message="Installing xxenv-latest..."
@@ -207,22 +207,21 @@ ynh_install_ruby () {
     RUBY_CONFIGURE_OPTS="--disable-install-doc --with-jemalloc" MAKE_OPTS="-j2" rbenv install --skip-existing $final_ruby_version > /dev/null 2>&1
 
     # Store ruby_version into the config of this app
-    ynh_app_setting_set --app=$YNH_APP_INSTANCE_NAME --key=ruby_version --value=$final_ruby_version
+    ynh_app_setting_set --app=$app --key=ruby_version --value=$final_ruby_version
 
     # Remove app virtualenv
-    if rbenv alias --list | grep --quiet "$YNH_APP_INSTANCE_NAME "
-    then
-        rbenv alias $YNH_APP_INSTANCE_NAME --remove
+    if rbenv alias --list | grep --quiet "$app "; then
+        rbenv alias $app --remove
     fi
 
     # Create app virtualenv
-    rbenv alias $YNH_APP_INSTANCE_NAME $final_ruby_version
+    rbenv alias $app $final_ruby_version
 
     # Cleanup Ruby versions
     ynh_cleanup_ruby
 
     # Set environment for Ruby users
-    echo  "#rbenv
+    echo "#rbenv
 export RBENV_ROOT=$rbenv_install_dir
 export PATH=\"$rbenv_install_dir/bin:$PATH\"
 eval \"\$(rbenv init -)\"
@@ -237,8 +236,8 @@ eval \"\$(rbenv init -)\"
 # This helper will also cleanup Ruby versions
 #
 # usage: ynh_remove_ruby
-ynh_remove_ruby () {
-    local ruby_version=$(ynh_app_setting_get --app=$YNH_APP_INSTANCE_NAME --key=ruby_version)
+ynh_remove_ruby() {
+    local ruby_version=$(ynh_app_setting_get --app=$app --key=ruby_version)
 
     # Load rbenv path in PATH
     local CLEAR_PATH="$rbenv_install_dir/bin:$PATH"
@@ -246,10 +245,10 @@ ynh_remove_ruby () {
     # Remove /usr/local/bin in PATH in case of Ruby prior installation
     PATH=$(echo $CLEAR_PATH | sed 's@/usr/local/bin:@@')
 
-    rbenv alias $YNH_APP_INSTANCE_NAME --remove
+    rbenv alias $app --remove
 
     # Remove the line for this app
-    ynh_app_setting_delete --app=$YNH_APP_INSTANCE_NAME --key=ruby_version
+    ynh_app_setting_delete --app=$app --key=ruby_version
 
     # Cleanup Ruby versions
     ynh_cleanup_ruby
@@ -262,34 +261,29 @@ ynh_remove_ruby () {
 # If no app uses Ruby, rbenv will be also removed.
 #
 # usage: ynh_cleanup_ruby
-ynh_cleanup_ruby () {
+ynh_cleanup_ruby() {
 
     # List required Ruby versions
     local installed_apps=$(yunohost app list | grep -oP 'id: \K.*$')
     local required_ruby_versions=""
-    for installed_app in $installed_apps
-    do
+    for installed_app in $installed_apps; do
         local installed_app_ruby_version=$(ynh_app_setting_get --app=$installed_app --key="ruby_version")
-        if [[ -n "$installed_app_ruby_version" ]]
-        then
+        if [[ -n "$installed_app_ruby_version" ]]; then
             required_ruby_versions="${installed_app_ruby_version}\n${required_ruby_versions}"
         fi
     done
-    
+
     # Remove no more needed Ruby versions
     local installed_ruby_versions=$(rbenv versions --bare --skip-aliases | grep -Ev '/')
-    for installed_ruby_version in $installed_ruby_versions
-    do
-        if ! echo ${required_ruby_versions} | grep -q "${installed_ruby_version}"
-        then
+    for installed_ruby_version in $installed_ruby_versions; do
+        if ! echo ${required_ruby_versions} | grep -q "${installed_ruby_version}"; then
             ynh_print_info --message="Removing Ruby-$installed_ruby_version"
             $rbenv_install_dir/bin/rbenv uninstall --force $installed_ruby_version
         fi
     done
 
     # If none Ruby version is required
-    if [[ -z "$required_ruby_versions" ]]
-    then
+    if [[ -z "$required_ruby_versions" ]]; then
         # Remove rbenv environment configuration
         ynh_print_info --message="Removing rbenv"
         ynh_secure_remove --file="$rbenv_install_dir"
@@ -298,9 +292,9 @@ ynh_cleanup_ruby () {
 }
 
 ynh_ruby_try_bash_extension() {
-  if [ -x src/configure ]; then
-    src/configure && make -C src || {
-      ynh_print_info --message="Optional bash extension failed to build, but things will still work normally."
-    }
-  fi
+    if [ -x src/configure ]; then
+        src/configure && make -C src || {
+            ynh_print_info --message="Optional bash extension failed to build, but things will still work normally."
+        }
+    fi
 }

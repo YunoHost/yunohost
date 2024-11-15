@@ -5,8 +5,7 @@ set -e
 _generate_config() {
     echo "domains:"
     # Add yunohost.local (only if yunohost.local ain't already in ynh_domains)
-    if ! echo "$YNH_DOMAINS"  | tr ' ' '\n' | grep -q --line-regexp 'yunohost.local'
-    then
+    if ! echo "$YNH_DOMAINS" | tr ' ' '\n' | grep -q --line-regexp 'yunohost.local'; then
         echo "    - yunohost.local"
     fi
     for domain in $YNH_DOMAINS; do
@@ -15,10 +14,8 @@ _generate_config() {
         [[ "$domain" =~ ^[^.]+\.local$ ]] || continue
         echo "    - $domain"
     done
-    if [[ -e /etc/yunohost/mdns.aliases ]]
-    then
-        for localalias in $(cat /etc/yunohost/mdns.aliases | grep -v "^ *$")
-        do
+    if [[ -e /etc/yunohost/mdns.aliases ]]; then
+        for localalias in $(cat /etc/yunohost/mdns.aliases | grep -v "^ *$"); do
             echo "    - $localalias.local"
         done
     fi
@@ -37,10 +34,10 @@ do_pre_regen() {
     mkdir -p ${pending_dir}/etc/systemd/system/
     cp yunomdns.service ${pending_dir}/etc/systemd/system/
 
-    getent passwd mdns &>/dev/null || useradd --no-create-home --shell /usr/sbin/nologin --system --user-group mdns
+    getent passwd mdns &> /dev/null || useradd --no-create-home --shell /usr/sbin/nologin --system --user-group mdns
 
     mkdir -p ${pending_dir}/etc/yunohost
-    _generate_config >${pending_dir}/etc/yunohost/mdns.yml
+    _generate_config > ${pending_dir}/etc/yunohost/mdns.yml
 }
 
 do_post_regen() {

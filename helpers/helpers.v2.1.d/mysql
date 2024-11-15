@@ -1,0 +1,116 @@
+#!/bin/bash
+
+# Run SQL instructions in a database ($db_name by default)
+#
+# usage: ynh_mysql_db_shell [database] <<< "instructions"
+# | arg: database=    - the database to connect to (by default, $db_name)
+#
+# examples:
+#    ynh_mysql_db_shell $db_name <<< "UPDATE ...;"
+#    ynh_mysql_db_shell < /path/to/file.sql
+#
+ynh_mysql_db_shell() {
+    local database=${1:-$db_name}
+    mysql -B $database
+}
+
+# Create a database and grant optionnaly privilegies to a user
+#
+# [internal] ... handled by the core / "database resource"
+#
+# usage: ynh_mysql_create_db db [user [pwd]]
+# | arg: db - the database name to create
+# | arg: user - the user to grant privilegies
+# | arg: pwd - the password to identify user by
+#
+ynh_mysql_create_db() {
+    local db=$1
+
+    local sql="CREATE DATABASE ${db};"
+
+    # grant all privilegies to user
+    if [[ $# -gt 1 ]]; then
+        sql+=" GRANT ALL PRIVILEGES ON ${db}.* TO '${2}'@'localhost'"
+        if [[ -n ${3:-} ]]; then
+            sql+=" IDENTIFIED BY '${3}'"
+        fi
+        sql+=" WITH GRANT OPTION;"
+    fi
+
+    mysql -B <<< "$sql"
+}
+
+# Drop a database
+#
+# [internal] ... handled by the core / "database resource"
+#
+# If you intend to drop the database *and* the associated user,
+# consider using ynh_mysql_remove_db instead.
+#
+# usage: ynh_mysql_drop_db db
+# | arg: db - the database name to drop
+#
+ynh_mysql_drop_db() {
+    mysql -B <<< "DROP DATABASE ${1};"
+}
+
+# Dump a database
+#
+# usage: ynh_mysql_dump_db database
+# | arg: database   - the database name to dump (by default, $db_name)
+# | ret: The mysqldump output
+#
+# example: ynh_mysql_dump_db "roundcube" > ./dump.sql
+#
+ynh_mysql_dump_db() {
+    local database=${1:-$db_name}
+    mysqldump --single-transaction --skip-dump-date --routines "$database"
+}
+
+# Create a user
+#
+# [internal] ... handled by the core / "database resource"
+#
+# usage: ynh_mysql_create_user user pwd [host]
+# | arg: user - the user name to create
+# | arg: pwd - the password to identify user by
+#
+ynh_mysql_create_user() {
+    mysql -B <<< "CREATE USER '${1}'@'localhost' IDENTIFIED BY '${2}';"
+}
+
+# Check if a mysql user exists
+#
+# [internal]
+#
+# usage: ynh_mysql_user_exists user
+# | arg: user   - the user for which to check existence
+# | ret: 0 if the user exists, 1 otherwise.
+ynh_mysql_user_exists() {
+    local user=$1
+    [[ -n "$(mysql -B <<< "SELECT User from mysql.user WHERE User = '$user';")" ]]
+}
+
+# Check if a mysql database exists
+#
+# [internal]
+#
+# usage: ynh_mysql_database_exists database
+# | arg: database    - the database for which to check existence
+# | exit: Return 1 if the database doesn't exist, 0 otherwise
+#
+ynh_mysql_database_exists() {
+    local database=$1
+    mysqlshow | grep -q "^| $database "
+}
+
+# Drop a user
+#
+# [internal] ... handled by the core / "database resource"
+#
+# usage: ynh_mysql_drop_user user
+# | arg: user - the user name to drop
+#
+ynh_mysql_drop_user() {
+    mysql -B <<< "DROP USER '${1}'@'localhost';"
+}
