@@ -35,7 +35,6 @@ from yunohost.utils.password import (
     assert_password_is_strong_enough,
     _hash_user_password,
 )
-from yunohost.settings import settings_get
 
 logger = logging.getLogger("portal")
 
@@ -79,14 +78,21 @@ def _get_portal_settings(
         "portal_title": "YunoHost",
         "show_other_domains_apps": False,
         "domain": domain,
+        "allow_edit_email": False,
+        "allow_edit_email_alias": False,
+        "allow_edit_email_forward": False,
     }
 
     portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{domain}.json")
+    global_portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/global_settings.json")
 
     if portal_settings_path.exists():
         settings.update(read_json(str(portal_settings_path)))
         # Portal may be public (no login required)
         settings["public"] = bool(settings.pop("enable_public_apps_page", False))
+
+    if global_portal_settings_path.exists():
+        settings.update(read_json(str(global_portal_settings_path)))
 
     # First clear apps since it may contains private apps
     apps: dict[str, Any] = settings.pop("apps", {})
@@ -151,10 +157,6 @@ def portal_me():
     for infos in apps.values():
         del infos["users"]
 
-    is_allowed_to_edit_main_email = settings_get("security.portal.portal_allow_edit_email")
-    is_allowed_to_edit_mail_alias = settings_get("security.portal.portal_allow_edit_email_alias")
-    is_allowed_to_edit_mail_forward = settings_get("security.portal.portal_allow_edit_email_forward")
-
     result_dict = {
         "username": username,
         "fullname": user["cn"][0],
@@ -163,9 +165,6 @@ def portal_me():
         "mailforward": user["maildrop"][1:],
         "groups": groups,
         "apps": apps,
-        "can_edit_main_email": is_allowed_to_edit_main_email,
-        "can_edit_email_alias": is_allowed_to_edit_mail_alias,
-        "can_edit_email_forward": is_allowed_to_edit_mail_forward,
     }
 
     # FIXME / TODO : add mail quota status ?
@@ -194,6 +193,7 @@ def portal_update(
         ["givenName", "sn", "cn", "mail", "maildrop", "memberOf"]
     )
     new_attr_dict = {}
+    portal_settings = _get_portal_settings(domain, username)
 
     if fullname is not None and fullname != current_user["cn"]:
         fullname = fullname.strip()
@@ -210,7 +210,7 @@ def portal_update(
     new_mails = current_user["mail"]
 
     if mainemail is not None:
-        is_allowed_to_edit_main_email = settings_get("security.portal.portal_allow_edit_email")
+        is_allowed_to_edit_main_email = portal_settings["allow_edit_email"]
         if is_allowed_to_edit_main_email != 1:
             raise YunohostValidationError("mail_edit_operation_unauthorized")
 
@@ -237,7 +237,7 @@ def portal_update(
         new_attr_dict["mail"] = new_mails
 
     if mailalias is not None:
-        is_allowed_to_edit_mail_alias = settings_get("security.portal.portal_allow_edit_email_alias")
+        is_allowed_to_edit_mail_alias = portal_settings["allow_edit_email_alias"]
         if is_allowed_to_edit_mail_alias != 1:
             raise YunohostValidationError("mail_edit_operation_unauthorized")
 
@@ -272,7 +272,7 @@ def portal_update(
         new_attr_dict["mail"] = mails
 
     if mailforward is not None:
-        is_allowed_to_edit_mail_forward = settings_get("security.portal.portal_allow_edit_email_forward")
+        is_allowed_to_edit_mail_forward = portal_settings["allow_edit_email_forward"]
         if is_allowed_to_edit_mail_forward != 1:
             raise YunohostValidationError("mail_edit_operation_unauthorized")
 

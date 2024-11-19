@@ -19,15 +19,18 @@
 import os
 import subprocess
 from logging import getLogger
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Union
 
 from moulinette import m18n
+from moulinette.utils.filesystem import write_to_json
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.configpanel import ConfigPanel, parse_filter_key
 from yunohost.utils.form import BaseOption
 from yunohost.regenconf import regen_conf
 from yunohost.firewall import firewall_reload
 from yunohost.log import is_unit_operation
+from yunohost.portal import PORTAL_SETTINGS_DIR
 
 if TYPE_CHECKING:
     from typing import cast
@@ -245,6 +248,17 @@ class SettingsConfigPanel(ConfigPanel):
                 "cn=admins,ou=sudo",
                 {"sudoOption": ["!authenticate"] if passwordless_sudo else []},
             )
+
+        global_portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/global_settings.json")
+        portal_allow_edit_email = form.get("portal_allow_edit_email", self.get("security.portal.portal_allow_edit_email"))
+        portal_allow_edit_email_alias = form.get("portal_allow_edit_email_alias", self.get("security.portal.portal_allow_edit_email_alias"))
+        portal_allow_edit_email_forward = form.get("portal_allow_edit_email_forward", self.get("security.portal.portal_allow_edit_email_forward"))
+        write_to_json(
+            str(global_portal_settings_path), {"allow_edit_email": portal_allow_edit_email,
+                                               "allow_edit_email_alias": portal_allow_edit_email_alias,
+                                               "allow_edit_email_forward":portal_allow_edit_email_forward
+                                               }, sort_keys=True, indent=4
+        )
 
         # First save settings except virtual + default ones
         super()._apply(form, config, previous_settings, exclude=self.virtual_settings)
