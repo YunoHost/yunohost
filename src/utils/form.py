@@ -666,14 +666,14 @@ class BaseInputOption(BaseOption):
     def _get_field_attrs(self) -> dict[str, Any]:
         """
         Returns attributes to build a `pydantic.Field`.
-        This may contains non `Field` attrs that will end up in `Field.extra`.
-        Those extra can be used as constraints in custom validators and ends up
+        Extra can be used as constraints in custom validators and ends up
         in the JSON Schema.
         """
         # TODO
         # - help
         # - placeholder
-        attrs: dict[str, Any] = {
+        attrs: dict[str, Any] = {}
+        attrs["json_schema_extra"] = {
             "redact": self.redact,  # extra
             "none_as_empty_str": self._none_as_empty_str,
         }
@@ -716,16 +716,16 @@ class BaseInputOption(BaseOption):
 
         return message
 
-    @classmethod
-    def _value_pre_validator(cls, value: Any, field: "ModelField") -> Any:
+    @staticmethod
+    def _value_pre_validator(cls, value: Any, info: "ValidationInfo") -> Any:
         if value == "":
             return None
 
         return value
 
-    @classmethod
-    def _value_post_validator(cls, value: Any, field: "ModelField") -> Any:
-        extras = field.field_info.extra
+    @staticmethod
+    def _value_post_validator(cls, value: Any, info: "ValidationInfo") -> Any:
+        extras = cls.model_fields[info.field_name].json_schema_extra
 
         if value is None and extras["none_as_empty_str"]:
             value = ""
@@ -771,7 +771,7 @@ class BaseStringOption(BaseInputOption):
         attrs = super()._get_field_attrs()
 
         if self.pattern:
-            attrs["regex_error"] = self.pattern.error  # extra
+            attrs["json_schema_extra"]["regex_error"] = self.pattern.error  # extra
 
         return attrs
 
@@ -848,16 +848,22 @@ class PasswordOption(BaseInputOption):
     def _get_field_attrs(self) -> dict[str, Any]:
         attrs = super()._get_field_attrs()
 
-        attrs["forbidden_chars"] = self._forbidden_chars  # extra
+        attrs["json_schema_extra"]["forbidden_chars"] = self._forbidden_chars  # extra
 
         return attrs
 
-    @classmethod
-    def _value_pre_validator(cls, value: str | None, field: "ModelField") -> str | None:
-        value = super()._value_pre_validator(value, field)
+    @staticmethod
+    def _value_pre_validator(
+        cls, value: str | None, info: "ValidationInfo"
+    ) -> str | None:
+        value = super(PasswordOption, PasswordOption)._value_pre_validator(
+            cls, value, info
+        )
 
         if value is not None and value != "":
-            forbidden_chars: str = field.field_info.extra["forbidden_chars"]
+            forbidden_chars: str = cls.model_fields[info.field_name].json_schema_extra[
+                "forbidden_chars"
+            ]
             if any(char in value for char in forbidden_chars):
                 raise YunohostValidationError(
                     "pattern_password_app", forbidden_chars=forbidden_chars
@@ -905,14 +911,14 @@ class ColorOption(BaseInputOption):
 
         return super(ColorOption, ColorOption).normalize(value, option)
 
-    @classmethod
+    @staticmethod
     def _value_post_validator(
-        cls, value: Color | None, field: "ModelField"
+        cls, value: Color | None, info: "ValidationInfo"
     ) -> str | None:
         if isinstance(value, Color):
             return value.as_hex()
 
-        return super()._value_post_validator(value, field)
+        return super(ColorOption, ColorOption)._value_post_validator(cls, value, info)
 
 
 # ─ NUMERIC ───────────────────────────────────────────────
@@ -973,13 +979,15 @@ class NumberOption(BaseInputOption):
         attrs = super()._get_field_attrs()
         attrs["ge"] = self.min
         attrs["le"] = self.max
-        attrs["step"] = self.step  # extra
+        attrs["json_schema_extra"]["step"] = self.step  # extra
 
         return attrs
 
-    @classmethod
-    def _value_pre_validator(cls, value: int | None, field: "ModelField") -> int | None:
-        value = super()._value_pre_validator(value, field)
+    @staticmethod
+    def _value_pre_validator(
+        cls, value: int | None, info: "ValidationInfo"
+    ) -> int | None:
+        value = super(NumberOption, NumberOption)._value_pre_validator(cls, value, info)
 
         if value is None:
             return None
@@ -1089,7 +1097,7 @@ class BooleanOption(BaseInputOption):
 
     def _get_field_attrs(self) -> dict[str, Any]:
         attrs = super()._get_field_attrs()
-        attrs["parse"] = {  # extra
+        attrs["json_schema_extra"]["parse"] = {  # extra
             True: self.yes,
             False: self.no,
         }
@@ -1103,12 +1111,14 @@ class BooleanOption(BaseInputOption):
 
         return message
 
-    @classmethod
-    def _value_post_validator(cls, value: bool | None, field: "ModelField") -> Any:
+    @staticmethod
+    def _value_post_validator(cls, value: bool | None, info: "ValidationInfo") -> Any:
         if isinstance(value, bool):
-            return field.field_info.extra["parse"][value]
+            return cls.model_fields[info.field_name].json_schema_extra["parse"][value]
 
-        return super()._value_post_validator(value, field)
+        return super(BooleanOption, BooleanOption)._value_post_validator(
+            cls, value, info
+        )
 
 
 # ─ TIME ──────────────────────────────────────────────────
@@ -1136,14 +1146,14 @@ class DateOption(BaseInputOption):
     default: str | None = None
     _annotation = datetime.date
 
-    @classmethod
+    @staticmethod
     def _value_post_validator(
-        cls, value: datetime.date | None, field: "ModelField"
+        cls, value: datetime.date | None, info: "ValidationInfo"
     ) -> str | None:
         if isinstance(value, datetime.date):
             return value.isoformat()
 
-        return super()._value_post_validator(value, field)
+        return super(DateOption, DateOption)._value_post_validator(cls, value, info)
 
 
 class TimeOption(BaseInputOption):
@@ -1166,15 +1176,15 @@ class TimeOption(BaseInputOption):
     default: str | int | None = None
     _annotation = datetime.time
 
-    @classmethod
+    @staticmethod
     def _value_post_validator(
-        cls, value: datetime.date | None, field: "ModelField"
+        cls, value: datetime.date | None, info: "ValidationInfo"
     ) -> str | None:
         if isinstance(value, datetime.time):
             # FIXME could use `value.isoformat()` to get `%H:%M:%S`
             return value.strftime("%H:%M")
 
-        return super()._value_post_validator(value, field)
+        return super(TimeOption, TimeOption)._value_post_validator(cls, value, info)
 
 
 # ─ LOCATIONS ─────────────────────────────────────────────
@@ -1267,17 +1277,47 @@ class URLOption(BaseStringOption):
     type: Literal[OptionType.url] = OptionType.url
     _annotation = HttpUrl
 
-    @classmethod
+    @staticmethod
     def _value_post_validator(
-        cls, value: HttpUrl | None, field: "ModelField"
+        cls, value: HttpUrl | None, info: "ValidationInfo"
     ) -> str | None:
-        if isinstance(value, HttpUrl):
+        if isinstance(value, Url):
             return str(value)
 
-        return super()._value_post_validator(value, field)
+        return super(URLOption, URLOption)._value_post_validator(cls, value, info)
 
 
 # ─ FILE ──────────────────────────────────────────────────
+
+
+def _base_value_post_validator(
+    cls, value: Any, info: "ValidationInfo"
+) -> tuple[bytes, str | None]:
+    import mimetypes
+    from pathlib import Path
+    from magic import Magic
+    from base64 import b64decode
+
+    if Moulinette.interface.type != "api":
+        path = Path(value)
+        if not (path.exists() and path.is_absolute() and path.is_file()):
+            raise YunohostValidationError("File doesn't exists", raw_msg=True)
+        content = path.read_bytes()
+    else:
+        content = b64decode(value)
+
+    accept_list = cls.model_fields[info.field_name].json_schema_extra.get("accept")
+    mimetype = Magic(mime=True).from_buffer(content)
+
+    if accept_list and mimetype not in accept_list:
+        raise YunohostValidationError(
+            f"Unsupported file type '{mimetype}', expected a type among '{', '.join(accept_list)}'.",
+            raw_msg=True,
+        )
+
+    ext = mimetypes.guess_extension(mimetype)
+
+    return content, ext
 
 
 class FileOption(BaseInputOption):
@@ -1323,9 +1363,9 @@ class FileOption(BaseInputOption):
         attrs = super()._get_field_attrs()
 
         if self.accept:
-            attrs["accept"] = self.accept  # extra
+            attrs["json_schema_extra"]["accept"] = self.accept  # extra
 
-        attrs["bind"] = self.bind
+        attrs["json_schema_extra"]["bind"] = self.bind
 
         return attrs
 
@@ -1336,57 +1376,29 @@ class FileOption(BaseInputOption):
             if os.path.exists(upload_dir):
                 shutil.rmtree(upload_dir)
 
-    @classmethod
-    def _base_value_post_validator(
-        cls, value: Any, field: "ModelField"
-    ) -> tuple[bytes, str | None]:
-        import mimetypes
-        from pathlib import Path
-        from magic import Magic
-        from base64 import b64decode
-
-        if Moulinette.interface.type != "api":
-            path = Path(value)
-            if not (path.exists() and path.is_absolute() and path.is_file()):
-                raise YunohostValidationError("File doesn't exists", raw_msg=True)
-            content = path.read_bytes()
-        else:
-            content = b64decode(value)
-
-        accept_list = field.field_info.extra.get("accept")
-        mimetype = Magic(mime=True).from_buffer(content)
-
-        if accept_list and mimetype not in accept_list:
-            raise YunohostValidationError(
-                f"Unsupported file type '{mimetype}', expected a type among '{', '.join(accept_list)}'.",
-                raw_msg=True,
-            )
-
-        ext = mimetypes.guess_extension(mimetype)
-
-        return content, ext
-
-    @classmethod
-    def _bash_value_post_validator(cls, value: Any, field: "ModelField") -> str:
+    @staticmethod
+    def _bash_value_post_validator(cls, value: Any, info: "ValidationInfo") -> str:
         """File handling for "bash" config panels (app)"""
         if not value:
             return ""
 
-        content, _ = cls._base_value_post_validator(value, field)
+        content, _ = _base_value_post_validator(cls, value, info)
 
         upload_dir = tempfile.mkdtemp(prefix="ynh_filequestion_")
         _, file_path = tempfile.mkstemp(dir=upload_dir)
 
         FileOption._upload_dirs.add(upload_dir)
 
-        logger.debug(f"Saving file {field.name} for file question into {file_path}")
+        logger.debug(
+            f"Saving file {info.field_name} for file question into {file_path}"
+        )
 
         write_to_file(file_path, content, file_mode="wb")
 
         return file_path
 
-    @classmethod
-    def _python_value_post_validator(cls, value: Any, field: "ModelField") -> str:
+    @staticmethod
+    def _python_value_post_validator(cls, value: Any, info: "ValidationInfo") -> str:
         """File handling for "python" config panels"""
 
         from pathlib import Path
@@ -1395,7 +1407,7 @@ class FileOption(BaseInputOption):
         if not value:
             return ""
 
-        bind = field.field_info.extra["bind"]
+        bind = cls.model_fields[info.field_name].json_schema_extra["bind"]
 
         # to avoid "filename too long" with b64 content
         if len(value.encode("utf-8")) < 255:
@@ -1406,7 +1418,7 @@ class FileOption(BaseInputOption):
             ):
                 return value
 
-        content, ext = cls._base_value_post_validator(value, field)
+        content, ext = _base_value_post_validator(cls, value, info)
 
         m = hashlib.sha256()
         m.update(content)
@@ -1572,13 +1584,13 @@ class TagsOption(BaseChoicesOption):
         attrs = super()._get_field_attrs()
 
         if self.choices:
-            attrs["choices"] = self.choices  # extra
+            attrs["json_schema_extra"]["choices"] = self.choices  # extra
 
         return attrs
 
-    @classmethod
+    @staticmethod
     def _value_pre_validator(
-        cls, value: list | str | None, field: "ModelField"
+        cls, value: list | str | None, info: "ValidationInfo"
     ) -> str | None:
         if value is None or value == "":
             return None
@@ -1586,7 +1598,7 @@ class TagsOption(BaseChoicesOption):
         if not isinstance(value, (list, str, type(None))):
             raise YunohostValidationError(
                 "app_argument_invalid",
-                name=field.name,
+                name=info.field_name,
                 error=f"'{str(value)}' is not a list",
             )
 
@@ -1595,12 +1607,12 @@ class TagsOption(BaseChoicesOption):
             value = [v for v in value if v]
 
         if isinstance(value, list):
-            choices = field.field_info.extra.get("choices")
+            choices = cls.model_fields[info.field_name].json_schema_extra.get("choices")
             if choices:
                 if not all(v in choices for v in value):
                     raise YunohostValidationError(
                         "app_argument_choice_invalid",
-                        name=field.name,
+                        name=info.field_name,
                         value=value,
                         choices=", ".join(str(choice) for choice in choices),
                     )
