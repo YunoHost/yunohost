@@ -1177,6 +1177,20 @@ class TimeOption(BaseInputOption):
     _annotation = datetime.time
 
     @staticmethod
+    def _value_pre_validator(
+        cls, v: Any, info: "ValidationInfo"
+    ) -> datetime.time | datetime.datetime | None:
+        v = super(TimeOption, TimeOption)._value_pre_validator(cls, v, info)
+        if isinstance(v, int | float) or (
+            isinstance(v, str) and v.replace(".", "").replace("-", "", 1).isdigit()
+        ):
+            value = float(v)
+            if value >= 0:
+                return datetime.datetime.fromtimestamp(float(v)).time()
+
+        return v
+
+    @staticmethod
     def _value_post_validator(
         cls, value: datetime.date | None, info: "ValidationInfo"
     ) -> str | None:

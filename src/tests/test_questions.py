@@ -970,17 +970,17 @@ class TestTime(BaseTest):
         # 1337 seconds == 22 minutes
         *all_as(1337, "1337", output="00:22"),
         # Negative timestamp fails
-        *all_fails(-1, "-1", error=OverflowError),  # FIXME should handle that as a validation error
+        *all_fails(-1, "-1"),
         # *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
         *all_fails("none", "_none", "False", "True", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
         *nones(None, "", output=""),
         # custom valid
         *unchanged("00:00", "08:00", "12:19", "20:59", "23:59"),
-        ("3:00", "03:00"),
-        ("23:1", "23:01"),
         ("22:35:05", "22:35"),
         ("22:35:03.514", "22:35"),
         # custom invalid
+        ("3:00", FAIL),
+        ("23:1", FAIL),
         ("24:00", FAIL),
         ("23:005", FAIL),
         # readonly
