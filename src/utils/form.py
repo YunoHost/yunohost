@@ -676,13 +676,14 @@ class BaseInputOption(BaseOption):
         }
 
         if self.readonly:
-            attrs["allow_mutation"] = False
+            attrs["frozen"] = True
 
         if self.example:
             attrs["examples"] = [self.example]
 
         if self.default is not None:
             attrs["default"] = self.default
+            attrs["validate_default"] = True
         else:
             attrs["default"] = ... if not self.optional else None
 
