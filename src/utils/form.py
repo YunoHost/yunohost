@@ -33,6 +33,7 @@ from typing import (
     Annotated,
     Any,
     Callable,
+    ClassVar,
     Iterable,
     Literal,
     Mapping,
@@ -614,7 +615,7 @@ class BaseInputOption(BaseOption):
     optional: bool = False  # FIXME keep required as default?
     default: Any = None
     _annotation: Any = Any
-    _none_as_empty_str: bool = True
+    _none_as_empty_str: ClassVar[bool] = True
 
     @validator("default", pre=True)
     def check_empty_default(value: Any) -> Any:
@@ -828,7 +829,7 @@ class PasswordOption(BaseInputOption):
     default: Literal[None] = None
     redact: Literal[True] = True
     _annotation = str
-    _forbidden_chars: str = FORBIDDEN_PASSWORD_CHARS
+    _forbidden_chars: ClassVar[str] = FORBIDDEN_PASSWORD_CHARS
 
     def _get_field_attrs(self) -> dict[str, Any]:
         attrs = super()._get_field_attrs()
@@ -1002,8 +1003,8 @@ class BooleanOption(BaseInputOption):
     no: Any = 0
     default: bool | int | str | None = 0
     _annotation = bool | int | str
-    _yes_answers: set[str] = {"1", "yes", "y", "true", "t", "on"}
-    _no_answers: set[str] = {"0", "no", "n", "false", "f", "off"}
+    _yes_answers: ClassVar[set[str]] = {"1", "yes", "y", "true", "t", "on"}
+    _no_answers: ClassVar[set[str]] = {"0", "no", "n", "false", "f", "off"}
     _none_as_empty_str = False
 
     @staticmethod
@@ -1291,7 +1292,7 @@ class FileOption(BaseInputOption):
     accept: list[str] | None = None  # currently only used by the web-admin
     default: str | None = None
     _annotation = str  # TODO could be Path at some point
-    _upload_dirs: set[str] = set()
+    _upload_dirs: ClassVar[set[str]] = set()
 
     @property
     def _validators(self) -> dict[str, Callable]:
