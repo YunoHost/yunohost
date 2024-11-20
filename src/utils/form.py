@@ -760,7 +760,7 @@ class BaseStringOption(BaseInputOption):
     @property
     def _dynamic_annotation(self) -> Type[str]:
         if self.pattern:
-            return constr(regex=self.pattern.regexp)
+            return constr(pattern=self.pattern.regexp)
 
         return self._annotation
 
@@ -1561,7 +1561,7 @@ class TagsOption(BaseChoicesOption):
 
         # Repeat pattern stuff since we can't call the bare class `_dynamic_annotation` prop without instantiating it
         if self.pattern:
-            return constr(regex=self.pattern.regexp)
+            return constr(pattern=self.pattern.regexp)
 
         return self._annotation
 
@@ -2146,7 +2146,7 @@ def prompt_or_validate_form(
                         )
                     if (
                         isinstance(option, (BaseStringOption, TagsOption))
-                        and "regex" in err["type"]
+                        and "pattern" in err["type"]
                         and option.pattern is not None
                     ):
                         err_text = option.pattern.error
