@@ -1409,7 +1409,6 @@ class TestSelect(BaseTest):
         },
         {
             "raw_options": [
-                {"choices": {-1: "verbose -one", 0: "verbose zero", 1: "verbose one", 10: "verbose ten"}},
                 {"choices": {"-1": "verbose -one", "0": "verbose zero", "1": "verbose one", "10": "verbose ten"}},
             ],
             "scenarios": [
@@ -1419,9 +1418,20 @@ class TestSelect(BaseTest):
                 *all_fails("100", 100),
             ]
         },
+        {
+            "raw_options": [
+                {"choices": {-1: "verbose -one", 0: "verbose zero", 1: "verbose one", 10: "verbose ten"}},
+            ],
+            "scenarios": [
+                *nones(None, "", output=""),
+                *unchanged(-1, 0, 1, 10), 
+                *all_fails("-1", "0", "1", "10"),
+                *all_fails("100", 100),
+            ]
+        },
         # [True, False, None]
         *unchanged(True, False, raw_option={"choices": [True, False, None]}),  # FIXME we should probably forbid None in choices
-        (None, FAIL, {"choices": [True, False, None]}),
+        (None, "", {"choices": [True, False, None]}),
         {
             # mixed types
             "raw_options": [{"choices": ["one", 2, True]}],
@@ -1438,7 +1448,7 @@ class TestSelect(BaseTest):
             "raw_options": [{"choices": ""}, {"choices": []}],
             "scenarios": [
                 # FIXME those should fail at option level (wrong default, dev error)
-                *all_fails(None, ""),
+                *all_fails(None, "", error=YunohostError),
                 *xpass(scenarios=[
                     ("", "", {"optional": True}),
                     (None, "", {"optional": True}),

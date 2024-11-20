@@ -1448,7 +1448,7 @@ class BaseChoicesOption(BaseInputOption):
 
     @property
     def _dynamic_annotation(self) -> object | Type[str]:
-        if self.choices is not None:
+        if self.choices:
             choices = (
                 self.choices if isinstance(self.choices, list) else self.choices.keys()
             )
@@ -1509,7 +1509,7 @@ class SelectOption(BaseChoicesOption):
 
     type: Literal[OptionType.select] = OptionType.select
     filter: Literal[None] = None
-    choices: list[Any] | dict[str, Any] | None
+    choices: list[Any] | dict[Any, Any] | None = None
     default: str | None = None
     _annotation = str
 
@@ -1641,7 +1641,7 @@ class DomainOption(BaseChoicesOption):
 
     type: Literal[OptionType.domain] = OptionType.domain
     filter: Literal[None] = None
-    choices: dict[str, str] | None
+    choices: dict[str, str] | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -1698,7 +1698,7 @@ class AppOption(BaseChoicesOption):
 
     type: Literal[OptionType.app] = OptionType.app
     filter: JSExpression | None = None
-    choices: dict[str, str] | None
+    choices: dict[str, str] | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -1745,7 +1745,7 @@ class UserOption(BaseChoicesOption):
 
     type: Literal[OptionType.user] = OptionType.user
     filter: Literal[None] = None
-    choices: dict[str, str] | None
+    choices: dict[str, str] | None = None
 
     @model_validator(mode="before")
     def inject_users_choices_and_default(cls, values: Values) -> Values:
@@ -1795,7 +1795,7 @@ class GroupOption(BaseChoicesOption):
 
     type: Literal[OptionType.group] = OptionType.group
     filter: Literal[None] = None
-    choices: dict[str, str] | None
+    choices: dict[str, str] | None = None
     default: Literal["visitors", "all_users", "admins"] | None = "all_users"
 
     @model_validator(mode="before")
