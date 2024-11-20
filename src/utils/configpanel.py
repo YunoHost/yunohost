@@ -21,7 +21,7 @@ import os
 import re
 from collections import OrderedDict
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, cast
+from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union, cast
 
 from pydantic import BaseModel, Extra, validator
 
@@ -413,7 +413,7 @@ class ConfigPanel:
     settings_must_be_defined: bool = False
     filter_key: "FilterKey" = (None, None, None)
     config: ConfigPanelModel | None = None
-    form: "FormModel" | None = None
+    form: Union["FormModel", None] = None
     raw_settings: "RawSettings" = {}
     hooks: "Hooks" = {}
 
@@ -546,7 +546,7 @@ class ConfigPanel:
         value: Any = None,
         args: str | None = None,
         args_file: str | None = None,
-        operation_logger: "OperationLogger" | None = None,
+        operation_logger: Union["OperationLogger", None] = None,
     ) -> None:
         self.filter_key = parse_filter_key(key)
         panel_id, section_id, option_id = self.filter_key
@@ -634,7 +634,7 @@ class ConfigPanel:
         key: str | None = None,
         args: str | None = None,
         args_file: str | None = None,
-        operation_logger: "OperationLogger" | None = None,
+        operation_logger: Union["OperationLogger", None] = None,
     ) -> None:
         #
         # FIXME : this stuff looks a lot like set() ...
@@ -880,7 +880,7 @@ class ConfigPanel:
         form: "FormModel",
         config: ConfigPanelModel,
         previous_settings: dict[str, Any],
-        exclude: "AbstractSetIntStr" | "MappingIntStrAny" | None = None,
+        exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
     ) -> None:
         """
         Save settings in yaml file.

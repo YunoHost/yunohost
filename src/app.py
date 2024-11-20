@@ -26,7 +26,7 @@ import re
 import subprocess
 import tempfile
 import copy
-from typing import TYPE_CHECKING, List, Tuple, Dict, Any, Iterator, Optional
+from typing import TYPE_CHECKING, List, Tuple, Dict, Any, Iterator, Optional, Union
 from packaging import version
 from logging import getLogger
 from pathlib import Path
@@ -1890,7 +1890,7 @@ def _get_AppConfigPanel():
             form: "FormModel",
             config: "ConfigPanelModel",
             previous_settings: dict[str, Any],
-            exclude: "AbstractSetIntStr" | "MappingIntStrAny" | None = None,
+            exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
         ) -> None:
             env = {key: str(value) for key, value in form.dict().items()}
             return_content = self._call_config_script("apply", env=env)
