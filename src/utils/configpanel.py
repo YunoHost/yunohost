@@ -45,8 +45,11 @@ from yunohost.utils.form import (
 from yunohost.utils.i18n import _value_for_locale
 
 if TYPE_CHECKING:
+    from pydantic import GetJsonSchemaHandler
     from pydantic.fields import ValidationInfo
+    from pydantic.json_schema import JsonSchemaValue
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
+    from pydantic_core.core_schema import CoreSchema
 
     from yunohost.utils.form import FormModel, Hooks
     from yunohost.log import OperationLogger
@@ -156,8 +159,8 @@ class SectionModel(ContainerModel, OptionsModel):
 
     @classmethod
     def __get_pydantic_json_schema__(
-        cls, core_schema: cs.CoreSchema, handler: GetJsonSchemaHandler
-    ) -> JsonSchemaValue:
+        cls, core_schema: "CoreSchema", handler: "GetJsonSchemaHandler"
+    ) -> "JsonSchemaValue":
         schema = handler(core_schema)
         del schema["properties"]["id"]
         options = schema["properties"].pop("options")
@@ -230,8 +233,8 @@ class PanelModel(ContainerModel):
 
     @classmethod
     def __get_pydantic_json_schema__(
-        cls, core_schema: cs.CoreSchema, handler: GetJsonSchemaHandler
-    ) -> JsonSchemaValue:
+        cls, core_schema: "CoreSchema", handler: "GetJsonSchemaHandler"
+    ) -> "JsonSchemaValue":
         schema = handler(core_schema)
         del schema["properties"]["id"]
         del schema["properties"]["sections"]
@@ -292,8 +295,8 @@ class ConfigPanelModel(BaseModel):
 
     @classmethod
     def __get_pydantic_json_schema__(
-        cls, core_schema: cs.CoreSchema, handler: GetJsonSchemaHandler
-    ) -> JsonSchemaValue:
+        cls, core_schema: "CoreSchema", handler: "GetJsonSchemaHandler"
+    ) -> "JsonSchemaValue":
         """Update the schema to the expected input
         In actual TOML definition, schema is like:
         ```toml

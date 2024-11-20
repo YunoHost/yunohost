@@ -43,14 +43,11 @@ from typing import (
 from pydantic import (
     BaseModel,
     ConfigDict,
-    GetJsonSchemaHandler,
     ValidationError,
     create_model,
     field_validator,
     model_validator,
 )
-from pydantic_core import core_schema as cs
-from pydantic.json_schema import JsonSchemaValue
 from pydantic.fields import Field
 from pydantic.networks import EmailStr, HttpUrl, Url
 from pydantic.types import constr
@@ -64,7 +61,10 @@ from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.i18n import _value_for_locale
 
 if TYPE_CHECKING:
+    from pydantic import GetJsonSchemaHandler
     from pydantic.fields import ValidationInfo, FieldInfo
+    from pydantic.json_schema import JsonSchemaValue
+    from pydantic_core.core_schema import CoreSchema
 
 logger = getLogger("yunohost.form")
 
@@ -393,8 +393,8 @@ class BaseOption(BaseModel):
 
     @classmethod
     def __get_pydantic_json_schema__(
-        cls, core_schema: cs.CoreSchema, handler: GetJsonSchemaHandler
-    ) -> JsonSchemaValue:
+        cls, core_schema: "CoreSchema", handler: "GetJsonSchemaHandler"
+    ) -> "JsonSchemaValue":
         schema = handler(core_schema)
         del schema["properties"]["id"]
         del schema["properties"]["name"]
