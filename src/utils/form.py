@@ -51,10 +51,10 @@ from pydantic import (
 )
 from pydantic_core import core_schema as cs
 from pydantic.json_schema import JsonSchemaValue
-from pydantic.color import Color
 from pydantic.fields import Field
-from pydantic.networks import EmailStr, HttpUrl
+from pydantic.networks import EmailStr, HttpUrl, Url
 from pydantic.types import constr
+from pydantic_extra_types.color import Color
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
