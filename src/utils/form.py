@@ -378,7 +378,7 @@ class BaseOption(BaseModel):
     mode: Mode = (
         "bash"  # TODO use "python" as default mode with AppConfigPanel setuping it to "bash"
     )
-    ask: Translation | None
+    ask: Translation | None = None
     readonly: bool = False
     visible: JSExpression | bool = True
     bind: str | None = None
