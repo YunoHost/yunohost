@@ -46,7 +46,7 @@ from pydantic import (
     ValidationError,
     create_model,
     field_validator,
-    root_validator,
+    model_validator,
 )
 from pydantic.color import Color
 from pydantic.fields import Field
@@ -1627,25 +1627,28 @@ class DomainOption(BaseChoicesOption):
     filter: Literal[None] = None
     choices: dict[str, str] | None
 
-    @validator("choices", pre=True, always=True)
-    def inject_domains_choices(
-        cls, value: dict[str, str] | None, values: Values
-    ) -> dict[str, str]:
+    @model_validator(mode="before")
+    @classmethod
+    def inject_domains_choices(cls, values: Values) -> dict[str, str]:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.domain import domain_list
 
         data = domain_list()
-        return {
+        values["choices"] = {
             domain: domain + " ★" if domain == data["main"] else domain
             for domain in data["domains"]
         }
 
-    @validator("default", pre=True, always=True)
-    def inject_default(cls, value: str | None, values: Values) -> str | None:
+        return values
+
+    @model_validator(mode="before")
+    @classmethod
+    def inject_default(cls, values: Values) -> str | None:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.domain import _get_maindomain
 
-        return _get_maindomain()
+        values["default"] = _get_maindomain()
+        return values
 
     @staticmethod
     def normalize(value, option={}) -> str:
@@ -1681,10 +1684,9 @@ class AppOption(BaseChoicesOption):
     filter: JSExpression | None = None
     choices: dict[str, str] | None
 
-    @validator("choices", pre=True, always=True)
-    def inject_apps_choices(
-        cls, value: dict[str, str] | None, values: Values
-    ) -> dict[str, str]:
+    @model_validator(mode="before")
+    @classmethod
+    def inject_apps_choices(cls, values: Values) -> dict[str, str]:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.app import app_list
 
@@ -1705,7 +1707,9 @@ class AppOption(BaseChoicesOption):
             }
         )
 
-        return value
+        values["choices"] = value
+
+        return values
 
 
 class UserOption(BaseChoicesOption):
@@ -1727,7 +1731,7 @@ class UserOption(BaseChoicesOption):
     filter: Literal[None] = None
     choices: dict[str, str] | None
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     def inject_users_choices_and_default(cls, values: Values) -> Values:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.user import user_list
@@ -1778,10 +1782,9 @@ class GroupOption(BaseChoicesOption):
     choices: dict[str, str] | None
     default: Literal["visitors", "all_users", "admins"] | None = "all_users"
 
-    @validator("choices", pre=True, always=True)
-    def inject_groups_choices(
-        cls, value: dict[str, str] | None, values: Values
-    ) -> dict[str, str]:
+    @model_validator(mode="before")
+    @classmethod
+    def inject_groups_choices(cls, values: Values) -> dict[str, str]:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.user import user_group_list
 
@@ -1797,14 +1800,19 @@ class GroupOption(BaseChoicesOption):
                 else groupname
             )
 
-        return {groupname: _human_readable_group(groupname) for groupname in groups}
+        values["choices"] = {
+            groupname: _human_readable_group(groupname) for groupname in groups
+        }
 
-    @validator("default", pre=True, always=True)
-    def inject_default(cls, value: str | None, values: Values) -> str:
+        return values
+
+    @model_validator(mode="before")
+    @classmethod
+    def inject_default(cls, values: Values) -> str:
         # FIXME do we really want to default to something all the time?
-        if value is None:
-            return "all_users"
-        return value
+        if values.get("default") in ("", None):
+            values["default"] = "all_users"
+        return values
 
 
 OPTIONS = {
