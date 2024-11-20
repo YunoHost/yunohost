@@ -721,7 +721,7 @@ class ConfigPanel:
         ) -> "RawConfig":
             # filter in keys defined in model, filter out panels/sections/options that aren't `key`
             return OrderedDict(
-                {k: v for k, v in data.items() if k in model.__fields__ or k == key}
+                {k: v for k, v in data.items() if k in model.model_fields or k == key}
             )
 
         raw_config = self._get_raw_config()
@@ -895,7 +895,7 @@ class ConfigPanel:
 
         exclude_defaults = self.save_mode == "diff"
         # get settings keys filtered by filter_key
-        partial_settings_keys = form.__fields__.keys()
+        partial_settings_keys = form.model_fields.keys()
         # get filtered settings
         partial_settings = form.model_dump(exclude_defaults=exclude_defaults, exclude=exclude)  # type: ignore
         # get previous settings that we will updated with new settings
