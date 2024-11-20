@@ -948,7 +948,7 @@ class NumberOption(BaseInputOption):
         if value in [None, ""]:
             return None
 
-        option = option.dict() if isinstance(option, BaseOption) else option
+        option = option.model_dump() if isinstance(option, BaseOption) else option
         raise YunohostValidationError(
             "app_argument_invalid",
             name=option.get("id"),
@@ -1009,7 +1009,7 @@ class BooleanOption(BaseInputOption):
 
     @staticmethod
     def humanize(value, option={}) -> str:
-        option = option.dict() if isinstance(option, BaseOption) else option
+        option = option.model_dump() if isinstance(option, BaseOption) else option
 
         yes = option.get("yes", 1)
         no = option.get("no", 0)
@@ -1032,7 +1032,7 @@ class BooleanOption(BaseInputOption):
 
     @staticmethod
     def normalize(value, option={}) -> Any:
-        option = option.dict() if isinstance(option, BaseOption) else option
+        option = option.model_dump() if isinstance(option, BaseOption) else option
 
         if isinstance(value, str):
             value = value.strip()
@@ -1206,7 +1206,7 @@ class WebPathOption(BaseStringOption):
 
     @staticmethod
     def normalize(value, option={}) -> str:
-        option = option.dict() if isinstance(option, BaseOption) else option
+        option = option.model_dump() if isinstance(option, BaseOption) else option
 
         if value is None:
             value = ""
@@ -2235,6 +2235,6 @@ def parse_raw_options(
     model.translate_options()
 
     if serialize:
-        return model.dict()["options"]
+        return model.model_dump()["options"]
 
     return model.options

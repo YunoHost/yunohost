@@ -497,7 +497,7 @@ class ConfigPanel:
         logger.debug(f"Formating result in '{mode}' mode")
 
         if mode == "full":
-            result = self.config.dict(exclude_none=True)
+            result = self.config.model_dump(exclude_none=True)
 
             for panel in result["panels"]:
                 for section in panel["sections"]:
@@ -569,7 +569,7 @@ class ConfigPanel:
 
         self.config, self.form = self._get_config_panel()
         # FIXME find a better way to exclude previous settings
-        previous_settings = self.form.dict()
+        previous_settings = self.form.model_dump()
 
         # FIXME Not sure if this is need (redact call to operation logger does it on all the instances)
         # BaseOption.operation_logger = operation_logger
@@ -897,7 +897,7 @@ class ConfigPanel:
         # get settings keys filtered by filter_key
         partial_settings_keys = form.__fields__.keys()
         # get filtered settings
-        partial_settings = form.dict(exclude_defaults=exclude_defaults, exclude=exclude)  # type: ignore
+        partial_settings = form.model_dump(exclude_defaults=exclude_defaults, exclude=exclude)  # type: ignore
         # get previous settings that we will updated with new settings
         current_settings = self.raw_settings.copy()
 
