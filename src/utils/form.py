@@ -388,16 +388,20 @@ class BaseOption(BaseModel):
         extra="forbid",
     )
 
-    class Config:
-        @staticmethod
-        def schema_extra(schema: dict[str, Any]) -> None:
-            del schema["properties"]["id"]
-            del schema["properties"]["name"]
-            schema["required"] = [
-                required for required in schema.get("required", []) if required != "id"
-            ]
-            if not schema["required"]:
-                del schema["required"]
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls, core_schema: cs.CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        schema = handler(core_schema)
+        del schema["properties"]["id"]
+        del schema["properties"]["name"]
+        schema["required"] = [
+            required for required in schema.get("required", []) if required != "id"
+        ]
+        if not schema["required"]:
+            del schema["required"]
+
+        return schema
 
     @validator("id", pre=True)
     def check_id_is_not_forbidden(cls, value: str) -> str:
