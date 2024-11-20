@@ -743,14 +743,11 @@ class TestPassword(BaseTest):
     }
     # fmt: off
     scenarios = [
-        *all_fails(False, True, 0, 1, -1, 1337, 13.37, raw_option={"optional": True}),
-        *all_fails([], ["one"], {}, raw_option={"optional": True}, error=AttributeError),  # FIXME those fails with AttributeError
+        *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
         *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
         *nones(None, "", output=""),
         ("s3cr3t!!", YunohostError, {"default": "SUPAs3cr3t!!"}),  # default is forbidden
-        *xpass(scenarios=[
-            ("s3cr3t!!", "s3cr3t!!", {"example": "SUPAs3cr3t!!"}),  # example is forbidden
-        ], reason="Should fail; example is forbidden"),
+        ("s3cr3t!!", YunohostError, {"example": "SUPAs3cr3t!!"}),  # example is forbidden
         *xpass(scenarios=[
             (" value \n moarc0mpl1cat3d\n  ", "value \n moarc0mpl1cat3d"),
             (" some_ value", "some_ value"),

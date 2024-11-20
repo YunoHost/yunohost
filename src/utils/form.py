@@ -861,6 +861,7 @@ class PasswordOption(BaseInputOption):
         )
 
         if value is not None and value != "":
+            value = str(value)
             forbidden_chars: str = cls.model_fields[info.field_name].json_schema_extra[
                 "forbidden_chars"
             ]
