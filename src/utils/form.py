@@ -1147,6 +1147,19 @@ class DateOption(BaseInputOption):
     _annotation = datetime.date
 
     @staticmethod
+    def _value_pre_validator(
+        cls, v: datetime.date | str | None, info: "ValidationInfo"
+    ) -> str | None:
+        v = super(DateOption, DateOption)._value_pre_validator(cls, v, info)
+        if isinstance(v, int | float) or (
+            isinstance(v, str) and v.replace(".", "").replace("-", "", 1).isdigit()
+        ):
+            # FIXME use datetime.timezone.utc? or use local timezone
+            return datetime.date.fromtimestamp(float(v))
+
+        return v
+
+    @staticmethod
     def _value_post_validator(
         cls, value: datetime.date | None, info: "ValidationInfo"
     ) -> str | None:
