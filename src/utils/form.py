@@ -1150,7 +1150,7 @@ class DateOption(BaseInputOption):
     @staticmethod
     def _value_pre_validator(
         cls, v: datetime.date | str | None, info: "ValidationInfo"
-    ) -> str | None:
+    ) -> datetime.date | str | None:
         v = super(DateOption, DateOption)._value_pre_validator(cls, v, info)
         if isinstance(v, int | float) or (
             isinstance(v, str) and v.replace(".", "").replace("-", "", 1).isdigit()
@@ -1673,7 +1673,7 @@ class DomainOption(BaseChoicesOption):
 
     @model_validator(mode="before")
     @classmethod
-    def inject_domains_choices(cls, values: Values) -> dict[str, str]:
+    def inject_domains_choices(cls, values: Values) -> Values:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.domain import domain_list
 
@@ -1687,7 +1687,7 @@ class DomainOption(BaseChoicesOption):
 
     @model_validator(mode="before")
     @classmethod
-    def inject_default(cls, values: Values) -> str | None:
+    def inject_default(cls, values: Values) -> Values:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.domain import _get_maindomain
 
@@ -1730,7 +1730,7 @@ class AppOption(BaseChoicesOption):
 
     @model_validator(mode="before")
     @classmethod
-    def inject_apps_choices(cls, values: Values) -> dict[str, str]:
+    def inject_apps_choices(cls, values: Values) -> Values:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.app import app_list
 
@@ -1828,7 +1828,7 @@ class GroupOption(BaseChoicesOption):
 
     @model_validator(mode="before")
     @classmethod
-    def inject_groups_choices(cls, values: Values) -> dict[str, str]:
+    def inject_groups_choices(cls, values: Values) -> Values:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.user import user_group_list
 
@@ -1852,7 +1852,7 @@ class GroupOption(BaseChoicesOption):
 
     @model_validator(mode="before")
     @classmethod
-    def inject_default(cls, values: Values) -> str:
+    def inject_default(cls, values: Values) -> Values:
         # FIXME do we really want to default to something all the time?
         if values.get("default") in ("", None):
             values["default"] = "all_users"
