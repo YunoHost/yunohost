@@ -741,7 +741,7 @@ class BaseInputOption(BaseOption):
 
 
 class BaseStringOption(BaseInputOption):
-    default: str | None
+    default: str | None = None
     pattern: Pattern | None = None
     _annotation = str
 
@@ -873,7 +873,7 @@ class ColorOption(BaseInputOption):
     """
 
     type: Literal[OptionType.color] = OptionType.color
-    default: str | None
+    default: str | None = None
     _annotation = Color
 
     @staticmethod
@@ -926,7 +926,7 @@ class NumberOption(BaseInputOption):
 
     # `number` and `range` are exactly the same, but `range` does render as a slider in web-admin
     type: Literal[OptionType.number, OptionType.range] = OptionType.number
-    default: int | None
+    default: int | None = None
     min: int | None = None
     max: int | None = None
     step: int | None = None
@@ -1118,7 +1118,7 @@ class DateOption(BaseInputOption):
     """
 
     type: Literal[OptionType.date] = OptionType.date
-    default: str | None
+    default: str | None = None
     _annotation = datetime.date
 
     @classmethod
@@ -1148,7 +1148,7 @@ class TimeOption(BaseInputOption):
     """
 
     type: Literal[OptionType.time] = OptionType.time
-    default: str | int | None
+    default: str | int | None = None
     _annotation = datetime.time
 
     @classmethod
@@ -1181,7 +1181,7 @@ class EmailOption(BaseInputOption):
     """
 
     type: Literal[OptionType.email] = OptionType.email
-    default: EmailStr | None
+    default: EmailStr | None = None
     _annotation = EmailStr
 
 
@@ -1289,7 +1289,7 @@ class FileOption(BaseInputOption):
     # `FilePath` for CLI (path must exists and must be a file)
     # `bytes` for API (a base64 encoded file actually)
     accept: list[str] | None = None  # currently only used by the web-admin
-    default: str | None
+    default: str | None = None
     _annotation = str  # TODO could be Path at some point
     _upload_dirs: set[str] = set()
 
@@ -1482,7 +1482,7 @@ class SelectOption(BaseChoicesOption):
     type: Literal[OptionType.select] = OptionType.select
     filter: Literal[None] = None
     choices: list[Any] | dict[str, Any] | None
-    default: str | None
+    default: str | None = None
     _annotation = str
 
 
@@ -1519,7 +1519,7 @@ class TagsOption(BaseChoicesOption):
     choices: list[str] | None = None
     pattern: Pattern | None = None
     icon: str | None = None
-    default: str | list[str] | None
+    default: str | list[str] | None = None
     _annotation = str
 
     @staticmethod
