@@ -43,11 +43,14 @@ from typing import (
 from pydantic import (
     BaseModel,
     ConfigDict,
+    GetJsonSchemaHandler,
     ValidationError,
     create_model,
     field_validator,
     model_validator,
 )
+from pydantic_core import core_schema as cs
+from pydantic.json_schema import JsonSchemaValue
 from pydantic.color import Color
 from pydantic.fields import Field
 from pydantic.networks import EmailStr, HttpUrl
