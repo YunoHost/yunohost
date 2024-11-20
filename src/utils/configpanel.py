@@ -807,7 +807,7 @@ class ConfigPanel:
         settings = (
             Settings(**raw_settings)
             if prevalidate
-            else Settings.construct(**raw_settings)
+            else Settings.model_construct(**raw_settings)
         )
 
         try:

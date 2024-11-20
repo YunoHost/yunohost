@@ -1950,7 +1950,7 @@ def build_form(
     """
     Returns a dynamic pydantic model class that can be used as a form.
     Parsing/validation occurs at instanciation and assignements.
-    To avoid validation at instanciation, use `my_form.construct(**values)`
+    To avoid validation at instanciation, use `my_form.model_construct(**values)`
     """
     options_as_fields: Any = {}
     validators: dict[str, Any] = {}
@@ -2202,7 +2202,7 @@ def ask_questions_and_parse_answers(
     model_options = parse_raw_options(raw_options, serialize=False)
     # Build the form from those questions and instantiate it without
     # parsing/validation (construct) since it may contains required questions.
-    form = build_form(model_options).construct()
+    form = build_form(model_options).model_construct()
     form = prompt_or_validate_form(
         model_options, form, prefilled_answers=answers, context=context, hooks=hooks
     )
