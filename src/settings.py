@@ -139,7 +139,7 @@ class SettingsConfigPanel(ConfigPanel):
         super().__init__("settings")
 
     def get(
-        self, key: Union[str, None] = None, mode: "ConfigPanelGetMode" = "classic"
+        self, key: str | None = None, mode: "ConfigPanelGetMode" = "classic"
     ) -> Any:
         result = super().get(key=key, mode=mode)
 
@@ -151,7 +151,7 @@ class SettingsConfigPanel(ConfigPanel):
 
     def reset(
         self,
-        key: Union[str, None] = None,
+        key: str | None = None,
         operation_logger: Union["OperationLogger", None] = None,
     ) -> None:
         self.filter_key = parse_filter_key(key)

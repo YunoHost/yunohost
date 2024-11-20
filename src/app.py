@@ -1912,7 +1912,7 @@ def _get_AppConfigPanel():
             self._call_config_script(action_id, env=env)
 
         def _call_config_script(
-            self, action: str, env: Union[dict[str, Any], None] = None
+            self, action: str, env: dict[str, Any] | None = None
         ) -> dict[str, Any]:
             from yunohost.hook import hook_exec
 

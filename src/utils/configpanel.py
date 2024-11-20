@@ -70,11 +70,11 @@ CONFIG_PANEL_VERSION_SUPPORTED = 1.0
 
 class ContainerModel(BaseModel):
     id: str
-    name: Union[Translation, None] = None
+    name: Translation | None = None
     services: list[str] = []
-    help: Union[Translation, None] = None
+    help: Translation | None = None
 
-    def translate(self, i18n_key: Union[str, None] = None) -> None:
+    def translate(self, i18n_key: str | None = None) -> None:
         """
         Translate `ask` and `name` attributes of panels and section.
         This is in place mutation.
@@ -121,10 +121,10 @@ class SectionModel(ContainerModel, OptionsModel):
         - Be careful that the `visible` property should only refer to **previous** options's value. Hence, it should not make sense to have a `visible` property on the very first section.
     """
 
-    visible: Union[bool, str] = True
+    visible: bool | str = True
     optional: bool = True
     is_action_section: bool = False
-    bind: Union[str, None] = None
+    bind: str | None = None
 
     class Config:
         @staticmethod
@@ -138,12 +138,12 @@ class SectionModel(ContainerModel, OptionsModel):
     def __init__(
         self,
         id: str,
-        name: Union[Translation, None] = None,
+        name: Translation | None = None,
         services: list[str] = [],
-        help: Union[Translation, None] = None,
-        visible: Union[bool, str] = True,
+        help: Translation | None = None,
+        visible: bool | str = True,
         optional: bool = True,
-        bind: Union[str, None] = None,
+        bind: str | None = None,
         **kwargs,
     ) -> None:
         options = self.options_dict_to_list(kwargs, optional=optional)
@@ -168,7 +168,7 @@ class SectionModel(ContainerModel, OptionsModel):
 
         return evaluate_simple_js_expression(self.visible, context=context)
 
-    def translate(self, i18n_key: Union[str, None] = None) -> None:
+    def translate(self, i18n_key: str | None = None) -> None:
         """
         Call to `Container`'s `translate` for self translation
         + Call to `OptionsContainer`'s `translate_options` for options translation
@@ -202,7 +202,7 @@ class PanelModel(ContainerModel):
 
     # FIXME what to do with `actions?
     actions: dict[str, Translation] = {"apply": {"en": "Apply"}}
-    bind: Union[str, None] = None
+    bind: str | None = None
     sections: list[SectionModel]
 
     class Config:
@@ -219,10 +219,10 @@ class PanelModel(ContainerModel):
     def __init__(
         self,
         id: str,
-        name: Union[Translation, None] = None,
+        name: Translation | None = None,
         services: list[str] = [],
-        help: Union[Translation, None] = None,
-        bind: Union[str, None] = None,
+        help: Translation | None = None,
+        bind: str | None = None,
         **kwargs,
     ) -> None:
         sections = [data | {"id": name} for name, data in kwargs.items()]
@@ -230,7 +230,7 @@ class PanelModel(ContainerModel):
             id=id, name=name, services=services, help=help, bind=bind, sections=sections
         )
 
-    def translate(self, i18n_key: Union[str, None] = None) -> None:
+    def translate(self, i18n_key: str | None = None) -> None:
         """
         Recursivly mutate translatable attributes to their translation
         """
@@ -262,7 +262,7 @@ class ConfigPanelModel(BaseModel):
     """
 
     version: float = CONFIG_PANEL_VERSION_SUPPORTED
-    i18n: Union[str, None] = None
+    i18n: str | None = None
     panels: list[PanelModel]
 
     class Config:
@@ -293,7 +293,7 @@ class ConfigPanelModel(BaseModel):
     def __init__(
         self,
         version: float,
-        i18n: Union[str, None] = None,
+        i18n: str | None = None,
         **kwargs,
     ) -> None:
         panels = [data | {"id": name} for name, data in kwargs.items()]
@@ -313,19 +313,19 @@ class ConfigPanelModel(BaseModel):
             for option in section.options:
                 yield option
 
-    def get_panel(self, panel_id: str) -> Union[PanelModel, None]:
+    def get_panel(self, panel_id: str) -> PanelModel | None:
         for panel in self.panels:
             if panel.id == panel_id:
                 return panel
         return None
 
-    def get_section(self, section_id: str) -> Union[SectionModel, None]:
+    def get_section(self, section_id: str) -> SectionModel | None:
         for section in self.sections:
             if section.id == section_id:
                 return section
         return None
 
-    def get_option(self, option_id: str) -> Union[AnyOption, None]:
+    def get_option(self, option_id: str) -> AnyOption | None:
         for option in self.options:
             if option.id == option_id:
                 return option
@@ -386,13 +386,13 @@ class ConfigPanelModel(BaseModel):
 # ╰───────────────────────────────────────────────────────╯
 
 if TYPE_CHECKING:
-    FilterKey = Sequence[Union[str, None]]
+    FilterKey = Sequence[str | None]
     RawConfig = OrderedDict[str, Any]
     RawSettings = dict[str, Any]
     ConfigPanelGetMode = Literal["classic", "full", "export"]
 
 
-def parse_filter_key(key: Union[str, None] = None) -> "FilterKey":
+def parse_filter_key(key: str | None = None) -> "FilterKey":
     if key and key.count(".") > 2:
         raise YunohostError(
             f"The filter key {key} has too many sub-levels, the max is 3.",
@@ -407,12 +407,12 @@ def parse_filter_key(key: Union[str, None] = None) -> "FilterKey":
 
 class ConfigPanel:
     entity_type = "config"
-    save_path_tpl: Union[str, None] = None
+    save_path_tpl: str | None = None
     config_path_tpl = "/usr/share/yunohost/config_{entity_type}.toml"
     save_mode = "full"
     settings_must_be_defined: bool = False
     filter_key: "FilterKey" = (None, None, None)
-    config: Union[ConfigPanelModel, None] = None
+    config: ConfigPanelModel | None = None
     form: Union["FormModel", None] = None
     raw_settings: "RawSettings" = {}
     hooks: "Hooks" = {}
@@ -470,7 +470,7 @@ class ConfigPanel:
         }
 
     def get(
-        self, key: Union[str, None] = None, mode: "ConfigPanelGetMode" = "classic"
+        self, key: str | None = None, mode: "ConfigPanelGetMode" = "classic"
     ) -> Any:
         self.filter_key = parse_filter_key(key)
         self.config, self.form = self._get_config_panel(prevalidate=False)
@@ -542,10 +542,10 @@ class ConfigPanel:
 
     def set(
         self,
-        key: Union[str, None] = None,
+        key: str | None = None,
         value: Any = None,
-        args: Union[str, None] = None,
-        args_file: Union[str, None] = None,
+        args: str | None = None,
+        args_file: str | None = None,
         operation_logger: Union["OperationLogger", None] = None,
     ) -> None:
         self.filter_key = parse_filter_key(key)
@@ -631,9 +631,9 @@ class ConfigPanel:
 
     def run_action(
         self,
-        key: Union[str, None] = None,
-        args: Union[str, None] = None,
-        args_file: Union[str, None] = None,
+        key: str | None = None,
+        args: str | None = None,
+        args_file: str | None = None,
         operation_logger: Union["OperationLogger", None] = None,
     ) -> None:
         #
@@ -717,7 +717,7 @@ class ConfigPanel:
         def filter_keys(
             data: "RawConfig",
             key: str,
-            model: Union[Type[ConfigPanelModel], Type[PanelModel], Type[SectionModel]],
+            model: Type[ConfigPanelModel] | Type[PanelModel] | Type[SectionModel],
         ) -> "RawConfig":
             # filter in keys defined in model, filter out panels/sections/options that aren't `key`
             return OrderedDict(
@@ -824,7 +824,7 @@ class ConfigPanel:
         config: ConfigPanelModel,
         form: "FormModel",
         prefilled_answers: dict[str, Any] = {},
-        action_id: Union[str, None] = None,
+        action_id: str | None = None,
         hooks: "Hooks" = {},
     ) -> "FormModel":
         # FIXME could be turned into a staticmethod
