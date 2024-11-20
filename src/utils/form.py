@@ -42,7 +42,7 @@ from typing import (
 
 from pydantic import (
     BaseModel,
-    Extra,
+    ConfigDict,
     ValidationError,
     create_model,
     validator,
@@ -381,12 +381,14 @@ class BaseOption(BaseModel):
     bind: str | None = None
     name: str | None = None  # LEGACY (replaced by `id`)
 
-    class Config:
-        arbitrary_types_allowed = True
-        use_enum_values = True
-        validate_assignment = True
-        extra = Extra.forbid
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        use_enum_values=True,
+        validate_assignment=True,
+        extra="forbid",
+    )
 
+    class Config:
         @staticmethod
         def schema_extra(schema: dict[str, Any]) -> None:
             del schema["properties"]["id"]
@@ -1917,9 +1919,11 @@ class FormModel(BaseModel):
     Base form on which dynamic forms are built upon Options.
     """
 
-    class Config:
-        validate_assignment = True
-        extra = Extra.ignore
+    model_config = ConfigDict(
+        validate_assignment=True,
+        extra="ignore",
+        coerce_numbers_to_str=True,
+    )
 
     def __getitem__(self, name: str) -> Any:
         # FIXME

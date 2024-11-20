@@ -23,7 +23,7 @@ from collections import OrderedDict
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union, cast
 
-from pydantic import BaseModel, Extra, validator
+from pydantic import BaseModel, ConfigDict, validator
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
@@ -205,9 +205,11 @@ class PanelModel(ContainerModel):
     bind: str | None = None
     sections: list[SectionModel]
 
-    class Config:
-        extra = Extra.allow
+    model_config = ConfigDict(
+        extra="allow",
+    )
 
+    class Config:
         @staticmethod
         def schema_extra(schema: dict[str, Any]) -> None:
             del schema["properties"]["id"]
@@ -265,10 +267,12 @@ class ConfigPanelModel(BaseModel):
     i18n: str | None = None
     panels: list[PanelModel]
 
-    class Config:
-        arbitrary_types_allowed = True
-        extra = Extra.allow
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        extra="allow",
+    )
 
+    class Config:
         @staticmethod
         def schema_extra(schema: dict[str, Any]) -> None:
             """Update the schema to the expected input
