@@ -2194,8 +2194,11 @@ def prompt_or_validate_form(
                     ):
                         err_text = option.pattern.error
                     else:
-                        err_text = m18n.n(
-                            f"pydantic.{err['type']}".replace(".", "_"), **ctx
+                        i18n_key = f"pydantic.{err['type']}".replace(".", "_")
+                        err_text = (
+                            m18n.n(i18n_key, **ctx)
+                            if m18n.key_exists(i18n_key)
+                            else err["msg"]
                         )
                 else:
                     err_text = str(e)
