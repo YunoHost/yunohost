@@ -19,7 +19,7 @@
 import os
 import subprocess
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -139,7 +139,7 @@ class SettingsConfigPanel(ConfigPanel):
         super().__init__("settings")
 
     def get(
-        self, key: Union[str, None] = None, mode: "ConfigPanelGetMode" = "classic"
+        self, key: str | None = None, mode: "ConfigPanelGetMode" = "classic"
     ) -> Any:
         result = super().get(key=key, mode=mode)
 
@@ -151,8 +151,8 @@ class SettingsConfigPanel(ConfigPanel):
 
     def reset(
         self,
-        key: Union[str, None] = None,
-        operation_logger: Union["OperationLogger", None] = None,
+        key: str | None = None,
+        operation_logger: "OperationLogger" | None = None,
     ) -> None:
         self.filter_key = parse_filter_key(key)
 
@@ -223,7 +223,7 @@ class SettingsConfigPanel(ConfigPanel):
         form: "FormModel",
         config: "ConfigPanelModel",
         previous_settings: dict[str, Any],
-        exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
+        exclude: "AbstractSetIntStr" | "MappingIntStrAny" | None = None,
     ) -> None:
         root_password = form.get("root_password", None)
         root_password_confirm = form.get("root_password_confirm", None)

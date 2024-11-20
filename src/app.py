@@ -26,7 +26,7 @@ import re
 import subprocess
 import tempfile
 import copy
-from typing import TYPE_CHECKING, List, Tuple, Dict, Any, Iterator, Optional, Union
+from typing import TYPE_CHECKING, List, Tuple, Dict, Any, Iterator, Optional
 from packaging import version
 from logging import getLogger
 from pathlib import Path
@@ -1890,7 +1890,7 @@ def _get_AppConfigPanel():
             form: "FormModel",
             config: "ConfigPanelModel",
             previous_settings: dict[str, Any],
-            exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
+            exclude: "AbstractSetIntStr" | "MappingIntStrAny" | None = None,
         ) -> None:
             env = {key: str(value) for key, value in form.dict().items()}
             return_content = self._call_config_script("apply", env=env)
@@ -1912,7 +1912,7 @@ def _get_AppConfigPanel():
             self._call_config_script(action_id, env=env)
 
         def _call_config_script(
-            self, action: str, env: Union[dict[str, Any], None] = None
+            self, action: str, env: dict[str, Any] | None = None
         ) -> dict[str, Any]:
             from yunohost.hook import hook_exec
 

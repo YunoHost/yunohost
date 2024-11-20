@@ -37,7 +37,6 @@ from typing import (
     Literal,
     Mapping,
     Type,
-    Union,
 )
 
 from pydantic import (
@@ -305,7 +304,7 @@ FORBIDDEN_KEYWORDS = {
 }
 
 Context = dict[str, Any]
-Translation = Union[dict[str, str], str]
+Translation = dict[str, str] | str
 JSExpression = str
 Values = dict[str, Any]
 Mode = Literal["python", "bash"]
@@ -375,11 +374,11 @@ class BaseOption(BaseModel):
     mode: Mode = (
         "bash"  # TODO use "python" as default mode with AppConfigPanel setuping it to "bash"
     )
-    ask: Union[Translation, None]
+    ask: Translation | None
     readonly: bool = False
-    visible: Union[JSExpression, bool] = True
-    bind: Union[str, None] = None
-    name: Union[str, None] = None  # LEGACY (replaced by `id`)
+    visible: JSExpression | bool = True
+    bind: str | None = None
+    name: str | None = None  # LEGACY (replaced by `id`)
 
     class Config:
         arbitrary_types_allowed = True
@@ -405,7 +404,7 @@ class BaseOption(BaseModel):
 
     # FIXME Legacy, is `name` still needed?
     @validator("name")
-    def apply_legacy_name(cls, value: Union[str, None], values: Values) -> str:
+    def apply_legacy_name(cls, value: str | None, values: Values) -> str:
         if value is None:
             return values["id"]
         return value
@@ -506,7 +505,7 @@ class AlertOption(BaseReadonlyOption):
 
     type: Literal[OptionType.alert] = OptionType.alert
     style: State = State.info
-    icon: Union[str, None] = None
+    icon: str | None = None
 
     def _get_prompt_message(self, value: None) -> str:
         colors = {
@@ -561,10 +560,10 @@ class ButtonOption(BaseReadonlyOption):
 
     type: Literal[OptionType.button] = OptionType.button
     bind: Literal["null"] = "null"
-    help: Union[Translation, None] = None
+    help: Translation | None = None
     style: State = State.success
-    icon: Union[str, None] = None
-    enabled: Union[JSExpression, bool] = True
+    icon: str | None = None
+    enabled: JSExpression | bool = True
 
     def is_enabled(self, context: Context) -> bool:
         if isinstance(self.enabled, bool):
@@ -608,9 +607,9 @@ class BaseInputOption(BaseOption):
     - `placeholder` (optional): `str`, shown in the web-admin fields only
     """
 
-    help: Union[Translation, None] = None
-    example: Union[str, None] = None
-    placeholder: Union[str, None] = None
+    help: Translation | None = None
+    example: str | None = None
+    placeholder: str | None = None
     redact: bool = False
     optional: bool = False  # FIXME keep required as default?
     default: Any = None
@@ -687,7 +686,7 @@ class BaseInputOption(BaseOption):
         anno = (
             self._dynamic_annotation
             if not self.optional
-            else Union[self._dynamic_annotation, None]
+            else self._dynamic_annotation | None
         )
         field = Field(default=attrs.pop("default", None), **attrs)
 
@@ -742,8 +741,8 @@ class BaseInputOption(BaseOption):
 
 
 class BaseStringOption(BaseInputOption):
-    default: Union[str, None]
-    pattern: Union[Pattern, None] = None
+    default: str | None
+    pattern: Pattern | None = None
     _annotation = str
 
     @property
@@ -839,9 +838,7 @@ class PasswordOption(BaseInputOption):
         return attrs
 
     @classmethod
-    def _value_pre_validator(
-        cls, value: Union[str, None], field: "ModelField"
-    ) -> Union[str, None]:
+    def _value_pre_validator(cls, value: str | None, field: "ModelField") -> str | None:
         value = super()._value_pre_validator(value, field)
 
         if value is not None and value != "":
@@ -876,18 +873,18 @@ class ColorOption(BaseInputOption):
     """
 
     type: Literal[OptionType.color] = OptionType.color
-    default: Union[str, None]
+    default: str | None
     _annotation = Color
 
     @staticmethod
-    def humanize(value: Union[Color, str, None], option={}) -> str:
+    def humanize(value: Color | str | None, option={}) -> str:
         if isinstance(value, Color):
             value.as_named(fallback=True)
 
         return super(ColorOption, ColorOption).humanize(value, option)
 
     @staticmethod
-    def normalize(value: Union[Color, str, None], option={}) -> str:
+    def normalize(value: Color | str | None, option={}) -> str:
         if isinstance(value, Color):
             return value.as_hex()
 
@@ -895,8 +892,8 @@ class ColorOption(BaseInputOption):
 
     @classmethod
     def _value_post_validator(
-        cls, value: Union[Color, None], field: "ModelField"
-    ) -> Union[str, None]:
+        cls, value: Color | None, field: "ModelField"
+    ) -> str | None:
         if isinstance(value, Color):
             return value.as_hex()
 
@@ -929,15 +926,15 @@ class NumberOption(BaseInputOption):
 
     # `number` and `range` are exactly the same, but `range` does render as a slider in web-admin
     type: Literal[OptionType.number, OptionType.range] = OptionType.number
-    default: Union[int, None]
-    min: Union[int, None] = None
-    max: Union[int, None] = None
-    step: Union[int, None] = None
+    default: int | None
+    min: int | None = None
+    max: int | None = None
+    step: int | None = None
     _annotation = int
     _none_as_empty_str = False
 
     @staticmethod
-    def normalize(value, option={}) -> Union[int, None]:
+    def normalize(value, option={}) -> int | None:
         if isinstance(value, int):
             return value
 
@@ -966,9 +963,7 @@ class NumberOption(BaseInputOption):
         return attrs
 
     @classmethod
-    def _value_pre_validator(
-        cls, value: Union[int, None], field: "ModelField"
-    ) -> Union[int, None]:
+    def _value_pre_validator(cls, value: int | None, field: "ModelField") -> int | None:
         value = super()._value_pre_validator(value, field)
 
         if value is None:
@@ -1005,8 +1000,8 @@ class BooleanOption(BaseInputOption):
     type: Literal[OptionType.boolean] = OptionType.boolean
     yes: Any = 1
     no: Any = 0
-    default: Union[bool, int, str, None] = 0
-    _annotation = Union[bool, int, str]
+    default: bool | int | str | None = 0
+    _annotation = bool | int | str
     _yes_answers: set[str] = {"1", "yes", "y", "true", "t", "on"}
     _no_answers: set[str] = {"0", "no", "n", "false", "f", "off"}
     _none_as_empty_str = False
@@ -1085,7 +1080,7 @@ class BooleanOption(BaseInputOption):
         }
         return attrs
 
-    def _get_prompt_message(self, value: Union[bool, None]) -> str:
+    def _get_prompt_message(self, value: bool | None) -> str:
         message = super()._get_prompt_message(value)
 
         if not self.readonly:
@@ -1094,9 +1089,7 @@ class BooleanOption(BaseInputOption):
         return message
 
     @classmethod
-    def _value_post_validator(
-        cls, value: Union[bool, None], field: "ModelField"
-    ) -> Any:
+    def _value_post_validator(cls, value: bool | None, field: "ModelField") -> Any:
         if isinstance(value, bool):
             return field.field_info.extra["parse"][value]
 
@@ -1125,13 +1118,13 @@ class DateOption(BaseInputOption):
     """
 
     type: Literal[OptionType.date] = OptionType.date
-    default: Union[str, None]
+    default: str | None
     _annotation = datetime.date
 
     @classmethod
     def _value_post_validator(
-        cls, value: Union[datetime.date, None], field: "ModelField"
-    ) -> Union[str, None]:
+        cls, value: datetime.date | None, field: "ModelField"
+    ) -> str | None:
         if isinstance(value, datetime.date):
             return value.isoformat()
 
@@ -1155,13 +1148,13 @@ class TimeOption(BaseInputOption):
     """
 
     type: Literal[OptionType.time] = OptionType.time
-    default: Union[str, int, None]
+    default: str | int | None
     _annotation = datetime.time
 
     @classmethod
     def _value_post_validator(
-        cls, value: Union[datetime.date, None], field: "ModelField"
-    ) -> Union[str, None]:
+        cls, value: datetime.date | None, field: "ModelField"
+    ) -> str | None:
         if isinstance(value, datetime.time):
             # FIXME could use `value.isoformat()` to get `%H:%M:%S`
             return value.strftime("%H:%M")
@@ -1188,7 +1181,7 @@ class EmailOption(BaseInputOption):
     """
 
     type: Literal[OptionType.email] = OptionType.email
-    default: Union[EmailStr, None]
+    default: EmailStr | None
     _annotation = EmailStr
 
 
@@ -1261,8 +1254,8 @@ class URLOption(BaseStringOption):
 
     @classmethod
     def _value_post_validator(
-        cls, value: Union[HttpUrl, None], field: "ModelField"
-    ) -> Union[str, None]:
+        cls, value: HttpUrl | None, field: "ModelField"
+    ) -> str | None:
         if isinstance(value, HttpUrl):
             return str(value)
 
@@ -1295,8 +1288,8 @@ class FileOption(BaseInputOption):
     type: Literal[OptionType.file] = OptionType.file
     # `FilePath` for CLI (path must exists and must be a file)
     # `bytes` for API (a base64 encoded file actually)
-    accept: Union[list[str], None] = None  # currently only used by the web-admin
-    default: Union[str, None]
+    accept: list[str] | None = None  # currently only used by the web-admin
+    default: str | None
     _annotation = str  # TODO could be Path at some point
     _upload_dirs: set[str] = set()
 
@@ -1414,19 +1407,19 @@ class FileOption(BaseInputOption):
 
 class BaseChoicesOption(BaseInputOption):
     # FIXME probably forbid choices to be None?
-    filter: Union[JSExpression, None] = None  # filter before choices
+    filter: JSExpression | None = None  # filter before choices
     # We do not declare `choices` here to be able to declare other fields before `choices` and acces their values in `choices` validators
-    # choices: Union[dict[str, Any], list[Any], None]
+    # choices: dict[str, Any] | list[Any] | None
 
     @validator("choices", pre=True, check_fields=False)
-    def parse_comalist_choices(value: Any) -> Union[dict[str, Any], list[Any], None]:
+    def parse_comalist_choices(value: Any) -> dict[str, Any] | list[Any] | None:
         if isinstance(value, str):
             values = [value.strip() for value in value.split(",")]
             return [value for value in values if value]
         return value
 
     @property
-    def _dynamic_annotation(self) -> Union[object, Type[str]]:
+    def _dynamic_annotation(self) -> object | Type[str]:
         if self.choices is not None:
             choices = (
                 self.choices if isinstance(self.choices, list) else self.choices.keys()
@@ -1488,8 +1481,8 @@ class SelectOption(BaseChoicesOption):
 
     type: Literal[OptionType.select] = OptionType.select
     filter: Literal[None] = None
-    choices: Union[list[Any], dict[str, Any]]
-    default: Union[str, None]
+    choices: list[Any] | dict[str, Any] | None
+    default: str | None
     _annotation = str
 
 
@@ -1523,10 +1516,10 @@ class TagsOption(BaseChoicesOption):
 
     type: Literal[OptionType.tags] = OptionType.tags
     filter: Literal[None] = None
-    choices: Union[list[str], None] = None
-    pattern: Union[Pattern, None] = None
-    icon: Union[str, None] = None
-    default: Union[str, list[str], None]
+    choices: list[str] | None = None
+    pattern: Pattern | None = None
+    icon: str | None = None
+    default: str | list[str] | None
     _annotation = str
 
     @staticmethod
@@ -1569,8 +1562,8 @@ class TagsOption(BaseChoicesOption):
 
     @classmethod
     def _value_pre_validator(
-        cls, value: Union[list, str, None], field: "ModelField"
-    ) -> Union[str, None]:
+        cls, value: list | str | None, field: "ModelField"
+    ) -> str | None:
         if value is None or value == "":
             return None
 
@@ -1620,11 +1613,11 @@ class DomainOption(BaseChoicesOption):
 
     type: Literal[OptionType.domain] = OptionType.domain
     filter: Literal[None] = None
-    choices: Union[dict[str, str], None]
+    choices: dict[str, str] | None
 
     @validator("choices", pre=True, always=True)
     def inject_domains_choices(
-        cls, value: Union[dict[str, str], None], values: Values
+        cls, value: dict[str, str] | None, values: Values
     ) -> dict[str, str]:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.domain import domain_list
@@ -1636,9 +1629,7 @@ class DomainOption(BaseChoicesOption):
         }
 
     @validator("default", pre=True, always=True)
-    def inject_default(
-        cls, value: Union[str, None], values: Values
-    ) -> Union[str, None]:
+    def inject_default(cls, value: str | None, values: Values) -> str | None:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.domain import _get_maindomain
 
@@ -1675,12 +1666,12 @@ class AppOption(BaseChoicesOption):
     """
 
     type: Literal[OptionType.app] = OptionType.app
-    filter: Union[JSExpression, None] = None
-    choices: Union[dict[str, str], None]
+    filter: JSExpression | None = None
+    choices: dict[str, str] | None
 
     @validator("choices", pre=True, always=True)
     def inject_apps_choices(
-        cls, value: Union[dict[str, str], None], values: Values
+        cls, value: dict[str, str] | None, values: Values
     ) -> dict[str, str]:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.app import app_list
@@ -1722,7 +1713,7 @@ class UserOption(BaseChoicesOption):
 
     type: Literal[OptionType.user] = OptionType.user
     filter: Literal[None] = None
-    choices: Union[dict[str, str], None]
+    choices: dict[str, str] | None
 
     @root_validator(pre=True)
     def inject_users_choices_and_default(cls, values: Values) -> Values:
@@ -1772,12 +1763,12 @@ class GroupOption(BaseChoicesOption):
 
     type: Literal[OptionType.group] = OptionType.group
     filter: Literal[None] = None
-    choices: Union[dict[str, str], None]
-    default: Union[Literal["visitors", "all_users", "admins"], None] = "all_users"
+    choices: dict[str, str] | None
+    default: Literal["visitors", "all_users", "admins"] | None = "all_users"
 
     @validator("choices", pre=True, always=True)
     def inject_groups_choices(
-        cls, value: Union[dict[str, str], None], values: Values
+        cls, value: dict[str, str] | None, values: Values
     ) -> dict[str, str]:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.user import user_group_list
@@ -1797,7 +1788,7 @@ class GroupOption(BaseChoicesOption):
         return {groupname: _human_readable_group(groupname) for groupname in groups}
 
     @validator("default", pre=True, always=True)
-    def inject_default(cls, value: Union[str, None], values: Values) -> str:
+    def inject_default(cls, value: str | None, values: Values) -> str:
         # FIXME do we really want to default to something all the time?
         if value is None:
             return "all_users"
@@ -1830,30 +1821,30 @@ OPTIONS = {
     OptionType.group: GroupOption,
 }
 
-AnyOption = Union[
-    DisplayTextOption,
-    MarkdownOption,
-    AlertOption,
-    ButtonOption,
-    StringOption,
-    TextOption,
-    PasswordOption,
-    ColorOption,
-    NumberOption,
-    BooleanOption,
-    DateOption,
-    TimeOption,
-    EmailOption,
-    WebPathOption,
-    URLOption,
-    FileOption,
-    SelectOption,
-    TagsOption,
-    DomainOption,
-    AppOption,
-    UserOption,
-    GroupOption,
-]
+AnyOption = (
+    DisplayTextOption
+    | MarkdownOption
+    | AlertOption
+    | ButtonOption
+    | StringOption
+    | TextOption
+    | PasswordOption
+    | ColorOption
+    | NumberOption
+    | BooleanOption
+    | DateOption
+    | TimeOption
+    | EmailOption
+    | WebPathOption
+    | URLOption
+    | FileOption
+    | SelectOption
+    | TagsOption
+    | DomainOption
+    | AppOption
+    | UserOption
+    | GroupOption
+)
 
 
 # ╭───────────────────────────────────────────────────────╮
@@ -1899,7 +1890,7 @@ class OptionsModel(BaseModel):
     def __init__(self, **kwargs) -> None:
         super().__init__(options=self.options_dict_to_list(kwargs))
 
-    def translate_options(self, i18n_key: Union[str, None] = None) -> None:
+    def translate_options(self, i18n_key: str | None = None) -> None:
         """
         Mutate in place translatable attributes of options to their translations
         """
@@ -1997,8 +1988,8 @@ Hooks = dict[str, Callable[[BaseInputOption], Any]]
 
 
 def parse_prefilled_values(
-    args: Union[str, None] = None,
-    args_file: Union[str, None] = None,
+    args: str | None = None,
+    args_file: str | None = None,
     method: Literal["parse_qs", "parse_qsl"] = "parse_qs",
 ) -> dict[str, Any]:
     """
@@ -2178,7 +2169,7 @@ def prompt_or_validate_form(
 
 def ask_questions_and_parse_answers(
     raw_options: dict[str, Any],
-    prefilled_answers: Union[str, Mapping[str, Any]] = {},
+    prefilled_answers: str | Mapping[str, Any] = {},
     current_values: Mapping[str, Any] = {},
     hooks: Hooks = {},
 ) -> tuple[list[AnyOption], FormModel]:
@@ -2231,7 +2222,7 @@ def parse_raw_options(
 
 def parse_raw_options(
     raw_options: dict[str, Any], serialize: bool = False
-) -> Union[list[dict[str, Any]], list[AnyOption]]:
+) -> list[dict[str, Any]] | list[AnyOption]:
     # Validate/parse the options attributes
     try:
         model = OptionsModel(**raw_options)

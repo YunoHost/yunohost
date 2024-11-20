@@ -19,7 +19,7 @@
 import os
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional
 from collections import OrderedDict
 from logging import getLogger
 
@@ -794,7 +794,7 @@ def _get_DomainConfigPanel():
             form: "FormModel",
             config: "ConfigPanelModel",
             previous_settings: dict[str, Any],
-            exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
+            exclude: "AbstractSetIntStr" | "MappingIntStrAny" | None = None,
         ) -> None:
             next_settings = {
                 k: v for k, v in form.dict().items() if previous_settings.get(k) != v
