@@ -661,8 +661,8 @@ class TestString(BaseTest):
     scenarios = [
         *nones(None, "", output=""),
         # basic typed values
-        (False, "False"),
-        (True, "True"),
+        (False, FAIL),
+        (True, FAIL),
         (0, "0"),
         (1, "1"),
         (-1, "-1"),
@@ -702,8 +702,8 @@ class TestText(BaseTest):
     scenarios = [
         *nones(None, "", output=""),
         # basic typed values
-        (False, "False"),
-        (True, "True"),
+        (False, FAIL),
+        (True, FAIL),
         (0, "0"),
         (1, "1"),
         (-1, "-1"),
