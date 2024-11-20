@@ -23,7 +23,7 @@ from collections import OrderedDict
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union, cast
 
-from pydantic import BaseModel, ConfigDict, validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
@@ -45,7 +45,7 @@ from yunohost.utils.form import (
 from yunohost.utils.i18n import _value_for_locale
 
 if TYPE_CHECKING:
-    from pydantic.fields import ModelField
+    from pydantic.fields import ValidationInfo
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
     from yunohost.utils.form import FormModel, Hooks
@@ -385,8 +385,9 @@ class ConfigPanelModel(BaseModel):
         for panel in self.panels:
             panel.translate(self.i18n)
 
-    @validator("version", always=True)
-    def check_version(cls, value: float, field: "ModelField") -> float:
+    @field_validator("version")
+    @classmethod
+    def check_version(cls, value: float, info: "ValidationInfo") -> float:
         if value < CONFIG_PANEL_VERSION_SUPPORTED:
             raise ValueError(
                 f"Config panels version '{value}' are no longer supported."

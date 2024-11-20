@@ -45,7 +45,7 @@ from pydantic import (
     ConfigDict,
     ValidationError,
     create_model,
-    validator,
+    field_validator,
     root_validator,
 )
 from pydantic.color import Color
@@ -61,7 +61,7 @@ from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.i18n import _value_for_locale
 
 if TYPE_CHECKING:
-    from pydantic.fields import ModelField, FieldInfo
+    from pydantic.fields import ValidationInfo, FieldInfo
 
 logger = getLogger("yunohost.form")
 
@@ -403,27 +403,30 @@ class BaseOption(BaseModel):
 
         return schema
 
-    @validator("id", pre=True)
+    @field_validator("id", mode="before")
+    @classmethod
     def check_id_is_not_forbidden(cls, value: str) -> str:
         if value in FORBIDDEN_KEYWORDS:
             raise ValueError(m18n.n("config_forbidden_keyword", keyword=value))
         return value
 
     # FIXME Legacy, is `name` still needed?
-    @validator("name")
-    def apply_legacy_name(cls, value: str | None, values: Values) -> str:
+    @field_validator("name")
+    @classmethod
+    def apply_legacy_name(cls, value: str | None, info: "ValidationInfo") -> str:
         if value is None:
-            return values["id"]
+            return info.data["id"]
         return value
 
-    @validator("readonly", pre=True)
-    def can_be_readonly(cls, value: bool, values: Values) -> bool:
-        if value is True and values["type"] in FORBIDDEN_READONLY_TYPES:
+    @field_validator("readonly", mode="before")
+    @classmethod
+    def can_be_readonly(cls, value: bool, info: "ValidationInfo") -> bool:
+        if value is True and info.data["type"] in FORBIDDEN_READONLY_TYPES:
             raise ValueError(
                 m18n.n(
                     "config_forbidden_readonly_type",
-                    type=values["type"],
-                    id=values["id"],
+                    type=info.data["type"],
+                    id=info.data["id"],
                 )
             )
         return value
@@ -623,8 +626,9 @@ class BaseInputOption(BaseOption):
     _annotation: Any = Any
     _none_as_empty_str: ClassVar[bool] = True
 
-    @validator("default", pre=True)
-    def check_empty_default(value: Any) -> Any:
+    @field_validator("default", mode="before")
+    @classmethod
+    def check_empty_default(cls, value: Any) -> Any:
         if value == "":
             return None
         return value
@@ -1418,8 +1422,9 @@ class BaseChoicesOption(BaseInputOption):
     # We do not declare `choices` here to be able to declare other fields before `choices` and acces their values in `choices` validators
     # choices: dict[str, Any] | list[Any] | None
 
-    @validator("choices", pre=True, check_fields=False)
-    def parse_comalist_choices(value: Any) -> dict[str, Any] | list[Any] | None:
+    @field_validator("choices", mode="before", check_fields=False)
+    @classmethod
+    def parse_comalist_choices(cls, value: Any) -> dict[str, Any] | list[Any] | None:
         if isinstance(value, str):
             values = [value.strip() for value in value.split(",")]
             return [value for value in values if value]
@@ -1971,8 +1976,8 @@ def build_form(
         option_validators = option._validators
 
         for step in ("pre", "post"):
-            validators[f"{option.id}_{step}_validator"] = validator(
-                option.id, allow_reuse=True, pre=step == "pre"
+            validators[f"{option.id}_{step}_validator"] = field_validator(
+                option.id, mode="before" if step == "pre" else "after"
             )(option_validators[step])
 
     return cast(
