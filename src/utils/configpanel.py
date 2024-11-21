@@ -839,7 +839,7 @@ class ConfigPanel:
         for panel in config.panels:
             if interactive and verbose:
                 Moulinette.display(
-                    colorize(f"\n{'='*40}\n>>>> {panel.name}\n{'='*40}", "purple")
+                    colorize(f"\n{'=' * 40}\n>>>> {panel.name}\n{'=' * 40}", "purple")
                 )
 
             # A section or option may only evaluate its conditions (`visible`
