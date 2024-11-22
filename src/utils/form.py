@@ -61,11 +61,15 @@ from pydantic_extra_types.color import Color
 from ..log import OperationLogger
 from ..utils.error import YunohostError, YunohostValidationError
 from ..utils.i18n import _value_for_locale
+from ..utils.validation import (
+    Mode,
+    Pattern,
+    Translation,
+)
 from .file_utils import read_yaml, write_to_file
 
 if TYPE_CHECKING:
-    from pydantic import GetJsonSchemaHandler
-    from pydantic.fields import FieldInfo, ValidationInfo
+    from pydantic import FieldInfo, GetJsonSchemaHandler, ValidationInfo
     from pydantic.json_schema import JsonSchemaValue
     from pydantic_core.core_schema import CoreSchema
 
@@ -309,15 +313,8 @@ FORBIDDEN_KEYWORDS = {
 }
 
 Context = dict[str, Any]
-Translation = dict[str, str] | str
 JSExpression = str
 Values = dict[str, Any]
-Mode = Literal["python", "bash"]
-
-
-class Pattern(BaseModel):
-    regexp: str
-    error: Translation = "pydantic.value_error.str.regex"  # FIXME add generic i18n key
 
 
 class BaseOption(BaseModel):

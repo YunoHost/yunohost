@@ -49,8 +49,7 @@ from .form import (
 from .i18n import _value_for_locale
 
 if TYPE_CHECKING:
-    from pydantic import GetJsonSchemaHandler
-    from pydantic.fields import ValidationInfo
+    from pydantic import GetJsonSchemaHandler, ValidationInfo
     from pydantic.json_schema import JsonSchemaValue
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
     from pydantic_core.core_schema import CoreSchema
