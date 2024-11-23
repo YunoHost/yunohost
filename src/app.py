@@ -1714,6 +1714,7 @@ def app_ssowatconf():
             "ihatemoney",
             "keeweb",
             "monica",
+            "my_webdav",
             "nextcloud",
             "owncloud",
             "paheko",
