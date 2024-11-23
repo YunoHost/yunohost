@@ -46,6 +46,7 @@ from typing import (
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
 from pydantic import (
+    AfterValidator,
     BaseModel,
     ConfigDict,
     ValidationError,
@@ -64,7 +65,10 @@ from ..utils.i18n import _value_for_locale
 from ..utils.validation import (
     Mode,
     Pattern,
+    StringConstraints,
     Translation,
+    coerce_nonish_to_none,
+    redact,
 )
 from .file_utils import read_yaml, write_to_file
 
@@ -628,10 +632,8 @@ class BaseInputOption(BaseOption):
 
     @field_validator("default", mode="before")
     @classmethod
-    def check_empty_default(cls, value: Any) -> Any:
-        if value == "":
-            return None
-        return value
+    def coerce_empty_str_default(cls, value: Any) -> Any:
+        return coerce_nonish_to_none(value)
 
     @staticmethod
     def humanize(value: Any, option: Union["BaseOption", dict[Any, Any]] = {}) -> str:
@@ -685,22 +687,6 @@ class BaseInputOption(BaseOption):
 
         return message
 
-    @staticmethod
-    def _value_pre_validator(cls, value: Any, info: "ValidationInfo") -> Any:
-        if value == "":
-            return None
-
-        return value
-
-    @staticmethod
-    def _value_post_validator(cls, value: Any, info: "ValidationInfo") -> Any:
-        extras = cls.model_fields[info.field_name].json_schema_extra
-
-        if value is None and extras["none_as_empty_str"]:
-            value = ""
-
-        return value
-
 
 # ─ STRINGS ───────────────────────────────────────────────
 
@@ -708,22 +694,20 @@ class BaseInputOption(BaseOption):
 class BaseStringOption(BaseInputOption):
     default: str | None = None
     pattern: Pattern | None = None
-    _annotation = str
 
-    @property
-    def _dynamic_annotation(self) -> Type[str]:
-        if self.pattern:
-            return constr(pattern=self.pattern.regexp)
-
-        return self._annotation
-
-    def _get_field_attrs(self) -> dict[str, Any]:
-        attrs = super()._get_field_attrs()
-
-        if self.pattern:
-            attrs["json_schema_extra"]["regex_error"] = self.pattern.error  # extra
-
-        return attrs
+    def get_annotation(self, mode: Mode = "bash") -> tuple[Any, "FieldInfo"]:
+        return (
+            Annotated[
+                str | None if self.optional else str,
+                StringConstraints(
+                    mode=mode,
+                    has_default=self.default is not None,
+                    pattern=self.pattern,
+                ),
+                AfterValidator(redact) if self.redact else None,
+            ],
+            Field(**self._get_field_attrs()),
+        )
 
 
 class StringOption(BaseStringOption):
