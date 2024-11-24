@@ -49,6 +49,7 @@ from pydantic import (
     AfterValidator,
     BaseModel,
     ConfigDict,
+    PlainSerializer,
     ValidationError,
     create_model,
     field_validator,
@@ -64,6 +65,7 @@ from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.validation import (
     FORBIDDEN_PASSWORD_CHARS,
+    BaseConstraints,
     Mode,
     PasswordConstraints,
     Pattern,
@@ -821,8 +823,7 @@ class ColorOption(BaseInputOption):
     """
 
     type: Literal[OptionType.color] = OptionType.color
-    default: str | None = None
-    _annotation = Color
+    default: Color | str | None = None
 
     @staticmethod
     def humanize(value: Color | str | None, option={}) -> str:
@@ -838,14 +839,17 @@ class ColorOption(BaseInputOption):
 
         return super(ColorOption, ColorOption).normalize(value, option)
 
-    @staticmethod
-    def _value_post_validator(
-        cls, value: Color | None, info: "ValidationInfo"
-    ) -> str | None:
-        if isinstance(value, Color):
-            return value.as_hex()
-
-        return super(ColorOption, ColorOption)._value_post_validator(cls, value, info)
+    def get_annotation(self, mode: Mode = "bash") -> Any:
+        return (
+            Annotated[
+                Color | None if self.optional else Color,
+                PlainSerializer(lambda v: v.as_hex() if v else v),
+                BaseConstraints(
+                    mode=mode, has_default=self.default is not None, redact=self.redact
+                ),
+            ],
+            Field(**self._get_field_attrs()),
+        )
 
 
 # ─ NUMERIC ───────────────────────────────────────────────

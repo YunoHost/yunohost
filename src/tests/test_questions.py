@@ -810,6 +810,7 @@ class TestColor(BaseTest):
         # named
         ("red", "#f00"),
         ("yellow", "#ff0"),
+        ("", "#000", {"default": "black"}),
         # custom fail
         ("#12", FAIL),
         ("#gggggg", FAIL),
