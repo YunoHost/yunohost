@@ -34,7 +34,6 @@ from yunohost import app, domain, user
 from yunohost.utils import form
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.form import (
-    FORBIDDEN_PASSWORD_CHARS,
     OPTIONS,
     READONLY_TYPES,
     BaseChoicesOption,
@@ -47,6 +46,8 @@ from yunohost.utils.form import (
     ask_questions_and_parse_answers,
     evaluate_simple_js_expression,
 )
+from yunohost.utils.validation import FORBIDDEN_PASSWORD_CHARS
+
 
 """
 Argument default format:
