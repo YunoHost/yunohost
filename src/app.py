@@ -1672,7 +1672,15 @@ def app_ssowatconf():
 
     # Will organize apps by portal domain
     portal_domains_apps = {domain: {} for domain in portal_domains}
-    apps_catalog = _load_apps_catalog()["apps"]
+
+    # This check is to prevent an issue during postinstall if the catalog cant
+    # be initialized (because of offline postinstall) and it's not a big deal
+    # because there's no app yet (this is only used to get the default logo for
+    # the app
+    if os.path.exists("/etc/yunohost/installed"):
+        apps_catalog = _load_apps_catalog()["apps"]
+    else:
+        apps_catalog = {}
 
     # New permission system
     for perm_name, perm_info in all_permissions.items():
