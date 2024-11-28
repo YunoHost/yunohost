@@ -1590,7 +1590,7 @@ class DomainOption(BaseSelectOption):
         return value
 
 
-class AppOption(BaseChoicesOption):
+class AppOption(BaseSelectOption):
     """
     Ask for a user app.
     Renders as a select in the web-admin and as a regular prompt in CLI with autocompletion of installed apps.
@@ -1612,7 +1612,7 @@ class AppOption(BaseChoicesOption):
 
     type: Literal[OptionType.app] = OptionType.app
     filter: JSExpression | None = None
-    choices: dict[str, str] | None = None
+    choices: dict[str, str]
 
     @model_validator(mode="before")
     @classmethod
