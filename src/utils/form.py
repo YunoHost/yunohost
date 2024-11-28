@@ -49,6 +49,7 @@ from moulinette.utils.filesystem import read_yaml, write_to_file
 from pydantic import (
     AfterValidator,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     PlainSerializer,
     ValidationError,
@@ -78,6 +79,7 @@ from yunohost.utils.validation import (
     Pattern,
     StringConstraints,
     Translation,
+    coerce_comalist_to_list,
     coerce_nonish_to_none,
     redact,
 )
@@ -1343,28 +1345,7 @@ class FileOption(BaseInputOption):
 
 
 class BaseChoicesOption(BaseInputOption):
-    # FIXME probably forbid choices to be None?
-    filter: JSExpression | None = None  # filter before choices
-    # We do not declare `choices` here to be able to declare other fields before `choices` and acces their values in `choices` validators
-    # choices: dict[str, Any] | list[Any] | None
-
-    @field_validator("choices", mode="before", check_fields=False)
-    @classmethod
-    def parse_comalist_choices(cls, value: Any) -> dict[str, Any] | list[Any] | None:
-        if isinstance(value, str):
-            values = [value.strip() for value in value.split(",")]
-            return [value for value in values if value]
-        return value
-
-    @property
-    def _dynamic_annotation(self) -> object | Type[str]:
-        if self.choices:
-            choices = (
-                self.choices if isinstance(self.choices, list) else self.choices.keys()
-            )
-            return Literal[tuple(choices)]
-
-        return self._annotation
+    choices: dict[Any, Any] | list[Any] | None = None
 
     def _get_prompt_message(self, value: Any) -> str:
         message = super()._get_prompt_message(value)
@@ -1398,7 +1379,31 @@ class BaseChoicesOption(BaseInputOption):
         return message
 
 
-class SelectOption(BaseChoicesOption):
+class BaseSelectOption(BaseChoicesOption):
+    default: str | None = None
+    choices: dict[Any, Any] | list[Any]
+
+    def get_annotation(self, mode: Mode = "bash") -> Any:
+        choices = tuple(
+            self.choices if isinstance(self.choices, list) else self.choices.keys()
+        )
+        return (
+            Annotated[
+                (
+                    Literal[tuple(choices)] | None
+                    if self.optional
+                    else Literal[tuple(choices)]
+                ),
+                BaseConstraints(
+                    mode=mode,
+                    has_default=self.default is not None,
+                ),
+            ],
+            Field(**self._get_field_attrs()),
+        )
+
+
+class SelectOption(BaseSelectOption):
     """
     Ask for value from a limited set of values.
     Renders as a regular `<select/>` in the web-admin and as a regular prompt in CLI with autocompletion of `choices`.
@@ -1421,10 +1426,12 @@ class SelectOption(BaseChoicesOption):
     """
 
     type: Literal[OptionType.select] = OptionType.select
-    filter: Literal[None] = None
-    choices: list[Any] | dict[Any, Any] | None = None
+    choices: Annotated[
+        list[Any] | dict[Any, Any],
+        BeforeValidator(coerce_comalist_to_list),
+        BaseConstraints(),
+    ]
     default: str | None = None
-    _annotation = str
 
 
 class TagsOption(BaseChoicesOption):
