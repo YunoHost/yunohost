@@ -154,7 +154,7 @@ def tools_postinstall(
     )
     from yunohost.domain import domain_main_domain, domain_add
     from yunohost.user import user_create, ADMIN_ALIASES
-    from yunohost.app import _ask_confirmation, app_ssowatconf
+    from yunohost.app import _ask_confirmation
     from yunohost.app_catalog import _update_apps_catalog
     from yunohost.firewall import firewall_upnp
 
