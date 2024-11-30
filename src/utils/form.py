@@ -650,8 +650,9 @@ class BaseInputOption(BaseOption):
 
     @field_validator("default", mode="before")
     @classmethod
-    def coerce_empty_str_default(cls, value: Any) -> Any:
-        return coerce_nonish_to_none(value)
+    def coerce_empty_str_default(cls, v: Any, info: "ValidationInfo") -> Any:
+        multiple = info.data.get("multiple", False)
+        return coerce_comalist_to_list(v) if multiple else coerce_nonish_to_none(v)
 
     @staticmethod
     def humanize(value: Any, option={}) -> str:
@@ -732,7 +733,7 @@ class BaseInputOption(BaseOption):
 
 
 class BaseStringOption(BaseInputOption):
-    default: str | None = None
+    default: str | list[str] | None = None
     pattern: Pattern | None = None
 
     def get_annotation(self, mode: Mode = "python") -> tuple[Any, "FieldInfo"]:
@@ -852,7 +853,7 @@ class ColorOption(BaseInputOption):
     """
 
     type: Literal[OptionType.color] = OptionType.color
-    default: Color | str | None = None
+    default: Color | str | list[Color | str] | None = None
 
     @staticmethod
     def humanize(value: Color | str | None, option={}) -> str:
@@ -908,7 +909,7 @@ class NumberOption(BaseInputOption):
 
     # `number` and `range` are exactly the same, but `range` does render as a slider in web-admin
     type: Literal[OptionType.number, OptionType.range] = OptionType.number
-    default: int | None = None
+    default: int | list[int] | None = None
     min: int | None = None
     max: int | None = None
     step: int | None = None
@@ -977,7 +978,7 @@ class BooleanOption(BaseInputOption):
     """
 
     type: Literal[OptionType.boolean] = OptionType.boolean
-    default: bool | int | str | None = False
+    default: bool | int | str | list[bool | int | str] | None = False
     yes: Any = 1
     no: Any = 0
     _yes_answers: ClassVar[set[str]] = {"1", "yes", "y", "true", "t", "on"}
@@ -1109,7 +1110,7 @@ class DateOption(BaseInputOption):
     """
 
     type: Literal[OptionType.date] = OptionType.date
-    default: Annotated[datetime.date | None, DatetimeConstraints()] = None
+    default: datetime.date | list[datetime.date] | None = None
 
     def get_annotation(self, mode: Mode = "python") -> tuple[Any, "FieldInfo"]:
         return self._build_annotation(
@@ -1142,7 +1143,7 @@ class TimeOption(BaseInputOption):
     """
 
     type: Literal[OptionType.time] = OptionType.time
-    default: Annotated[datetime.time | None, DatetimeConstraints()] = None
+    default: datetime.time | list[datetime.time] | None = None
 
     @staticmethod
     def humanize(v: Any, option={}) -> str:
@@ -1181,7 +1182,7 @@ class EmailOption(BaseInputOption):
     """
 
     type: Literal[OptionType.email] = OptionType.email
-    default: EmailStr | None = None
+    default: EmailStr | list[EmailStr] | None = None
 
     def get_annotation(self, mode: Mode = "python") -> tuple[Any, "FieldInfo"]:
         return self._build_annotation(
@@ -1214,7 +1215,7 @@ class WebPathOption(BaseInputOption):
     """
 
     type: Literal[OptionType.path] = OptionType.path
-    default: Annotated[Path | None, PathConstraints()] = None
+    default: Path | str | list[Path | str] | None = None
 
     @staticmethod
     def normalize(value, option={}) -> str:
@@ -1279,7 +1280,7 @@ class URLOption(BaseInputOption):
     """
 
     type: Literal[OptionType.url] = OptionType.url
-    default: Annotated[HttpUrl | None, BaseConstraints()] = None
+    default: HttpUrl | list[HttpUrl] | None = None
 
     def get_annotation(self, mode: Mode = "python") -> tuple[Any, "FieldInfo"]:
         return self._build_annotation(
@@ -1320,6 +1321,7 @@ class FileOption(BaseInputOption):
     """
 
     type: Literal[OptionType.file] = OptionType.file
+    multiple: Literal[False] = False
     default: str | None = None
     accept: list[str] | None = None  # currently only used by the web-admin
 
@@ -1383,7 +1385,7 @@ class BaseChoicesOption(BaseInputOption):
 
 class BaseSelectOption(BaseChoicesOption):
     choices: dict[Any, Any] | list[Any]
-    default: str | None = None
+    default: str | list[str] | None = None
 
     def get_annotation(self, mode: Mode = "python") -> tuple[Any, "FieldInfo"]:
         choices = tuple(
@@ -1427,7 +1429,7 @@ class SelectOption(BaseSelectOption):
         BeforeValidator(coerce_comalist_to_list),
         BaseConstraints(),
     ]
-    default: str | None = None
+    default: str | list[str] | None = None
 
 
 class TagsOption(BaseChoicesOption):
@@ -1466,9 +1468,7 @@ class TagsOption(BaseChoicesOption):
     choices: Annotated[
         list[str] | None, BeforeValidator(coerce_comalist_to_list), BaseConstraints()
     ] = None
-    default: Annotated[
-        list[str] | None, BeforeValidator(coerce_comalist_to_list), BaseConstraints()
-    ] = None
+    default: list[str] | None = None
     pattern: Pattern | None = None
     icon: str | None = None
 
@@ -1681,7 +1681,11 @@ class GroupOption(BaseSelectOption):
     """
 
     type: Literal[OptionType.group] = OptionType.group
-    default: Literal["visitors", "all_users", "admins"] | None = "all_users"
+    default: (
+        Literal["visitors", "all_users", "admins"]
+        | list[Literal["visitors", "all_users", "admins"]]
+        | None
+    ) = None
     choices: dict[str, str]
 
     @model_validator(mode="before")
