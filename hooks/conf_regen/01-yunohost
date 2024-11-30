@@ -137,10 +137,11 @@ base_folder_and_perm_init() {
     [ ! -e /var/www/.well-known/ynh-diagnosis/ ] || chmod 775 /var/www/.well-known/ynh-diagnosis/
 
     if test -e /etc/yunohost/installed; then
-        setfacl -m g:all_users:--- /var/www
-        setfacl -m g:all_users:--- /var/log/nginx
-        setfacl -m g:all_users:--- /etc/yunohost
-        setfacl -m g:all_users:--- /etc/ssowat
+        # We use "|| true" because some filesystem do not support ACL (such as NTFS ... for example when incus storage is on an NTFS drive in dir storage)
+        setfacl -m g:all_users:--- /var/www || true
+        setfacl -m g:all_users:--- /var/log/nginx || true
+        setfacl -m g:all_users:--- /etc/yunohost || true
+        setfacl -m g:all_users:--- /etc/ssowat || true
     fi
 }
 
