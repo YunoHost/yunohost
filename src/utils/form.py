@@ -874,7 +874,9 @@ class ColorOption(BaseInputOption):
             Color,
             PlainSerializer(lambda v: v.as_hex() if v else v),
             BaseConstraints(
-                mode=mode, has_default=self.default is not None, redact=self.redact
+                mode=mode,
+                has_default=self.default is not None and not self.multiple,
+                redact=self.redact,
             ),
             mode=mode,
         )
@@ -940,7 +942,7 @@ class NumberOption(BaseInputOption):
             int,
             NumberConstraints(
                 mode=mode,
-                has_default=self.default is not None,
+                has_default=self.default is not None and not self.multiple,
                 min=self.min,
                 max=self.max,
                 step=self.step,
@@ -1070,7 +1072,7 @@ class BooleanOption(BaseInputOption):
             bool,
             BooleanConstraints(
                 mode=mode,
-                has_default=self.default is not None,
+                has_default=self.default is not None and not self.multiple,
                 serialization=(self.yes, self.no),
             ),
             mode=mode,
@@ -1117,7 +1119,7 @@ class DateOption(BaseInputOption):
             datetime.date,
             DatetimeConstraints(
                 mode=mode,
-                has_default=self.default is not None,
+                has_default=self.default is not None and not self.multiple,
             ),
             mode=mode,
         )
@@ -1154,7 +1156,7 @@ class TimeOption(BaseInputOption):
             datetime.time,
             DatetimeConstraints(
                 mode=mode,
-                has_default=self.default is not None,
+                has_default=self.default is not None and not self.multiple,
             ),
             mode=mode,
         )
@@ -1189,7 +1191,7 @@ class EmailOption(BaseInputOption):
             EmailStr,
             BaseConstraints(
                 mode=mode,
-                has_default=self.default is not None,
+                has_default=self.default is not None and not self.multiple,
             ),
             mode=mode,
         )
@@ -1254,7 +1256,7 @@ class WebPathOption(BaseInputOption):
             Path,
             PathConstraints(
                 mode=mode,
-                has_default=self.default is not None,
+                has_default=self.default is not None and not self.multiple,
             ),
             mode=mode,
         )
@@ -1287,7 +1289,7 @@ class URLOption(BaseInputOption):
             HttpUrl,
             BaseConstraints(
                 mode=mode,
-                has_default=self.default is not None,
+                has_default=self.default is not None and not self.multiple,
                 serializer=lambda v: str(v) if v else v,
             ),
             mode=mode,
@@ -1395,7 +1397,7 @@ class BaseSelectOption(BaseChoicesOption):
             Literal[tuple(choices)],
             BaseConstraints(
                 mode=mode,
-                has_default=self.default is not None,
+                has_default=self.default is not None and not self.multiple,
             ),
             mode=mode,
         )
