@@ -46,8 +46,13 @@ from yunohost.utils.form import (
     ask_questions_and_parse_answers,
     evaluate_simple_js_expression,
 )
-from yunohost.utils.validation import FORBIDDEN_PASSWORD_CHARS
+from yunohost.utils.validation import (
+    FORBIDDEN_PASSWORD_CHARS,
+    NONISH_VALUES,
+    coerce_nonish_to_none,
+)
 
+MULTIPLE_NONISH: Any = (*NONISH_VALUES, ",", ", , ", [])
 
 """
 Argument default format:
@@ -461,7 +466,7 @@ class BaseTest:
     # fmt: off
     # scenarios = [
     #     *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
-    #     *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+    #     *all_fails("False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
     #     *nones(None, "", output=""),
     # ]
     # fmt: on
@@ -694,7 +699,7 @@ class TestString(BaseTest):
     }
     # fmt: off
     scenarios = [
-        *nones(None, "", output=""),
+        *nones(*NONISH_VALUES, output=""),
         # basic typed values
         (False, FAIL),
         (True, FAIL),
@@ -704,7 +709,7 @@ class TestString(BaseTest):
         (1337, "1337"),
         (13.37, "13.37"),
         *all_fails([], ["one"], {}),
-        *unchanged("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", raw_option={"optional": True}),
+        *unchanged("False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", raw_option={"optional": True}),
         # test strip
         ("value", "value"),
         ("value\n", "value"),
@@ -720,7 +725,7 @@ class TestString(BaseTest):
         # readonly
         ("overwrite", "expected value", {"readonly": True, "default": "expected value"}),  # FIXME do we want to fail instead?
         # multiple
-        *nones(None, "", ",", ", , ", [], output="", raw_option={"multiple": True}),
+        *nones(*MULTIPLE_NONISH, output="", raw_option={"multiple": True}),
         *commons("one,two", output="one,two", raw_option={"multiple": True}),
         *commons(["one", "two"], output="one,two", raw_option={"multiple": True}),
         ([1, 2], "1,2", {"multiple": True}),
@@ -744,7 +749,7 @@ class TestText(BaseTest):
     }
     # fmt: off
     scenarios = [
-        *nones(None, "", output=""),
+        *nones(*NONISH_VALUES, output=""),
         # basic typed values
         (False, FAIL),
         (True, FAIL),
@@ -754,7 +759,7 @@ class TestText(BaseTest):
         (1337, "1337"),
         (13.37, "13.37"),
         *all_fails([], ["one"], {}),
-        *unchanged("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", raw_option={"optional": True}),
+        *unchanged("False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", raw_option={"optional": True}),
         ("value", "value"),
         ("value\n value", "value\n value"),
         ("value", FAIL, {"pattern": {"regexp": r'^[A-F]\d\d$', "error": "Provide a room like F12 : one uppercase and 2 numbers"}}),
@@ -764,7 +769,7 @@ class TestText(BaseTest):
         # readonly
         ("overwrite", "expected value", {"readonly": True, "default": "expected value"}),
         # multiple
-        *nones(None, "", output="", raw_option={"multiple": True}),
+        *nones(*MULTIPLE_NONISH, output="", raw_option={"multiple": True}),
         *commons("one\none,two", output="one\none,two", raw_option={"multiple": True}),
         *commons(["one\none", "two"], output="one\none,two", raw_option={"multiple": True}),
         ([1, 2], "1,2", {"multiple": True}),
@@ -789,8 +794,8 @@ class TestPassword(BaseTest):
     # fmt: off
     scenarios = [
         *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
-        *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
-        *nones(None, "", output=""),
+        *all_fails("False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+        *nones(*NONISH_VALUES, output=""),
         ("s3cr3t!!", YunohostError, {"default": "SUPAs3cr3t!!"}),  # default is forbidden
         ("s3cr3t!!", YunohostError, {"example": "SUPAs3cr3t!!"}),  # example is forbidden
         *unchanged(" value \n moarc0mpl1cat3d\n  ", " some_ value"),
@@ -818,8 +823,8 @@ class TestColor(BaseTest):
     # fmt: off
     scenarios = [
         *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
-        *all_fails("none", "_none", "False", "True", "0", "1", "-1", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
-        *nones(None, "", output=""),
+        *all_fails("False", "True", "0", "1", "-1", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+        *nones(*NONISH_VALUES, output=""),
         # custom valid
         (" #fe1  ", "#fe1"),
         ("#000000", "#000"),
@@ -839,7 +844,7 @@ class TestColor(BaseTest):
         # readonly
         ("#ffff00", "#000", {"readonly": True, "default": "#000"}),
         # multiple
-        *nones(None, "", ",", ", , ", [], output="", raw_option={"multiple": True}),
+        *nones(*MULTIPLE_NONISH, output="", raw_option={"multiple": True}),
         *commons("red,yellow", output="#f00,#ff0", raw_option={"multiple": True}),
         *commons(["red", "yellow"], "#f00,#ff0", {"multiple": True}),
         *all_fails([[]], [True], {}, [1, 2], ["#gggggg"], raw_option={"multiple": True}),
@@ -862,9 +867,9 @@ class TestNumber(BaseTest):
     # fmt: off
     scenarios = [
         *all_fails([], ["one"], {}),
-        *all_fails("none", "_none", "False", "True", "[]", ",", "['one']", "one,two", r"{}", "value"),
+        *all_fails("False", "True", "[]", ",", "['one']", "one,two", r"{}", "value"),
 
-        *nones(None, "", output=None),
+        *nones(*NONISH_VALUES, output=None),
         *unchanged(0, 1, -1, 1337),
         *all_as(False, "0", 0, output=0),  # FIXME should `False` fail instead?
         *all_as(True, "1", 1, output=1),  # FIXME should `True` fail instead?
@@ -882,11 +887,7 @@ class TestNumber(BaseTest):
         # readonly
         (1337, 10000, {"readonly": True, "default": "10000"}),
         # multiple
-        *nones(None, "", ",", ", , ", [], output="", raw_option={"multiple": True}),
-        *xfail(scenarios=[
-            ("none", ""),
-            ("_none", ""), 
-        ], reason="Should output as `'' | None`"),
+        *nones(*MULTIPLE_NONISH, output="", raw_option={"multiple": True}),
         *commons("1,2", output="1,2", raw_option={"multiple": True}),
         *commons(["1", "2"], output="1,2", raw_option={"multiple": True}),
         *commons([1, 2], output="1,2", raw_option={"multiple": True}),
@@ -913,10 +914,8 @@ class TestBoolean(BaseTest):
     truthy_values = (True, 1, "1", "True", "true", "Yes", "yes", "y", "on")
     falsy_values = (False, 0, "0", "False", "false", "No", "no", "n", "off")
     scenarios = [
-        *all_as(None, "", output=0),
-        *all_fails("none", "None"),  # FIXME should output as `0` (default) like other none values when required?
-        *all_as(None, "", output=0, raw_option={"optional": True}),  # FIXME should output as `None`?
-        *all_as("none", "None", output=None, raw_option={"optional": True}),
+        *all_as(*NONISH_VALUES, output=0),
+        *all_as(*NONISH_VALUES, output=0, raw_option={"optional": True}),
         {
             "raw_options": [
                 {"default": None},
@@ -926,9 +925,9 @@ class TestBoolean(BaseTest):
             ],
             "scenarios": [
                 # All none values fails if default is overriden
-                *all_fails(None, "", "none", "None"),
+                *all_fails(*NONISH_VALUES),
                 # All none values ends up as None if default is overriden
-                *all_as(None, "", "none", "None", output=None, raw_option={"optional": True}),
+                *all_as(*NONISH_VALUES, output=None, raw_option={"optional": True}),
             ]
         },
         # Unhandled types should fail
@@ -965,7 +964,7 @@ class TestBoolean(BaseTest):
         # readonly
         (1, 0, {"readonly": True, "default": 0}),
         # multiple
-        *nones(None, "", ",", ", , ", [], output="", raw_option={"multiple": True, "default": None}),
+        *nones(*MULTIPLE_NONISH, output="", raw_option={"multiple": True, "default": None}),
         *commons("1,0", output="1,0", raw_option={"multiple": True}),
         *commons(["1", "False"], output="1,0", raw_option={"multiple": True}),
         *commons([True, 0], output="1,0", raw_option={"multiple": True}),
@@ -994,8 +993,8 @@ class TestDate(BaseTest):
         # Those are negative one second timestamp ending up as Unix date - 1 sec (so day change)
         *all_as(-1, "-1", output="1969-12-31"),
         *all_fails([], ["one"], {}, raw_option={"optional": True}),
-        *all_fails("none", "_none", "False", "True", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
-        *nones(None, "", output=""),
+        *all_fails("False", "True", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+        *nones(*NONISH_VALUES, output=""),
         # custom valid
         ("2070-12-31", "2070-12-31"),
         ("2024-02-29", "2024-02-29"),
@@ -1012,7 +1011,7 @@ class TestDate(BaseTest):
         # readonly
         ("2070-12-31", "2024-02-29", {"readonly": True, "default": "2024-02-29"}),
         # multiple
-        *nones(None, "", ",", ", , ", [], output="", raw_option={"multiple": True}),
+        *nones(*MULTIPLE_NONISH, output="", raw_option={"multiple": True}),
         *commons("2070-12-31,2025-06-15", output="2070-12-31,2025-06-15", raw_option={"multiple": True}),
         ("2070-12-31,2025-06-15T13:45:30", "2070-12-31,2025-06-15", {"multiple": True}),
         ([1749938400, "2024-02-29"], "2025-06-14,2024-02-29", {"multiple": True}),
@@ -1042,8 +1041,8 @@ class TestTime(BaseTest):
         # Negative timestamp fails
         *all_fails(-1, "-1"),
         # *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
-        *all_fails("none", "_none", "False", "True", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
-        *nones(None, "", output=""),
+        *all_fails("False", "True", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+        *nones(*NONISH_VALUES, output=""),
         # custom valid
         *unchanged("00:00", "08:00", "12:19", "20:59", "23:59"),
         ("22:35:05", "22:35"),
@@ -1056,7 +1055,7 @@ class TestTime(BaseTest):
         # readonly
         ("00:00", "08:00", {"readonly": True, "default": "08:00"}),
         # multiple
-        *nones(None, "", ",", ", , ", [], output="", raw_option={"multiple": True}),
+        *nones(*MULTIPLE_NONISH, output="", raw_option={"multiple": True}),
         *commons("22:35:05,12:19", output="22:35,12:19", raw_option={"multiple": True}),
         ("22:35:03.514,1337", "22:35,00:22", {"multiple": True}),
         *all_as([True], [1], " , 1,,", output="00:00", raw_option={"multiple": True}),
@@ -1079,9 +1078,8 @@ class TestEmail(BaseTest):
     # fmt: off
     scenarios = [
         *all_fails(False, True, 0, 1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
-        *all_fails("none", "_none", "False", "True", "0", "1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
-
-        *nones(None, "", output=""),
+        *all_fails("False", "True", "0", "1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+        *nones(*NONISH_VALUES, output=""),
         ("\n Abc@example.tld  ", "Abc@example.tld"),
         ("admin@ynh.local", "admin@ynh.local"),
         # readonly
@@ -1153,7 +1151,7 @@ class TestEmail(BaseTest):
             "me@yy－－0.tld",
         ),
         # multiple
-        *nones(None, "", ",", ", , ", [], output="", raw_option={"multiple": True}),
+        *nones(*MULTIPLE_NONISH, output="", raw_option={"multiple": True}),
         *commons("Abc@example.tld,admin@ynh.org", output="Abc@example.tld,admin@ynh.org", raw_option={"multiple": True}),
         (["admin@ynh.org", " jeff@臺網中心.tw"], "admin@ynh.org,jeff@臺網中心.tw", {"multiple": True}),
         *all_fails([[]], {}, ["my@localhost"], [True], [1], " , 1,,", raw_option={"multiple": True}),
@@ -1175,14 +1173,13 @@ class TestWebPath(BaseTest):
     # fmt: off
     scenarios = [
         *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
-
-        *nones(None, "", output=""),
+        *nones(*NONISH_VALUES, output=""),
         # custom valid
         ("/", "/"),
         ("/one/two", "/one/two"),
         *[
             (v, "/" + v)
-            for v in ("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value")
+            for v in ("False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value")
         ],
         ("value\n", "/value"),
         ("//value", "/value"),
@@ -1198,7 +1195,7 @@ class TestWebPath(BaseTest):
         # readonly
         ("/overwrite", "/value", {"readonly": True, "default": "/value"}),
         # multiple
-        *nones(None, "", ",", ", , ", [], output="", raw_option={"multiple": True}),
+        *nones(*MULTIPLE_NONISH, output="", raw_option={"multiple": True}),
         *commons("value\n,https://example.com/folder", output="/value,/folder", raw_option={"multiple": True}),
         ("//value, , 1,,", "/value,/1", {"multiple": True}),
         *all_fails([[]], {}, [True], [1], raw_option={"multiple": True}),
@@ -1220,9 +1217,8 @@ class TestUrl(BaseTest):
     # fmt: off
     scenarios = [
         *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
-        *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
-
-        *nones(None, "", output=""),
+        *all_fails("False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+        *nones(*NONISH_VALUES, output=""),
         ("http://some.org/folder/file.txt", "http://some.org/folder/file.txt"),
         ('  https://www.example.com \n', 'https://www.example.com/'),
         # readonly
@@ -1301,7 +1297,7 @@ class TestUrl(BaseTest):
             "http://[192.168.1.1]:8329",
             "http://example.com:99999",
         ),
-        *nones(None, "", ",", ", , ", [], output="", raw_option={"multiple": True}),
+        *nones(*MULTIPLE_NONISH, output="", raw_option={"multiple": True}),
         *commons("http://123.45.67.8/\n,https://example.com/folder", output="http://123.45.67.8/,https://example.com/folder", raw_option={"multiple": True}),
         ("http://example/#, , http://example.com,,", "http://example/#,http://example.com/", {"multiple": True}),
         *all_fails([[]], {}, [True], [1], raw_option={"multiple": True}),
@@ -1373,7 +1369,7 @@ class TestFile(BaseTest):
     # Prefill data is generated in `cls.test_options_prompted_with_ask_help`
     # fmt: off
     scenarios = [
-        *nones(None, "", output=""),
+        *nones(*NONISH_VALUES, output=""),
         *unchanged(file_content1, file_content2),
         (file_content1, YunohostError, {"multiple": True}) # multiple forbidden for now
         # other type checks are done in `test_wrong_intake`
@@ -1402,7 +1398,7 @@ class TestFile(BaseTest):
 
     @pytest.mark.usefixtures("file_clean")
     def test_scenarios(self, intake, expected_output, raw_option, data):
-        if intake in (None, ""):
+        if coerce_nonish_to_none(intake) is None:
             with patch_prompt(intake):
                 _test_intake_may_fail(raw_option, None, expected_output)
             with patch_isatty(False):
@@ -1432,32 +1428,8 @@ class TestFile(BaseTest):
         "intake",
         [
             # fmt: off
-            False,
-            True,
-            0,
-            1,
-            -1,
-            1337,
-            13.37,
-            [],
-            ["one"],
-            {},
-            "none",
-            "_none",
-            "False",
-            "True",
-            "0",
-            "1",
-            "-1",
-            "1337",
-            "13.37",
-            "[]",
-            ",",
-            "['one']",
-            "one,two",
-            r"{}",
-            "value",
-            "value\n",
+            False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {},
+            "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n"
             # fmt: on
         ],
     )
@@ -1489,7 +1461,7 @@ class TestSelect(BaseTest):
                 {"choices": {"one": "verbose one", "two": "verbose two"}},
             ],
             "scenarios": [
-                *nones(None, "", output=""),
+                *nones(*NONISH_VALUES, output=""),
                 *unchanged("one", "two"),
                 ("three", FAIL),
             ]
@@ -1506,7 +1478,7 @@ class TestSelect(BaseTest):
                 {"choices": {"-1": "verbose -one", "0": "verbose zero", "1": "verbose one", "10": "verbose ten"}},
             ],
             "scenarios": [
-                *nones(None, "", output=""),
+                *nones(*NONISH_VALUES, output=""),
                 *all_fails(-1, 0, 1, 10),  # Should pass? converted to str?
                 *unchanged("-1", "0", "1", "10"),
                 *all_fails("100", 100),
@@ -1527,7 +1499,7 @@ class TestSelect(BaseTest):
         # readonly
         ("one", "two", {"readonly": True, "choices": ["one", "two"], "default": "two"}),
         # multiple
-        *nones(None, "", ",", ", , ", [], output="", raw_option={"multiple": True, "choices": ["one", "two"]}),
+        *nones(*MULTIPLE_NONISH, output="", raw_option={"multiple": True, "choices": ["one", "two"]}),
         *commons("one, two ", output="one,two", raw_option={"multiple": True, "choices": "one,two"}),
         (["-1", "0", "1", "10"], "-1,0,1,10", {"multiple": True, "choices": {"-1": "verbose -one", "0": "verbose zero", "1": "verbose one", "10": "verbose ten"}}),
         *all_fails([[]], {}, [True], [1], raw_option={"multiple": True, "choices": ["one"]}),
@@ -1549,7 +1521,7 @@ class TestTags(BaseTest):
     }
     # fmt: off
     scenarios = [
-        *nones(None, "", ",", ", , ", [], output=""),
+        *nones(*MULTIPLE_NONISH, output=""),
         {
             "raw_options": [
                 {},
@@ -1562,7 +1534,7 @@ class TestTags(BaseTest):
             ]
         },
         ("three", FAIL, {"choices": ["one", "two"]}),
-        *unchanged("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", "['one']", "one,two", r"{}", "value"),
+        *unchanged("False", "True", "0", "1", "-1", "1337", "13.37", "[]", "['one']", "one,two", r"{}", "value"),
         (" value\n", "value"),
         ([False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}], FAIL),
         *all_fails(([t], str(t)) for t in (False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {})),
@@ -1623,7 +1595,7 @@ class TestDomain(BaseTest):
         {
             "data": [{"main_domain": domains1[0], "domains": domains1}],
             "scenarios": [
-                *nones(None, "", output=domains1[0], fail_if_required=False),
+                *nones(*NONISH_VALUES, output=domains1[0], fail_if_required=False),
                 (domains1[0], domains1[0], {}),
                 ("doesnt_exist.pouet", FAIL, {}),
                 ("fake.com", FAIL, {"choices": ["fake.com"]}),
@@ -1634,13 +1606,13 @@ class TestDomain(BaseTest):
         {
             "data": [{"main_domain": domains2[1], "domains": domains2}],
             "scenarios": [
-                *nones(None, "", output=domains2[1], fail_if_required=False),
+                *nones(*NONISH_VALUES, output=domains2[1], fail_if_required=False),
                 (domains2[1], domains2[1], {}),
                 (domains2[0], domains2[0], {}),
                 ("doesnt_exist.pouet", FAIL, {}),
                 ("fake.com", FAIL, {"choices": ["fake.com"]}),
                 # multiple
-                *nones(None, "", ",", ", , ", [], output="", raw_option={"multiple": True}),
+                *nones(*MULTIPLE_NONISH, output="", raw_option={"multiple": True}),
                 *commons(f"{domains1[0]}, {domains2[0]} ", output=f"{domains1[0]},{domains2[0]}", raw_option={"multiple": True}),
                 ("fake.com", FAIL, {"multiple": True, "choices": ["fake.com"]}),
                 *all_fails([[]], {}, [True], [1], raw_option={"multiple": True}),
@@ -1698,16 +1670,7 @@ class TestApp(BaseTest):
                 {"apps": [installed_webapp, installed_non_webapp]},
             ],
             "scenarios": [
-                # FIXME there are currently 3 different nones (`None`, `""` and `_none`), choose one?
-                *nones(None, "", output=""),  # FIXME Should return chosen none?
-                *xpass(scenarios=[
-                    ("_none", "_none"),
-                    ("_none", "_none", {"default": "_none"}),
-                ], reason="should fail; is required"),
-                *xpass(scenarios=[
-                    ("_none", "_none", {"optional": True}),
-                    ("_none", "_none", {"optional": True, "default": "_none"})
-                ], reason="Should output chosen none value"),
+                *nones(*NONISH_VALUES, output="_none"), 
                 ("fake_app", FAIL),
                 ("fake_app", FAIL, {"choices": ["fake_app"]}),
             ]
@@ -1722,9 +1685,9 @@ class TestApp(BaseTest):
                 (installed_webapp["id"], installed_webapp["id"], {"filter": "is_webapp"}),
                 (installed_webapp["id"], FAIL, {"filter": "is_webapp == false"}),
                 (installed_webapp["id"], FAIL, {"filter": "id != 'my_webapp'"}),
-                (None, "", {"filter": "id == 'fake_app'", "optional": True}),
+                (None, "_none", {"filter": "id == 'fake_app'", "optional": True}),
                 # multiple
-                *nones(None, "", ",", ", , ", [], output="", raw_option={"multiple": True}), # FIXME Should return chosen none?
+                *nones(*MULTIPLE_NONISH, output="_none", raw_option={"multiple": True}),
                 (f"{installed_webapp['id']}, , ", installed_webapp['id'], {"multiple": True, "filter": "is_webapp"}),
                 (f"{installed_webapp['id']}, , ", installed_webapp['id'], {"multiple": True, "filter": "is_webapp", "optional": True}),
                 ("", "_none", {"multiple": True, "filter": "is_webapp", "optional": True, "default": installed_webapp['id']}),
@@ -1821,7 +1784,7 @@ class TestUser(BaseTest):
             ],
             "scenarios": [
                 # FIXME User option is not really nullable, even if optional
-                *nones(None, "", output=admin_username, fail_if_required=False),
+                *nones(*NONISH_VALUES, output=admin_username, fail_if_required=False),
                 ("fake_user", FAIL),
                 ("fake_user", FAIL, {"choices": ["fake_user"]}),
             ]
@@ -1835,7 +1798,7 @@ class TestUser(BaseTest):
                 # readonly
                 (admin_username, YunohostError, {"readonly": True}),  # readonly is forbidden
                 # multiple
-                *nones(None, "", ",", ", , ", [], output="", raw_option={"multiple": True}),
+                *nones(*MULTIPLE_NONISH, output="", raw_option={"multiple": True}),
                 (f"{admin_username}, {regular_username} ", f"{admin_username},{regular_username}", {"multiple": True}),
                 (f"{admin_username}, {regular_username} ", f"{admin_username},{regular_username}", {"multiple": True, "optional": True}),
                 ("", "", {"multiple": True, "optional": True, "default": regular_username}), # no arbitrary default
@@ -1901,7 +1864,7 @@ class TestGroup(BaseTest):
             ],
             "scenarios": [
                 # FIXME Group option is not really nullable, even if optional
-                *nones(None, "", output="all_users", fail_if_required=False),
+                *nones(*NONISH_VALUES, output="all_users", fail_if_required=False),
                 ("admins", "admins"),
                 ("fake_group", FAIL),
                 ("fake_group", FAIL, {"choices": ["fake_group"]}),
@@ -1918,7 +1881,7 @@ class TestGroup(BaseTest):
                 # readonly
                 ("admins", YunohostError, {"readonly": True}),  # readonly is forbidden
                 # multiple
-                *nones(None, "", ",", ", , ", [], output="", raw_option={"multiple": True}),
+                *nones(*MULTIPLE_NONISH, output="", raw_option={"multiple": True}),
                 *commons("admins, visitors ", output="admins,visitors", raw_option={"multiple": True}),
                 (["custom_group", "visitors"], "custom_group,visitors", {"multiple": True}),
                 ("fake_group", FAIL, {"multiple": True, "choices": ["fake_group"]}),
