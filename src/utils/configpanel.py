@@ -25,11 +25,11 @@ from collections import OrderedDict
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union, cast
 
-from pydantic import BaseModel, Extra, validator
-
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
 from moulinette.utils.filesystem import mkdir, read_toml, read_yaml, write_to_yaml
+from pydantic import BaseModel, Extra, validator
+
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.form import (
     AnyOption,
@@ -50,8 +50,8 @@ if TYPE_CHECKING:
     from pydantic.fields import ModelField
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
-    from yunohost.utils.form import FormModel, Hooks
     from yunohost.log import OperationLogger
+    from yunohost.utils.form import FormModel, Hooks
 
 if TYPE_CHECKING:
     from moulinette.utils.log import MoulinetteLogger

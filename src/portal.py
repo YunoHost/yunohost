@@ -24,16 +24,15 @@ from typing import Any, Union
 
 import ldap
 from moulinette.utils.filesystem import read_json
-from yunohost.authenticators.ldap_ynhuser import (
-    Authenticator as Auth,
-    user_is_allowed_on_domain,
-)
+
+from yunohost.authenticators.ldap_ynhuser import Authenticator as Auth
+from yunohost.authenticators.ldap_ynhuser import user_is_allowed_on_domain
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract, LDAPInterface
+from yunohost.utils.ldap import LDAPInterface, _get_ldap_interface, _ldap_path_extract
 from yunohost.utils.password import (
+    _hash_user_password,
     assert_password_is_compatible,
     assert_password_is_strong_enough,
-    _hash_user_password,
 )
 
 logger = logging.getLogger("portal")

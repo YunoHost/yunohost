@@ -26,14 +26,13 @@ This script generates man pages for yunohost.
 Pages are stored in OUTPUT_DIR
 """
 
-import os
-import yaml
-import gzip
 import argparse
-
-from datetime import date
+import gzip
+import os
 from collections import OrderedDict
+from datetime import date
 
+import yaml
 from jinja2 import Template
 
 base_path = os.path.split(os.path.realpath(__file__))[0]

@@ -23,13 +23,13 @@ Pythonic declaration of mDNS .local domains for YunoHost
 """
 
 import sys
-import yaml
+from ipaddress import ip_address
 from time import sleep
-from typing import List, Dict
+from typing import Dict, List
 
 import ifaddr
-from ipaddress import ip_address
-from zeroconf import Zeroconf, ServiceInfo, ServiceBrowser
+import yaml
+from zeroconf import ServiceBrowser, ServiceInfo, Zeroconf
 
 
 def get_network_local_interfaces() -> Dict[str, Dict[str, List[str]]]:

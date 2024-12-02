@@ -19,21 +19,21 @@
 #
 
 import os
+
+import moulinette
 import pytest
 import yaml
 from mock import patch
 
-import moulinette
-from yunohost.utils.error import YunohostError, YunohostValidationError
-
 from yunohost.settings import (
+    SETTINGS_PATH,
     settings_get,
     settings_list,
-    settings_set,
     settings_reset,
     settings_reset_all,
-    SETTINGS_PATH,
+    settings_set,
 )
+from yunohost.utils.error import YunohostError, YunohostValidationError
 
 EXAMPLE_SETTINGS = """
 [example]

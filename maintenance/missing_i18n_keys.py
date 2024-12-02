@@ -18,14 +18,15 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import toml
-import os
-import re
 import glob
 import json
-import yaml
+import os
+import re
 import subprocess
 import sys
+
+import toml
+import yaml
 
 ROOT = os.path.dirname(__file__) + "/../"
 LOCALE_FOLDER = ROOT + "/locales/"

@@ -18,22 +18,17 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import hashlib
 import os
 import re
-import hashlib
 from logging import getLogger
 
 from moulinette import m18n
+from moulinette.utils.filesystem import mkdir, read_json, read_yaml, write_to_json
 from moulinette.utils.network import download_json
-from moulinette.utils.filesystem import (
-    read_json,
-    read_yaml,
-    write_to_json,
-    mkdir,
-)
 
-from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError
+from yunohost.utils.i18n import _value_for_locale
 
 logger = getLogger("yunohost.app_catalog")
 
@@ -219,8 +214,9 @@ def _update_apps_catalog():
                 f"(Will fetch {len(logos_to_download)} logos, this may take a couple minutes)"
             )
 
-        import requests
         from multiprocessing.pool import ThreadPool
+
+        import requests
 
         def fetch_logo(logo_hash):
             try:

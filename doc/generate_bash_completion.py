@@ -30,6 +30,7 @@ author: Christophe Vuillot
 """
 
 import os
+
 import yaml
 
 THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))

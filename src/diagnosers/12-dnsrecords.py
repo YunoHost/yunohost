@@ -18,27 +18,27 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import logging
 import os
 import re
-import logging
-from typing import List
 from datetime import datetime, timedelta
-from publicsuffix2 import PublicSuffixList
+from typing import List
 
 from moulinette.utils.process import check_output
+from publicsuffix2 import PublicSuffixList
 
-from yunohost.utils.dns import (
-    dig,
-    YNH_DYNDNS_DOMAINS,
-    is_yunohost_dyndns_domain,
-    is_special_use_tld,
-)
 from yunohost.diagnosis import Diagnoser
-from yunohost.domain import domain_list, _get_maindomain
 from yunohost.dns import (
     _build_dns_conf,
     _get_dns_zone_for_domain,
     _get_relative_name_for_dns_zone,
+)
+from yunohost.domain import _get_maindomain, domain_list
+from yunohost.utils.dns import (
+    YNH_DYNDNS_DOMAINS,
+    dig,
+    is_special_use_tld,
+    is_yunohost_dyndns_domain,
 )
 
 logger = logging.getLogger("yunohost.diagnosis")

@@ -22,10 +22,11 @@ import os
 import re
 from typing import List
 
-from yunohost.settings import settings_get
-from yunohost.diagnosis import Diagnoser
-from yunohost.regenconf import _get_regenconf_infos, _calculate_hash
 from moulinette.utils.filesystem import read_file
+
+from yunohost.diagnosis import Diagnoser
+from yunohost.regenconf import _calculate_hash, _get_regenconf_infos
+from yunohost.settings import settings_get
 
 
 class MyDiagnoser(Diagnoser):

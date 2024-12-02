@@ -18,9 +18,10 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
-import requests
 import json
+import sys
+
+import requests
 
 SERVER_URL = "https://paste.yunohost.org"
 TIMEOUT = 3

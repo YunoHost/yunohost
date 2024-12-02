@@ -18,10 +18,10 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
-import os
 import datetime
+import os
 import subprocess
+import sys
 
 tree = {
     "sources": {
@@ -83,9 +83,9 @@ def get_current_commit():
 
 def render(tree, helpers_version):
 
-    from jinja2 import Template
     from ansi2html import Ansi2HTMLConverter
     from ansi2html.style import get_styles
+    from jinja2 import Template
 
     conv = Ansi2HTMLConverter()
     shell_css = "\n".join(map(str, get_styles(conv.dark_bg)))

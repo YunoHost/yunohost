@@ -21,26 +21,26 @@
 import os
 import re
 import time
-from logging import getLogger
-from difflib import SequenceMatcher
 from collections import OrderedDict
+from difflib import SequenceMatcher
+from logging import getLogger
 
-from moulinette import m18n, Moulinette
-from moulinette.utils.filesystem import read_file, write_to_file, read_toml, mkdir
+from moulinette import Moulinette, m18n
+from moulinette.utils.filesystem import mkdir, read_file, read_toml, write_to_file
 
 from yunohost.domain import (
     _assert_domain_exists,
-    domain_config_get,
     _get_domain_settings,
-    _set_domain_settings,
-    _list_subdomains_of,
     _get_parent_domain_of,
+    _list_subdomains_of,
+    _set_domain_settings,
+    domain_config_get,
 )
-from yunohost.utils.dns import dig, is_yunohost_dyndns_domain, is_special_use_tld
-from yunohost.utils.error import YunohostValidationError, YunohostError
-from yunohost.utils.network import get_public_ip
-from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback
+from yunohost.log import is_unit_operation
+from yunohost.utils.dns import dig, is_special_use_tld, is_yunohost_dyndns_domain
+from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.network import get_public_ip
 
 logger = getLogger("yunohost.domain")
 

@@ -18,16 +18,17 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
 import atexit
 import logging
-import ldap
-import ldap.sasl
+import os
 import time
-import ldap.modlist as modlist
 
+import ldap
+import ldap.modlist as modlist
+import ldap.sasl
 from moulinette import m18n
 from moulinette.core import MoulinetteError
+
 from yunohost.utils.error import YunohostError
 
 logger = logging.getLogger("yunohost.utils.ldap")

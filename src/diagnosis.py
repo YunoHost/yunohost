@@ -18,18 +18,18 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import re
-import os
-import time
 import glob
+import os
+import re
+import time
 from importlib import import_module
 from logging import getLogger
 
-from moulinette import m18n, Moulinette
+from moulinette import Moulinette, m18n
 from moulinette.utils.filesystem import (
     read_json,
-    write_to_json,
     read_yaml,
+    write_to_json,
     write_to_yaml,
 )
 
@@ -588,8 +588,9 @@ class Diagnoser:
     @staticmethod
     def remote_diagnosis(uri, data, ipversion, timeout=30):
         # Lazy loading for performance
-        import requests
         import socket
+
+        import requests
 
         # Monkey patch socket.getaddrinfo to force request() to happen in ipv4
         # or 6 ...

@@ -21,31 +21,26 @@
 import glob
 import os
 import subprocess
-from time import sleep
 from datetime import date
+from time import sleep
+
+import _ldap  # noqa: F401
 
 # Explicitly import packages to prevent an issue that may arise later because of python3.9 being replaced by 3.11 in the middle of the upgrade etc
 import _strptime  # noqa: F401
-import _ldap  # noqa: F401
-
 from moulinette import Moulinette, m18n
-from moulinette.utils.process import call_async_output
-from yunohost.utils.error import YunohostError
-from yunohost.tools import _write_migration_state
-from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file, write_to_file
+from moulinette.utils.process import call_async_output, check_output
 
-from yunohost.tools import (
-    Migration,
-    tools_update,
-)
 from yunohost.app import unstable_apps
 from yunohost.regenconf import manually_modified_files, regen_conf
+from yunohost.tools import Migration, _write_migration_state, tools_update
+from yunohost.utils.error import YunohostError
 from yunohost.utils.system import (
-    free_space_in_directory,
-    get_ynh_package_version,
     _list_upgradable_apt_packages,
     aptitude_with_progress_bar,
+    free_space_in_directory,
+    get_ynh_package_version,
 )
 
 # getActionLogger is not there in bookworm,

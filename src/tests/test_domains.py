@@ -18,26 +18,25 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import pytest
 import os
 import random
 
+import pytest
 from mock import patch
-
 from moulinette import Moulinette
 from moulinette.core import MoulinetteError
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.domain import (
     DOMAIN_SETTINGS_DIR,
     _get_maindomain,
     domain_add,
-    domain_remove,
-    domain_list,
-    domain_main_domain,
     domain_config_get,
     domain_config_set,
+    domain_list,
+    domain_main_domain,
+    domain_remove,
 )
+from yunohost.utils.error import YunohostError, YunohostValidationError
 
 TEST_DOMAINS = ["example.tld", "sub.example.tld", "other-example.com"]
 TEST_DYNDNS_DOMAIN = (

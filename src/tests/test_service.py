@@ -20,17 +20,17 @@
 
 import os
 
-from .conftest import raiseYunohostError
-
 from yunohost.service import (
     _get_services,
     _save_services,
-    service_status,
     service_add,
-    service_remove,
     service_log,
     service_reload_or_restart,
+    service_remove,
+    service_status,
 )
+
+from .conftest import raiseYunohostError
 
 
 def setup_function(function):

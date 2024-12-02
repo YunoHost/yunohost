@@ -18,17 +18,16 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
-import dns.resolver
-import re
 import logging
+import os
+import re
+from subprocess import CalledProcessError
 from typing import List
 
-from subprocess import CalledProcessError
-
-from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_yaml
+from moulinette.utils.process import check_output
 
+import dns.resolver
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import _get_maindomain, domain_list
 from yunohost.settings import settings_get

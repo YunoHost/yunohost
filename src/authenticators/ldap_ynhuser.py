@@ -18,25 +18,25 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import time
-import jwt
-import logging
-import ldap
-import ldap.sasl
 import base64
-import os
 import hashlib
+import logging
+import os
+import time
 from pathlib import Path
 
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives import padding
+import jwt
+import ldap
+import ldap.sasl
 from cryptography.hazmat.backends import default_backend
-
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from moulinette import m18n
 from moulinette.authentication import BaseAuthenticator
-from moulinette.utils.text import random_ascii
 from moulinette.utils.filesystem import read_json
-from yunohost.utils.error import YunohostError, YunohostAuthenticationError
+from moulinette.utils.text import random_ascii
+
+from yunohost.utils.error import YunohostAuthenticationError, YunohostError
 from yunohost.utils.ldap import _get_ldap_interface
 
 logger = logging.getLogger("yunohostportal.authenticators.ldap_ynhuser")
@@ -247,7 +247,7 @@ class Authenticator(BaseAuthenticator):
         }
 
     def set_session_cookie(self, infos):
-        from bottle import response, request
+        from bottle import request, response
 
         assert isinstance(infos, dict)
         assert "user" in infos

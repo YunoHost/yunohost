@@ -19,6 +19,7 @@
 #
 
 import argparse
+
 import yunohost
 
 # Default server configuration

@@ -19,16 +19,15 @@
 #
 
 import pytest
-
 from moulinette.utils.filesystem import read_toml
 
-from yunohost.domain import domain_add, domain_remove
 from yunohost.dns import (
     DOMAIN_REGISTRAR_LIST_PATH,
+    _build_dns_conf,
     _get_dns_zone_for_domain,
     _get_registrar_config_section,
-    _build_dns_conf,
 )
+from yunohost.domain import domain_add, domain_remove
 
 
 def setup_function(function):

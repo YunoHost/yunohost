@@ -19,23 +19,23 @@
 #
 
 import copy
+import glob
 import os
 import re
-import yaml
-import glob
-import psutil
 import time
+from datetime import datetime, timedelta
+from io import IOBase
+from logging import FileHandler, Formatter, getLogger
 from typing import List
 
-from datetime import datetime, timedelta
-from logging import FileHandler, getLogger, Formatter
-from io import IOBase
-
-from moulinette import m18n, Moulinette
+import psutil
+import yaml
+from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
+from moulinette.utils.filesystem import read_file, read_yaml
+
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import get_ynh_package_version
-from moulinette.utils.filesystem import read_file, read_yaml
 
 logger = getLogger("yunohost.log")
 
@@ -392,7 +392,7 @@ def log_share(path):
     return log_show(path, share=True)
 
 
-from typing import TypeVar, Callable, Concatenate, ParamSpec
+from typing import Callable, Concatenate, ParamSpec, TypeVar
 
 # FuncT = TypeVar("FuncT", bound=Callable[..., Any])
 Param = ParamSpec("Param")

@@ -30,8 +30,6 @@ from enum import Enum
 from logging import getLogger
 from typing import (
     TYPE_CHECKING,
-    cast,
-    overload,
     Annotated,
     Any,
     Callable,
@@ -40,30 +38,32 @@ from typing import (
     Literal,
     Mapping,
     Type,
+    cast,
+    overload,
 )
 
+from moulinette import Moulinette, m18n
+from moulinette.interfaces.cli import colorize
+from moulinette.utils.filesystem import read_yaml, write_to_file
 from pydantic import (
     BaseModel,
     Extra,
     ValidationError,
     create_model,
-    validator,
     root_validator,
+    validator,
 )
 from pydantic.color import Color
 from pydantic.fields import Field
 from pydantic.networks import EmailStr, HttpUrl
 from pydantic.types import constr
 
-from moulinette import Moulinette, m18n
-from moulinette.interfaces.cli import colorize
-from moulinette.utils.filesystem import read_yaml, write_to_file
 from yunohost.log import OperationLogger
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.i18n import _value_for_locale
 
 if TYPE_CHECKING:
-    from pydantic.fields import ModelField, FieldInfo
+    from pydantic.fields import FieldInfo, ModelField
 
 logger = getLogger("yunohost.form")
 
@@ -1329,9 +1329,10 @@ class FileOption(BaseInputOption):
         cls, value: Any, field: "ModelField"
     ) -> tuple[bytes, str | None]:
         import mimetypes
-        from pathlib import Path
-        from magic import Magic
         from base64 import b64decode
+        from pathlib import Path
+
+        from magic import Magic
 
         if Moulinette.interface.type != "api":
             path = Path(value)
@@ -1377,8 +1378,8 @@ class FileOption(BaseInputOption):
     def _python_value_post_validator(cls, value: Any, field: "ModelField") -> str:
         """File handling for "python" config panels"""
 
-        from pathlib import Path
         import hashlib
+        from pathlib import Path
 
         if not value:
             return ""

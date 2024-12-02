@@ -18,10 +18,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from moulinette import m18n
-from yunohost.tools import Migration
-
 import logging
+
+from moulinette import m18n
+
+from yunohost.tools import Migration
 
 logger = logging.getLogger("yunohost.migration")
 

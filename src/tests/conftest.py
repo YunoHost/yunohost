@@ -19,13 +19,14 @@
 #
 
 import os
-import pytest
+from contextlib import contextmanager
 from unittest.mock import Mock
 
 import moulinette
-from moulinette import m18n, Moulinette
+import pytest
+from moulinette import Moulinette, m18n
+
 from yunohost.utils.error import YunohostError
-from contextlib import contextmanager
 
 
 @pytest.fixture(scope="session", autouse=True)

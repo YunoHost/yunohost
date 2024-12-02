@@ -21,27 +21,26 @@
 import glob
 import os
 import shutil
+
 import pytest
 from mock import patch
-
-from .conftest import get_test_apps_dir
-
 from moulinette import Moulinette
 from moulinette.utils.filesystem import read_file
 
-from yunohost.domain import _get_maindomain
 from yunohost.app import (
-    app_setting,
-    app_install,
-    app_remove,
     _is_installed,
     app_config_get,
     app_config_set,
+    app_install,
+    app_remove,
+    app_setting,
     app_ssowatconf,
 )
+from yunohost.domain import _get_maindomain
 from yunohost.user import user_create, user_delete
-
 from yunohost.utils.error import YunohostError, YunohostValidationError
+
+from .conftest import get_test_apps_dir
 
 
 def setup_function(function):

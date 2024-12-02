@@ -18,34 +18,33 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import pytest
 import os
 import shutil
 import subprocess
+
+import pytest
 from mock import patch
-
-from .conftest import message, raiseYunohostError, get_test_apps_dir
-
 from moulinette.utils.text import random_ascii
 
-from yunohost.app import app_install, app_remove, app_ssowatconf
-from yunohost.app import _is_installed
+from yunohost.app import _is_installed, app_install, app_remove, app_ssowatconf
 from yunohost.backup import (
-    backup_create,
-    backup_restore,
-    backup_list,
-    backup_info,
-    backup_delete,
     _recursive_umount,
+    backup_create,
+    backup_delete,
+    backup_info,
+    backup_list,
+    backup_restore,
 )
-from yunohost.domain import _get_maindomain, domain_list, domain_add, domain_remove
-from yunohost.user import user_create, user_list, user_delete
+from yunohost.domain import _get_maindomain, domain_add, domain_list, domain_remove
+from yunohost.hook import CUSTOM_HOOK_FOLDER
 from yunohost.permission import user_permission_list
 from yunohost.tests.test_permission import (
     check_LDAP_db_integrity,
     check_permission_for_apps,
 )
-from yunohost.hook import CUSTOM_HOOK_FOLDER
+from yunohost.user import user_create, user_delete, user_list
+
+from .conftest import get_test_apps_dir, message, raiseYunohostError
 
 # Get main domain
 maindomain = ""

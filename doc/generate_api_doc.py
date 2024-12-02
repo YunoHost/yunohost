@@ -21,10 +21,11 @@
 """
     Generate JSON specification files API
 """
+import json
 import os
 import sys
+
 import yaml
-import json
 
 
 def main():

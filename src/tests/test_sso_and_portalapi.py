@@ -19,29 +19,29 @@
 #
 
 import base64
-import time
-import requests
-from pathlib import Path
 import os
+import time
+from pathlib import Path
 
-from .conftest import message, raiseYunohostError, get_test_apps_dir
+import requests
 
-from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
-from yunohost.user import user_create, user_list, user_delete, user_update
-from yunohost.authenticators.ldap_ynhuser import (
-    Authenticator,
-    SESSION_FOLDER,
-    short_hash,
-)
 from yunohost.app import (
+    app_change_url,
     app_install,
     app_remove,
     app_setting,
     app_ssowatconf,
-    app_change_url,
 )
+from yunohost.authenticators.ldap_ynhuser import (
+    SESSION_FOLDER,
+    Authenticator,
+    short_hash,
+)
+from yunohost.domain import _get_maindomain, domain_add, domain_list, domain_remove
 from yunohost.permission import user_permission_list, user_permission_update
+from yunohost.user import user_create, user_delete, user_list, user_update
 
+from .conftest import get_test_apps_dir, message, raiseYunohostError
 
 # Get main domain
 maindomain = open("/etc/yunohost/current_host").read().strip()

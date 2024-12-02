@@ -20,24 +20,24 @@
 
 import pytest
 
-from .conftest import message, raiseYunohostError
-
-from yunohost.user import (
-    user_list,
-    user_info,
-    user_create,
-    user_delete,
-    user_update,
-    user_import,
-    user_export,
-    FIELDS_FOR_IMPORT,
-    user_group_list,
-    user_group_create,
-    user_group_delete,
-    user_group_update,
-)
 from yunohost.domain import _get_maindomain
 from yunohost.tests.test_permission import check_LDAP_db_integrity
+from yunohost.user import (
+    FIELDS_FOR_IMPORT,
+    user_create,
+    user_delete,
+    user_export,
+    user_group_create,
+    user_group_delete,
+    user_group_list,
+    user_group_update,
+    user_import,
+    user_info,
+    user_list,
+    user_update,
+)
+
+from .conftest import message, raiseYunohostError
 
 # Get main domain
 maindomain = ""

@@ -20,14 +20,15 @@
 
 import os
 
-from .conftest import message
-from yunohost.domain import domain_add, domain_remove, domain_list
+from yunohost.domain import domain_add, domain_list, domain_remove
 from yunohost.regenconf import (
-    regen_conf,
-    manually_modified_files,
-    _get_conf_hashes,
     _force_clear_hashes,
+    _get_conf_hashes,
+    manually_modified_files,
+    regen_conf,
 )
+
+from .conftest import message
 
 TEST_DOMAIN = "secondarydomain.test"
 TEST_DOMAIN_NGINX_CONFIG = "/etc/nginx/conf.d/%s.conf" % TEST_DOMAIN

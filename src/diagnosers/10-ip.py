@@ -18,19 +18,19 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import re
+import logging
 import os
 import random
-import logging
+import re
 from typing import List
 
+from moulinette.utils.filesystem import read_file
 from moulinette.utils.network import download_text
 from moulinette.utils.process import check_output
-from moulinette.utils.filesystem import read_file
 
 from yunohost.diagnosis import Diagnoser
-from yunohost.utils.network import get_network_interfaces
 from yunohost.settings import settings_get
+from yunohost.utils.network import get_network_interfaces
 
 logger = logging.getLogger("yunohost.diagnosis")
 

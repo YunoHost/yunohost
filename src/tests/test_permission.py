@@ -18,43 +18,44 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import socket
-import requests
-import pytest
-import string
-import os
 import json
+import os
 import shutil
+import socket
+import string
 
-from .conftest import message, raiseYunohostError, get_test_apps_dir
+import pytest
+import requests
 
 from yunohost.app import (
-    app_install,
-    app_upgrade,
-    app_remove,
-    app_change_url,
-    app_map,
-    _installed_apps,
     APPS_SETTING_PATH,
-    _set_app_settings,
     _get_app_settings,
+    _installed_apps,
+    _set_app_settings,
+    app_change_url,
+    app_install,
+    app_map,
+    app_remove,
+    app_upgrade,
 )
-from yunohost.user import (
-    user_list,
-    user_create,
-    user_delete,
-    user_group_list,
-    user_group_delete,
-)
+from yunohost.domain import _get_maindomain, domain_add, domain_list, domain_remove
 from yunohost.permission import (
-    user_permission_update,
-    user_permission_list,
-    user_permission_reset,
     permission_create,
     permission_delete,
     permission_url,
+    user_permission_list,
+    user_permission_reset,
+    user_permission_update,
 )
-from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
+from yunohost.user import (
+    user_create,
+    user_delete,
+    user_group_delete,
+    user_group_list,
+    user_list,
+)
+
+from .conftest import get_test_apps_dir, message, raiseYunohostError
 
 # Get main domain
 maindomain = ""

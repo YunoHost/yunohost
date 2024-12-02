@@ -19,13 +19,14 @@
 #
 
 import os
-import yaml
-import miniupnpc
 from logging import getLogger
 
+import miniupnpc
+import yaml
 from moulinette import m18n
-from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils import process
+
+from yunohost.utils.error import YunohostError, YunohostValidationError
 
 FIREWALL_FILE = "/etc/yunohost/firewall.yml"
 UPNP_CRON_JOB = "/etc/cron.d/yunohost-firewall-upnp"

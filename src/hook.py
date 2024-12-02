@@ -18,18 +18,19 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import mimetypes
 import os
 import re
 import sys
 import tempfile
-import mimetypes
 from glob import iglob
 from importlib import import_module
 from logging import getLogger
 
-from moulinette import m18n, Moulinette
+from moulinette import Moulinette, m18n
+from moulinette.utils.filesystem import cp, read_yaml
+
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from moulinette.utils.filesystem import read_yaml, cp
 
 HOOK_FOLDER = "/usr/share/yunohost/hooks/"
 CUSTOM_HOOK_FOLDER = "/etc/yunohost/hooks.d/"

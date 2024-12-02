@@ -18,20 +18,20 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import jwt
-import os
-import logging
-import ldap
-import ldap.sasl
-import time
 import hashlib
+import logging
+import os
+import time
 from pathlib import Path
 
+import jwt
+import ldap
+import ldap.sasl
 from moulinette import m18n
 from moulinette.authentication import BaseAuthenticator
 from moulinette.utils.text import random_ascii
 
-from yunohost.utils.error import YunohostError, YunohostAuthenticationError
+from yunohost.utils.error import YunohostAuthenticationError, YunohostError
 from yunohost.utils.ldap import _get_ldap_interface
 
 logger = logging.getLogger("yunohost.authenticators.ldap_admin")

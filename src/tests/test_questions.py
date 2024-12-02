@@ -19,37 +19,35 @@
 #
 
 import inspect
-import sys
-import pytest
 import os
+import sys
 import tempfile
-
 from contextlib import contextmanager
-from mock import patch
 from io import StringIO
 from typing import Any, Literal, Sequence, TypedDict, Union
 
+import pytest
 from _pytest.mark.structures import ParameterSet
-
+from mock import patch
 from moulinette import Moulinette
+
 from yunohost import app, domain, user
+from yunohost.utils import form
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.form import (
-    OPTIONS,
     FORBIDDEN_PASSWORD_CHARS,
+    OPTIONS,
     READONLY_TYPES,
-    ask_questions_and_parse_answers,
     BaseChoicesOption,
     BaseInputOption,
     BaseReadonlyOption,
-    DomainOption,
-    WebPathOption,
     BooleanOption,
+    DomainOption,
     FileOption,
+    WebPathOption,
+    ask_questions_and_parse_answers,
     evaluate_simple_js_expression,
 )
-from yunohost.utils import form
-from yunohost.utils.error import YunohostError, YunohostValidationError
-
 
 """
 Argument default format:

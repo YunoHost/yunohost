@@ -18,15 +18,15 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import os
 import subprocess
 import time
-import os
 from logging import getLogger
 
 from moulinette import m18n
-from yunohost.utils.error import YunohostError, YunohostValidationError
 
 from yunohost.tools import Migration
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import free_space_in_directory, space_used_by_directory
 
 logger = getLogger("yunohost.migration")

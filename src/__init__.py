@@ -23,8 +23,8 @@ import sys
 
 import moulinette
 from moulinette import m18n
-from moulinette.utils.log import configure_logging
 from moulinette.interfaces.cli import colorize, get_locale
+from moulinette.utils.log import configure_logging
 
 
 def is_installed():

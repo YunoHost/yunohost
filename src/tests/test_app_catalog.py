@@ -18,31 +18,31 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import glob
 import os
+import shutil
+
 import pytest
 import requests
 import requests_mock
-import glob
-import shutil
-
-from .conftest import message
-
 from moulinette import m18n
 from moulinette.utils.filesystem import read_json, write_to_json, write_to_yaml
 
-from yunohost.utils.error import YunohostError
 from yunohost.app_catalog import (
-    _read_apps_catalog_list,
-    _update_apps_catalog,
-    _actual_apps_catalog_api_url,
-    _load_apps_catalog,
-    app_catalog,
-    logger,
+    APPS_CATALOG_API_VERSION,
     APPS_CATALOG_CACHE,
     APPS_CATALOG_CONF,
-    APPS_CATALOG_API_VERSION,
     APPS_CATALOG_DEFAULT_URL,
+    _actual_apps_catalog_api_url,
+    _load_apps_catalog,
+    _read_apps_catalog_list,
+    _update_apps_catalog,
+    app_catalog,
+    logger,
 )
+from yunohost.utils.error import YunohostError
+
+from .conftest import message
 
 APPS_CATALOG_DEFAULT_URL_FULL = _actual_apps_catalog_api_url(APPS_CATALOG_DEFAULT_URL)
 

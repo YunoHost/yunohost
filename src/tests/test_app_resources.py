@@ -19,19 +19,19 @@
 #
 
 import os
-import pytest
 
+import pytest
 from moulinette.utils.process import check_output
 
 from yunohost.app import app_setting
 from yunohost.domain import _get_maindomain
+from yunohost.firewall import firewall_list
+from yunohost.permission import permission_delete, user_permission_list
 from yunohost.utils.resources import (
     AppResource,
-    AppResourceManager,
     AppResourceClassesByType,
+    AppResourceManager,
 )
-from yunohost.permission import user_permission_list, permission_delete
-from yunohost.firewall import firewall_list
 
 dummyfile = "/tmp/dummyappresource-testapp"
 

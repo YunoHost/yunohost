@@ -20,31 +20,31 @@
 
 import glob
 import os
-import pytest
 import shutil
+
+import pytest
 import requests
-
-from .conftest import message, raiseYunohostError, get_test_apps_dir
-
 from moulinette.utils.filesystem import mkdir
 
 from yunohost.app import (
+    _is_installed,
+    app_info,
     app_install,
+    app_manifest,
+    app_map,
     app_remove,
     app_ssowatconf,
-    _is_installed,
     app_upgrade,
-    app_map,
-    app_manifest,
-    app_info,
 )
-from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
-from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.domain import _get_maindomain, domain_add, domain_list, domain_remove
+from yunohost.permission import permission_delete, user_permission_list
 from yunohost.tests.test_permission import (
     check_LDAP_db_integrity,
     check_permission_for_apps,
 )
-from yunohost.permission import user_permission_list, permission_delete
+from yunohost.utils.error import YunohostError, YunohostValidationError
+
+from .conftest import get_test_apps_dir, message, raiseYunohostError
 
 
 def setup_function(function):

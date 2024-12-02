@@ -18,17 +18,17 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import pytest
-import time
-import requests
 import os
+import time
+
+import pytest
+import requests
+
+from yunohost.app import app_change_url, app_install, app_map, app_remove
+from yunohost.domain import _get_maindomain
+from yunohost.utils.error import YunohostError
 
 from .conftest import get_test_apps_dir
-
-from yunohost.app import app_install, app_change_url, app_remove, app_map
-from yunohost.domain import _get_maindomain
-
-from yunohost.utils.error import YunohostError
 
 # Get main domain
 maindomain = ""

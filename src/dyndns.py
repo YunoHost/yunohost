@@ -18,24 +18,24 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
-import json
-import glob
 import base64
-import subprocess
+import glob
 import hashlib
+import json
+import os
+import subprocess
 from logging import getLogger
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
-from moulinette.utils.filesystem import write_to_file, rm, chown, chmod
+from moulinette.utils.filesystem import chmod, chown, rm, write_to_file
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.domain import _get_maindomain
-from yunohost.utils.network import get_public_ip
-from yunohost.utils.dns import dig, is_yunohost_dyndns_domain
 from yunohost.log import is_unit_operation
 from yunohost.regenconf import regen_conf
+from yunohost.utils.dns import dig, is_yunohost_dyndns_domain
+from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.network import get_public_ip
 
 logger = getLogger("yunohost.dyndns")
 
@@ -366,11 +366,11 @@ def dyndns_update(
         domain -- Full domain to update
     """
 
-    from yunohost.dns import _build_dns_conf
     import dns.query
     import dns.tsig
     import dns.tsigkeyring
     import dns.update
+    from yunohost.dns import _build_dns_conf
 
     # If domain is not given, update all DynDNS domains
     if domain is None:

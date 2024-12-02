@@ -41,7 +41,7 @@ class MyMigration(Migration):
 
     @Migration.ldap_migration
     def run(self, *args):
-        from yunohost.permission import user_permission_list, permission_delete
+        from yunohost.permission import permission_delete, user_permission_list
 
         self.ldap_migration_started = True
 

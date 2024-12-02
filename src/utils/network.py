@@ -18,9 +18,9 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import logging
 import os
 import re
-import logging
 import time
 
 from moulinette.utils.filesystem import read_file, write_to_file

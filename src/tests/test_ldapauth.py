@@ -18,15 +18,15 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import pytest
 import os
 
-from yunohost.authenticators.ldap_admin import Authenticator as LDAPAuth
-from yunohost.user import user_create, user_list, user_update, user_delete
-from yunohost.domain import _get_maindomain
-
+import pytest
 from moulinette import m18n
 from moulinette.core import MoulinetteError
+
+from yunohost.authenticators.ldap_admin import Authenticator as LDAPAuth
+from yunohost.domain import _get_maindomain
+from yunohost.user import user_create, user_delete, user_list, user_update
 
 
 def setup_function(function):

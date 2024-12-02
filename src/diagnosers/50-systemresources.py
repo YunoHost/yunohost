@@ -18,12 +18,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
-import psutil
 import datetime
+import os
 import re
 from typing import List
 
+import psutil
 from moulinette.utils.process import check_output
 
 from yunohost.diagnosis import Diagnoser

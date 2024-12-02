@@ -18,10 +18,10 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import glob
+import json
 import os
 import re
-import json
-import glob
 from collections import OrderedDict
 
 ROOT = os.path.dirname(__file__) + "/../"

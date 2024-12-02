@@ -18,20 +18,21 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import pytest
 import os
 
-from .conftest import get_test_apps_dir
+import pytest
 
-from yunohost.utils.error import YunohostError
 from yunohost.app import (
-    app_install,
-    app_remove,
     _is_app_repo_url,
     _parse_app_instance_name,
+    app_install,
+    app_remove,
 )
 from yunohost.domain import _get_maindomain, domain_url_available
 from yunohost.permission import _validate_and_sanitize_permission_url
+from yunohost.utils.error import YunohostError
+
+from .conftest import get_test_apps_dir
 
 # Get main domain
 maindomain = _get_maindomain()
