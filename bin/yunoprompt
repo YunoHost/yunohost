@@ -19,15 +19,18 @@
 #
 
 # Fetch x509 fingerprint
-x509_fingerprint=$(openssl x509  -in /etc/yunohost/certs/yunohost.org/crt.pem -noout -fingerprint -sha256 | cut -d= -f2)
+x509_fingerprint=$(openssl x509 -in /etc/yunohost/certs/yunohost.org/crt.pem -noout -fingerprint -sha256 | cut -d= -f2)
 
 
 # Fetch SSH fingerprints
 i=0
-for key in $(ls /etc/ssh/ssh_host_{ed25519,rsa,ecdsa}_key.pub 2> /dev/null) ; do
-    output=$(ssh-keygen -l -f $key)
-    fingerprint[$i]=" - $(echo $output | cut -d' ' -f2) $(echo $output| cut -d' ' -f4)"
-    i=$(($i + 1))
+for keyfile in /etc/ssh/ssh_host_{ed25519,rsa,ecdsa}_key.pub; do
+    if [ ! -f "$keyfile" ]; then
+        continue
+    fi
+    output=$(ssh-keygen -l -f "$keyfile")
+    fingerprint[i]=" - $(echo "$output" | cut -d' ' -f2) $(echo "$output" | cut -d' ' -f4)"
+    i=$((i + 1))
 done
 
 #
@@ -100,20 +103,15 @@ the following URL: https://yunohost.org/admindoc
 ===============================================================================
 EOF
 
-    read -p "Proceed with post-installation? (y/n) "
-    RESULT=1
-    while [ $RESULT -gt 0 ]; do
-        if [[ $REPLY =~ ^[Nn]$ ]]; then
+    read -rp "Proceed with post-installation? (y/n) " -n 1
+    while [[ $REPLY =~ ^[Yy]$ ]]; do
+        if /usr/bin/yunohost tools postinstall; then
             break
         fi
         echo -e "\n"
-        /usr/bin/yunohost tools postinstall
-        let RESULT=$?
-        if [ $RESULT -gt 0 ]; then
-            echo -e "\n"
-            read -p "Retry? (y/n) " -n 1
-        fi
+        read -rp "Retry? (y/n) " -n 1
     done
+
     chvt 1
     exit 0
 fi
