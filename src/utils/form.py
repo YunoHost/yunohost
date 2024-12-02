@@ -51,7 +51,6 @@ from pydantic import (
     BaseModel,
     BeforeValidator,
     ConfigDict,
-    PlainSerializer,
     ValidationError,
     create_model,
     field_validator,
@@ -672,9 +671,6 @@ class BaseInputOption(BaseOption):
         # - help
         # - placeholder
         attrs: dict[str, Any] = {}
-        attrs["json_schema_extra"] = {
-            "redact": self.redact,  # extra
-        }
 
         if self.readonly:
             attrs["frozen"] = True
@@ -706,8 +702,6 @@ class BaseInputOption(BaseOption):
             anno = Annotated[
                 list[anno] | None if self.optional else list[anno],
                 (ListConstraints(mode=mode, has_default=self.default is not None)),
-                # FIXME use in constraints in serializer
-                AfterValidator(redact) if self.redact else None,
             ]
 
         return (anno, field)
@@ -738,6 +732,7 @@ class BaseStringOption(BaseInputOption):
             StringConstraints(
                 mode=mode,
                 has_default=self.default is not None and not self.multiple,
+                redact=self.redact,
                 pattern=self.pattern,
             ),
             mode=mode,
@@ -849,6 +844,7 @@ class ColorOption(BaseInputOption):
     """
 
     type: Literal[OptionType.color] = OptionType.color
+    redact: Literal[False] = False
     default: Color | str | list[Color | str] | None = None
 
     @staticmethod
@@ -872,11 +868,11 @@ class ColorOption(BaseInputOption):
     def get_annotation(self, mode: Mode = "python") -> tuple[Any, "FieldInfo"]:
         return self._build_annotation(
             Color,
-            PlainSerializer(lambda v: v.as_hex() if v else v),
             BaseConstraints(
                 mode=mode,
                 has_default=self.default is not None and not self.multiple,
                 redact=self.redact,
+                serializer=lambda v: v.as_hex() if v else v,
             ),
             mode=mode,
         )
@@ -911,6 +907,7 @@ class NumberOption(BaseInputOption):
 
     # `number` and `range` are exactly the same, but `range` does render as a slider in web-admin
     type: Literal[OptionType.number, OptionType.range] = OptionType.number
+    redact: Literal[False] = False
     default: int | list[int] | None = None
     min: int | None = None
     max: int | None = None
@@ -945,6 +942,7 @@ class NumberOption(BaseInputOption):
             NumberConstraints(
                 mode=mode,
                 has_default=self.default is not None and not self.multiple,
+                redact=self.redact,
                 min=self.min,
                 max=self.max,
                 step=self.step,
@@ -982,6 +980,7 @@ class BooleanOption(BaseInputOption):
     """
 
     type: Literal[OptionType.boolean] = OptionType.boolean
+    redact: Literal[False] = False
     default: bool | int | str | list[bool | int | str] | None = False
     yes: Any = 1
     no: Any = 0
@@ -1080,6 +1079,7 @@ class BooleanOption(BaseInputOption):
             BooleanConstraints(
                 mode=mode,
                 has_default=self.default is not None and not self.multiple,
+                redact=self.redact,
                 serialization=(self.yes, self.no),
             ),
             mode=mode,
@@ -1119,6 +1119,7 @@ class DateOption(BaseInputOption):
     """
 
     type: Literal[OptionType.date] = OptionType.date
+    redact: Literal[False] = False
     default: datetime.date | list[datetime.date] | None = None
 
     def get_annotation(self, mode: Mode = "python") -> tuple[Any, "FieldInfo"]:
@@ -1127,6 +1128,7 @@ class DateOption(BaseInputOption):
             DatetimeConstraints(
                 mode=mode,
                 has_default=self.default is not None and not self.multiple,
+                redact=self.redact,
             ),
             mode=mode,
         )
@@ -1152,6 +1154,7 @@ class TimeOption(BaseInputOption):
     """
 
     type: Literal[OptionType.time] = OptionType.time
+    redact: Literal[False] = False
     default: datetime.time | list[datetime.time] | None = None
 
     @staticmethod
@@ -1164,6 +1167,7 @@ class TimeOption(BaseInputOption):
             DatetimeConstraints(
                 mode=mode,
                 has_default=self.default is not None and not self.multiple,
+                redact=self.redact,
             ),
             mode=mode,
         )
@@ -1199,6 +1203,7 @@ class EmailOption(BaseInputOption):
             BaseConstraints(
                 mode=mode,
                 has_default=self.default is not None and not self.multiple,
+                redact=self.redact,
             ),
             mode=mode,
         )
@@ -1224,6 +1229,7 @@ class WebPathOption(BaseInputOption):
     """
 
     type: Literal[OptionType.path] = OptionType.path
+    redact: Literal[False] = False
     default: Path | str | list[Path | str] | None = None
 
     @staticmethod
@@ -1266,6 +1272,7 @@ class WebPathOption(BaseInputOption):
             PathConstraints(
                 mode=mode,
                 has_default=self.default is not None and not self.multiple,
+                redact=self.redact,
             ),
             mode=mode,
         )
@@ -1291,6 +1298,7 @@ class URLOption(BaseInputOption):
     """
 
     type: Literal[OptionType.url] = OptionType.url
+    redact: Literal[False] = False
     default: HttpUrl | list[HttpUrl] | None = None
 
     def get_annotation(self, mode: Mode = "python") -> tuple[Any, "FieldInfo"]:
@@ -1299,6 +1307,7 @@ class URLOption(BaseInputOption):
             BaseConstraints(
                 mode=mode,
                 has_default=self.default is not None and not self.multiple,
+                redact=self.redact,
                 serializer=lambda v: str(v) if v else v,
             ),
             mode=mode,
@@ -1342,6 +1351,7 @@ class FileOption(BaseInputOption):
             FileConstraints(
                 mode=mode,
                 has_default=self.default is not None,
+                redact=self.redact,
                 bind=self.bind,
                 accept=self.accept,
             ),
@@ -1360,6 +1370,7 @@ class FileOption(BaseInputOption):
 
 
 class BaseChoicesOption(BaseInputOption):
+    redact: Literal[False] = False
     choices: dict[Any, Any] | list[Any] | None = None
 
     def _get_prompt_message(self, value: Any) -> str:
@@ -1407,6 +1418,7 @@ class BaseSelectOption(BaseChoicesOption):
             BaseConstraints(
                 mode=mode,
                 has_default=self.default is not None and not self.multiple,
+                redact=self.redact,
             ),
             mode=mode,
         )
@@ -1514,7 +1526,11 @@ class TagsOption(BaseChoicesOption):
     def get_annotation(self, mode: Mode = "python") -> tuple[Any, "FieldInfo"]:
         return self._build_annotation(
             Literal[tuple(self.choices)] if self.choices is not None else str,
-            StringConstraints(mode=mode, pattern=self.pattern),
+            StringConstraints(
+                mode=mode,
+                redact=self.redact,
+                pattern=self.pattern,
+            ),
             mode=mode,
         )
 
@@ -1730,7 +1746,7 @@ class GroupOption(BaseSelectOption):
         }
 
         # FIXME do we really want to default to something all the time when not multiple?
-        if not values.get("default")  and not values.get("multiple"):
+        if not values.get("default") and not values.get("multiple"):
             values["default"] = "all_users"
 
         return values
