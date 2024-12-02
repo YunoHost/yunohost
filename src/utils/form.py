@@ -83,7 +83,6 @@ from ..utils.validation import (
     coerce_comalist_to_list,
     coerce_nonish_to_none,
     redact,
-    serialize_list_to_comalist,
 )
 from .file_utils import read_yaml, write_to_file
 
