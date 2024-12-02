@@ -27,23 +27,23 @@ SERVER_URL = "https://paste.yunohost.org"
 TIMEOUT = 3
 
 
-def create_snippet(data):
+def create_snippet(data: str) -> str:
     try:
-        url = SERVER_URL + "/documents"
+        url = f"{SERVER_URL}/documents"
         response = requests.post(url, data=data.encode("utf-8"), timeout=TIMEOUT)
         response.raise_for_status()
         dockey = json.loads(response.text)["key"]
-        return SERVER_URL + "/raw/" + dockey
+        return f"{SERVER_URL}/raw/{dockey}"
     except requests.exceptions.RequestException as e:
-        print("\033[31mError: {}\033[0m".format(e))
+        print(f"\033[31mError: {e}\033[0m", file=sys.stderr)
         sys.exit(1)
 
 
-def main():
+def main() -> None:
     output = sys.stdin.read()
 
     if not output:
-        print("\033[31mError: No input received from stdin.\033[0m")
+        print("\033[31mError: No input received from stdin.\033[0m", file=sys.stderr)
         sys.exit(1)
 
     url = create_snippet(output)

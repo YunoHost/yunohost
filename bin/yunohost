@@ -25,7 +25,7 @@ import sys
 import yunohost
 
 
-def _parse_cli_args():
+def _parse_cli_args() -> tuple[argparse.ArgumentParser, argparse.Namespace, list[str]]:
     """Parse additional arguments for the cli"""
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument(
@@ -71,7 +71,7 @@ def _parse_cli_args():
     elif opts.json:
         opts.output_as = "json"
 
-    return (parser, opts, args)
+    return parser, opts, args
 
 
 # Stupid PATH management because sometimes (e.g. some cron job) PATH is only /usr/bin:/bin ...
@@ -82,12 +82,10 @@ if os.environ["PATH"] != default_path:
 
 # Main action ----------------------------------------------------------
 
-if __name__ == "__main__":
+
+def main() -> None:
     if os.geteuid() != 0:
-        sys.stderr.write(
-            "\033[1;31mError:\033[0m yunohost command must be "
-            "run as root or with sudo.\n"
-        )
+        print("\033[1;31mError:\033[0m yunohost command must be run as root or with sudo.", file=sys.stderr)
         sys.exit(1)
 
     parser, opts, args = _parse_cli_args()
@@ -104,3 +102,7 @@ if __name__ == "__main__":
         args=args,
         parser=parser,
     )
+
+
+if __name__ == "__main__":
+    main()

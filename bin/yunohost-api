@@ -27,7 +27,7 @@ DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 6787
 
 
-def _parse_api_args():
+def _parse_api_args() -> argparse.Namespace:
     """Parse main arguments for the api"""
     parser = argparse.ArgumentParser(
         add_help=False,
