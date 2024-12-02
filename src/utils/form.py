@@ -1620,6 +1620,7 @@ class AppOption(BaseSelectOption):
         )
 
         values["choices"] = value
+        values["default"] = None
 
         return values
 
@@ -1665,12 +1666,14 @@ class UserOption(BaseSelectOption):
                 error="You should create a YunoHost user first.",
             )
 
-        if not values.get("default") and not values.get("multiple"):
+        if not values.get("multiple"):
             values["default"] = next(
                 username
                 for username, infos in users.items()
                 if "admins" in infos["groups"]
             )
+        else:
+            values["default"] = None
 
         return values
 
