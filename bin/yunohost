@@ -44,7 +44,10 @@ def _parse_cli_args():
         "--quiet", action="store_true", default=False, help="Don't produce any output"
     )
     parser.add_argument(
-        "--version", action="store_true", default=False, help="Display YunoHost packages versions (alias to 'yunohost tools versions')"
+        "--version",
+        action="store_true",
+        default=False,
+        help="Display YunoHost packages versions (alias to 'yunohost tools versions')",
     )
     parser.add_argument(
         "--timeout",
