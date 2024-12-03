@@ -35,7 +35,7 @@ from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import get_ynh_package_version
-from moulinette.utils.log import getActionLogger, LOG_BROKER_BACKEND_ENDPOINT
+from moulinette.utils.log import LOG_BROKER_BACKEND_ENDPOINT
 from moulinette.utils.filesystem import read_file, read_yaml
 
 logger = getLogger("yunohost.log")
