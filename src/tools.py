@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,30 +17,31 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+
+import os
 import pwd
 import re
-import os
 import subprocess
 import time
 from importlib import import_module
-from packaging import version
-from typing import List
 from logging import getLogger
+from typing import List
 
 from moulinette import Moulinette, m18n
+from moulinette.utils.filesystem import chown, cp, mkdir, read_yaml, rm, write_to_yaml
 from moulinette.utils.process import call_async_output
-from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm, chown
+from packaging import version
 
+from yunohost.log import OperationLogger, is_unit_operation
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import (
+    _apt_log_line_is_relevant,
     _dump_sources_list,
     _list_upgradable_apt_packages,
-    ynh_packages_version,
     dpkg_is_broken,
     dpkg_lock_available,
-    _apt_log_line_is_relevant,
+    ynh_packages_version,
 )
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.log import is_unit_operation, OperationLogger
 
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
@@ -51,12 +53,13 @@ def tools_versions():
 
 
 def tools_rootpw(new_password, check_strength=True):
-    from yunohost.utils.password import (
-        assert_password_is_strong_enough,
-        assert_password_is_compatible,
-        _hash_user_password,
-    )
     import spwd
+
+    from yunohost.utils.password import (
+        _hash_user_password,
+        assert_password_is_compatible,
+        assert_password_is_strong_enough,
+    )
 
     assert_password_is_compatible(new_password)
     if check_strength:
@@ -145,20 +148,20 @@ def tools_postinstall(
     overwrite_root_password=True,
     i_have_read_terms_of_services=False,
 ):
-    from yunohost.service import _run_service_command
-    from yunohost.dyndns import _dyndns_available, dyndns_unsubscribe
-    from yunohost.utils.dns import is_yunohost_dyndns_domain
-    from yunohost.utils.password import (
-        assert_password_is_strong_enough,
-        assert_password_is_compatible,
-    )
-    from yunohost.domain import domain_main_domain, domain_add
-    from yunohost.user import user_create, ADMIN_ALIASES
+    import psutil
+
     from yunohost.app import _ask_confirmation
     from yunohost.app_catalog import _update_apps_catalog
+    from yunohost.domain import domain_add, domain_main_domain
+    from yunohost.dyndns import _dyndns_available, dyndns_unsubscribe
     from yunohost.firewall import firewall_upnp
-
-    import psutil
+    from yunohost.service import _run_service_command
+    from yunohost.user import ADMIN_ALIASES, user_create
+    from yunohost.utils.dns import is_yunohost_dyndns_domain
+    from yunohost.utils.password import (
+        assert_password_is_compatible,
+        assert_password_is_strong_enough,
+    )
 
     # Do some checks at first
     if os.path.isfile("/etc/yunohost/installed"):
@@ -305,8 +308,8 @@ def tools_update(target=None):
     """
     Update apps & system package cache
     """
-    from yunohost.app_catalog import _update_apps_catalog
     from yunohost.app import _list_upgradable_apps
+    from yunohost.app_catalog import _update_apps_catalog
 
     if not target:
         target = "all"
@@ -415,7 +418,7 @@ def tools_upgrade(operation_logger, target=None):
        system -- True to upgrade system
     """
 
-    from yunohost.app import app_upgrade, app_list
+    from yunohost.app import app_list, app_upgrade
 
     if dpkg_is_broken():
         raise YunohostValidationError("dpkg_is_broken")

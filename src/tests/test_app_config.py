@@ -1,27 +1,46 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
 import glob
 import os
 import shutil
+
 import pytest
 from mock import patch
-
-from .conftest import get_test_apps_dir
-
 from moulinette import Moulinette
 from moulinette.utils.filesystem import read_file
 
-from yunohost.domain import _get_maindomain
 from yunohost.app import (
-    app_setting,
-    app_install,
-    app_remove,
     _is_installed,
     app_config_get,
     app_config_set,
+    app_install,
+    app_remove,
+    app_setting,
     app_ssowatconf,
 )
+from yunohost.domain import _get_maindomain
 from yunohost.user import user_create, user_delete
-
 from yunohost.utils.error import YunohostError, YunohostValidationError
+
+from .conftest import get_test_apps_dir
 
 
 def setup_function(function):

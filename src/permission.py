@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,15 +17,17 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-import re
+
 import copy
 import grp
 import random
+import re
 from logging import getLogger
 
 from moulinette import m18n
-from yunohost.utils.error import YunohostError, YunohostValidationError
+
 from yunohost.log import is_unit_operation
+from yunohost.utils.error import YunohostError, YunohostValidationError
 
 logger = getLogger("yunohost.user")
 
@@ -45,7 +48,7 @@ def user_permission_list(
     """
 
     # Fetch relevant informations
-    from yunohost.app import app_setting, _installed_apps
+    from yunohost.app import _installed_apps, app_setting
     from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
 
     ldap = _get_ldap_interface()
@@ -387,8 +390,8 @@ def permission_create(
        re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
     """
 
-    from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.user import user_group_list
+    from yunohost.utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
 
@@ -643,6 +646,7 @@ def permission_sync_to_user():
     user<->group link and the group<->permission link
     """
     import os
+
     from yunohost.app import app_ssowatconf
     from yunohost.user import user_group_list
     from yunohost.utils.ldap import _get_ldap_interface
@@ -855,8 +859,8 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
         re:^/api/.*|/scripts/api.js$
     """
 
-    from yunohost.domain import _assert_domain_exists
     from yunohost.app import _assert_no_conflicting_apps
+    from yunohost.domain import _assert_domain_exists
 
     #
     # Regexes

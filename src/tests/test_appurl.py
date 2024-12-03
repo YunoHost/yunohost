@@ -1,17 +1,38 @@
-import pytest
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
 import os
 
-from .conftest import get_test_apps_dir
+import pytest
 
-from yunohost.utils.error import YunohostError
 from yunohost.app import (
-    app_install,
-    app_remove,
     _is_app_repo_url,
     _parse_app_instance_name,
+    app_install,
+    app_remove,
 )
 from yunohost.domain import _get_maindomain, domain_url_available
 from yunohost.permission import _validate_and_sanitize_permission_url
+from yunohost.utils.error import YunohostError
+
+from .conftest import get_test_apps_dir
 
 # Get main domain
 maindomain = _get_maindomain()

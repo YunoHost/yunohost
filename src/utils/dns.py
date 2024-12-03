@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,10 +17,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-import dns.resolver
+
 from typing import List
 
 from moulinette.utils.filesystem import read_file
+
+import dns.resolver
 
 SPECIAL_USE_TLDS = ["home.arpa", "internal", "local", "localhost", "onion", "test"]
 

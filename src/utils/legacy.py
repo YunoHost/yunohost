@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,19 +17,16 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+
+import glob
 import os
 import re
-import glob
 from logging import getLogger
 
 from moulinette.core import MoulinetteError
-from moulinette.utils.filesystem import (
-    read_file,
-    write_to_file,
-)
+from moulinette.utils.filesystem import read_file, write_to_file
 
 from yunohost.utils.error import YunohostValidationError
-
 
 logger = getLogger("yunohost.utils.legacy")
 

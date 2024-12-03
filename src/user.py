@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,28 +17,30 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-import os
-import re
-import pwd
-import grp
-import random
-import subprocess
+
 import copy
+import grp
+import os
+import pwd
+import random
+import re
+import subprocess
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, TextIO, Optional, Callable, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional, TextIO, Union, cast
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.process import check_output
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.service import service_status
 from yunohost.log import is_unit_operation
+from yunohost.service import service_status
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import binary_to_human
 
 if TYPE_CHECKING:
-    from yunohost.log import OperationLogger
     from bottle import HTTPResponse as HTTPResponseType
     from moulinette.utils.log import MoulinetteLogger
+
+    from yunohost.log import OperationLogger
 
     logger = cast(MoulinetteLogger, getLogger("yunohost.user"))
 else:
@@ -166,14 +169,14 @@ def user_create(
         " ".join(fullname.split()[1:]) or " "
     )  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
 
-    from yunohost.domain import domain_list, _get_maindomain, _assert_domain_exists
+    from yunohost.domain import _assert_domain_exists, _get_maindomain, domain_list
     from yunohost.hook import hook_callback
-    from yunohost.utils.password import (
-        assert_password_is_strong_enough,
-        assert_password_is_compatible,
-        _hash_user_password,
-    )
     from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.utils.password import (
+        _hash_user_password,
+        assert_password_is_compatible,
+        assert_password_is_strong_enough,
+    )
 
     # Ensure compatibility and sufficiently complex password
     assert_password_is_compatible(password)
@@ -322,10 +325,10 @@ def user_delete(
     purge: bool = False,
     from_import: bool = False,
 ):
+    from yunohost.authenticators.ldap_admin import Authenticator as AdminAuth
+    from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
-    from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
-    from yunohost.authenticators.ldap_admin import Authenticator as AdminAuth
 
     if username not in user_list()["users"]:
         raise YunohostValidationError("user_unknown", user=username)
@@ -395,15 +398,15 @@ def user_update(
         firstname = None
         lastname = None
 
-    from yunohost.domain import domain_list
     from yunohost.app import app_ssowatconf
-    from yunohost.utils.password import (
-        assert_password_is_strong_enough,
-        assert_password_is_compatible,
-        _hash_user_password,
-    )
-    from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.domain import domain_list
     from yunohost.hook import hook_callback
+    from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.utils.password import (
+        _hash_user_password,
+        assert_password_is_compatible,
+        assert_password_is_strong_enough,
+    )
 
     domains = domain_list()["domains"]
 
@@ -722,10 +725,12 @@ def user_import(
     """
 
     import csv  # CSV are needed only in this function
+
     from moulinette.utils.text import random_ascii
-    from yunohost.permission import permission_sync_to_user
+
     from yunohost.app import app_ssowatconf
     from yunohost.domain import domain_list
+    from yunohost.permission import permission_sync_to_user
 
     # Pre-validate data and prepare what should be done
     actions: dict[str, list[dict[str, Any]]] = {
@@ -1166,9 +1171,9 @@ def user_group_update(
     sync_perm: bool = True,
     from_import: bool = False,
 ) -> None | dict[str, Any]:
+    from yunohost.hook import hook_callback
     from yunohost.permission import permission_sync_to_user
     from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
-    from yunohost.hook import hook_callback
 
     existing_users = list(user_list()["users"].keys())
 

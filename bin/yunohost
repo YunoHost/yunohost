@@ -1,12 +1,31 @@
-#! /usr/bin/python3
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
+import argparse
 import os
 import sys
-import argparse
+
 import yunohost
 
 
-def _parse_cli_args():
+def _parse_cli_args() -> tuple[argparse.ArgumentParser, argparse.Namespace, list[str]]:
     """Parse additional arguments for the cli"""
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument(
@@ -25,7 +44,10 @@ def _parse_cli_args():
         "--quiet", action="store_true", default=False, help="Don't produce any output"
     )
     parser.add_argument(
-        "--version", action="store_true", default=False, help="Display YunoHost packages versions (alias to 'yunohost tools versions')"
+        "--version",
+        action="store_true",
+        default=False,
+        help="Display YunoHost packages versions (alias to 'yunohost tools versions')",
     )
     parser.add_argument(
         "--timeout",
@@ -49,7 +71,7 @@ def _parse_cli_args():
     elif opts.json:
         opts.output_as = "json"
 
-    return (parser, opts, args)
+    return parser, opts, args
 
 
 # Stupid PATH management because sometimes (e.g. some cron job) PATH is only /usr/bin:/bin ...
@@ -60,12 +82,10 @@ if os.environ["PATH"] != default_path:
 
 # Main action ----------------------------------------------------------
 
-if __name__ == "__main__":
+
+def main() -> None:
     if os.geteuid() != 0:
-        sys.stderr.write(
-            "\033[1;31mError:\033[0m yunohost command must be "
-            "run as root or with sudo.\n"
-        )
+        print("\033[1;31mError:\033[0m yunohost command must be run as root or with sudo.", file=sys.stderr)
         sys.exit(1)
 
     parser, opts, args = _parse_cli_args()
@@ -82,3 +102,7 @@ if __name__ == "__main__":
         args=args,
         parser=parser,
     )
+
+
+if __name__ == "__main__":
+    main()

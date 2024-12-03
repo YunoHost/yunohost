@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,26 +17,28 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-import re
-import os
-import time
-import yaml
-import subprocess
-from logging import getLogger
-from glob import glob
-from datetime import datetime
 
+import os
+import re
+import subprocess
+import time
+from datetime import datetime
+from glob import glob
+from logging import getLogger
+
+import yaml
 from moulinette import m18n
-from yunohost.diagnosis import diagnosis_ignore, diagnosis_unignore
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import (
-    read_file,
     append_to_file,
-    write_to_file,
+    read_file,
     read_yaml,
+    write_to_file,
     write_to_yaml,
 )
+from moulinette.utils.process import check_output
+
+from yunohost.diagnosis import diagnosis_ignore, diagnosis_unignore
+from yunohost.utils.error import YunohostError, YunohostValidationError
 
 MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 

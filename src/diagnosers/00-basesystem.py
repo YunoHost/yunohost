@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,20 +17,18 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-import os
+
 import json
-import subprocess
 import logging
+import os
+import subprocess
 from typing import List
 
-from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file, read_json, write_to_json
+from moulinette.utils.process import check_output
+
 from yunohost.diagnosis import Diagnoser
-from yunohost.utils.system import (
-    ynh_packages_version,
-    system_virt,
-    system_arch,
-)
+from yunohost.utils.system import system_arch, system_virt, ynh_packages_version
 
 logger = logging.getLogger("yunohost.diagnosis")
 
