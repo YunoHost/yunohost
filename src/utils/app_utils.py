@@ -1025,8 +1025,8 @@ def _get_conflicting_apps(
     from ..domain import _assert_domain_exists
     from .form import DomainOption, WebPathOption
 
-    domain = DomainOption.normalize(domain)
-    path = WebPathOption.normalize(path)
+    domain = DomainOption().normalize(domain)
+    path = WebPathOption(default="/").normalize(path)
 
     # Abort if domain is unknown
     _assert_domain_exists(domain)

@@ -528,7 +528,7 @@ class ConfigPanel:
             if isinstance(option, BaseReadonlyOption):
                 return None
 
-            return option.normalize(self.form[option_id], option)
+            return option.normalize(self.form[option_id])
 
         # Format result in 'classic' or 'export' mode
         self.config.translate()
@@ -542,9 +542,7 @@ class ConfigPanel:
                     for opt in section["options"]:
                         instance = self.config.get_option(opt["id"])
                         if isinstance(instance, BaseInputOption):
-                            opt["value"] = instance.normalize(
-                                self.form[opt["id"]], instance
-                            )
+                            opt["value"] = instance.normalize(self.form[opt["id"]])
             return result
 
         result = OrderedDict()
@@ -568,9 +566,7 @@ class ConfigPanel:
                         result[key] = {"ask": option.ask}
 
                         if isinstance(option, BaseInputOption):
-                            result[key]["value"] = option.humanize(
-                                self.form[option.id], option
-                            )
+                            result[key]["value"] = option.humanize(self.form[option.id])
                             if option.type is OptionType.password:
                                 result[key]["value"] = (
                                     "**************"  # Prevent displaying password in `config get`
