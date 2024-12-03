@@ -502,6 +502,14 @@ class APIHandler(Handler):
     def __init__(self, operation_id):
         super().__init__()
         self.operation_id = operation_id
+
+        if Moulinette.interface.type == "api":
+            from bottle import request
+            self.ref_id = request.get_header("ref_id")
+        else:
+            from uuid import uuid4
+            self.ref_id = str(uuid4())
+
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PUB)
         self.socket.connect(LOG_BROKER_BACKEND_ENDPOINT)
@@ -538,6 +546,7 @@ class APIHandler(Handler):
     def _encode_and_pub(self, data):
 
         data["operation_id"] = self.operation_id
+        data["ref_id"] = self.ref_id
 
         payload = base64.b64encode(json.dumps(data).encode())
         self.socket.send_multipart([b'', payload])
