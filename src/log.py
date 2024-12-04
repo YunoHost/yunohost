@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-import base64
 import copy
 import os
 import re
@@ -23,19 +22,16 @@ import yaml
 import glob
 import psutil
 import time
-import zmq
-import json
 from typing import List
 
 from datetime import datetime, timedelta
-from logging import FileHandler, getLogger, Formatter, Handler, INFO
+from logging import FileHandler, getLogger, Formatter, INFO
 from io import IOBase
 
 from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import get_ynh_package_version
-from moulinette.utils.log import LOG_BROKER_BACKEND_ENDPOINT
 from moulinette.utils.filesystem import read_file, read_yaml
 
 logger = getLogger("yunohost.log")
@@ -522,66 +518,6 @@ def is_unit_operation(
     return decorate
 
 
-class APIHandler(Handler):
-
-    def __init__(self, operation_id):
-        super().__init__()
-        self.operation_id = operation_id
-
-        if Moulinette.interface.type == "api":
-            from bottle import request
-            self.ref_id = request.get_header("ref_id")
-        else:
-            from uuid import uuid4
-            self.ref_id = str(uuid4())
-
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.PUB)
-        self.socket.connect(LOG_BROKER_BACKEND_ENDPOINT)
-
-        # FIXME ? ... Boring hack because otherwise it seems we lose messages emitted while
-        # the socket ain't properly connected to the other side
-        import time
-        time.sleep(1)
-
-    def emit(self, record):
-        self._encode_and_pub({
-            "type": "msg",
-            "timestamp": record.created,
-            "level": record.levelname,
-            "msg": self.format(record),
-        })
-
-    def emit_operation_start(self, time):
-
-        self._encode_and_pub({
-            "type": "start",
-            "timestamp": time.timestamp(),
-        })
-
-    def emit_operation_end(self, time, success, errormsg):
-
-        self._encode_and_pub({
-            "type": "end",
-            "success": success,
-            "errormsg": errormsg,
-            "timestamp": time.timestamp(),
-        })
-
-    def _encode_and_pub(self, data):
-
-        data["operation_id"] = self.operation_id
-        data["ref_id"] = self.ref_id
-
-        payload = base64.b64encode(json.dumps(data).encode())
-        self.socket.send_multipart([b'', payload])
-
-    def close(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.socket.close()
-        self.context.term()
-
-
 class RedactingFormatter(Formatter):
     def __init__(self, format_string, data_to_redact):
         super(RedactingFormatter, self).__init__(format_string)
@@ -641,7 +577,7 @@ class OperationLogger:
         self.started_at = None
         self.ended_at = None
         self.logger = None
-        self.api_handler = None
+        self.sse_handler = None
         self._name = None
         self.data_to_redact = []
         self.parent = self.parent_logger()
@@ -719,8 +655,8 @@ class OperationLogger:
             self.started_at = datetime.utcnow()
             self.flush()
             self._register_log()
-            if self.api_handler:
-                self.api_handler.emit_operation_start(self.started_at)
+            if self.sse_handler:
+                self.sse_handler.emit_operation_start(self.started_at)
 
     @property
     def md_path(self):
@@ -752,9 +688,10 @@ class OperationLogger:
 
         # Only do this one for the main parent operation
         if not self.parent:
-            self.api_handler = APIHandler(self.name)
-            self.api_handler.level = INFO
-            self.api_handler.formatter = RedactingFormatter(
+            from yunohost.utils.sse import SSELogStreamingHandler
+            self.sse_handler = SSELogStreamingHandler(self.name)
+            self.sse_handler.level = INFO
+            self.sse_handler.formatter = RedactingFormatter(
                 "%(message)s", self.data_to_redact
             )
 
@@ -763,7 +700,7 @@ class OperationLogger:
         self.logger.addHandler(self.file_handler)
 
         if not self.parent:
-            self.logger.addHandler(self.api_handler)
+            self.logger.addHandler(self.sse_handler)
 
     def flush(self):
         """
@@ -877,15 +814,15 @@ class OperationLogger:
         self._error = error
         self._success = error is None
 
-        if self.api_handler:
-            self.api_handler.emit_operation_end(self.ended_at, self._success, self._error)
+        if self.sse_handler:
+            self.sse_handler.emit_operation_end(self.ended_at, self._success, self._error)
 
         if self.logger is not None:
             self.logger.removeHandler(self.file_handler)
             self.file_handler.close()
-            if self.api_handler:
-                self.logger.removeHandler(self.api_handler)
-                self.api_handler.close()
+            if self.sse_handler:
+                self.logger.removeHandler(self.sse_handler)
+                self.sse_handler.close()
 
         is_api = Moulinette.interface.type == "api"
         desc = _get_description_from_name(self.name)

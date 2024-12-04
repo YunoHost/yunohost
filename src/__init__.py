@@ -23,7 +23,7 @@ import sys
 
 import moulinette
 from moulinette import m18n
-from moulinette.utils.log import configure_logging, start_log_broker
+from moulinette.utils.log import configure_logging
 from moulinette.interfaces.cli import colorize, get_locale
 
 
@@ -201,5 +201,6 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
             logging_configuration["loggers"]["moulinette"]["handlers"].append("cli")
             logging_configuration["root"]["handlers"].append("cli")
 
+        from yunohost.utils.sse import start_log_broker
         start_log_broker()
         configure_logging(logging_configuration)
