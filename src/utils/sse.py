@@ -131,6 +131,7 @@ def sse_stream():
 
     # We need zmq.green to uh have some sort of async ? (I think)
     import zmq.green as zmq
+    from yunohost.log import log_list
 
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
@@ -140,6 +141,17 @@ def sse_stream():
     # Set client-side auto-reconnect timeout, ms.
     yield 'retry: 100\n\n'
 
+    recent_operation_history = log_list(since_days_ago=2, limit=50)["operation"]
+    for operation in recent_operation_history:
+        data = {
+            "type": "recent_history",
+            "operation_id": operation["name"],
+            "success": operation["success"],
+            "started_at": operation["started_at"].timestamp(),
+        }
+        yield 'data: ' + base64.b64encode(json.dumps(data).encode()).decode() + '\n\n'
+
+    # Init heartbeat
     last_heartbeat = 0
 
     try:

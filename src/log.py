@@ -93,7 +93,7 @@ def _update_log_cache_symlinks():
         name = log_md.split("/")[-1][: -len(METADATA_FILE_EXT)]
         parent_symlink = os.path.join(OPERATIONS_PATH, f".{name}.parent.yml")
         success_symlink = os.path.join(OPERATIONS_PATH, f".{name}.success")
-        if os.path.islink(parent_symlink) and (os.path.islink(success_symlink) and os.path.getctime(success_symlink) < os.path.getctime(log_md)):
+        if os.path.islink(parent_symlink) and (os.path.islink(success_symlink) and os.path.getmtime(success_symlink) < os.path.getmtime(log_md)):
             continue
 
         try:
@@ -127,7 +127,7 @@ def _update_log_cache_symlinks():
                 logger.warning(f"Failed to create symlink {parent_symlink} ? {e}")
 
 
-def log_list(limit=None, with_details=False, with_suboperations=False):
+def log_list(limit=None, with_details=False, with_suboperations=False, since_days_ago=365):
     """
     List available logs
 
@@ -145,11 +145,11 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
 
     _update_log_cache_symlinks()
 
-    one_year_ago = time.time() - 365 * 24 * 3600
+    since = time.time() - since_days_ago * 24 * 3600
     logs = [
         x.split("/")[-1]
         for x in glob.iglob(OPERATIONS_PATH + "*" + METADATA_FILE_EXT)
-        if os.path.getctime(x) > one_year_ago
+        if os.path.getctime(x) > since
     ]
     logs = list(reversed(sorted(logs)))
 
