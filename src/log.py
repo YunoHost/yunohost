@@ -84,7 +84,7 @@ BORING_LOG_LINES = [
 ]
 
 
-def _update_log_parent_symlinks():
+def _update_log_cache_symlinks():
 
     one_year_ago = time.time() - 365 * 24 * 3600
 
@@ -96,7 +96,8 @@ def _update_log_parent_symlinks():
 
         name = log_md.split("/")[-1][: -len(METADATA_FILE_EXT)]
         parent_symlink = os.path.join(OPERATIONS_PATH, f".{name}.parent.yml")
-        if os.path.islink(parent_symlink):
+        success_symlink = os.path.join(OPERATIONS_PATH, f".{name}.success")
+        if os.path.islink(parent_symlink) and (os.path.islink(success_symlink) and os.path.getctime(success_symlink) < os.path.getctime(log_md)):
             continue
 
         try:
@@ -108,12 +109,26 @@ def _update_log_parent_symlinks():
             logger.error(m18n.n("log_corrupted_md_file", md_file=log_md, error=e))
             continue
 
-        parent = metadata.get("parent")
-        parent = parent + METADATA_FILE_EXT if parent else "/dev/null"
-        try:
-            os.symlink(parent, parent_symlink)
-        except Exception as e:
-            logger.warning(f"Failed to create symlink {parent_symlink} ? {e}")
+        if not os.path.islink(success_symlink) or os.path.getctime(success_symlink) > os.path.getctime(log_md):
+            success = metadata.get("success", "?")
+            if success is True:
+                success_target = "/usr/bin/true"
+            elif success is False:
+                success_target = "/usr/bin/false"
+            else:
+                success_target = "/dev/null"
+            try:
+                os.symlink(success_target, success_symlink)
+            except Exception as e:
+                logger.warning(f"Failed to create symlink {parent_symlink} ? {e}")
+
+        if not os.path.islink(parent_symlink):
+            parent = metadata.get("parent")
+            parent = parent + METADATA_FILE_EXT if parent else "/dev/null"
+            try:
+                os.symlink(parent, parent_symlink)
+            except Exception as e:
+                logger.warning(f"Failed to create symlink {parent_symlink} ? {e}")
 
 
 def log_list(limit=None, with_details=False, with_suboperations=False):
@@ -132,7 +147,7 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
 
     operations = {}
 
-    _update_log_parent_symlinks()
+    _update_log_cache_symlinks()
 
     one_year_ago = time.time() - 365 * 24 * 3600
     logs = [
@@ -167,19 +182,29 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
             "description": _get_description_from_name(name),
         }
 
+        success_symlink = os.path.join(OPERATIONS_PATH, f".{name}.success")
+        entry["success"] = "?"
+        if os.path.islink(success_symlink):
+            success_target = os.path.realpath(success_symlink)
+            if success_target == "/usr/bin/false":
+                entry["success"] = False
+            elif success_target == "/usr/bin/true":
+                entry["success"] = True
+
         try:
             entry["started_at"] = _get_datetime_from_name(name)
         except ValueError:
             pass
 
-        try:
-            metadata = (
-                read_yaml(md_path) or {}
-            )  # Making sure this is a dict and not  None..?
-        except Exception as e:
-            # If we can't read the yaml for some reason, report an error and ignore this entry...
-            logger.error(m18n.n("log_corrupted_md_file", md_file=md_path, error=e))
-            continue
+        if with_details or with_suboperations:
+            try:
+                metadata = (
+                    read_yaml(md_path) or {}
+                )  # Making sure this is a dict and not  None..?
+            except Exception as e:
+                # If we can't read the yaml for some reason, report an error and ignore this entry...
+                logger.error(m18n.n("log_corrupted_md_file", md_file=md_path, error=e))
+                continue
 
         if with_details:
             entry["success"] = metadata.get("success", "?")
