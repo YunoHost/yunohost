@@ -2983,7 +2983,8 @@ def _get_conflicting_apps(domain, path, ignore_app=None):
             if a["id"] == ignore_app:
                 continue
             if path == p or (
-                not (path.startswith("/.well-known/") or p.startswith("/.well-known/")) and (path == "/" or p == "/")
+                not (path.startswith("/.well-known/") or p.startswith("/.well-known/"))
+                and (path == "/" or p == "/")
             ):
                 conflicts.append((p, a["id"], a["label"]))
 
