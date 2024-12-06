@@ -1,3 +1,4 @@
+import glob
 import os
 import base64
 import json
@@ -61,11 +62,22 @@ class SSELogStreamingHandler(Handler):
         self.socket = self.context.socket(zmq.PUB)
         self.socket.connect(LOG_BROKER_BACKEND_ENDPOINT)
 
+        from yunohost.log import OPERATIONS_PATH
+
+        # Since we're starting this operation, garbage all the previous streamcache
+        old_stream_caches = glob.iglob(OPERATIONS_PATH + ".*.logstreamcache")
+        for old_stream_cache in old_stream_caches:
+            os.remove(old_stream_cache)
+        # Start a new log stream cache, meant to be replayed for client opening
+        # the SSE when an operation is already ongoing
+        self.log_stream_cache = open(OPERATIONS_PATH + f"/.{self.operation_id}.logstreamcache", "w")
+
         # FIXME ? ... Boring hack because otherwise it seems we lose messages emitted while
         # the socket ain't properly connected to the other side
         time.sleep(1)
 
     def emit(self, record):
+
         self._encode_and_pub({
             "type": "msg",
             "timestamp": record.created,
@@ -95,12 +107,21 @@ class SSELogStreamingHandler(Handler):
         data["ref_id"] = self.ref_id
 
         payload = base64.b64encode(json.dumps(data).encode())
+
+        try:
+            self.log_stream_cache.write(payload.decode() + "\n")
+            self.log_stream_cache.flush()
+        except Exception:
+            # Not a huge deal if we can't write to the file for some reason...
+            pass
+
         self.socket.send_multipart([b'', payload])
 
     def close(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.socket.close()
         self.context.term()
+        self.log_stream_cache.close()
 
 
 def get_current_operation():
@@ -131,7 +152,7 @@ def sse_stream():
 
     # We need zmq.green to uh have some sort of async ? (I think)
     import zmq.green as zmq
-    from yunohost.log import log_list
+    from yunohost.log import log_list, OPERATIONS_PATH
 
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
@@ -141,15 +162,33 @@ def sse_stream():
     # Set client-side auto-reconnect timeout, ms.
     yield 'retry: 100\n\n'
 
+    # Check if there's any ongoing operation right now
+    current_operation_id = get_current_operation()
+
     recent_operation_history = log_list(since_days_ago=2, limit=50)["operation"]
     for operation in recent_operation_history:
+        if current_operation_id and operation["name"] == current_operation_id:
+            continue
         data = {
             "type": "recent_history",
             "operation_id": operation["name"],
             "success": operation["success"],
             "started_at": operation["started_at"].timestamp(),
         }
-        yield 'data: ' + base64.b64encode(json.dumps(data).encode()).decode() + '\n\n'
+        payload = base64.b64encode(json.dumps(data).encode()).decode()
+        yield f'data: {payload}\n\n'
+
+    if current_operation_id:
+        try:
+            log_stream_cache = open(OPERATIONS_PATH + f"/.{current_operation_id}.logstreamcache")
+        except Exception as e:
+            pass
+        else:
+            os.system(f"cat " + OPERATIONS_PATH + f"/.{current_operation_id}.logstreamcache")
+            entries = [entry.strip() for entry in log_stream_cache.readlines()]
+            for payload in entries:
+                yield f'data: {payload}\n\n'
+            log_stream_cache.close()
 
     # Init heartbeat
     last_heartbeat = 0
@@ -162,7 +201,8 @@ def sse_stream():
                     "current_operation": get_current_operation(),
                     "timestamp": time.time(),
                 }
-                yield 'data: ' + base64.b64encode(json.dumps(data).encode()).decode() + '\n\n'
+                payload = base64.b64encode(json.dumps(data).encode()).decode()
+                yield f'data: {payload}\n\n'
                 last_heartbeat = time.time()
             if sub.poll(10, zmq.POLLIN):
                 _, msg = sub.recv_multipart()
