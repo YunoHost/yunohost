@@ -1562,7 +1562,6 @@ def app_shell(app):
         app -- App ID
 
     """
-
     subprocess.run(
         [
             "/bin/bash",
