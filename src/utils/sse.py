@@ -180,11 +180,11 @@ def sse_stream():
 
     if current_operation_id:
         try:
-            log_stream_cache = open(OPERATIONS_PATH + f"/.{current_operation_id}.logstreamcache")
-        except Exception as e:
+            log_stream_cache = open(f"{OPERATIONS_PATH}/.{current_operation_id}.logstreamcache")
+        except Exception:
             pass
         else:
-            os.system(f"cat " + OPERATIONS_PATH + f"/.{current_operation_id}.logstreamcache")
+            os.system(f"cat {OPERATIONS_PATH}/.{current_operation_id}.logstreamcache")
             entries = [entry.strip() for entry in log_stream_cache.readlines()]
             for payload in entries:
                 yield f'data: {payload}\n\n'
