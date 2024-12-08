@@ -158,7 +158,6 @@ i18n = "global_settings_setting"
         default = "both"
 
     [misc.tls_passthrough]
-    visible = "security_experimental_enabled"
 
         [misc.tls_passthrough.tls_passthrough_enabled]
         type = "boolean"
