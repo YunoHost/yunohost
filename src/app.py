@@ -1562,12 +1562,14 @@ def app_shell(app):
         app -- App ID
 
     """
+
     subprocess.run(
         [
             "/bin/bash",
             "-c",
             "source /usr/share/yunohost/helpers && ynh_spawn_app_shell " + app,
-        ]
+        ],
+        env=_make_environment_for_app_script(app)
     )
 
 
@@ -1750,6 +1752,7 @@ def app_ssowatconf():
 
         setting_path = os.path.join(APPS_SETTING_PATH, app_id)
         local_manifest = _get_manifest_of_app(setting_path)
+        helpers_version = local_manifest["integration"]["helpers_version"] 
 
         app_domain = uris[0].split("/")[0]
         # get "topest" domain
