@@ -417,7 +417,7 @@ ynh_spawn_app_shell() {
 
     # Force `php` to its intended version
     # We use `eval`+`export` since `alias` is not propagated to subshells, even with `export`
-    local phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
+    local phpversion=$(ynh_app_setting_get --app=$app --key=php_version)
     local phpflags=$(ynh_app_setting_get --app=$app --key=phpflags)
     if [ -n "$phpversion" ]; then
         eval "php() { php${phpversion} ${phpflags} \"\$@\"; }"
