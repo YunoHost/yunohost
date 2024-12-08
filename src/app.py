@@ -1752,7 +1752,6 @@ def app_ssowatconf():
 
         setting_path = os.path.join(APPS_SETTING_PATH, app_id)
         local_manifest = _get_manifest_of_app(setting_path)
-        helpers_version = local_manifest["integration"]["helpers_version"] 
 
         app_domain = uris[0].split("/")[0]
         # get "topest" domain
