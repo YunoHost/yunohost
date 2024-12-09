@@ -1407,10 +1407,10 @@ class PortsResource(AppResource):
             self.set_setting(setting_name, port_value)
 
             if infos["exposed"]:
-                firewall_allow(infos["exposed"], port_value, reload_only_if_change=True)
+                firewall_allow(infos["exposed"], port_value, reload_if_change=True)
             else:
                 firewall_disallow(
-                    infos["exposed"], port_value, reload_only_if_change=True
+                    infos["exposed"], port_value, reload_if_change=True
                 )
 
     def deprovision(self, context: Dict = {}):
@@ -1422,7 +1422,7 @@ class PortsResource(AppResource):
             self.delete_setting(setting_name)
             if value and str(value).strip():
                 firewall_disallow(
-                    infos["exposed"], int(value), reload_only_if_change=True
+                    infos["exposed"], int(value), reload_if_change=True
                 )
 
 

@@ -230,9 +230,9 @@ def tools_postinstall(
                 else:
                     raise YunohostValidationError("dyndns_unavailable", domain=domain)
 
-    if os.system("iptables -V >/dev/null 2>/dev/null") != 0:
+    if os.system("nft -V >/dev/null 2>/dev/null") != 0:
         raise YunohostValidationError(
-            "iptables/nftables does not seems to be working on your setup. You may be in a container or your kernel does have the proper modules loaded. Sometimes, rebooting the machine may solve the issue.",
+            "nftables does not seems to be working on your setup. You may be in a container or your kernel does have the proper modules loaded. Sometimes, rebooting the machine may solve the issue.",
             raw_msg=True,
         )
 
