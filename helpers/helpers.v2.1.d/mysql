@@ -36,7 +36,7 @@ ynh_mysql_db_shell() {
         default_character_set="--default-character-set=$default_character_set"
     fi
 
-    mysql $character_set -B $database
+    mysql $default_character_set -B $database
 }
 
 # Create a database and grant optionnaly privilegies to a user
