@@ -166,7 +166,7 @@ def sse_stream():
     current_operation_id = get_current_operation()
 
     recent_operation_history = log_list(since_days_ago=2, limit=50)["operation"]
-    for operation in recent_operation_history:
+    for operation in reversed(recent_operation_history):
         if current_operation_id and operation["name"] == current_operation_id:
             continue
         data = {
