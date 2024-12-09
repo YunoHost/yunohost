@@ -471,7 +471,7 @@ def firewall_stop() -> None:
     Stop nftables
     """
     if os.system("nft list ruleset") != 0:
-        raise YunohostError("iptables_unavailable")
+        raise YunohostError("nftables_unavailable")
     YunoFirewall().clear()
 
 

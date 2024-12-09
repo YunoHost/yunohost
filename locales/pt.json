@@ -34,7 +34,7 @@
     "field_invalid": "Campo inválido '{}'",
     "firewall_reloaded": "Firewall recarregada com êxito",
     "installation_complete": "Instalação concluída",
-    "iptables_unavailable": "Não pode alterar aqui a iptables. Ou o seu kernel não o suporta ou está num espaço reservado",
+    "nftables_unavailable": "Não pode alterar aqui a nftables. Ou o seu kernel não o suporta ou está num espaço reservado",
     "mail_alias_remove_failed": "Não foi possível remover a etiqueta de correio '{mail}'",
     "mail_domain_unknown": "Domínio de endereço de correio '{domain}' inválido. Por favor, usa um domínio administrado per esse servidor.",
     "mail_forward_remove_failed": "Não foi possível remover o reencaminhamento de correio '{mail}'",
