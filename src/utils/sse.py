@@ -81,7 +81,7 @@ class SSELogStreamingHandler(Handler):
         self._encode_and_pub({
             "type": "msg",
             "timestamp": record.created,
-            "level": record.levelname,
+            "level": record.levelname.lower(),
             "msg": self.format(record),
         })
 
