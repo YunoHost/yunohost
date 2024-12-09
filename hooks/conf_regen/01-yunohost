@@ -278,6 +278,10 @@ ConditionVirtualization=!container
 EOF
     fi
 
+    # Delete legacy conflict between yunohost and nftables
+    mkdir -p ${pending_dir}/etc/systemd/system/nftables.service.d/
+    touch ${pending_dir}/etc/systemd/system/nftables.service.d/ynh-override.conf
+
     # Don't suspend computer on LidSwitch
     mkdir -p ${pending_dir}/etc/systemd/logind.conf.d/
     cat > ${pending_dir}/etc/systemd/logind.conf.d/ynh-override.conf << EOF

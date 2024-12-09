@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+set -e
+
+. /usr/share/yunohost/helpers
+
+
+PY_LIST_PORTS_OF="
+import os
+import yaml
+file = os.environ['FILE']
+proto = os.environ['PROTO']
+data = yaml.safe_load(open(file, 'r'))
+ports = [str(port) for port, info in data[proto].items() if info['open']]
+print(' '.join(ports))
+"
+
+do_pre_regen() {
+    pending_dir=$1
+
+    firewall_file="/etc/yunohost/firewall.yml"
+
+    tcp_ports=$(FILE=$firewall_file PROTO=tcp python3 -c "$PY_LIST_PORTS_OF")
+    udp_ports=$(FILE=$firewall_file PROTO=udp python3 -c "$PY_LIST_PORTS_OF")
+    export tcp_ports udp_ports
+
+    cd /usr/share/yunohost/conf/nftables
+    mkdir -p "${pending_dir}/etc/nftables.d"
+    cp nftables.conf "${pending_dir}/etc/nftables.conf"
+    ynh_render_template nftables.d/yunohost-firewall.tpl.conf "${pending_dir}/etc/nftables.d/yunohost-firewall.conf"
+}
+
+do_post_regen() {
+    regen_conf_files=$1
+
+    if ls -l /etc/nftables.d/*.conf> /dev/null; then
+        chown root:root /etc/nftables.d/*.conf
+        chmod 644 /etc/nftables.d/*.conf
+    fi
+
+    [[ -z "$regen_conf_files" ]] \
+        || systemctl reload-or-restart nftables
+}
+
+do_$1_regen ${@:2}
