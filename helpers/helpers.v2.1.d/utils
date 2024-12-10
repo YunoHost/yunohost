@@ -432,8 +432,7 @@ ynh_spawn_app_shell() {
 
     # Load the app's service name, or default to $app
     service=${service:-$app}
-    if systemctl list-units | grep -q "$service.service"
-    then
+    if systemctl list-units | grep -q "$service.service"; then
         # Load the Environment variables from the app's service
         local env_var=$(systemctl show $service.service -p "Environment" --value)
         [ -n "${env_var:-}" ] && export $env_var
