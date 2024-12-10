@@ -107,6 +107,8 @@ ynh_app_setting_delete() {
 # [internal]
 #
 ynh_app_setting() {
+    # Trick to only re-enable debugging if it was set before
+    local xtrace_enable=$(set +o | grep xtrace)
     set +o xtrace # set +x
     ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python3 - << EOF
 import os, yaml, sys
@@ -132,7 +134,7 @@ else:
     with open(setting_file, "w") as f:
         yaml.safe_dump(settings, f, default_flow_style=False)
 EOF
-    set -o xtrace # set -x
+    eval "$xtrace_enable"
 }
 
 # Check availability of a web path
