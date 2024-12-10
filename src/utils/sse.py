@@ -165,7 +165,7 @@ def sse_stream():
     # Check if there's any ongoing operation right now
     current_operation_id = get_current_operation()
 
-    recent_operation_history = log_list(since_days_ago=2, limit=50)["operation"]
+    recent_operation_history = log_list(since_days_ago=2, limit=20)["operation"]
     for operation in reversed(recent_operation_history):
         if current_operation_id and operation["name"] == current_operation_id:
             continue
