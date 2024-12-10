@@ -211,7 +211,7 @@ ynh_setup_source() {
     fi
 
     # Apply patches
-    if [ -d "$YNH_APP_BASEDIR/patches/" ]; then
+    if [ -d "$YNH_APP_BASEDIR/patches/$source_id" ]; then
         local patches_folder=$(realpath "$YNH_APP_BASEDIR/patches/$source_id")
         pushd "$dest_dir"
         for patchfile in "$patches_folder/"*.patch; do
