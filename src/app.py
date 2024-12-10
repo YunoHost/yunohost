@@ -1567,7 +1567,8 @@ def app_shell(app):
             "/bin/bash",
             "-c",
             "source /usr/share/yunohost/helpers && ynh_spawn_app_shell " + app,
-        ]
+        ],
+        env=_make_environment_for_app_script(app)
     )
 
 

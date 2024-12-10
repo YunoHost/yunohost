@@ -64,6 +64,9 @@
 #
 # Requires YunoHost version 3.2.2 or higher.
 ynh_handle_getopts_args() {
+    # Trick to only re-enable debugging if it was set before
+    local xtrace_enable=$(set +o | grep xtrace)
+
     # Manage arguments only if there's some provided
     set +o xtrace # set +x
     if [ $# -ne 0 ]; then
@@ -197,9 +200,6 @@ ynh_handle_getopts_args() {
         if [ "${arguments[0]:0:1}" != "-" ]; then
             # If not, enter in legacy mode and manage the arguments as positionnal ones..
             # Dot not echo, to prevent to go through a helper output. But print only in the log.
-            set -x
-            echo "! Helper used in legacy mode !" > /dev/null
-            set +x
             local i
             for i in $(seq 0 $((${#arguments[@]} - 1))); do
                 # Try to use legacy_args as a list of option_flag of the array args_array
@@ -229,5 +229,5 @@ ynh_handle_getopts_args() {
             parse_arg "${arguments[@]}"
         fi
     fi
-    set -o xtrace # set -x
+    eval "$xtrace_enable"
 }
