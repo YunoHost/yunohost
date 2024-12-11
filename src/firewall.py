@@ -32,7 +32,7 @@ from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.regenconf import regen_conf
 
 
-logger = getLogger("yunohost.firewall")
+logger: Any = getLogger("yunohost.firewall")
 
 
 class YunoFirewall:
