@@ -154,7 +154,7 @@ def get_current_operation():
     active_logs = [
         p.path.split("/")[-1]
         for p in process_open_files
-        if p.mode == "a" and p.path.startswith("/var/log/yunohost/operations/") and p.path.endswith(".logstreamcache")
+        if p.mode == "w" and p.path.startswith("/var/log/yunohost/operations/") and p.path.endswith(".logstreamcache")
     ]
     if active_logs:
         main_active_log = sorted(active_logs)[0][:-len(".logstreamcache")].strip(".")
