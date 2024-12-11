@@ -25,7 +25,7 @@ import time
 from typing import List
 
 from datetime import datetime, timedelta
-from logging import FileHandler, getLogger, Formatter, INFO, WARNING
+from logging import FileHandler, getLogger, Formatter, INFO
 from io import IOBase
 
 from moulinette import m18n, Moulinette
@@ -33,6 +33,7 @@ from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import get_ynh_package_version
 from moulinette.utils.filesystem import read_file, read_yaml
+from moulinette.utils.log import SUCCESS
 
 logger = getLogger("yunohost.log")
 
@@ -696,7 +697,7 @@ class OperationLogger:
         if not self.parent:
             from yunohost.utils.sse import SSELogStreamingHandler
             self.sse_handler = SSELogStreamingHandler(self.name, flash=self.flash)
-            self.sse_handler.level = INFO if not self.flash else WARNING
+            self.sse_handler.level = INFO if not self.flash else SUCCESS
             self.sse_handler.formatter = RedactingFormatter(
                 "%(message)s", self.data_to_redact
             )
