@@ -132,7 +132,7 @@ class SSELogStreamingHandler(Handler):
         self.socket.send_multipart([b'', payload])
 
     def close(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().close(*args, **kwargs)
         self.socket.close()
         self.context.term()
         if self.log_stream_cache:
