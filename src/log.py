@@ -421,7 +421,7 @@ def is_unit_operation(
     entities=["app", "domain", "group", "service", "user"],
     exclude=["password"],
     sse_only=False,
-    flash=True,
+    flash=False,
 ) -> Callable[
     [Callable[Concatenate["OperationLogger", Param], RetType]], Callable[Param, RetType]
 ]:
