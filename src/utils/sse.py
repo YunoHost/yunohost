@@ -53,7 +53,7 @@ class SSELogStreamingHandler(Handler):
         from moulinette import Moulinette
         if Moulinette.interface.type == "api":
             from bottle import request
-            self.ref_id = request.get_header("ref_id")
+            self.ref_id = request.get_header("ref-id")
         else:
             from uuid import uuid4
             self.ref_id = str(uuid4())
