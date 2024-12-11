@@ -2213,13 +2213,13 @@ def ask_questions_and_parse_answers(
 
 
 @overload
-def parse_raw_options(
+def parse_raw_options(  # noqa: E704
     raw_options: dict[str, Any], serialize: Literal[True]
 ) -> list[dict[str, Any]]: ...
 
 
 @overload
-def parse_raw_options(
+def parse_raw_options(  # noqa: E704
     raw_options: dict[str, Any], serialize: Literal[False] = False
 ) -> list[AnyOption]: ...
 
