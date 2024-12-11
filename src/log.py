@@ -25,7 +25,7 @@ import time
 from typing import List
 
 from datetime import datetime, timedelta
-from logging import FileHandler, getLogger, Formatter, INFO
+from logging import FileHandler, getLogger, Formatter, INFO, WARNING
 from io import IOBase
 
 from moulinette import m18n, Moulinette
@@ -327,7 +327,7 @@ def log_show(
 
         url = yunopaste(content)
 
-        logger.info(m18n.n("log_available_on_yunopaste", url=url))
+        logger.success(m18n.n("log_available_on_yunopaste", url=url))
         if Moulinette.interface.type == "api":
             return {"url": url}
         else:
@@ -410,10 +410,6 @@ def log_show(
     return infos
 
 
-def log_share(path):
-    return log_show(path, share=True)
-
-
 from typing import TypeVar, Callable, Concatenate, ParamSpec
 
 # FuncT = TypeVar("FuncT", bound=Callable[..., Any])
@@ -425,6 +421,7 @@ def is_unit_operation(
     entities=["app", "domain", "group", "service", "user"],
     exclude=["password"],
     sse_only=False,
+    flash=True,
 ) -> Callable[
     [Callable[Concatenate["OperationLogger", Param], RetType]], Callable[Param, RetType]
 ]:
@@ -500,7 +497,7 @@ def is_unit_operation(
                         context[field] = value.name
                     except Exception:
                         context[field] = "IOBase"
-            operation_logger = OperationLogger(func.__name__, related_to, sse_only, args=context)
+            operation_logger = OperationLogger(func.__name__, related_to, sse_only, flash, args=context)
 
             try:
                 # Start the actual function, and give the unit operation
@@ -565,12 +562,12 @@ class OperationLogger:
     Each time an action of the yunohost cli/api change the system, one or
     several unit operations should be registered.
 
-    This class record logs and metadata like context or start time/end time.
+    This class record logs and metadata like context or  time/end time.
     """
 
     _instances: List["OperationLogger"] = []
 
-    def __init__(self, operation, related_to=None, sse_only=False, **kwargs):
+    def __init__(self, operation, related_to=None, sse_only=False, flash=False, **kwargs):
         # TODO add a way to not save password on app installation
         self.operation = operation
         self.related_to = related_to
@@ -582,6 +579,7 @@ class OperationLogger:
         self.sse_handler = None
         self._name = None
         self.sse_only = sse_only
+        self.flash = flash
         self.data_to_redact = []
         self.parent = self.parent_logger()
         self._instances.append(self)
@@ -594,6 +592,10 @@ class OperationLogger:
 
         if not os.path.exists(self.path):
             os.makedirs(self.path)
+
+        # Autostart the logger for flash operations ?
+        if self.flash:
+            self.start()
 
     def parent_logger(self):
         # If there are other operation logger instances
@@ -658,7 +660,7 @@ class OperationLogger:
             self.started_at = datetime.utcnow()
             self.flush()
             self._register_log()
-            if self.sse_handler is not None:
+            if self.sse_handler is not None and not self.flash:
                 self.sse_handler.emit_operation_start(self.started_at, _get_description_from_name(self.name))
 
     @property
@@ -680,7 +682,7 @@ class OperationLogger:
         Register log with a handler connected on log system
         """
 
-        if not self.sse_only:
+        if not self.sse_only and not self.flash:
             self.file_handler = FileHandler(self.log_path)
             # We use a custom formatter that's able to redact all stuff in self.data_to_redact
             # N.B. : the subtle thing here is that the class will remember a pointer to the list,
@@ -693,8 +695,8 @@ class OperationLogger:
         # Only do this one for the main parent operation
         if not self.parent:
             from yunohost.utils.sse import SSELogStreamingHandler
-            self.sse_handler = SSELogStreamingHandler(self.name)
-            self.sse_handler.level = INFO
+            self.sse_handler = SSELogStreamingHandler(self.name, flash=self.flash)
+            self.sse_handler.level = INFO if not self.flash else WARNING
             self.sse_handler.formatter = RedactingFormatter(
                 "%(message)s", self.data_to_redact
             )
@@ -711,7 +713,7 @@ class OperationLogger:
         """
         Write or rewrite the metadata file with all metadata known
         """
-        if self.sse_only:
+        if self.sse_only or self.flash:
             return
 
         metadata = copy.copy(self.metadata)
@@ -822,7 +824,10 @@ class OperationLogger:
         self._success = error is None
 
         if self.sse_handler is not None:
-            self.sse_handler.emit_operation_end(self.ended_at, self._success, self._error)
+            if not self.flash:
+                self.sse_handler.emit_operation_end(self.ended_at, self._success, self._error)
+            elif self._error:
+                self.sse_handler.emit_error_toast(self._error)
 
         if self.file_handler is not None:
             self.logger.removeHandler(self.file_handler)
@@ -930,3 +935,8 @@ def _get_description_from_name(name):
         return m18n.n(key, *args)
     except IndexError:
         return name
+
+
+@is_unit_operation(flash=True)
+def log_share(operation_logger, path):
+    return log_show(path, share=True)

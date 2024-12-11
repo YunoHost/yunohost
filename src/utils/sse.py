@@ -45,9 +45,10 @@ def start_log_broker():
 
 class SSELogStreamingHandler(Handler):
 
-    def __init__(self, operation_id):
+    def __init__(self, operation_id, flash=False):
         super().__init__()
         self.operation_id = operation_id
+        self.flash = flash
 
         from moulinette import Moulinette
         if Moulinette.interface.type == "api":
@@ -64,13 +65,16 @@ class SSELogStreamingHandler(Handler):
 
         from yunohost.log import OPERATIONS_PATH
 
-        # Since we're starting this operation, garbage all the previous streamcache
-        old_stream_caches = glob.iglob(OPERATIONS_PATH + ".*.logstreamcache")
-        for old_stream_cache in old_stream_caches:
-            os.remove(old_stream_cache)
-        # Start a new log stream cache, meant to be replayed for client opening
-        # the SSE when an operation is already ongoing
-        self.log_stream_cache = open(OPERATIONS_PATH + f"/.{self.operation_id}.logstreamcache", "w")
+        if not flash:
+            # Since we're starting this operation, garbage all the previous streamcache
+            old_stream_caches = glob.iglob(OPERATIONS_PATH + ".*.logstreamcache")
+            for old_stream_cache in old_stream_caches:
+                os.remove(old_stream_cache)
+            # Start a new log stream cache, meant to be replayed for client opening
+            # the SSE when an operation is already ongoing
+            self.log_stream_cache = open(OPERATIONS_PATH + f"/.{self.operation_id}.logstreamcache", "w")
+        else:
+            self.log_stream_cache = None
 
         # FIXME ? ... Boring hack because otherwise it seems we lose messages emitted while
         # the socket ain't properly connected to the other side
@@ -79,10 +83,18 @@ class SSELogStreamingHandler(Handler):
     def emit(self, record):
 
         self._encode_and_pub({
-            "type": "msg",
+            "type": "msg" if not self.flash else "toast",
             "timestamp": record.created,
             "level": record.levelname.lower(),
             "msg": self.format(record),
+        })
+
+    def emit_error_toast(self, error):
+        self._encode_and_pub({
+            "type": "toast",
+            "timestamp": time.time(),
+            "level": "error",
+            "msg": error,
         })
 
     def emit_operation_start(self, time, title):
@@ -109,12 +121,13 @@ class SSELogStreamingHandler(Handler):
 
         payload = base64.b64encode(json.dumps(data).encode())
 
-        try:
-            self.log_stream_cache.write(payload.decode() + "\n")
-            self.log_stream_cache.flush()
-        except Exception:
-            # Not a huge deal if we can't write to the file for some reason...
-            pass
+        if self.log_stream_cache:
+            try:
+                self.log_stream_cache.write(payload.decode() + "\n")
+                self.log_stream_cache.flush()
+            except Exception:
+                # Not a huge deal if we can't write to the file for some reason...
+                pass
 
         self.socket.send_multipart([b'', payload])
 
@@ -122,7 +135,8 @@ class SSELogStreamingHandler(Handler):
         super().__init__(*args, **kwargs)
         self.socket.close()
         self.context.term()
-        self.log_stream_cache.close()
+        if self.log_stream_cache:
+            self.log_stream_cache.close()
 
 
 def get_current_operation():
