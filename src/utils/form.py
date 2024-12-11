@@ -2215,15 +2215,13 @@ def ask_questions_and_parse_answers(
 @overload
 def parse_raw_options(
     raw_options: dict[str, Any], serialize: Literal[True]
-) -> list[dict[str, Any]]:
-    ...
+) -> list[dict[str, Any]]: ...
 
 
 @overload
 def parse_raw_options(
     raw_options: dict[str, Any], serialize: Literal[False] = False
-) -> list[AnyOption]:
-    ...
+) -> list[AnyOption]: ...
 
 
 def parse_raw_options(
