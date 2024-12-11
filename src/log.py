@@ -656,7 +656,7 @@ class OperationLogger:
             self.flush()
             self._register_log()
             if self.sse_handler:
-                self.sse_handler.emit_operation_start(self.started_at)
+                self.sse_handler.emit_operation_start(self.started_at, _get_description_from_name(self.name))
 
     @property
     def md_path(self):

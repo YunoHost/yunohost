@@ -85,11 +85,12 @@ class SSELogStreamingHandler(Handler):
             "msg": self.format(record),
         })
 
-    def emit_operation_start(self, time):
+    def emit_operation_start(self, time, title):
 
         self._encode_and_pub({
             "type": "start",
             "timestamp": time.timestamp(),
+            "title": title,
         })
 
     def emit_operation_end(self, time, success, errormsg):
@@ -172,6 +173,7 @@ def sse_stream():
         data = {
             "type": "recent_history",
             "operation_id": operation["name"],
+            "title": operation["description"],
             "success": operation["success"],
             "started_at": operation["started_at"].timestamp(),
         }
