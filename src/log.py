@@ -424,6 +424,7 @@ RetType = TypeVar("RetType")
 def is_unit_operation(
     entities=["app", "domain", "group", "service", "user"],
     exclude=["password"],
+    sse_only=False,
 ) -> Callable[
     [Callable[Concatenate["OperationLogger", Param], RetType]], Callable[Param, RetType]
 ]:
@@ -499,7 +500,7 @@ def is_unit_operation(
                         context[field] = value.name
                     except Exception:
                         context[field] = "IOBase"
-            operation_logger = OperationLogger(func.__name__, related_to, args=context)
+            operation_logger = OperationLogger(func.__name__, related_to, sse_only, args=context)
 
             try:
                 # Start the actual function, and give the unit operation
@@ -569,7 +570,7 @@ class OperationLogger:
 
     _instances: List["OperationLogger"] = []
 
-    def __init__(self, operation, related_to=None, **kwargs):
+    def __init__(self, operation, related_to=None, sse_only=False, **kwargs):
         # TODO add a way to not save password on app installation
         self.operation = operation
         self.related_to = related_to
@@ -577,8 +578,10 @@ class OperationLogger:
         self.started_at = None
         self.ended_at = None
         self.logger = None
+        self.file_handler = None
         self.sse_handler = None
         self._name = None
+        self.sse_only = sse_only
         self.data_to_redact = []
         self.parent = self.parent_logger()
         self._instances.append(self)
@@ -655,7 +658,7 @@ class OperationLogger:
             self.started_at = datetime.utcnow()
             self.flush()
             self._register_log()
-            if self.sse_handler:
+            if self.sse_handler is not None:
                 self.sse_handler.emit_operation_start(self.started_at, _get_description_from_name(self.name))
 
     @property
@@ -677,14 +680,15 @@ class OperationLogger:
         Register log with a handler connected on log system
         """
 
-        self.file_handler = FileHandler(self.log_path)
-        # We use a custom formatter that's able to redact all stuff in self.data_to_redact
-        # N.B. : the subtle thing here is that the class will remember a pointer to the list,
-        # so we can directly append stuff to self.data_to_redact and that'll be automatically
-        # propagated to the RedactingFormatter
-        self.file_handler.formatter = RedactingFormatter(
-            "%(asctime)s: %(levelname)s - %(message)s", self.data_to_redact
-        )
+        if not self.sse_only:
+            self.file_handler = FileHandler(self.log_path)
+            # We use a custom formatter that's able to redact all stuff in self.data_to_redact
+            # N.B. : the subtle thing here is that the class will remember a pointer to the list,
+            # so we can directly append stuff to self.data_to_redact and that'll be automatically
+            # propagated to the RedactingFormatter
+            self.file_handler.formatter = RedactingFormatter(
+                "%(asctime)s: %(levelname)s - %(message)s", self.data_to_redact
+            )
 
         # Only do this one for the main parent operation
         if not self.parent:
@@ -697,15 +701,18 @@ class OperationLogger:
 
         # Listen to the root logger
         self.logger = getLogger("yunohost")
-        self.logger.addHandler(self.file_handler)
+        if self.file_handler is not None:
+            self.logger.addHandler(self.file_handler)
 
-        if not self.parent:
+        if self.sse_handler is not None:
             self.logger.addHandler(self.sse_handler)
 
     def flush(self):
         """
         Write or rewrite the metadata file with all metadata known
         """
+        if self.sse_only:
+            return
 
         metadata = copy.copy(self.metadata)
 
@@ -814,15 +821,15 @@ class OperationLogger:
         self._error = error
         self._success = error is None
 
-        if self.sse_handler:
+        if self.sse_handler is not None:
             self.sse_handler.emit_operation_end(self.ended_at, self._success, self._error)
 
-        if self.logger is not None:
+        if self.file_handler is not None:
             self.logger.removeHandler(self.file_handler)
             self.file_handler.close()
-            if self.sse_handler:
-                self.logger.removeHandler(self.sse_handler)
-                self.sse_handler.close()
+        if self.sse_handler is not None:
+            self.logger.removeHandler(self.sse_handler)
+            self.sse_handler.close()
 
         is_api = Moulinette.interface.type == "api"
         desc = _get_description_from_name(self.name)

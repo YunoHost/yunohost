@@ -301,7 +301,8 @@ def tools_regen_conf(
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 
-def tools_update(target=None):
+@is_unit_operation(sse_only=True)
+def tools_update(operation_logger, target=None):
     """
     Update apps & system package cache
     """
@@ -316,6 +317,8 @@ def tools_update(target=None):
             f"Unknown target {target}, should be 'system', 'apps' or 'all'",
             raw_msg=True,
         )
+
+    operation_logger.start()
 
     upgradable_system_packages = []
     if target in ["system", "all"]:
