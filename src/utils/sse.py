@@ -97,12 +97,13 @@ class SSELogStreamingHandler(Handler):
             "msg": error,
         })
 
-    def emit_operation_start(self, time, title):
+    def emit_operation_start(self, time, title, started_by):
 
         self._encode_and_pub({
             "type": "start",
             "timestamp": time.timestamp(),
             "title": title,
+            "started_by": started_by,
         })
 
     def emit_operation_end(self, time, success, errormsg):

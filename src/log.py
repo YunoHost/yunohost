@@ -204,6 +204,7 @@ def log_list(limit=None, with_details=False, with_suboperations=False, since_day
         if with_details:
             entry["success"] = metadata.get("success", "?")
             entry["parent"] = metadata.get("parent")
+            entry["started_by"] = metadata.get("started_by")
 
         if with_suboperations:
             entry["parent"] = metadata.get("parent")
@@ -586,6 +587,23 @@ class OperationLogger:
             if os.path.exists(filename):
                 self.data_to_redact.append(read_file(filename).strip())
 
+        self.started_by = None
+        if not self.parent:
+            if Moulinette.interface.type == "api":
+                try:
+                    from yunohost.authenticators.ldap_admin import Authenticator as Auth
+                    auth = Auth().get_session_cookie()
+                    self.started_by = auth["user"]
+                except Exception:
+                    # During postinstall, we're not actually authenticated so eeeh what happens exactly?
+                    self.started_by = "root"
+            elif "SUDO_USER" in os.environ:
+                self.started_by = os.environ["SUDO_USER"]
+            elif not os.isatty(1):
+                self.started_by = "noninteractive"
+            else:
+                self.started_by = "root"
+
         if not os.path.exists(OPERATIONS_PATH):
             os.makedirs(OPERATIONS_PATH)
 
@@ -657,7 +675,7 @@ class OperationLogger:
             self.flush()
             self._register_log()
             if self.sse_handler is not None and not self.flash:
-                self.sse_handler.emit_operation_start(self.started_at, _get_description_from_name(self.name))
+                self.sse_handler.emit_operation_start(self.started_at, _get_description_from_name(self.name), self.started_by)
 
     @property
     def md_path(self):
@@ -773,6 +791,8 @@ class OperationLogger:
             data["success"] = self._success
             if self.error is not None:
                 data["error"] = self._error
+        if self.started_by is not None:
+            data["started_by"] = self.started_by
         # TODO: detect if 'extra' erase some key of 'data'
         data.update(self.extra)
         # Remove the 'args' arg from args (yodawg). It corresponds to url-encoded args for app install, config panel set, etc
