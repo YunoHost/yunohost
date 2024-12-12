@@ -181,7 +181,8 @@ def sse_stream():
     # Check if there's any ongoing operation right now
     current_operation_id = get_current_operation()
 
-    recent_operation_history = log_list(since_days_ago=2, limit=20)["operation"]
+    # Log list metadata is cached so it shouldnt be a bit deal to ask for "details" (which loads the metadata yaml for every operation)
+    recent_operation_history = log_list(since_days_ago=2, limit=20, with_details=True)["operation"]
     for operation in reversed(recent_operation_history):
         if current_operation_id and operation["name"] == current_operation_id:
             continue
@@ -191,6 +192,7 @@ def sse_stream():
             "title": operation["description"],
             "success": operation["success"],
             "started_at": operation["started_at"].timestamp(),
+            "started_by": operation["started_by"],
         }
         payload = base64.b64encode(json.dumps(data).encode()).decode()
         yield f'data: {payload}\n\n'

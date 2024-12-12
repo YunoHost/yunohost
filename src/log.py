@@ -192,14 +192,22 @@ def log_list(limit=None, with_details=False, with_suboperations=False, since_day
             pass
 
         if with_details or with_suboperations:
-            try:
-                metadata = (
-                    read_yaml(md_path) or {}
-                )  # Making sure this is a dict and not  None..?
-            except Exception as e:
-                # If we can't read the yaml for some reason, report an error and ignore this entry...
-                logger.error(m18n.n("log_corrupted_md_file", md_file=md_path, error=e))
-                continue
+            if name in log_list.cache and os.path.getmtime(md_path) == log_list.cache[name]["time"]:
+                metadata = log_list.cache[name]["metadata"]
+            else:
+                try:
+                    metadata = (
+                        read_yaml(md_path) or {}
+                    )  # Making sure this is a dict and not  None..?
+                except Exception as e:
+                    # If we can't read the yaml for some reason, report an error and ignore this entry...
+                    logger.error(m18n.n("log_corrupted_md_file", md_file=md_path, error=e))
+                    continue
+                else:
+                    log_list.cache[name] = {
+                        "time": os.path.getmtime(md_path),
+                        "metadata": metadata,
+                    }
 
         if with_details:
             entry["success"] = metadata.get("success", "?")
@@ -237,6 +245,9 @@ def log_list(limit=None, with_details=False, with_suboperations=False, since_day
         operations = list(reversed(operations))
 
     return {"operation": operations}
+
+
+log_list.cache = {}
 
 
 def log_show(
