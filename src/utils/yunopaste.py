@@ -19,6 +19,7 @@
 import requests
 import json
 import logging
+import re
 
 from yunohost.domain import _get_maindomain, domain_list
 from yunohost.utils.network import get_public_ip
@@ -74,6 +75,8 @@ def anonymize(data):
         # /var/lib/metronome/ have some folders named this way
         data = data.replace(domain.replace(".", "%2e"), redact.replace(".", "%2e"))
         return data
+
+    data = re.sub("\nstarted_by: .*\n", "\nstarted_by: ******\n", data)
 
     # First, let's replace every occurence of the main domain by "domain.tld"
     # This should cover a good fraction of the info leaked
