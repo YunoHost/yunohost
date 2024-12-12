@@ -1376,7 +1376,14 @@ class PortsResource(AppResource):
         return used_by_process or used_by_app or used_by_self_provisioning
 
     def provision_or_update(self, context: Dict = {}):
-        from yunohost.firewall import firewall_allow, firewall_disallow
+        from yunohost.firewall import (
+            firewall_allow,
+            firewall_disallow,
+            firewall_list,
+            firewall_reload,
+        )
+
+        previous_ports = firewall_list(raw=True)
 
         for name, infos in self.ports.items():
             setting_name = f"port_{name}" if name != "main" else "port"
@@ -1407,23 +1414,27 @@ class PortsResource(AppResource):
             self.set_setting(setting_name, port_value)
 
             if infos["exposed"]:
-                firewall_allow(infos["exposed"], port_value, reload_only_if_change=True)
+                firewall_allow(infos["exposed"], port_value, no_reload=True)
             else:
-                firewall_disallow(
-                    infos["exposed"], port_value, reload_only_if_change=True
-                )
+                firewall_disallow(infos["exposed"], port_value, no_reload=True)
+
+        if firewall_list(raw=True) != previous_ports:
+            firewall_reload()
 
     def deprovision(self, context: Dict = {}):
-        from yunohost.firewall import firewall_disallow
+        from yunohost.firewall import firewall_disallow, firewall_list, firewall_reload
+
+        previous_ports = firewall_list(raw=True)
 
         for name, infos in self.ports.items():
             setting_name = f"port_{name}" if name != "main" else "port"
             value = self.get_setting(setting_name)
             self.delete_setting(setting_name)
             if value and str(value).strip():
-                firewall_disallow(
-                    infos["exposed"], int(value), reload_only_if_change=True
-                )
+                firewall_disallow(infos["exposed"], int(value), no_reload=True)
+
+        if firewall_list(raw=True) != previous_ports:
+            firewall_reload()
 
 
 class DatabaseAppResource(AppResource):
