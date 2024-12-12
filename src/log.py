@@ -38,8 +38,6 @@ from moulinette.utils.log import SUCCESS
 logger = getLogger("yunohost.log")
 
 OPERATIONS_PATH = "/var/log/yunohost/operations/"
-METADATA_FILE_EXT = ".yml"
-LOG_FILE_EXT = ".log"
 
 BORING_LOG_LINES = [
     r"set [+-]x$",
@@ -85,13 +83,13 @@ def _update_log_cache_symlinks():
 
     one_year_ago = time.time() - 365 * 24 * 3600
 
-    logs = glob.iglob(OPERATIONS_PATH + "*" + METADATA_FILE_EXT)
+    logs = glob.iglob(OPERATIONS_PATH + "*.yml")
     for log_md in logs:
         if os.path.getctime(log_md) < one_year_ago:
             # Let's ignore files older than one year because hmpf reading a shitload of yml is not free
             continue
 
-        name = log_md.split("/")[-1][: -len(METADATA_FILE_EXT)]
+        name = log_md.split("/")[-1][: -len(".yml")]
         parent_symlink = os.path.join(OPERATIONS_PATH, f".{name}.parent.yml")
         success_symlink = os.path.join(OPERATIONS_PATH, f".{name}.success")
         if os.path.islink(parent_symlink) and (os.path.islink(success_symlink) and os.path.getmtime(success_symlink) < os.path.getmtime(log_md)):
@@ -121,7 +119,7 @@ def _update_log_cache_symlinks():
 
         if not os.path.islink(parent_symlink):
             parent = metadata.get("parent")
-            parent = parent + METADATA_FILE_EXT if parent else "/dev/null"
+            parent = parent + ".yml" if parent else "/dev/null"
             try:
                 os.symlink(parent, parent_symlink)
             except Exception as e:
@@ -149,7 +147,7 @@ def log_list(limit=None, with_details=False, with_suboperations=False, since_day
     since = time.time() - since_days_ago * 24 * 3600
     logs = [
         x.split("/")[-1]
-        for x in glob.iglob(OPERATIONS_PATH + "*" + METADATA_FILE_EXT)
+        for x in glob.iglob(OPERATIONS_PATH + "*.yml")
         if os.path.getctime(x) > since
     ]
     logs = list(reversed(sorted(logs)))
@@ -157,7 +155,7 @@ def log_list(limit=None, with_details=False, with_suboperations=False, since_day
     if not with_suboperations:
 
         def parent_symlink_points_to_dev_null(log):
-            name = log[: -len(METADATA_FILE_EXT)]
+            name = log[: -len(".yml")]
             parent_symlink = os.path.join(OPERATIONS_PATH, f".{name}.parent.yml")
             return (
                 os.path.islink(parent_symlink)
@@ -170,7 +168,7 @@ def log_list(limit=None, with_details=False, with_suboperations=False, since_day
         logs = logs[:limit]
 
     for log in logs:
-        name = log[: -len(METADATA_FILE_EXT)]
+        name = log[: -len(".yml")]
         md_path = os.path.join(OPERATIONS_PATH, log)
 
         entry = {
@@ -293,17 +291,17 @@ def log_show(
     if not path.startswith("/"):
         abs_path = os.path.join(OPERATIONS_PATH, path)
 
-    if os.path.exists(abs_path) and not path.endswith(METADATA_FILE_EXT):
+    if os.path.exists(abs_path) and not path.endswith(".yml"):
         log_path = abs_path
 
-    if abs_path.endswith(METADATA_FILE_EXT) or abs_path.endswith(LOG_FILE_EXT):
+    if abs_path.endswith(".yml") or abs_path.endswith(".log"):
         base_path = "".join(os.path.splitext(abs_path)[:-1])
     else:
         base_path = abs_path
     base_filename = os.path.basename(base_path)
-    md_path = base_path + METADATA_FILE_EXT
+    md_path = base_path + ".yml"
     if log_path is None:
-        log_path = base_path + LOG_FILE_EXT
+        log_path = base_path + ".log"
 
     if not os.path.exists(md_path) and not os.path.exists(log_path):
         raise YunohostValidationError("log_does_exists", log=path)
@@ -360,7 +358,7 @@ def log_show(
                         return
 
                     for filename in os.listdir(OPERATIONS_PATH):
-                        if not filename.endswith(METADATA_FILE_EXT):
+                        if not filename.endswith(".yml"):
                             continue
 
                         # We first retrict search to a ~48h time window to limit the number
@@ -382,11 +380,10 @@ def log_show(
                             continue
 
                         if submetadata and submetadata.get("parent") == base_filename:
+                            name = filename[: -len(".yml")]
                             yield {
-                                "name": filename[: -len(METADATA_FILE_EXT)],
-                                "description": _get_description_from_name(
-                                    filename[: -len(METADATA_FILE_EXT)]
-                                ),
+                                "name": name,
+                                "description": _get_description_from_name(name),
                                 "success": submetadata.get("success", "?"),
                             }
 
@@ -589,10 +586,8 @@ class OperationLogger:
             if os.path.exists(filename):
                 self.data_to_redact.append(read_file(filename).strip())
 
-        self.path = OPERATIONS_PATH
-
-        if not os.path.exists(self.path):
-            os.makedirs(self.path)
+        if not os.path.exists(OPERATIONS_PATH):
+            os.makedirs(OPERATIONS_PATH)
 
         # Autostart the logger for flash operations ?
         if self.flash:
@@ -669,14 +664,14 @@ class OperationLogger:
         """
         Metadata path file
         """
-        return os.path.join(self.path, self.name + METADATA_FILE_EXT)
+        return f"{OPERATIONS_PATH}/{self.name}.yml"
 
     @property
     def log_path(self):
         """
         Log path file
         """
-        return os.path.join(self.path, self.name + LOG_FILE_EXT)
+        return f"{OPERATIONS_PATH}/{self.name}.log"
 
     def _register_log(self):
         """
