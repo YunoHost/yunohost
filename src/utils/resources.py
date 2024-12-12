@@ -1335,6 +1335,7 @@ class PortsResource(AppResource):
         "default": None,
         "exposed": False,  # or True(="Both"), "TCP", "UDP"
         "fixed": False,
+        "upnp": False,
     }
 
     ports: Dict[str, Dict[str, Any]]
@@ -1376,7 +1377,8 @@ class PortsResource(AppResource):
         return used_by_process or used_by_app or used_by_self_provisioning
 
     def provision_or_update(self, context: Dict = {}):
-        from yunohost.firewall import firewall_allow, firewall_disallow
+        from yunohost.firewall import YunoFirewall
+        firewall = YunoFirewall()
 
         for name, infos in self.ports.items():
             setting_name = f"port_{name}" if name != "main" else "port"
@@ -1407,23 +1409,40 @@ class PortsResource(AppResource):
             self.set_setting(setting_name, port_value)
 
             if infos["exposed"]:
-                firewall_allow(infos["exposed"], port_value, reload_if_change=True)
+                if infos["exposed"].lower() == "both":
+                    protos = ["tcp", "udp"]
+                else:
+                    protos = [infos["exposed"].lower()]
+
+                comment = f"{self.app} {name}"
+                for proto in protos:
+                    firewall.open_port(proto, port_value, comment, infos["upnp"])
+
             else:
-                firewall_disallow(
-                    infos["exposed"], port_value, reload_if_change=True
-                )
+                for proto in ["tcp", "udp"]:
+                    firewall.close_port(proto, port_value)
+
+        if firewall.need_reload:
+            firewall.apply()
 
     def deprovision(self, context: Dict = {}):
-        from yunohost.firewall import firewall_disallow
+        from yunohost.firewall import YunoFirewall
+        firewall = YunoFirewall()
 
         for name, infos in self.ports.items():
             setting_name = f"port_{name}" if name != "main" else "port"
             value = self.get_setting(setting_name)
             self.delete_setting(setting_name)
             if value and str(value).strip():
-                firewall_disallow(
-                    infos["exposed"], int(value), reload_if_change=True
-                )
+                if infos["exposed"].lower() == "both":
+                    protos = ["tcp", "udp"]
+                else:
+                    protos = [infos["exposed"].lower()]
+                for proto in protos:
+                    firewall.delete_port(proto, value)
+
+        if firewall.need_reload:
+            firewall.apply()
 
 
 class DatabaseAppResource(AppResource):
