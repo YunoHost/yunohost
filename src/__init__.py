@@ -20,9 +20,7 @@
 
 import os
 import sys
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    import argparse
+import argparse
 
 import moulinette
 from moulinette import m18n
