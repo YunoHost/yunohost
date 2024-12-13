@@ -255,6 +255,21 @@ class YunoUPnP:
             self.enabled(False)
 
 
+def firewall_is_open(
+    port: int | str,
+    protocol: str,
+) -> bool:
+    """
+    Returns whether the specified port is open.
+
+    Keyword arguments:
+        port -- Port or range of ports to open
+        protocol -- Protocol type to allow (tcp/udp)
+
+    """
+    return port in firewall_list(raw=False, protocol=protocol, forwarded=False)
+
+
 def firewall_open(
     port: int | str,
     protocol: str,
