@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -17,58 +18,58 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import time
+import copy
 import glob
 import os
-import shutil
-import yaml
 import re
+import shutil
 import subprocess
 import tempfile
-import copy
-from typing import TYPE_CHECKING, List, Tuple, Dict, Any, Iterator, Optional, Union
-from packaging import version
+import time
 from logging import getLogger
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Tuple, Union
 
+import yaml
 from moulinette import Moulinette, m18n
-from moulinette.utils.process import run_commands, check_output
 from moulinette.utils.filesystem import (
+    chmod,
+    chown,
+    cp,
     read_file,
     read_json,
     read_toml,
+    rm,
     write_to_file,
     write_to_json,
-    cp,
-    rm,
-    chown,
-    chmod,
 )
+from moulinette.utils.process import check_output, run_commands
+from packaging import version
 
-from yunohost.utils.i18n import _value_for_locale
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.system import (
-    free_space_in_directory,
-    dpkg_is_broken,
-    get_ynh_package_version,
-    system_arch,
-    debian_version,
-    human_to_binary,
-    binary_to_human,
-    ram_available,
-)
-from yunohost.log import is_unit_operation, OperationLogger
 from yunohost.app_catalog import (  # noqa
+    APPS_CATALOG_LOGOS,
+    _load_apps_catalog,
     app_catalog,
     app_search,
-    _load_apps_catalog,
-    APPS_CATALOG_LOGOS,
+)
+from yunohost.log import OperationLogger, is_unit_operation
+from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.i18n import _value_for_locale
+from yunohost.utils.system import (
+    binary_to_human,
+    debian_version,
+    dpkg_is_broken,
+    free_space_in_directory,
+    get_ynh_package_version,
+    human_to_binary,
+    ram_available,
+    system_arch,
 )
 
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
-    from yunohost.utils.configpanel import RawSettings, ConfigPanelModel
+    from yunohost.utils.configpanel import ConfigPanelModel, RawSettings
     from yunohost.utils.form import FormModel
 
 logger = getLogger("yunohost.app")
@@ -408,9 +409,9 @@ def app_change_url(operation_logger, app, domain, path):
         path -- New path at which the application will be move
 
     """
-    from yunohost.utils.form import DomainOption, WebPathOption
-    from yunohost.hook import hook_exec_with_script_debug_if_failure, hook_callback
+    from yunohost.hook import hook_callback, hook_exec_with_script_debug_if_failure
     from yunohost.service import service_reload_or_restart
+    from yunohost.utils.form import DomainOption, WebPathOption
 
     installed = _is_installed(app)
     if not installed:
@@ -552,21 +553,21 @@ def app_upgrade(
         no_safety_backup -- Disable the safety backup during upgrade
 
     """
+    from yunohost.backup import (
+        backup_create,
+        backup_delete,
+        backup_list,
+        backup_restore,
+    )
     from yunohost.hook import (
         hook_add,
-        hook_remove,
         hook_callback,
         hook_exec_with_script_debug_if_failure,
+        hook_remove,
     )
     from yunohost.permission import permission_sync_to_user
     from yunohost.regenconf import manually_modified_files
     from yunohost.utils.legacy import _patch_legacy_helpers
-    from yunohost.backup import (
-        backup_list,
-        backup_create,
-        backup_delete,
-        backup_restore,
-    )
 
     apps = app
     # Check if disk space available
@@ -1050,22 +1051,22 @@ def app_install(
 
     from yunohost.hook import (
         hook_add,
-        hook_remove,
         hook_callback,
         hook_exec,
         hook_exec_with_script_debug_if_failure,
+        hook_remove,
     )
     from yunohost.log import OperationLogger
     from yunohost.permission import (
-        user_permission_list,
         permission_create,
         permission_delete,
         permission_sync_to_user,
+        user_permission_list,
     )
     from yunohost.regenconf import manually_modified_files
-    from yunohost.utils.legacy import _patch_legacy_helpers
-    from yunohost.utils.form import ask_questions_and_parse_answers
     from yunohost.user import user_list
+    from yunohost.utils.form import ask_questions_and_parse_answers
+    from yunohost.utils.legacy import _patch_legacy_helpers
 
     # Check if disk space available
     if free_space_in_directory("/") <= 512 * 1000 * 1000:
@@ -1397,14 +1398,14 @@ def app_remove(operation_logger, app, purge=False, force_workdir=None):
         purge -- Remove with all app data
         force_workdir -- Special var to force the working directoy to use, in context such as remove-after-failed-upgrade or remove-after-failed-restore
     """
-    from yunohost.utils.legacy import _patch_legacy_helpers
-    from yunohost.hook import hook_exec, hook_remove, hook_callback
+    from yunohost.domain import _get_raw_domain_settings, domain_config_set, domain_list
+    from yunohost.hook import hook_callback, hook_exec, hook_remove
     from yunohost.permission import (
-        user_permission_list,
         permission_delete,
         permission_sync_to_user,
+        user_permission_list,
     )
-    from yunohost.domain import domain_list, domain_config_set, _get_raw_domain_settings
+    from yunohost.utils.legacy import _patch_legacy_helpers
 
     _assert_is_installed(app)
 
@@ -1566,7 +1567,8 @@ def app_shell(app):
             "/bin/bash",
             "-c",
             "source /usr/share/yunohost/helpers && ynh_spawn_app_shell " + app,
-        ]
+        ],
+        env=_make_environment_for_app_script(app),
     )
 
 
@@ -1579,12 +1581,12 @@ def app_register_url(app, domain, path):
         domain -- The domain on which the app should be registered (e.g. your.domain.tld)
         path -- The path to be registered (e.g. /coffee)
     """
-    from yunohost.utils.form import DomainOption, WebPathOption
     from yunohost.permission import (
+        permission_sync_to_user,
         permission_url,
         user_permission_update,
-        permission_sync_to_user,
     )
+    from yunohost.utils.form import DomainOption, WebPathOption
 
     domain = DomainOption.normalize(domain)
     path = WebPathOption.normalize(path)
@@ -1621,9 +1623,9 @@ def app_ssowatconf():
 
     """
     from yunohost.domain import (
-        domain_list,
-        _get_raw_domain_settings,
         _get_domain_portal_dict,
+        _get_raw_domain_settings,
+        domain_list,
     )
     from yunohost.permission import user_permission_list
 
@@ -2983,7 +2985,8 @@ def _get_conflicting_apps(domain, path, ignore_app=None):
             if a["id"] == ignore_app:
                 continue
             if path == p or (
-                not path.startswith("/.well-known/") and (path == "/" or p == "/")
+                not (path.startswith("/.well-known/") or p.startswith("/.well-known/"))
+                and (path == "/" or p == "/")
             ):
                 conflicts.append((p, a["id"], a["label"]))
 

@@ -1,3 +1,34 @@
+yunohost (12.0.8.2) stable; urgency=low
+
+  - fix unset variable in helper 2.1 mysql ([#2010](http://github.com/YunoHost/yunohost/pull/2010))
+
+  Thanks to all contributors <3 ! (Kay0u)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 09 Dec 2024 14:38:40 +0100
+
+yunohost (12.0.8.1) stable; urgency=low
+
+  - helpers: typo T_T (75c81bbef)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 09 Dec 2024 14:27:00 +0100
+
+yunohost (12.0.8) stable; urgency=low
+
+  - dns: support '.internal' TLD as a reserved TLD for private networks ([#1999](http://github.com/YunoHost/yunohost/pull/1999))
+  - typing: pre pydantic v2 ([#2000](http://github.com/YunoHost/yunohost/pull/2000))
+  - apps: add my_webdav to the list of apps that need basic auth header to go through (8c620a3c6)
+  - misc: fix postinstall in offline context (27611864d)
+  - backup/restore: typo preventing portal settings to be restored eh ? (300723974)
+  - regenconf: don't miserably crash regenconf when setfacl can't be applied due to the FS type (92164edaa)
+  - helpers2.1: automatically add --default-character-set for mysql stuff (in particular for nextcloud) (64a39a123)
+  - apps: allow apps to be installed on / if another app is using /.well-known/ ([#2007](http://github.com/YunoHost/yunohost/pull/2007))
+  - settings: having a visible on an entire section doesn't work and prevent changing any global setting ? (dce043a66)
+  - i18n: Translations updated for Catalan
+
+  Thanks to all contributors <3 ! (axolotle, Félix Piédallu, Francescc, Kesefon, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 08 Dec 2024 21:59:47 +0100
+
 yunohost (12.0.7) stable; urgency=low
 
   - bullseye->bookworm: migration shouldnt rebuild venv for homeassistant and immich ([#1996](http://github.com/YunoHost/yunohost/pull/1996))

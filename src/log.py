@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+#
 # Copyright (c) 2024 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
@@ -15,25 +17,26 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+
 import copy
+import glob
 import os
 import re
-import yaml
-import glob
-import psutil
 import time
-from typing import List
-
 from datetime import datetime, timedelta
 from logging import FileHandler, getLogger, Formatter, INFO
 from io import IOBase
+from typing import List
 
-from moulinette import m18n, Moulinette
+import psutil
+import yaml
+from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.system import get_ynh_package_version
 from moulinette.utils.filesystem import read_file, read_yaml
 from moulinette.utils.log import SUCCESS
+
+from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.system import get_ynh_package_version
 
 logger = getLogger("yunohost.log")
 
@@ -420,7 +423,7 @@ def log_show(
     return infos
 
 
-from typing import TypeVar, Callable, Concatenate, ParamSpec
+from typing import Callable, Concatenate, ParamSpec, TypeVar
 
 # FuncT = TypeVar("FuncT", bound=Callable[..., Any])
 Param = ParamSpec("Param")

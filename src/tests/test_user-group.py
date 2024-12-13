@@ -1,23 +1,43 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
 import pytest
 
-from .conftest import message, raiseYunohostError
-
-from yunohost.user import (
-    user_list,
-    user_info,
-    user_create,
-    user_delete,
-    user_update,
-    user_import,
-    user_export,
-    FIELDS_FOR_IMPORT,
-    user_group_list,
-    user_group_create,
-    user_group_delete,
-    user_group_update,
-)
 from yunohost.domain import _get_maindomain
 from yunohost.tests.test_permission import check_LDAP_db_integrity
+from yunohost.user import (
+    FIELDS_FOR_IMPORT,
+    user_create,
+    user_delete,
+    user_export,
+    user_group_create,
+    user_group_delete,
+    user_group_list,
+    user_group_update,
+    user_import,
+    user_info,
+    user_list,
+    user_update,
+)
+
+from .conftest import message, raiseYunohostError
 
 # Get main domain
 maindomain = ""

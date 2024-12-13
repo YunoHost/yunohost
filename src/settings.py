@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,25 +17,27 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+
 import os
 import subprocess
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Union
 
 from moulinette import m18n
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.configpanel import ConfigPanel, parse_filter_key
-from yunohost.utils.form import BaseOption
-from yunohost.regenconf import regen_conf
+
 from yunohost.firewall import firewall_reload
 from yunohost.log import is_unit_operation
+from yunohost.regenconf import regen_conf
+from yunohost.utils.configpanel import ConfigPanel, parse_filter_key
+from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.form import BaseOption
 
 if TYPE_CHECKING:
     from typing import cast
 
+    from moulinette.utils.log import MoulinetteLogger
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
-    from moulinette.utils.log import MoulinetteLogger
     from yunohost.log import OperationLogger
     from yunohost.utils.configpanel import (
         ConfigPanelGetMode,

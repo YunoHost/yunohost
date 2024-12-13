@@ -1,31 +1,46 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
 import glob
 import os
 import subprocess
-from time import sleep
 from datetime import date
+from time import sleep
+
+import _ldap  # noqa: F401
 
 # Explicitly import packages to prevent an issue that may arise later because of python3.9 being replaced by 3.11 in the middle of the upgrade etc
 import _strptime  # noqa: F401
-import _ldap  # noqa: F401
-
 from moulinette import Moulinette, m18n
-from moulinette.utils.process import call_async_output
-from yunohost.utils.error import YunohostError
-from yunohost.tools import _write_migration_state
-from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file, write_to_file
+from moulinette.utils.process import call_async_output, check_output
 
-from yunohost.tools import (
-    Migration,
-    tools_update,
-)
 from yunohost.app import unstable_apps
 from yunohost.regenconf import manually_modified_files, regen_conf
+from yunohost.tools import Migration, _write_migration_state, tools_update
+from yunohost.utils.error import YunohostError
 from yunohost.utils.system import (
-    free_space_in_directory,
-    get_ynh_package_version,
     _list_upgradable_apt_packages,
     aptitude_with_progress_bar,
+    free_space_in_directory,
+    get_ynh_package_version,
 )
 
 # getActionLogger is not there in bookworm,

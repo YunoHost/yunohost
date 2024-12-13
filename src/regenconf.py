@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,22 +17,23 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-import os
-import yaml
-import shutil
+
 import hashlib
 import json
-from logging import getLogger
-from difflib import unified_diff
+import os
+import shutil
 from datetime import datetime
+from difflib import unified_diff
+from logging import getLogger
 
+import yaml
 from moulinette import m18n
 from moulinette.utils.filesystem import mkdir
 from moulinette.utils.process import check_output
 
-from yunohost.utils.error import YunohostError
-from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback, hook_list
+from yunohost.log import is_unit_operation
+from yunohost.utils.error import YunohostError
 
 BASE_CONF_PATH = "/var/cache/yunohost/regenconf"
 BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, "backup")
