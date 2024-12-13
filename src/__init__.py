@@ -53,7 +53,7 @@ def cli(debug: bool, quiet: bool, output_as: str, timeout: int, args: list[str],
     sys.exit(ret)
 
 
-def api(debug: bool, host: str, port: int) -> None:
+def api(debug: bool, host: str, port: int, socket: str | None) -> None:
 
     allowed_cors_origins = []
     allowed_cors_origins_file = "/etc/yunohost/.admin-api-allowed-cors-origins"
@@ -77,6 +77,18 @@ def api(debug: bool, host: str, port: int) -> None:
         routes={("GET", "/installed"): is_installed_api},
         allowed_cors_origins=allowed_cors_origins,
     )
+    if ret:
+        sys.exit(ret)
+
+    if socket:
+        ret = moulinette.socket_api(
+            socket_path=socket,
+            actionsmap="/usr/share/yunohost/actionsmap.yml",
+            locales_dir="/usr/share/yunohost/locales/",
+            routes={("GET", "/installed"): is_installed_api},
+            allowed_cors_origins=allowed_cors_origins,
+        )
+
     sys.exit(ret)
 
 
