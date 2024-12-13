@@ -512,7 +512,8 @@ def is_unit_operation(
             try:
                 # Start the actual function, and give the unit operation
                 # in argument to let the developper start the record itself
-                args = (operation_logger,) + args
+                if not flash:
+                    args = (operation_logger,) + args
                 result = func(*args, **kwargs)
             except Exception as e:
                 operation_logger.error(e)
@@ -965,5 +966,5 @@ def _get_description_from_name(name):
 
 
 @is_unit_operation(flash=True)
-def log_share(operation_logger, path):
+def log_share(path):
     return log_show(path, share=True)

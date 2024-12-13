@@ -212,10 +212,12 @@ def diagnosis_run(
         logger.warning(m18n.n("diagnosis_display_tip"))
 
 
+@is_unit_operation(flash=True)
 def diagnosis_ignore(filter, list=False):
     return _diagnosis_ignore(add_filter=filter, list=list)
 
 
+@is_unit_operation(flash=True)
 def diagnosis_unignore(filter):
     return _diagnosis_ignore(remove_filter=filter)
 
