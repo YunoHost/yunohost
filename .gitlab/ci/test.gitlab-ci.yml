@@ -1,4 +1,7 @@
 .install_debs: &install_debs
+    # Temporary hack for the CI to install python3-zmq not yet in the image
+    - DEBIAN_FRONTEND=noninteractive apt update
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes install python3-zmq 
     - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ${CI_PROJECT_DIR}/*.deb
 
 .test-stage:
