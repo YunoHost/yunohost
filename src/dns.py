@@ -175,10 +175,11 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
         if ipv4 and settings_get("misc.network.dns_exposure") in ["both", "ipv4"]:
             basic.append([basename, ttl, "A", ipv4])
 
-        if ipv6:
-            basic.append([basename, ttl, "AAAA", ipv6])
-        elif include_empty_AAAA_if_no_ipv6:
-            basic.append([basename, ttl, "AAAA", None])
+        if settings_get("misc.network.dns_exposure") in ["both", "ipv6"]:
+            if ipv6:
+                basic.append([basename, ttl, "AAAA", ipv6])
+            elif include_empty_AAAA_if_no_ipv6:
+                basic.append([basename, ttl, "AAAA", None])
 
         #########
         # Email #
@@ -207,10 +208,11 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
             if ipv4 and settings_get("misc.network.dns_exposure") in ["both", "ipv4"]:
                 extra.append([f"*{suffix}", ttl, "A", ipv4])
 
-            if ipv6:
-                extra.append([f"*{suffix}", ttl, "AAAA", ipv6])
-            elif include_empty_AAAA_if_no_ipv6:
-                extra.append([f"*{suffix}", ttl, "AAAA", None])
+            if settings_get("misc.network.dns_exposure") in ["both", "ipv6"]:
+                if ipv6:
+                    extra.append([f"*{suffix}", ttl, "AAAA", ipv6])
+                elif include_empty_AAAA_if_no_ipv6:
+                    extra.append([f"*{suffix}", ttl, "AAAA", None])
 
             extra.append([basename, ttl, "CAA", '0 issue "letsencrypt.org"'])
 
