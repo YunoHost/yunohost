@@ -765,7 +765,7 @@
     "global_settings_setting_tls_passthrough_list": "Birbidalketen zerrenda",
     "global_settings_setting_tls_passthrough_list_help": "Zerrendak DOMEINUA;HELBURUA;ATAKA egitura izan behar du. Adibidez: domeinua.eus;192.168.1.42;443 edo domeinua.eus;zerbitzaria.local;8123",
     "global_settings_setting_tls_passthrough_explain": "Ezaugarri hau AURRERATUA eta ESPERIMENTALA da, eta aldaketa handiak eragingo ditu zerbitzari honen nginx konfigurazioan. EZ erabili ez badakizu zertan ari zaren! Kontuan izan fail2ban ezin dela inplementatu proxy atzeko zerbitzarian (iptables-ek ezin dute trafiko maltzurra debekatu, IP pakete guztiak zerbitzari nagusitik datozelaren itxura dutelako). Horrez gain, oraingoz, proxy atzeko zerbitzariaren nginx konfigurazioa eskuz moldatu behar da `proxy_protocol` onartzeko.",
-    "confirm_tos_acknowledgement": "Zerbitzuen Baldintzak irakurri eta ulertzen ditut [{answers}]",
+    "confirm_tos_acknowledgement": "Zerbitzuen baldintzak irakurri eta ulertzen ditut [{answers}]",
     "domain_config_cert_name": "Ziurtagiria",
     "domain_config_custom_css": "CSS estilo-orri pertsonalizatua",
     "domain_config_dns_name": "DNSa",
