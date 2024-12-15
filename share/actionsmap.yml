@@ -1838,10 +1838,6 @@ hook:
                     full: --args
                     help: Ordered list of arguments to pass to the scripts
                     nargs: "*"
-                -q:
-                    full: --no-trace
-                    help: Do not print each command that will be executed
-                    action: store_true
                 -d:
                     full: --chdir
                     help: The directory from where the scripts will be executed
@@ -1859,10 +1855,6 @@ hook:
                     nargs: "*"
                 --raise-on-error:
                     help: Raise if the script returns a non-zero exit code
-                    action: store_true
-                -q:
-                    full: --no-trace
-                    help: Do not print each command that will be executed
                     action: store_true
                 -d:
                     full: --chdir
