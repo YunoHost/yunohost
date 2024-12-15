@@ -195,7 +195,6 @@ do_init_regen() {
     # YunoHost services
     cp yunohost-api.service /etc/systemd/system/yunohost-api.service
     cp yunohost-portal-api.service /etc/systemd/system/yunohost-portal-api.service
-    cp yunohost-firewall.service /etc/systemd/system/yunohost-firewall.service
     cp yunoprompt.service /etc/systemd/system/yunoprompt.service
 
     systemctl daemon-reload
@@ -278,8 +277,9 @@ ConditionVirtualization=!container
 EOF
     fi
 
-    # Delete legacy conflict between yunohost and nftables
     mkdir -p ${pending_dir}/etc/systemd/system/nftables.service.d/
+    cp yunohost-nftables-hooks-override.conf ${pending_dir}/etc/systemd/system/nftables.service.d/yunohost-nftables-hooks.conf
+    # Delete legacy conflict between yunohost and nftables
     touch ${pending_dir}/etc/systemd/system/nftables.service.d/ynh-override.conf
 
     # Don't suspend computer on LidSwitch
@@ -293,9 +293,10 @@ EOF
 
     cp yunohost-api.service ${pending_dir}/etc/systemd/system/yunohost-api.service
     cp yunohost-portal-api.service ${pending_dir}/etc/systemd/system/yunohost-portal-api.service
-    cp yunohost-firewall.service ${pending_dir}/etc/systemd/system/yunohost-firewall.service
     cp yunoprompt.service ${pending_dir}/etc/systemd/system/yunoprompt.service
     cp proc-hidepid.service ${pending_dir}/etc/systemd/system/proc-hidepid.service
+    # Delete legacy yunohost-firewall service
+    touch ${pending_dir}/etc/systemd/system/yunohost-firewall.service
 
     mkdir -p ${pending_dir}/etc/dpkg/origins/
     cp dpkg-origins ${pending_dir}/etc/dpkg/origins/yunohost
@@ -359,7 +360,6 @@ do_post_regen() {
         systemctl daemon-reload
         systemctl restart systemd-logind
     }
-    [[ ! "$regen_conf_files" =~ "yunohost-firewall.service" ]] || systemctl daemon-reload
     [[ ! "$regen_conf_files" =~ "yunohost-api.service" ]] || systemctl daemon-reload
     [[ ! "$regen_conf_files" =~ "yunohost-portal-api.service" ]] || systemctl daemon-reload
 
