@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2016,SC2034,SC2089,SC2090
+
 ynhtest_exec_warn_less() {
 
     FOO='foo'
@@ -12,9 +15,9 @@ ynhtest_exec_warn_less() {
     FOOANDBAR="foo&bar"
     FOO1QUOTEBAR="foo'bar"
     FOO2QUOTEBAR="foo\"bar"
-    
+
     ynh_hide_warnings uptime
-   
+
     test ! -e $FOO
     ynh_hide_warnings touch $FOO
     test -e $FOO
