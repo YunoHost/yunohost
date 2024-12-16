@@ -1,0 +1,30 @@
+name: Run Shellcheck on push and PR
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  shellcheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run ShellCheck
+      uses: salamandar/action-shellcheck@master
+      env:
+        SHELLCHECK_OPTS: -x -e SC2155
+      with:
+        additional_files: |
+          bin/yunoprompt
+          debian/postinst
+          debian/postrm
+          debian/prerm
+          hooks/*/*
+          tests
+          helpers/helpers.v2.1.d/*
+
+        ignore_paths:
+          tests/test_helpers.v2.d
+          helpers/vendor
+          src/vendor
