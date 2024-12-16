@@ -1,0 +1,11 @@
+external-sources=true
+source-path=SCRIPTDIR
+
+# Declare and assign separately
+disable=SC2155
+
+# In case cd / pushd / popd fails
+disable=SC2164
+
+# Useless cat when sed/grep
+disable=SC2002

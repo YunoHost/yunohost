@@ -1,6 +1,8 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2164,SC2010
+
 _make_dummy_manifest() {
-    if [ ! -e $HTTPSERVER_DIR/dummy.tar.gz ]
-    then
+    if [ ! -e "$HTTPSERVER_DIR/dummy.tar.gz" ]; then
         pushd "$HTTPSERVER_DIR" >/dev/null
             mkdir dummy
             pushd dummy >/dev/null
@@ -16,13 +18,13 @@ _make_dummy_manifest() {
 
     cat << EOF
 packaging_format = 2
-id = "$app"
+id = "${app:?}"
 version = "0.1~ynh2"
 
 [resources]
     [resources.sources.dummy]
     url = "http://127.0.0.1:$HTTPSERVER_PORT/dummy.tar.gz"
-    sha256 = "$(sha256sum $HTTPSERVER_DIR/dummy.tar.gz | awk '{print $1}')"
+    sha256 = "$(sha256sum "$HTTPSERVER_DIR/dummy.tar.gz" | awk '{print $1}')"
 
     [resources.install_dir]
     group = "www-data:r-x"
@@ -31,9 +33,9 @@ EOF
 }
 
 ynhtest_setup_source_nominal() {
-    install_dir="$(mktemp -d -p $VAR_WWW)"
+    install_dir="$(mktemp -d -p "$VAR_WWW")"
     _make_dummy_manifest > ../manifest.toml
-    
+
     ynh_setup_source --dest_dir="$install_dir" --source_id="dummy"
 
     test -e "$install_dir"
@@ -46,10 +48,10 @@ ynhtest_setup_source_nominal() {
 }
 
 ynhtest_setup_source_no_group_in_manifest() {
-    install_dir="$(mktemp -d -p $VAR_WWW)"
+    install_dir="$(mktemp -d -p "$VAR_WWW")"
     _make_dummy_manifest > ../manifest.toml
     sed '/www-data/d' -i ../manifest.toml
-    
+
     ynh_setup_source --dest_dir="$install_dir" --source_id="dummy"
 
     test -e "$install_dir"
@@ -62,41 +64,41 @@ ynhtest_setup_source_no_group_in_manifest() {
 
 
 ynhtest_setup_source_nominal_upgrade() {
-    install_dir="$(mktemp -d -p $VAR_WWW)"
+    install_dir="$(mktemp -d -p "$VAR_WWW")"
     _make_dummy_manifest > ../manifest.toml
 
     ynh_setup_source --dest_dir="$install_dir" --source_id="dummy"
 
-    test "$(cat $install_dir/index.html)" == "Lorem Ipsum"
-    
+    test "$(cat "$install_dir/index.html")" == "Lorem Ipsum"
+
     # Except index.html to get overwritten during next ynh_setup_source
-    echo "IEditedYou!" > $install_dir/index.html
-    test "$(cat $install_dir/index.html)" == "IEditedYou!"
+    echo "IEditedYou!" > "$install_dir/index.html"
+    test "$(cat "$install_dir/index.html")" == "IEditedYou!"
 
     ynh_setup_source --dest_dir="$install_dir" --source_id="dummy"
 
-    test "$(cat $install_dir/index.html)" == "Lorem Ipsum"
+    test "$(cat "$install_dir/index.html")" == "Lorem Ipsum"
 }
 
 
 ynhtest_setup_source_with_keep() {
-    install_dir="$(mktemp -d -p $VAR_WWW)"
+    install_dir="$(mktemp -d -p "$VAR_WWW")"
     _make_dummy_manifest > ../manifest.toml
 
-    echo "IEditedYou!" > $install_dir/index.html
-    echo "IEditedYou!" > $install_dir/test.txt
+    echo "IEditedYou!" > "$install_dir/index.html"
+    echo "IEditedYou!" > "$install_dir/test.txt"
 
     ynh_setup_source --dest_dir="$install_dir" --source_id="dummy" --keep="index.html test.txt"
 
     test -e "$install_dir"
     test -e "$install_dir/index.html"
     test -e "$install_dir/test.txt"
-    test "$(cat $install_dir/index.html)" == "IEditedYou!"
-    test "$(cat $install_dir/test.txt)" == "IEditedYou!"
+    test "$(cat "$install_dir/index.html")" == "IEditedYou!"
+    test "$(cat "$install_dir/test.txt")" == "IEditedYou!"
 }
 
 ynhtest_setup_source_with_patch() {
-    install_dir="$(mktemp -d -p $VAR_WWW)"
+    install_dir="$(mktemp -d -p "$VAR_WWW")"
     _make_dummy_manifest > ../manifest.toml
 
     mkdir -p ../patches/dummy/
@@ -110,5 +112,5 @@ EOF
 
     ynh_setup_source --dest_dir="$install_dir" --source_id="dummy"
 
-    test "$(cat $install_dir/index.html)" == "Lorem Ipsum dolor sit amet"
+    test "$(cat "$install_dir/index.html")" == "Lorem Ipsum dolor sit amet"
 }

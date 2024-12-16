@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 
 #################
 #  _ __  _   _  #
@@ -17,10 +18,10 @@ _read_py() {
 
 ynhtest_config_read_py() {
 
-    local dummy_dir="$(mktemp -d -p $VAR_WWW)"
+    local dummy_dir="$(mktemp -d -p "$VAR_WWW")"
     file="$dummy_dir/dummy.py"
 
-    cat << EOF > $dummy_dir/dummy.py
+    cat << EOF > "$dummy_dir/dummy.py"
 # Some comment
 FOO = None
 ENABLED = False
@@ -60,9 +61,9 @@ EOF
     test "$(ynh_read_var_in_file --file="$file" --key="URL")" == "https://yunohost.org"
 
     test "$(ynh_read_var_in_file --file="$file" --key="ldap_base")" == "ou=users,dc=yunohost,dc=org"
-    
+
     test "$(ynh_read_var_in_file --file="$file" --key="user")" == "camille"
-    
+
     test "$(ynh_read_var_in_file --file="$file" --key="TITLE" --after="YNH_ICI")" == "Hello world"
 
     ! _read_py                          "$file"       "NONEXISTENT"
@@ -73,10 +74,10 @@ EOF
 }
 
 ynhtest_config_write_py() {
-    local dummy_dir="$(mktemp -d -p $VAR_WWW)"
+    local dummy_dir="$(mktemp -d -p "$VAR_WWW")"
     file="$dummy_dir/dummy.py"
 
-    cat << EOF > $dummy_dir/dummy.py
+    cat << EOF > "$dummy_dir/dummy.py"
 # Some comment
 FOO = None
 ENABLED = False
@@ -122,7 +123,7 @@ EOF
 
     ynh_write_var_in_file        --file="$file" --key="ldap_base" --value="ou=users,dc=yunohost,dc=org"
     test "$(ynh_read_var_in_file --file="$file" --key="ldap_base")"    == "ou=users,dc=yunohost,dc=org"
-    
+
     ynh_write_var_in_file        --file="$file" --key="TITLE" --value="YOLO" --after="YNH_ICI"
     test "$(ynh_read_var_in_file --file="$file" --key="TITLE" --after="YNH_ICI")" == "YOLO"
 
@@ -153,10 +154,10 @@ _read_ini() {
 }
 
 ynhtest_config_read_ini() {
-    local dummy_dir="$(mktemp -d -p $VAR_WWW)"
+    local dummy_dir="$(mktemp -d -p "$VAR_WWW")"
     file="$dummy_dir/dummy.ini"
 
-    cat << EOF > $file
+    cat << EOF > "$file"
 # Some comment
 ; Another comment
 [main]
@@ -204,10 +205,10 @@ EOF
 }
 
 ynhtest_config_write_ini() {
-    local dummy_dir="$(mktemp -d -p $VAR_WWW)"
+    local dummy_dir="$(mktemp -d -p "$VAR_WWW")"
     file="$dummy_dir/dummy.ini"
 
-    cat << EOF > $file
+    cat << EOF > "$file"
 # Some comment
 ; Another comment
 [main]
@@ -283,10 +284,10 @@ _read_yaml() {
 }
 
 ynhtest_config_read_yaml() {
-    local dummy_dir="$(mktemp -d -p $VAR_WWW)"
+    local dummy_dir="$(mktemp -d -p "$VAR_WWW")"
     file="$dummy_dir/dummy.yml"
 
-    cat << EOF > $file
+    cat << EOF > "$file"
 # Some comment
 foo:
 enabled: false
@@ -332,10 +333,10 @@ EOF
 
 
 ynhtest_config_write_yaml() {
-    local dummy_dir="$(mktemp -d -p $VAR_WWW)"
+    local dummy_dir="$(mktemp -d -p "$VAR_WWW")"
     file="$dummy_dir/dummy.yml"
 
-    cat << EOF > $file
+    cat << EOF > "$file"
 # Some comment
 foo:
 enabled: false
@@ -408,10 +409,10 @@ _read_json() {
 }
 
 ynhtest_config_read_json() {
-    local dummy_dir="$(mktemp -d -p $VAR_WWW)"
+    local dummy_dir="$(mktemp -d -p "$VAR_WWW")"
     file="$dummy_dir/dummy.json"
 
-    cat << EOF > $file
+    cat << EOF > "$file"
 {
      "foo": null,
      "enabled":     false,
@@ -459,10 +460,10 @@ EOF
 
 
 ynhtest_config_write_json() {
-    local dummy_dir="$(mktemp -d -p $VAR_WWW)"
+    local dummy_dir="$(mktemp -d -p "$VAR_WWW")"
     file="$dummy_dir/dummy.json"
 
-    cat << EOF > $file
+    cat << EOF > "$file"
 {
      "foo": null,
      "enabled":     false,
@@ -478,27 +479,27 @@ ynhtest_config_write_json() {
 EOF
 
     ynh_write_var_in_file        --file="$file" --key="foo" --value="bar"
-    cat $file
+    cat "$file"
     test "$(_read_json                  "$file"       "foo")"    == "bar"
     test "$(ynh_read_var_in_file --file="$file" --key="foo")"    == "bar"
 
     ynh_write_var_in_file        --file="$file" --key="enabled" --value="true"
-    cat $file
+    cat "$file"
     test "$(_read_json                  "$file"       "enabled")"    == "true"
     test "$(ynh_read_var_in_file --file="$file" --key="enabled")"    == "true"
 
     ynh_write_var_in_file        --file="$file" --key="title" --value="Foo Bar"
-    cat $file
+    cat "$file"
     test "$(_read_json                  "$file"       "title")"    == "Foo Bar"
     test "$(ynh_read_var_in_file --file="$file" --key="title")"    == "Foo Bar"
 
     ynh_write_var_in_file        --file="$file" --key="theme" --value="super-awesome-theme"
-    cat $file
+    cat "$file"
     test "$(_read_json                  "$file"       "theme")"    == "super-awesome-theme"
     test "$(ynh_read_var_in_file --file="$file" --key="theme")"    == "super-awesome-theme"
 
     ynh_write_var_in_file        --file="$file" --key="email" --value="sam@domain.tld"
-    cat $file
+    cat "$file"
     test "$(_read_json                  "$file"       "email")"    == "sam@domain.tld"
     test "$(ynh_read_var_in_file --file="$file" --key="email")"    == "sam@domain.tld"
 
@@ -540,10 +541,10 @@ _read_php() {
 }
 
 ynhtest_config_read_php() {
-    local dummy_dir="$(mktemp -d -p $VAR_WWW)"
+    local dummy_dir="$(mktemp -d -p "$VAR_WWW")"
     file="$dummy_dir/dummy.php"
 
-    cat << EOF > $file
+    cat << EOF > "$file"
 <?php
   // Some comment
   \$foo = NULL;
@@ -564,10 +565,10 @@ ynhtest_config_read_php() {
 EOF
 
     test "$(_read_php                   "$file"       "foo")" == "NULL"
-    test "$(ynh_read_var_in_file --file="$file" --key="foo")" == "NULL" 
+    test "$(ynh_read_var_in_file --file="$file" --key="foo")" == "NULL"
 
     test "$(_read_php                   "$file"       "enabled")" == "false"
-    test "$(ynh_read_var_in_file --file="$file" --key="enabled")" == "false" 
+    test "$(ynh_read_var_in_file --file="$file" --key="enabled")" == "false"
 
     test "$(_read_php                   "$file"       "title")" == "Lorem Ipsum"
     test "$(ynh_read_var_in_file --file="$file" --key="title")" == "Lorem Ipsum"
@@ -585,9 +586,9 @@ EOF
     test "$(ynh_read_var_in_file --file="$file" --key="url")" == "https://yunohost.org"
 
     test "$(ynh_read_var_in_file --file="$file" --key="ldap_base")" == "ou=users,dc=yunohost,dc=org"
-    
+
     test "$(ynh_read_var_in_file --file="$file" --key="user")" == "camille"
-    
+
     test "$(ynh_read_var_in_file --file="$file" --key="DB_HOST")" == "localhost"
 
     ! _read_php                         "$file"       "nonexistent"
@@ -599,10 +600,10 @@ EOF
 
 
 ynhtest_config_write_php() {
-    local dummy_dir="$(mktemp -d -p $VAR_WWW)"
+    local dummy_dir="$(mktemp -d -p "$VAR_WWW")"
     file="$dummy_dir/dummy.php"
 
-    cat << EOF > $file
+    cat << EOF > "$file"
 <?php
   // Some comment
   \$foo = NULL;
@@ -628,17 +629,17 @@ EOF
     test "$(ynh_read_var_in_file --file="$file" --key="enabled")"    == "true"
 
     ynh_write_var_in_file        --file="$file" --key="title" --value="Foo Bar"
-    cat $file
+    cat "$file"
     test "$(_read_php                   "$file"       "title")"    == "Foo Bar"
     test "$(ynh_read_var_in_file --file="$file" --key="title")"    == "Foo Bar"
 
     ynh_write_var_in_file        --file="$file" --key="theme" --value="super-awesome-theme"
-    cat $file
+    cat "$file"
     test "$(_read_php                   "$file"       "theme")"    == "super-awesome-theme"
     test "$(ynh_read_var_in_file --file="$file" --key="theme")"    == "super-awesome-theme"
 
     ynh_write_var_in_file        --file="$file" --key="email" --value="sam@domain.tld"
-    cat $file
+    cat "$file"
     test "$(_read_php                   "$file"       "email")"    == "sam@domain.tld"
     test "$(ynh_read_var_in_file --file="$file" --key="email")"    == "sam@domain.tld"
 

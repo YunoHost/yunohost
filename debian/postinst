@@ -49,7 +49,11 @@ do_configure() {
         yunohost tools migrations run --auto
 
         echo "Re-diagnosing server health..."
-        [[ -n "${YNH_SKIP_DIAGNOSIS_DURING_UPGRADE:-}" ]] && echo "(Skipping)" || yunohost diagnosis run --force
+        if [[ -n "${YNH_SKIP_DIAGNOSIS_DURING_UPGRADE:-}" ]]; then
+            echo "(Skipping)"
+        else
+            yunohost diagnosis run --force
+        fi
 
         echo "Refreshing app catalog..."
         yunohost tools update apps --output-as none || true
