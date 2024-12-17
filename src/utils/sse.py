@@ -148,7 +148,9 @@ def get_current_operation():
         return None
 
     try:
-        process_open_files = psutil.Process(int(pid)).open_files()
+        process = psutil.Process(int(pid))
+        process_open_files = process.open_files()
+        process_command_line = process.cmdline()
     except Exception:
         return None
 
@@ -161,7 +163,7 @@ def get_current_operation():
         main_active_log = sorted(active_logs)[0][:-len(".logstreamcache")].strip(".")
         return main_active_log
     else:
-        return None
+        return ' '.join(process_command_line[1:]).replace("/usr/bin/", "") or "???"
 
 
 def sse_stream():
