@@ -765,7 +765,7 @@
     "global_settings_setting_tls_passthrough_list": "Birbidalketen zerrenda",
     "global_settings_setting_tls_passthrough_list_help": "Zerrendak DOMEINUA;HELBURUA;ATAKA egitura izan behar du. Adibidez: domeinua.eus;192.168.1.42;443 edo domeinua.eus;zerbitzaria.local;8123",
     "global_settings_setting_tls_passthrough_explain": "Ezaugarri hau AURRERATUA eta ESPERIMENTALA da, eta aldaketa handiak eragingo ditu zerbitzari honen nginx konfigurazioan. EZ erabili ez badakizu zertan ari zaren! Kontuan izan fail2ban ezin dela inplementatu proxy atzeko zerbitzarian (iptables-ek ezin dute trafiko maltzurra debekatu, IP pakete guztiak zerbitzari nagusitik datozelaren itxura dutelako). Horrez gain, oraingoz, proxy atzeko zerbitzariaren nginx konfigurazioa eskuz moldatu behar da `proxy_protocol` onartzeko.",
-    "confirm_tos_acknowledgement": "Zerbitzuen Baldintzak irakurri eta ulertzen ditut [{answers}]",
+    "confirm_tos_acknowledgement": "Zerbitzu-baldintzak irakurri eta ulertzen ditut [{answers}]",
     "domain_config_cert_name": "Ziurtagiria",
     "domain_config_custom_css": "CSS estilo-orri pertsonalizatua",
     "domain_config_dns_name": "DNSa",
@@ -777,7 +777,7 @@
     "global_settings_setting_smtp_name": "SMTP",
     "domain_config_search_engine_help": "Aukerako ezaugarria da, atarian bilaketa-barra bat erakustea ahalbidetzen duena (adibidez YunoHosten ataria nabigatzaileko hasierako orri ezarri nahi baduzu). Kontsulta-katea hutsik duen URL bat izan behar da, 'https://duckduckgo.com/?q=' esaterako, 'q=' duckduckgo-ren kontsulta parametro bezala",
     "migration_0030_rebuild_python_venv_in_bookworm_broken_app": "{app} aplikazioaren virtualenv-a ezin da modu errazean berreraiki eta egin gabe utziko da. Konpondu aplikazioa bertsio-berritzen 'yunohost app upgrade --force {app}' erabiliz.",
-    "tos_postinstall_acknowledgement": "YunoHost boluntario talde baten proiektua da, zerbitzarietarako sistema eragile ireki bat sortzeko kausa komuna duena. YunoHosten softwareak AGPLv3 lizentzia dauka (<https://www.gnu.org/licenses/agpl-3.0.txt>). Proiektuak zerbitzu tekniko eta komunitario anitz administratu eta eskuragarri jartzen ditu, hainbat helburutarako. Zerbitzu horiek erabiltzean, Zerbitzuen Baldintzak onartzen dituzu: <https://yunohost.org/terms_of_services>.",
+    "tos_postinstall_acknowledgement": "YunoHost boluntario talde baten proiektua da, zerbitzarietarako sistema eragile ireki bat sortzeko kausa komuna duena. YunoHosten softwareak AGPLv3 lizentzia dauka (<https://www.gnu.org/licenses/agpl-3.0.txt>). Proiektuak zerbitzu tekniko eta komunitario anitz administratu eta eskuragarri jartzen ditu, hainbat helburutarako. Zerbitzu horiek erabiltzean, Zerbitzu-baldintzak onartzen dituzu: <https://yunohost.org/terms_of_services>.",
     "domain_config_custom_css_help": "Administrari adituentzako da, erabiltzaile-ataria pertsonalizatu nahi badute",
     "domain_config_enable_public_apps_page_help": "Bisitariek 'aplikazio publikoen' orria kusiko dute atarira iristerakoan, saioa hasteko formularioaren bidez.",
     "domain_config_feature_name": "Ezaugarriak",
@@ -816,8 +816,8 @@
     "migration_0030_rebuild_python_venv_in_bookworm_disclaimer_base": "Debian Bookworm-era eguneratu ondoren, Python-en aplikazio batzuk partzialki berreraiki behar dira Debian-ek dakarren Python-en bertsio berrira bihurtzeko (termino teknikoetan: 'virtualenv' deritzaiona birsortu egin behar da). Bitartean, baliteke Python aplikazio horiek ez funtzionatzea. YunoHost virtualenv-a berreraikitzen saia daiteke horietako batzuentzat, jarraian zehazten den bezala. Beste aplikazio batzuetarako, edo berreraikitzeko saiakerak huts egiten badu, aplikazio horiek eskuz bertsio-berritzera behartu beharko dituzu.",
     "migration_0030_rebuild_python_venv_in_bookworm_disclaimer_ignored": "Ezin dira automatikoki berreraiki aplikazio horien virtualenvs-ak. Bertsio-berritzera behartu behar dituzu ondorengo komandoarekin: 'yunohost app upgrade --force APP': {ignored_apps}",
     "migration_0030_rebuild_python_venv_in_bookworm_disclaimer_rebuild": "Ondorengo aplikazioen virtualenvs-ak berreraikitzen saiatuko gara (NB: eragiketak luze jo dezake!): {rebuild_apps}",
-    "migration_description_0031_terms_of_services": "Zerbitzuen Baldintzak",
-    "migration_0031_terms_of_services": "Migrazio hau informazio mezu bat baino ez da: YunoHost proiektuak zerbitzu tekniko eta komunitarioei buruzko Zerbitzuen Baldintzak argitaratzen ditu orain.",
+    "migration_description_0031_terms_of_services": "Zerbitzu-baldintzak",
+    "migration_0031_terms_of_services": "Migrazio hau informazio mezu bat baino ez da: YunoHost proiektuak zerbitzu tekniko eta komunitarioei buruzko Zerbitzu-baldintzak argitaratzen ditu orain.",
     "migration_description_0028_delete_legacy_xmpp_permission": "Ezabatu XMPPren baimen zaharrak, Metronome orain aplikazio bat da",
     "migration_description_0029_postgresql_13_to_15": "Migratu datu-baseak PostgreSQL 13tik 15era",
     "migration_description_0030_rebuild_python_venv_in_bookworm": "Konpondu Python aplikazioa bookworm-en migrazioa eta gero",
@@ -841,5 +841,5 @@
     "service_description_yunohost-portal-api": "Erabiltzaileen web atariaren interfaze desberdinen eta sistemaren arteko interakzioak kudeatzen ditu",
     "session_expired": "Saioa iraungi da",
     "unable_authenticate": "Huts egin du saioaren autentikazioak",
-    "tos_dyndns_acknowledgement": "DynDNS domeinu bat erregistratzea aukeratu zenuen, YunoHost proiektuaren eskaintzen baitan. Domeinu-izenak epe luzeko zerbitzu digitalen alderdi garrantzitsua direnez, gogorarazten dizugu arretaz irakur ditzazula dagozkion Zerbitzuen Baldintzak, bereziki domeinu-izen libre horiei dagokien atala: <https://yunohost.org/terms_of_services>."
+    "tos_dyndns_acknowledgement": "DynDNS domeinu bat erregistratzea aukeratu zenuen, YunoHost proiektuaren eskaintzen baitan. Domeinu-izenak epe luzeko zerbitzu digitalen alderdi garrantzitsua direnez, gogorarazten dizugu arretaz irakur ditzazula dagozkion Zerbitzu-baldintzak, bereziki domeinu-izen libre horiei dagokien atala: <https://yunohost.org/terms_of_services>."
 }
