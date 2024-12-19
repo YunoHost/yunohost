@@ -144,15 +144,16 @@ def get_current_operation():
     try:
         with open("/var/run/moulinette_yunohost.lock") as f:
             pid = f.read().strip().split("\n")[0]
+        lock_ctime = os.path.getctime("/var/run/moulinette_yunohost.lock")
     except FileNotFoundError:
-        return None
+        return None, None, None
 
     try:
         process = psutil.Process(int(pid))
         process_open_files = process.open_files()
-        process_command_line = process.cmdline()
+        process_command_line = ' '.join(process.cmdline()[1:]).replace("/usr/bin/", "") or "???"
     except Exception:
-        return None
+        return None, None, None
 
     active_logs = [
         p.path.split("/")[-1]
@@ -160,10 +161,11 @@ def get_current_operation():
         if p.mode == "w" and p.path.startswith("/var/log/yunohost/operations/") and p.path.endswith(".logstreamcache")
     ]
     if active_logs:
-        main_active_log = sorted(active_logs)[0][:-len(".logstreamcache")].strip(".")
-        return main_active_log
+        operation_id = sorted(active_logs)[0][:-len(".logstreamcache")].strip(".")
     else:
-        return ' '.join(process_command_line[1:]).replace("/usr/bin/", "") or "???"
+        operation_id = f"lock-{lock_ctime}"
+
+    return pid, operation_id, process_command_line
 
 
 def sse_stream():
@@ -181,7 +183,7 @@ def sse_stream():
     yield 'retry: 100\n\n'
 
     # Check if there's any ongoing operation right now
-    current_operation_id = get_current_operation()
+    _, current_operation_id, _ = get_current_operation()
 
     # Log list metadata is cached so it shouldnt be a bit deal to ask for "details" (which loads the metadata yaml for every operation)
     recent_operation_history = log_list(since_days_ago=2, limit=20, with_details=True)["operation"]
@@ -200,18 +202,20 @@ def sse_stream():
         yield f'data: {payload}\n\n'
 
     if current_operation_id:
+        log_stream_cache = None
         try:
             log_stream_cache = open(f"{OPERATIONS_PATH}/.{current_operation_id}.logstreamcache")
         except Exception:
             pass
         else:
-            os.system(f"cat {OPERATIONS_PATH}/.{current_operation_id}.logstreamcache")
             entries = [entry.strip() for entry in log_stream_cache.readlines()]
             for payload in entries:
                 type, payload = payload.split(":", 1)
                 yield f"event: {type}\n"
                 yield f'data: {payload}\n\n'
-            log_stream_cache.close()
+        finally:
+            if log_stream_cache:
+                log_stream_cache.close()
 
     # Init heartbeat
     last_heartbeat = 0
@@ -219,8 +223,10 @@ def sse_stream():
     try:
         while True:
             if time.time() - last_heartbeat > SSE_HEARTBEAT_PERIOD:
+                _, current_operation_id, cmdline = get_current_operation()
                 data = {
-                    "current_operation": get_current_operation(),
+                    "current_operation": current_operation_id,
+                    "cmdline": cmdline,
                     "timestamp": time.time(),
                 }
                 payload = json.dumps(data)
