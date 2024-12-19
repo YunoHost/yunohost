@@ -118,8 +118,9 @@ class SSELogStreamingHandler(Handler):
 
         data["operation_id"] = self.operation_id
         data["ref_id"] = self.ref_id
+        type = data.pop("type")
 
-        payload = json.dumps(data)
+        payload = type + ":" + json.dumps(data)
 
         if self.log_stream_cache:
             try:
@@ -129,7 +130,7 @@ class SSELogStreamingHandler(Handler):
                 # Not a huge deal if we can't write to the file for some reason...
                 pass
 
-        self.socket.send_multipart([b'', payload])
+        self.socket.send_multipart([b'', payload.encode()])
 
     def close(self, *args, **kwargs):
         super().close(*args, **kwargs)
@@ -188,7 +189,6 @@ def sse_stream():
         if current_operation_id and operation["name"] == current_operation_id:
             continue
         data = {
-            "type": "recent_history",
             "operation_id": operation["name"],
             "title": operation["description"],
             "success": operation["success"],
@@ -196,6 +196,7 @@ def sse_stream():
             "started_by": operation["started_by"],
         }
         payload = json.dumps(data)
+        yield "event: recent_history\n"
         yield f'data: {payload}\n\n'
 
     if current_operation_id:
@@ -207,6 +208,8 @@ def sse_stream():
             os.system(f"cat {OPERATIONS_PATH}/.{current_operation_id}.logstreamcache")
             entries = [entry.strip() for entry in log_stream_cache.readlines()]
             for payload in entries:
+                type, payload = payload.split(":", 1)
+                yield f"event: {type}\n"
                 yield f'data: {payload}\n\n'
             log_stream_cache.close()
 
@@ -217,16 +220,18 @@ def sse_stream():
         while True:
             if time.time() - last_heartbeat > SSE_HEARTBEAT_PERIOD:
                 data = {
-                    "type": "heartbeat",
                     "current_operation": get_current_operation(),
                     "timestamp": time.time(),
                 }
                 payload = json.dumps(data)
+                yield "event: heartbeat\n"
                 yield f'data: {payload}\n\n'
                 last_heartbeat = time.time()
             if sub.poll(10, zmq.POLLIN):
-                _, msg = sub.recv_multipart()
-                yield 'data: ' + str(msg.decode()) + '\n\n'
+                _, payload = sub.recv_multipart()
+                type, payload = payload.decode().split(":", 1)
+                yield f'event: {type}\n'
+                yield f'data: {payload}\n\n'
     finally:
         sub.close()
         ctx.term()
