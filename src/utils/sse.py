@@ -1,6 +1,5 @@
 import glob
 import os
-import base64
 import json
 import time
 import psutil
@@ -120,11 +119,11 @@ class SSELogStreamingHandler(Handler):
         data["operation_id"] = self.operation_id
         data["ref_id"] = self.ref_id
 
-        payload = base64.b64encode(json.dumps(data).encode())
+        payload = json.dumps(data)
 
         if self.log_stream_cache:
             try:
-                self.log_stream_cache.write(payload.decode() + "\n")
+                self.log_stream_cache.write(payload + "\n")
                 self.log_stream_cache.flush()
             except Exception:
                 # Not a huge deal if we can't write to the file for some reason...
@@ -196,7 +195,7 @@ def sse_stream():
             "started_at": operation["started_at"].timestamp(),
             "started_by": operation["started_by"],
         }
-        payload = base64.b64encode(json.dumps(data).encode()).decode()
+        payload = json.dumps(data)
         yield f'data: {payload}\n\n'
 
     if current_operation_id:
@@ -222,7 +221,7 @@ def sse_stream():
                     "current_operation": get_current_operation(),
                     "timestamp": time.time(),
                 }
-                payload = base64.b64encode(json.dumps(data).encode()).decode()
+                payload = json.dumps(data)
                 yield f'data: {payload}\n\n'
                 last_heartbeat = time.time()
             if sub.poll(10, zmq.POLLIN):
