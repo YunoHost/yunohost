@@ -1376,6 +1376,13 @@ class PortsResource(AppResource):
 
         return used_by_process or used_by_app or used_by_self_provisioning
 
+    def _exposed_to_protos(self, exposed: str | bool) -> list[str]:
+        if isinstance(exposed, bool):
+            return ["tcp"] if exposed else []
+        if exposed.lower() == "both":
+            return ["tcp", "udp"]
+        return [exposed.lower()]
+
     def provision_or_update(self, context: Dict = {}):
         from yunohost.firewall import YunoFirewall
         firewall = YunoFirewall()
@@ -1408,16 +1415,10 @@ class PortsResource(AppResource):
             self.ports_used_by_self.append(port_value)
             self.set_setting(setting_name, port_value)
 
+            comment = f"{self.app} {name}"
             if infos["exposed"]:
-                if infos["exposed"].lower() == "both":
-                    protos = ["tcp", "udp"]
-                else:
-                    protos = [infos["exposed"].lower()]
-
-                comment = f"{self.app} {name}"
-                for proto in protos:
+                for proto in self._exposed_to_protos(infos["exposed"]):
                     firewall.open_port(proto, port_value, comment, infos["upnp"])
-
             else:
                 for proto in ["tcp", "udp"]:
                     firewall.close_port(proto, port_value)
@@ -1434,11 +1435,7 @@ class PortsResource(AppResource):
             value = self.get_setting(setting_name)
             self.delete_setting(setting_name)
             if value and str(value).strip():
-                if infos["exposed"].lower() == "both":
-                    protos = ["tcp", "udp"]
-                else:
-                    protos = [infos["exposed"].lower()]
-                for proto in protos:
+                for proto in self._exposed_to_protos(infos["exposed"]):
                     firewall.delete_port(proto, value)
 
         if firewall.need_reload:
