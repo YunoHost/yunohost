@@ -24,6 +24,7 @@ from typing import Any
 import yaml
 
 from yunohost.tools import Migration
+from yunohost.app import app_list
 
 from yunohost.firewall import YunoFirewall
 
@@ -35,8 +36,28 @@ class MyMigration(Migration):
 
     mode = "auto"
 
+    apps = app_list(full=True)
+
+    def _app_comment_of_port(self, port: int) -> str:
+        for app in self.apps["apps"]:
+            settings = app["settings"]
+            port_keys: list[str] = [
+                key
+                for key in settings.keys()
+                if key.startswith("port_") or key == "port"
+            ]
+            for key in port_keys:
+                if settings[key] not in [port, str(port)]:
+                    continue
+                port_name = "main" if key == "port" else key.removeprefix("port_")
+                return f"App {app['id']}: {port_name} port"
+
+        return ""
+
     def firewall_file_migrate(self) -> None:
-        old_data = yaml.safe_load(YunoFirewall.FIREWALL_FILE.open("r", encoding="utf-8"))
+        old_data = yaml.safe_load(
+            YunoFirewall.FIREWALL_FILE.open("r", encoding="utf-8")
+        )
 
         new_data: dict[str, Any] = {
             "router_forwarding_upnp": old_data["uPnP"]["enabled"],
@@ -48,6 +69,7 @@ class MyMigration(Migration):
                 port: {
                     "open": True,
                     "upnp": port in old_data["uPnP"][proto],
+                    "comment": self._app_comment_of_port(port),
                 }
                 for port in set(old_data["ipv4"][proto] + old_data["ipv6"][proto])
             }
