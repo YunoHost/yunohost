@@ -10,7 +10,7 @@
     "app_not_properly_removed": "{app} es pas estat corrèctament suprimit",
     "app_removed": "{app} es estada suprimida",
     "app_unknown": "Aplicacion desconeguda",
-    "app_upgrade_app_name": "Actualizacion de l’aplicacion {app}…",
+    "app_upgrade_app_name": "Actualizacion de {app}…",
     "app_upgrade_failed": "Impossible d’actualizar {app} : {error}",
     "app_upgrade_some_app_failed": "D’aplicacions se pòdon pas actualizar",
     "app_upgraded": "{app} es estada actualizada",
@@ -257,10 +257,10 @@
     "root_password_desynchronized": "Lo senhal de l’administrator es estat cambiat, mas YunoHost a pas pogut l’espandir al senhal root !",
     "aborting": "Interrupcion.",
     "app_not_upgraded": "L’aplicacion « {failed_app} » a pas reüssit a s’actualizar e coma consequéncia las mesas a jorn de las aplicacions seguentas son estadas anulladas : {apps}",
-    "app_start_install": "Installacion de l’aplicacion {app}…",
-    "app_start_remove": "Supression de l’aplicacion {app}…",
+    "app_start_install": "Installacion de {app}…",
+    "app_start_remove": "Supression de {app}…",
     "app_start_backup": "Recuperacion dels fichièrs de salvagardar per {app}…",
-    "app_start_restore": "Restauracion de l’aplicacion {app}…",
+    "app_start_restore": "Restauracion de {app}…",
     "app_upgrade_several_apps": "Las aplicacions seguentas seràn actualizadas : {apps}",
     "ask_new_domain": "Nòu domeni",
     "ask_new_path": "Nòu camin",
@@ -456,5 +456,6 @@
     "global_settings_setting_admin_strength": "Fòrça del senhal administrator",
     "global_settings_setting_user_strength": "Fòrça del senhal utilizaire",
     "global_settings_setting_postfix_compatibility_help": "Solucion de compromés entre compatibilitat e seguretat pel servidor Postfix. Afècta los criptografs (e d’autres aspèctes ligats amb la seguretat)",
-    "global_settings_setting_ssh_compatibility_help": "Solucion de compromés entre compatibilitat e seguretat pel servidor SSH. Afècta los criptografs (e d’autres aspèctes ligats amb la seguretat)."
+    "global_settings_setting_ssh_compatibility_help": "Solucion de compromés entre compatibilitat e seguretat pel servidor SSH. Afècta los criptografs (e d’autres aspèctes ligats amb la seguretat).",
+    "ask_fullname": "Nom complèt"
 }
