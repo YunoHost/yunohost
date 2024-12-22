@@ -1,3 +1,12 @@
+yunohost (12.0.9.1) stable; urgency=low
+
+  - yunohost app shell: helpers2.0 need PATH to be defined (62f43b410)
+  - i18n: Translations updated for Occitan, Polish
+
+  Thanks to all contributors <3 ! (harc, Quentí)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 22 Dec 2024 16:03:35 +0100
+
 yunohost (12.0.9) stable; urgency=low
 
   - apps: when opening an 'app shell', fix PHP version for helpers 2.1 + prevent bash flooding debug infos ([#2009](http://github.com/YunoHost/yunohost/pull/2009))
