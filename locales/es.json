@@ -463,7 +463,7 @@
     "certmanager_domain_not_diagnosed_yet": "Aún no hay resultado del diagnóstico para el dominio {domain}. Por favor ejecute el diagnóstico para las categorías 'Registros DNS' y 'Web' en la sección de diagnóstico para verificar si el dominio está listo para Let's Encrypt. (O si sabe lo que está haciendo, utilice '--no-checks' para deshabilitar esos chequeos.)",
     "backup_archive_corrupted": "Parece que el archivo de respaldo '{archive}' está corrupto : {error}",
     "backup_archive_cant_retrieve_info_json": "No se pudieron cargar informaciones para el archivo '{archive}'… El archivo info.json no se pudo recuperar (o no es un json válido).",
-    "ask_user_domain": "Dominio a usar para la dirección de correo del usuario y cuenta XMPP",
+    "ask_user_domain": "Dominio a usar para la dirección de correo del usuario",
     "app_packaging_format_not_supported": "Esta aplicación no se puede instalar porque su formato de empaque no está soportado por su versión de YunoHost. Considere actualizar su sistema.",
     "app_manifest_install_ask_is_public": "¿Debería exponerse esta aplicación a visitantes anónimos?",
     "app_manifest_install_ask_admin": "Elija un usuario administrativo para esta aplicación",
