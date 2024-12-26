@@ -124,7 +124,7 @@ class Parser:
         current_block = {"name": None, "line": -1, "comments": [], "code": []}
 
         for i, line in enumerate(self.file):
-            if line.startswith("#!/bin/bash"):
+            if i == 0 and line.startswith("#!"):
                 continue
 
             line = line.rstrip().replace("\t", "    ")
