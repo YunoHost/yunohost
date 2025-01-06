@@ -74,7 +74,7 @@ fi
 #
 # usage: ynh_exec_as_app COMMAND [ARG ...]
 ynh_exec_as_app() {
-    sudo -u "$app" env PATH="$PATH" "$@"
+    sudo -u "$app" env PATH="$PATH" COREPACK_ENABLE_DOWNLOAD_PROMPT="0" "$@"
 }
 
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
