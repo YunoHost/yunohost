@@ -180,7 +180,7 @@ ynh_install_go() {
 
     # Install the requested version of Go
     local final_go_version=$(goenv latest --print $go_version)
-    if ! [ -n "$final_go_version" ]; then
+    if [[ -z "$final_go_version" ]]; then
         final_go_version=$go_version
     fi
     ynh_print_info --message="Installing Go $final_go_version"
