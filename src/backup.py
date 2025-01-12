@@ -1881,7 +1881,7 @@ class CopyBackupMethod(BackupMethod):
         if not os.path.isdir(self.repo):
             raise YunohostError("backup_no_uncompress_archive_dir")
 
-        mkdir(self.work_dir, parent=True)
+        mkdir(self.work_dir, parents=True)
         ret = subprocess.call(["mount", "-r", "--rbind", self.repo, self.work_dir])
         if ret == 0:
             return
