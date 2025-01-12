@@ -534,7 +534,7 @@ def tools_shutdown(operation_logger, force=False):
         try:
             # Ask confirmation for server shutdown
             i = Moulinette.prompt(m18n.n("server_shutdown_confirm", answers="y/N"))
-        except NotImplemented:
+        except NotImplementedError:
             pass
         else:
             if i.lower() == "y" or i.lower() == "yes":
@@ -553,7 +553,7 @@ def tools_reboot(operation_logger, force=False):
         try:
             # Ask confirmation for restoring
             i = Moulinette.prompt(m18n.n("server_reboot_confirm", answers="y/N"))
-        except NotImplemented:
+        except NotImplementedError:
             pass
         else:
             if i.lower() == "y" or i.lower() == "yes":

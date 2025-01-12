@@ -1825,7 +1825,7 @@ class BackupMethod:
                         size=str(size),
                     )
                 )
-            except NotImplemented:
+            except NotImplementedError:
                 raise YunohostError("backup_unable_to_organize_files")
             else:
                 if i != "y" and i != "Y":
@@ -2323,7 +2323,7 @@ def backup_restore(name, system=[], apps=[], force=False):
                 i = Moulinette.prompt(
                     m18n.n("restore_confirm_yunohost_installed", answers="y/N")
                 )
-            except NotImplemented:
+            except NotImplementedError:
                 pass
             else:
                 if i == "y" or i == "Y":
