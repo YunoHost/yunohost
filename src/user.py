@@ -543,7 +543,8 @@ def user_update(
     if add_mailforward:
         if not isinstance(add_mailforward, list):
             add_mailforward = [add_mailforward]
-        new_attr_dict["maildrop"] = set(user["maildrop"]) + set(add_mailforward)
+        new_attr_dict["maildrop"] = set(user["maildrop"])
+        new_attr_dict["maildrop"].update(set(add_mailforward))
 
     if remove_mailforward:
         if not isinstance(remove_mailforward, list):
@@ -1341,7 +1342,8 @@ def user_group_update(
         new_attr_dict["mail"] = list(set(new_group_mail))
 
         if new_attr_dict["mail"]:
-            new_attr_dict["objectClass"] = set(group["objectClass"]).update({"mailGroup"})
+            new_attr_dict["objectClass"] = set(group["objectClass"])
+            new_attr_dict["objectClass"].update({"mailGroup"})
         else:
             new_attr_dict["objectClass"] = set(group["objectClass"]) - {"mailGroup", "mailAccount"}
 
