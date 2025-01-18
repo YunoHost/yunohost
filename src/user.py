@@ -1180,6 +1180,7 @@ def user_group_update(
     # Refuse to edit a primary group of a user (e.g. group 'sam' related to user 'sam')
     # Those kind of group should only ever contain the user (e.g. sam) and only this one.
     # We also can't edit "all_users" without the force option because that's a special group...
+    # Also prevent to remove the last admin
     if not force:
         if groupname == "all_users":
             raise YunohostValidationError("group_cannot_edit_all_users")
@@ -1189,6 +1190,8 @@ def user_group_update(
             raise YunohostValidationError(
                 "group_cannot_edit_primary_group", group=groupname
             )
+        elif remove and groupname == "admins" and len(user_group_info("admins")['members']) <= 1:
+            raise YunohostValidationError("group_cannot_remove_last_admin")
 
     ldap = _get_ldap_interface()
 
