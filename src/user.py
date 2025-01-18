@@ -1190,7 +1190,11 @@ def user_group_update(
             raise YunohostValidationError(
                 "group_cannot_edit_primary_group", group=groupname
             )
-        elif remove and groupname == "admins" and len(user_group_info("admins")['members']) <= 1:
+        elif (
+            remove
+            and groupname == "admins"
+            and len(user_group_info("admins")["members"]) <= 1
+        ):
             raise YunohostValidationError("group_cannot_remove_last_admin")
 
     ldap = _get_ldap_interface()

@@ -357,6 +357,7 @@ def test_update_group_add_user_that_doesnt_exist(mocker):
 
     assert "doesnt_exist" not in user_group_list()["groups"]["dev"]["members"]
 
+
 def test_update_group_remove_last_admin(mocker):
     with raiseYunohostError(mocker, "group_cannot_remove_last_admin"):
         user_group_update("admins", remove=["alice"])
