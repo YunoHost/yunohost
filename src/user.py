@@ -960,7 +960,7 @@ def user_import(
     for user in actions["deleted"]:
         progress(f"Deleting {user}")
         try:
-            user_delete(user["username"], purge=True, from_import=True)
+            user_delete(user["username"], purge=True, from_import=True, force=True)
             result["deleted"] += 1
         except YunohostError as e:
             _on_failure(user, e)
