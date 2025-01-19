@@ -2862,19 +2862,29 @@ def _check_manifest_requirements(
     if ram_requirement.get("include_swap", False):
         ram += swap
 
-    if ram_requirement["build"] == "?" or ram > human_to_binary(ram_requirement["build"]):
+    if ram_requirement["build"] == "?" or ram > human_to_binary(
+        ram_requirement["build"]
+    ):
         can_build = True
     # When upgrading, compare the available ram to (build - runtime), because the app is already running
-    elif action == "upgrade" and ram_requirement["runtime"] != "?" and ram > human_to_binary(ram_requirement["build"]) - human_to_binary(ram_requirement["runtime"]):
+    elif (
+        action == "upgrade"
+        and ram_requirement["runtime"] != "?"
+        and ram
+        > human_to_binary(ram_requirement["build"])
+        - human_to_binary(ram_requirement["runtime"])
+    ):
         can_build = True
     else:
         can_build = False
-          
-    # Before upgrading, the application is probably already running, 
+
+    # Before upgrading, the application is probably already running,
     # and RAM rarely increases significantly from one version to the next.
-    can_run = ram_requirement["runtime"] == "?" or ram > human_to_binary(
-        ram_requirement["runtime"]
-    ) or action == "upgrade"
+    can_run = (
+        ram_requirement["runtime"] == "?"
+        or ram > human_to_binary(ram_requirement["runtime"])
+        or action == "upgrade"
+    )
 
     # Some apps have a higher runtime value than build ...
     if ram_requirement["build"] != "?" and ram_requirement["runtime"] != "?":
