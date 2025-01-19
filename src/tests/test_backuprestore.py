@@ -124,7 +124,7 @@ def teardown_function(function):
         shutil.rmtree("/opt/test_backup_output_directory")
 
     if "alice" in user_list()["users"]:
-        user_delete("alice")
+        user_delete("alice", force=True)
 
     if "with_custom_domain" in markers:
         domain = markers["with_custom_domain"]["args"][0]

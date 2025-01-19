@@ -89,9 +89,9 @@ def setup_module(module):
 
 def teardown_module(module):
     if "alice" in user_list()["users"]:
-        user_delete("alice")
+        user_delete("alice", force=True)
     if "bob" in user_list()["users"]:
-        user_delete("bob")
+        user_delete("bob", force=True)
 
     app_remove("hellopy")
 
