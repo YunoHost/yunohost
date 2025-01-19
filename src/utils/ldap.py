@@ -107,6 +107,7 @@ def modifyModlist_finegrained(old_entry: dict, new_entry: dict) -> list:
 
         # Add or/and delete only needed values with ordered list
         else:
+            i = 0
             for i, v in enumerate(value):
                 if i >= len(old_value) or old_value[i] != v:
                     break
