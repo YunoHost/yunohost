@@ -348,7 +348,7 @@ def user_delete(
         # If the user is in this group (and it's not the primary group),
         # remove the member from the group
         if username != group and username in infos["members"]:
-            user_group_update(group, remove=username, sync_perm=False)
+            user_group_update(group, remove=username, sync_perm=False, force=force)
 
     # Delete primary group if it exists (why wouldnt it exists ?  because some
     # epic bug happened somewhere else and only a partial removal was
