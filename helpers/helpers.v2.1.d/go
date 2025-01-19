@@ -116,7 +116,7 @@ eval \"\$(goenv init -)\"
 #goenv" > /etc/profile.d/goenv.sh
 
     # Load the environment
-    eval "$(goenv init -)"
+    HOME=$install_dir eval "$(goenv init -)"
 
     _ynh_load_go_in_path_and_other_tweaks
 }

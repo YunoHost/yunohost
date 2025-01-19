@@ -82,24 +82,24 @@ ignoreregex =
     ynh_config_add --template="f2b_jail.conf" --destination="/etc/fail2ban/jail.d/$app.conf"
     ynh_config_add --template="f2b_filter.conf" --destination="/etc/fail2ban/filter.d/$app.conf"
 
-    # if "$logpath" doesn't exist (as if using --use_template argument), assign
-    # "$logpath" using the one in the previously generated fail2ban conf file
-    if [ -z "${logpath:-}" ]; then
-        # the first sed deletes possibles spaces and the second one extract the path
-        logpath=$(grep "^logpath" "/etc/fail2ban/jail.d/$app.conf" | sed "s/ //g" | sed "s/logpath=//g")
-    fi
-
     # Create the folder and logfile if they doesn't exist,
     # as fail2ban require an existing logfile before configuration
-    mkdir -p "/var/log/$app"
+    local logdir=$(dirname "$logpath")
+    if [ ! -d "$logdir" ]; then
+        mkdir -p "$logdir"
+        # Make sure log folder's permissions are correct
+        chown "$app:$app" "$logdir"
+        chmod u=rwX,g=rX,o= "$logdir"
+    fi
+
     if [ ! -f "$logpath" ]; then
         touch "$logpath"
+        # Make sure log file's permissions are correct
+        chown "$app:$app" "$logpath"
+        chmod u=rwX,g=rX,o= "$logpath"
     fi
-    # Make sure log folder's permissions are correct
-    chown -R "$app:$app" "/var/log/$app"
-    chmod -R u=rwX,g=rX,o= "/var/log/$app"
 
-    ynh_systemctl --service=fail2ban --action=reload --wait_until="(Started|Reloaded) Fail2Ban Service" --log_path=systemd
+    ynh_systemctl --service=fail2ban --action=reload --wait_until="(Started|Reloaded) fail2ban.service" --log_path=systemd
 
     local fail2ban_error="$(journalctl --no-hostname --unit=fail2ban | tail --lines=50 | grep "WARNING.*$app.*")"
     if [[ -n "$fail2ban_error" ]]; then

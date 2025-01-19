@@ -18,11 +18,7 @@ ynh_app_setting_get() {
     ynh_handle_getopts_args "$@"
     app="${app:-$_globalapp}"
 
-    if [[ $key =~ (unprotected|protected|skipped)_ ]]; then
-        yunohost app setting $app $key
-    else
-        ynh_app_setting "get" "$app" "$key"
-    fi
+    ynh_app_setting "get" "$app" "$key"
 }
 
 # Set an application setting
@@ -45,11 +41,7 @@ ynh_app_setting_set() {
     ynh_handle_getopts_args "$@"
     app="${app:-$_globalapp}"
 
-    if [[ $key =~ (unprotected|protected|skipped)_ ]]; then
-        yunohost app setting $app $key -v $value
-    else
-        ynh_app_setting "set" "$app" "$key" "$value"
-    fi
+    ynh_app_setting "set" "$app" "$key" "$value"
 }
 
 # Set an application setting but only if the "$key" variable ain't set yet
@@ -106,11 +98,7 @@ ynh_app_setting_delete() {
     ynh_handle_getopts_args "$@"
     app="${app:-$_globalapp}"
 
-    if [[ "$key" =~ (unprotected|skipped|protected)_ ]]; then
-        yunohost app setting $app $key -d
-    else
-        ynh_app_setting "delete" "$app" "$key"
-    fi
+    ynh_app_setting "delete" "$app" "$key"
 }
 
 # Small "hard-coded" interface to avoid calling "yunohost app" directly each
@@ -119,6 +107,8 @@ ynh_app_setting_delete() {
 # [internal]
 #
 ynh_app_setting() {
+    # Trick to only re-enable debugging if it was set before
+    local xtrace_enable=$(set +o | grep xtrace)
     set +o xtrace # set +x
     ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python3 - << EOF
 import os, yaml, sys
@@ -144,7 +134,7 @@ else:
     with open(setting_file, "w") as f:
         yaml.safe_dump(settings, f, default_flow_style=False)
 EOF
-    set -o xtrace # set -x
+    eval "$xtrace_enable"
 }
 
 # Check availability of a web path

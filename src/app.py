@@ -1553,121 +1553,6 @@ def app_setting(app, key, value=None, delete=False):
     """
     app_settings = _get_app_settings(app) or {}
 
-    #
-    # Legacy permission setting management
-    # (unprotected, protected, skipped_uri/regex)
-    #
-
-    is_legacy_permission_setting = any(
-        key.startswith(word + "_") for word in ["unprotected", "protected", "skipped"]
-    )
-
-    if is_legacy_permission_setting:
-        from yunohost.permission import (
-            user_permission_list,
-            user_permission_update,
-            permission_create,
-            permission_delete,
-            permission_url,
-        )
-
-        permissions = user_permission_list(full=True, apps=[app])["permissions"]
-        key_ = key.split("_")[0]
-        permission_name = f"{app}.legacy_{key_}_uris"
-        permission = permissions.get(permission_name)
-
-        # GET
-        if value is None and not delete:
-            return (
-                ",".join(permission.get("uris", []) + permission["additional_urls"])
-                if permission
-                else None
-            )
-
-        # DELETE
-        if delete:
-            # If 'is_public' setting still exists, we interpret this as
-            # coming from a legacy app (because new apps shouldn't manage the
-            # is_public state themselves anymore...)
-            #
-            # In that case, we interpret the request for "deleting
-            # unprotected/skipped" setting as willing to make the app
-            # private
-            if (
-                "is_public" in app_settings
-                and "visitors" in permissions[app + ".main"]["allowed"]
-            ):
-                if key.startswith("unprotected_") or key.startswith("skipped_"):
-                    user_permission_update(app + ".main", remove="visitors")
-
-            if permission:
-                permission_delete(permission_name)
-
-        # SET
-        else:
-            urls = value
-            # If the request is about the root of the app (/), ( = the vast majority of cases)
-            # we interpret this as a change for the main permission
-            # (i.e. allowing/disallowing visitors)
-            if urls == "/":
-                if key.startswith("unprotected_") or key.startswith("skipped_"):
-                    permission_url(app + ".main", url="/", sync_perm=False)
-                    user_permission_update(app + ".main", add="visitors")
-                else:
-                    user_permission_update(app + ".main", remove="visitors")
-            else:
-                urls = urls.split(",")
-                if key.endswith("_regex"):
-                    urls = ["re:" + url for url in urls]
-
-                if permission:
-                    # In case of new regex, save the urls, to add a new time in the additional_urls
-                    # In case of new urls, we do the same thing but inversed
-                    if key.endswith("_regex"):
-                        # List of urls to save
-                        current_urls_or_regex = [
-                            url
-                            for url in permission["additional_urls"]
-                            if not url.startswith("re:")
-                        ]
-                    else:
-                        # List of regex to save
-                        current_urls_or_regex = [
-                            url
-                            for url in permission["additional_urls"]
-                            if url.startswith("re:")
-                        ]
-
-                    new_urls = urls + current_urls_or_regex
-                    # We need to clear urls because in the old setting the new setting override the old one and dont just add some urls
-                    permission_url(permission_name, clear_urls=True, sync_perm=False)
-                    permission_url(permission_name, add_url=new_urls)
-                else:
-                    from yunohost.utils.legacy import legacy_permission_label
-
-                    # Let's create a "special" permission for the legacy settings
-                    permission_create(
-                        permission=permission_name,
-                        # FIXME find a way to limit to only the user allowed to the main permission
-                        allowed=(
-                            ["all_users"]
-                            if key.startswith("protected_")
-                            else ["all_users", "visitors"]
-                        ),
-                        url=None,
-                        additional_urls=urls,
-                        auth_header=not key.startswith("skipped_"),
-                        label=legacy_permission_label(app, key.split("_")[0]),
-                        show_tile=False,
-                        protected=True,
-                    )
-
-        return
-
-    #
-    # Regular setting management
-    #
-
     # GET
     if value is None and not delete:
         return app_settings.get(key, None)
@@ -1682,8 +1567,6 @@ def app_setting(app, key, value=None, delete=False):
 
     # SET
     else:
-        if key in ["redirected_urls", "redirected_regex"]:
-            value = yaml.safe_load(value)
         app_settings[key] = value
 
     _set_app_settings(app, app_settings)
@@ -1697,12 +1580,14 @@ def app_shell(app):
         app -- App ID
 
     """
+
     subprocess.run(
         [
             "/bin/bash",
             "-c",
             "source /usr/share/yunohost/helpers && ynh_spawn_app_shell " + app,
-        ]
+        ],
+        env=_make_environment_for_app_script(app)
     )
 
 
