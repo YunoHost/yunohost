@@ -388,7 +388,7 @@ _ynh_apply_default_permissions() {
 }
 
 int_to_bool() {
-    sed -e 's/^1$/True/g' -e 's/^0$/False/g'
+    sed -e 's/^1$/True/g' -e 's/^0$/False/g' -e 's/^true$/True/g' -e 's/^false$/False/g'
 }
 
 toml_to_json() {
