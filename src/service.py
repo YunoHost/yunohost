@@ -463,8 +463,8 @@ def _get_and_format_service_status(service, infos):
         raw_service.get("Type", "").lower() == "oneshot"
         and output["status"] == "exited"
     ):
-        # These are services like yunohost-firewall, hotspot, vpnclient,
-        # ... they will be "exited" why doesn't provide any info about
+        # These are services like hotspot, vpnclient...
+        # they will be "exited" why doesn't provide any info about
         # the real state of the service (unless they did provide a
         # test_status, c.f. previous condition)
         output["status"] = "unknown"
