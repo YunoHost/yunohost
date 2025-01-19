@@ -324,20 +324,25 @@ def user_delete(
     username: str,
     purge: bool = False,
     from_import: bool = False,
+    force: bool = False,
 ):
     from yunohost.authenticators.ldap_admin import Authenticator as AdminAuth
     from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
 
+    groups = user_group_list()["groups"]
+
     if username not in user_list()["users"]:
         raise YunohostValidationError("user_unknown", user=username)
+    elif not force and username in groups['admins'] and len(groups['admins']) <= 1:
+        raise YunohostValidationError("user_cannot_delete_last_admin")
 
     if not from_import:
         operation_logger.start()
 
     user_group_update("all_users", remove=username, force=True, sync_perm=False)
-    for group, infos in user_group_list()["groups"].items():
+    for group, infos in groups.items():
         if group == "all_users":
             continue
         # If the user is in this group (and it's not the primary group),
