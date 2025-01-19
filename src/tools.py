@@ -271,8 +271,8 @@ def tools_postinstall(
     os.system("touch /etc/yunohost/installed")
 
     # Enable and start YunoHost firewall at boot time
-    _run_service_command("enable", "yunohost-firewall")
-    _run_service_command("start", "yunohost-firewall")
+    _run_service_command("enable", "nftables")
+    _run_service_command("start", "nftables")
 
     tools_regen_conf(names=["ssh"], force=True)
 
