@@ -30,6 +30,7 @@ from yunohost.user import (
     user_group_create,
     user_group_delete,
     user_group_list,
+    user_group_info,
     user_group_update,
     user_import,
     user_info,
@@ -165,13 +166,26 @@ def test_import_user():
         )
         writer.writerow(
             {
+                "username": "sam",
+                "firstname": "Sam",
+                "lastname": "White",
+                "password": "",
+                "mailbox-quota": "1G",
+                "mail": "sam@" + maindomain,
+                "mail-alias": "sam1@" + maindomain + ",sam2@" + maindomain,
+                "mail-forward": "",
+                "groups": "apps",
+            }
+        )
+        writer.writerow(
+            {
                 "username": "alice",
                 "firstname": "Alice",
                 "lastname": "White",
                 "password": "",
                 "mailbox-quota": "1G",
                 "mail": "alice@" + maindomain,
-                "mail-alias": "alice1@" + maindomain + ",alice2@" + maindomain,
+                "mail-alias": "",
                 "mail-forward": "",
                 "groups": "apps",
             }
@@ -183,12 +197,15 @@ def test_import_user():
     group_res = user_group_list()["groups"]
     user_res = user_list(list(FIELDS_FOR_IMPORT.keys()))["users"]
     assert "albert" in user_res
+    assert "sam" in user_res
     assert "alice" in user_res
     assert "bob" not in user_res
-    assert len(user_res["alice"]["mail-alias"]) == 2
+    assert len(user_res["sam"]["mail-alias"]) == 2
     assert "albert" in group_res["dev"]["members"]
-    assert "alice" in group_res["apps"]["members"]
-    assert "alice" not in group_res["dev"]["members"]
+    assert "sam" in group_res["apps"]["members"]
+    assert "sam" not in group_res["dev"]["members"]
+    assert "alice" in group_res["admins"]["members"]
+    assert "alice" not in group_res["apps"]["members"]
 
 
 def test_export_user():

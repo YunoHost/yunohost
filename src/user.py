@@ -341,14 +341,14 @@ def user_delete(
     if not from_import:
         operation_logger.start()
 
-    user_group_update("all_users", remove=username, force=True, sync_perm=False)
+    user_group_update("all_users", remove=username, force=True, from_import=from_import, sync_perm=False)
     for group, infos in groups.items():
         if group == "all_users":
             continue
         # If the user is in this group (and it's not the primary group),
         # remove the member from the group
         if username != group and username in infos["members"]:
-            user_group_update(group, remove=username, sync_perm=False, force=force)
+            user_group_update(group, remove=username, sync_perm=False, from_import=from_import, force=force)
 
     # Delete primary group if it exists (why wouldnt it exists ?  because some
     # epic bug happened somewhere else and only a partial removal was
@@ -872,8 +872,11 @@ def user_import(
     progress.old = ""  # type: ignore[attr-defined]
 
     def _on_failure(user, exception):
-        result["errors"] += 1
-        logger.error(user + ": " + str(exception))
+        if exception.key == "group_cannot_remove_last_admin":
+            logger.warning(user + ": " + m18n.n("user_import_cannot_edit_or_delete_admins", user=user))
+        else:
+            result["errors"] += 1
+            logger.error(user + ": " + str(exception))
 
     def _import_update(new_infos, old_infos=False):
         remove_alias = None
@@ -942,22 +945,23 @@ def user_import(
     operation_logger.start()
     # We do delete and update before to avoid mail uniqueness issues
     for user in actions["deleted"]:
+        progress(f"Deleting {user}")
         try:
-            user_delete(user["username"], purge=True, from_import=True)
+            user_delete(user["username"], purge=True, from_import=True, force=True)
             result["deleted"] += 1
         except YunohostError as e:
             _on_failure(user, e)
-        progress(f"Deleting {user}")
 
     for user in actions["updated"]:
+        progress(f"Updating {user['username']}")
         try:
             _import_update(user, users[user["username"]])
             result["updated"] += 1
         except YunohostError as e:
             _on_failure(user["username"], e)
-        progress(f"Updating {user['username']}")
 
     for user in actions["created"]:
+        progress(f"Creating {user['username']}")
         try:
             user_create(
                 user["username"],
@@ -971,7 +975,6 @@ def user_import(
             result["created"] += 1
         except YunohostError as e:
             _on_failure(user["username"], e)
-        progress(f"Creating {user['username']}")
 
     permission_sync_to_user()
     app_ssowatconf()
@@ -1195,12 +1198,12 @@ def user_group_update(
             raise YunohostValidationError(
                 "group_cannot_edit_primary_group", group=groupname
             )
-        elif (
-            remove
-            and groupname == "admins"
-            and len(user_group_info("admins")["members"]) <= 1
-        ):
-            raise YunohostValidationError("group_cannot_remove_last_admin")
+        elif groupname == "admins" and remove:
+            admins = user_group_info("admins")["members"]
+            if isinstance(remove, str):
+                remove = [remove]
+            if admins and not set(admins) - set(remove):
+                raise YunohostValidationError("group_cannot_remove_last_admin", user=remove[0])
 
     ldap = _get_ldap_interface()
 
