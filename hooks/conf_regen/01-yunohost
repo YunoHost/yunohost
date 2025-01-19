@@ -362,6 +362,7 @@ do_post_regen() {
     }
     [[ ! "$regen_conf_files" =~ "yunohost-api.service" ]] || systemctl daemon-reload
     [[ ! "$regen_conf_files" =~ "yunohost-portal-api.service" ]] || systemctl daemon-reload
+    [[ ! "$regen_conf_files" =~ "nftables.service.d/yunohost-nftables-hooks.conf" ]] || systemctl daemon-reload
 
     if [[ "$regen_conf_files" =~ "yunoprompt.service" ]]; then
         systemctl daemon-reload
