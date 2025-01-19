@@ -53,8 +53,7 @@ yunohost-portal-api:
 yunohost-api:
   log: /var/log/yunohost/yunohost-api.log
   category: admin
-yunohost-firewall:
-  need_lock: true
+nftables:
   test_status: nft list chain ip filter input | grep "dport" | grep -q "accept"
   category: security
 yunomdns:
