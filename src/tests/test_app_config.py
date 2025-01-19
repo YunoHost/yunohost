@@ -123,7 +123,7 @@ def test_app_config_get(config_app):
     assert isinstance(app_config_get(config_app, "main.components"), dict)
     assert app_config_get(config_app, "main.components.boolean") == 0
 
-    user_delete("alice")
+    user_delete("alice", force=True)
 
 
 def test_app_config_nopanel(legacy_app):

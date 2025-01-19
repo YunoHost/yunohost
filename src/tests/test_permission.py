@@ -127,7 +127,7 @@ def _clear_dummy_app_settings():
 
 def clean_user_groups_permission():
     for u in user_list()["users"]:
-        user_delete(u)
+        user_delete(u, force=True)
 
     for g in user_group_list()["groups"]:
         if g not in ["all_users", "visitors", "admins"]:

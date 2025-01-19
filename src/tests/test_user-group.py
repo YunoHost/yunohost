@@ -45,7 +45,7 @@ maindomain = ""
 
 def clean_user_groups():
     for u in user_list()["users"]:
-        user_delete(u, purge=True)
+        user_delete(u, purge=True, force=True)
 
     for g in user_group_list()["groups"]:
         if g not in ["all_users", "visitors", "admins"]:
@@ -124,7 +124,7 @@ def test_create_user():
 
 def test_del_user():
     with message("user_deleted"):
-        user_delete("alice")
+        user_delete("alice", force=True)
 
     group_res = user_group_list()["groups"]
     assert "alice" not in user_list()
@@ -252,7 +252,7 @@ def test_update_user_with_mail_address_with_unknown_domain(mocker):
 
 def test_del_user_that_does_not_exist(mocker):
     with raiseYunohostError(mocker, "user_unknown"):
-        user_delete("doesnt_exist")
+        user_delete("doesnt_exist", force=True)
 
 
 def test_create_group_all_users(mocker):

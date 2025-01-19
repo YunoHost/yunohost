@@ -31,7 +31,7 @@ from yunohost.user import user_create, user_delete, user_list, user_update
 
 def setup_function(function):
     for u in user_list()["users"]:
-        user_delete(u, purge=True)
+        user_delete(u, purge=True, force=True)
 
     maindomain = _get_maindomain()
 
@@ -46,7 +46,7 @@ def teardown_function():
     os.system("systemctl is-active slapd >/dev/null || systemctl start slapd; sleep 5")
 
     for u in user_list()["users"]:
-        user_delete(u, purge=True)
+        user_delete(u, purge=True, force=True)
 
 
 def test_authenticate():
