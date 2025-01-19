@@ -2882,18 +2882,16 @@ def _check_manifest_requirements(
     if ram_requirement.get("include_swap", False):
         ram += swap
 
-    # During upgrade build operations, the service is stopped
-    can_build = ram_requirement["build"] == "?" or ram > human_to_binary(
-        ram_requirement["build"]
-    ) or (
-        action == "upgrade" and 
-        ram_requirement["runtime"] != "?" and 
-        ram + human_to_binary(ram_requirement["runtime"]) > human_to_binary(ram_requirement["build"])
-    )
+    if ram_requirement["build"] == "?" or ram > human_to_binary(ram_requirement["build"]):
+        can_build = True
+    # When upgrading, compare the available ram to (build - runtime), because the app is already running
+    elif action == "upgrade" and ram_requirement["runtime"] != "?" and ram > human_to_binary(ram_requirement["build"]) - human_to_binary(ram_requirement["runtime"]):
+        can_build = True
+    else:
+        can_build = False
           
     # Before upgrading, the application is probably already running, 
     # and RAM rarely increases significantly from one version to the next.
-    # FIXME: during upgrade compare old ram runtime with the new one
     can_run = ram_requirement["runtime"] == "?" or ram > human_to_binary(
         ram_requirement["runtime"]
     ) or action == "upgrade"
