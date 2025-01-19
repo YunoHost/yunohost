@@ -324,6 +324,7 @@ def user_delete(
     username: str,
     purge: bool = False,
     from_import: bool = False,
+    force: bool = False,
 ):
     from yunohost.authenticators.ldap_admin import Authenticator as AdminAuth
     from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
@@ -334,7 +335,7 @@ def user_delete(
 
     if username not in user_list()["users"]:
         raise YunohostValidationError("user_unknown", user=username)
-    elif username in groups['admins'] and len(groups['admins']) <= 1:
+    elif not force and username in groups['admins'] and len(groups['admins']) <= 1:
         raise YunohostValidationError("user_cannot_delete_last_admin")
 
     if not from_import:

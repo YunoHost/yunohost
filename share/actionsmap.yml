@@ -118,6 +118,9 @@ user:
                 --purge:
                     help: Purge user's home and mail directories
                     action: store_true
+                --force:
+                    help: Force user deletion
+                    action: store_true
 
         ### user_update()
         update:
