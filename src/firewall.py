@@ -129,17 +129,22 @@ class YunoFirewall:
         self.need_reload = True
         self.write()
 
-    def apply(self, upnp: bool = True) -> None:
+    def apply(self, upnp: bool = True) -> bool:
         # FIXME: Ensure SSH is allowed
         self.open_port("tcp", _get_ssh_port(), "SSH port", upnp=True)
 
         # Just leverage regen_conf that will regen the nftables files, reload nftables
-        regen_conf(["nftables"], force=True)
+        try:
+            regen_conf(["nftables"], force=True)
+        except YunohostError:
+            return False
+
         self.need_reload = False
 
         # Refresh port forwarding with UPnP
         if self.config["router_forwarding_upnp"] and upnp:
             YunoUPnP(self).refresh(self)
+        return True
 
     def clear(self) -> None:
         os.system("systemctl stop nftables")
@@ -314,10 +319,15 @@ def firewall_open(
     if not reload_if_changed and not firewall.need_reload:
         logger.warning(m18n.n("port_already_opened", port=port))
 
-    if (firewall.need_reload and reload_if_changed) or (
-        not no_reload and not reload_if_changed
-    ):
-        firewall.apply()
+    will_reload = (
+        (firewall.need_reload and reload_if_changed) or
+        (not no_reload and not reload_if_changed)
+    )
+    if will_reload:
+        if firewall.apply():
+            logger.success(m18n.n("firewall_reloaded"))
+        else:
+            logger.error(m18n.n("firewall_reload_failed"))
 
 
 def firewall_close(
@@ -342,10 +352,15 @@ def firewall_close(
     if not firewall.need_reload and not reload_if_changed:
         logger.warning(m18n.n("port_already_closed", port=port))
 
-    if (firewall.need_reload and reload_if_changed) or (
-        not no_reload and not reload_if_changed
-    ):
-        firewall.apply()
+    will_reload = (
+        (firewall.need_reload and reload_if_changed) or
+        (not no_reload and not reload_if_changed)
+    )
+    if will_reload:
+        if firewall.apply():
+            logger.success(m18n.n("firewall_reloaded"))
+        else:
+            logger.error(m18n.n("firewall_reload_failed"))
 
 
 # Legacy APIs
@@ -400,10 +415,15 @@ def firewall_delete(
     if not firewall.need_reload and not reload_if_changed:
         logger.warning(m18n.n("port_already_closed", port=port))
 
-    if (firewall.need_reload and reload_if_changed) or (
-        not no_reload and not reload_if_changed
-    ):
-        firewall.apply()
+    will_reload = (
+        (firewall.need_reload and reload_if_changed) or
+        (not no_reload and not reload_if_changed)
+    )
+    if will_reload:
+        if firewall.apply():
+            logger.success(m18n.n("firewall_reloaded"))
+        else:
+            logger.error(m18n.n("firewall_reload_failed"))
 
 
 def firewall_list(
@@ -429,17 +449,11 @@ def firewall_reload(skip_upnp: bool = False) -> None:
     Keyword arguments:
         skip_upnp -- Do not refresh port forwarding using UPnP
     """
-    # from yunohost.hook import hook_callback
-    from yunohost.service import _run_service_command
-
     firewall = YunoFirewall()
-    firewall.apply(upnp=not skip_upnp)
-    # FIXME: how to get errors from regen_conf?
-    errors = False
-    if errors:
-        logger.warning(m18n.n("firewall_rules_cmd_failed"))
-    else:
+    if firewall.apply(upnp=not skip_upnp):
         logger.success(m18n.n("firewall_reloaded"))
+    else:
+        logger.error(m18n.n("firewall_reload_failed"))
 
 
 def firewall_upnp(action: str = "status", no_refresh: bool = False) -> dict[str, bool]:
