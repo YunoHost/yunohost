@@ -1,3 +1,15 @@
+yunohost (12.0.11) stable; urgency=low
+
+  - users: Prevent to remove the last user from admins ([#2029](http://github.com/YunoHost/yunohost/pull/2029), [#2030](http://github.com/YunoHost/yunohost/pull/2030), [#2031](http://github.com/YunoHost/yunohost/pull/2031), a18928475, d7b57a87a, fc2596d04, 8d6fd9c32)
+  - apps: incorrect warning about amount of RAM during upgrade ([#1971](http://github.com/YunoHost/yunohost/pull/1971))
+  - doc/helpers: document the possibility of using regex in <permission>.url property ([#2028](http://github.com/YunoHost/yunohost/pull/2028))
+  - logs: fix boring hack causing boring issue on the webadmin preventing the 'show more' button to be displayed sometimes (6117aa800)
+  - i18n: Translations updated for French, German
+
+  Thanks to all contributors <3 ! (Félix Piédallu, JocelynDelalande, Kay0u, ljf (zamentur), ppr, Tagadda, Vinzenz Vietzke)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 20 Jan 2025 15:46:36 +0100
+
 yunohost (12.0.10) stable; urgency=low
 
   - helpers2.1: force COREPACK_ENABLE_DOWNLOAD_PROMPT=0 when using ynh_exec_as_app (4a07a8301)
