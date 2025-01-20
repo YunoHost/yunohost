@@ -57,7 +57,7 @@ do_post_regen() {
     fi
 
     [[ -z "$regen_conf_files" ]] \
-        || systemctl reload-or-restart nftables
+        || systemctl restart nftables
 }
 
 do_$1_regen ${@:2}
