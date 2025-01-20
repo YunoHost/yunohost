@@ -374,7 +374,7 @@ def log_show(
         from yunohost.service import _tail
 
         if number and filter_irrelevant:
-            logs = _tail(log_path, int(number * 4))
+            logs = _tail(log_path, int(number * 6))
         elif number:
             logs = _tail(log_path, int(number))
         else:
