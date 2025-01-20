@@ -341,14 +341,26 @@ def user_delete(
     if not from_import:
         operation_logger.start()
 
-    user_group_update("all_users", remove=username, force=True, from_import=from_import, sync_perm=False)
+    user_group_update(
+        "all_users",
+        remove=username,
+        force=True,
+        from_import=from_import,
+        sync_perm=False,
+    )
     for group, infos in groups.items():
         if group == "all_users":
             continue
         # If the user is in this group (and it's not the primary group),
         # remove the member from the group
         if username != group and username in infos["members"]:
-            user_group_update(group, remove=username, sync_perm=False, from_import=from_import, force=force)
+            user_group_update(
+                group,
+                remove=username,
+                sync_perm=False,
+                from_import=from_import,
+                force=force,
+            )
 
     # Delete primary group if it exists (why wouldnt it exists ?  because some
     # epic bug happened somewhere else and only a partial removal was
@@ -873,7 +885,11 @@ def user_import(
 
     def _on_failure(user, exception):
         if exception.key == "group_cannot_remove_last_admin":
-            logger.warning(user + ": " + m18n.n("user_import_cannot_edit_or_delete_admins", user=user))
+            logger.warning(
+                user
+                + ": "
+                + m18n.n("user_import_cannot_edit_or_delete_admins", user=user)
+            )
         else:
             result["errors"] += 1
             logger.error(user + ": " + str(exception))
@@ -1203,7 +1219,9 @@ def user_group_update(
             if isinstance(remove, str):
                 remove = [remove]
             if admins and not set(admins) - set(remove):
-                raise YunohostValidationError("group_cannot_remove_last_admin", user=remove[0])
+                raise YunohostValidationError(
+                    "group_cannot_remove_last_admin", user=remove[0]
+                )
 
     ldap = _get_ldap_interface()
 
