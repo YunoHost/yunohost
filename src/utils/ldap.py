@@ -92,6 +92,8 @@ def modifyModlist_finegrained(old_entry: dict, new_entry: dict) -> list:
 
         if not old_value:
             ldif.append((ldap.MOD_ADD, attribute, list(value)))
+        elif not value:
+            ldif.append((ldap.MOD_DELETE, attribute, list(old_value)))
         # Add or/and delete only needed values with unordered set
         elif isinstance(value, set):
             values_to_del = set(old_value) - value
@@ -107,7 +109,6 @@ def modifyModlist_finegrained(old_entry: dict, new_entry: dict) -> list:
 
         # Add or/and delete only needed values with ordered list
         else:
-            i = 0
             for i, v in enumerate(value):
                 if i >= len(old_value) or old_value[i] != v:
                     break
