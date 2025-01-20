@@ -1385,6 +1385,7 @@ class PortsResource(AppResource):
 
     def provision_or_update(self, context: Dict = {}):
         from yunohost.firewall import YunoFirewall
+
         firewall = YunoFirewall()
 
         for name, infos in self.ports.items():
@@ -1428,6 +1429,7 @@ class PortsResource(AppResource):
 
     def deprovision(self, context: Dict = {}):
         from yunohost.firewall import YunoFirewall
+
         firewall = YunoFirewall()
 
         for name, infos in self.ports.items():

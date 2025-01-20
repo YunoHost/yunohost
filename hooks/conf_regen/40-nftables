@@ -22,7 +22,6 @@ set -e
 
 . /usr/share/yunohost/helpers
 
-
 PY_LIST_PORTS_OF="
 import os
 import yaml
@@ -51,7 +50,7 @@ do_pre_regen() {
 do_post_regen() {
     regen_conf_files=$1
 
-    if ls -l /etc/nftables.d/*.conf> /dev/null; then
+    if ls -l /etc/nftables.d/*.conf > /dev/null; then
         chown root:root /etc/nftables.d/*.conf
         chmod 644 /etc/nftables.d/*.conf
     fi
