@@ -10,9 +10,11 @@ run_parts() {
     fi
 }
 
-run_parts "$HOOK_FOLDER/post_nftables"
-run_parts "$CUSTOM_HOOK_FOLDER/post_nftables"
+pre_or_post="${1:-pre}"
 
-# This one is legacy, apps should use the new post_nftables hook
-run_parts "$HOOK_FOLDER/post_iptable_rules"
-run_parts "$CUSTOM_HOOK_FOLDER/post_iptable_rules"
+run_parts "$HOOK_FOLDER/${pre_or_post}_nftables"
+run_parts "$CUSTOM_HOOK_FOLDER/${pre_or_post}_nftables"
+
+# This one is legacy, apps should use the new ${pre_or_post}_nftables hook
+run_parts "$HOOK_FOLDER/${pre_or_post}_iptable_rules"
+run_parts "$CUSTOM_HOOK_FOLDER/${pre_or_post}_iptable_rules"
