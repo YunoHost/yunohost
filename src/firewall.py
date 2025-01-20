@@ -196,7 +196,7 @@ class YunoUPnP:
             self.find_gid()
         assert self.upnpc is not None
 
-        # FIXME : how should we handle port ranges ?
+        # FIXME: how should we handle port ranges ?
         if not isinstance(port, int):
             logger.warning("Can't use UPnP to open '%s'" % port)
             return False
