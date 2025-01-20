@@ -288,6 +288,7 @@ def dyndns_unsubscribe(operation_logger, domain, recovery_password=None):
     logger.success(m18n.n("dyndns_unsubscribed"))
 
 
+@is_unit_operation(flash=True)
 def dyndns_set_recovery_password(domain, recovery_password):
     keys = glob.glob(f"/etc/yunohost/dyndns/K{domain}.+*.key")
 

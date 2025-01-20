@@ -34,6 +34,7 @@ from moulinette.utils.filesystem import (
 )
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.log import is_unit_operation
 
 logger = getLogger("yunohost.diagnosis")
 
@@ -154,8 +155,9 @@ def _dump_human_readable_reports(reports):
     return output
 
 
+@is_unit_operation(sse_only=True)
 def diagnosis_run(
-    categories=[], force=False, except_if_never_ran_yet=False, email=False
+    operation_logger, categories=[], force=False, except_if_never_ran_yet=False, email=False
 ):
     if (email or except_if_never_ran_yet) and not os.path.exists(DIAGNOSIS_CACHE):
         return
@@ -172,6 +174,8 @@ def diagnosis_run(
             raise YunohostValidationError(
                 "diagnosis_unknown_categories", categories=", ".join(unknown_categories)
             )
+
+    operation_logger.start()
 
     issues = []
     # Call the hook ...
@@ -210,10 +214,12 @@ def diagnosis_run(
         logger.warning(m18n.n("diagnosis_display_tip"))
 
 
+@is_unit_operation(flash=True)
 def diagnosis_ignore(filter, list=False):
     return _diagnosis_ignore(add_filter=filter, list=list)
 
 
+@is_unit_operation(flash=True)
 def diagnosis_unignore(filter):
     return _diagnosis_ignore(remove_filter=filter)
 

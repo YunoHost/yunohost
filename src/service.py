@@ -37,6 +37,7 @@ from moulinette.utils.filesystem import (
 )
 from moulinette.utils.process import check_output
 
+from yunohost.log import is_unit_operation
 from yunohost.diagnosis import diagnosis_ignore, diagnosis_unignore
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
@@ -149,6 +150,7 @@ def service_remove(name):
     logger.success(m18n.n("service_removed", service=name))
 
 
+@is_unit_operation(flash=True)
 def service_start(names):
     """
     Start one or more services
@@ -173,6 +175,7 @@ def service_start(names):
             logger.debug(m18n.n("service_already_started", service=name))
 
 
+@is_unit_operation(flash=True)
 def service_stop(names):
     """
     Stop one or more services
@@ -287,6 +290,7 @@ def service_reload_or_restart(names, test_conf=True):
                 )
 
 
+@is_unit_operation(flash=True)
 def service_enable(names):
     """
     Enable one or more services
@@ -307,6 +311,7 @@ def service_enable(names):
             )
 
 
+@is_unit_operation(flash=True)
 def service_disable(names):
     """
     Disable one or more services

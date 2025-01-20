@@ -2556,6 +2556,7 @@ def backup_info(name, with_details=False, human_readable=False):
     return result
 
 
+@is_unit_operation(flash=True)
 def backup_delete(name):
     """
     Delete a backup

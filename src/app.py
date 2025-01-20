@@ -1815,6 +1815,7 @@ def app_ssowatconf():
     logger.debug(m18n.n("ssowat_conf_generated"))
 
 
+@is_unit_operation(flash=True)
 def app_change_label(app, new_label):
     from yunohost.permission import user_permission_update
 
@@ -3252,6 +3253,7 @@ def _assert_system_is_sane_for_app(manifest, when):
             raise YunohostError("this_action_broke_dpkg")
 
 
+@is_unit_operation(flash=True)
 def app_dismiss_notification(app, name):
     assert isinstance(name, str)
     name = name.lower()
