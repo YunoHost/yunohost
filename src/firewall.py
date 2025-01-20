@@ -320,8 +320,8 @@ def firewall_open(
         logger.warning(m18n.n("port_already_opened", port=port))
 
     will_reload = (
-        (firewall.need_reload and reload_if_changed) or
-        (not no_reload and not reload_if_changed)
+        (firewall.need_reload and reload_if_changed)
+        or (not no_reload and not reload_if_changed)
     )
     if will_reload:
         if firewall.apply():
@@ -353,8 +353,8 @@ def firewall_close(
         logger.warning(m18n.n("port_already_closed", port=port))
 
     will_reload = (
-        (firewall.need_reload and reload_if_changed) or
-        (not no_reload and not reload_if_changed)
+        (firewall.need_reload and reload_if_changed)
+        or (not no_reload and not reload_if_changed)
     )
     if will_reload:
         if firewall.apply():
@@ -416,8 +416,8 @@ def firewall_delete(
         logger.warning(m18n.n("port_already_closed", port=port))
 
     will_reload = (
-        (firewall.need_reload and reload_if_changed) or
-        (not no_reload and not reload_if_changed)
+        (firewall.need_reload and reload_if_changed)
+        or (not no_reload and not reload_if_changed)
     )
     if will_reload:
         if firewall.apply():
