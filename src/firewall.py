@@ -130,6 +130,9 @@ class YunoFirewall:
         self.write()
 
     def apply(self, upnp: bool = True) -> None:
+        # FIXME: Ensure SSH is allowed
+        self.open_port("tcp", _get_ssh_port(), "SSH port", upnp=True)
+
         # Just leverage regen_conf that will regen the nftables files, reload nftables
         regen_conf(["nftables"], force=True)
         self.need_reload = False
@@ -430,9 +433,6 @@ def firewall_reload(skip_upnp: bool = False) -> None:
     from yunohost.service import _run_service_command
 
     firewall = YunoFirewall()
-
-    # Check if SSH port is allowed
-    firewall.open_port("tcp", _get_ssh_port(), "SSH port", upnp=True)
     firewall.apply(upnp=not skip_upnp)
     _run_service_command("restart", "fail2ban")
 
