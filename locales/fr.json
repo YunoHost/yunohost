@@ -841,5 +841,7 @@
     "pydantic_value_error_url_host": "URL hôte invalide",
     "pydantic_value_error_url_port": "Port URL non valide, le port ne peut pas dépasser 65535",
     "pydantic_value_error_url_scheme": "Schéma d'URL non invalide ou manquant",
-    "unable_authenticate": "Échec de l'authentification de la session"
+    "unable_authenticate": "Échec de l'authentification de la session",
+    "group_cannot_remove_last_admin": "L'utilisateur '{user}' est le dernier utilisateur du groupe 'admins' et ne sera pas supprimé de celui-ci.",
+    "user_cannot_delete_last_admin": "L'utilisateur '{user}' est le dernier utilisateur du groupe 'admins' et ne sera pas supprimé."
 }
