@@ -164,7 +164,6 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
                 "formatter": "precise",
                 "filename": logfile,
             },
-
         },
         "loggers": {
             "yunohost": {
@@ -202,5 +201,6 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
             logging_configuration["root"]["handlers"].append("cli")
 
         from yunohost.utils.sse import start_log_broker
+
         start_log_broker()
         configure_logging(logging_configuration)

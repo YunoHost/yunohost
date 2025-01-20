@@ -50,14 +50,18 @@ class SSELogStreamingHandler(Handler):
         self.flash = flash
 
         from moulinette import Moulinette
+
         if Moulinette.interface.type == "api":
             from bottle import request
+
             self.ref_id = request.get_header("ref-id")
         else:
             from uuid import uuid4
+
             self.ref_id = str(uuid4())
 
         import zmq
+
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PUB)
         self.socket.connect(LOG_BROKER_BACKEND_ENDPOINT)
@@ -71,7 +75,9 @@ class SSELogStreamingHandler(Handler):
                 os.remove(old_stream_cache)
             # Start a new log stream cache, meant to be replayed for client opening
             # the SSE when an operation is already ongoing
-            self.log_stream_cache = open(OPERATIONS_PATH + f"/.{self.operation_id}.logstreamcache", "w")
+            self.log_stream_cache = open(
+                OPERATIONS_PATH + f"/.{self.operation_id}.logstreamcache", "w"
+            )
         else:
             self.log_stream_cache = None
 
@@ -81,38 +87,46 @@ class SSELogStreamingHandler(Handler):
 
     def emit(self, record):
 
-        self._encode_and_pub({
-            "type": "msg" if not self.flash else "toast",
-            "timestamp": record.created,
-            "level": record.levelname.lower(),
-            "msg": self.format(record),
-        })
+        self._encode_and_pub(
+            {
+                "type": "msg" if not self.flash else "toast",
+                "timestamp": record.created,
+                "level": record.levelname.lower(),
+                "msg": self.format(record),
+            }
+        )
 
     def emit_error_toast(self, error):
-        self._encode_and_pub({
-            "type": "toast",
-            "timestamp": time.time(),
-            "level": "error",
-            "msg": error,
-        })
+        self._encode_and_pub(
+            {
+                "type": "toast",
+                "timestamp": time.time(),
+                "level": "error",
+                "msg": error,
+            }
+        )
 
     def emit_operation_start(self, time, title, started_by):
 
-        self._encode_and_pub({
-            "type": "start",
-            "timestamp": time.timestamp(),
-            "title": title,
-            "started_by": started_by,
-        })
+        self._encode_and_pub(
+            {
+                "type": "start",
+                "timestamp": time.timestamp(),
+                "title": title,
+                "started_by": started_by,
+            }
+        )
 
     def emit_operation_end(self, time, success, errormsg):
 
-        self._encode_and_pub({
-            "type": "end",
-            "success": success,
-            "errormsg": errormsg,
-            "timestamp": time.timestamp(),
-        })
+        self._encode_and_pub(
+            {
+                "type": "end",
+                "success": success,
+                "errormsg": errormsg,
+                "timestamp": time.timestamp(),
+            }
+        )
 
     def _encode_and_pub(self, data):
 
@@ -130,7 +144,7 @@ class SSELogStreamingHandler(Handler):
                 # Not a huge deal if we can't write to the file for some reason...
                 pass
 
-        self.socket.send_multipart([b'', payload.encode()])
+        self.socket.send_multipart([b"", payload.encode()])
 
     def close(self, *args, **kwargs):
         super().close(*args, **kwargs)
@@ -151,17 +165,21 @@ def get_current_operation():
     try:
         process = psutil.Process(int(pid))
         process_open_files = process.open_files()
-        process_command_line = ' '.join(process.cmdline()[1:]).replace("/usr/bin/", "") or "???"
+        process_command_line = (
+            " ".join(process.cmdline()[1:]).replace("/usr/bin/", "") or "???"
+        )
     except Exception:
         return None, None, None
 
     active_logs = [
         p.path.split("/")[-1]
         for p in process_open_files
-        if p.mode == "w" and p.path.startswith("/var/log/yunohost/operations/") and p.path.endswith(".logstreamcache")
+        if p.mode == "w"
+        and p.path.startswith("/var/log/yunohost/operations/")
+        and p.path.endswith(".logstreamcache")
     ]
     if active_logs:
-        operation_id = sorted(active_logs)[0][:-len(".logstreamcache")].strip(".")
+        operation_id = sorted(active_logs)[0][: -len(".logstreamcache")].strip(".")
     else:
         operation_id = f"lock-{lock_ctime}"
 
@@ -176,17 +194,19 @@ def sse_stream():
 
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
-    sub.subscribe('')
+    sub.subscribe("")
     sub.connect(LOG_BROKER_FRONTEND_ENDPOINT)
 
     # Set client-side auto-reconnect timeout, ms.
-    yield 'retry: 100\n\n'
+    yield "retry: 100\n\n"
 
     # Check if there's any ongoing operation right now
     _, current_operation_id, _ = get_current_operation()
 
     # Log list metadata is cached so it shouldnt be a bit deal to ask for "details" (which loads the metadata yaml for every operation)
-    recent_operation_history = log_list(since_days_ago=2, limit=20, with_details=True)["operation"]
+    recent_operation_history = log_list(since_days_ago=2, limit=20, with_details=True)[
+        "operation"
+    ]
     for operation in reversed(recent_operation_history):
         if current_operation_id and operation["name"] == current_operation_id:
             continue
@@ -199,12 +219,14 @@ def sse_stream():
         }
         payload = json.dumps(data)
         yield "event: recent_history\n"
-        yield f'data: {payload}\n\n'
+        yield f"data: {payload}\n\n"
 
     if current_operation_id:
         log_stream_cache = None
         try:
-            log_stream_cache = open(f"{OPERATIONS_PATH}/.{current_operation_id}.logstreamcache")
+            log_stream_cache = open(
+                f"{OPERATIONS_PATH}/.{current_operation_id}.logstreamcache"
+            )
         except Exception:
             pass
         else:
@@ -212,7 +234,7 @@ def sse_stream():
             for payload in entries:
                 type, payload = payload.split(":", 1)
                 yield f"event: {type}\n"
-                yield f'data: {payload}\n\n'
+                yield f"data: {payload}\n\n"
         finally:
             if log_stream_cache:
                 log_stream_cache.close()
@@ -231,13 +253,13 @@ def sse_stream():
                 }
                 payload = json.dumps(data)
                 yield "event: heartbeat\n"
-                yield f'data: {payload}\n\n'
+                yield f"data: {payload}\n\n"
                 last_heartbeat = time.time()
             if sub.poll(10, zmq.POLLIN):
                 _, payload = sub.recv_multipart()
                 type, payload = payload.decode().split(":", 1)
-                yield f'event: {type}\n'
-                yield f'data: {payload}\n\n'
+                yield f"event: {type}\n"
+                yield f"data: {payload}\n\n"
     finally:
         sub.close()
         ctx.term()

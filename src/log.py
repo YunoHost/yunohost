@@ -95,7 +95,10 @@ def _update_log_cache_symlinks():
         name = log_md.split("/")[-1][: -len(".yml")]
         parent_symlink = os.path.join(OPERATIONS_PATH, f".{name}.parent.yml")
         success_symlink = os.path.join(OPERATIONS_PATH, f".{name}.success")
-        if os.path.islink(parent_symlink) and (os.path.islink(success_symlink) and os.path.getmtime(success_symlink) < os.path.getmtime(log_md)):
+        if os.path.islink(parent_symlink) and (
+            os.path.islink(success_symlink)
+            and os.path.getmtime(success_symlink) < os.path.getmtime(log_md)
+        ):
             continue
 
         try:
@@ -107,7 +110,9 @@ def _update_log_cache_symlinks():
             logger.error(m18n.n("log_corrupted_md_file", md_file=log_md, error=e))
             continue
 
-        if not os.path.islink(success_symlink) or os.path.getctime(success_symlink) > os.path.getctime(log_md):
+        if not os.path.islink(success_symlink) or os.path.getctime(
+            success_symlink
+        ) > os.path.getctime(log_md):
             success = metadata.get("success", "?")
             if success is True:
                 success_target = "/usr/bin/true"
@@ -129,7 +134,9 @@ def _update_log_cache_symlinks():
                 logger.warning(f"Failed to create symlink {parent_symlink} ? {e}")
 
 
-def log_list(limit=None, with_details=False, with_suboperations=False, since_days_ago=365):
+def log_list(
+    limit=None, with_details=False, with_suboperations=False, since_days_ago=365
+):
     """
     List available logs
 
@@ -195,7 +202,10 @@ def log_list(limit=None, with_details=False, with_suboperations=False, since_day
             pass
 
         if with_details or with_suboperations:
-            if name in log_list.cache and os.path.getmtime(md_path) == log_list.cache[name]["time"]:
+            if (
+                name in log_list.cache
+                and os.path.getmtime(md_path) == log_list.cache[name]["time"]
+            ):
                 metadata = log_list.cache[name]["metadata"]
             else:
                 try:
@@ -204,7 +214,9 @@ def log_list(limit=None, with_details=False, with_suboperations=False, since_day
                     )  # Making sure this is a dict and not  None..?
                 except Exception as e:
                     # If we can't read the yaml for some reason, report an error and ignore this entry...
-                    logger.error(m18n.n("log_corrupted_md_file", md_file=md_path, error=e))
+                    logger.error(
+                        m18n.n("log_corrupted_md_file", md_file=md_path, error=e)
+                    )
                     continue
                 else:
                     log_list.cache[name] = {
@@ -510,7 +522,9 @@ def is_unit_operation(
                         context[field] = value.name
                     except Exception:
                         context[field] = "IOBase"
-            operation_logger = OperationLogger(func.__name__, related_to, sse_only, flash, args=context)
+            operation_logger = OperationLogger(
+                func.__name__, related_to, sse_only, flash, args=context
+            )
 
             try:
                 # Start the actual function, and give the unit operation
@@ -581,7 +595,9 @@ class OperationLogger:
 
     _instances: List["OperationLogger"] = []
 
-    def __init__(self, operation, related_to=None, sse_only=False, flash=False, **kwargs):
+    def __init__(
+        self, operation, related_to=None, sse_only=False, flash=False, **kwargs
+    ):
         # TODO add a way to not save password on app installation
         self.operation = operation
         self.related_to = related_to
@@ -607,6 +623,7 @@ class OperationLogger:
             if Moulinette.interface.type == "api":
                 try:
                     from yunohost.authenticators.ldap_admin import Authenticator as Auth
+
                     auth = Auth().get_session_cookie()
                     self.started_by = auth["user"]
                 except Exception:
@@ -690,7 +707,11 @@ class OperationLogger:
             self.flush()
             self._register_log()
             if self.sse_handler is not None and not self.flash:
-                self.sse_handler.emit_operation_start(self.started_at, _get_description_from_name(self.name), self.started_by)
+                self.sse_handler.emit_operation_start(
+                    self.started_at,
+                    _get_description_from_name(self.name),
+                    self.started_by,
+                )
 
     @property
     def md_path(self):
@@ -724,6 +745,7 @@ class OperationLogger:
         # Only do this one for the main parent operation
         if not self.parent:
             from yunohost.utils.sse import SSELogStreamingHandler
+
             self.sse_handler = SSELogStreamingHandler(self.name, flash=self.flash)
             self.sse_handler.level = INFO if not self.flash else SUCCESS
             self.sse_handler.formatter = RedactingFormatter(
@@ -856,7 +878,9 @@ class OperationLogger:
 
         if self.sse_handler is not None:
             if not self.flash:
-                self.sse_handler.emit_operation_end(self.ended_at, self._success, self._error)
+                self.sse_handler.emit_operation_end(
+                    self.ended_at, self._success, self._error
+                )
             elif self._error:
                 self.sse_handler.emit_error_toast(self._error)
 

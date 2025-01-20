@@ -157,7 +157,11 @@ def _dump_human_readable_reports(reports):
 
 @is_unit_operation(sse_only=True)
 def diagnosis_run(
-    operation_logger, categories=[], force=False, except_if_never_ran_yet=False, email=False
+    operation_logger,
+    categories=[],
+    force=False,
+    except_if_never_ran_yet=False,
+    email=False,
 ):
     if (email or except_if_never_ran_yet) and not os.path.exists(DIAGNOSIS_CACHE):
         return
