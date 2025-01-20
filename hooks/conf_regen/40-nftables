@@ -22,36 +22,42 @@ set -e
 
 . /usr/share/yunohost/helpers
 
+
+PY_LIST_PORTS_OF="
+import os
+import yaml
+file = os.environ['FILE']
+proto = os.environ['PROTO']
+data = yaml.safe_load(open(file, 'r'))
+ports = [str(port) for port, info in data[proto].items() if info['open']]
+print(' '.join(ports))
+"
+
 do_pre_regen() {
     pending_dir=$1
 
-    cd /usr/share/yunohost/conf/fail2ban
+    firewall_file="/etc/yunohost/firewall.yml"
 
-    fail2ban_dir="${pending_dir}/etc/fail2ban"
-    mkdir -p "${fail2ban_dir}/filter.d"
-    mkdir -p "${fail2ban_dir}/jail.d"
-    mkdir -p "${pending_dir}/etc/systemd/system/fail2ban.service.d/"
+    tcp_ports=$(FILE=$firewall_file PROTO=tcp python3 -c "$PY_LIST_PORTS_OF")
+    udp_ports=$(FILE=$firewall_file PROTO=udp python3 -c "$PY_LIST_PORTS_OF")
+    export tcp_ports udp_ports
 
-    cp yunohost.conf "${fail2ban_dir}/filter.d/yunohost.conf"
-    cp yunohost-portal.conf "${fail2ban_dir}/filter.d/yunohost-portal.conf"
-    cp postfix-sasl.conf "${fail2ban_dir}/filter.d/postfix-sasl.conf"
-    cp jail.conf "${fail2ban_dir}/jail.conf"
-    cp systemd-override-bind-nftables.conf "${pending_dir}/etc/systemd/system/fail2ban.service.d/systemd-override-bind-nftables.conf"
-
-    export ssh_port="$(jq -r '.ssh_port' <<< "$YNH_SETTINGS")"
-    ynh_render_template "yunohost-jails.conf" "${fail2ban_dir}/jail.d/yunohost-jails.conf"
+    cd /usr/share/yunohost/conf/nftables
+    mkdir -p "${pending_dir}/etc/nftables.d"
+    cp nftables.conf "${pending_dir}/etc/nftables.conf"
+    ynh_render_template nftables.d/yunohost-firewall.tpl.conf "${pending_dir}/etc/nftables.d/yunohost-firewall.conf"
 }
 
 do_post_regen() {
     regen_conf_files=$1
 
-    if ls -l /etc/fail2ban/jail.d/*.conf; then
-        chown root:root /etc/fail2ban/jail.d/*.conf
-        chmod 644 /etc/fail2ban/jail.d/*.conf
+    if ls -l /etc/nftables.d/*.conf> /dev/null; then
+        chown root:root /etc/nftables.d/*.conf
+        chmod 644 /etc/nftables.d/*.conf
     fi
 
     [[ -z "$regen_conf_files" ]] \
-        || systemctl reload fail2ban
+        || systemctl restart nftables
 }
 
 do_$1_regen ${@:2}

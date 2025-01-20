@@ -154,7 +154,6 @@ def tools_postinstall(
     from yunohost.app_catalog import _update_apps_catalog
     from yunohost.domain import domain_add, domain_main_domain
     from yunohost.dyndns import _dyndns_available, dyndns_unsubscribe
-    from yunohost.firewall import firewall_upnp
     from yunohost.service import _run_service_command
     from yunohost.user import ADMIN_ALIASES, user_create
     from yunohost.utils.dns import is_yunohost_dyndns_domain
@@ -230,9 +229,9 @@ def tools_postinstall(
                 else:
                     raise YunohostValidationError("dyndns_unavailable", domain=domain)
 
-    if os.system("iptables -V >/dev/null 2>/dev/null") != 0:
+    if os.system("nft -V >/dev/null 2>/dev/null") != 0:
         raise YunohostValidationError(
-            "iptables/nftables does not seems to be working on your setup. You may be in a container or your kernel does have the proper modules loaded. Sometimes, rebooting the machine may solve the issue.",
+            "nftables does not seems to be working on your setup. You may be in a container or your kernel does have the proper modules loaded. Sometimes, rebooting the machine may solve the issue.",
             raw_msg=True,
         )
 
@@ -254,9 +253,6 @@ def tools_postinstall(
     if overwrite_root_password:
         tools_rootpw(password)
 
-    # Enable UPnP silently and reload firewall
-    firewall_upnp("enable", no_refresh=True)
-
     # Try to fetch the apps catalog ...
     # we don't fail miserably if this fails,
     # because that could be for example an offline installation...
@@ -271,8 +267,7 @@ def tools_postinstall(
     os.system("touch /etc/yunohost/installed")
 
     # Enable and start YunoHost firewall at boot time
-    _run_service_command("enable", "yunohost-firewall")
-    _run_service_command("start", "yunohost-firewall")
+    _run_service_command("enable", "nftables")
 
     tools_regen_conf(names=["ssh"], force=True)
 

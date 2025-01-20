@@ -275,17 +275,17 @@ def test_resource_ports_firewall():
 
     r(conf, "testapp").provision_or_update()
 
-    assert 12345 not in firewall_list()["opened_ports"]
+    assert 12345 not in firewall_list(protocol="tcp")["tcp"]
 
     conf = {"main": {"default": 12345, "exposed": "TCP"}}
 
     r(conf, "testapp").provision_or_update()
 
-    assert 12345 in firewall_list()["opened_ports"]
+    assert 12345 in firewall_list(protocol="tcp")["tcp"]
 
     r(conf, "testapp").deprovision()
 
-    assert 12345 not in firewall_list()["opened_ports"]
+    assert 12345 not in firewall_list(protocol="tcp")["tcp"]
 
 
 def test_resource_database():

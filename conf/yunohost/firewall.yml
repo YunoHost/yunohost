@@ -1,12 +1,45 @@
-uPnP:
-    enabled: false
-    TCP: [22, 25, 80, 443, 587, 993, 5222, 5269]
-    UDP: []
-    TCP_TO_CLOSE: []
-    UDP_TO_CLOSE: []
-ipv4:
-    TCP: [22, 25, 53, 80, 443, 587, 993, 5222, 5269]
-    UDP: [53, 5353]
-ipv6:
-    TCP: [22, 25, 53, 80, 443, 587, 993, 5222, 5269]
-    UDP: [53, 5353]
+router_forwarding_upnp: false
+
+tcp:
+    22:
+        open: true
+        upnp: true
+        comment: Default SSH port
+    25:
+        open: true
+        upnp: true
+        comment: SMTP email server (postfix)
+    80:
+        open: true
+        upnp: true
+        comment: HTTP server (nginx)
+    443:
+        open: true
+        upnp: true
+        comment: HTTPS server (nginx)
+    587:
+        open: true
+        upnp: true
+        comment: SMTP MSA email server (postfix)
+    993:
+        open: true
+        upnp: true
+        comment: IMAP email server (dovecot)
+
+udp:
+    53:
+        open: true
+        upnp: false
+        comment: DNS server (dnsmasq)
+    1900:
+        open: true
+        upnp: false
+        comment: UPnP services
+    5353:
+        open: true
+        upnp: false
+        comment: mDNS (yunomdns)
+    55354:
+        open: true
+        upnp: false
+        comment: YunoHost UPnP firewall configurator
