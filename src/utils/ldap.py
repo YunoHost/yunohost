@@ -340,8 +340,8 @@ class LDAPInterface:
         except Exception as e:
             raise MoulinetteError(
                 "error during LDAP update operation with: rdn='%s', "
-                "attr_dict=%s, new_rdn=%s and exception: %s"
-                % (rdn, attr_dict, new_rdn, e),
+                "attr_dict=%s, new_rdn=%s, ldif=%s and exception: %s"
+                % (rdn, attr_dict, new_rdn, ldif, e),
                 raw_msg=True,
             )
         else:
