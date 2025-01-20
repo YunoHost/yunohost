@@ -434,8 +434,6 @@ def firewall_reload(skip_upnp: bool = False) -> None:
 
     firewall = YunoFirewall()
     firewall.apply(upnp=not skip_upnp)
-    _run_service_command("restart", "fail2ban")
-
     # FIXME: how to get errors from regen_conf?
     errors = False
     if errors:
