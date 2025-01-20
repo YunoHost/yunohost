@@ -339,9 +339,12 @@ class LDAPInterface:
             self.con.modify_ext_s(dn, ldif)
         except Exception as e:
             raise MoulinetteError(
-                "error during LDAP update operation with: rdn='%s', "
-                "attr_dict=%s, new_rdn=%s, ldif=%s and exception: %s"
-                % (rdn, attr_dict, new_rdn, ldif, e),
+                "Error during LDAP update operation:\n"
+                f" rdn: {rdn}\n"
+                f" attr_dict: {attr_dict}\n"
+                f" new_rdn: {new_rdn}\n"
+                f" ldif: {ldif}\n"
+                f" exception: {e}",
                 raw_msg=True,
             )
         else:
