@@ -108,7 +108,7 @@ def find_expected_string_keys():
     # For all unit operations, expect to find "log_<name>"
     # A unit operation is created either using the @is_unit_operation decorator
     # or using OperationLogger(
-    cmd = f"grep -hr '@is_unit_operation' {ROOT}/src/ -A3 2>/dev/null | grep '^def' | sed -E 's@^def (\\w+)\\(.*@\\1@g'"
+    cmd = f"grep -hr '@is_unit_operation([^f]' {ROOT}/src/ -A3 2>/dev/null | grep '^def' | sed -E 's@^def (\\w+)\\(.*@\\1@g'"
     for funcname in (
         subprocess.check_output(cmd, shell=True).decode("utf-8").strip().split("\n")
     ):

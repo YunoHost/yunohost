@@ -891,24 +891,25 @@ class OperationLogger:
             self.logger.removeHandler(self.sse_handler)
             self.sse_handler.close()
 
-        is_api = Moulinette.interface.type == "api"
-        desc = _get_description_from_name(self.name)
-        if error is None:
-            if is_api:
-                msg = m18n.n("log_link_to_log", name=self.name, desc=desc)
+        if not self.flash:
+            is_api = Moulinette.interface.type == "api"
+            desc = _get_description_from_name(self.name)
+            if error is None:
+                if is_api:
+                    msg = m18n.n("log_link_to_log", name=self.name, desc=desc)
+                else:
+                    msg = m18n.n("log_help_to_get_log", name=self.name, desc=desc)
+                logger.debug(msg)
             else:
-                msg = m18n.n("log_help_to_get_log", name=self.name, desc=desc)
-            logger.debug(msg)
-        else:
-            if is_api:
-                msg = (
-                    "<strong>"
-                    + m18n.n("log_link_to_failed_log", name=self.name, desc=desc)
-                    + "</strong>"
-                )
-            else:
-                msg = m18n.n("log_help_to_get_failed_log", name=self.name, desc=desc)
-            logger.info(msg)
+                if is_api:
+                    msg = (
+                        "<strong>"
+                        + m18n.n("log_link_to_failed_log", name=self.name, desc=desc)
+                        + "</strong>"
+                    )
+                else:
+                    msg = m18n.n("log_help_to_get_failed_log", name=self.name, desc=desc)
+                logger.info(msg)
         self.flush()
         return msg
 
