@@ -908,7 +908,9 @@ class OperationLogger:
                         + "</strong>"
                     )
                 else:
-                    msg = m18n.n("log_help_to_get_failed_log", name=self.name, desc=desc)
+                    msg = m18n.n(
+                        "log_help_to_get_failed_log", name=self.name, desc=desc
+                    )
                 logger.info(msg)
         self.flush()
         return msg
