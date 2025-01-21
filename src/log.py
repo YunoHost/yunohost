@@ -912,6 +912,8 @@ class OperationLogger:
                         "log_help_to_get_failed_log", name=self.name, desc=desc
                     )
                 logger.info(msg)
+        else:
+            msg = None
         self.flush()
         return msg
 
