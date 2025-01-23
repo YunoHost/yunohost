@@ -232,7 +232,7 @@
     "log_backup_restore_app": "Restaurer '{}' depuis une sauvegarde",
     "log_remove_on_failed_install": "Enlever '{}' après une installation échouée",
     "log_domain_add": "Ajouter le domaine '{}'",
-    "log_domain_remove": "Enlever le domaine '{}'",
+    "log_domain_remove": "Supprimer le domaine '{}'",
     "log_dyndns_subscribe": "Souscrire au sous-domaine YunoHost '{}'",
     "log_dyndns_update": "Mettre à jour l'adresse IP associée à votre sous-domaine YunoHost '{}'",
     "log_letsencrypt_cert_install": "Installer le certificat Let's Encrypt sur le domaine '{}'",
