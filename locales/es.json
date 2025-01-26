@@ -806,5 +806,9 @@
     "migration_0027_system_not_fully_up_to_date": "Su sistema no esta totalmente actualizado. Por favor actualice de manera clásica antes de proceder a la migración hacia Bookworm.",
     "global_settings_setting_smtp_backup_mx_emails_whitelisted": "Respaldo SMTP de los correos en lista blanca del MX",
     "global_settings_setting_smtp_backup_mx_domains_help": "Autorizar este servidor a funcionar como un dominio MX secundarios de respaldo para los dominios listados. Significa que si el MX principal no esta disponible (pana), los correos electrónicos serán enviado a este servidor. Los conservara un máximo de 20 días y intentara reenviarlos hacia su destino una vez que estará nuevamente activo. Varios dominios pueden estar especificados separados por comas ','.",
-    "global_settings_setting_tls_passthrough_list": "Lista de las transferencias"
+    "global_settings_setting_tls_passthrough_list": "Lista de las transferencias",
+    "migration_0029_postgresql_13_not_installed": "PostgreSQL no fue installado en su sistema. Nada por hacer.",
+    "migration_0029_postgresql_15_not_installed": "PostgreSQL 13 esta installado, pero no PostgreSQL 15!? algo extraño paso en su sistema :(…",
+    "migration_0030_rebuild_python_venv_in_bookworm_disclaimer_base": "Después de la la migración a Debian Bookrworm, ciertas aplicaciones de Python deben estar parcialmente reconstruidas para estar convertidas hacia la nueva versión de Python entregada con Debian ( técnicamente : el virtuelenv debe reconstruirse). Esperando, estas aplicaciones Python pueden no funcionar. Yunohost puede intentar reconstruir virtualenv para algunas de ellas, como indicado abajo. Para otras aplicaciones, o si el intento fallo, deberán forzar la reconstrucción manualmente haciendo una actualización de estas.",
+    "migration_0029_not_enough_space": "Borra suficiente espacio en {path} para iniciar la migración."
 }
