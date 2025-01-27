@@ -308,7 +308,6 @@ class LDAPInterface:
         dn = f"{rdn},{BASEDN}"
         current_entry = self.search(rdn, attrs=None)
 
-
         # Previously, we used modifyModlist, which directly uses the lib system libldap
         # supplied with openldap. Unfortunately, the output of this command was not
         # optimal with attributes containing lists (complete deletion then complete

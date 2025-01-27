@@ -183,7 +183,7 @@ def portal_update(
     username, domain, current_user = _get_user_infos(
         ["givenName", "sn", "cn", "mail", "maildrop", "memberOf"]
     )
-    new_attr_dict = {}
+    new_attr_dict: dict[str, Any] = {}
 
     if fullname is not None and fullname != current_user["cn"]:
         fullname = fullname.strip()

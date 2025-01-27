@@ -441,7 +441,7 @@ def user_update(
     env_dict: dict[str, str] = {"YNH_USER_USERNAME": username}
 
     # Get modifications from arguments
-    new_attr_dict = {}
+    new_attr_dict: dict[str, Any] = {}
     if firstname:
         new_attr_dict["givenName"] = firstname  # TODO: Validate
         new_attr_dict["cn"] = new_attr_dict["displayName"] = (
@@ -551,7 +551,9 @@ def user_update(
             remove_mailforward = [remove_mailforward]
         new_attr_dict["maildrop"] = set(user["maildrop"]) - set(remove_mailforward)
 
-        if len(user["maildrop"]) - len(remove_mailforward) != len(new_attr_dict["maildrop"]):
+        if len(user["maildrop"]) - len(remove_mailforward) != len(
+            new_attr_dict["maildrop"]
+        ):
             raise YunohostValidationError("mail_forward_remove_failed", mail=mail)
 
     if "maildrop" in new_attr_dict:
@@ -1241,7 +1243,7 @@ def user_group_update(
         _ldap_path_extract(p, "uid") for p in group.get("member", [])
     ]
     new_group_members = copy.copy(current_group_members)
-    new_attr_dict: dict[str, list] = {}
+    new_attr_dict: dict[str, Any] = {}
 
     # Group permissions
     current_group_permissions = [
@@ -1345,7 +1347,10 @@ def user_group_update(
             new_attr_dict["objectClass"] = set(group["objectClass"])
             new_attr_dict["objectClass"].add("mailGroup")
         else:
-            new_attr_dict["objectClass"] = set(group["objectClass"]) - {"mailGroup", "mailAccount"}
+            new_attr_dict["objectClass"] = set(group["objectClass"]) - {
+                "mailGroup",
+                "mailAccount",
+            }
 
     if new_attr_dict:
         if not from_import:
