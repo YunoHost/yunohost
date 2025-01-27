@@ -1343,7 +1343,7 @@ def user_group_update(
 
         if new_attr_dict["mail"]:
             new_attr_dict["objectClass"] = set(group["objectClass"])
-            new_attr_dict["objectClass"].update({"mailGroup"})
+            new_attr_dict["objectClass"].add("mailGroup")
         else:
             new_attr_dict["objectClass"] = set(group["objectClass"]) - {"mailGroup", "mailAccount"}
 
