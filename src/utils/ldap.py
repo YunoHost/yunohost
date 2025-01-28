@@ -76,6 +76,7 @@ BASEDN = "dc=yunohost,dc=org"
 ROOTDN = "gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth"
 USERDN = "uid={username},ou=users,dc=yunohost,dc=org"
 
+
 def modifyModlist_finegrained(old_entry: dict, new_entry: dict) -> list:
     """
     Prepare an optimized modification list to give to ldap.modify_ext()
