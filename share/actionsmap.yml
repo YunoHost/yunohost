@@ -914,7 +914,7 @@ app:
                     action: store_true
                 -i:
                     full: --ignore-yunohost-version
-                    help: Attempt to install the app even if your YunoHost version is below the required one
+                    help: Attempt to upgrade the app even if your YunoHost version is below the required one
                     action: store_true
 
         ### app_change_url()
