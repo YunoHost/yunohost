@@ -669,7 +669,7 @@ def app_upgrade(
                         "confirm_app_insufficient_ram", params=values, force=force
                     )
                 elif name == "required_yunohost_version" and ignore_yunohost_version:
-                    logger.warning(m18n.n(err **values))
+                    logger.warning(m18n.n(err, **values))
                 else:
                     raise YunohostValidationError(err, **values)
 
