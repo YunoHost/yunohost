@@ -554,6 +554,7 @@ def app_upgrade(
     force=False,
     no_safety_backup=False,
     continue_on_failure=False,
+    ignore_yunohost_version=False,
 ):
     """
     Upgrade app
@@ -673,6 +674,8 @@ def app_upgrade(
                     _ask_confirmation(
                         "confirm_app_insufficient_ram", params=values, force=force
                     )
+                elif name == "required_yunohost_version" and ignore_yunohost_version:
+                    logger.warning(m18n.n(err, **values))
                 else:
                     raise YunohostValidationError(err, **values)
 
@@ -1045,6 +1048,7 @@ def app_install(
     args=None,
     no_remove_on_failure=False,
     force=False,
+    ignore_yunohost_version=False,
 ):
     """
     Install apps
@@ -1111,6 +1115,8 @@ def app_install(
                 _ask_confirmation(
                     "confirm_app_insufficient_ram", params=values, force=force
                 )
+            elif name == "required_yunohost_version" and ignore_yunohost_version:
+                logger.warning(m18n.n(err, **values))
             else:
                 raise YunohostValidationError(err, **values)
 
