@@ -1,9 +1,27 @@
-#!/usr/env/python3
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
-import sys
-import os
 import datetime
+import os
 import subprocess
+import sys
 
 tree = {
     "sources": {
@@ -65,9 +83,9 @@ def get_current_commit():
 
 def render(tree, helpers_version):
 
-    from jinja2 import Template
     from ansi2html import Ansi2HTMLConverter
     from ansi2html.style import get_styles
+    from jinja2 import Template
 
     conv = Ansi2HTMLConverter()
     shell_css = "\n".join(map(str, get_styles(conv.dark_bg)))
@@ -106,7 +124,7 @@ class Parser:
         current_block = {"name": None, "line": -1, "comments": [], "code": []}
 
         for i, line in enumerate(self.file):
-            if line.startswith("#!/bin/bash"):
+            if i == 0 and line.startswith("#!"):
                 continue
 
             line = line.rstrip().replace("\t", "    ")

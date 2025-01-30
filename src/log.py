@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+#
 # Copyright (c) 2024 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
@@ -15,30 +17,30 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+
 import copy
+import glob
 import os
 import re
-import yaml
-import glob
-import psutil
 import time
+from datetime import datetime, timedelta
+from logging import FileHandler, getLogger, Formatter, INFO
+from io import IOBase
 from typing import List
 
-from datetime import datetime, timedelta
-from logging import FileHandler, getLogger, Formatter
-from io import IOBase
-
-from moulinette import m18n, Moulinette
+import psutil
+import yaml
+from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
+from moulinette.utils.filesystem import read_file, read_yaml
+from moulinette.utils.log import SUCCESS
+
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import get_ynh_package_version
-from moulinette.utils.filesystem import read_file, read_yaml
 
 logger = getLogger("yunohost.log")
 
 OPERATIONS_PATH = "/var/log/yunohost/operations/"
-METADATA_FILE_EXT = ".yml"
-LOG_FILE_EXT = ".log"
 
 BORING_LOG_LINES = [
     r"set [+-]x$",
@@ -80,19 +82,23 @@ BORING_LOG_LINES = [
 ]
 
 
-def _update_log_parent_symlinks():
+def _update_log_cache_symlinks():
 
     one_year_ago = time.time() - 365 * 24 * 3600
 
-    logs = glob.iglob(OPERATIONS_PATH + "*" + METADATA_FILE_EXT)
+    logs = glob.iglob(OPERATIONS_PATH + "*.yml")
     for log_md in logs:
         if os.path.getctime(log_md) < one_year_ago:
             # Let's ignore files older than one year because hmpf reading a shitload of yml is not free
             continue
 
-        name = log_md.split("/")[-1][: -len(METADATA_FILE_EXT)]
+        name = log_md.split("/")[-1][: -len(".yml")]
         parent_symlink = os.path.join(OPERATIONS_PATH, f".{name}.parent.yml")
-        if os.path.islink(parent_symlink):
+        success_symlink = os.path.join(OPERATIONS_PATH, f".{name}.success")
+        if os.path.islink(parent_symlink) and (
+            os.path.islink(success_symlink)
+            and os.path.getmtime(success_symlink) < os.path.getmtime(log_md)
+        ):
             continue
 
         try:
@@ -104,15 +110,33 @@ def _update_log_parent_symlinks():
             logger.error(m18n.n("log_corrupted_md_file", md_file=log_md, error=e))
             continue
 
-        parent = metadata.get("parent")
-        parent = parent + METADATA_FILE_EXT if parent else "/dev/null"
-        try:
-            os.symlink(parent, parent_symlink)
-        except Exception as e:
-            logger.warning(f"Failed to create symlink {parent_symlink} ? {e}")
+        if not os.path.islink(success_symlink) or os.path.getctime(
+            success_symlink
+        ) > os.path.getctime(log_md):
+            success = metadata.get("success", "?")
+            if success is True:
+                success_target = "/usr/bin/true"
+            elif success is False:
+                success_target = "/usr/bin/false"
+            else:
+                success_target = "/dev/null"
+            try:
+                os.symlink(success_target, success_symlink)
+            except Exception as e:
+                logger.warning(f"Failed to create symlink {parent_symlink} ? {e}")
+
+        if not os.path.islink(parent_symlink):
+            parent = metadata.get("parent")
+            parent = parent + ".yml" if parent else "/dev/null"
+            try:
+                os.symlink(parent, parent_symlink)
+            except Exception as e:
+                logger.warning(f"Failed to create symlink {parent_symlink} ? {e}")
 
 
-def log_list(limit=None, with_details=False, with_suboperations=False):
+def log_list(
+    limit=None, with_details=False, with_suboperations=False, since_days_ago=365
+):
     """
     List available logs
 
@@ -128,20 +152,20 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
 
     operations = {}
 
-    _update_log_parent_symlinks()
+    _update_log_cache_symlinks()
 
-    one_year_ago = time.time() - 365 * 24 * 3600
+    since = time.time() - since_days_ago * 24 * 3600
     logs = [
         x.split("/")[-1]
-        for x in glob.iglob(OPERATIONS_PATH + "*" + METADATA_FILE_EXT)
-        if os.path.getctime(x) > one_year_ago
+        for x in glob.iglob(OPERATIONS_PATH + "*.yml")
+        if os.path.getctime(x) > since
     ]
     logs = list(reversed(sorted(logs)))
 
     if not with_suboperations:
 
         def parent_symlink_points_to_dev_null(log):
-            name = log[: -len(METADATA_FILE_EXT)]
+            name = log[: -len(".yml")]
             parent_symlink = os.path.join(OPERATIONS_PATH, f".{name}.parent.yml")
             return (
                 os.path.islink(parent_symlink)
@@ -154,7 +178,7 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
         logs = logs[:limit]
 
     for log in logs:
-        name = log[: -len(METADATA_FILE_EXT)]
+        name = log[: -len(".yml")]
         md_path = os.path.join(OPERATIONS_PATH, log)
 
         entry = {
@@ -163,23 +187,47 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
             "description": _get_description_from_name(name),
         }
 
+        success_symlink = os.path.join(OPERATIONS_PATH, f".{name}.success")
+        entry["success"] = "?"
+        if os.path.islink(success_symlink):
+            success_target = os.path.realpath(success_symlink)
+            if success_target == "/usr/bin/false":
+                entry["success"] = False
+            elif success_target == "/usr/bin/true":
+                entry["success"] = True
+
         try:
             entry["started_at"] = _get_datetime_from_name(name)
         except ValueError:
             pass
 
-        try:
-            metadata = (
-                read_yaml(md_path) or {}
-            )  # Making sure this is a dict and not  None..?
-        except Exception as e:
-            # If we can't read the yaml for some reason, report an error and ignore this entry...
-            logger.error(m18n.n("log_corrupted_md_file", md_file=md_path, error=e))
-            continue
+        if with_details or with_suboperations:
+            if (
+                name in log_list.cache
+                and os.path.getmtime(md_path) == log_list.cache[name]["time"]
+            ):
+                metadata = log_list.cache[name]["metadata"]
+            else:
+                try:
+                    metadata = (
+                        read_yaml(md_path) or {}
+                    )  # Making sure this is a dict and not  None..?
+                except Exception as e:
+                    # If we can't read the yaml for some reason, report an error and ignore this entry...
+                    logger.error(
+                        m18n.n("log_corrupted_md_file", md_file=md_path, error=e)
+                    )
+                    continue
+                else:
+                    log_list.cache[name] = {
+                        "time": os.path.getmtime(md_path),
+                        "metadata": metadata,
+                    }
 
         if with_details:
             entry["success"] = metadata.get("success", "?")
             entry["parent"] = metadata.get("parent")
+            entry["started_by"] = metadata.get("started_by")
 
         if with_suboperations:
             entry["parent"] = metadata.get("parent")
@@ -212,6 +260,9 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
         operations = list(reversed(operations))
 
     return {"operation": operations}
+
+
+log_list.cache = {}
 
 
 def log_show(
@@ -267,17 +318,17 @@ def log_show(
     if not path.startswith("/"):
         abs_path = os.path.join(OPERATIONS_PATH, path)
 
-    if os.path.exists(abs_path) and not path.endswith(METADATA_FILE_EXT):
+    if os.path.exists(abs_path) and not path.endswith(".yml"):
         log_path = abs_path
 
-    if abs_path.endswith(METADATA_FILE_EXT) or abs_path.endswith(LOG_FILE_EXT):
+    if abs_path.endswith(".yml") or abs_path.endswith(".log"):
         base_path = "".join(os.path.splitext(abs_path)[:-1])
     else:
         base_path = abs_path
     base_filename = os.path.basename(base_path)
-    md_path = base_path + METADATA_FILE_EXT
+    md_path = base_path + ".yml"
     if log_path is None:
-        log_path = base_path + LOG_FILE_EXT
+        log_path = base_path + ".log"
 
     if not os.path.exists(md_path) and not os.path.exists(log_path):
         raise YunohostValidationError("log_does_exists", log=path)
@@ -302,7 +353,7 @@ def log_show(
 
         url = yunopaste(content)
 
-        logger.info(m18n.n("log_available_on_yunopaste", url=url))
+        logger.success(m18n.n("log_available_on_yunopaste", url=url))
         if Moulinette.interface.type == "api":
             return {"url": url}
         else:
@@ -334,7 +385,7 @@ def log_show(
                         return
 
                     for filename in os.listdir(OPERATIONS_PATH):
-                        if not filename.endswith(METADATA_FILE_EXT):
+                        if not filename.endswith(".yml"):
                             continue
 
                         # We first retrict search to a ~48h time window to limit the number
@@ -356,11 +407,10 @@ def log_show(
                             continue
 
                         if submetadata and submetadata.get("parent") == base_filename:
+                            name = filename[: -len(".yml")]
                             yield {
-                                "name": filename[: -len(METADATA_FILE_EXT)],
-                                "description": _get_description_from_name(
-                                    filename[: -len(METADATA_FILE_EXT)]
-                                ),
+                                "name": name,
+                                "description": _get_description_from_name(name),
                                 "success": submetadata.get("success", "?"),
                             }
 
@@ -371,7 +421,7 @@ def log_show(
         from yunohost.service import _tail
 
         if number and filter_irrelevant:
-            logs = _tail(log_path, int(number * 4))
+            logs = _tail(log_path, int(number * 6))
         elif number:
             logs = _tail(log_path, int(number))
         else:
@@ -385,11 +435,7 @@ def log_show(
     return infos
 
 
-def log_share(path):
-    return log_show(path, share=True)
-
-
-from typing import TypeVar, Callable, Concatenate, ParamSpec
+from typing import Callable, Concatenate, ParamSpec, TypeVar
 
 # FuncT = TypeVar("FuncT", bound=Callable[..., Any])
 Param = ParamSpec("Param")
@@ -399,6 +445,8 @@ RetType = TypeVar("RetType")
 def is_unit_operation(
     entities=["app", "domain", "group", "service", "user"],
     exclude=["password"],
+    sse_only=False,
+    flash=False,
 ) -> Callable[
     [Callable[Concatenate["OperationLogger", Param], RetType]], Callable[Param, RetType]
 ]:
@@ -474,12 +522,15 @@ def is_unit_operation(
                         context[field] = value.name
                     except Exception:
                         context[field] = "IOBase"
-            operation_logger = OperationLogger(func.__name__, related_to, args=context)
+            operation_logger = OperationLogger(
+                func.__name__, related_to, sse_only, flash, args=context
+            )
 
             try:
                 # Start the actual function, and give the unit operation
                 # in argument to let the developper start the record itself
-                args = (operation_logger,) + args
+                if not flash:
+                    args = (operation_logger,) + args
                 result = func(*args, **kwargs)
             except Exception as e:
                 operation_logger.error(e)
@@ -539,12 +590,14 @@ class OperationLogger:
     Each time an action of the yunohost cli/api change the system, one or
     several unit operations should be registered.
 
-    This class record logs and metadata like context or start time/end time.
+    This class record logs and metadata like context or  time/end time.
     """
 
     _instances: List["OperationLogger"] = []
 
-    def __init__(self, operation, related_to=None, **kwargs):
+    def __init__(
+        self, operation, related_to=None, sse_only=False, flash=False, **kwargs
+    ):
         # TODO add a way to not save password on app installation
         self.operation = operation
         self.related_to = related_to
@@ -552,7 +605,11 @@ class OperationLogger:
         self.started_at = None
         self.ended_at = None
         self.logger = None
+        self.file_handler = None
+        self.sse_handler = None
         self._name = None
+        self.sse_only = sse_only
+        self.flash = flash
         self.data_to_redact = []
         self.parent = self.parent_logger()
         self._instances.append(self)
@@ -561,10 +618,30 @@ class OperationLogger:
             if os.path.exists(filename):
                 self.data_to_redact.append(read_file(filename).strip())
 
-        self.path = OPERATIONS_PATH
+        self.started_by = None
+        if not self.parent:
+            if Moulinette.interface.type == "api":
+                try:
+                    from yunohost.authenticators.ldap_admin import Authenticator as Auth
 
-        if not os.path.exists(self.path):
-            os.makedirs(self.path)
+                    auth = Auth().get_session_cookie()
+                    self.started_by = auth["user"]
+                except Exception:
+                    # During postinstall, we're not actually authenticated so eeeh what happens exactly?
+                    self.started_by = "root"
+            elif "SUDO_USER" in os.environ:
+                self.started_by = os.environ["SUDO_USER"]
+            elif not os.isatty(1):
+                self.started_by = "noninteractive"
+            else:
+                self.started_by = "root"
+
+        if not os.path.exists(OPERATIONS_PATH):
+            os.makedirs(OPERATIONS_PATH)
+
+        # Autostart the logger for flash operations ?
+        if self.flash:
+            self.start()
 
     def parent_logger(self):
         # If there are other operation logger instances
@@ -629,43 +706,66 @@ class OperationLogger:
             self.started_at = datetime.utcnow()
             self.flush()
             self._register_log()
+            if self.sse_handler is not None and not self.flash:
+                self.sse_handler.emit_operation_start(
+                    self.started_at,
+                    _get_description_from_name(self.name),
+                    self.started_by,
+                )
 
     @property
     def md_path(self):
         """
         Metadata path file
         """
-        return os.path.join(self.path, self.name + METADATA_FILE_EXT)
+        return f"{OPERATIONS_PATH}/{self.name}.yml"
 
     @property
     def log_path(self):
         """
         Log path file
         """
-        return os.path.join(self.path, self.name + LOG_FILE_EXT)
+        return f"{OPERATIONS_PATH}/{self.name}.log"
 
     def _register_log(self):
         """
         Register log with a handler connected on log system
         """
 
-        self.file_handler = FileHandler(self.log_path)
-        # We use a custom formatter that's able to redact all stuff in self.data_to_redact
-        # N.B. : the subtle thing here is that the class will remember a pointer to the list,
-        # so we can directly append stuff to self.data_to_redact and that'll be automatically
-        # propagated to the RedactingFormatter
-        self.file_handler.formatter = RedactingFormatter(
-            "%(asctime)s: %(levelname)s - %(message)s", self.data_to_redact
-        )
+        if not self.sse_only and not self.flash:
+            self.file_handler = FileHandler(self.log_path)
+            # We use a custom formatter that's able to redact all stuff in self.data_to_redact
+            # N.B. : the subtle thing here is that the class will remember a pointer to the list,
+            # so we can directly append stuff to self.data_to_redact and that'll be automatically
+            # propagated to the RedactingFormatter
+            self.file_handler.formatter = RedactingFormatter(
+                "%(asctime)s: %(levelname)s - %(message)s", self.data_to_redact
+            )
+
+        # Only do this one for the main parent operation
+        if not self.parent:
+            from yunohost.utils.sse import SSELogStreamingHandler
+
+            self.sse_handler = SSELogStreamingHandler(self.name, flash=self.flash)
+            self.sse_handler.level = INFO if not self.flash else SUCCESS
+            self.sse_handler.formatter = RedactingFormatter(
+                "%(message)s", self.data_to_redact
+            )
 
         # Listen to the root logger
         self.logger = getLogger("yunohost")
-        self.logger.addHandler(self.file_handler)
+        if self.file_handler is not None:
+            self.logger.addHandler(self.file_handler)
+
+        if self.sse_handler is not None:
+            self.logger.addHandler(self.sse_handler)
 
     def flush(self):
         """
         Write or rewrite the metadata file with all metadata known
         """
+        if self.sse_only or self.flash:
+            return
 
         metadata = copy.copy(self.metadata)
 
@@ -728,6 +828,8 @@ class OperationLogger:
             data["success"] = self._success
             if self.error is not None:
                 data["error"] = self._error
+        if self.started_by is not None:
+            data["started_by"] = self.started_by
         # TODO: detect if 'extra' erase some key of 'data'
         data.update(self.extra)
         # Remove the 'args' arg from args (yodawg). It corresponds to url-encoded args for app install, config panel set, etc
@@ -774,28 +876,44 @@ class OperationLogger:
         self._error = error
         self._success = error is None
 
-        if self.logger is not None:
+        if self.sse_handler is not None:
+            if not self.flash:
+                self.sse_handler.emit_operation_end(
+                    self.ended_at, self._success, self._error
+                )
+            elif self._error:
+                self.sse_handler.emit_error_toast(self._error)
+
+        if self.file_handler is not None:
             self.logger.removeHandler(self.file_handler)
             self.file_handler.close()
+        if self.sse_handler is not None:
+            self.logger.removeHandler(self.sse_handler)
+            self.sse_handler.close()
 
-        is_api = Moulinette.interface.type == "api"
-        desc = _get_description_from_name(self.name)
-        if error is None:
-            if is_api:
-                msg = m18n.n("log_link_to_log", name=self.name, desc=desc)
+        if not self.flash:
+            is_api = Moulinette.interface.type == "api"
+            desc = _get_description_from_name(self.name)
+            if error is None:
+                if is_api:
+                    msg = m18n.n("log_link_to_log", name=self.name, desc=desc)
+                else:
+                    msg = m18n.n("log_help_to_get_log", name=self.name, desc=desc)
+                logger.debug(msg)
             else:
-                msg = m18n.n("log_help_to_get_log", name=self.name, desc=desc)
-            logger.debug(msg)
+                if is_api:
+                    msg = (
+                        "<strong>"
+                        + m18n.n("log_link_to_failed_log", name=self.name, desc=desc)
+                        + "</strong>"
+                    )
+                else:
+                    msg = m18n.n(
+                        "log_help_to_get_failed_log", name=self.name, desc=desc
+                    )
+                logger.info(msg)
         else:
-            if is_api:
-                msg = (
-                    "<strong>"
-                    + m18n.n("log_link_to_failed_log", name=self.name, desc=desc)
-                    + "</strong>"
-                )
-            else:
-                msg = m18n.n("log_help_to_get_failed_log", name=self.name, desc=desc)
-            logger.info(msg)
+            msg = None
         self.flush()
         return msg
 
@@ -877,3 +995,8 @@ def _get_description_from_name(name):
         return m18n.n(key, *args)
     except IndexError:
         return name
+
+
+@is_unit_operation(flash=True)
+def log_share(path):
+    return log_show(path, share=True)

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,26 +17,26 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+
 import os
-import sys
 import shutil
 import subprocess
+import sys
+from datetime import datetime
 from glob import glob
 from logging import getLogger
-from datetime import datetime
 
 from moulinette import m18n
-from moulinette.utils.filesystem import read_file, chown, chmod
+from moulinette.utils.filesystem import chmod, chown, read_file
 from moulinette.utils.process import check_output
 
-from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
+from yunohost.diagnosis import Diagnoser
+from yunohost.log import OperationLogger
+from yunohost.regenconf import regen_conf
+from yunohost.service import _run_service_command
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.network import get_public_ip
-
-from yunohost.diagnosis import Diagnoser
-from yunohost.service import _run_service_command
-from yunohost.regenconf import regen_conf
-from yunohost.log import OperationLogger
+from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 
 logger = getLogger("yunohost.certmanager")
 
@@ -70,9 +71,9 @@ def certificate_status(domains, full=False):
     """
 
     from yunohost.domain import (
-        domain_list,
         _assert_domain_exists,
         _get_parent_domain_of,
+        domain_list,
     )
 
     # If no domains given, consider all yunohost domains
@@ -240,7 +241,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
 
 def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
-    from yunohost.domain import domain_list, _assert_domain_exists
+    from yunohost.domain import _assert_domain_exists, domain_list
 
     if not os.path.exists(ACCOUNT_KEY_FILE):
         _generate_account_key()
@@ -320,7 +321,7 @@ def certificate_renew(domains, force=False, no_checks=False, email=False):
         email      -- Emails root if some renewing failed
     """
 
-    from yunohost.domain import domain_list, _assert_domain_exists
+    from yunohost.domain import _assert_domain_exists, domain_list
 
     # If no domains given, consider all yunohost domains with Let's Encrypt
     # certificates
@@ -570,6 +571,7 @@ def _fetch_and_enable_new_certificate(domain, no_checks=False):
 
 def _prepare_certificate_signing_request(domain, key_file, output_folder):
     from OpenSSL import crypto  # lazy loading this module for performance reasons
+
     from yunohost.hook import hook_callback
 
     # Init a request
@@ -769,8 +771,8 @@ def _backup_current_cert(domain):
 
 
 def _check_domain_is_ready_for_ACME(domain):
-    from yunohost.domain import _get_parent_domain_of
     from yunohost.dns import _get_dns_zone_for_domain
+    from yunohost.domain import _get_parent_domain_of
     from yunohost.utils.dns import is_yunohost_dyndns_domain
 
     httpreachable = (

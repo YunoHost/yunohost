@@ -1,3 +1,23 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
 """
 Inspired by yunohost_completion.py (author: Christophe Vuillot)
 =======
@@ -6,14 +26,13 @@ This script generates man pages for yunohost.
 Pages are stored in OUTPUT_DIR
 """
 
-import os
-import yaml
-import gzip
 import argparse
-
-from datetime import date
+import gzip
+import os
 from collections import OrderedDict
+from datetime import date
 
+import yaml
 from jinja2 import Template
 
 base_path = os.path.split(os.path.realpath(__file__))[0]

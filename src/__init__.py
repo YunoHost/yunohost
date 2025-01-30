@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -23,8 +23,8 @@ import sys
 
 import moulinette
 from moulinette import m18n
-from moulinette.utils.log import configure_logging
 from moulinette.interfaces.cli import colorize, get_locale
+from moulinette.utils.log import configure_logging
 
 
 def is_installed():
@@ -140,6 +140,8 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
     if not os.path.isdir(logdir):
         os.makedirs(logdir, 0o750)
 
+    base_handlers = ["file"] + (["cli"] if interface == "cli" else [])
+
     logging_configuration = {
         "version": 1,
         "disable_existing_loggers": True,
@@ -157,14 +159,6 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
                 "class": "moulinette.interfaces.cli.TTYHandler",
                 "formatter": "tty-debug" if debug else "",
             },
-            "api": {
-                "level": "DEBUG" if debug else "INFO",
-                "class": "moulinette.interfaces.api.APIQueueHandler",
-            },
-            "portalapi": {
-                "level": "DEBUG" if debug else "INFO",
-                "class": "moulinette.interfaces.api.APIQueueHandler",
-            },
             "file": {
                 "class": "logging.FileHandler",
                 "formatter": "precise",
@@ -174,18 +168,18 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
         "loggers": {
             "yunohost": {
                 "level": "DEBUG",
-                "handlers": ["file", interface] if not quiet else ["file"],
+                "handlers": base_handlers if not quiet else ["file"],
                 "propagate": False,
             },
             "moulinette": {
                 "level": "DEBUG",
-                "handlers": ["file", interface] if not quiet else ["file"],
+                "handlers": base_handlers if not quiet else ["file"],
                 "propagate": False,
             },
         },
         "root": {
             "level": "DEBUG",
-            "handlers": ["file", interface] if debug else ["file"],
+            "handlers": base_handlers if debug else ["file"],
         },
     }
 
@@ -206,4 +200,7 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
             logging_configuration["loggers"]["moulinette"]["handlers"].append("cli")
             logging_configuration["root"]["handlers"].append("cli")
 
+        from yunohost.utils.sse import start_log_broker
+
+        start_log_broker()
         configure_logging(logging_configuration)

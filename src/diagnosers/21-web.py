@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,17 +17,18 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+
 import os
 import random
-import requests
 from typing import List
 
-from moulinette.utils.filesystem import read_file, mkdir, rm
+import requests
+from moulinette.utils.filesystem import mkdir, read_file, rm
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list
-from yunohost.utils.dns import is_special_use_tld
 from yunohost.settings import settings_get
+from yunohost.utils.dns import is_special_use_tld
 
 DIAGNOSIS_SERVER = "diagnosis.yunohost.org"
 

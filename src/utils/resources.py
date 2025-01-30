@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,24 +17,23 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-import os
+
 import copy
-import shutil
+import os
 import random
-import tempfile
+import shutil
 import subprocess
-from typing import Dict, Any, List, Union, Callable
+import tempfile
 from logging import getLogger
+from typing import Any, Callable, Dict, List, Union
 
 from moulinette import m18n
-from moulinette.utils.text import random_ascii
+from moulinette.utils.filesystem import chmod, chown, mkdir, rm, write_to_file
 from moulinette.utils.process import check_output
-from moulinette.utils.filesystem import mkdir, chown, chmod, write_to_file
-from moulinette.utils.filesystem import (
-    rm,
-)
-from yunohost.utils.system import system_arch, debian_version, debian_version_id
+from moulinette.utils.text import random_ascii
+
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.system import debian_version, debian_version_id, system_arch
 
 logger = getLogger("yunohost.utils.resources")
 
@@ -229,9 +229,7 @@ class AppResource:
         app_setting(self.app, key, delete=True)
 
     def check_output_bash_snippet(self, snippet, env={}):
-        from yunohost.app import (
-            _make_environment_for_app_script,
-        )
+        from yunohost.app import _make_environment_for_app_script
 
         env_ = _make_environment_for_app_script(
             self.app,
@@ -252,8 +250,8 @@ class AppResource:
 
     def _run_script(self, action, script, env={}):
         from yunohost.app import (
-            _make_tmp_workdir_for_app,
             _make_environment_for_app_script,
+            _make_tmp_workdir_for_app,
         )
         from yunohost.hook import hook_exec_with_script_debug_if_failure
 
@@ -576,7 +574,7 @@ class PermissionsResource(AppResource):
     ```
 
     ### Properties (for each perm name)
-    - `url`: The relative URI corresponding to this permission. Typically `/` or `/something`. This property may be omitted for non-web permissions.
+    - `url`: The relative URI corresponding to this permission. Typically `/` or `/something`. This property may be omitted for non-web permissions. Can also be a regex, prefixed by `re:` like `re:/api/[A-Z]*$`.
     - `show_tile`: (default: `true` if `url` is defined) Wether or not a tile should be displayed for that permission in the user portal
     - `allowed`: (default: nobody) The group initially allowed to access this perm, if `init_{perm}_permission` is not defined in the manifest questions. Note that the admin may tweak who is allowed/unallowed on that permission later on, this is only meant to **initialize** the permission.
     - `auth_header`: (default: `true`) Define for the URL of this permission, if SSOwat pass the authentication header to the application. Default is true
@@ -681,11 +679,11 @@ class PermissionsResource(AppResource):
     def provision_or_update(self, context: Dict = {}):
         from yunohost.permission import (
             permission_create,
-            permission_url,
             permission_delete,
+            permission_sync_to_user,
+            permission_url,
             user_permission_list,
             user_permission_update,
-            permission_sync_to_user,
         )
 
         # Delete legacy is_public setting if not already done
@@ -755,8 +753,8 @@ class PermissionsResource(AppResource):
     def deprovision(self, context: Dict = {}):
         from yunohost.permission import (
             permission_delete,
-            user_permission_list,
             permission_sync_to_user,
+            user_permission_list,
         )
 
         existing_perms = user_permission_list(short=True, apps=[self.app])[
@@ -1337,6 +1335,7 @@ class PortsResource(AppResource):
         "default": None,
         "exposed": False,  # or True(="Both"), "TCP", "UDP"
         "fixed": False,
+        "upnp": False,
     }
 
     ports: Dict[str, Dict[str, Any]]
@@ -1377,8 +1376,17 @@ class PortsResource(AppResource):
 
         return used_by_process or used_by_app or used_by_self_provisioning
 
+    def _exposed_to_protos(self, exposed: str | bool) -> list[str]:
+        if isinstance(exposed, bool):
+            return ["tcp"] if exposed else []
+        if exposed.lower() == "both":
+            return ["tcp", "udp"]
+        return [exposed.lower()]
+
     def provision_or_update(self, context: Dict = {}):
-        from yunohost.firewall import firewall_allow, firewall_disallow
+        from yunohost.firewall import YunoFirewall
+
+        firewall = YunoFirewall()
 
         for name, infos in self.ports.items():
             setting_name = f"port_{name}" if name != "main" else "port"
@@ -1408,24 +1416,32 @@ class PortsResource(AppResource):
             self.ports_used_by_self.append(port_value)
             self.set_setting(setting_name, port_value)
 
+            comment = f"{self.app} {name}"
             if infos["exposed"]:
-                firewall_allow(infos["exposed"], port_value, reload_only_if_change=True)
+                for proto in self._exposed_to_protos(infos["exposed"]):
+                    firewall.open_port(proto, port_value, comment, infos["upnp"])
             else:
-                firewall_disallow(
-                    infos["exposed"], port_value, reload_only_if_change=True
-                )
+                for proto in ["tcp", "udp"]:
+                    firewall.close_port(proto, port_value)
+
+        if firewall.need_reload:
+            firewall.apply()
 
     def deprovision(self, context: Dict = {}):
-        from yunohost.firewall import firewall_disallow
+        from yunohost.firewall import YunoFirewall
+
+        firewall = YunoFirewall()
 
         for name, infos in self.ports.items():
             setting_name = f"port_{name}" if name != "main" else "port"
             value = self.get_setting(setting_name)
             self.delete_setting(setting_name)
             if value and str(value).strip():
-                firewall_disallow(
-                    infos["exposed"], int(value), reload_only_if_change=True
-                )
+                for proto in self._exposed_to_protos(infos["exposed"]):
+                    firewall.delete_port(proto, value)
+
+        if firewall.need_reload:
+            firewall.apply()
 
 
 class DatabaseAppResource(AppResource):

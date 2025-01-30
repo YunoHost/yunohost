@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,28 +17,30 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-import os
-import re
-import pwd
-import grp
-import random
-import subprocess
+
 import copy
+import grp
+import os
+import pwd
+import random
+import re
+import subprocess
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, TextIO, Optional, Callable, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional, TextIO, Union, cast
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.process import check_output
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.service import service_status
 from yunohost.log import is_unit_operation
+from yunohost.service import service_status
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import binary_to_human
 
 if TYPE_CHECKING:
-    from yunohost.log import OperationLogger
     from bottle import HTTPResponse as HTTPResponseType
     from moulinette.utils.log import MoulinetteLogger
+
+    from yunohost.log import OperationLogger
 
     logger = cast(MoulinetteLogger, getLogger("yunohost.user"))
 else:
@@ -166,14 +169,14 @@ def user_create(
         " ".join(fullname.split()[1:]) or " "
     )  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
 
-    from yunohost.domain import domain_list, _get_maindomain, _assert_domain_exists
+    from yunohost.domain import _assert_domain_exists, _get_maindomain, domain_list
     from yunohost.hook import hook_callback
-    from yunohost.utils.password import (
-        assert_password_is_strong_enough,
-        assert_password_is_compatible,
-        _hash_user_password,
-    )
     from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.utils.password import (
+        _hash_user_password,
+        assert_password_is_compatible,
+        assert_password_is_strong_enough,
+    )
 
     # Ensure compatibility and sufficiently complex password
     assert_password_is_compatible(password)
@@ -321,26 +324,43 @@ def user_delete(
     username: str,
     purge: bool = False,
     from_import: bool = False,
+    force: bool = False,
 ):
+    from yunohost.authenticators.ldap_admin import Authenticator as AdminAuth
+    from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
-    from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
-    from yunohost.authenticators.ldap_admin import Authenticator as AdminAuth
+
+    groups = user_group_list()["groups"]
 
     if username not in user_list()["users"]:
         raise YunohostValidationError("user_unknown", user=username)
+    elif force and username in groups["admins"] and len(groups["admins"]) <= 1:
+        raise YunohostValidationError("user_cannot_delete_last_admin")
 
     if not from_import:
         operation_logger.start()
 
-    user_group_update("all_users", remove=username, force=True, sync_perm=False)
-    for group, infos in user_group_list()["groups"].items():
+    user_group_update(
+        "all_users",
+        remove=username,
+        force=True,
+        from_import=from_import,
+        sync_perm=False,
+    )
+    for group, infos in groups.items():
         if group == "all_users":
             continue
         # If the user is in this group (and it's not the primary group),
         # remove the member from the group
         if username != group and username in infos["members"]:
-            user_group_update(group, remove=username, sync_perm=False)
+            user_group_update(
+                group,
+                remove=username,
+                sync_perm=False,
+                from_import=from_import,
+                force=force,
+            )
 
     # Delete primary group if it exists (why wouldnt it exists ?  because some
     # epic bug happened somewhere else and only a partial removal was
@@ -395,15 +415,15 @@ def user_update(
         firstname = None
         lastname = None
 
-    from yunohost.domain import domain_list
     from yunohost.app import app_ssowatconf
-    from yunohost.utils.password import (
-        assert_password_is_strong_enough,
-        assert_password_is_compatible,
-        _hash_user_password,
-    )
-    from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.domain import domain_list
     from yunohost.hook import hook_callback
+    from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.utils.password import (
+        _hash_user_password,
+        assert_password_is_compatible,
+        assert_password_is_strong_enough,
+    )
 
     domains = domain_list()["domains"]
 
@@ -722,10 +742,12 @@ def user_import(
     """
 
     import csv  # CSV are needed only in this function
+
     from moulinette.utils.text import random_ascii
-    from yunohost.permission import permission_sync_to_user
+
     from yunohost.app import app_ssowatconf
     from yunohost.domain import domain_list
+    from yunohost.permission import permission_sync_to_user
 
     # Pre-validate data and prepare what should be done
     actions: dict[str, list[dict[str, Any]]] = {
@@ -862,8 +884,15 @@ def user_import(
     progress.old = ""  # type: ignore[attr-defined]
 
     def _on_failure(user, exception):
-        result["errors"] += 1
-        logger.error(user + ": " + str(exception))
+        if exception.key == "group_cannot_remove_last_admin":
+            logger.warning(
+                user
+                + ": "
+                + m18n.n("user_import_cannot_edit_or_delete_admins", user=user)
+            )
+        else:
+            result["errors"] += 1
+            logger.error(user + ": " + str(exception))
 
     def _import_update(new_infos, old_infos=False):
         remove_alias = None
@@ -932,22 +961,23 @@ def user_import(
     operation_logger.start()
     # We do delete and update before to avoid mail uniqueness issues
     for user in actions["deleted"]:
+        progress(f"Deleting {user}")
         try:
             user_delete(user["username"], purge=True, from_import=True)
             result["deleted"] += 1
         except YunohostError as e:
             _on_failure(user, e)
-        progress(f"Deleting {user}")
 
     for user in actions["updated"]:
+        progress(f"Updating {user['username']}")
         try:
             _import_update(user, users[user["username"]])
             result["updated"] += 1
         except YunohostError as e:
             _on_failure(user["username"], e)
-        progress(f"Updating {user['username']}")
 
     for user in actions["created"]:
+        progress(f"Creating {user['username']}")
         try:
             user_create(
                 user["username"],
@@ -961,7 +991,6 @@ def user_import(
             result["created"] += 1
         except YunohostError as e:
             _on_failure(user["username"], e)
-        progress(f"Creating {user['username']}")
 
     permission_sync_to_user()
     app_ssowatconf()
@@ -1166,15 +1195,16 @@ def user_group_update(
     sync_perm: bool = True,
     from_import: bool = False,
 ) -> None | dict[str, Any]:
+    from yunohost.hook import hook_callback
     from yunohost.permission import permission_sync_to_user
     from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
-    from yunohost.hook import hook_callback
 
     existing_users = list(user_list()["users"].keys())
 
     # Refuse to edit a primary group of a user (e.g. group 'sam' related to user 'sam')
     # Those kind of group should only ever contain the user (e.g. sam) and only this one.
     # We also can't edit "all_users" without the force option because that's a special group...
+    # Also prevent to remove the last admin
     if not force:
         if groupname == "all_users":
             raise YunohostValidationError("group_cannot_edit_all_users")
@@ -1184,6 +1214,14 @@ def user_group_update(
             raise YunohostValidationError(
                 "group_cannot_edit_primary_group", group=groupname
             )
+        elif groupname == "admins" and remove:
+            admins = user_group_info("admins")["members"]
+            if isinstance(remove, str):
+                remove = [remove]
+            if admins and not set(admins) - set(remove):
+                raise YunohostValidationError(
+                    "group_cannot_remove_last_admin", user=remove[0]
+                )
 
     ldap = _get_ldap_interface()
 

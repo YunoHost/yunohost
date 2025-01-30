@@ -1,30 +1,50 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
 import glob
 import os
-import pytest
 import shutil
+
+import pytest
 import requests
-
-from .conftest import message, raiseYunohostError, get_test_apps_dir
-
 from moulinette.utils.filesystem import mkdir
 
 from yunohost.app import (
+    _is_installed,
+    app_info,
     app_install,
+    app_manifest,
+    app_map,
     app_remove,
     app_ssowatconf,
-    _is_installed,
     app_upgrade,
-    app_map,
-    app_manifest,
-    app_info,
 )
-from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
-from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.domain import _get_maindomain, domain_add, domain_list, domain_remove
+from yunohost.permission import permission_delete, user_permission_list
 from yunohost.tests.test_permission import (
     check_LDAP_db_integrity,
     check_permission_for_apps,
 )
-from yunohost.permission import user_permission_list, permission_delete
+from yunohost.utils.error import YunohostError, YunohostValidationError
+
+from .conftest import get_test_apps_dir, message, raiseYunohostError
 
 
 def setup_function(function):

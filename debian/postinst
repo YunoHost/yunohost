@@ -1,4 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 set -e
 
@@ -31,7 +49,11 @@ do_configure() {
         yunohost tools migrations run --auto
 
         echo "Re-diagnosing server health..."
-        [[ -n "${YNH_SKIP_DIAGNOSIS_DURING_UPGRADE:-}" ]] && echo "(Skipping)" || yunohost diagnosis run --force
+        if [[ -n "${YNH_SKIP_DIAGNOSIS_DURING_UPGRADE:-}" ]]; then
+            echo "(Skipping)"
+        else
+            yunohost diagnosis run --force
+        fi
 
         echo "Refreshing app catalog..."
         yunohost tools update apps --output-as none || true

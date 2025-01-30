@@ -1,40 +1,61 @@
-import socket
-import requests
-import pytest
-import string
-import os
-import json
-import shutil
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
-from .conftest import message, raiseYunohostError, get_test_apps_dir
+import json
+import os
+import shutil
+import socket
+import string
+
+import pytest
+import requests
 
 from yunohost.app import (
-    app_install,
-    app_upgrade,
-    app_remove,
-    app_change_url,
-    app_map,
-    _installed_apps,
     APPS_SETTING_PATH,
-    _set_app_settings,
     _get_app_settings,
+    _installed_apps,
+    _set_app_settings,
+    app_change_url,
+    app_install,
+    app_map,
+    app_remove,
+    app_upgrade,
 )
-from yunohost.user import (
-    user_list,
-    user_create,
-    user_delete,
-    user_group_list,
-    user_group_delete,
-)
+from yunohost.domain import _get_maindomain, domain_add, domain_list, domain_remove
 from yunohost.permission import (
-    user_permission_update,
-    user_permission_list,
-    user_permission_reset,
     permission_create,
     permission_delete,
     permission_url,
+    user_permission_list,
+    user_permission_reset,
+    user_permission_update,
 )
-from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
+from yunohost.user import (
+    user_create,
+    user_delete,
+    user_group_delete,
+    user_group_list,
+    user_list,
+)
+
+from .conftest import get_test_apps_dir, message, raiseYunohostError
 
 # Get main domain
 maindomain = ""
@@ -106,7 +127,7 @@ def _clear_dummy_app_settings():
 
 def clean_user_groups_permission():
     for u in user_list()["users"]:
-        user_delete(u)
+        user_delete(u, force=True)
 
     for g in user_group_list()["groups"]:
         if g not in ["all_users", "visitors", "admins"]:

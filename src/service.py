@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,26 +17,29 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-import re
-import os
-import time
-import yaml
-import subprocess
-from logging import getLogger
-from glob import glob
-from datetime import datetime
 
+import os
+import re
+import subprocess
+import time
+from datetime import datetime
+from glob import glob
+from logging import getLogger
+
+import yaml
 from moulinette import m18n
-from yunohost.diagnosis import diagnosis_ignore, diagnosis_unignore
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import (
-    read_file,
     append_to_file,
-    write_to_file,
+    read_file,
     read_yaml,
+    write_to_file,
     write_to_yaml,
 )
+from moulinette.utils.process import check_output
+
+from yunohost.log import is_unit_operation
+from yunohost.diagnosis import diagnosis_ignore, diagnosis_unignore
+from yunohost.utils.error import YunohostError, YunohostValidationError
 
 MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 
@@ -146,6 +150,7 @@ def service_remove(name):
     logger.success(m18n.n("service_removed", service=name))
 
 
+@is_unit_operation(flash=True)
 def service_start(names):
     """
     Start one or more services
@@ -170,6 +175,7 @@ def service_start(names):
             logger.debug(m18n.n("service_already_started", service=name))
 
 
+@is_unit_operation(flash=True)
 def service_stop(names):
     """
     Stop one or more services
@@ -284,6 +290,7 @@ def service_reload_or_restart(names, test_conf=True):
                 )
 
 
+@is_unit_operation(flash=True)
 def service_enable(names):
     """
     Enable one or more services
@@ -304,6 +311,7 @@ def service_enable(names):
             )
 
 
+@is_unit_operation(flash=True)
 def service_disable(names):
     """
     Disable one or more services
@@ -460,8 +468,8 @@ def _get_and_format_service_status(service, infos):
         raw_service.get("Type", "").lower() == "oneshot"
         and output["status"] == "exited"
     ):
-        # These are services like yunohost-firewall, hotspot, vpnclient,
-        # ... they will be "exited" why doesn't provide any info about
+        # These are services like hotspot, vpnclient...
+        # they will be "exited" why doesn't provide any info about
         # the real state of the service (unless they did provide a
         # test_status, c.f. previous condition)
         output["status"] = "unknown"

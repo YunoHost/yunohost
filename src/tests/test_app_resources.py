@@ -1,17 +1,37 @@
-import os
-import pytest
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
+import os
+
+import pytest
 from moulinette.utils.process import check_output
 
 from yunohost.app import app_setting
 from yunohost.domain import _get_maindomain
+from yunohost.firewall import firewall_list
+from yunohost.permission import permission_delete, user_permission_list
 from yunohost.utils.resources import (
     AppResource,
-    AppResourceManager,
     AppResourceClassesByType,
+    AppResourceManager,
 )
-from yunohost.permission import user_permission_list, permission_delete
-from yunohost.firewall import firewall_list
 
 dummyfile = "/tmp/dummyappresource-testapp"
 
@@ -255,17 +275,17 @@ def test_resource_ports_firewall():
 
     r(conf, "testapp").provision_or_update()
 
-    assert 12345 not in firewall_list()["opened_ports"]
+    assert 12345 not in firewall_list(protocol="tcp")["tcp"]
 
     conf = {"main": {"default": 12345, "exposed": "TCP"}}
 
     r(conf, "testapp").provision_or_update()
 
-    assert 12345 in firewall_list()["opened_ports"]
+    assert 12345 in firewall_list(protocol="tcp")["tcp"]
 
     r(conf, "testapp").deprovision()
 
-    assert 12345 not in firewall_list()["opened_ports"]
+    assert 12345 not in firewall_list(protocol="tcp")["tcp"]
 
 
 def test_resource_database():

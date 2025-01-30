@@ -1,4 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 set -e
 
@@ -12,11 +30,13 @@ do_pre_regen() {
     fail2ban_dir="${pending_dir}/etc/fail2ban"
     mkdir -p "${fail2ban_dir}/filter.d"
     mkdir -p "${fail2ban_dir}/jail.d"
+    mkdir -p "${pending_dir}/etc/systemd/system/fail2ban.service.d/"
 
     cp yunohost.conf "${fail2ban_dir}/filter.d/yunohost.conf"
     cp yunohost-portal.conf "${fail2ban_dir}/filter.d/yunohost-portal.conf"
     cp postfix-sasl.conf "${fail2ban_dir}/filter.d/postfix-sasl.conf"
     cp jail.conf "${fail2ban_dir}/jail.conf"
+    cp systemd-override-bind-nftables.conf "${pending_dir}/etc/systemd/system/fail2ban.service.d/systemd-override-bind-nftables.conf"
 
     export ssh_port="$(jq -r '.ssh_port' <<< "$YNH_SETTINGS")"
     ynh_render_template "yunohost-jails.conf" "${fail2ban_dir}/jail.d/yunohost-jails.conf"

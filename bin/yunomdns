@@ -1,17 +1,35 @@
 #!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 """
 Pythonic declaration of mDNS .local domains for YunoHost
 """
 
 import sys
-import yaml
+from ipaddress import ip_address
 from time import sleep
-from typing import List, Dict
+from typing import Dict, List
 
 import ifaddr
-from ipaddress import ip_address
-from zeroconf import Zeroconf, ServiceInfo, ServiceBrowser
+import yaml
+from zeroconf import ServiceBrowser, ServiceInfo, Zeroconf
 
 
 def get_network_local_interfaces() -> Dict[str, Dict[str, List[str]]]:
@@ -45,17 +63,17 @@ def get_network_local_interfaces() -> Dict[str, Dict[str, List[str]]]:
 # Listener class, to detect duplicates on the network
 # Stores the list of servers in its list property
 class Listener:
-    def __init__(self):
+    def __init__(self) -> None:
         self.list = []
 
-    def remove_service(self, zeroconf, type, name):
+    def remove_service(self, zeroconf: Zeroconf, type: str, name: str) -> None:
         info = zeroconf.get_service_info(type, name)
         self.list.remove(info.server)
 
-    def update_service(self, zeroconf, type, name):
+    def update_service(self, zeroconf: Zeroconf, type: str, name: str) -> None:
         pass
 
-    def add_service(self, zeroconf, type, name):
+    def add_service(self, zeroconf: Zeroconf, type: str, name: str) -> None:
         info = zeroconf.get_service_info(type, name)
         self.list.append(info.server[:-1])
 

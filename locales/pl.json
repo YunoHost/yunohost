@@ -288,7 +288,7 @@
     "diagnosis_found_errors": "Znaleziono istotne problemy związane z kategorią: {errors}!",
     "diagnosis_dns_missing_record": "Zgodnie z zalecaną konfiguracją DNS powinieneś dodać rekord DNS z następującymi informacjami.<br>Typ: <code>{type}</code><br>Nazwa: <code>{name}</code><br >Wartość: <code>{value}</code>",
     "diagnosis_display_tip": "Aby zobaczyć znalezione problemy, możesz przejść do sekcji Diagnostyka w webadmin lub uruchomić z wiersza poleceń polecenie „yunohost diagnoza show --issues --human-readable”.",
-    "diagnosis_dns_point_to_doc": "eśli potrzebujesz pomocy w konfiguracji rekordów DNS, sprawdź dokumentację pod adresem <a href='https://yunohost.org/dns_config'>https://yunohost.org/dns_config</a>.",
+    "diagnosis_dns_point_to_doc": "Jeśli potrzebujesz pomocy w konfiguracji rekordów DNS, sprawdź dokumentację pod adresem <a href='https://yunohost.org/dns_config'>https://yunohost.org/dns_config</a>.",
     "diagnosis_failed": "Nie udało się pobrać wyniku diagnostyki dla kategorii „{category}”: {error}",
     "diagnosis_dns_bad_conf": "Brakuje niektórych rekordów DNS lub są one nieprawidłowe dla domeny {domain} (category {category})",
     "diagnosis_dns_discrepancy": "Wydaje się, że następujący rekord DNS nie jest zgodny z zalecaną konfiguracją:<br>Typ: <code>{type}</code><br>Nazwa: <code>{name}</code><br>Aktualna wartość: < code>{current}</code><br>Oczekiwana wartość: <code>{value}</code>",

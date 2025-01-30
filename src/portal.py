@@ -1,39 +1,38 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
-""" License
-
-    Copyright (C) 2021 YUNOHOST.ORG
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
 import logging
 from pathlib import Path
 from typing import Any, Union
 
 import ldap
 from moulinette.utils.filesystem import read_json
-from yunohost.authenticators.ldap_ynhuser import (
-    Authenticator as Auth,
-    user_is_allowed_on_domain,
-)
+
+from yunohost.authenticators.ldap_ynhuser import Authenticator as Auth
+from yunohost.authenticators.ldap_ynhuser import user_is_allowed_on_domain
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract, LDAPInterface
+from yunohost.utils.ldap import LDAPInterface, _get_ldap_interface, _ldap_path_extract
 from yunohost.utils.password import (
+    _hash_user_password,
     assert_password_is_compatible,
     assert_password_is_strong_enough,
-    _hash_user_password,
 )
 
 logger = logging.getLogger("portal")

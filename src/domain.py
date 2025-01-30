@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,35 +17,35 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+
 import os
 import time
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Optional, Union
 from collections import OrderedDict
 from logging import getLogger
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 
-from moulinette import m18n, Moulinette
+from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.filesystem import (
+    read_file,
     read_json,
     read_yaml,
     rm,
-    read_file,
     write_to_file,
     write_to_json,
     write_to_yaml,
 )
 
-from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
-from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation
+from yunohost.regenconf import _force_clear_hashes, _process_regen_conf, regen_conf
+from yunohost.utils.error import YunohostError, YunohostValidationError
 
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
-    from yunohost.utils.configpanel import RawConfig
-    from yunohost.utils.form import FormModel, ConfigPanelModel
-    from yunohost.utils.configpanel import RawSettings
+    from yunohost.utils.configpanel import RawConfig, RawSettings
+    from yunohost.utils.form import ConfigPanelModel, FormModel
 
 logger = getLogger("yunohost.domain")
 
@@ -184,9 +185,9 @@ def domain_info(domain):
         domain     -- Domain to be checked
     """
 
-    from yunohost.app import app_info, _installed_apps, _get_app_settings
-    from yunohost.dns import _get_registar_settings
+    from yunohost.app import _get_app_settings, _installed_apps, app_info
     from yunohost.certificate import certificate_status
+    from yunohost.dns import _get_registar_settings
 
     _assert_domain_exists(domain)
 
@@ -262,16 +263,16 @@ def domain_add(
         ignore_dyndns -- If we want to just add the DynDNS domain to the list, without subscribing
         install_letsencrypt_cert -- If adding a subdomain of an already added domain, try to install a Let's Encrypt certificate
     """
-    from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
-    from yunohost.utils.ldap import _get_ldap_interface
-    from yunohost.utils.password import assert_password_is_strong_enough
     from yunohost.certificate import (
         _certificate_install_letsencrypt,
         _certificate_install_selfsigned,
         certificate_status,
     )
+    from yunohost.hook import hook_callback
     from yunohost.utils.dns import is_yunohost_dyndns_domain
+    from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.utils.password import assert_password_is_strong_enough
 
     if dyndns_recovery_password:
         operation_logger.data_to_redact.append(dyndns_recovery_password)
@@ -306,6 +307,7 @@ def domain_add(
 
         if not skip_tos and Moulinette.interface.type == "cli" and os.isatty(1):
             Moulinette.display(m18n.n("tos_dyndns_acknowledgement"), style="warning")
+            # i18n: confirm_tos_acknowledgement
             _ask_confirmation("confirm_tos_acknowledgement", kind="soft")
 
         if dyndns_recovery_password:
@@ -416,16 +418,17 @@ def domain_remove(
         ignore_dyndns -- If we just remove the DynDNS domain, without unsubscribing
     """
     import glob
-    from yunohost.hook import hook_callback
+
     from yunohost.app import (
-        app_ssowatconf,
-        app_info,
-        app_remove,
         _get_app_settings,
         _installed_apps,
+        app_info,
+        app_remove,
+        app_ssowatconf,
     )
-    from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.hook import hook_callback
     from yunohost.utils.dns import is_yunohost_dyndns_domain
+    from yunohost.utils.ldap import _get_ldap_interface
 
     if dyndns_recovery_password:
         operation_logger.data_to_redact.append(dyndns_recovery_password)
@@ -636,11 +639,11 @@ def domain_main_domain(operation_logger, new_main_domain=None):
     if os.path.exists("/etc/yunohost/installed"):
         regen_conf()
 
-    from yunohost.user import _update_admins_group_aliases
+        from yunohost.user import _update_admins_group_aliases
 
-    _update_admins_group_aliases(
-        old_main_domain=old_main_domain, new_main_domain=new_main_domain
-    )
+        _update_admins_group_aliases(
+            old_main_domain=old_main_domain, new_main_domain=new_main_domain
+        )
 
     logger.success(m18n.n("main_domain_changed"))
 
@@ -711,8 +714,8 @@ def domain_config_set(
 
 
 def _get_DomainConfigPanel():
-    from yunohost.utils.configpanel import ConfigPanel
     from yunohost.dns import _set_managed_dns_records_hashes
+    from yunohost.utils.configpanel import ConfigPanel
 
     class DomainConfigPanel(ConfigPanel):
         entity_type = "domain"

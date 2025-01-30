@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,66 +17,67 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+
+import csv
+import json
 import os
 import re
-import json
-import time
-import tarfile
 import shutil
 import subprocess
-import csv
+import tarfile
 import tempfile
-from datetime import datetime
-from glob import glob
+import time
 from collections import OrderedDict
+from datetime import datetime
 from functools import reduce
-from packaging import version
+from glob import glob
 from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.text import random_ascii
 from moulinette.utils.filesystem import (
-    read_file,
+    chmod,
+    chown,
     mkdir,
-    write_to_yaml,
+    read_file,
     read_yaml,
     rm,
-    chown,
-    chmod,
+    write_to_yaml,
 )
 from moulinette.utils.process import check_output
+from moulinette.utils.text import random_ascii
+from packaging import version
 
 import yunohost.domain
 from yunohost.app import (
-    app_info,
+    _get_manifest_of_app,
     _is_installed,
     _make_environment_for_app_script,
     _make_tmp_workdir_for_app,
-    _get_manifest_of_app,
+    app_info,
     app_remove,
 )
 from yunohost.hook import (
-    hook_list,
-    hook_remove,
+    CUSTOM_HOOK_FOLDER,
     hook_add,
-    hook_info,
     hook_callback,
     hook_exec,
     hook_exec_with_script_debug_if_failure,
-    CUSTOM_HOOK_FOLDER,
+    hook_info,
+    hook_list,
+    hook_remove,
 )
+from yunohost.log import OperationLogger, is_unit_operation
+from yunohost.regenconf import regen_conf
 from yunohost.tools import (
-    tools_postinstall,
     _tools_migrations_run_after_system_restore,
     _tools_migrations_run_before_app_restore,
+    tools_postinstall,
 )
-from yunohost.regenconf import regen_conf
-from yunohost.log import OperationLogger, is_unit_operation
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import (
+    binary_to_human,
     free_space_in_directory,
     get_ynh_package_version,
-    binary_to_human,
     space_used_by_directory,
 )
 
@@ -1222,8 +1224,8 @@ class RestoreManager:
         from yunohost.permission import (
             permission_create,
             permission_delete,
-            user_permission_list,
             permission_sync_to_user,
+            user_permission_list,
         )
 
         # Backup old permission for apps
@@ -1345,14 +1347,9 @@ class RestoreManager:
         app_instance_name -- (string) The app name to restore (no app with this
                              name should be already install)
         """
-        from yunohost.utils.legacy import (
-            _patch_legacy_helpers,
-        )
+        from yunohost.permission import permission_create, permission_sync_to_user
         from yunohost.user import user_group_list
-        from yunohost.permission import (
-            permission_create,
-            permission_sync_to_user,
-        )
+        from yunohost.utils.legacy import _patch_legacy_helpers
 
         def copytree(src, dst, symlinks=False, ignore=None):
             for item in os.listdir(src):
@@ -1828,7 +1825,7 @@ class BackupMethod:
                         size=str(size),
                     )
                 )
-            except NotImplemented:
+            except NotImplementedError:
                 raise YunohostError("backup_unable_to_organize_files")
             else:
                 if i != "y" and i != "Y":
@@ -1884,7 +1881,7 @@ class CopyBackupMethod(BackupMethod):
         if not os.path.isdir(self.repo):
             raise YunohostError("backup_no_uncompress_archive_dir")
 
-        mkdir(self.work_dir, parent=True)
+        mkdir(self.work_dir, parents=True)
         ret = subprocess.call(["mount", "-r", "--rbind", self.repo, self.work_dir])
         if ret == 0:
             return
@@ -2326,7 +2323,7 @@ def backup_restore(name, system=[], apps=[], force=False):
                 i = Moulinette.prompt(
                     m18n.n("restore_confirm_yunohost_installed", answers="y/N")
                 )
-            except NotImplemented:
+            except NotImplementedError:
                 pass
             else:
                 if i == "y" or i == "Y":
@@ -2559,6 +2556,7 @@ def backup_info(name, with_details=False, human_readable=False):
     return result
 
 
+@is_unit_operation(flash=True)
 def backup_delete(name):
     """
     Delete a backup

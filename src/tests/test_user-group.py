@@ -1,23 +1,44 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
 import pytest
 
-from .conftest import message, raiseYunohostError
-
-from yunohost.user import (
-    user_list,
-    user_info,
-    user_create,
-    user_delete,
-    user_update,
-    user_import,
-    user_export,
-    FIELDS_FOR_IMPORT,
-    user_group_list,
-    user_group_create,
-    user_group_delete,
-    user_group_update,
-)
 from yunohost.domain import _get_maindomain
 from yunohost.tests.test_permission import check_LDAP_db_integrity
+from yunohost.user import (
+    FIELDS_FOR_IMPORT,
+    user_create,
+    user_delete,
+    user_export,
+    user_group_create,
+    user_group_delete,
+    user_group_list,
+    user_group_info,
+    user_group_update,
+    user_import,
+    user_info,
+    user_list,
+    user_update,
+)
+
+from .conftest import message, raiseYunohostError
 
 # Get main domain
 maindomain = ""
@@ -25,7 +46,7 @@ maindomain = ""
 
 def clean_user_groups():
     for u in user_list()["users"]:
-        user_delete(u, purge=True)
+        user_delete(u, purge=True, force=True)
 
     for g in user_group_list()["groups"]:
         if g not in ["all_users", "visitors", "admins"]:
@@ -104,7 +125,7 @@ def test_create_user():
 
 def test_del_user():
     with message("user_deleted"):
-        user_delete("alice")
+        user_delete("alice", force=True)
 
     group_res = user_group_list()["groups"]
     assert "alice" not in user_list()
@@ -145,13 +166,26 @@ def test_import_user():
         )
         writer.writerow(
             {
+                "username": "sam",
+                "firstname": "Sam",
+                "lastname": "White",
+                "password": "",
+                "mailbox-quota": "1G",
+                "mail": "sam@" + maindomain,
+                "mail-alias": "sam1@" + maindomain + ",sam2@" + maindomain,
+                "mail-forward": "",
+                "groups": "apps",
+            }
+        )
+        writer.writerow(
+            {
                 "username": "alice",
                 "firstname": "Alice",
                 "lastname": "White",
                 "password": "",
                 "mailbox-quota": "1G",
                 "mail": "alice@" + maindomain,
-                "mail-alias": "alice1@" + maindomain + ",alice2@" + maindomain,
+                "mail-alias": "",
                 "mail-forward": "",
                 "groups": "apps",
             }
@@ -163,12 +197,15 @@ def test_import_user():
     group_res = user_group_list()["groups"]
     user_res = user_list(list(FIELDS_FOR_IMPORT.keys()))["users"]
     assert "albert" in user_res
+    assert "sam" in user_res
     assert "alice" in user_res
     assert "bob" not in user_res
-    assert len(user_res["alice"]["mail-alias"]) == 2
+    assert len(user_res["sam"]["mail-alias"]) == 2
     assert "albert" in group_res["dev"]["members"]
-    assert "alice" in group_res["apps"]["members"]
-    assert "alice" not in group_res["dev"]["members"]
+    assert "sam" in group_res["apps"]["members"]
+    assert "sam" not in group_res["dev"]["members"]
+    assert "alice" in group_res["admins"]["members"]
+    assert "alice" not in group_res["apps"]["members"]
 
 
 def test_export_user():
@@ -232,7 +269,7 @@ def test_update_user_with_mail_address_with_unknown_domain(mocker):
 
 def test_del_user_that_does_not_exist(mocker):
     with raiseYunohostError(mocker, "user_unknown"):
-        user_delete("doesnt_exist")
+        user_delete("doesnt_exist", force=True)
 
 
 def test_create_group_all_users(mocker):
@@ -336,3 +373,10 @@ def test_update_group_add_user_that_doesnt_exist(mocker):
         user_group_update("dev", add=["doesnt_exist"])
 
     assert "doesnt_exist" not in user_group_list()["groups"]["dev"]["members"]
+
+
+def test_update_group_remove_last_admin(mocker):
+    with raiseYunohostError(mocker, "group_cannot_remove_last_admin"):
+        user_group_update("admins", remove=["alice"])
+
+    assert "alice" in user_group_info("admins")["members"]

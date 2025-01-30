@@ -1,13 +1,32 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
-import toml
-import os
-import re
 import glob
 import json
-import yaml
+import os
+import re
 import subprocess
 import sys
+
+import toml
+import yaml
 
 ROOT = os.path.dirname(__file__) + "/../"
 LOCALE_FOLDER = ROOT + "/locales/"
@@ -89,7 +108,7 @@ def find_expected_string_keys():
     # For all unit operations, expect to find "log_<name>"
     # A unit operation is created either using the @is_unit_operation decorator
     # or using OperationLogger(
-    cmd = f"grep -hr '@is_unit_operation' {ROOT}/src/ -A3 2>/dev/null | grep '^def' | sed -E 's@^def (\\w+)\\(.*@\\1@g'"
+    cmd = f"grep -hr '@is_unit_operation([^f]' {ROOT}/src/ -A3 2>/dev/null | grep '^def' | sed -E 's@^def (\\w+)\\(.*@\\1@g'"
     for funcname in (
         subprocess.check_output(cmd, shell=True).decode("utf-8").strip().split("\n")
     ):

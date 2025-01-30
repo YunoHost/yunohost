@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -20,6 +21,7 @@
 import os
 import string
 import subprocess
+
 import yaml
 
 SMALL_PWD_LIST = [

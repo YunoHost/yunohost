@@ -1,4 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 set -e
 
@@ -137,10 +155,11 @@ base_folder_and_perm_init() {
     [ ! -e /var/www/.well-known/ynh-diagnosis/ ] || chmod 775 /var/www/.well-known/ynh-diagnosis/
 
     if test -e /etc/yunohost/installed; then
-        setfacl -m g:all_users:--- /var/www
-        setfacl -m g:all_users:--- /var/log/nginx
-        setfacl -m g:all_users:--- /etc/yunohost
-        setfacl -m g:all_users:--- /etc/ssowat
+        # We use "|| true" because some filesystem do not support ACL (such as NTFS ... for example when incus storage is on an NTFS drive in dir storage)
+        setfacl -m g:all_users:--- /var/www || true
+        setfacl -m g:all_users:--- /var/log/nginx || true
+        setfacl -m g:all_users:--- /etc/yunohost || true
+        setfacl -m g:all_users:--- /etc/ssowat || true
     fi
 }
 
@@ -176,7 +195,6 @@ do_init_regen() {
     # YunoHost services
     cp yunohost-api.service /etc/systemd/system/yunohost-api.service
     cp yunohost-portal-api.service /etc/systemd/system/yunohost-portal-api.service
-    cp yunohost-firewall.service /etc/systemd/system/yunohost-firewall.service
     cp yunoprompt.service /etc/systemd/system/yunoprompt.service
 
     systemctl daemon-reload
@@ -259,15 +277,10 @@ ConditionVirtualization=!container
 EOF
     fi
 
-    # Make nftable conflict with yunohost-firewall
     mkdir -p ${pending_dir}/etc/systemd/system/nftables.service.d/
-    cat > ${pending_dir}/etc/systemd/system/nftables.service.d/ynh-override.conf << EOF
-[Unit]
-# yunohost-firewall and nftables conflict with each other
-Conflicts=yunohost-firewall.service
-ConditionFileIsExecutable=!/etc/init.d/yunohost-firewall
-ConditionPathExists=!/etc/systemd/system/multi-user.target.wants/yunohost-firewall.service
-EOF
+    cp yunohost-nftables-hooks-override.conf ${pending_dir}/etc/systemd/system/nftables.service.d/yunohost-nftables-hooks.conf
+    # Delete legacy conflict between yunohost and nftables
+    touch ${pending_dir}/etc/systemd/system/nftables.service.d/ynh-override.conf
 
     # Don't suspend computer on LidSwitch
     mkdir -p ${pending_dir}/etc/systemd/logind.conf.d/
@@ -280,9 +293,10 @@ EOF
 
     cp yunohost-api.service ${pending_dir}/etc/systemd/system/yunohost-api.service
     cp yunohost-portal-api.service ${pending_dir}/etc/systemd/system/yunohost-portal-api.service
-    cp yunohost-firewall.service ${pending_dir}/etc/systemd/system/yunohost-firewall.service
     cp yunoprompt.service ${pending_dir}/etc/systemd/system/yunoprompt.service
     cp proc-hidepid.service ${pending_dir}/etc/systemd/system/proc-hidepid.service
+    # Delete legacy yunohost-firewall service
+    touch ${pending_dir}/etc/systemd/system/yunohost-firewall.service
 
     mkdir -p ${pending_dir}/etc/dpkg/origins/
     cp dpkg-origins ${pending_dir}/etc/dpkg/origins/yunohost
@@ -342,14 +356,13 @@ do_post_regen() {
         }
     fi
 
-    [[ ! "$regen_conf_files" =~ "nftables.service.d/ynh-override.conf" ]] || systemctl daemon-reload
     [[ ! "$regen_conf_files" =~ "login.conf.d/ynh-override.conf" ]] || {
         systemctl daemon-reload
         systemctl restart systemd-logind
     }
-    [[ ! "$regen_conf_files" =~ "yunohost-firewall.service" ]] || systemctl daemon-reload
     [[ ! "$regen_conf_files" =~ "yunohost-api.service" ]] || systemctl daemon-reload
     [[ ! "$regen_conf_files" =~ "yunohost-portal-api.service" ]] || systemctl daemon-reload
+    [[ ! "$regen_conf_files" =~ "nftables.service.d/yunohost-nftables-hooks.conf" ]] || systemctl daemon-reload
 
     if [[ "$regen_conf_files" =~ "yunoprompt.service" ]]; then
         systemctl daemon-reload

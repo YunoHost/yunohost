@@ -1,4 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 YNH_APP_BASEDIR=${YNH_APP_BASEDIR:-$(realpath ..)}
 
@@ -56,7 +74,7 @@ fi
 #
 # usage: ynh_exec_as_app COMMAND [ARG ...]
 ynh_exec_as_app() {
-    sudo -u "$app" env PATH="$PATH" "$@"
+    sudo -u "$app" env PATH="$PATH" COREPACK_ENABLE_DOWNLOAD_PROMPT="0" "$@"
 }
 
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
@@ -379,17 +397,16 @@ ynh_user_list() {
 
 # Spawn a Bash shell with the app environment loaded
 #
-# usage: ynh_spawn_app_shell "appname"
+# usage: ynh_spawn_app_shell
 #
 # examples:
-#   ynh_spawn_app_shell "foobar" <<< 'echo "$USER"'
-#   ynh_spawn_app_shell "foobar" < /tmp/some_script.bash
+#   ynh_spawn_app_shell <<< 'echo "$USER"'
+#   ynh_spawn_app_shell < /tmp/some_script.bash
 #
 # The spawned shell will have environment variables loaded and environment files sourced
 # from the app's service configuration file (defaults to $app.service, overridable by the packager with `service` setting).
 # If the app relies on a specific PHP version, then `php` will be aliased that version. The PHP command will also be appended with the `phpflags` settings.
 ynh_spawn_app_shell() {
-    local app=$1
 
     # Force Bash to be used to run this helper
     [[ $0 =~ \/?bash$ ]] || ynh_die "Please use Bash as shell"
@@ -401,52 +418,48 @@ ynh_spawn_app_shell() {
     id -u "$app" &> /dev/null || ynh_die "There is no \"$app\" system user"
 
     # Make sure the app has an install_dir setting
-    local install_dir=$(ynh_app_setting_get --app=$app --key=install_dir)
-    [ -n "$install_dir" ] || ynh_die "$app has no install_dir setting (does it use packaging format >=2?)"
-
-    # Load the app's service name, or default to $app
-    local service=$(ynh_app_setting_get --app=$app --key=service)
-    [ -z "$service" ] && service=$app
+    [ -n "${install_dir:-}" ] || ynh_die "$app has no install_dir setting!"
 
     # Export HOME variable
     export HOME=$install_dir
 
-    # Load the Environment variables from the app's service
-    local env_var=$(systemctl show $service.service -p "Environment" --value)
-    [ -n "$env_var" ] && export $env_var
-
     # Force `php` to its intended version
     # We use `eval`+`export` since `alias` is not propagated to subshells, even with `export`
-    local phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
-    local phpflags=$(ynh_app_setting_get --app=$app --key=phpflags)
-    if [ -n "$phpversion" ]; then
-        eval "php() { php${phpversion} ${phpflags} \"\$@\"; }"
+    if [ -n "${php_version:-}" ]; then
+        eval "php() { php${php_version} ${phpflags:-} \"\$@\"; }"
         export -f php
     fi
 
-    # Source the EnvironmentFiles from the app's service
-    local env_files=($(systemctl show $service.service -p "EnvironmentFiles" --value))
-    if [ ${#env_files[*]} -gt 0 ]; then
-        # set -/+a enables and disables new variables being automatically exported. Needed when using `source`.
-        set -a
-        for file in ${env_files[*]}; do
-            [[ $file = /* ]] && source $file
-        done
-        set +a
+    # Load the app's service name, or default to $app
+    service=${service:-$app}
+    if systemctl list-units | grep -q "$service.service"; then
+        # Load the Environment variables from the app's service
+        local env_var=$(systemctl show $service.service -p "Environment" --value)
+        [ -n "${env_var:-}" ] && export $env_var
+
+        # Source the EnvironmentFiles from the app's service
+        local env_files=($(systemctl show $service.service -p "EnvironmentFiles" --value))
+        if [ ${#env_files[*]} -gt 0 ]; then
+            # set -/+a enables and disables new variables being automatically exported. Needed when using `source`.
+            set -a
+            for file in ${env_files[*]}; do
+                [[ $file = /* ]] && source $file
+            done
+            set +a
+        fi
     fi
 
     # Activate the Python environment, if it exists
-    if [ -f $install_dir/venv/bin/activate ]; then
+    if [ -f "$install_dir/venv/bin/activate" ]; then
         # set -/+a enables and disables new variables being automatically exported. Needed when using `source`.
         set -a
-        source $install_dir/venv/bin/activate
+        source "$install_dir/venv/bin/activate"
         set +a
     fi
 
     # cd into the WorkingDirectory set in the service, or default to the install_dir
     local env_dir=$(systemctl show $service.service -p "WorkingDirectory" --value)
-    [ -z $env_dir ] && env_dir=$install_dir
-    cd $env_dir
+    cd "${env_dir:-$install_dir}"
 
     # Spawn the app shell
     su -s /bin/bash $app
