@@ -841,9 +841,9 @@
     "pydantic_value_error_url_scheme": "Schéma d'URL non invalide ou manquant",
     "unable_authenticate": "Échec de l'authentification de la session",
     "group_cannot_remove_last_admin": "L'utilisateur '{user}' est le dernier utilisateur du groupe 'admins' et ne sera pas supprimé de celui-ci.",
-    "user_cannot_delete_last_admin": "L'utilisateur '{user}' est le dernier utilisateur du groupe 'admins' et ne sera pas supprimé.",
+    "user_cannot_delete_last_admin": "L'utilisateur '{user}' est le dernier utilisateur du groupe 'admins' et il ne sera donc pas supprimé.",
     "log_diagnosis_run": "Exécuter le diagnostic",
-    "log_tools_update": "Récupération des mises à jour système disponibles et actualisation du catalogue d'applications",
+    "log_tools_update": "Recherche des mises à jour système en cours et actualisation du catalogue d'applications",
     "migration_description_0032_firewall_config": "Migration du fichier de configuration du pare-feu interne",
     "user_import_cannot_edit_or_delete_admins": "Impossible de modifier ou de supprimer '{user}' car l'utilisateur est administrateur"
 }
