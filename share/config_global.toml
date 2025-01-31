@@ -74,6 +74,7 @@ i18n = "global_settings_setting"
     [security.portal]
         [security.portal.portal_allow_edit_email]
         type = "boolean"
+        default = 0
 
         [security.portal.portal_allow_edit_email_alias]
         type = "boolean"

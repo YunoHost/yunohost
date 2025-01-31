@@ -231,7 +231,7 @@ def portal_update(
         else:
             # email already exist in the list we just move it on the first place
             new_mails.remove(mainemail)
-            new_mails.insert(0, mainemail)
+            new_mails = [mainemail] + new_mails[1:]
 
         new_attr_dict["mail"] = new_mails
 
