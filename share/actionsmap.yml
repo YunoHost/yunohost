@@ -2125,7 +2125,7 @@ storage:
                         action: store_true
                 info:
                     action_help: Get hard-drive information
-                    api: GET /users/<name>
+                    api: GET /storage/disk/info/<name>
                     arguments:
                         name:
                             help: Name of the hard drive as returned by 'list' command
