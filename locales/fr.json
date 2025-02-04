@@ -231,8 +231,8 @@
     "log_backup_restore_system": "Restaurer le système depuis une archive de sauvegarde",
     "log_backup_restore_app": "Restaurer '{}' depuis une sauvegarde",
     "log_remove_on_failed_install": "Enlever '{}' après une installation échouée",
-    "log_domain_add": "Ajouter le domaine '{}' dans la configuration du système",
-    "log_domain_remove": "Enlever le domaine '{}' de la configuration du système",
+    "log_domain_add": "Ajouter le domaine '{}'",
+    "log_domain_remove": "Supprimer le domaine '{}'",
     "log_dyndns_subscribe": "Souscrire au sous-domaine YunoHost '{}'",
     "log_dyndns_update": "Mettre à jour l'adresse IP associée à votre sous-domaine YunoHost '{}'",
     "log_letsencrypt_cert_install": "Installer le certificat Let's Encrypt sur le domaine '{}'",
@@ -841,5 +841,9 @@
     "pydantic_value_error_url_scheme": "Schéma d'URL non invalide ou manquant",
     "unable_authenticate": "Échec de l'authentification de la session",
     "group_cannot_remove_last_admin": "L'utilisateur '{user}' est le dernier utilisateur du groupe 'admins' et ne sera pas supprimé de celui-ci.",
-    "user_cannot_delete_last_admin": "L'utilisateur '{user}' est le dernier utilisateur du groupe 'admins' et ne sera pas supprimé."
+    "user_cannot_delete_last_admin": "L'utilisateur '{user}' est le dernier utilisateur du groupe 'admins' et il ne sera donc pas supprimé.",
+    "log_diagnosis_run": "Exécuter le diagnostic",
+    "log_tools_update": "Recherche des mises à jour système en cours et actualisation du catalogue d'applications",
+    "migration_description_0032_firewall_config": "Migration du fichier de configuration du pare-feu interne",
+    "user_import_cannot_edit_or_delete_admins": "Impossible de modifier ou de supprimer '{user}' car l'utilisateur est administrateur"
 }
