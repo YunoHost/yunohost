@@ -26,7 +26,7 @@ import time
 from datetime import datetime, timedelta
 from logging import FileHandler, getLogger, Formatter, INFO
 from io import IOBase
-from typing import List
+from typing import List, Any
 
 import psutil
 import yaml
@@ -134,6 +134,9 @@ def _update_log_cache_symlinks():
                 logger.warning(f"Failed to create symlink {parent_symlink} ? {e}")
 
 
+log_list_cache: dict[str, dict[str, Any]] = {}
+
+
 def log_list(
     limit=None, with_details=False, with_suboperations=False, since_days_ago=365
 ):
@@ -149,6 +152,8 @@ def log_list(
         operation but are sub-operations triggered by another ongoing operation
         ... (e.g. initializing groups/permissions when installing an app)
     """
+
+    global log_list_cache
 
     operations = {}
 
@@ -203,10 +208,10 @@ def log_list(
 
         if with_details or with_suboperations:
             if (
-                name in log_list.cache
-                and os.path.getmtime(md_path) == log_list.cache[name]["time"]
+                name in log_list_cache
+                and os.path.getmtime(md_path) == log_list_cache[name]["time"]
             ):
-                metadata = log_list.cache[name]["metadata"]
+                metadata = log_list_cache[name]["metadata"]
             else:
                 try:
                     metadata = (
@@ -219,7 +224,7 @@ def log_list(
                     )
                     continue
                 else:
-                    log_list.cache[name] = {
+                    log_list_cache[name] = {
                         "time": os.path.getmtime(md_path),
                         "metadata": metadata,
                     }
@@ -260,9 +265,6 @@ def log_list(
         operations = list(reversed(operations))
 
     return {"operation": operations}
-
-
-log_list.cache = {}
 
 
 def log_show(
