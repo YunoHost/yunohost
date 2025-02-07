@@ -132,10 +132,11 @@ def app_info(app, full=False, upgradable=False):
     setting_path = os.path.join(APPS_SETTING_PATH, app)
     local_manifest = _get_manifest_of_app(setting_path)
     settings = _get_app_settings(app)
+    main_perm = settings.get("_permissions", {}).get("main", {})
 
     ret = {
-        "description": _value_for_locale(local_manifest["description"]),
-        "name": settings.get("label", local_manifest["name"]),
+        "description": main_perm.get("description") or _value_for_locale(local_manifest["description"]),
+        "name": main_perm.get("label") or settings.get("label") or local_manifest["name"],
         "version": local_manifest.get("version", "-"),
     }
 
@@ -153,7 +154,7 @@ def app_info(app, full=False, upgradable=False):
     ret["logo"] = (
         app
         if os.path.exists(f"{APPS_CATALOG_LOGOS}/{app}.png")
-        else from_catalog.get("logo_hash")
+        else (main_perm.get("logo_hash") or from_catalog.get("logo_hash"))
     )
     ret["upgradable"] = _app_upgradable({**ret, "from_catalog": from_catalog})
 
@@ -1618,10 +1619,9 @@ def app_register_url(app, domain, path):
     _sync_permissions_with_ldap()
 
 
-def app_ssowatconf():
+def app_ssowatconf() -> None:
     """
     Regenerate SSOwat configuration file
-
 
     """
     from yunohost.domain import (
@@ -1629,13 +1629,13 @@ def app_ssowatconf():
         _get_raw_domain_settings,
         domain_list,
     )
-    from yunohost.permission import user_permission_list
+    from yunohost.permission import AppPermInfos, user_permission_list
 
     domain_portal_dict = _get_domain_portal_dict()
 
     domains = domain_list()["domains"]
     portal_domains = domain_list(exclude_subdomains=True)["domains"]
-    all_permissions = user_permission_list(
+    all_permissions: dict[str, AppPermInfos] = user_permission_list(
         full=True, ignore_system_perms=True, absolute_urls=True
     )["permissions"]
 
@@ -1675,7 +1675,9 @@ def app_ssowatconf():
             redirected_urls[domain + "/"] = domain_portal_dict[domain]
 
     # Will organize apps by portal domain
-    portal_domains_apps = {domain: {} for domain in portal_domains}
+    portal_domains_apps: dict[str, dict[str, dict]] = {
+        domain: {} for domain in portal_domains
+    }
 
     # This check is to prevent an issue during postinstall if the catalog cant
     # be initialized (because of offline postinstall) and it's not a big deal
@@ -1765,16 +1767,20 @@ def app_ssowatconf():
             "users": perm_info["corresponding_users"],
             "public": "visitors" in perm_info["allowed"],
             "url": uris[0],
-            "description": local_manifest["description"],
+            "description": perm_info.get("description") or local_manifest["description"],
+            "order": perm_info.get("order", 100),
         }
 
-        # FIXME : find a smarter way to get this info ? (in the settings maybe..)
-        # Also ideally we should not rely on the webadmin route for this, maybe expose these through a different route in nginx idk
-        # Also related to "people will want to customize those.."
-        app_catalog_info = apps_catalog.get(app_id.split("__")[0])
-        if app_catalog_info and "logo_hash" in app_catalog_info:
+        if perm_info.get("hide_from_public"):
+            app_portal_info["hide_from_public"] = True
+
+        # Logo may be customized via the perm setting, otherwise we use the default logo that we fetch from the catalog infos
+        app_base_id = app_id.split("__")[0]
+        # Use the perm logo, or the main-perm logo, or the default logo from catalog
+        logo_hash = perm_info.get("logo_hash") or all_permissions[f"{app_id}.main"].get("logo_hash") or apps_catalog.get(app_base_id, {}).get("logo_hash")
+        if logo_hash:
             app_portal_info["logo"] = (
-                f"/yunohost/sso/applogos/{app_catalog_info['logo_hash']}.png"
+                f"/yunohost/sso/applogos/{logo_hash}.png"
             )
 
         portal_domains_apps[app_portal_domain][perm_name] = app_portal_info

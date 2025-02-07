@@ -26,7 +26,7 @@ import random
 import re
 import subprocess
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Callable, TextIO, Union, cast, Literal
+from typing import TYPE_CHECKING, Any, Callable, TextIO, BinaryIO, Union, cast, Literal
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.process import check_output
@@ -1048,6 +1048,18 @@ def user_group_list(
             _ldap_path_extract(p, "uid") for p in infos.get("member", [])
         ]
 
+    if full:
+        for group in groups:
+            groups[group]["permissions"] = []
+
+        from yunohost.permission import user_permission_list
+
+        perms = user_permission_list(full=False)["permissions"]
+        for perm, infos in perms.items():
+            for group in infos["allowed"]:
+                if group in groups:
+                    groups[group]["permissions"].append(perm)
+
     return {"groups": groups}
 
 
@@ -1413,7 +1425,7 @@ def user_group_info(groupname: str) -> dict[str, Any]:
     result = ldap.search(
         "ou=groups",
         "cn=" + groupname,
-        ["cn", "member", "permission", "mail"],
+        ["cn", "member", "mail"],
     )
 
     if not result:
@@ -1494,15 +1506,50 @@ def user_permission_list(
 @is_unit_operation(flash=True)
 def user_permission_update(
     permission: str,
-    label: Optional[str] = None,
-    show_tile: Optional[bool] = None,
-    sync_perm: bool = True,
-) -> "PermInfos":
-    from yunohost.permission import user_permission_update
+    label: str | None = None,
+    show_tile: bool | None = None,
+    logo: BinaryIO | None = None,
+    description: str | None = None,
+    hide_from_public: bool | None = None,
+    order: int | None = None,
+) -> dict[str, Any]:
 
-    return user_permission_update(
-        permission, label=label, show_tile=show_tile, sync_perm=sync_perm
+    from yunohost.app import _assert_is_installed, app_ssowatconf, app_setting
+    from yunohost.permission import _update_app_permission_setting
+
+    # By default, manipulate main permission
+    if "." not in permission:
+        permission = permission + ".main"
+
+    app, permname = permission.split(".", 1)
+    _assert_is_installed(app)
+
+    if permname not in (app_setting(app, "_permissions") or {}):
+        raise YunohostValidationError(
+            f"Unknown permission {permname} for app {app}", raw_msg=True
+        )
+
+    # We get these from CLI as string (because we want to be able to differentiate between True, False and "unspecified" = "do not change the value"
+    if isinstance(show_tile, str):
+        show_tile = True if show_tile.lower() == "true" else False
+    if isinstance(hide_from_public, str):
+        hide_from_public = True if hide_from_public.lower() == "true" else False
+
+    _update_app_permission_setting(
+        permission=permission,
+        label=label,
+        show_tile=show_tile,
+        logo=logo,
+        description=description,
+        hide_from_public=hide_from_public,
+        order=order,
     )
+
+    app_ssowatconf()
+
+    logger.success(m18n.n("permission_updated", permission=permission))
+
+    return (app_setting(app, "_permissions") or {}).get(permname, "")
 
 
 @is_unit_operation(flash=True)
@@ -1554,16 +1601,19 @@ def user_permission_ldapsync() -> None:
 
 def user_ssh_list_keys(username: str) -> dict[str, dict[str, str]]:
     from yunohost.ssh import user_ssh_list_keys
+
     return user_ssh_list_keys(username)
 
 
 def user_ssh_add_key(username: str, key: str, comment: str | None = None) -> None:
     from yunohost.ssh import user_ssh_add_key
+
     return user_ssh_add_key(username, key, comment)
 
 
 def user_ssh_remove_key(username: str, key: str) -> None:
     from yunohost.ssh import user_ssh_remove_key
+
     return user_ssh_remove_key(username, key)
 
 

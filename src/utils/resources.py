@@ -678,7 +678,6 @@ class PermissionsResource(AppResource):
             permission_delete,
             _sync_permissions_with_ldap,
             permission_url,
-            user_permission_list,
             user_permission_update,
         )
 
@@ -695,16 +694,14 @@ class PermissionsResource(AppResource):
         ):
             self.set_setting("path", "/")
 
-        existing_perms = user_permission_list(apps=[self.app])[
-            "permissions"
-        ]
+        existing_perms = list((self.get_setting("_permissions") or {}).keys())
         for perm in existing_perms:
-            if perm.split(".")[1] not in self.permissions.keys():
-                permission_delete(perm, force=True, sync_perm=False)
+            if perm not in self.permissions.keys():
+                permission_delete(f"{self.app}.{perm}", force=True, sync_perm=False)
 
         for perm, infos in self.permissions.items():
             perm_id = f"{self.app}.{perm}"
-            if perm_id not in existing_perms:
+            if perm not in existing_perms:
                 # Use the 'allowed' key from the manifest,
                 # or use the 'init_{perm}_permission' from the install questions
                 # which is temporarily saved as a setting as an ugly hack to pass the info to this piece of code...
@@ -749,14 +746,11 @@ class PermissionsResource(AppResource):
         from yunohost.permission import (
             permission_delete,
             _sync_permissions_with_ldap,
-            user_permission_list,
         )
 
-        existing_perms = user_permission_list(apps=[self.app])[
-            "permissions"
-        ]
+        existing_perms = list((self.get_setting("_permissions") or {}).keys())
         for perm in existing_perms:
-            permission_delete(perm, force=True, sync_perm=False)
+            permission_delete(f"{self.app}.{perm}", force=True, sync_perm=False)
 
         _sync_permissions_with_ldap()
 

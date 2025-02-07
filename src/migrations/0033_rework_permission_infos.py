@@ -40,6 +40,8 @@ class MyMigration(Migration):
 
     def run_after_system_restore(self):
 
+        regen_conf(["slapd"], force=True)
+
         _, permission_system = self.read_legacy_permissions()
         _set_system_perms(permission_system)
 

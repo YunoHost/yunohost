@@ -53,6 +53,7 @@ from yunohost.user import (
     user_group_list,
     user_list,
 )
+from yunohost.user import user_permission_update as user_permission_update_from_cli
 
 from .conftest import get_test_apps_dir, message, raiseYunohostError
 
@@ -571,17 +572,20 @@ def test_permission_create_with_urls_management_multiple_domain():
 
 
 def test_permission_delete():
-    with message("permission_deleted", permission="wiki.main"):
-        permission_delete("wiki.main", force=True)
-
-    res = user_permission_list()["permissions"]
-    assert "wiki.main" not in res
-
     with message("permission_deleted", permission="blog.api"):
         permission_delete("blog.api", force=False)
 
     res = user_permission_list()["permissions"]
     assert "blog.api" not in res
+
+def test_permission_delete_cant_really_delete_main():
+    with message("permission_deleted", permission="wiki.main"):
+        permission_delete("wiki.main", force=True)
+
+    # A "main" perm will always be injected so it is still outputed by user_permission_list
+    res = user_permission_list()["permissions"]
+    assert "wiki.main" in res
+
 
 
 #
@@ -590,12 +594,12 @@ def test_permission_delete():
 
 
 def test_permission_create_already_existing(mocker):
-    with raiseYunohostError(mocker, "permission_already_exist"):
-        permission_create("wiki.main")
+    # This doesn't raise an exception anymoar by design
+    permission_create("wiki.main")
 
 
-def test_permission_delete_doesnt_existing(mocker):
-    with raiseYunohostError(mocker, "permission_not_found"):
+def test_permission_delete_for_unknown_app(mocker):
+    with raiseYunohostError(mocker, "app_not_installed"):
         permission_delete("doesnt.exist", force=True)
 
     res = user_permission_list()["permissions"]
@@ -695,14 +699,14 @@ def test_permission_switch_show_tile():
     # Note that from the actionmap the value is passed as string, not as bool
     # Try with lowercase
     with message("permission_updated", permission="wiki.main"):
-        user_permission_update("wiki.main", show_tile="false")
+        user_permission_update_from_cli("wiki.main", show_tile="false")
 
     res = user_permission_list(full=True)["permissions"]
     assert res["wiki.main"]["show_tile"] is False
 
     # Try with uppercase
     with message("permission_updated", permission="wiki.main"):
-        user_permission_update("wiki.main", show_tile="TRUE")
+        user_permission_update_from_cli("wiki.main", show_tile="TRUE")
 
     res = user_permission_list(full=True)["permissions"]
     assert res["wiki.main"]["show_tile"] is True
@@ -711,7 +715,7 @@ def test_permission_switch_show_tile():
 def test_permission_switch_show_tile_with_same_value():
     # Note that from the actionmap the value is passed as string, not as bool
     with message("permission_updated", permission="wiki.main"):
-        user_permission_update("wiki.main", show_tile="True")
+        user_permission_update_from_cli("wiki.main", show_tile="True")
 
     res = user_permission_list(full=True)["permissions"]
     assert res["wiki.main"]["show_tile"] is True
@@ -732,7 +736,7 @@ def test_permission_add_group_that_doesnt_exist(mocker):
 
 
 def test_permission_update_permission_that_doesnt_exist(mocker):
-    with raiseYunohostError(mocker, "permission_not_found"):
+    with raiseYunohostError(mocker, "app_not_installed"):
         user_permission_update("doesnt.exist", add="alice")
 
 

@@ -371,12 +371,13 @@ def test_resource_permissions():
         "main": {
             "url": "/",
             "allowed": "visitors",
-            # TODO: test protected?
         },
     }
 
     res = user_permission_list(full=True)["permissions"]
-    assert not any(key.startswith("testapp.") for key in res)
+    # Nowadays there's always an implicit "main" perm but with default stuff such as empty url
+    assert res["testapp.main"]["url"] is None
+    assert res["testapp.main"]["allowed"] == []
 
     r(conf, "testapp", manager).provision_or_update()
 
