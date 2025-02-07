@@ -760,7 +760,6 @@ domain:
                             help: Does not perform any check that your domain seems correctly configured (DNS, reachability) before attempting to renew. (Not recommended)
                             action: store_true
 
-
 #############################
 #            App            #
 #############################
@@ -1195,7 +1194,6 @@ backup:
                     extra:
                         pattern: *pattern_backup_archive_name
 
-
 #############################
 #         Settings          #
 #############################
@@ -1598,9 +1596,6 @@ firewall:
         stop:
             action_help: Remove all the firewall rules
 
-
-
-
 #############################
 #          DynDNS           #
 #############################
@@ -1643,7 +1638,6 @@ dyndns:
                     full: --dry-run
                     help: Only display the generated zone
                     action: store_true
-
 
 #############################
 #           Tools           #
@@ -1868,7 +1862,6 @@ tools:
               state:
                   action_help: Show current migrations state
 
-
 #############################
 #           Hook            #
 #############################
@@ -2018,7 +2011,6 @@ log:
             arguments:
                 path:
                     help: Log file to share
-
 
 #############################
 #          Diagnosis        #
