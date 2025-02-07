@@ -202,6 +202,7 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
 
         if interface == "api":
             from yunohost.utils.sse import start_log_broker
+
             start_log_broker()
 
         configure_logging(logging_configuration)
