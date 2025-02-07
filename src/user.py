@@ -1497,8 +1497,8 @@ def user_permission_list(short: bool = False, full: bool = False, apps: list[str
 # FIXME: missing return type
 def user_permission_update(
     permission: str,
-    label: Optional[str] = None,
-    show_tile: Optional[bool] = None,
+    label: str | None = None,
+    show_tile: bool | None = None,
     sync_perm: bool = True,
 ):
     from yunohost.permission import user_permission_update
