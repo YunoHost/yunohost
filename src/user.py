@@ -26,7 +26,7 @@ import random
 import re
 import subprocess
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Callable, Optional, TextIO, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, TextIO, Union, cast
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.process import check_output
@@ -62,7 +62,7 @@ FIELDS_FOR_IMPORT = {
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
 
-def user_list(fields: Optional[list[str]] = None) -> dict[str, dict[str, Any]]:
+def user_list(fields: list[str] | None = None) -> dict[str, dict[str, Any]]:
     from yunohost.utils.ldap import _get_ldap_interface
 
     ldap_attrs = {
@@ -394,16 +394,16 @@ def user_delete(
 def user_update(
     operation_logger: "OperationLogger",
     username: str,
-    mail: Optional[str] = None,
-    change_password: Optional[str] = None,
+    mail: str | None = None,
+    change_password: str | None = None,
     add_mailforward: None | str | list[str] = None,
     remove_mailforward: None | str | list[str] = None,
     add_mailalias: None | str | list[str] = None,
     remove_mailalias: None | str | list[str] = None,
-    mailbox_quota: Optional[str] = None,
+    mailbox_quota: str | None = None,
     from_import: bool = False,
-    fullname: Optional[str] = None,
-    loginShell: Optional[str] = None,
+    fullname: str | None = None,
+    loginShell: str | None = None,
 ):
     if fullname and fullname.strip():
         fullname = fullname.strip()
@@ -688,10 +688,6 @@ def user_info(username: str) -> dict[str, str]:
 def user_export() -> Union[str, "HTTPResponseType"]:
     """
     Export users into CSV
-
-    Keyword argument:
-        csv -- CSV file with columns username;firstname;lastname;password;mailbox-quota;mail;mail-alias;mail-forward;groups
-
     """
     import csv  # CSV are needed only in this function
     from io import StringIO
@@ -1063,7 +1059,7 @@ def user_group_list(
 def user_group_create(
     operation_logger: "OperationLogger",
     groupname: str,
-    gid: Optional[str] = None,
+    gid: str | None = None,
     primary_group: bool = False,
     sync_perm: bool = True,
 ) -> dict[str, str]:
@@ -1442,7 +1438,7 @@ def user_group_info(groupname: str) -> dict[str, Any]:
 
 def user_group_add(
     groupname: str, usernames: list[str], force: bool = False, sync_perm: bool = True
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     """
     Add user(s) to a group
 
@@ -1456,7 +1452,7 @@ def user_group_add(
 
 def user_group_remove(
     groupname: str, usernames: list[str], force: bool = False, sync_perm: bool = True
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     """
     Remove user(s) from a group
 
@@ -1472,7 +1468,7 @@ def user_group_remove(
 
 def user_group_add_mailalias(
     groupname: str, aliases: list[str], force: bool = False
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     return user_group_update(
         groupname, add_mailalias=aliases, force=force, sync_perm=False
     )
@@ -1480,7 +1476,7 @@ def user_group_add_mailalias(
 
 def user_group_remove_mailalias(
     groupname: str, aliases: list[str], force: bool = False
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     return user_group_update(
         groupname, remove_mailalias=aliases, force=force, sync_perm=False
     )
@@ -1516,7 +1512,7 @@ def user_permission_update(
 def user_permission_add(
     permission: str,
     names: list[str],
-    protected: Optional[bool] = None,
+    protected: bool | None = None,
     force: bool = False,
     sync_perm: bool = True,
 ):
@@ -1531,7 +1527,7 @@ def user_permission_add(
 def user_permission_remove(
     permission: str,
     names: list[str],
-    protected: Optional[bool] = None,
+    protected: bool | None = None,
     force: bool = False,
     sync_perm: bool = True,
 ):
@@ -1566,7 +1562,7 @@ def user_ssh_list_keys(username: str) -> dict[str, dict[str, str]]:
     return yunohost.ssh.user_ssh_list_keys(username)
 
 
-def user_ssh_add_key(username: str, key: str, comment: Optional[str] = None) -> None:
+def user_ssh_add_key(username: str, key: str, comment: str | None = None) -> None:
     return yunohost.ssh.user_ssh_add_key(username, key, comment)
 
 
