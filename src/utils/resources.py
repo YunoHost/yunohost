@@ -676,7 +676,7 @@ class PermissionsResource(AppResource):
         from yunohost.permission import (
             permission_create,
             permission_delete,
-            permission_sync_to_user,
+            _sync_permissions_with_ldap,
             permission_url,
             user_permission_list,
             user_permission_update,
@@ -695,7 +695,7 @@ class PermissionsResource(AppResource):
         ):
             self.set_setting("path", "/")
 
-        existing_perms = user_permission_list(short=True, apps=[self.app])[
+        existing_perms = user_permission_list(apps=[self.app])[
             "permissions"
         ]
         for perm in existing_perms:
@@ -733,6 +733,7 @@ class PermissionsResource(AppResource):
                 show_tile=infos["show_tile"],
                 protected=infos["protected"],
                 sync_perm=False,
+                log_success_as_debug=True,
             )
             permission_url(
                 perm_id,
@@ -742,22 +743,22 @@ class PermissionsResource(AppResource):
                 sync_perm=False,
             )
 
-        permission_sync_to_user()
+        _sync_permissions_with_ldap()
 
     def deprovision(self, context: Dict = {}):
         from yunohost.permission import (
             permission_delete,
-            permission_sync_to_user,
+            _sync_permissions_with_ldap,
             user_permission_list,
         )
 
-        existing_perms = user_permission_list(short=True, apps=[self.app])[
+        existing_perms = user_permission_list(apps=[self.app])[
             "permissions"
         ]
         for perm in existing_perms:
             permission_delete(perm, force=True, sync_perm=False)
 
-        permission_sync_to_user()
+        _sync_permissions_with_ldap()
 
 
 class SystemuserAppResource(AppResource):

@@ -343,10 +343,6 @@ user:
                         apps:
                             help: Apps to list permission for (all by default)
                             nargs: "*"
-                        -s:
-                            full: --short
-                            help: Only list permission names
-                            action: store_true
                         -f:
                             full: --full
                             help: Display all info known about each permission, including the full user list of each group it is granted to.
@@ -405,13 +401,9 @@ user:
                             extra:
                                 pattern: *pattern_username
 
-                ## user_permission_reset()
-                reset:
-                    action_help: Reset allowed groups to the default (all_users) for a given permission
-                    api: DELETE /users/permissions/<permission>
-                    arguments:
-                        permission:
-                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
+                ## user_permission_ldapsync()
+                ldapsync:
+                    action_help: Resynchronize permissions to LDAP from app settings. This is a purely technical command, only meant to be ran if you manually modified permission settings in app, which is absolutely not recommended. 
 
         ssh:
             subcategory_help: Manage ssh access

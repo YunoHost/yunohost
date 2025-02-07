@@ -563,7 +563,7 @@ def app_upgrade(
         hook_exec_with_script_debug_if_failure,
         hook_remove,
     )
-    from yunohost.permission import permission_sync_to_user
+    from yunohost.permission import _sync_permissions_with_ldap
     from yunohost.regenconf import manually_modified_files
     from yunohost.utils.legacy import _patch_legacy_helpers
 
@@ -877,7 +877,7 @@ def app_upgrade(
             if upgrade_failed or broke_the_system:
                 if not continue_on_failure or broke_the_system:
                     # display this if there are remaining apps
-                    if apps[number + 1 :]:
+                    if apps[number + 1:]:
                         not_upgraded_apps = apps[number:]
                         if broke_the_system and not continue_on_failure:
                             logger.error(
@@ -947,7 +947,7 @@ def app_upgrade(
             hook_callback("post_app_upgrade", env=env_dict)
             operation_logger.success()
 
-    permission_sync_to_user()
+    _sync_permissions_with_ldap()
 
     logger.success(m18n.n("upgrade_complete"))
 
@@ -1061,7 +1061,7 @@ def app_install(
     from yunohost.permission import (
         permission_create,
         permission_delete,
-        permission_sync_to_user,
+        _sync_permissions_with_ldap,
         user_permission_list,
     )
     from yunohost.regenconf import manually_modified_files
@@ -1352,7 +1352,7 @@ def app_install(
             shutil.rmtree(app_setting_path)
             shutil.rmtree(extracted_app_folder)
 
-            permission_sync_to_user()
+            _sync_permissions_with_ldap()
 
             raise YunohostError(failure_message_with_debug_instructions, raw_msg=True)
 
@@ -1402,7 +1402,7 @@ def app_remove(operation_logger, app, purge=False, force_workdir=None):
     from yunohost.hook import hook_callback, hook_exec, hook_remove
     from yunohost.permission import (
         permission_delete,
-        permission_sync_to_user,
+        _sync_permissions_with_ldap,
         user_permission_list,
     )
     from yunohost.utils.legacy import _patch_legacy_helpers
@@ -1488,7 +1488,7 @@ def app_remove(operation_logger, app, purge=False, force_workdir=None):
     else:
         logger.warning(m18n.n("app_not_properly_removed", app=app))
 
-    permission_sync_to_user()
+    _sync_permissions_with_ldap()
     _assert_system_is_sane_for_app(manifest, "post")
 
 
@@ -1584,7 +1584,7 @@ def app_register_url(app, domain, path):
         path -- The path to be registered (e.g. /coffee)
     """
     from yunohost.permission import (
-        permission_sync_to_user,
+        _sync_permissions_with_ldap,
         permission_url,
         user_permission_update,
     )
@@ -1615,7 +1615,7 @@ def app_register_url(app, domain, path):
     # the tile using the permission helpers.
     permission_url(app + ".main", url="/", sync_perm=False)
     user_permission_update(app + ".main", show_tile=True, sync_perm=False)
-    permission_sync_to_user()
+    _sync_permissions_with_ldap()
 
 
 def app_ssowatconf():

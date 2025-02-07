@@ -55,7 +55,6 @@ objectClass: posixGroup
 objectClass: groupOfNamesYnh
 gidNumber: 4002
 cn: all_users
-permission: cn=mail.main,ou=permission,dc=yunohost,dc=org
 
 dn: cn=visitors,ou=groups,dc=yunohost,dc=org
 objectClass: posixGroup
@@ -64,7 +63,6 @@ gidNumber: 4003
 cn: visitors
 
 dn: cn=mail.main,ou=permission,dc=yunohost,dc=org
-groupPermission: cn=all_users,ou=groups,dc=yunohost,dc=org
 cn: mail.main
 objectClass: posixGroup
 objectClass: permissionYnh
