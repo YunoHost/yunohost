@@ -232,7 +232,7 @@ def user_permission_update(
     else:
         # Refuse to add "visitors" to protected permission
         if (
-            ((add and "visitors" in add) or (remove and "visitors"))
+            ((add and "visitors" in add) or (remove and "visitors" in remove))
             and existing_permission.get("protected")
             and not force
         ):
@@ -704,7 +704,7 @@ def _update_app_permission_setting(
     show_tile: bool | None = None,
     protected: bool | None = None,
     allowed: str | list[str] | None = None,
-    logo: BinaryIO | None = None,
+    logo: BinaryIO | Literal[''] | None = None,
     description: str | None = None,
     hide_from_public: bool | None = None,
     order: int | None = None,
@@ -729,7 +729,12 @@ def _update_app_permission_setting(
     if order is not None:
         update_settings["order"] = order
 
-    if logo is not None:
+    # Delete the logo hash info if the provided logo is literally empty string
+    if logo == "":
+        if "logo_hash" in perm_settings[sub_permission]:
+            del perm_settings[sub_permission]["logo_hash"]
+
+    elif logo is not None:
 
         from yunohost.app import APPS_CATALOG_LOGOS
         import hashlib

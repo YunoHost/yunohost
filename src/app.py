@@ -28,7 +28,7 @@ import tempfile
 import time
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Tuple, Union, Literal
 
 import yaml
 from moulinette import Moulinette, m18n
@@ -69,7 +69,7 @@ from yunohost.utils.system import (
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
-    from yunohost.utils.configpanel import ConfigPanelModel, RawSettings
+    from yunohost.utils.configpanel import ConfigPanelModel, RawSettings, RawConfig
     from yunohost.utils.form import FormModel
 
 logger = getLogger("yunohost.app")
@@ -143,6 +143,7 @@ def app_info(app, full=False, upgradable=False):
     if "domain" in settings and "path" in settings:
         ret["domain_path"] = settings["domain"] + settings["path"]
 
+    # FIXME: this 'upgradable' option only seems to be used here an is equivalent to full = True?
     if not upgradable and not full:
         return ret
 
@@ -156,18 +157,7 @@ def app_info(app, full=False, upgradable=False):
         if os.path.exists(f"{APPS_CATALOG_LOGOS}/{app}.png")
         else (main_perm.get("logo_hash") or from_catalog.get("logo_hash"))
     )
-    ret["upgradable"] = _app_upgradable({**ret, "from_catalog": from_catalog})
-
-    if ret["upgradable"] == "yes":
-        ret["current_version"] = ret.get("version", "?")
-        ret["new_version"] = from_catalog.get("manifest", {}).get("version", "?")
-
-        if ret["current_version"] == ret["new_version"]:
-            current_revision = settings.get("current_revision", "?")[:7]
-            new_revision = from_catalog.get("git", {}).get("revision", "?")[:7]
-
-            ret["current_version"] = f" ({current_revision})"
-            ret["new_version"] = f" ({new_revision})"
+    ret["upgradable"], ret["current_version"], ret["new_version"] = _app_upgradable(app, local_manifest=local_manifest)
 
     ret["settings"] = settings
 
@@ -248,23 +238,29 @@ def app_info(app, full=False, upgradable=False):
         "permissions"
     ]
 
-    # FIXME : this is the same stuff as "name" ... maybe we should get rid of "name" ?
+    # FIXME: this is the same stuff as "name" ... maybe we should get rid of "name" ?
     ret["label"] = settings.get("label", local_manifest["name"])
 
     return ret
 
 
-def _app_upgradable(app_infos):
-    # Determine upgradability
+def _app_upgradable(app: str, local_manifest: dict | None = None) -> Tuple[Literal["yes", "no", "url_required", "bad_quality"], str | None, str | None]:
 
-    app_in_catalog = app_infos.get("from_catalog")
-    installed_version = _parse_app_version(app_infos.get("version", "0~ynh0"))
-    version_in_catalog = _parse_app_version(
-        app_infos.get("from_catalog", {}).get("manifest", {}).get("version", "0~ynh0")
-    )
+    base_app_id, _ = _parse_app_instance_name(app)
+    app_in_catalog = _load_apps_catalog()["apps"].get(base_app_id, {})
+
+    # Local manifest can be provided to avoid re-reading the manifest from scratch (eg when in app_info)
+    # Otherwise we read it here
+    if local_manifest is None:
+        setting_path = os.path.join(APPS_SETTING_PATH, app)
+        local_manifest = _get_manifest_of_app(setting_path)
+
+    current_version = local_manifest.get("version", "0~ynh0")
 
     if not app_in_catalog:
-        return "url_required"
+        return "url_required", current_version, None
+
+    version_in_catalog = app_in_catalog.get("manifest", {}).get("version", "0~ynh0")
 
     # Do not advertise upgrades for bad-quality apps
     level = app_in_catalog.get("level", -1)
@@ -272,12 +268,23 @@ def _app_upgradable(app_infos):
         not (isinstance(level, int) and level >= 5)
         or app_in_catalog.get("state") != "working"
     ):
-        return "bad_quality"
+        return "bad_quality", current_version, None
 
-    if installed_version < version_in_catalog:
-        return "yes"
+    if _parse_app_version(current_version) >= _parse_app_version(version_in_catalog):
+        return "no", current_version, version_in_catalog
+
+    # Not sure when this happens exactly considering we checked for ">=" before ...
+    # maybe that's for "legacy versions" that do not respect the X.Y~ynhZ syntax
+    if current_version == version_in_catalog:
+        current_revision = _get_app_settings(app).get("current_revision", "?")[:7]
+        new_revision = app_in_catalog.get("git", {}).get("revision", "?")[:7]
+
+        current_version = f" ({current_revision})"
+        new_version = f" ({new_revision})"
     else:
-        return "no"
+        new_version = version_in_catalog
+
+    return "yes", current_version, new_version
 
 
 def app_map(app=None, raw=False, user=None):
@@ -1833,21 +1840,25 @@ def app_change_label(app, new_label):
 
     app_setting(app, "label", new_label)
 
+    # FIXME: we kinda have redundant stuff between the label key on the main perm, and the label key at top level ...
+    # or at least this operation should also change the label in the main perm to be consistent ...
+
 
 def app_action_list(app):
-    AppConfigPanel = _get_AppConfigPanel()
+    AppConfigPanel, AppCoreConfigPanel = _get_AppConfigPanel()
     return AppConfigPanel(app).list_actions()
 
 
 @is_unit_operation()
-def app_action_run(operation_logger, app, action, args=None, args_file=None):
-    AppConfigPanel = _get_AppConfigPanel()
-    return AppConfigPanel(app).run_action(
+def app_action_run(operation_logger, app, action, args=None, args_file=None, core=False):
+    AppConfigPanel, AppCoreConfigPanel = _get_AppConfigPanel()
+    config_panel = AppConfigPanel(app) if core is False else AppCoreConfigPanel(app)
+    return config_panel.run_action(
         action, args=args, args_file=args_file, operation_logger=operation_logger
     )
 
 
-def app_config_get(app, key="", full=False, export=False):
+def app_config_get(app, key="", full=False, export=False, core=False):
     """
     Display an app configuration in classic, full or export mode
     """
@@ -1863,9 +1874,9 @@ def app_config_get(app, key="", full=False, export=False):
     else:
         mode = "classic"
 
-    AppConfigPanel = _get_AppConfigPanel()
+    AppConfigPanel, AppCoreConfigPanel = _get_AppConfigPanel()
     try:
-        config_ = AppConfigPanel(app)
+        config_ = AppConfigPanel(app) if core is False else AppCoreConfigPanel(app)
         return config_.get(key, mode)
     except YunohostValidationError as e:
         if Moulinette.interface.type == "api" and e.key == "config_no_panel":
@@ -1877,14 +1888,14 @@ def app_config_get(app, key="", full=False, export=False):
 
 @is_unit_operation()
 def app_config_set(
-    operation_logger, app, key=None, value=None, args=None, args_file=None
+    operation_logger, app, key=None, value=None, args=None, args_file=None, core=False
 ):
     """
     Apply a new app configuration
     """
 
-    AppConfigPanel = _get_AppConfigPanel()
-    config_ = AppConfigPanel(app)
+    AppConfigPanel, AppCoreConfigPanel = _get_AppConfigPanel()
+    config_ = AppConfigPanel(app) if core is False else AppCoreConfigPanel(app)
 
     return config_.set(key, value, args, args_file, operation_logger=operation_logger)
 
@@ -2051,7 +2062,166 @@ ynh_app_config_run $1
                         )
             return "\n".join(lines)
 
-    return AppConfigPanel
+    class AppCoreConfigPanel(ConfigPanel):
+        entity_type = "app"
+
+        def __init__(self, entity) -> None:
+            self.entity = entity
+            self.config_path = self.config_path_tpl.format(
+                entity=entity, entity_type=self.entity_type
+            )
+
+        def _get_raw_config(self) -> "RawConfig":
+
+            from yunohost.user import user_list, user_group_list
+
+            raw_config = super()._get_raw_config()
+            i18n_prefix = raw_config["i18n"]
+
+            perm_config_template = raw_config["_core"].pop("permissions")
+            special_groups = {g: m18n.n(g) for g in ["visitors", "all_users", "admins"]}
+            regular_groups = {g: g.title() for g in list(user_group_list(include_primary_groups=False)["groups"].keys()) if g not in special_groups}
+            users = {username: infos["fullname"] for username, infos in user_list(fields=["fullname"])["users"].items()}
+
+            groups = {**special_groups, **regular_groups, **users}
+
+            perm_config_template["allowed"]["choices"] = list(groups.keys())
+
+            # i18n tweaks
+            for k, v in perm_config_template.items():
+                v["ask"] = m18n.n(f"{i18n_prefix}_permission_{k}")
+                if m18n.key_exists(f"{i18n_prefix}_permission_{k}_help"):
+                    v["help"] = m18n.n(f"{i18n_prefix}_permission_{k}_help")
+
+            settings = _get_app_settings(self.entity)
+            perms_that_are_not_main = list(settings.get("_permissions", {}).keys())
+            if "main" in perms_that_are_not_main:
+                perms_that_are_not_main.remove("main")
+            for perm in ["main"] + perms_that_are_not_main:
+                # Prefix every key with "permission_{perm}_" to make the key unique
+                this_perm_config = {f"permission_{perm}_{k}": v for k, v in perm_config_template.items()}
+                raw_config["_core"][f"permission_{perm}"] = this_perm_config
+                if perm == "main":
+                    section_name = m18n.n(f"{i18n_prefix}_permission_main_section_name")
+                else:
+                    section_name = m18n.n(f"{i18n_prefix}_permission_extraperm_section_name", perm=perm)
+                raw_config["_core"][f"permission_{perm}"]["name"] = section_name
+
+            # Ugly trick to move 'operations' at the end
+            raw_config["_core"]["operations"] = raw_config["_core"].pop("operations")
+
+            upgradable, current_version, new_version = _app_upgradable(self.entity)
+            raw_config["_core"]["operations"]["upgradable"]["default"] = upgradable
+            # i18n: app_config_upgradable_yes
+            # i18n: app_config_upgradable_no
+            # i18n: app_config_upgradable_url_required
+            # i18n: app_config_upgradable_bad_quality
+            raw_config["_core"]["operations"]["upgradable_msg"]["ask"] = m18n.n(f"app_config_upgradable_{upgradable}", current_version=current_version, new_version=new_version)
+            raw_config["_core"]["operations"]["upgradable_msg"]["style"] = {
+                "yes": "info",  # "App can be upgraded"
+                "no": "success",  # "It's up to date !" etc
+                "url_required": "warning",  # "App is unknown, gotta be upgraded manually by specifying the URL in CLI" etc
+                "bad_quality": "warning",  # "App is currently marked as bad quality" etc
+            }[upgradable]
+
+            domain = settings.get("domain")
+            path = settings.get("path")
+            if not domain and not path:
+                change_url_supported = "not_relevant"
+            elif (Path(APPS_SETTING_PATH) / self.entity / "scripts" / "change_url").exists():
+                change_url_supported = "yes"
+                # FIXME: "change_url_unsupported_msg"
+                raw_config["_core"]["operations"]["change_url_domain"]["default"] = domain
+                raw_config["_core"]["operations"]["change_url_path"]["default"] = path
+            else:
+                change_url_supported = "no"
+
+            raw_config["_core"]["operations"]["change_url_supported"]["default"] = change_url_supported
+
+            return raw_config
+
+        def _get_raw_settings(self) -> "RawSettings":
+
+            from yunohost.permission import user_permission_list
+            perms = user_permission_list(full=True, apps=[self.entity])["permissions"]
+            app_settings = _get_app_settings(self.entity)
+            perms_as_app_settings = app_settings.get("_permissions", {})
+
+            domain, path = app_settings.get("domain"), app_settings.get("path")
+
+            raw_settings = {}
+
+            for perm, infos in perms.items():
+                perm = perm.split(".")[1]
+                if perm == "main":
+                    label = perms_as_app_settings.get(perm, {}).get("label") or app_settings.get("label") or self.entity.title()
+                else:
+                    label = perms_as_app_settings.get(perm, {}).get("label") or perm
+                raw_settings[f"permission_{perm}_label"] = label
+                raw_settings[f"permission_{perm}_description"] = infos.get("description", "")
+                raw_settings[f"permission_{perm}_show_tile"] = infos["show_tile"]
+                if infos.get("url") and domain and path:
+                    absolute_url = f"https://{domain}{path}{infos.get('url')}"
+                    raw_settings[f"permission_{perm}_location"] = {"ask": f"Corresponds to [{absolute_url}]({absolute_url})"}
+                else:
+                    raw_settings[f"permission_{perm}_location"] = {"visible": False}
+                    raw_settings[f"permission_{perm}_show_tile"]["visible"] = False
+                raw_settings[f"permission_{perm}_url"] = infos.get("url") or ""
+                if infos.get("logo_hash"):
+                    raw_settings[f"permission_{perm}_logo"] = f"{APPS_CATALOG_LOGOS}/{infos.get('logo_hash')}.png"
+                else:
+                    raw_settings[f"permission_{perm}_logo"] = ""
+                raw_settings[f"permission_{perm}_allowed"] = ','.join(infos["allowed"])
+                if infos.get("protected"):
+                    # FIXME: i18n
+                    raw_settings[f"permission_{perm}_allowed"] = {
+                        "value": raw_settings[f"permission_{perm}_allowed"],
+                        "help": "NB: this permission is 'protected' and therefore the 'visitors' group cannot be actually added/removed from the authorized groups."
+                    }
+
+            return raw_settings
+
+        def _apply(
+            self,
+            form: "FormModel",
+            config: "ConfigPanelModel",
+            previous_settings: dict[str, Any],
+            exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
+        ) -> None:
+
+            from yunohost.user import user_permission_update, user_permission_add, user_permission_remove
+
+            next_settings = {
+                k: v for k, v in form.dict().items() if previous_settings.get(k) != v
+            }
+
+            perm_changes: dict[str, dict[str, Any]] = {}
+            for next_setting, value in next_settings.items():
+                # next_setting is something like 'permission_main_logo'
+                _, perm, key = next_setting.split("_", 2)
+                if perm not in perm_changes:
+                    perm_changes[perm] = {}
+                if key == "logo" and value.strip():
+                    value = open(value, "rb")
+                perm_changes[perm][key] = value
+
+            for perm, new_infos in perm_changes.items():
+                new_allowed = new_infos.pop("allowed") if "allowed" in new_infos else None
+
+                if new_infos:
+                    user_permission_update(f"{self.entity}.{perm}", **new_infos)
+                if new_allowed is not None:
+                    old_allowed = previous_settings.get(f"permission_{perm}_allowed", "")
+                    old_allowed_set = set(old_allowed.split(",")) if old_allowed else set()
+                    new_allowed_set = set(new_allowed.split(",")) if new_allowed else set()
+                    to_add = list(set(new_allowed_set) - set(old_allowed_set))
+                    to_remove = list(set(old_allowed_set) - set(new_allowed_set))
+                    if to_add:
+                        user_permission_add(f"{self.entity}.{perm}", to_add)
+                    if to_remove:
+                        user_permission_remove(f"{self.entity}.{perm}", to_remove)
+
+    return AppConfigPanel, AppCoreConfigPanel
 
 
 app_settings_cache: Dict[str, Dict[str, Any]] = {}

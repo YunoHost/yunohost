@@ -1508,7 +1508,7 @@ def user_permission_update(
     permission: str,
     label: str | None = None,
     show_tile: bool | None = None,
-    logo: BinaryIO | None = None,
+    logo: BinaryIO | Literal[''] | None = None,
     description: str | None = None,
     hide_from_public: bool | None = None,
     order: int | None = None,

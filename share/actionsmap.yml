@@ -1077,6 +1077,9 @@ app:
                         full: --export
                         help: Only export key/values, meant to be reimported using "config set --args-file"
                         action: store_true
+                    --core:
+                        help: Get the 'core' config for this app, such as permissions stuff. This option is only meant for API.
+                        action: store_true
 
               ### app_config_set()
               set:
@@ -1098,6 +1101,9 @@ app:
                         full: --args-file
                         help: YAML or JSON file with key/value couples
                         type: open
+                    --core:
+                        help: Set the 'core' config for this app, such as permissions stuff. This option is only meant for API.
+                        action: store_true
 
 #############################
 #          Backup           #
