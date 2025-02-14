@@ -48,13 +48,13 @@ class SystemPermInfos(TypedDict):
     label: str
     allowed: list[str]
     corresponding_users: NotRequired[list[str] | set[str]]
+    protected: bool
 
 
 class AppPermInfos(SystemPermInfos):
     url: str | None
     additional_urls: list[str]
     auth_header: bool
-    protected: bool
     show_tile: bool | None
     hide_from_public: NotRequired[bool]
     logo_hash: NotRequired[str]
@@ -859,6 +859,7 @@ def _get_system_perms() -> dict[str, SystemPermInfos]:
 
     for p, infos in system_perm_conf.items():
         infos["label"] = SYSTEM_PERMS[p]["label"]
+        infos["protected"] = True
 
     return system_perm_conf
 
