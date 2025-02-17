@@ -239,7 +239,7 @@ def app_info(app, full=False, upgradable=False):
     ]
 
     # FIXME: this is the same stuff as "name" ... maybe we should get rid of "name" ?
-    ret["label"] = settings.get("label", local_manifest["name"])
+    ret["label"] = ret["name"]
 
     return ret
 
@@ -2102,8 +2102,10 @@ ynh_app_config_run $1
                 this_perm_config = {f"permission_{perm}_{k}": v for k, v in perm_config_template.items()}
                 raw_config["_core"][f"permission_{perm}"] = this_perm_config
                 if perm == "main":
+                    # i18n: app_config_permission_main_section_name
                     section_name = m18n.n(f"{i18n_prefix}_permission_main_section_name")
                 else:
+                    # i18n: app_config_permission_extraperm_section_name
                     section_name = m18n.n(f"{i18n_prefix}_permission_extraperm_section_name", perm=perm)
                 raw_config["_core"][f"permission_{perm}"]["name"] = section_name
 
@@ -2162,7 +2164,7 @@ ynh_app_config_run $1
                 raw_settings[f"permission_{perm}_show_tile"] = infos["show_tile"]
                 if infos.get("url") and domain and path:
                     absolute_url = f"https://{domain}{path}{infos.get('url')}"
-                    raw_settings[f"permission_{perm}_location"] = {"ask": f"Corresponds to [{absolute_url}]({absolute_url})"}
+                    raw_settings[f"permission_{perm}_location"] = {"ask": m18n.n("app_config_permission_location", absolute_url=absolute_url)}
                 else:
                     raw_settings[f"permission_{perm}_location"] = {"visible": False}
                     raw_settings[f"permission_{perm}_show_tile"]["visible"] = False
@@ -2173,10 +2175,9 @@ ynh_app_config_run $1
                     raw_settings[f"permission_{perm}_logo"] = ""
                 raw_settings[f"permission_{perm}_allowed"] = ','.join(infos["allowed"])
                 if infos.get("protected"):
-                    # FIXME: i18n
                     raw_settings[f"permission_{perm}_allowed"] = {
                         "value": raw_settings[f"permission_{perm}_allowed"],
-                        "help": "NB: this permission is 'protected' and therefore the 'visitors' group cannot be actually added/removed from the authorized groups."
+                        "help": m18n.n("app_config_permission_allowed_warn_protected"),
                     }
 
             return raw_settings
