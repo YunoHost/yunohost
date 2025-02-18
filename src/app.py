@@ -2108,6 +2108,7 @@ ynh_app_config_run $1
                 else:
                     # i18n: app_config_permission_extraperm_section_name
                     section_name = m18n.n(f"{i18n_prefix}_permission_extraperm_section_name", perm=perm)
+                    raw_config["_core"][f"permission_{perm}"]["collapsed"] = True
                 raw_config["_core"][f"permission_{perm}"]["name"] = section_name
 
             # Ugly trick to move 'operations' at the end
