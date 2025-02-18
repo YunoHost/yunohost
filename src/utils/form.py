@@ -2043,9 +2043,15 @@ def prompt_or_validate_form(
     hooks: Hooks = {},
 ) -> FormModel:
     for option in options:
+
+        print(option)
+
         interactive = Moulinette.interface.type == "cli" and os.isatty(1)
 
         if isinstance(option, ButtonOption):
+            print("=====")
+            print(option)
+            print(context)
             if option.is_visible(context) and option.is_enabled(context):
                 continue
             else:
@@ -2061,7 +2067,10 @@ def prompt_or_validate_form(
                 # - we doesn't want to give a specific value
                 # - we want to keep the previous value
                 # - we want the default value
-                context[option.id] = None
+                if option.readonly:
+                    context[option.id] = option.normalize(form[option.id])
+                else:
+                    context[option.id] = None
 
             continue
 

@@ -28,7 +28,17 @@ import tempfile
 import time
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Tuple, Union, Literal
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    Literal,
+)
 
 import yaml
 from moulinette import Moulinette, m18n
@@ -135,8 +145,11 @@ def app_info(app, full=False, upgradable=False):
     main_perm = settings.get("_permissions", {}).get("main", {})
 
     ret = {
-        "description": main_perm.get("description") or _value_for_locale(local_manifest["description"]),
-        "name": main_perm.get("label") or settings.get("label") or local_manifest["name"],
+        "description": main_perm.get("description")
+        or _value_for_locale(local_manifest["description"]),
+        "name": main_perm.get("label")
+        or settings.get("label")
+        or local_manifest["name"],
         "version": local_manifest.get("version", "-"),
     }
 
@@ -157,7 +170,9 @@ def app_info(app, full=False, upgradable=False):
         if os.path.exists(f"{APPS_CATALOG_LOGOS}/{app}.png")
         else (main_perm.get("logo_hash") or from_catalog.get("logo_hash"))
     )
-    ret["upgradable"], ret["current_version"], ret["new_version"] = _app_upgradable(app, local_manifest=local_manifest)
+    ret["upgradable"], ret["current_version"], ret["new_version"] = _app_upgradable(
+        app, local_manifest=local_manifest
+    )
 
     ret["settings"] = settings
 
@@ -234,9 +249,9 @@ def app_info(app, full=False, upgradable=False):
         and local_manifest["resources"].get("data_dir") is not None
     )
 
-    ret["permissions"] = user_permission_list(full=True, absolute_urls=True, apps=[app])[
-        "permissions"
-    ]
+    ret["permissions"] = user_permission_list(
+        full=True, absolute_urls=True, apps=[app]
+    )["permissions"]
 
     # FIXME: this is the same stuff as "name" ... maybe we should get rid of "name" ?
     ret["label"] = ret["name"]
@@ -244,7 +259,9 @@ def app_info(app, full=False, upgradable=False):
     return ret
 
 
-def _app_upgradable(app: str, local_manifest: dict | None = None) -> Tuple[Literal["yes", "no", "url_required", "bad_quality"], str | None, str | None]:
+def _app_upgradable(
+    app: str, local_manifest: dict | None = None
+) -> Tuple[Literal["yes", "no", "url_required", "bad_quality"], str | None, str | None]:
 
     base_app_id, _ = _parse_app_instance_name(app)
     app_in_catalog = _load_apps_catalog()["apps"].get(base_app_id, {})
@@ -885,7 +902,7 @@ def app_upgrade(
             if upgrade_failed or broke_the_system:
                 if not continue_on_failure or broke_the_system:
                     # display this if there are remaining apps
-                    if apps[number + 1:]:
+                    if apps[number + 1 :]:
                         not_upgraded_apps = apps[number:]
                         if broke_the_system and not continue_on_failure:
                             logger.error(
@@ -1775,7 +1792,8 @@ def app_ssowatconf() -> None:
             "users": perm_info["corresponding_users"],
             "public": "visitors" in perm_info["allowed"],
             "url": uris[0],
-            "description": perm_info.get("description") or local_manifest["description"],
+            "description": perm_info.get("description")
+            or local_manifest["description"],
             "order": perm_info.get("order", 100),
         }
 
@@ -1785,11 +1803,13 @@ def app_ssowatconf() -> None:
         # Logo may be customized via the perm setting, otherwise we use the default logo that we fetch from the catalog infos
         app_base_id = app_id.split("__")[0]
         # Use the perm logo, or the main-perm logo, or the default logo from catalog
-        logo_hash = perm_info.get("logo_hash") or all_permissions[f"{app_id}.main"].get("logo_hash") or apps_catalog.get(app_base_id, {}).get("logo_hash")
+        logo_hash = (
+            perm_info.get("logo_hash")
+            or all_permissions[f"{app_id}.main"].get("logo_hash")
+            or apps_catalog.get(app_base_id, {}).get("logo_hash")
+        )
         if logo_hash:
-            app_portal_info["logo"] = (
-                f"/yunohost/sso/applogos/{logo_hash}.png"
-            )
+            app_portal_info["logo"] = f"/yunohost/sso/applogos/{logo_hash}.png"
 
         portal_domains_apps[app_portal_domain][perm_name] = app_portal_info
 
@@ -2104,8 +2124,17 @@ ynh_app_config_run $1
 
             perm_config_template = raw_config["_core"].pop("permissions")
             special_groups = {g: m18n.n(g) for g in ["visitors", "all_users", "admins"]}
-            regular_groups = {g: g.title() for g in list(user_group_list(include_primary_groups=False)["groups"].keys()) if g not in special_groups}
-            users = {username: infos["fullname"] for username, infos in user_list(fields=["fullname"])["users"].items()}
+            regular_groups = {
+                g: g.title()
+                for g in list(
+                    user_group_list(include_primary_groups=False)["groups"].keys()
+                )
+                if g not in special_groups
+            }
+            users = {
+                username: infos["fullname"]
+                for username, infos in user_list(fields=["fullname"])["users"].items()
+            }
 
             groups = {**special_groups, **regular_groups, **users}
 
@@ -2123,14 +2152,18 @@ ynh_app_config_run $1
                 perms_that_are_not_main.remove("main")
             for perm in ["main"] + perms_that_are_not_main:
                 # Prefix every key with "permission_{perm}_" to make the key unique
-                this_perm_config = {f"permission_{perm}_{k}": v for k, v in perm_config_template.items()}
+                this_perm_config = {
+                    f"permission_{perm}_{k}": v for k, v in perm_config_template.items()
+                }
                 raw_config["_core"][f"permission_{perm}"] = this_perm_config
                 if perm == "main":
                     # i18n: app_config_permission_main_section_name
                     section_name = m18n.n(f"{i18n_prefix}_permission_main_section_name")
                 else:
                     # i18n: app_config_permission_extraperm_section_name
-                    section_name = m18n.n(f"{i18n_prefix}_permission_extraperm_section_name", perm=perm)
+                    section_name = m18n.n(
+                        f"{i18n_prefix}_permission_extraperm_section_name", perm=perm
+                    )
                     raw_config["_core"][f"permission_{perm}"]["collapsed"] = True
                 raw_config["_core"][f"permission_{perm}"]["name"] = section_name
 
@@ -2143,7 +2176,11 @@ ynh_app_config_run $1
             # i18n: app_config_upgradable_no
             # i18n: app_config_upgradable_url_required
             # i18n: app_config_upgradable_bad_quality
-            raw_config["_core"]["operations"]["upgradable_msg"]["ask"] = m18n.n(f"app_config_upgradable_{upgradable}", current_version=current_version, new_version=new_version)
+            raw_config["_core"]["operations"]["upgradable_msg"]["ask"] = m18n.n(
+                f"app_config_upgradable_{upgradable}",
+                current_version=current_version,
+                new_version=new_version,
+            )
             raw_config["_core"]["operations"]["upgradable_msg"]["style"] = {
                 "yes": "info",  # "App can be upgraded"
                 "no": "success",  # "It's up to date !" etc
@@ -2155,21 +2192,28 @@ ynh_app_config_run $1
             path = settings.get("path")
             if not domain and not path:
                 change_url_supported = "not_relevant"
-            elif (Path(APPS_SETTING_PATH) / self.entity / "scripts" / "change_url").exists():
+            elif (
+                Path(APPS_SETTING_PATH) / self.entity / "scripts" / "change_url"
+            ).exists():
                 change_url_supported = "yes"
                 # FIXME: "change_url_unsupported_msg"
-                raw_config["_core"]["operations"]["change_url_domain"]["default"] = domain
+                raw_config["_core"]["operations"]["change_url_domain"][
+                    "default"
+                ] = domain
                 raw_config["_core"]["operations"]["change_url_path"]["default"] = path
             else:
                 change_url_supported = "no"
 
-            raw_config["_core"]["operations"]["change_url_supported"]["default"] = change_url_supported
+            raw_config["_core"]["operations"]["change_url_supported"][
+                "default"
+            ] = change_url_supported
 
             return raw_config
 
         def _get_raw_settings(self) -> "RawSettings":
 
             from yunohost.permission import user_permission_list
+
             perms = user_permission_list(full=True, apps=[self.entity])["permissions"]
             app_settings = _get_app_settings(self.entity)
             perms_as_app_settings = app_settings.get("_permissions", {})
@@ -2181,24 +2225,36 @@ ynh_app_config_run $1
             for perm, infos in perms.items():
                 perm = perm.split(".")[1]
                 if perm == "main":
-                    label = perms_as_app_settings.get(perm, {}).get("label") or app_settings.get("label") or self.entity.title()
+                    label = (
+                        perms_as_app_settings.get(perm, {}).get("label")
+                        or app_settings.get("label")
+                        or self.entity.title()
+                    )
                 else:
                     label = perms_as_app_settings.get(perm, {}).get("label") or perm
                 raw_settings[f"permission_{perm}_label"] = label
-                raw_settings[f"permission_{perm}_description"] = infos.get("description", "")
+                raw_settings[f"permission_{perm}_description"] = infos.get(
+                    "description", ""
+                )
                 raw_settings[f"permission_{perm}_show_tile"] = infos["show_tile"]
                 if infos.get("url") and domain and path:
                     absolute_url = f"https://{domain}{path}{infos.get('url')}"
-                    raw_settings[f"permission_{perm}_location"] = {"ask": m18n.n("app_config_permission_location", absolute_url=absolute_url)}
+                    raw_settings[f"permission_{perm}_location"] = {
+                        "ask": m18n.n(
+                            "app_config_permission_location", absolute_url=absolute_url
+                        )
+                    }
                 else:
                     raw_settings[f"permission_{perm}_location"] = {"visible": False}
                     raw_settings[f"permission_{perm}_show_tile"]["visible"] = False
                 raw_settings[f"permission_{perm}_url"] = infos.get("url") or ""
                 if infos.get("logo_hash"):
-                    raw_settings[f"permission_{perm}_logo"] = f"{APPS_CATALOG_LOGOS}/{infos.get('logo_hash')}.png"
+                    raw_settings[f"permission_{perm}_logo"] = (
+                        f"{APPS_CATALOG_LOGOS}/{infos.get('logo_hash')}.png"
+                    )
                 else:
                     raw_settings[f"permission_{perm}_logo"] = ""
-                raw_settings[f"permission_{perm}_allowed"] = ','.join(infos["allowed"])
+                raw_settings[f"permission_{perm}_allowed"] = ",".join(infos["allowed"])
                 if infos.get("protected"):
                     raw_settings[f"permission_{perm}_allowed"] = {
                         "value": raw_settings[f"permission_{perm}_allowed"],
@@ -2215,7 +2271,11 @@ ynh_app_config_run $1
             exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
         ) -> None:
 
-            from yunohost.user import user_permission_update, user_permission_add, user_permission_remove
+            from yunohost.user import (
+                user_permission_update,
+                user_permission_add,
+                user_permission_remove,
+            )
 
             next_settings = {
                 k: v for k, v in form.dict().items() if previous_settings.get(k) != v
@@ -2232,20 +2292,32 @@ ynh_app_config_run $1
                 perm_changes[perm][key] = value
 
             for perm, new_infos in perm_changes.items():
-                new_allowed = new_infos.pop("allowed") if "allowed" in new_infos else None
+                new_allowed = (
+                    new_infos.pop("allowed") if "allowed" in new_infos else None
+                )
 
                 if new_infos:
                     user_permission_update(f"{self.entity}.{perm}", **new_infos)
                 if new_allowed is not None:
-                    old_allowed = previous_settings.get(f"permission_{perm}_allowed", "")
-                    old_allowed_set = set(old_allowed.split(",")) if old_allowed else set()
-                    new_allowed_set = set(new_allowed.split(",")) if new_allowed else set()
+                    old_allowed = previous_settings.get(
+                        f"permission_{perm}_allowed", ""
+                    )
+                    old_allowed_set = (
+                        set(old_allowed.split(",")) if old_allowed else set()
+                    )
+                    new_allowed_set = (
+                        set(new_allowed.split(",")) if new_allowed else set()
+                    )
                     to_add = list(set(new_allowed_set) - set(old_allowed_set))
                     to_remove = list(set(old_allowed_set) - set(new_allowed_set))
                     if to_add:
                         user_permission_add(f"{self.entity}.{perm}", to_add)
                     if to_remove:
                         user_permission_remove(f"{self.entity}.{perm}", to_remove)
+
+        def _run_action(self, form: "FormModel", action_id: str) -> None:
+
+            time.sleep(5)
 
     return AppConfigPanel, AppCoreConfigPanel
 
