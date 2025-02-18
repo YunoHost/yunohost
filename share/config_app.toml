@@ -40,6 +40,7 @@ i18n = "app_config"
         type = "string"
         # can be 'yes', 'no', 'bad_quality' or 'url_required
         visible = false
+        readonly = true
 
         [_core.operations.upgradable_msg]
         type = "alert"

@@ -1846,17 +1846,40 @@ def app_change_label(app, new_label):
 
 
 def app_action_list(app):
-    AppConfigPanel, AppCoreConfigPanel = _get_AppConfigPanel()
+    AppConfigPanel, _ = _get_AppConfigPanel()
     return AppConfigPanel(app).list_actions()
 
 
-@is_unit_operation()
-def app_action_run(operation_logger, app, action, args=None, args_file=None, core=False):
-    AppConfigPanel, AppCoreConfigPanel = _get_AppConfigPanel()
-    config_panel = AppConfigPanel(app) if core is False else AppCoreConfigPanel(app)
-    return config_panel.run_action(
-        action, args=args, args_file=args_file, operation_logger=operation_logger
-    )
+def app_action_run(app, action, args=None, args_file=None, core=False):
+
+    if action.startswith("_core"):
+        core = True
+    if core:
+        _assert_is_installed(app)
+
+        from yunohost.utils.form import parse_prefilled_values
+
+        args = parse_prefilled_values(args)
+
+        _, _, action = action.split(".")
+        if action == "force_upgrade":
+            app_upgrade(app, force=True)
+        elif action == "upgrade":
+            app_upgrade(app)
+        elif action == "change_url":
+            app_change_url(app, args["change_url_domain"], args["change_url_path"])
+        elif action == "uninstall":
+            app_remove(app, purge=args.get("purge", False))
+        else:
+            raise YunohostValidationError("Unknown app action {action}", raw_msg=True)
+        return
+    else:
+        operation_logger = OperationLogger("app_action_run", app)
+        AppConfigPanel, _ = _get_AppConfigPanel()
+        config_panel = AppConfigPanel(app)
+        return config_panel.run_action(
+            action, args=args, args_file=args_file, operation_logger=operation_logger
+        )
 
 
 def app_config_get(app, key="", full=False, export=False, core=False):
