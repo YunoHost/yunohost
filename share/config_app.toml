@@ -20,7 +20,7 @@ i18n = "app_config"
         type = "string"
 
         [_core.permissions.description]
-        type = "text"
+        type = "string"
 
         [_core.permissions.show_tile]
         type = "boolean"
