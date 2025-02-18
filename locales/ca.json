@@ -161,7 +161,7 @@
     "log_remove_on_failed_install": "Elimina « {} » després de que la instal·lació hagi fallat",
     "log_domain_add": "Afegeix el domini « {} »",
     "log_domain_remove": "Elimina el domini « {} »",
-    "log_dyndns_subscribe": "Subscriure's a un subdomini YunoHost « {} »",
+    "log_dyndns_subscribe": "Registra un subdomini YunoHost « {} »",
     "log_dyndns_update": "Actualitza la IP associada al subdomini YunoHost « {} »",
     "log_letsencrypt_cert_install": "Instal·la un certificat Let's Encrypt al domini « {} »",
     "log_selfsigned_cert_install": "Instal·la el certificat autosignat al domini « {} »",
