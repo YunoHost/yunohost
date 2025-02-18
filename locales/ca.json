@@ -839,5 +839,7 @@
     "migration_0027_patch_yunohost_conflicts": "S'està aplicant el pegat per solucionar el problema del conflicte…",
     "migration_0027_patching_sources_list": "S'està aplicant pedaços al fitxer sources.lists…",
     "global_settings_setting_smtp_backup_mx_domains_help": "Permet que aquest servidor actuï com a domini MX *secundari* de recolzament per al domini indicat. Això vol dir que si no es pot accedir al MX principal del domini (per exemple a causa d'una interrupció), els correus s'enviaran a aquest servidor, que els conservarà durant un màxim de 20 dies i intentarà retransmetre'ls a la destinació real un cop torna a pujar. Es poden proporcionar diversos dominis, separats per comes.",
-    "global_settings_setting_tls_passthrough_list_help": "Hauria de ser una llista de DOMAIN;DESTINATION;PORT, com ara domain.tld;192.168.1.42;443 o domain.tld;server.local;8123"
+    "global_settings_setting_tls_passthrough_list_help": "Hauria de ser una llista de DOMAIN;DESTINATION;PORT, com ara domain.tld;192.168.1.42;443 o domain.tld;server.local;8123",
+    "log_diagnosis_run": "Executa el diagnòstic",
+    "group_cannot_remove_last_admin": "L'usuari '{user}' és l'únic usuari del grup 'admins' i no serà eliminat."
 }
