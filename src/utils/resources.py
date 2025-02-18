@@ -680,6 +680,7 @@ class PermissionsResource(AppResource):
             permission_url,
             user_permission_update,
         )
+        from yunohost.app import app_ssowatconf
 
         # Delete legacy is_public setting if not already done
         self.delete_setting("is_public")
@@ -741,18 +742,21 @@ class PermissionsResource(AppResource):
             )
 
         _sync_permissions_with_ldap()
+        app_ssowatconf()
 
     def deprovision(self, context: Dict = {}):
         from yunohost.permission import (
             permission_delete,
             _sync_permissions_with_ldap,
         )
+        from yunohost.app import app_ssowatconf
 
         existing_perms = list((self.get_setting("_permissions") or {}).keys())
         for perm in existing_perms:
             permission_delete(f"{self.app}.{perm}", force=True, sync_perm=False)
 
         _sync_permissions_with_ldap()
+        app_ssowatconf()
 
 
 class SystemuserAppResource(AppResource):

@@ -412,4 +412,6 @@ def test_resource_permissions():
     r(conf, "testapp").deprovision()
 
     res = user_permission_list(full=True)["permissions"]
-    assert "testapp.main" not in res
+    assert "testapp.admin" not in res
+    # The main permission is still forced to exist
+    assert "testapp.main" in res

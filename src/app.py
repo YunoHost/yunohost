@@ -1361,6 +1361,7 @@ def app_install(
             shutil.rmtree(extracted_app_folder)
 
             _sync_permissions_with_ldap()
+            app_ssowatconf()
 
             raise YunohostError(failure_message_with_debug_instructions, raw_msg=True)
 
