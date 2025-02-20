@@ -818,7 +818,7 @@
     "global_settings_setting_webadmin_name": "Webadmin",
     "migration_0029_postgresql_13_not_installed": "PostgreSQL n'a pas été installé sur votre système. Rien à faire.",
     "migration_0030_rebuild_python_venv_in_bookworm_broken_app": "{app} est ignoré car virtualenv ne peut pas être facilement reconstruit pour cette application. Vous devriez résoudre la situation en forçant la mise à niveau de cette application à l'aide de `yunohost app upgrade --force {app}`.",
-    "migration_0030_rebuild_python_venv_in_bookworm_disclaimer_ignored": "Les environnements virtuels ne peuvent pas être reconstruits automatiquement pour ces applications. Vous devez forcer une mise à niveau pour celles-ci, ce qui peut être fait à partir de la ligne de commande avec : `yunohost app upgrade --force APP`: {ignored_apps}",
+    "migration_0030_rebuild_python_venv_in_bookworm_disclaimer_ignored": "Les environnements virtuels ne peuvent pas être reconstruits automatiquement pour ces applications. Vous devez forcer une mise à niveau pour celles-ci, ce qui peut être fait à partir de la ligne de commande avec : `yunohost app upgrade --force APP` : {ignored_apps}",
     "migration_0030_rebuild_python_venv_in_bookworm_disclaimer_rebuild": "La reconstruction du virtualenv sera tentée pour les applications suivantes (NB : l'opération peut prendre un certain temps !) : {rebuild_apps}",
     "migration_0030_rebuild_python_venv_in_bookworm_in_progress": "Nous essayons maintenant de reconstruire le virtualenv Python pour `{app}`",
     "migration_0031_terms_of_services": "Cette migration est un message purement informatif sur le fait que le projet YunoHost publie désormais des conditions d'utilisation liées aux services techniques et communautaires.",
