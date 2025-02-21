@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple, Optional
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typing import Any, Dict, List, Tuple, Optional
 
 from sdbus import (
-    DbusDeprecatedFlag,
     DbusInterfaceCommon,
     DbusPropertyEmitsChangeFlag,
     DbusUnprivilegedFlag,
@@ -39,7 +41,10 @@ class GetDisksMixin(DbusInterfaceCommon):
             on_unknown_interface="none",
             on_unknown_member="ignore",
         ).items():
-            if object_path.startswith(UDISKS2_DRIVE_PATH) and issubclass(iface, Disk):
+            if (
+                object_path.startswith(UDISKS2_DRIVE_PATH)  # This is a drive
+                and not props["optical"]  # This is not a CD player
+            ):
                 value = DiskResult(object_path, iface, props)
                 result[value.name] = value
 
@@ -124,13 +129,6 @@ class Udisks2Manager(
         chunk: int,
         options: Dict[str, Tuple[str, Any]],
     ) -> str:
-        raise NotImplementedError
-
-    @dbus_method(
-        input_signature="b",
-        flags=DbusDeprecatedFlag | DbusUnprivilegedFlag,
-    )
-    def enable_modules(self, enable: bool) -> None:
         raise NotImplementedError
 
     @dbus_method(
