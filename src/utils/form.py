@@ -1334,10 +1334,10 @@ class FileOption(BaseInputOption):
 
         from magic import Magic
 
-        if Moulinette.interface.type != "api":
+        if Moulinette.interface.type != "api" or (isinstance(value, str) and value.startswith("/")):
             path = Path(value)
             if not (path.exists() and path.is_absolute() and path.is_file()):
-                raise YunohostValidationError("File doesn't exists", raw_msg=True)
+                raise YunohostValidationError(f"File {value} doesn't exists", raw_msg=True)
             content = path.read_bytes()
         else:
             content = b64decode(value)
