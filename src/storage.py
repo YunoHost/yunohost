@@ -1,10 +1,10 @@
 def storage_disk_list(with_info=False, human_readable=False):
-    from yunohost.disks import list
+    from yunohost.disk import disk_list
 
-    return list(with_info=with_info, human_readable=human_readable)
+    return disk_list(with_info=with_info, human_readable=human_readable)
 
 
 def storage_disk_info(name, human_readable=False):
-    from yunohost.disks import info
+    from yunohost.disk import disk_info
 
-    return info(name, human_readable=human_readable)
+    return disk_info(name, human_readable=human_readable)

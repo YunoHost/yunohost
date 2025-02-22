@@ -2,9 +2,6 @@ import dbus
 from yunohost.utils.system import binary_to_human
 
 
-__all__ = ["info", "list"]
-
-
 UDISK_DRIVE_PATH = "/org/freedesktop/UDisks2/drives/"
 UDISK_DRIVE_IFC = "org.freedesktop.UDisks2.Drive"
 
@@ -58,7 +55,7 @@ def _disk_infos(name: str, drive: dict, human_readable=False):
     return result
 
 
-def list(with_info=False, human_readable=False):
+def disk_list(with_info=False, human_readable=False):
     if not with_info:
         return [name for name, _ in _query_udisks()]
 
@@ -70,7 +67,7 @@ def list(with_info=False, human_readable=False):
     return {"disks": result}
 
 
-def info(name, human_readable=False):
+def disk_info(name, human_readable=False):
     bus = dbus.SystemBus()
     drive = dbus.Interface(
         bus.get_object(
