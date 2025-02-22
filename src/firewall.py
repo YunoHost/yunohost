@@ -47,7 +47,32 @@ class YunoFirewall:
         self.read()
 
     def read(self) -> None:
-        self.config = yaml.safe_load(self.FIREWALL_FILE.read_text())
+        """
+        The config is expected to have a structure as below
+        See also conf/yunohost/firewall.yml
+
+        tcp:
+            123:
+                open: true
+                upnp: false
+                comment: "some comment"
+            456:
+                open: true
+                upnp: true
+                comment: "some other comment"
+        udp:
+            123:
+                open: true
+                upnp: false
+                comment: "some other other comment"
+
+        router_forwarding_upnp: false
+        """
+
+        self.config = yaml.safe_load(self.FIREWALL_FILE.read_text()) or {}
+
+        if "tcp" not in self.config or "udp" not in self.config:
+            raise Exception(f"Uhoh, no 'tcp' or 'udp' key found in {self.FIREWALL_FILE} ?!")
 
     def write(self) -> None:
         old_file = self.FIREWALL_FILE.parent / (self.FIREWALL_FILE.name + ".old")
@@ -142,7 +167,7 @@ class YunoFirewall:
         self.need_reload = False
 
         # Refresh port forwarding with UPnP
-        if self.config["router_forwarding_upnp"] and upnp:
+        if self.config.get("router_forwarding_upnp") and upnp:
             YunoUPnP(self).refresh(self)
         return True
 
@@ -163,7 +188,7 @@ class YunoUPnP:
         if new_status is not None:
             self.firewall.config["router_forwarding_upnp"] = new_status
         self.firewall.write()
-        return self.firewall.config["router_forwarding_upnp"]
+        return self.firewall.config.get("router_forwarding_upnp")
 
     def ensure_listen_port(self) -> None:
         self.firewall.open_port("udp", self.UPNP_PORT, self.UPNP_PORT_COMMENT)
