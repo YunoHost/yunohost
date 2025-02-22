@@ -504,7 +504,8 @@ def user_update(
         if mail.split("@")[0] in ADMIN_ALIASES:
             raise YunohostValidationError("mail_unavailable")
 
-        new_attr_dict["mail"] = [mail] + user["mail"][1:]
+        user["mail"] = [mail] + user["mail"][1:]
+        new_attr_dict["mail"] = user["mail"]
 
     if add_mailalias is not None:
         if not isinstance(add_mailalias, list):
@@ -957,7 +958,7 @@ def user_import(
     operation_logger.start()
     # We do delete and update before to avoid mail uniqueness issues
     for user in actions["deleted"]:
-        progress(f"Deleting {user}")
+        progress(f"Deleting {user['username']}")
         try:
             user_delete(user["username"], purge=True, from_import=True)
             result["deleted"] += 1
