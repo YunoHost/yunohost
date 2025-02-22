@@ -44,7 +44,6 @@ from yunohost.permission import (
     permission_delete,
     permission_url,
     user_permission_list,
-    user_permission_reset,
     user_permission_update,
 )
 from yunohost.user import (
@@ -54,6 +53,7 @@ from yunohost.user import (
     user_group_list,
     user_list,
 )
+from yunohost.user import user_permission_update as user_permission_update_from_cli
 
 from .conftest import get_test_apps_dir, message, raiseYunohostError
 
@@ -74,7 +74,6 @@ def _permission_create_with_dummy_app(
     url=None,
     additional_urls=None,
     auth_header=True,
-    label=None,
     show_tile=False,
     protected=True,
     sync_perm=True,
@@ -109,7 +108,6 @@ def _permission_create_with_dummy_app(
         url=url,
         additional_urls=additional_urls,
         auth_header=auth_header,
-        label=label,
         show_tile=show_tile,
         protected=protected,
         sync_perm=sync_perm,
@@ -186,7 +184,6 @@ def setup_function(function):
         url="/",
         additional_urls=["/whatever", "/idontnow"],
         auth_header=False,
-        label="Wiki",
         show_tile=True,
         allowed=["all_users"],
         protected=False,
@@ -246,12 +243,12 @@ def check_LDAP_db_integrity():
     # Here we check that all attributes in all object are sychronized.
     # Here is the list of attributes per object:
     # user : memberOf, permission
-    # group : member, permission
-    # permission : groupPermission, inheritPermission
+    # group : member
+    # permission : inheritPermission
     #
     # The idea is to check that all attributes on all sides of object are sychronized.
     # One part should be done automatically by the "memberOf" overlay of LDAP.
-    # The other part is done by the the "permission_sync_to_user" function of the permission module
+    # The other part is done by the the "_sync_permissions_with_ldap" function of the permission module
 
     from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
 
@@ -265,12 +262,12 @@ def check_LDAP_db_integrity():
     group_search = ldap.search(
         "ou=groups",
         "(objectclass=groupOfNamesYnh)",
-        ["cn", "member", "memberUid", "permission"],
+        ["cn", "member", "memberUid"],
     )
     permission_search = ldap.search(
         "ou=permission",
         "(objectclass=permissionYnh)",
-        ["cn", "groupPermission", "inheritPermission", "memberUid"],
+        ["cn", "inheritPermission", "memberUid"],
     )
 
     user_map = {u["uid"][0]: u for u in user_search}
@@ -278,7 +275,7 @@ def check_LDAP_db_integrity():
     permission_map = {p["cn"][0]: p for p in permission_search}
 
     for user in user_search:
-        user_dn = "uid=" + user["uid"][0] + ",ou=users,dc=yunohost,dc=org"
+        user_dn = f"uid={user['uid'][0]},ou=users,dc=yunohost,dc=org"
         group_list = [_ldap_path_extract(m, "cn") for m in user.get("memberOf", [])]
         permission_list = [
             _ldap_path_extract(m, "cn") for m in user.get("permission", [])
@@ -293,9 +290,7 @@ def check_LDAP_db_integrity():
             assert user_dn in permission_map[permission]["inheritPermission"]
 
     for permission in permission_search:
-        permission_dn = (
-            "cn=" + permission["cn"][0] + ",ou=permission,dc=yunohost,dc=org"
-        )
+        permission_dn = f"cn={permission['cn'][0]},ou=permission,dc=yunohost,dc=org"
 
         # inheritPermission uid's should match memberUids
         user_list = [
@@ -308,21 +303,8 @@ def check_LDAP_db_integrity():
         for user in user_list:
             assert permission_dn in user_map[user]["permission"]
 
-        # Same for groups : we should find the permission's DN for all related groups
-        group_list = [
-            _ldap_path_extract(m, "cn") for m in permission.get("groupPermission", [])
-        ]
-        for group in group_list:
-            assert permission_dn in group_map[group]["permission"]
-
-            # The list of user in the group should be a subset of all users related to the current permission
-            users_in_group = [
-                _ldap_path_extract(m, "uid") for m in group_map[group].get("member", [])
-            ]
-            assert set(users_in_group) <= set(user_list)
-
     for group in group_search:
-        group_dn = "cn=" + group["cn"][0] + ",ou=groups,dc=yunohost,dc=org"
+        group_dn = f"cn={group['cn'][0]},ou=groups,dc=yunohost,dc=org"
 
         user_list = [_ldap_path_extract(m, "uid") for m in group.get("member", [])]
         # For primary groups, we should find that :
@@ -340,20 +322,6 @@ def check_LDAP_db_integrity():
         # For all users members, this group should be in the "memberOf" on the other side
         for user in user_list:
             assert group_dn in user_map[user]["memberOf"]
-
-        # For all the permissions of this group, the group should be among the "groupPermission" on the other side
-        permission_list = [
-            _ldap_path_extract(m, "cn") for m in group.get("permission", [])
-        ]
-        for permission in permission_list:
-            assert group_dn in permission_map[permission]["groupPermission"]
-
-            # And the list of user of this group (user_list) should be a subset of all allowed users for this perm...
-            allowed_user_list = [
-                _ldap_path_extract(m, "uid")
-                for m in permission_map[permission].get("inheritPermission", [])
-            ]
-            assert set(user_list) <= set(allowed_user_list)
 
 
 def check_permission_for_apps():
@@ -465,7 +433,7 @@ def test_permission_list():
 
 def test_permission_create_main():
     with message("permission_created", permission="site.main"):
-        permission_create("site.main", allowed=["all_users"], protected=False)
+        _permission_create_with_dummy_app("site.main", allowed=["all_users"], protected=False)
 
     res = user_permission_list(full=True)["permissions"]
     assert "site.main" in res
@@ -476,7 +444,7 @@ def test_permission_create_main():
 
 def test_permission_create_extra():
     with message("permission_created", permission="site.test"):
-        permission_create("site.test")
+        _permission_create_with_dummy_app("site.test", protected=None)
 
     res = user_permission_list(full=True)["permissions"]
     assert "site.test" in res
@@ -487,7 +455,8 @@ def test_permission_create_extra():
 
 
 def test_permission_create_with_specific_user():
-    permission_create("site.test", allowed=["alice"])
+    with message("permission_created", permission="site.test"):
+        _permission_create_with_dummy_app("site.test", allowed=["alice"])
 
     res = user_permission_list(full=True)["permissions"]
     assert "site.test" in res
@@ -499,7 +468,6 @@ def test_permission_create_with_tile_management():
         _permission_create_with_dummy_app(
             "site.main",
             allowed=["all_users"],
-            label="The Site",
             show_tile=False,
             domain=maindomain,
             path="/site",
@@ -507,7 +475,7 @@ def test_permission_create_with_tile_management():
 
     res = user_permission_list(full=True)["permissions"]
     assert "site.main" in res
-    assert res["site.main"]["label"] == "The Site"
+    assert res["site.main"]["label"] == "Site"
     assert res["site.main"]["show_tile"] is False
 
 
@@ -604,17 +572,20 @@ def test_permission_create_with_urls_management_multiple_domain():
 
 
 def test_permission_delete():
-    with message("permission_deleted", permission="wiki.main"):
-        permission_delete("wiki.main", force=True)
-
-    res = user_permission_list()["permissions"]
-    assert "wiki.main" not in res
-
     with message("permission_deleted", permission="blog.api"):
         permission_delete("blog.api", force=False)
 
     res = user_permission_list()["permissions"]
     assert "blog.api" not in res
+
+def test_permission_delete_cant_really_delete_main():
+    with message("permission_deleted", permission="wiki.main"):
+        permission_delete("wiki.main", force=True)
+
+    # A "main" perm will always be injected so it is still outputed by user_permission_list
+    res = user_permission_list()["permissions"]
+    assert "wiki.main" in res
+
 
 
 #
@@ -623,12 +594,12 @@ def test_permission_delete():
 
 
 def test_permission_create_already_existing(mocker):
-    with raiseYunohostError(mocker, "permission_already_exist"):
-        permission_create("wiki.main")
+    # This doesn't raise an exception anymoar by design
+    permission_create("wiki.main")
 
 
-def test_permission_delete_doesnt_existing(mocker):
-    with raiseYunohostError(mocker, "permission_not_found"):
+def test_permission_delete_for_unknown_app(mocker):
+    with raiseYunohostError(mocker, "app_not_installed"):
         permission_delete("doesnt.exist", force=True)
 
     res = user_permission_list()["permissions"]
@@ -659,6 +630,17 @@ def test_permission_add_group():
     res = user_permission_list(full=True)["permissions"]
     assert set(res["wiki.main"]["allowed"]) == {"all_users", "alice"}
     assert set(res["wiki.main"]["corresponding_users"]) == {"alice", "bob"}
+
+
+def test_permission_add_group_to_system_perm():
+    res = user_permission_list(full=True)["permissions"]
+    assert set(res["sftp.main"]["allowed"]) == set()
+
+    with message("permission_updated", permission="sftp.main"):
+        user_permission_update("sftp.main", add="alice")
+
+    res = user_permission_list(full=True)["permissions"]
+    assert set(res["sftp.main"]["allowed"]) == {"alice"}
 
 
 def test_permission_remove_group():
@@ -697,25 +679,6 @@ def test_permission_remove_group_already_not_allowed():
     assert res["blog.main"]["corresponding_users"] == ["alice"]
 
 
-def test_permission_reset():
-    with message("permission_updated", permission="blog.main"):
-        user_permission_reset("blog.main")
-
-    res = user_permission_list(full=True)["permissions"]
-    assert res["blog.main"]["allowed"] == ["all_users"]
-    assert set(res["blog.main"]["corresponding_users"]) == {"alice", "bob"}
-
-
-def test_permission_reset_idempotency():
-    # Reset permission
-    user_permission_reset("blog.main")
-    user_permission_reset("blog.main")
-
-    res = user_permission_list(full=True)["permissions"]
-    assert res["blog.main"]["allowed"] == ["all_users"]
-    assert set(res["blog.main"]["corresponding_users"]) == {"alice", "bob"}
-
-
 def test_permission_change_label():
     with message("permission_updated", permission="wiki.main"):
         user_permission_update("wiki.main", label="New Wiki")
@@ -736,14 +699,14 @@ def test_permission_switch_show_tile():
     # Note that from the actionmap the value is passed as string, not as bool
     # Try with lowercase
     with message("permission_updated", permission="wiki.main"):
-        user_permission_update("wiki.main", show_tile="false")
+        user_permission_update_from_cli("wiki.main", show_tile="false")
 
     res = user_permission_list(full=True)["permissions"]
     assert res["wiki.main"]["show_tile"] is False
 
     # Try with uppercase
     with message("permission_updated", permission="wiki.main"):
-        user_permission_update("wiki.main", show_tile="TRUE")
+        user_permission_update_from_cli("wiki.main", show_tile="TRUE")
 
     res = user_permission_list(full=True)["permissions"]
     assert res["wiki.main"]["show_tile"] is True
@@ -752,7 +715,7 @@ def test_permission_switch_show_tile():
 def test_permission_switch_show_tile_with_same_value():
     # Note that from the actionmap the value is passed as string, not as bool
     with message("permission_updated", permission="wiki.main"):
-        user_permission_update("wiki.main", show_tile="True")
+        user_permission_update_from_cli("wiki.main", show_tile="True")
 
     res = user_permission_list(full=True)["permissions"]
     assert res["wiki.main"]["show_tile"] is True
@@ -773,7 +736,7 @@ def test_permission_add_group_that_doesnt_exist(mocker):
 
 
 def test_permission_update_permission_that_doesnt_exist(mocker):
-    with raiseYunohostError(mocker, "permission_not_found"):
+    with raiseYunohostError(mocker, "app_not_installed"):
         user_permission_update("doesnt.exist", add="alice")
 
 
@@ -979,7 +942,6 @@ def test_show_tile_cant_be_enabled():
     _permission_create_with_dummy_app(
         permission="site.main",
         auth_header=False,
-        label="Site",
         show_tile=True,
         allowed=["all_users"],
         protected=False,
@@ -992,7 +954,6 @@ def test_show_tile_cant_be_enabled():
         permission="web.main",
         url="re:/[a-z]{3}/bla",
         auth_header=False,
-        label="Web",
         show_tile=True,
         allowed=["all_users"],
         protected=False,

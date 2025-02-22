@@ -90,7 +90,7 @@ def clean():
     os.system("systemctl start nginx")
 
     # Clean permissions
-    for permission_name in user_permission_list(short=True)["permissions"]:
+    for permission_name in user_permission_list()["permissions"]:
         if any(test_app in permission_name for test_app in test_apps):
             permission_delete(permission_name, force=True)
 
@@ -273,6 +273,7 @@ def test_manifestv2_app_install_main_domain():
     assert app_map_[main_domain]["/manifestv2"]["id"] == "manifestv2_app"
 
     assert app_is_installed(main_domain, "manifestv2_app")
+
     assert app_is_exposed_on_http(main_domain, "/manifestv2", "Hextris")
 
     app_remove("manifestv2_app")

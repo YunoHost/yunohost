@@ -125,6 +125,7 @@ class SectionModel(ContainerModel, OptionsModel):
 
     visible: bool | str = True
     optional: bool = True
+    collapsed: bool = False
     is_action_section: bool = False
     bind: str | None = None
 
@@ -145,6 +146,7 @@ class SectionModel(ContainerModel, OptionsModel):
         help: Translation | None = None,
         visible: bool | str = True,
         optional: bool = True,
+        collapsed: bool = False,
         bind: str | None = None,
         **kwargs,
     ) -> None:
@@ -159,6 +161,7 @@ class SectionModel(ContainerModel, OptionsModel):
             services=services,
             help=help,
             visible=visible,
+            collapsed=collapsed,
             bind=bind,
             options=options,
             is_action_section=is_action_section,
