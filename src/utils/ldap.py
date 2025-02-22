@@ -85,7 +85,7 @@ def modifyModlist_finegrained(old_entry: dict, new_entry: dict) -> list:
     ldif = []
     for attribute, value in new_entry.items():
         if not isinstance(value, (set, list)):
-            value = {value}
+            value = set(value)
         old_value = old_entry.get(attribute, set())
         if not isinstance(old_value, (set, list)):
             old_value = {old_value}
