@@ -116,7 +116,6 @@
     "app_packaging_format_not_supported": "Deze app kon niet geinstalleerd worden, omdat het pakketformaat niet ondersteund wordt door je Yunohost. Probeer of je Yunohost bijgewerkt kan worden.",
     "additional_urls_already_added": "Extra URL '{url}' is al toegevoegd in de extra URL voor privilege '{permission}'",
     "additional_urls_already_removed": "Extra URL '{url}' is al verwijderd in de extra URL voor privilege '{permission}'",
-    "app_label_deprecated": "Dit commando is vervallen. Gebruik alsjeblieft het nieuwe commando 'yunohost user permission update' om het label van de app te beheren.",
     "app_change_url_no_script": "App '{app_name}' ondersteunt nog geen URL-aanpassingen. Misschien wel na een upgrade.",
     "app_upgrade_some_app_failed": "Sommige apps konden niet worden bijgewerkt",
     "other_available_options": "… en {n} andere beschikbare opties die niet getoond worden",
