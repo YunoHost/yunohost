@@ -190,7 +190,7 @@ class YunoUPnP:
         if new_status is not None:
             self.firewall.config["router_forwarding_upnp"] = new_status
         self.firewall.write()
-        return self.firewall.config.get("router_forwarding_upnp")
+        return self.firewall.config.get("router_forwarding_upnp", False)
 
     def ensure_listen_port(self) -> None:
         self.firewall.open_port("udp", self.UPNP_PORT, self.UPNP_PORT_COMMENT)
