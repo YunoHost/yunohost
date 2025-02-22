@@ -58,14 +58,14 @@ Display YunoHost packages versions
 {# each categories #}
 {% for name, value in categories.items() %}
 .SH YUNOHOST {{ name.upper() }}
-usage: yunohost {{ name }} {{ '{' }}{{ ",".join(value["actions"].keys()) }}{{ '}' }}
+usage: yunohost {{ name }} {{ '{' }}{{ ",".join(value.get("actions", {}).keys()) }}{{ '}' }}
 \&...
 .SS "description:"
 .IP
 {{ value["category_help"] }}
 
 {# each command of each category #}
-{% for action, action_value in value["actions"].items() %}
+{% for action, action_value in value.get("actions", {}).items() %}
 .SS "yunohost {{ name }} {{ action }} \
 {% for argument_name, argument_value in action_value.get("arguments", {}).items() %}\
 {% set required=(not str(argument_name).startswith("-")) or argument_value.get("extra", {}).get("required", False) %}\
