@@ -32,6 +32,7 @@ from yunohost.utils.error import YunohostError, YunohostValidationError
 
 if TYPE_CHECKING:
     from moulinette.utils.log import MoulinetteLogger
+
     logger = cast(MoulinetteLogger, getLogger("yunohost.permission"))
 else:
     logger = getLogger("yunohost.permission")
@@ -100,7 +101,9 @@ def user_permission_list(
         if "main" not in subperms:
             subperms["main"] = {}
 
-        app_label = subperms["main"].get("label") or settings.get("label") or app.title()
+        app_label = (
+            subperms["main"].get("label") or settings.get("label") or app.title()
+        )
 
         for subperm, infos in subperms.items():
             name = f"{app}.{subperm}"
@@ -116,7 +119,7 @@ def user_permission_list(
             perm.update(infos)
             if subperm != "main":
                 # Redefine the subperm label to : <main_label> (<subperm>)
-                subperm_label = (perm["label"] or subperm)
+                subperm_label = perm["label"] or subperm
                 perm["label"] = f"{app_label} ({subperm_label})"
             elif not perm["label"]:
                 perm["label"] = app_label
@@ -166,13 +169,18 @@ def user_permission_list(
                 # restoring an app on which not all the user/group exist)
                 users_in_group = set(map_group_to_users.get(group, []))
                 infos["corresponding_users"] |= users_in_group
-            infos["corresponding_users"] = list(
-                sorted(infos["corresponding_users"])
-            )
+            infos["corresponding_users"] = list(sorted(infos["corresponding_users"]))
     else:
         # Keep the output concise when used without --full, meant to not bloat CLI
         for infos in permissions.values():
-            for key in ["additional_urls", "auth_header", "logo_hash", "order", "protected", "show_tile"]:
+            for key in [
+                "additional_urls",
+                "auth_header",
+                "logo_hash",
+                "order",
+                "protected",
+                "show_tile",
+            ]:
                 if key in infos:
                     del infos[key]
 
@@ -573,7 +581,9 @@ def permission_delete(
     app, subperm = permission.split(".")
 
     if app in SYSTEM_PERMS:
-        raise YunohostValidationError(f"Cannot delete system permission {permission}", raw_msg=True)
+        raise YunohostValidationError(
+            f"Cannot delete system permission {permission}", raw_msg=True
+        )
 
     _assert_is_installed(app)
 
@@ -704,7 +714,7 @@ def _update_app_permission_setting(
     show_tile: bool | None = None,
     protected: bool | None = None,
     allowed: str | list[str] | None = None,
-    logo: BinaryIO | Literal[''] | None = None,
+    logo: BinaryIO | Literal[""] | None = None,
     description: str | None = None,
     hide_from_public: bool | None = None,
     order: int | None = None,
@@ -741,7 +751,10 @@ def _update_app_permission_setting(
 
         logo_content = logo.read()
         if not logo_content.startswith(b"\x89PNG\r\n\x1a\n"):
-            raise YunohostValidationError("The provided logo file doesn't seem to be a PNG file. Only PNG logos are supported.", raw_msg=True)
+            raise YunohostValidationError(
+                "The provided logo file doesn't seem to be a PNG file. Only PNG logos are supported.",
+                raw_msg=True,
+            )
 
         logo_hash = hashlib.sha256(logo_content).hexdigest()
         with open(f"{APPS_CATALOG_LOGOS}/{logo_hash}.png", "wb") as f:

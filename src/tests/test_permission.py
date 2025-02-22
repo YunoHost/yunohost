@@ -433,7 +433,9 @@ def test_permission_list():
 
 def test_permission_create_main():
     with message("permission_created", permission="site.main"):
-        _permission_create_with_dummy_app("site.main", allowed=["all_users"], protected=False)
+        _permission_create_with_dummy_app(
+            "site.main", allowed=["all_users"], protected=False
+        )
 
     res = user_permission_list(full=True)["permissions"]
     assert "site.main" in res
@@ -578,6 +580,7 @@ def test_permission_delete():
     res = user_permission_list()["permissions"]
     assert "blog.api" not in res
 
+
 def test_permission_delete_cant_really_delete_main():
     with message("permission_deleted", permission="wiki.main"):
         permission_delete("wiki.main", force=True)
@@ -585,7 +588,6 @@ def test_permission_delete_cant_really_delete_main():
     # A "main" perm will always be injected so it is still outputed by user_permission_list
     res = user_permission_list()["permissions"]
     assert "wiki.main" in res
-
 
 
 #

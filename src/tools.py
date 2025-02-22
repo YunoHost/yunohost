@@ -238,11 +238,13 @@ def tools_postinstall(
     operation_logger.start()
     logger.info(m18n.n("yunohost_installing"))
 
-    _set_system_perms({
-        "ssh": {"allowed": ["admins"]},
-        "sftp": {"allowed": []},
-        "mail": {"allowed": ["all_users"]},
-    })
+    _set_system_perms(
+        {
+            "ssh": {"allowed": ["admins"]},
+            "sftp": {"allowed": []},
+            "mail": {"allowed": ["all_users"]},
+        }
+    )
 
     # New domain config
     domain_add(
@@ -302,6 +304,7 @@ def tools_regen_conf(
 ):
 
     from yunohost.regenconf import regen_conf
+
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 

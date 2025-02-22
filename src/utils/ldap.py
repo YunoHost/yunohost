@@ -57,7 +57,7 @@ def _get_ldap_interface():
 def _ldap_path_extract(path, info):
     for element in path.split(","):
         if element.startswith(info + "="):
-            return element[len(info + "="):]
+            return element[len(info + "=") :]
 
 
 # Add this to properly close / delete the ldap interface / authenticator

@@ -5,7 +5,11 @@ from moulinette.utils.filesystem import read_yaml
 from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
 from yunohost.tools import Migration
 from yunohost.regenconf import regen_conf
-from yunohost.permission import _sync_permissions_with_ldap, _set_system_perms, permission_create
+from yunohost.permission import (
+    _sync_permissions_with_ldap,
+    _set_system_perms,
+    permission_create,
+)
 from yunohost.app import app_setting, app_ssowatconf
 from yunohost.user import user_group_list
 
@@ -54,7 +58,9 @@ class MyMigration(Migration):
         # The LDAP db corresponding to the app was dump into a separate yaml
         permfile = f"/etc/yunohost/apps/{app_id}/permissions.yml"
         if not os.path.isfile(permfile):
-            logger.warning("Uhoh, this app backup is from yunohost <= 12.0, but there is no 'permissions.yml' ? Skipping perm restoration … You might have to reconfigure permissions yourself.")
+            logger.warning(
+                "Uhoh, this app backup is from yunohost <= 12.0, but there is no 'permissions.yml' ? Skipping perm restoration … You might have to reconfigure permissions yourself."
+            )
             return
 
         legacy_permissions_yml = read_yaml(permfile)
@@ -114,7 +120,10 @@ class MyMigration(Migration):
 
             if app in SYSTEM_PERMS:
                 if name == "main":
-                    permissions_system[app]["allowed"] = [_ldap_path_extract(p, "cn") for p in infos.get("groupPermission", [])]
+                    permissions_system[app]["allowed"] = [
+                        _ldap_path_extract(p, "cn")
+                        for p in infos.get("groupPermission", [])
+                    ]
                 continue
 
             if app not in permissions_per_app:
@@ -127,7 +136,10 @@ class MyMigration(Migration):
                 "protected": infos.get("isProtected", [False])[0] == "TRUE",
                 "url": infos.get("URL", [None])[0],
                 "additional_urls": infos.get("additionalUrls", []),
-                "allowed": [_ldap_path_extract(p, "cn") for p in infos.get("groupPermission", [])],
+                "allowed": [
+                    _ldap_path_extract(p, "cn")
+                    for p in infos.get("groupPermission", [])
+                ],
             }
 
         return permissions_per_app, permissions_system

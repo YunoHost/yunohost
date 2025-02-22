@@ -162,8 +162,7 @@ objectClass: top"
         nscd -i group
     fi
 
-    if [ -z "$regen_conf_files" ] && [ $FORCE == "false" ]
-    then
+    if [ -z "$regen_conf_files" ] && [ $FORCE == "false" ]; then
         exit 0
     fi
 

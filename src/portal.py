@@ -114,7 +114,12 @@ def _get_portal_settings(
         }
 
     # Sort dictionnary according to the "order" info
-    settings["apps"] = dict(sorted([(app, infos) for app, infos in settings["apps"].items()], key=lambda v: (v[1].get("order", 100), v[0])))
+    settings["apps"] = dict(
+        sorted(
+            [(app, infos) for app, infos in settings["apps"].items()],
+            key=lambda v: (v[1].get("order", 100), v[0]),
+        )
+    )
 
     return settings
 
