@@ -2196,7 +2196,6 @@ ynh_app_config_run $1
                 Path(APPS_SETTING_PATH) / self.entity / "scripts" / "change_url"
             ).exists():
                 change_url_supported = "yes"
-                # FIXME: "change_url_unsupported_msg"
                 raw_config["_core"]["operations"]["change_url_domain"][
                     "default"
                 ] = domain
@@ -2314,10 +2313,6 @@ ynh_app_config_run $1
                         user_permission_add(f"{self.entity}.{perm}", to_add)
                     if to_remove:
                         user_permission_remove(f"{self.entity}.{perm}", to_remove)
-
-        def _run_action(self, form: "FormModel", action_id: str) -> None:
-
-            time.sleep(5)
 
     return AppConfigPanel, AppCoreConfigPanel
 

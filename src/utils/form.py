@@ -2044,14 +2044,9 @@ def prompt_or_validate_form(
 ) -> FormModel:
     for option in options:
 
-        print(option)
-
         interactive = Moulinette.interface.type == "cli" and os.isatty(1)
 
         if isinstance(option, ButtonOption):
-            print("=====")
-            print(option)
-            print(context)
             if option.is_visible(context) and option.is_enabled(context):
                 continue
             else:
