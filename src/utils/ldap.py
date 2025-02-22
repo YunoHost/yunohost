@@ -22,6 +22,7 @@ import atexit
 import logging
 import os
 import time
+from typing import Optional
 
 import ldap
 import ldap.modlist as modlist
@@ -35,7 +36,7 @@ logger = logging.getLogger("yunohost.utils.ldap")
 
 # We use a global variable to do some caching
 # to avoid re-authenticating in case we call _get_ldap_authenticator multiple times
-_ldap_interface = None
+_ldap_interface: Optional["LDAPInterface"] = None
 
 
 def _get_ldap_interface():

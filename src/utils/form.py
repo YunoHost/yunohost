@@ -1334,10 +1334,14 @@ class FileOption(BaseInputOption):
 
         from magic import Magic
 
-        if Moulinette.interface.type != "api":
+        if Moulinette.interface.type != "api" or (
+            isinstance(value, str) and value.startswith("/")
+        ):
             path = Path(value)
             if not (path.exists() and path.is_absolute() and path.is_file()):
-                raise YunohostValidationError("File doesn't exists", raw_msg=True)
+                raise YunohostValidationError(
+                    f"File {value} doesn't exists", raw_msg=True
+                )
             content = path.read_bytes()
         else:
             content = b64decode(value)
@@ -2043,6 +2047,7 @@ def prompt_or_validate_form(
     hooks: Hooks = {},
 ) -> FormModel:
     for option in options:
+
         interactive = Moulinette.interface.type == "cli" and os.isatty(1)
 
         if isinstance(option, ButtonOption):
@@ -2061,7 +2066,10 @@ def prompt_or_validate_form(
                 # - we doesn't want to give a specific value
                 # - we want to keep the previous value
                 # - we want the default value
-                context[option.id] = None
+                if option.readonly:
+                    context[option.id] = option.normalize(form[option.id])
+                else:
+                    context[option.id] = None
 
             continue
 

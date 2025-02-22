@@ -30,7 +30,6 @@
     "app_change_url_identical_domains": "('{domain}{path}') Eski ve yeni alan adının veya URL adresler aynı.Şu anda yapacak bir şey bulunmuyor.",
     "app_corrupt_source": "YunoHost, {app} için '{source_id}' ({url}) adresinden indirebildi, ancak varlık olması gereken yapılandırmalarla eşleşmiyor. Bu, sunucunuzda geçici bir ağ arızası meydana geldiği veya varlığın bir şekilde yayın yapılan veri sağlacıyısı (veya kötü niyetli bir kişi?) tarafından değiştirildiği ve YunoHost yapımcılarının araştırması ve belki de bu değişikliği dikkate almak için uygulama bildirimini güncellemesi gerektiği anlamına gelebilir.\n    Beklenen sha256 sağlama toplamı: {expected_sha256}\n    İndirilen sha256 sağlama toplamı: {computed_sha256}\n    İndirilen dosya boyutu: {size}",
     "app_failed_to_upgrade_but_continue": "{failed_app} uygulaması yükseltilirken başarısız oldu. Sıradaki güncellemeler devam ediyor. Konu ile ilgili hata kayıtlarını görüntülemek için 'yunohost log show {operation_logger_name}' komutunu çalıştırın",
-    "app_label_deprecated": "Bu komut kullanımdan kaldırılmış! Lütfen uygulama başlığını yeni komutumuz olan \"yunohost user permission update\" ile değiştirin.",
     "app_install_failed": "{app} indirilmedi: {error}",
     "app_manifest_install_ask_password": "Bu uygulama için yönetici şifresi seçin",
     "app_manifest_install_ask_is_public": "Bu uygulama anonim ziyaretçilere açık olmalı mı?",

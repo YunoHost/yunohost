@@ -25,7 +25,6 @@ import subprocess
 import time
 from importlib import import_module
 from logging import getLogger
-from typing import List
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.filesystem import chown, cp, mkdir, read_yaml, rm, write_to_yaml
@@ -154,6 +153,7 @@ def tools_postinstall(
     from yunohost.app_catalog import _update_apps_catalog
     from yunohost.domain import domain_add, domain_main_domain
     from yunohost.dyndns import _dyndns_available, dyndns_unsubscribe
+    from yunohost.permission import _set_system_perms
     from yunohost.service import _run_service_command
     from yunohost.user import ADMIN_ALIASES, user_create
     from yunohost.utils.dns import is_yunohost_dyndns_domain
@@ -237,6 +237,14 @@ def tools_postinstall(
 
     operation_logger.start()
     logger.info(m18n.n("yunohost_installing"))
+
+    _set_system_perms(
+        {
+            "ssh": {"allowed": ["admins"]},
+            "sftp": {"allowed": []},
+            "mail": {"allowed": ["all_users"]},
+        }
+    )
 
     # New domain config
     domain_add(
@@ -959,7 +967,7 @@ class Migration:
     # Those are to be implemented by daughter classes
 
     mode = "auto"
-    dependencies: List[str] = (
+    dependencies: list[str] = (
         []
     )  # List of migration ids required before running this migration
 

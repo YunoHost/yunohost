@@ -26,7 +26,7 @@ import random
 import re
 import subprocess
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Callable, Optional, TextIO, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, TextIO, BinaryIO, Union, cast, Literal
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.process import check_output
@@ -41,6 +41,7 @@ if TYPE_CHECKING:
     from moulinette.utils.log import MoulinetteLogger
 
     from yunohost.log import OperationLogger
+    from yunohost.permission import PermInfos
 
     logger = cast(MoulinetteLogger, getLogger("yunohost.user"))
 else:
@@ -62,7 +63,7 @@ FIELDS_FOR_IMPORT = {
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
 
-def user_list(fields: Optional[list[str]] = None) -> dict[str, dict[str, Any]]:
+def user_list(fields: list[str] | None = None) -> dict[str, dict[str, Any]]:
     from yunohost.utils.ldap import _get_ldap_interface
 
     ldap_attrs = {
@@ -394,16 +395,16 @@ def user_delete(
 def user_update(
     operation_logger: "OperationLogger",
     username: str,
-    mail: Optional[str] = None,
-    change_password: Optional[str] = None,
+    mail: str | None = None,
+    change_password: str | None = None,
     add_mailforward: None | str | list[str] = None,
     remove_mailforward: None | str | list[str] = None,
     add_mailalias: None | str | list[str] = None,
     remove_mailalias: None | str | list[str] = None,
-    mailbox_quota: Optional[str] = None,
+    mailbox_quota: str | None = None,
     from_import: bool = False,
-    fullname: Optional[str] = None,
-    loginShell: Optional[str] = None,
+    fullname: str | None = None,
+    loginShell: str | None = None,
 ):
     if fullname and fullname.strip():
         fullname = fullname.strip()
@@ -687,10 +688,6 @@ def user_info(username: str) -> dict[str, str]:
 def user_export() -> Union[str, "HTTPResponseType"]:
     """
     Export users into CSV
-
-    Keyword argument:
-        csv -- CSV file with columns username;firstname;lastname;password;mailbox-quota;mail;mail-alias;mail-forward;groups
-
     """
     import csv  # CSV are needed only in this function
     from io import StringIO
@@ -746,7 +743,7 @@ def user_import(
 
     from yunohost.app import app_ssowatconf
     from yunohost.domain import domain_list
-    from yunohost.permission import permission_sync_to_user
+    from yunohost.permission import _sync_permissions_with_ldap
 
     # Pre-validate data and prepare what should be done
     actions: dict[str, list[dict[str, Any]]] = {
@@ -991,7 +988,7 @@ def user_import(
         except YunohostError as e:
             _on_failure(user["username"], e)
 
-    permission_sync_to_user()
+    _sync_permissions_with_ldap()
     app_ssowatconf()
 
     if result["errors"]:
@@ -1013,7 +1010,7 @@ def user_group_list(
     full: bool = False, include_primary_groups: bool = True
 ) -> dict[str, dict[str, dict]]:
     """
-    List users
+    List groups
 
     Keyword argument:
         full -- List all the info available for each groups
@@ -1031,7 +1028,7 @@ def user_group_list(
     groups_infos = ldap.search(
         "ou=groups",
         "(objectclass=groupOfNamesYnh)",
-        ["cn", "member", "permission"],
+        ["cn", "member"],
     )
 
     # Parse / organize information to be outputed
@@ -1050,10 +1047,17 @@ def user_group_list(
             _ldap_path_extract(p, "uid") for p in infos.get("member", [])
         ]
 
-        if full:
-            groups[name]["permissions"] = [
-                _ldap_path_extract(p, "cn") for p in infos.get("permission", [])
-            ]
+    if full:
+        for group in groups:
+            groups[group]["permissions"] = []
+
+        from yunohost.permission import user_permission_list
+
+        perms = user_permission_list(full=False)["permissions"]
+        for perm, infos in perms.items():
+            for group in infos["allowed"]:
+                if group in groups:
+                    groups[group]["permissions"].append(perm)
 
     return {"groups": groups}
 
@@ -1062,7 +1066,7 @@ def user_group_list(
 def user_group_create(
     operation_logger: "OperationLogger",
     groupname: str,
-    gid: Optional[str] = None,
+    gid: str | None = None,
     primary_group: bool = False,
     sync_perm: bool = True,
 ) -> dict[str, str]:
@@ -1073,7 +1077,7 @@ def user_group_create(
         groupname -- Must be unique
 
     """
-    from yunohost.permission import permission_sync_to_user
+    from yunohost.permission import _sync_permissions_with_ldap
     from yunohost.utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
@@ -1126,7 +1130,7 @@ def user_group_create(
         raise YunohostError("group_creation_failed", group=groupname, error=e)
 
     if sync_perm:
-        permission_sync_to_user()
+        _sync_permissions_with_ldap()
 
     if not primary_group:
         logger.success(m18n.n("group_created", group=groupname))
@@ -1150,7 +1154,7 @@ def user_group_delete(
         groupname -- Groupname to delete
 
     """
-    from yunohost.permission import permission_sync_to_user
+    from yunohost.permission import _sync_permissions_with_ldap
     from yunohost.utils.ldap import _get_ldap_interface
 
     existing_groups = list(user_group_list()["groups"].keys())
@@ -1174,7 +1178,7 @@ def user_group_delete(
         raise YunohostError("group_deletion_failed", group=groupname, error=e)
 
     if sync_perm:
-        permission_sync_to_user()
+        _sync_permissions_with_ldap()
 
     if groupname not in existing_users:
         logger.success(m18n.n("group_deleted", group=groupname))
@@ -1195,7 +1199,7 @@ def user_group_update(
     from_import: bool = False,
 ) -> None | dict[str, Any]:
     from yunohost.hook import hook_callback
-    from yunohost.permission import permission_sync_to_user
+    from yunohost.permission import _sync_permissions_with_ldap
     from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
 
     existing_users = list(user_list()["users"].keys())
@@ -1367,7 +1371,7 @@ def user_group_update(
             AdminAuth.invalidate_all_sessions_for_user(user)
 
     if sync_perm:
-        permission_sync_to_user()
+        _sync_permissions_with_ldap()
 
     if add and users_to_add:
         for permission in current_group_permissions:
@@ -1420,7 +1424,7 @@ def user_group_info(groupname: str) -> dict[str, Any]:
     result = ldap.search(
         "ou=groups",
         "cn=" + groupname,
-        ["cn", "member", "permission", "mail"],
+        ["cn", "member", "mail"],
     )
 
     if not result:
@@ -1441,7 +1445,7 @@ def user_group_info(groupname: str) -> dict[str, Any]:
 
 def user_group_add(
     groupname: str, usernames: list[str], force: bool = False, sync_perm: bool = True
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     """
     Add user(s) to a group
 
@@ -1455,7 +1459,7 @@ def user_group_add(
 
 def user_group_remove(
     groupname: str, usernames: list[str], force: bool = False, sync_perm: bool = True
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     """
     Remove user(s) from a group
 
@@ -1471,7 +1475,7 @@ def user_group_remove(
 
 def user_group_add_mailalias(
     groupname: str, aliases: list[str], force: bool = False
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     return user_group_update(
         groupname, add_mailalias=aliases, force=force, sync_perm=False
     )
@@ -1479,7 +1483,7 @@ def user_group_add_mailalias(
 
 def user_group_remove_mailalias(
     groupname: str, aliases: list[str], force: bool = False
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     return user_group_update(
         groupname, remove_mailalias=aliases, force=force, sync_perm=False
     )
@@ -1490,35 +1494,71 @@ def user_group_remove_mailalias(
 #
 
 
-# FIXME: missing return type
-def user_permission_list(short: bool = False, full: bool = False, apps: list[str] = []):
+def user_permission_list(
+    full: bool = False, apps: list[str] = []
+) -> dict[Literal["permissions"], "PermInfos"]:
     from yunohost.permission import user_permission_list
 
-    return user_permission_list(short, full, absolute_urls=True, apps=apps)
+    return user_permission_list(full=full, absolute_urls=True, apps=apps)
 
 
-# FIXME: missing return type
+@is_unit_operation(flash=True)
 def user_permission_update(
     permission: str,
-    label: Optional[str] = None,
-    show_tile: Optional[bool] = None,
-    sync_perm: bool = True,
-):
-    from yunohost.permission import user_permission_update
+    label: str | None = None,
+    show_tile: bool | None = None,
+    logo: BinaryIO | Literal[""] | None = None,
+    description: str | None = None,
+    hide_from_public: bool | None = None,
+    order: int | None = None,
+) -> dict[str, Any]:
 
-    return user_permission_update(
-        permission, label=label, show_tile=show_tile, sync_perm=sync_perm
+    from yunohost.app import _assert_is_installed, app_ssowatconf, app_setting
+    from yunohost.permission import _update_app_permission_setting
+
+    # By default, manipulate main permission
+    if "." not in permission:
+        permission = permission + ".main"
+
+    app, permname = permission.split(".", 1)
+    _assert_is_installed(app)
+
+    if permname not in (app_setting(app, "_permissions") or {}):
+        raise YunohostValidationError(
+            f"Unknown permission {permname} for app {app}", raw_msg=True
+        )
+
+    # We get these from CLI as string (because we want to be able to differentiate between True, False and "unspecified" = "do not change the value"
+    if isinstance(show_tile, str):
+        show_tile = True if show_tile.lower() == "true" else False
+    if isinstance(hide_from_public, str):
+        hide_from_public = True if hide_from_public.lower() == "true" else False
+
+    _update_app_permission_setting(
+        permission=permission,
+        label=label,
+        show_tile=show_tile,
+        logo=logo,
+        description=description,
+        hide_from_public=hide_from_public,
+        order=order,
     )
 
+    app_ssowatconf()
 
-# FIXME: missing return type
+    logger.success(m18n.n("permission_updated", permission=permission))
+
+    return (app_setting(app, "_permissions") or {}).get(permname, "")
+
+
+@is_unit_operation(flash=True)
 def user_permission_add(
     permission: str,
     names: list[str],
-    protected: Optional[bool] = None,
+    protected: bool | None = None,
     force: bool = False,
     sync_perm: bool = True,
-):
+) -> "PermInfos":
     from yunohost.permission import user_permission_update
 
     return user_permission_update(
@@ -1526,14 +1566,14 @@ def user_permission_add(
     )
 
 
-# FIXME: missing return type
+@is_unit_operation(flash=True)
 def user_permission_remove(
     permission: str,
     names: list[str],
-    protected: Optional[bool] = None,
+    protected: bool | None = None,
     force: bool = False,
     sync_perm: bool = True,
-):
+) -> "PermInfos":
     from yunohost.permission import user_permission_update
 
     return user_permission_update(
@@ -1541,36 +1581,39 @@ def user_permission_remove(
     )
 
 
-# FIXME: missing return type
-def user_permission_reset(permission: str, sync_perm: bool = True):
-    from yunohost.permission import user_permission_reset
-
-    return user_permission_reset(permission, sync_perm=sync_perm)
-
-
-# FIXME: missing return type
-def user_permission_info(permission: str):
+def user_permission_info(permission: str) -> "PermInfos":
     from yunohost.permission import user_permission_info
 
     return user_permission_info(permission)
 
 
+def user_permission_ldapsync() -> None:
+    from yunohost.permission import _sync_permissions_with_ldap
+
+    _sync_permissions_with_ldap()
+
+
 #
 # SSH subcategory
 #
-import yunohost.ssh
 
 
 def user_ssh_list_keys(username: str) -> dict[str, dict[str, str]]:
-    return yunohost.ssh.user_ssh_list_keys(username)
+    from yunohost.ssh import user_ssh_list_keys
+
+    return user_ssh_list_keys(username)
 
 
-def user_ssh_add_key(username: str, key: str, comment: Optional[str] = None) -> None:
-    return yunohost.ssh.user_ssh_add_key(username, key, comment)
+def user_ssh_add_key(username: str, key: str, comment: str | None = None) -> None:
+    from yunohost.ssh import user_ssh_add_key
+
+    return user_ssh_add_key(username, key, comment)
 
 
 def user_ssh_remove_key(username: str, key: str) -> None:
-    return yunohost.ssh.user_ssh_remove_key(username, key)
+    from yunohost.ssh import user_ssh_remove_key
+
+    return user_ssh_remove_key(username, key)
 
 
 #

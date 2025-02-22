@@ -42,7 +42,7 @@ BASH_COMPLETION_FILE = BASH_COMPLETION_FOLDER + "/yunohost"
 def get_dict_actions(OPTION_SUBTREE, category):
     ACTIONS = [
         action
-        for action in OPTION_SUBTREE[category]["actions"].keys()
+        for action in OPTION_SUBTREE[category].get("actions", {}).keys()
         if not action.startswith("_")
     ]
     ACTIONS_STR = "{}".format(" ".join(ACTIONS))

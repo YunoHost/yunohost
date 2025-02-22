@@ -343,10 +343,6 @@ user:
                         apps:
                             help: Apps to list permission for (all by default)
                             nargs: "*"
-                        -s:
-                            full: --short
-                            help: Only list permission names
-                            action: store_true
                         -f:
                             full: --full
                             help: Display all info known about each permission, including the full user list of each group it is granted to.
@@ -369,10 +365,27 @@ user:
                             help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
                         -l:
                             full: --label
-                            help: Label for this permission. This label will be shown on the SSO and in the admin
+                            help: Custom label for this app / permission
                         -s:
                             full: --show_tile
-                            help: Define if a tile will be shown in the SSO
+                            help: Define if a tile will be shown in the user portal
+                            choices:
+                                - 'True'
+                                - 'False'
+                        -L:
+                            full: --logo
+                            help: File to use as logo for this app / permission. Only PNG are supported.
+                            type: argparse.FileType('rb')
+                        -d:
+                            full: --description
+                            help: Custom description for this app / permission
+                        -o:
+                            full: --order
+                            help: Order number to be used when displaying the tiles in the user portal. Default is 100 so set this to any low value for the tile to appear first, or higher value to appear last.
+                            type: int
+                        -H:
+                            full: --hide_from_public
+                            help: Mark the tile as to be hidden from the 'public app list' (if enabled). Useful for apps such as Nextcloud that need to be exposed to be publicly exposed for desktop/mobile client to be able to connect to, but not meant to be listed for visitors.
                             choices:
                                 - 'True'
                                 - 'False'
@@ -405,13 +418,9 @@ user:
                             extra:
                                 pattern: *pattern_username
 
-                ## user_permission_reset()
-                reset:
-                    action_help: Reset allowed groups to the default (all_users) for a given permission
-                    api: DELETE /users/permissions/<permission>
-                    arguments:
-                        permission:
-                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
+                ## user_permission_ldapsync()
+                ldapsync:
+                    action_help: Resynchronize permissions to LDAP from app settings. This is a purely technical command, only meant to be ran if you manually modified permission settings in app, which is absolutely not recommended. 
 
         ssh:
             subcategory_help: Manage ssh access
@@ -760,7 +769,6 @@ domain:
                             help: Does not perform any check that your domain seems correctly configured (DNS, reachability) before attempting to renew. (Not recommended)
                             action: store_true
 
-
 #############################
 #            App            #
 #############################
@@ -869,6 +877,10 @@ app:
                     full: --force
                     help: Do not ask confirmation if the app is not safe to use (low quality, experimental or 3rd party), or when the app displays a post-install notification
                     action: store_true
+                -i:
+                    full: --ignore-yunohost-version
+                    help: Attempt to install the app even if your YunoHost version is below the required one
+                    action: store_true
 
         ### app_remove()
         remove:
@@ -907,6 +919,10 @@ app:
                 -c:
                     full: --continue-on-failure
                     help: Continue to upgrade apps even if one or more upgrade failed
+                    action: store_true
+                -i:
+                    full: --ignore-yunohost-version
+                    help: Attempt to upgrade the app even if your YunoHost version is below the required one
                     action: store_true
 
         ### app_change_url()
@@ -1061,6 +1077,9 @@ app:
                         full: --export
                         help: Only export key/values, meant to be reimported using "config set --args-file"
                         action: store_true
+                    --core:
+                        help: Get the 'core' config for this app, such as permissions stuff. This option is only meant for API.
+                        action: store_true
 
               ### app_config_set()
               set:
@@ -1082,6 +1101,9 @@ app:
                         full: --args-file
                         help: YAML or JSON file with key/value couples
                         type: open
+                    --core:
+                        help: Set the 'core' config for this app, such as permissions stuff. This option is only meant for API.
+                        action: store_true
 
 #############################
 #          Backup           #
@@ -1186,7 +1208,6 @@ backup:
                     help: Name of the archive to delete
                     extra:
                         pattern: *pattern_backup_archive_name
-
 
 #############################
 #         Settings          #
@@ -1590,9 +1611,6 @@ firewall:
         stop:
             action_help: Remove all the firewall rules
 
-
-
-
 #############################
 #          DynDNS           #
 #############################
@@ -1635,7 +1653,6 @@ dyndns:
                     full: --dry-run
                     help: Only display the generated zone
                     action: store_true
-
 
 #############################
 #           Tools           #
@@ -1860,7 +1877,6 @@ tools:
               state:
                   action_help: Show current migrations state
 
-
 #############################
 #           Hook            #
 #############################
@@ -2011,7 +2027,6 @@ log:
                 path:
                     help: Log file to share
 
-
 #############################
 #          Diagnosis        #
 #############################
@@ -2091,3 +2106,37 @@ diagnosis:
                     help: Remove a filter (it should be an existing filter as listed with "ignore --list")
                     nargs: "*"
                     metavar: CRITERIA
+
+
+#############################
+#           Storage         #
+#############################
+storage:
+    category_help: Manage hard-drives, filesystem, pools
+    subcategories:
+        disk:
+            subcategory_help: Manage et get infos about hard-drives
+            actions:
+                # storage_disks_list
+                list:
+                    action_help: List hard-drives currently attached to this system optionnaly with infos
+                    api: GET /storage/disk/list
+                arguments:
+                    -i:
+                        full: --with-info
+                        help: Get all informations for each archive
+                        action: store_true
+                    -H:
+                        full: --human-readable
+                        help: Print sizes in human readable format
+                        action: store_true
+                info:
+                    action_help: Get hard-drive information
+                    api: GET /storage/disk/info/<name>
+                    arguments:
+                        name:
+                            help: Name of the hard drive as returned by 'list' command
+                    -H:
+                        full: --human-readable
+                        help: Print sizes in human readable format
+                        action: store_true
