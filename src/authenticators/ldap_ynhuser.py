@@ -207,7 +207,7 @@ class Authenticator(BaseAuthenticator):
         if "@" in username:
             user = _get_ldap_interface().search("ou=users", f"mail={username}", ["uid"])
             if len(user) != 0:
-                username = user[0]['uid'][0]
+                username = user[0]["uid"][0]
 
         def _reconnect():
             con = ldap.ldapobject.ReconnectLDAPObject(URI, retry_max=2, retry_delay=0.5)
