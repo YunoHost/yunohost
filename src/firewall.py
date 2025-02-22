@@ -72,7 +72,9 @@ class YunoFirewall:
         self.config = yaml.safe_load(self.FIREWALL_FILE.read_text()) or {}
 
         if "tcp" not in self.config or "udp" not in self.config:
-            raise Exception(f"Uhoh, no 'tcp' or 'udp' key found in {self.FIREWALL_FILE} ?!")
+            raise Exception(
+                f"Uhoh, no 'tcp' or 'udp' key found in {self.FIREWALL_FILE} ?!"
+            )
 
     def write(self) -> None:
         old_file = self.FIREWALL_FILE.parent / (self.FIREWALL_FILE.name + ".old")
