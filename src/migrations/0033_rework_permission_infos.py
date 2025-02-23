@@ -157,7 +157,9 @@ class MyMigration(Migration):
             # to be able to empty them ...
             # (and yeah why is this all so fucking complex why can't we just drop the column like a real DB or something...)
             os.system("sed -i 's@ OBSOLETE$@@g' /etc/ldap/schema/permission.ldif")
-            os.system("/usr/share/yunohost/hooks/conf_regen/06-slapd _regenerate_slapd_conf")
+            os.system(
+                "/usr/share/yunohost/hooks/conf_regen/06-slapd _regenerate_slapd_conf"
+            )
             os.system("systemctl restart slapd")
             for infos in permissions_infos:
                 ldap.update(
