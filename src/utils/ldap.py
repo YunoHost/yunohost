@@ -91,7 +91,7 @@ def modifyModlist_finegrained(old_entry: dict, new_entry: dict) -> list:
             old_value = {old_value}
         if isinstance(value, set) and value == set(old_value):
             continue
-        if isinstance(value, list) and value == old_value:
+        if isinstance(value, list) and value == list(old_value):
             continue
 
         if not old_value:
