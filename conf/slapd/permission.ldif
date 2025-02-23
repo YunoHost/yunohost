@@ -24,15 +24,19 @@ olcAttributeTypes: ( 1.3.6.1.4.1.17953.9.1.5 NAME 'additionalUrls'
   SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{128} )
 olcAttributeTypes: ( 1.3.6.1.4.1.17953.9.1.6 NAME 'authHeader'
   DESC 'YunoHost application, enable authentication header' OBSOLETE
+  EQUALITY booleanMatch
   SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE )
 olcAttributeTypes: ( 1.3.6.1.4.1.17953.9.1.7 NAME 'label'
   DESC 'YunoHost permission label, also used for the tile name in the SSO' OBSOLETE
+  EQUALITY caseExactMatch
   SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{128} SINGLE-VALUE )
 olcAttributeTypes: ( 1.3.6.1.4.1.17953.9.1.8 NAME 'showTile'
   DESC 'YunoHost application, show/hide the tile in the SSO for this permission' OBSOLETE
+  EQUALITY booleanMatch
   SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE )
 olcAttributeTypes: ( 1.3.6.1.4.1.17953.9.1.9 NAME 'isProtected'
   DESC 'YunoHost application permission protection' OBSOLETE
+  EQUALITY booleanMatch
   SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE )
 # OBJECTCLASS
 # For Applications

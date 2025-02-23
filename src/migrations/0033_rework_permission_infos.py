@@ -146,24 +146,31 @@ class MyMigration(Migration):
 
     def delete_legacy_permissions(self):
 
-        ldap = _get_ldap_interface()
-        permissions_infos = ldap.search(
-            "ou=permission",
-            "(objectclass=permissionYnh)",
-            ["cn"],
-        )
-        for infos in permissions_infos:
-            # LDAP won't delete the old, obsolete info,
-            # we have to do it ourselves ~_~
-            ldap.update(
-                f'cn={infos["cn"][0]},ou=permission',
-                {
-                    "label": [],
-                    "authHeader": [],
-                    "showTile": [],
-                    "isProtected": [],
-                    "URL": [],
-                    "additionalUrls": [],
-                    "groupPermission": [],
-                },
+        try:
+            ldap = _get_ldap_interface()
+            permissions_infos = ldap.search(
+                "ou=permission",
+                "(objectclass=permissionYnh)",
+                ["cn"],
             )
+            # LDAP is fucking stupid, therefore we have to un-mark the attributes as obsolete
+            # to be able to empty them ...
+            # (and yeah why is this all so fucking complex why can't we just drop the column like a real DB or something...)
+            os.system("sed -i 's@ OBSOLETE$@@g' /etc/ldap/schema/permission.ldif")
+            os.system("/usr/share/yunohost/hooks/conf_regen/06-slapd _regenerate_slapd_conf")
+            os.system("systemctl restart slapd")
+            for infos in permissions_infos:
+                ldap.update(
+                    f'cn={infos["cn"][0]},ou=permission',
+                    {
+                        "label": [],
+                        "authHeader": [],
+                        "showTile": [],
+                        "isProtected": [],
+                        "URL": [],
+                        "additionalUrls": [],
+                        "groupPermission": [],
+                    },
+                )
+        finally:
+            regen_conf(["slapd"], force=True)

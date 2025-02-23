@@ -186,4 +186,9 @@ objectClass: top"
     systemctl force-reload slapd
 }
 
-do_$1_regen ${@:2}
+if [[ "$1" == _regenerate_slapd_conf ]]
+then
+    _regenerate_slapd_conf
+else
+    do_$1_regen ${@:2}
+fi
