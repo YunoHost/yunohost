@@ -34,6 +34,7 @@ logger = logging.getLogger("yunohost.migration")
 class MyMigration(Migration):
     "Rework the firewall configuration"
 
+    introduced_in_version = "12.1"
     mode = "auto"
 
     apps = app_list(full=True)
@@ -77,3 +78,6 @@ class MyMigration(Migration):
 
     def run(self):
         self.firewall_file_migrate()
+
+    def run_after_system_restore(self):
+        self.run()
