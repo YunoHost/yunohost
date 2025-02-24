@@ -56,10 +56,6 @@ i18n = "app_config"
         style = "success"
         visible = "upgradable == 'yes'"
 
-        [_core.operations.force_upgrade_explain]
-        type = "markdown"
-        visible = "upgradable == 'no'"
-
         [_core.operations.force_upgrade]
         type = "button"
         icon = "refresh"

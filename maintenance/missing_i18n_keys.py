@@ -189,6 +189,7 @@ def find_expected_string_keys():
     app_settings_with_help_key = [
         "logo",
         "description",
+        "force_upgrade",
     ]
     for panel_key, panel in app_config.items():
         if not isinstance(panel, dict):

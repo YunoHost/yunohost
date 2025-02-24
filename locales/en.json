@@ -28,7 +28,7 @@
     "app_config_change_url_path": "New path",
     "app_config_change_url_unsupported_msg": "Changing the URL where this app is installed is not currently supported for this app.",
     "app_config_force_upgrade": "Force-upgrade",
-    "app_config_force_upgrade_explain": "Force-upgrading the app (to the same version) can sometime be useful to rebuild the app and configurations",
+    "app_config_force_upgrade_help": "Force-upgrading the app (to the same version) can sometime be useful to rebuild the app and configurations",
     "app_config_operations_name": "Operations",
     "app_config_permission_allowed": "Groups/users allowed to access",
     "app_config_permission_allowed_warn_protected": "NB: this permission is 'protected' and therefore the 'visitors' group cannot be actually added/removed from the authorized groups.",
