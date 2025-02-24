@@ -699,7 +699,6 @@
     "user_import_bad_line": "不正确的行 {line}: {details}",
     "user_cannot_delete_last_admin": "用户 '{user}' 是组 'admins' 中的最后一个用户，无法被删除。",
     "app_config_force_upgrade": "强制升级",
-    "app_config_force_upgrade_explain": "强制升级应用（到相同版本）有时可以帮助重建应用和配置",
     "app_config_operations_name": "操作",
     "app_config_permission_allowed": "被允许访问的用户/组",
     "app_config_permission_description_help": "如果您使用的是“描述性”门户模式，则此功能非常有用",
