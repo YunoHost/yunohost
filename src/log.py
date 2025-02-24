@@ -112,7 +112,7 @@ def _update_log_cache_symlinks():
 
         if not os.path.islink(success_symlink) or os.path.getctime(
             success_symlink
-        ) > os.path.getctime(log_md):
+        ) < os.path.getctime(log_md):
             success = metadata.get("success", "?")
             if success is True:
                 success_target = "/usr/bin/true"
