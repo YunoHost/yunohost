@@ -838,7 +838,7 @@
     "migration_description_0032_firewall_config": "Migration du fichier de configuration du pare-feu interne",
     "user_import_cannot_edit_or_delete_admins": "Impossible de modifier ou de supprimer '{user}' car ce compte est administrateur",
     "app_config_change_url_unsupported_msg": "La modification de l'URL sur laquelle cette application est installée n'est actuellement pas prise en charge pour cette application.",
-    "app_config_force_upgrade_explain": "La mise à jour forcée de l'application (vers la même version) peut parfois être utile pour reconstruire l'application et les configurations",
+    "app_config_force_upgrade_help": "Forcer la mise à jour de l'application (vers la même version) peut parfois être utile pour reconstruire l'application et les configurations",
     "app_config_upgradable_no": "Cette application est à jour. <small>(version `{current_version}`)</small><br/><small><em>Vous cherchez une nouvelle version de cette application ? Il y a peut-être une version 'testing' pour laquelle vous pouvez aider les packagers sur le dépôt git du paquet YunoHost !</em></small>",
     "app_config_permission_logo_help": "Seuls les fichiers PNG sont pris en charge",
     "app_config_upgradable_bad_quality": "Cette application est actuellement signalée comme cassée dans le catalogue d'applications de YunoHost. Il peut s'agir d'un problème temporaire pendant que l'équipe tente de résoudre le problème. En attendant, la mise à jour de cette application est désactivée.",
