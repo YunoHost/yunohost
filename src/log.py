@@ -88,7 +88,7 @@ def _update_log_cache_symlinks():
 
     logs = glob.iglob(OPERATIONS_PATH + "*.yml")
     for log_md in logs:
-        if os.path.getctime(log_md) < one_year_ago:
+        if os.path.getmtime(log_md) < one_year_ago:
             # Let's ignore files older than one year because hmpf reading a shitload of yml is not free
             continue
 
@@ -110,9 +110,9 @@ def _update_log_cache_symlinks():
             logger.error(m18n.n("log_corrupted_md_file", md_file=log_md, error=e))
             continue
 
-        if not os.path.islink(success_symlink) or os.path.getctime(
+        if not os.path.islink(success_symlink) or os.path.getmtime(
             success_symlink
-        ) < os.path.getctime(log_md):
+        ) < os.path.getmtime(log_md):
             success = metadata.get("success", "?")
             if success is True:
                 success_target = "/usr/bin/true"
@@ -163,7 +163,7 @@ def log_list(
     logs = [
         x.split("/")[-1]
         for x in glob.iglob(OPERATIONS_PATH + "*.yml")
-        if os.path.getctime(x) > since
+        if os.path.getmtime(x) > since
     ]
     logs = list(reversed(sorted(logs)))
 
@@ -676,7 +676,7 @@ class OperationLogger:
         # of the most recent file
 
         recent_operation_logs = sorted(
-            glob.iglob(OPERATIONS_PATH + "*.log"), key=os.path.getctime, reverse=True
+            glob.iglob(OPERATIONS_PATH + "*.log"), key=os.path.getmtime, reverse=True
         )[:20]
 
         proc = psutil.Process().parent()
@@ -685,7 +685,7 @@ class OperationLogger:
             # We only keep files matching a recent yunohost operation log
             active_logs = sorted(
                 (f.path for f in proc.open_files() if f.path in recent_operation_logs),
-                key=os.path.getctime,
+                key=os.path.getmtime,
                 reverse=True,
             )
             if active_logs != []:

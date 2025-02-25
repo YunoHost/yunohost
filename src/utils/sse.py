@@ -158,7 +158,7 @@ def get_current_operation():
     try:
         with open("/var/run/moulinette_yunohost.lock") as f:
             pid = f.read().strip().split("\n")[0]
-        lock_ctime = os.path.getctime("/var/run/moulinette_yunohost.lock")
+        lock_mtime = os.path.getmtime("/var/run/moulinette_yunohost.lock")
     except FileNotFoundError:
         return None, None, None
 
@@ -181,7 +181,7 @@ def get_current_operation():
     if active_logs:
         operation_id = sorted(active_logs)[0][: -len(".logstreamcache")].strip(".")
     else:
-        operation_id = f"lock-{lock_ctime}"
+        operation_id = f"lock-{lock_mtime}"
 
     return pid, operation_id, process_command_line
 
