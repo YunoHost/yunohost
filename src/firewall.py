@@ -91,7 +91,7 @@ class YunoFirewall:
 
     @staticmethod
     def _validate_port(protocol: str, port: int | str) -> tuple[str, int | str]:
-        if isinstance(port, str) and ":" not in port:
+        if isinstance(port, str) and "-" not in port:
             port = int(port)
         if protocol not in ["tcp", "udp"]:
             raise ValueError(f"protocol should be tcp or udp, not {protocol}")
