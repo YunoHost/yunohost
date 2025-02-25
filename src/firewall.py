@@ -298,7 +298,7 @@ def firewall_is_open(
     Returns whether the specified port is open.
 
     Keyword arguments:
-        port -- Port or range of ports to open
+        port -- Port or dash-separated range of ports to open
         protocol -- Protocol type to allow (tcp/udp)
 
     """
@@ -317,7 +317,7 @@ def firewall_open(
     Allow connections on a port
 
     Keyword arguments:
-        port -- Port or range of ports to open
+        port -- Port or dash-separated range of ports to open
         protocol -- Protocol type to allow (tcp/udp)
         comment -- A reason for the port to be open
         no_upnp -- Do not add forwarding of this port with UPnP
@@ -367,7 +367,7 @@ def firewall_close(
     Disallow connections on a port
 
     Keyword arguments:
-        port -- Port or range of ports to close
+        port -- Port or dash-separated range of ports to close
         protocol -- Protocol type to disallow (tcp/udp)
         upnp_only -- Only remove forwarding of this port with UPnP
         no_reload -- Do not reload firewall rules
@@ -431,7 +431,7 @@ def firewall_delete(
 
     Keyword arguments:
         protocol -- Protocol type to disallow (tcp/udp)
-        port -- Port or range of ports to close
+        port -- Port or dash-separated range of ports to close
         no_reload -- Do not reload firewall rules
     """
     firewall = YunoFirewall()
