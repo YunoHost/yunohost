@@ -2245,7 +2245,10 @@ ynh_app_config_run $1
                     }
                 else:
                     raw_settings[f"permission_{perm}_location"] = {"visible": False}
-                    raw_settings[f"permission_{perm}_show_tile"] = {"value": False, "visible": False}
+                    raw_settings[f"permission_{perm}_show_tile"] = {
+                        "value": False,
+                        "visible": False,
+                    }
                 raw_settings[f"permission_{perm}_url"] = infos.get("url") or ""
                 if infos.get("logo_hash"):
                     raw_settings[f"permission_{perm}_logo"] = (
