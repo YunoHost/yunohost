@@ -305,7 +305,9 @@ def tools_regen_conf(
 
     from yunohost.regenconf import regen_conf
 
-    if (names == [] or "nftables" in names) and tools_migrations_state()["migrations"].get("0032_firewall_config") not in ["skipped", "done"]:
+    if (names == [] or "nftables" in names) and tools_migrations_state()[
+        "migrations"
+    ].get("0032_firewall_config") not in ["skipped", "done"]:
         # Make sure the firewall conf is migrated before running the regenconf,
         # otherwise the nftable regenconf wont work
         try:
