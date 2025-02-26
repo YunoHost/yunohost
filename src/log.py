@@ -584,7 +584,6 @@ class RedactingFormatter(Formatter):
                 "Failed to parse line to try to identify data to redact ... : %s" % e
             )
 
-
 class OperationLogger:
     """
     Instances of this class represents unit operation done on the ynh instance.
@@ -631,12 +630,8 @@ class OperationLogger:
                 except Exception:
                     # During postinstall, we're not actually authenticated so eeeh what happens exactly?
                     self.started_by = "root"
-            elif "SUDO_USER" in os.environ:
-                self.started_by = os.environ["SUDO_USER"]
-            elif not os.isatty(1):
-                self.started_by = "noninteractive"
             else:
-                self.started_by = "root"
+                self.started_by = _guess_who_started_process(psutil.Process())
 
         if not os.path.exists(OPERATIONS_PATH):
             os.makedirs(OPERATIONS_PATH)
@@ -1002,3 +997,25 @@ def _get_description_from_name(name):
 @is_unit_operation(flash=True)
 def log_share(path):
     return log_show(path, share=True)
+
+
+def _guess_who_started_process(process):
+
+    if 'SUDO_USER' in process.environ():
+        return process.environ()['SUDO_USER']
+
+    parent = process.parent()
+    parent_cli = parent.cmdline()
+    pparent = parent.parent() if parent else None
+    pparent_cli = pparent.cmdline() if pparent else []
+    ppparent = pparent.parent() if pparent else None
+    ppparent_cli = ppparent.cmdline() if ppparent else []
+
+    if any("/usr/sbin/CRON" in cli for cli in [parent_cli, pparent_cli, ppparent_cli]):
+        return m18n.n("automatic_task")
+    elif any("/usr/bin/yunohost-api" in cli for cli in [parent_cli, pparent_cli, ppparent_cli]):
+        return m18n.n("yunohost_api")
+    elif process.terminal() is None:
+        return m18n.n("noninteractive_task")
+    else:
+        return "root"
