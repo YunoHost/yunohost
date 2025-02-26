@@ -584,6 +584,7 @@ class RedactingFormatter(Formatter):
                 "Failed to parse line to try to identify data to redact ... : %s" % e
             )
 
+
 class OperationLogger:
     """
     Instances of this class represents unit operation done on the ynh instance.
@@ -1001,8 +1002,8 @@ def log_share(path):
 
 def _guess_who_started_process(process):
 
-    if 'SUDO_USER' in process.environ():
-        return process.environ()['SUDO_USER']
+    if "SUDO_USER" in process.environ():
+        return process.environ()["SUDO_USER"]
 
     parent = process.parent()
     parent_cli = parent.cmdline()
@@ -1013,7 +1014,10 @@ def _guess_who_started_process(process):
 
     if any("/usr/sbin/CRON" in cli for cli in [parent_cli, pparent_cli, ppparent_cli]):
         return m18n.n("automatic_task")
-    elif any("/usr/bin/yunohost-api" in cli for cli in [parent_cli, pparent_cli, ppparent_cli]):
+    elif any(
+        "/usr/bin/yunohost-api" in cli
+        for cli in [parent_cli, pparent_cli, ppparent_cli]
+    ):
         return m18n.n("yunohost_api")
     elif process.terminal() is None:
         return m18n.n("noninteractive_task")
