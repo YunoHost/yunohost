@@ -167,7 +167,7 @@ def service_start(names):
             logger.success(m18n.n("service_started", service=name))
         else:
             if service_status(name)["status"] != "running":
-                logs = _get_journalctl_logs(name)
+                logs = _get_journalctl_logs(name, number=25)
                 if Moulinette.interface.type != "api":
                     logger.error(logs)
                 raise YunohostError(
@@ -194,7 +194,7 @@ def service_stop(names):
             logger.success(m18n.n("service_stopped", service=name))
         else:
             if service_status(name)["status"] != "inactive":
-                logs = _get_journalctl_logs(name)
+                logs = _get_journalctl_logs(name, number=25)
                 if Moulinette.interface.type != "api":
                     logger.error(logs)
                 raise YunohostError(
@@ -220,7 +220,7 @@ def service_reload(names):
             logger.success(m18n.n("service_reloaded", service=name))
         else:
             if service_status(name)["status"] != "running":
-                logs = _get_journalctl_logs(name)
+                logs = _get_journalctl_logs(name, number=25)
                 if Moulinette.interface.type != "api":
                     logger.error(logs)
                 raise YunohostError(
@@ -246,7 +246,7 @@ def service_restart(names):
             logger.success(m18n.n("service_restarted", service=name))
         else:
             if service_status(name)["status"] != "running":
-                logs = _get_journalctl_logs(name)
+                logs = _get_journalctl_logs(name, number=25)
                 if Moulinette.interface.type != "api":
                     logger.error(logs)
                 raise YunohostError(
@@ -298,7 +298,7 @@ def service_reload_or_restart(names, test_conf=True):
             logger.success(m18n.n("service_reloaded_or_restarted", service=name))
         else:
             if service_status(name)["status"] != "running":
-                logs = _get_journalctl_logs(name)
+                logs = _get_journalctl_logs(name, number=25)
                 if Moulinette.interface.type != "api":
                     logger.error(logs)
                 raise YunohostError(
@@ -324,9 +324,7 @@ def service_enable(names):
             diagnosis_unignore(["services", f"service={name}"])
             logger.success(m18n.n("service_enabled", service=name))
         else:
-            raise YunohostError(
-                "service_enable_failed", service=name, logs=_get_journalctl_logs(name)
-            )
+            raise YunohostError("service_enable_failed", service=name)
 
 
 @is_unit_operation(flash=True)
@@ -345,9 +343,7 @@ def service_disable(names):
             diagnosis_ignore(["services", f"service={name}"])
             logger.success(m18n.n("service_disabled", service=name))
         else:
-            raise YunohostError(
-                "service_disable_failed", service=name, logs=_get_journalctl_logs(name)
-            )
+            raise YunohostError("service_disable_failed", service=name)
 
 
 def service_status(names=[]):
