@@ -862,6 +862,7 @@ class OperationLogger:
             self.started_at
             and isinstance(error, Exception)
             and not isinstance(error, YunohostValidationError)
+            and not self.flash
         ):
             error.log_ref = self.name
 
