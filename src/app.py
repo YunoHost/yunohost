@@ -80,12 +80,12 @@ from yunohost.utils.system import (
 )
 
 
-
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
     from yunohost.utils.configpanel import ConfigPanelModel, RawSettings, RawConfig
     from yunohost.utils.form import FormModel
+
     class LoggerWithSuccess(Logger):
         def success(str, *args, **kwargs):
             pass
@@ -120,6 +120,7 @@ APP_FILES_TO_COPY = [
 
 AppManifest = dict[str, Any]
 
+
 class AppInfo(TypedDict, total=False):
     id: Required[str]
     name: Required[str]
@@ -146,7 +147,9 @@ class AppInfo(TypedDict, total=False):
     notifications: dict[str, dict[str, str]]
 
 
-def app_list(full: bool=False, upgradable: bool=False) -> dict[Literal["apps"], list[AppInfo]]:
+def app_list(
+    full: bool = False, upgradable: bool = False
+) -> dict[Literal["apps"], list[AppInfo]]:
     """
     List installed apps
     """
@@ -165,8 +168,7 @@ def app_list(full: bool=False, upgradable: bool=False) -> dict[Literal["apps"], 
     return {"apps": out}
 
 
-
-def app_info(app: str, full: bool=False, upgradable: bool=False) -> AppInfo:
+def app_info(app: str, full: bool = False, upgradable: bool = False) -> AppInfo:
     """
     Get info for a specific app
     """
@@ -341,7 +343,9 @@ def _app_upgradable(
     return "yes", current_version, new_version
 
 
-def app_map(app: str | None=None, raw: bool=False, user: str | None=None) -> dict[str, Any]:
+def app_map(
+    app: str | None = None, raw: bool = False, user: str | None = None
+) -> dict[str, Any]:
     """
     Returns a map of url <-> app id such as :
 
@@ -458,7 +462,9 @@ def app_map(app: str | None=None, raw: bool=False, user: str | None=None) -> dic
 
 
 @is_unit_operation()
-def app_change_url(operation_logger: "OperationLogger", app: str, domain: str, path: str) -> None:
+def app_change_url(
+    operation_logger: "OperationLogger", app: str, domain: str, path: str
+) -> None:
     """
     Modify the URL at which an application is installed.
 
@@ -595,14 +601,16 @@ def app_change_url(operation_logger: "OperationLogger", app: str, domain: str, p
 
 
 def app_upgrade(
-    app: str | list[str]=[],
-    url: str | None=None,
-    file: str | None=None,
-    force: bool=False,
-    no_safety_backup: bool=False,
-    continue_on_failure: bool=False,
-    ignore_yunohost_version: bool=False,
-) -> None | dict[Literal["notifications"], dict[Literal["POST_UPGRADE"], dict[str, str]]]:
+    app: str | list[str] = [],
+    url: str | None = None,
+    file: str | None = None,
+    force: bool = False,
+    no_safety_backup: bool = False,
+    continue_on_failure: bool = False,
+    ignore_yunohost_version: bool = False,
+) -> (
+    None | dict[Literal["notifications"], dict[Literal["POST_UPGRADE"], dict[str, str]]]
+):
     """
     Upgrade app
 
@@ -1029,7 +1037,8 @@ def app_upgrade(
     else:
         return None
 
-def app_manifest(app: str, with_screenshot: bool=False) -> AppManifest:
+
+def app_manifest(app: str, with_screenshot: bool = False) -> AppManifest:
     from yunohost.utils.form import parse_raw_options
 
     manifest, extracted_app_folder = _extract_app(app)
@@ -1072,7 +1081,7 @@ def app_manifest(app: str, with_screenshot: bool=False) -> AppManifest:
     return manifest
 
 
-def _confirm_app_install(app: str, force: bool=False) -> None:
+def _confirm_app_install(app: str, force: bool = False) -> None:
     # Ignore if there's nothing for confirm (good quality app), if --force is used
     # or if request on the API (confirm already implemented on the API side)
     if force or Moulinette.interface.type == "api":
@@ -1096,11 +1105,11 @@ def _confirm_app_install(app: str, force: bool=False) -> None:
 def app_install(
     operation_logger: "OperationLogger",
     app: str,
-    label: str | None=None,
-    args: str | None=None,
-    no_remove_on_failure: bool=False,
-    force: bool=False,
-    ignore_yunohost_version: bool=False,
+    label: str | None = None,
+    args: str | None = None,
+    no_remove_on_failure: bool = False,
+    force: bool = False,
+    ignore_yunohost_version: bool = False,
 ) -> None | dict[Literal["notifications"], dict[str, str]]:
     """
     Install apps
@@ -1280,7 +1289,10 @@ def app_install(
 
     # Prepare env. var. to pass to script
     env_dict = _make_environment_for_app_script(
-        app_instance_name, args=parsedargs, workdir=extracted_app_folder, action="install"
+        app_instance_name,
+        args=parsedargs,
+        workdir=extracted_app_folder,
+        action="install",
     )
 
     # If packaging_format v2+, save all install options as settings
@@ -1455,7 +1467,12 @@ def app_install(
 
 
 @is_unit_operation()
-def app_remove(operation_logger: "OperationLogger", app: str, purge: bool=False, force_workdir: str|None=None) -> None:
+def app_remove(
+    operation_logger: "OperationLogger",
+    app: str,
+    purge: bool = False,
+    force_workdir: str | None = None,
+) -> None:
     """
     Remove app
 
@@ -1559,7 +1576,12 @@ def app_remove(operation_logger: "OperationLogger", app: str, purge: bool=False,
 
 
 @is_unit_operation()
-def app_makedefault(operation_logger: "OperationLogger", app: str, domain: str | None=None, undo: bool=False) -> None:
+def app_makedefault(
+    operation_logger: "OperationLogger",
+    app: str,
+    domain: str | None = None,
+    undo: bool = False,
+) -> None:
     """
     Redirect domain root to an app
 
@@ -1588,7 +1610,9 @@ def app_makedefault(operation_logger: "OperationLogger", app: str, domain: str |
         domain_config_set(domain, "feature.app.default_app", app)
 
 
-def app_setting(app: str, key: str, value: str | int | None=None, delete: bool=False) -> None | Any:
+def app_setting(
+    app: str, key: str, value: str | int | None = None, delete: bool = False
+) -> None | Any:
     """
     Set or get an app setting value
 
@@ -1912,7 +1936,9 @@ def app_action_list(app: str) -> None:
     return AppConfigPanel(app).list_actions()
 
 
-def app_action_run(app: str, action: str, args: str|None=None, args_file=None, core: bool=False) -> None:
+def app_action_run(
+    app: str, action: str, args: str | None = None, args_file=None, core: bool = False
+) -> None:
 
     if action.startswith("_core"):
         core = True
@@ -1929,7 +1955,9 @@ def app_action_run(app: str, action: str, args: str|None=None, args_file=None, c
         elif action == "upgrade":
             app_upgrade(app)
         elif action == "change_url":
-            app_change_url(app, parsedargs["change_url_domain"], parsedargs["change_url_path"])
+            app_change_url(
+                app, parsedargs["change_url_domain"], parsedargs["change_url_path"]
+            )
         elif action == "uninstall":
             app_remove(app, purge=parsedargs.get("purge", False))
         else:
@@ -1944,7 +1972,13 @@ def app_action_run(app: str, action: str, args: str|None=None, args_file=None, c
         )
 
 
-def app_config_get(app: str, key: str="", full: bool=False, export: bool=False, core: bool=False):
+def app_config_get(
+    app: str,
+    key: str = "",
+    full: bool = False,
+    export: bool = False,
+    core: bool = False,
+):
     """
     Display an app configuration in classic, full or export mode
     """
@@ -1974,7 +2008,13 @@ def app_config_get(app: str, key: str="", full: bool=False, export: bool=False, 
 
 @is_unit_operation()
 def app_config_set(
-    operation_logger: "OperationLogger", app: str, key: str|None=None, value: Any=None, args: str|None=None, args_file=None, core: bool=False
+    operation_logger: "OperationLogger",
+    app: str,
+    key: str | None = None,
+    value: Any = None,
+    args: str | None = None,
+    args_file=None,
+    core: bool = False,
 ) -> None:
     """
     Apply a new app configuration
@@ -2751,7 +2791,7 @@ def _convert_v1_manifest_to_v2(manifest: dict[str, Any]) -> AppManifest:
     return manifest
 
 
-def _set_default_ask_questions(questions: dict[str, Any], script_name: str="install"):
+def _set_default_ask_questions(questions: dict[str, Any], script_name: str = "install"):
     # arguments is something like
     # { "domain":
     #       {
@@ -3273,7 +3313,7 @@ def _guess_webapp_path_requirement(app_folder: str) -> str:
 
 
 def _validate_webpath_requirement(
-    args: Dict[str, Any], path_requirement: str, ignore_app: str|None=None
+    args: Dict[str, Any], path_requirement: str, ignore_app: str | None = None
 ) -> None:
     domain = args.get("domain")
     path = args.get("path")
@@ -3290,7 +3330,9 @@ def _validate_webpath_requirement(
         )
 
 
-def _get_conflicting_apps(domain: str, path: str, ignore_app: str|None=None) -> list[tuple[str, str, str]]:
+def _get_conflicting_apps(
+    domain: str, path: str, ignore_app: str | None = None
+) -> list[tuple[str, str, str]]:
     """
     Return a list of all conflicting apps with a domain/path (it can be empty)
 
@@ -3328,7 +3370,9 @@ def _get_conflicting_apps(domain: str, path: str, ignore_app: str|None=None) -> 
     return conflicts
 
 
-def _assert_no_conflicting_apps(domain: str, path: str, ignore_app: str|None=None, full_domain: bool=False) -> None:
+def _assert_no_conflicting_apps(
+    domain: str, path: str, ignore_app: str | None = None, full_domain: bool = False
+) -> None:
     conflicts = _get_conflicting_apps(domain, path, ignore_app)
 
     if conflicts:
@@ -3471,7 +3515,7 @@ def _next_instance_number_for_app(app: str) -> int:
             i += 1
 
 
-def _make_tmp_workdir_for_app(app: str|None=None) -> str:
+def _make_tmp_workdir_for_app(app: str | None = None) -> str:
     # Create parent dir if it doesn't exists yet
     if not os.path.exists(APP_TMP_WORKDIRS):
         os.makedirs(APP_TMP_WORKDIRS)
@@ -3597,7 +3641,9 @@ def _notification_is_dismissed(name, settings):
         return False
 
 
-def _filter_and_hydrate_notifications(notifications, current_version=None, data={}) -> dict[str, str]:
+def _filter_and_hydrate_notifications(
+    notifications, current_version=None, data={}
+) -> dict[str, str]:
     def is_version_more_recent_than_current_version(name, current_version):
         current_version = str(current_version)
         return _parse_app_version(name) > _parse_app_version(current_version)
@@ -3675,7 +3721,9 @@ def _ask_confirmation(
         raise YunohostError("aborting")
 
 
-def regen_mail_app_user_config_for_dovecot_and_postfix(only: Literal["dovecot", "postfix"] | None=None) -> None:
+def regen_mail_app_user_config_for_dovecot_and_postfix(
+    only: Literal["dovecot", "postfix"] | None = None,
+) -> None:
     dovecot = True if only in [None, "dovecot"] else False
     postfix = True if only in [None, "postfix"] else False
 

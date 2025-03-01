@@ -38,7 +38,10 @@ APPS_CATALOG_LOGOS = "/usr/share/yunohost/applogos"
 APPS_CATALOG_CONF = "/etc/yunohost/apps_catalog.yml"
 APPS_CATALOG_API_VERSION = 3
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
-DEFAULT_APPS_CATALOG_LIST: list[dict[Literal["id", "url"], str]] = [{"id": "default", "url": APPS_CATALOG_DEFAULT_URL}]
+DEFAULT_APPS_CATALOG_LIST: list[dict[Literal["id", "url"], str]] = [
+    {"id": "default", "url": APPS_CATALOG_DEFAULT_URL}
+]
+
 
 class AppCatalog(TypedDict):
     apps: dict[str, dict[str, Any]]
@@ -46,7 +49,9 @@ class AppCatalog(TypedDict):
     antifeatures: NotRequired[list[dict[str, Any]]]
 
 
-def app_catalog(full: bool=False, with_categories: bool=False, with_antifeatures: bool=False) -> AppCatalog:
+def app_catalog(
+    full: bool = False, with_categories: bool = False, with_antifeatures: bool = False
+) -> AppCatalog:
     """
     Return a dict of apps available to installation from Yunohost's app catalog
     """
@@ -121,6 +126,7 @@ def app_search(string: str) -> dict[Literal["apps"], dict]:
             matching_apps[app[0]] = app[1]
 
     return {"apps": matching_apps}
+
 
 def _read_apps_catalog_list() -> list[dict[Literal["id", "url"], str]]:
     """
@@ -247,7 +253,7 @@ def _update_apps_catalog() -> None:
             # Is this even needed to iterate on the results ?
             pass
 
-    logger.success(m18n.n("apps_catalog_update_success")) # type: ignore
+    logger.success(m18n.n("apps_catalog_update_success"))  # type: ignore
 
 
 def _load_apps_catalog() -> AppCatalog:
