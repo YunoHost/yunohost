@@ -85,12 +85,9 @@ if TYPE_CHECKING:
 
     from yunohost.utils.configpanel import ConfigPanelModel, RawSettings, RawConfig
     from yunohost.utils.form import FormModel
+    from moulinette.utils.log import MoulinetteLogger
 
-    class LoggerWithSuccess(Logger):
-        def success(str, *args, **kwargs):
-            pass
-
-    logger = cast(LoggerWithSuccess, getLogger("yunohost.app"))
+    logger = cast(MoulinetteLogger, getLogger("yunohost.app"))
 else:
     logger = getLogger("yunohost.app")
 
