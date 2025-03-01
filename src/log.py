@@ -471,7 +471,7 @@ def is_unit_operation(
     """
 
     def decorate(
-        func: Callable[Concatenate["OperationLogger", Param], RetType]
+        func: Callable[Concatenate["OperationLogger", Param], RetType],
     ) -> Callable[Param, RetType]:
         def func_wrapper(*args, **kwargs):
 
