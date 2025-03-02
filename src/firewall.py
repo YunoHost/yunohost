@@ -505,6 +505,7 @@ def firewall_upnp(action: str = "status", no_refresh: bool = False) -> dict[str,
         upnp.enable()
     if action == "disable":
         upnp.disable()
+        no_refresh = True
     if no_refresh:
         # Only return current state
         return {"enabled": upnp.enabled()}
