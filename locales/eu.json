@@ -843,7 +843,6 @@
     "app_config_change_url_path": "Bide berria",
     "app_config_change_url_unsupported_msg": "Aplikazioa ez da oraingoz instalatuta dagoen URLa aldatzearekin bateragarria.",
     "app_config_force_upgrade": "Behartu bertsio-berritzea",
-    "app_config_force_upgrade_explain": "Aplikazioa bertsio-berritzera behartzeak (bertsio berbera) konfigurazioa berreraikitzen lagun dezake",
     "app_config_operations_name": "Eragiketak",
     "app_config_permission_allowed": "Sarbidea baimenduta duten taldeak/erabiltzaileak",
     "app_config_permission_allowed_warn_protected": "Ohart ongi: baimena 'babestuta' da, eta, beraz, 'bisitariak' taldea ezin da gehitu/kendu baimendutako taldeetatik.",
