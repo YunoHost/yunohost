@@ -280,6 +280,9 @@ class YunoUPnP:
         return status
 
     def enable(self) -> None:
+        if not self.find_gid():
+            logger.error("Not enabling UPnP because no UPnP device was found")
+            return
         if not self.enabled():
             # Add cron job
             self.UPNP_CRON_JOB.write_text(
