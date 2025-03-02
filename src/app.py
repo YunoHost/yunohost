@@ -26,7 +26,7 @@ import shutil
 import subprocess
 import tempfile
 import time
-from logging import getLogger, Logger
+from logging import getLogger
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
