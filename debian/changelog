@@ -1,3 +1,14 @@
+yunohost (12.1.1) testing; urgency=low
+
+  - firewall: let's not try to refresh upnp after disabling it because it's just gonna fail (5b127c7a5)
+  - firewall: do not actually enable upnp if no upnp device is available on the network (207de4228)
+  - permission migration: missing app_ssowatconf at the end (c2da2d3ab)
+  - i18n: Translations updated for Chinese (Simplified)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, Poesty Li)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 02 Mar 2025 19:20:00 +0100
+
 yunohost (12.1.0) testing; urgency=low
 
   - general: New "SSE" API to stream/broadcast logs of the current action, using zero-mq ([#1663](http://github.com/YunoHost/yunohost/pull/1663))
