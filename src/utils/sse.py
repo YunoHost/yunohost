@@ -155,12 +155,15 @@ class SSELogStreamingHandler(Handler):
 
 
 def get_current_operation():
+
+    from yunohost.log import _guess_who_started_process
+
     try:
         with open("/var/run/moulinette_yunohost.lock") as f:
             pid = f.read().strip().split("\n")[0]
-        lock_ctime = os.path.getctime("/var/run/moulinette_yunohost.lock")
+        lock_mtime = os.path.getmtime("/var/run/moulinette_yunohost.lock")
     except FileNotFoundError:
-        return None, None, None
+        return None, None, None, None
 
     try:
         process = psutil.Process(int(pid))
@@ -169,7 +172,7 @@ def get_current_operation():
             " ".join(process.cmdline()[1:]).replace("/usr/bin/", "") or "???"
         )
     except Exception:
-        return None, None, None
+        return None, None, None, None
 
     active_logs = [
         p.path.split("/")[-1]
@@ -181,9 +184,11 @@ def get_current_operation():
     if active_logs:
         operation_id = sorted(active_logs)[0][: -len(".logstreamcache")].strip(".")
     else:
-        operation_id = f"lock-{lock_ctime}"
+        operation_id = f"lock-{lock_mtime}"
 
-    return pid, operation_id, process_command_line
+    started_by = _guess_who_started_process(process)
+
+    return pid, operation_id, process_command_line, started_by
 
 
 def sse_stream():
@@ -201,7 +206,7 @@ def sse_stream():
     yield "retry: 100\n\n"
 
     # Check if there's any ongoing operation right now
-    _, current_operation_id, _ = get_current_operation()
+    _, current_operation_id, _, _ = get_current_operation()
 
     # Log list metadata is cached so it shouldnt be a bit deal to ask for "details" (which loads the metadata yaml for every operation)
     recent_operation_history = log_list(since_days_ago=2, limit=20, with_details=True)[
@@ -245,11 +250,12 @@ def sse_stream():
     try:
         while True:
             if time.time() - last_heartbeat > SSE_HEARTBEAT_PERIOD:
-                _, current_operation_id, cmdline = get_current_operation()
+                _, current_operation_id, cmdline, started_by = get_current_operation()
                 data = {
                     "current_operation": current_operation_id,
                     "cmdline": cmdline,
                     "timestamp": time.time(),
+                    "started_by": started_by,
                 }
                 payload = json.dumps(data)
                 yield "event: heartbeat\n"

@@ -67,7 +67,7 @@ class MyMigration(Migration):
         }
         for proto in ["TCP", "UDP"]:
             new_data[proto.lower()] = {
-                port: {
+                port if isinstance(port, int) else port.replace(":", "-"): {
                     "open": True,
                     "upnp": port in old_data["uPnP"][proto],
                     "comment": self._app_comment_of_port(port),

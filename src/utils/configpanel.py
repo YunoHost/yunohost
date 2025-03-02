@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union,
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
 from moulinette.utils.filesystem import mkdir, read_toml, read_yaml, write_to_yaml
-from pydantic import BaseModel, Extra, validator
+from pydantic import BaseModel, Extra, ValidationError, validator
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.form import (
@@ -805,7 +805,13 @@ class ConfigPanel:
         self, prevalidate: bool = False
     ) -> tuple[ConfigPanelModel, "FormModel"]:
         raw_config = self._get_partial_raw_config()
-        config = ConfigPanelModel(**raw_config)
+        try:
+            config = ConfigPanelModel(**raw_config)
+        except ValidationError as e:
+            raise YunohostError(
+                "Error while parsing config panel: " + e.errors()[0]["msg"],
+                raw_msg=True,
+            )
         config, raw_settings = self._get_partial_raw_settings_and_mutate_config(config)
         config.translate()
         Settings = build_form(config.options)

@@ -32,10 +32,13 @@ class YunohostError(MoulinetteError):
     are translated via m18n.n (namespace) instead of m18n.g (global?)
     """
 
-    def __init__(self, key, raw_msg=False, log_ref=None, *args, **kwargs):
+    def __init__(
+        self, key, raw_msg=False, log_ref=None, error_details=None, *args, **kwargs
+    ):
         self.key = key  # Saving the key is useful for unit testing
         self.kwargs = kwargs  # Saving the key is useful for unit testing
         self.log_ref = log_ref
+        self.error_details = error_details
         if raw_msg:
             msg = key
         else:
@@ -44,10 +47,12 @@ class YunohostError(MoulinetteError):
         super(YunohostError, self).__init__(msg, raw_msg=True)
 
     def content(self):
-        if not self.log_ref:
-            return super().content()
-        else:
+        if self.log_ref:
             return {"error": self.strerror, "log_ref": self.log_ref}
+        elif self.error_details:
+            return {"error": self.strerror, "details": self.error_details}
+        else:
+            return super().content()
 
 
 class YunohostValidationError(YunohostError):

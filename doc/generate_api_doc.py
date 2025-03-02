@@ -19,7 +19,7 @@
 #
 
 """
-    Generate JSON specification files API
+Generate JSON specification files API
 """
 import json
 import os

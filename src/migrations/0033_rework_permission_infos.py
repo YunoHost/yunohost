@@ -41,6 +41,7 @@ class MyMigration(Migration):
 
         self.delete_legacy_permissions()
         _sync_permissions_with_ldap()
+        app_ssowatconf()
 
     def run_after_system_restore(self):
 
@@ -51,6 +52,7 @@ class MyMigration(Migration):
 
         self.delete_legacy_permissions()
         _sync_permissions_with_ldap()
+        app_ssowatconf()
 
     def run_before_app_restore(self, app_id):
 

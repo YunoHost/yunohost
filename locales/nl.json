@@ -47,7 +47,7 @@
     "service_disabled": "Service '{service}' wordt niet meer gestart als het systeem opstart.",
     "service_remove_failed": "Kan service '{service}' niet verwijderen",
     "service_removed": "Service '{service}' werd verwijderd",
-    "service_stop_failed": "Kan service '{service}' niet stoppen\n\nRecente servicelogs: {logs}",
+    "service_stop_failed": "Kan service '{service}' niet stoppen",
     "service_unknown": "De service '{service}' bestaat niet",
     "unexpected_error": "Er is een onbekende fout opgetreden: {error}",
     "unrestore_app": "App '{app}' wordt niet teruggezet",

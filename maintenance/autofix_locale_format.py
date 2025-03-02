@@ -128,7 +128,7 @@ def autofix_orthotypography_and_standardized_words():
         "\u2007",
         "\u2008",
         "\u2009",
-        "\u200A",
+        "\u200a",
         # "\u202f",
         # "\u202F",
         "\u3000",
