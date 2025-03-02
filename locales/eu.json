@@ -834,7 +834,7 @@
     "log_diagnosis_run": "Abiarazi diagnostikoa",
     "log_tools_update": "Sistemaren eguneraketak eskuratzen eta aplikazioen katalogoa freskatzen",
     "group_cannot_remove_last_admin": "'{user}' erabiltzailea 'admins' taldeko azken erabiltzailea da, eta ez da bertatik kenduko.",
-    "user_import_cannot_edit_or_delete_admins": "Ezin da '{user}' erabiltzailea editatu edo ezabatu administratzailea delako",
+    "user_import_cannot_edit_or_delete_admins": "Ezin da '{user}' erabiltzailea editatu edo ezabatu (inportazio bidez) administratzailea delako",
     "migration_description_0032_firewall_config": "Barneko suebakiaren konfigurazio-fitxategiaren migrazioa",
     "user_cannot_delete_last_admin": "'{user}' erabiltzailea 'admins' taldeko azken erabiltzailea da, eta ez da ezabatuko.",
     "app_config__core_name": "Konfigurazioa eta eragiketak",
@@ -862,5 +862,9 @@
     "app_config_upgradable_msg": "Aplikazioa `{current_version}`(e)tik `{new_version}`(e)ra bertsio-berritu daiteke",
     "app_config_upgradable_url_required": "Aplikazioa ez dago (egon al da inoiz?) katalogoan eta, beraz, eskuz eguneratu behar da honako komandoa erabiliz `yunohost app upgrade <app>` eta `-u`aukerarekin gordailuaren URLa zehaztuz.",
     "app_config_upgradable_no": "Aplikazioa egunean dago. <small>(`{current_version}` bertsioa)</small><br/><small><em>Jatorrizko kode-gordailuko bertsio baten bila? Agian 'probazko' bertsio bat dago eta pakete-arduradunei lagun diezaiekezu YunoHosten git gordailurako prestatzen!</em></small>",
-    "migration_description_0033_rework_permission_infos": "Berrantolatu gordetako aplikazio-baimenak"
+    "migration_description_0033_rework_permission_infos": "Berrantolatu gordetako aplikazio-baimenak",
+    "app_config_force_upgrade_help": "Bertsio-berritzea behartzea (bertsio berberera) aplikazioa eta konfigurazioa birsortzeko lagungarri izan daiteke batzuetan",
+    "automatic_task": "Ataza automatikoa",
+    "noninteractive_task": "Interakziorik gabeko ataza",
+    "yunohost_api": "YunoHosten APIa"
 }
