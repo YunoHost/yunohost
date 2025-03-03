@@ -863,5 +863,8 @@
     "app_config_upgradable_yes": "L'application peut être mise à jour de la version {current_version} vers la version {new_version}",
     "app_config_upgrade": "Mise à jour",
     "app_config_permission_description_help": "Cette fonctionnalité n'est vraiment utile que si vous utilisez le mode 'descriptif' du portail.",
-    "migration_description_0033_rework_permission_infos": "Remanier la façon dont les autorisations des applications sont enregistrées"
+    "migration_description_0033_rework_permission_infos": "Remanier la façon dont les autorisations des applications sont enregistrées",
+    "automatic_task": "Tâche automatique",
+    "noninteractive_task": "Tâche non interactive",
+    "yunohost_api": "API YunoHost"
 }
