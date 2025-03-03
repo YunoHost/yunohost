@@ -188,6 +188,7 @@ class YunoUPnP:
 
     def __init__(self, firewall: "YunoFirewall") -> None:
         self.firewall = firewall
+        self.description = "Yunohost firewall"
         self.upnpc: miniupnpc.UPnP | None = None
 
     def enabled(self, new_status: bool | None = None) -> bool:
@@ -242,7 +243,7 @@ class YunoUPnP:
                 return False
 
         # Add new port mapping
-        desc = f"yunohost firewall: port {port} {comment}"
+        desc = f"{self.description}: port {port} {comment}"
         try:
             self.upnpc.addportmapping(
                 port, protocol, self.upnpc.lanaddr, port, desc, ""
@@ -299,10 +300,29 @@ class YunoUPnP:
             )
             self.enabled(True)
 
+    def close_ports(self) -> None:
+        i = 0
+        to_remove = []
+        # Get all ports from UPNP
+        while True:
+            port_mapping = self.upnpc.getgenericportmapping(i)
+            if port_mapping is None:
+                break
+            (port, protocol, (ihost, iport), description, c, d, e) = port_mapping
+            
+            # Remove it if IP and description match
+            if ihost == self.upnpc.lanaddr and description.startswith(self.description):
+                to_remove.append((port, protocol))
+            i = i + 1
+
+        for port, protocol in to_remove:
+            self.close_port(protocol, port)
+
     def disable(self) -> None:
         if self.enabled():
             # Remove cron job
             self.UPNP_CRON_JOB.unlink(missing_ok=True)
+            self.close_ports()
             self.enabled(False)
 
 
