@@ -260,7 +260,7 @@ class YunoUPnP:
 
         # FIXME: how should we handle port ranges ?
         if not isinstance(port, int):
-            logger.warning("Can't use UPnP to open '%s'" % port)
+            logger.warning("Can't use UPnP to close '%s'" % port)
             return False
 
         protocol = protocol.upper()
