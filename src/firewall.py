@@ -232,6 +232,8 @@ class YunoUPnP:
             logger.warning("Can't use UPnP to open '%s'" % port)
             return False
 
+        protocol = protocol.upper()
+
         # Clean the mapping of this port
         if self.upnpc.getspecificportmapping(port, protocol):
             try:
@@ -254,6 +256,13 @@ class YunoUPnP:
         if self.upnpc is None:
             self.find_gid()
         assert self.upnpc is not None
+
+        # FIXME: how should we handle port ranges ?
+        if not isinstance(port, int):
+            logger.warning("Can't use UPnP to open '%s'" % port)
+            return False
+
+        protocol = protocol.upper()
 
         if self.upnpc.getspecificportmapping(port, protocol):
             try:
