@@ -40,8 +40,8 @@ _ynh_load_go_in_path_and_other_tweaks() {
     PATH_with_go="$PATH"
 
     # Sets the local application-specific go version
-    pushd ${install_dir}
-    $GOENV_INSTALL_DIR/bin/goenv local $go_version
+    pushd "$install_dir"
+    $GOENV_INSTALL_DIR/bin/goenv local "$go_version"
     popd
 }
 
@@ -66,7 +66,7 @@ ynh_go_install() {
     local CLEAR_PATH="$GOENV_INSTALL_DIR/bin:$PATH"
 
     # Remove /usr/local/bin in PATH in case of Go prior installation
-    PATH=$(echo $CLEAR_PATH | sed 's@/usr/local/bin:@@')
+    PATH=$(echo "$CLEAR_PATH" | sed 's@/usr/local/bin:@@')
 
     # Move an existing Go binary, to avoid to block goenv
     test -x /usr/bin/go && mv /usr/bin/go /usr/bin/go_goenv
@@ -152,7 +152,7 @@ ynh_go_remove() {
     local CLEAR_PATH="$GOENV_INSTALL_DIR/bin:$PATH"
 
     # Remove /usr/local/bin in PATH in case of Go prior installation
-    PATH=$(echo $CLEAR_PATH | sed 's@/usr/local/bin:@@')
+    PATH=$(echo "$CLEAR_PATH" | sed 's@/usr/local/bin:@@')
 
     # Remove the line for this app
     ynh_app_setting_delete --key="go_version"
@@ -171,28 +171,27 @@ ynh_go_remove() {
 #
 # usage: _ynh_go_cleanup
 _ynh_go_cleanup() {
-
     # List required Go versions
     local installed_apps=$(yunohost app list --output-as json --quiet | jq -r .apps[].id)
-    local required_go_versions=""
+    local required_go_versions=()
     for installed_app in $installed_apps; do
-        local installed_app_go_version=$(ynh_app_setting_get --app=$installed_app --key="go_version")
+        local installed_app_go_version=$(ynh_app_setting_get --app="$installed_app" --key="go_version")
         if [[ $installed_app_go_version ]]; then
-            required_go_versions="${installed_app_go_version}\n${required_go_versions}"
+            required_go_versions+=("$installed_app_go_version")
         fi
     done
 
     # Remove no more needed Go versions
     local installed_go_versions=$(goenv versions --bare --skip-aliases | grep -Ev '/')
     for installed_go_version in $installed_go_versions; do
-        if ! $(echo ${required_go_versions} | grep "${installed_go_version}" 1> /dev/null 2>&1); then
+        if ! (printf '%s\0' "${required_go_versions[@]}" | grep -Fxqz -- "$installed_go_version"); then
             ynh_print_info "Removing of Go-$installed_go_version"
             $GOENV_INSTALL_DIR/bin/goenv uninstall --force "$installed_go_version"
         fi
     done
 
     # If none Go version is required
-    if [[ ! $required_go_versions ]]; then
+    if (( ${#required_go_versions[@]} == 0 )); then
         # Remove goenv environment configuration
         ynh_print_info "Removing of goenv"
         ynh_safe_rm "$GOENV_INSTALL_DIR"
@@ -202,6 +201,7 @@ _ynh_go_cleanup() {
 
 _ynh_go_try_bash_extension() {
     if [ -x src/configure ]; then
+        # shellcheck disable=SC2015
         src/configure && make -C src || {
             ynh_print_info "Optional bash extension failed to build, but things will still work normally."
         }

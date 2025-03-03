@@ -83,16 +83,16 @@ ynh_system_user_create() {
     if ! ynh_system_user_exists --username="$username"; then # Check if the user exists on the system
         # If the user doesn't exist
         if [ -n "$home_dir" ]; then # If a home dir is mentioned
-            local user_home_dir="--home-dir $home_dir"
+            local user_home_dir=(--home-dir "$home_dir")
         else
-            local user_home_dir="--no-create-home"
+            local user_home_dir=(--no-create-home)
         fi
-        if [ $use_shell -eq 1 ]; then # If we want a shell for the user
-            local shell=""            # Use default shell
+        if [ "$use_shell" -eq 1 ]; then # If we want a shell for the user
+            local shell=()            # Use default shell
         else
-            local shell="--shell /usr/sbin/nologin"
+            local shell=(--shell /usr/sbin/nologin)
         fi
-        useradd $user_home_dir --system --user-group $username $shell || ynh_die "Unable to create $username system account"
+        useradd "${user_home_dir[@]}" --system --user-group "$username" "${shell[@]}" || ynh_die "Unable to create $username system account"
     fi
 
     local group
@@ -114,13 +114,13 @@ ynh_system_user_delete() {
 
     # Check if the user exists on the system
     if ynh_system_user_exists --username="$username"; then
-        deluser $username
+        deluser "$username"
     else
         ynh_print_warn "The user $username was not found"
     fi
 
     # Check if the group exists on the system
     if ynh_system_group_exists --group="$username"; then
-        delgroup $username
+        delgroup "$username"
     fi
 }
