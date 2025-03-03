@@ -200,13 +200,13 @@ class YunoUPnP:
         self.firewall.open_port("udp", self.UPNP_PORT, self.UPNP_PORT_COMMENT)
 
     def find_gid(self) -> bool:
-        upnpc = miniupnpc.UPnP()
-        upnpc.localport = self.UPNP_PORT
-        upnpc.discoverdelay = 3000
+        self.upnpc = miniupnpc.UPnP()
+        self.upnpc.localport = self.UPNP_PORT
+        self.upnpc.discoverdelay = 3000
         # Discover UPnP device(s)
         logger.debug("discovering UPnP devices...")
         try:
-            nb_dev = upnpc.discover()
+            nb_dev = self.upnpc.discover()
         except Exception:
             logger.warning("Failed to find any UPnP device on the network")
             nb_dev = -1
@@ -216,7 +216,7 @@ class YunoUPnP:
         logger.debug("found %d UPnP device(s)", int(nb_dev))
         try:
             # Select UPnP device
-            upnpc.selectigd()
+            self.upnpc.selectigd()
         except Exception:
             logger.debug("unable to select UPnP device", exc_info=1)
             return False
