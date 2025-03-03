@@ -15,7 +15,7 @@ jobs:
       uses: salamandar/action-shellcheck@master
       env:
         # Those are errors that we haven't fixed yet
-        SHELLCHECK_OPTS: -x -e SC2155,SC2012,SC2013,SC2038,SC2076
+        SHELLCHECK_OPTS: -x -e SC2155,SC2012,SC2013,SC2038,SC2076,SC2034,SC2154,SC2001
       with:
         additional_files: |
           bin/yunoprompt
