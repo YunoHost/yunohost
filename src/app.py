@@ -3316,7 +3316,7 @@ def _validate_webpath_requirement(
     path = args.get("path")
 
     if not domain or not path:
-        raise Exception
+        return None
 
     if path_requirement == "domain_and_path":
         _assert_no_conflicting_apps(domain, path, ignore_app=ignore_app)
