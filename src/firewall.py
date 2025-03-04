@@ -301,6 +301,10 @@ class YunoUPnP:
             self.enabled(True)
 
     def close_ports(self) -> None:
+        if self.upnpc is None:
+            self.find_gid()
+        assert self.upnpc is not None
+
         i = 0
         to_remove = []
         # Get all ports from UPNP
@@ -309,7 +313,7 @@ class YunoUPnP:
             if port_mapping is None:
                 break
             (port, protocol, (ihost, iport), description, c, d, e) = port_mapping
-            
+
             # Remove it if IP and description match
             if ihost == self.upnpc.lanaddr and description.startswith(self.description):
                 to_remove.append((port, protocol))
