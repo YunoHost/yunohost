@@ -62,7 +62,7 @@ ynh_app_setting_set() {
 #
 # Hence it's meant as a replacement for this legacy overly complex syntax:
 #
-# ```
+# ```bash
 # if [ -z "${foo:-}" ]
 # then
 #     foo="bar"
