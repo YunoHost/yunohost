@@ -1,3 +1,16 @@
+yunohost (12.1.2) testing; urgency=low
+
+  - storage: Fix YAML indent for storage.disk.list.arguments in actionsmap.yml ([#2058](http://github.com/YunoHost/yunohost/pull/2058))
+  - yunohost app shell: fix env loading by remove 'ignore_errors=yes' from systemctl show output in some cases ([#2057](http://github.com/YunoHost/yunohost/pull/2057))
+  - app.py: fix path requirement validation for non-web apps and full-domain apps (75f5af054, 597aa0c6c)
+  - i18n: fix consistency for oc.json, the {logs} stuff got removed (37a3547c5)
+  - i18n: Reformat / remove stale translated strings ([#2059](http://github.com/YunoHost/yunohost/pull/2059))
+  - i18n: Translations updated for Basque, French, Galician
+
+  Thanks to all contributors <3 ! (Christophe Henry, Félix Piédallu, José M, ppr, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 05 Mar 2025 18:09:55 +0100
+
 yunohost (12.1.1) testing; urgency=low
 
   - firewall: let's not try to refresh upnp after disabling it because it's just gonna fail (5b127c7a5)
