@@ -3315,7 +3315,7 @@ def _validate_webpath_requirement(
     domain = args.get("domain")
     path = args.get("path")
 
-    if not domain or not path:
+    if not domain and not path:
         return None
 
     if path_requirement == "domain_and_path":
