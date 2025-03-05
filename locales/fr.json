@@ -297,7 +297,7 @@
     "regenconf_file_kept_back": "Le fichier de configuration '{conf}' devait être supprimé par 'regen-conf' (catégorie {category}) mais a été conservé.",
     "regenconf_updated": "La configuration a été mise à jour pour '{category}'",
     "regenconf_would_be_updated": "La configuration aurait dû être mise à jour pour la catégorie '{category}'",
-    "regenconf_dry_pending_applying": "Vérification de la configuration en attente qui aurait été appliquée pour la catégorie '{category}'…",
+    "regenconf_dry_pending_applying": "Vérification de la configuration en attente qui aurait été appliquée pour la catégorie '{category}' …",
     "regenconf_failed": "Impossible de régénérer la configuration pour la ou les catégorie(s) : '{categories}'",
     "regenconf_pending_applying": "Applique la configuration en attente pour la catégorie '{category}'…",
     "dpkg_lock_not_available": "Cette commande ne peut pas être exécutée pour le moment car un autre programme semble utiliser le verrou de dpkg (le gestionnaire de package système)",
