@@ -93,7 +93,7 @@ def get_current_commit() -> str:
 
 
 def render(tree, helpers_version: str) -> str:
-    template_file = YUNOHOST_SRCDIR / "doc" / "helper_doc_template.md"
+    template_file = YUNOHOST_SRCDIR / "doc" / "helpers_doc_template.md.j2"
     template = Template(template_file.read_text())
     template.globals["now"] = datetime.datetime.utcnow
 
