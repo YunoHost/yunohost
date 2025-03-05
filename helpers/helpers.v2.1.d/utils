@@ -438,7 +438,7 @@ ynh_spawn_app_shell() {
         [ -n "${env_var:-}" ] && export $env_var
 
         # Source the EnvironmentFiles from the app's service
-        local env_files=($(systemctl show $service.service -p "EnvironmentFiles" --value))
+        local env_files=($(systemctl show $service.service -p "EnvironmentFiles" --value | sed 's| (ignore_errors=yes)||'))
         if [ ${#env_files[*]} -gt 0 ]; then
             # set -/+a enables and disables new variables being automatically exported. Needed when using `source`.
             set -a
