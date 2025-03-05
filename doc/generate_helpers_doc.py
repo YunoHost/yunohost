@@ -291,7 +291,7 @@ def main() -> None:
             for b in p.blocks:
                 p.parse_block(b)
 
-            section["helpers"][subsection] = p.blocks
+            section["helpers"][subsection] = p.blocks  # type: ignore
 
     result = render(TREE, args.version)
 

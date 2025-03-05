@@ -21,6 +21,7 @@
 import ast
 import datetime
 import subprocess
+from typing import cast
 import argparse
 from pathlib import Path
 
@@ -73,12 +74,17 @@ def list_resources() -> dict[str, str]:
     resource_docstrings: dict[str, str] = {}
 
     for cl in tree.body:
-        if isinstance(cl, ast.ClassDef) and cl.bases and cl.bases[0].id == "AppResource":
-            assert cl.body[1].targets[0].id == "type"
-            resource_id = cl.body[1].value.value.replace("_", " ").title()
-            docstring = ast.get_docstring(cl)
-
-            resource_docstrings[resource_id] = docstring
+        if isinstance(cl, ast.ClassDef) and cl.bases:
+            assert isinstance(cl.bases[0], ast.Name)
+            if cl.bases[0].id == "AppResource":
+                assert isinstance(cl.body[1], ast.Assign)
+                assert isinstance(cl.body[1].targets[0], ast.Name)
+                assert cl.body[1].targets[0].id == "type"
+                assert isinstance(cl.body[1].value, ast.Constant)
+                resource_id = cl.body[1].value.value.replace("_", " ").title()
+                docstring = ast.get_docstring(cl)
+                assert isinstance(docstring, str)
+                resource_docstrings[resource_id] = docstring
 
     return dict(sorted(resource_docstrings.items()))
 
