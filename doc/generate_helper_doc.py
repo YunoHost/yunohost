@@ -23,8 +23,6 @@ import subprocess
 import argparse
 from pathlib import Path
 
-from ansi2html import Ansi2HTMLConverter
-from ansi2html.style import get_styles
 from jinja2 import Template
 
 
@@ -95,15 +93,10 @@ def get_current_commit() -> str:
 
 
 def render(tree, helpers_version: str) -> str:
-    conv = Ansi2HTMLConverter()
-    shell_css = "\n".join(map(str, get_styles(conv.dark_bg)))
-
-    def shell_to_html(shell):
-        return conv.convert(shell, False)
-
     template_file = YUNOHOST_SRCDIR / "doc" / "helper_doc_template.md"
     template = Template(template_file.read_text())
     template.globals["now"] = datetime.datetime.utcnow
+
     changelog_file = YUNOHOST_SRCDIR / "debian" / "changelog"
     version = changelog_file.open("r").readline().split()[1].strip("()")
 
@@ -113,8 +106,6 @@ def render(tree, helpers_version: str) -> str:
         version=version,
         helpers_version=helpers_version,
         current_commit=get_current_commit(),
-        convert=shell_to_html,
-        shell_css=shell_css,
     )
     return result
 
