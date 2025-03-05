@@ -55,6 +55,7 @@ _ynh_load_nodejs_in_path_and_other_tweaks() {
 #
 # The helper adds the appropriate, specific version of nodejs to the `$PATH` variable (which
 # is preserved when calling ynh_exec_as_app). Also defines:
+#
 # - `$path_with_nodejs` to be used in the systemd config (`Environment="PATH=__PATH_WITH_NODEJS__"`)
 # - `$nodejs_dir`, the directory containing the specific version of nodejs, which may be used in the systemd config too (e.g. `ExecStart=__NODEJS_DIR__/node foo bar`)
 ynh_nodejs_install() {
@@ -120,6 +121,7 @@ ynh_nodejs_install() {
 # usage: ynh_nodejs_remove
 #
 # This helper will check if another app uses the same version of node.
+#
 # - If not, this version of node will be removed.
 # - If no other app uses node, n will be also removed.
 ynh_nodejs_remove() {

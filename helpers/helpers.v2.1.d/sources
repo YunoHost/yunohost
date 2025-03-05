@@ -59,6 +59,7 @@
 # ```
 #
 # You may also define assets url and checksum per-architectures such as:
+#
 # ```toml
 # [resources.sources]
 #     [resources.sources.main]
@@ -71,6 +72,7 @@
 # In which case `ynh_setup_source --dest_dir="$install_dir"` will automatically pick the appropriate source depending on the arch
 #
 # The helper will:
+#
 # - Download the specific URL if there is no local archive
 # - Check the integrity with the specific sha256 sum
 # - Uncompress the archive to `$dest_dir`.

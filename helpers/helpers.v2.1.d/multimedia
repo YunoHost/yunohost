@@ -67,12 +67,12 @@ ynh_multimedia_build_main_dir() {
     setfacl -RL -m m::rwx "$MEDIA_DIRECTORY" || true
 }
 
-# Add a directory in yunohost.multimedia
+# Add a directory in `yunohost.multimedia`
 #
 # usage: ynh_multimedia_addfolder --source_dir="source_dir" --dest_dir="dest_dir"
 #
 # | arg: --source_dir= - Source directory - The real directory which contains your medias.
-# | arg: --dest_dir= - Destination directory - The name and the place of the symbolic link, relative to "/home/yunohost.multimedia"
+# | arg: --dest_dir= - Destination directory - The name and the place of the symbolic link, relative to `/home/yunohost.multimedia`
 #
 # This "directory" will be a symbolic link to a existing directory.
 ynh_multimedia_addfolder() {
