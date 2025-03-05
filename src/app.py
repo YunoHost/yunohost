@@ -3319,9 +3319,11 @@ def _validate_webpath_requirement(
         return None
 
     if path_requirement == "domain_and_path":
+        assert domain and path
         _assert_no_conflicting_apps(domain, path, ignore_app=ignore_app)
 
     elif path_requirement == "full_domain":
+        assert domain
         _assert_no_conflicting_apps(
             domain, "/", full_domain=True, ignore_app=ignore_app
         )
