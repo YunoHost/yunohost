@@ -30,7 +30,6 @@ author: Christophe Vuillot
 """
 
 import argparse
-import datetime
 from pathlib import Path
 from typing import Any
 
