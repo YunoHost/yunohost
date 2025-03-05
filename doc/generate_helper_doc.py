@@ -267,7 +267,7 @@ class Parser:
                             b.args.append([argname, argdescr])
                 continue
 
-            else:
+            elif subblock:
                 b.details += subblock + "\n\n"
 
         b.usage = b.usage.strip()
