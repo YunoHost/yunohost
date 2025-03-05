@@ -30,6 +30,7 @@
 # `../conf/f2b_jail.conf` and `../conf/f2b_filter.conf`
 #
 # They will typically look like (for example here for synapse):
+#
 # ```
 # f2b_jail.conf:
 #     [__APP__]
@@ -39,6 +40,7 @@
 #     logpath = /var/log/__APP__/logfile.log
 #     maxretry = 5
 # ```
+#
 # ```
 # f2b_filter.conf:
 #     [INCLUDES]
@@ -54,16 +56,17 @@
 #     ignoreregex =
 # ```
 #
-# ##### Regarding the the `failregex` option:
+# ##### Regarding the the `failregex` option
 #
 # regex to match the password failure messages in the logfile. The host must be
 # matched by a group named "`host`". The tag "`<HOST>`" can be used for standard
 # IP/hostname matching and is only an alias for `(?:::f{4,6}:)?(?P<host>[\w\-.^_]+)`
 #
 # You can find some more explainations about how to make a regex here :
-# https://www.fail2ban.org/wiki/index.php/MANUAL_0_8#Filters
+# <https://www.fail2ban.org/wiki/index.php/MANUAL_0_8#Filters>
 #
 # To validate your regex you can test with this command:
+#
 # ```
 # fail2ban-regex /var/log/YOUR_LOG_FILE_PATH /etc/fail2ban/filter.d/YOUR_APP.conf
 # ```

@@ -48,7 +48,7 @@
 # mode ain't enough because you need conditional blocks or loops.
 #
 # For a full documentation of jinja's syntax you can refer to:
-# https://jinja.palletsprojects.com/en/3.1.x/templates/
+# <https://jinja.palletsprojects.com/en/3.1.x/templates/>
 #
 # Note that in YunoHost context, all variables are from shell variables and therefore are strings
 #
@@ -90,7 +90,7 @@ ynh_config_add() {
 
     if [[ "$jinja" == 1 ]]; then
         # This is ran in a subshell such that the "export" does not "contaminate" the main process
-        (   
+        (
             export $(compgen -v)
             j2 "$template_path" -f env -o $destination
         )
@@ -167,6 +167,8 @@ _ynh_replace_vars() {
 # if you have several identical keys in your files
 #
 # Example of line this helpers can managed correctly
+#
+# ```text
 # .yml
 #     title: YunoHost documentation
 #     email: 'yunohost@yunohost.org'
@@ -186,6 +188,8 @@ _ynh_replace_vars() {
 #     USER = 8102
 #     user = 'https://donate.local'
 #     CUSTOM['user'] = 'YunoHost'
+# ```
+#
 ynh_read_var_in_file() {
     # ============ Argument parsing =============
     local -A args_array=([f]=file= [k]=key= [a]=after=)
