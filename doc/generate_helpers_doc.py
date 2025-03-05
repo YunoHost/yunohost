@@ -18,13 +18,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import argparse
 import datetime
 import subprocess
-import argparse
 from pathlib import Path
 
 from jinja2 import Template
-
 
 YUNOHOST_SRCDIR = Path(__file__).resolve().parent.parent
 
