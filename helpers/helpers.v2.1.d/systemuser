@@ -58,13 +58,13 @@ ynh_system_group_exists() {
 #
 # Create a nextcloud user with no home directory and /usr/sbin/nologin login shell (hence no login capability) :
 #
-# ```
+# ```bash
 # ynh_system_user_create --username=nextcloud
 # ```
 #
 # Create a discourse user using /var/www/discourse as home directory and the default login shell :
 #
-# ```
+# ```bash
 # ynh_system_user_create --username=discourse --home_dir=/var/www/discourse --use_shell
 # ```
 ynh_system_user_create() {

@@ -99,6 +99,7 @@ class SectionModel(ContainerModel, OptionsModel):
     FIXME i'm not sure we have this in code.
 
     #### Examples
+
     ```toml
     [main]
 
@@ -114,13 +115,14 @@ class SectionModel(ContainerModel, OptionsModel):
     ```
 
     #### Properties
+
     - `name` (optional): `Translation` or `str`, displayed as the section's title if any
     - `help`: `Translation` or `str`, text to display before the first option
     - `services` (optional): `list` of services names to `reload-or-restart` when any option's value contained in the section changes
-        - `"__APP__` will refer to the app instance name
+      - `"__APP__` will refer to the app instance name
     - `optional`: `bool` (default: `true`), set the default `optional` prop of all Options in the section
     - `visible`: `bool` or `JSExpression` (default: `true`), allow to conditionally display a section depending on user's answers to previous questions.
-        - Be careful that the `visible` property should only refer to **previous** options's value. Hence, it should not make sense to have a `visible` property on the very first section.
+      - Be careful that the `visible` property should only refer to **previous** options's value. Hence, it should not make sense to have a `visible` property on the very first section.
     """
 
     visible: bool | str = True
@@ -187,6 +189,7 @@ class PanelModel(ContainerModel):
     Panels are, basically, sections grouped together. Panels are `dict`s defined inside a ConfigPanel file and require a unique id (in the below example, the id is `main`). Keep in mind that this id will be used in CLI to refer to the panel, so choose something short and meaningfull.
 
     #### Examples
+
     ```toml
     [main]
     name.en = "Main configuration"
@@ -197,11 +200,13 @@ class PanelModel(ContainerModel):
         [main.customization]
         # …refer to Sections doc
     ```
+
     #### Properties
+
     - `name`: `Translation` or `str`, displayed as the panel title
     - `help` (optional): `Translation` or `str`, text to display before the first section
     - `services` (optional): `list` of services names to `reload-or-restart` when any option's value contained in the panel changes
-        - `"__APP__` will refer to the app instance name
+      - `"__APP__` will refer to the app instance name
     - `actions`: FIXME not sure what this does
     """
 
@@ -262,7 +267,7 @@ class ConfigPanelModel(BaseModel):
 
     - `version`: `float` (default: `1.0`), version that the config panel supports in terms of features.
     - `i18n` (optional): `str`, an i18n property that let you internationalize options text.
-        - However this feature is only available in core configuration panel (like `yunohost domain config`), prefer the use `Translation` in `name`, `help`, etc.
+      - However this feature is only available in core configuration panel (like `yunohost domain config`), prefer the use `Translation` in `name`, `help`, etc.
 
     """
 

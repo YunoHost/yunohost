@@ -31,7 +31,7 @@
 #
 # They will typically look like (for example here for synapse):
 #
-# ```
+# ```toml
 # f2b_jail.conf:
 #     [__APP__]
 #     enabled = true
@@ -41,7 +41,7 @@
 #     maxretry = 5
 # ```
 #
-# ```
+# ```toml
 # f2b_filter.conf:
 #     [INCLUDES]
 #     before = common.conf
@@ -67,7 +67,7 @@
 #
 # To validate your regex you can test with this command:
 #
-# ```
+# ```bash
 # fail2ban-regex /var/log/YOUR_LOG_FILE_PATH /etc/fail2ban/filter.d/YOUR_APP.conf
 # ```
 ynh_config_add_fail2ban() {
