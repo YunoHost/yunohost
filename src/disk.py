@@ -32,13 +32,15 @@ class DiskState(enum.StrEnum):
 
 
 
-def _disk_infos(name: str, drive: dict, human_readable=False):
+def _disk_infos(name: str, drive: dict, **kwargs):
+    human_readable = kwargs.get("human_readable", False)
+    human_readable_size = kwargs.get("human_readable_size", human_readable)
     result = {
         "name": name,
         "model": drive["model"],
         "serial": drive["serial"],
         "removable": bool(drive["media_removable"]),
-        "size": binary_to_human(drive["size"]) if human_readable else drive["size"],
+        "size": binary_to_human(drive["size"]) if human_readable_size else drive["size"],
         "smartStatus": DiskState.parse(drive),
     }
 
@@ -65,24 +67,29 @@ def _disk_infos(name: str, drive: dict, human_readable=False):
     return result
 
 
-def disk_list(with_info=False, human_readable=False):
+def disk_list(**kwargs):
     bus = sd_bus_open_system()
     disks = Udisks2Manager(bus).get_disks()
+
+    with_info = kwargs.get("with_info", False)
+
     if not with_info:
         return list(disks.keys())
 
     result = [
-        _disk_infos(name, disk.props, human_readable) for name, disk in disks.items()
+        _disk_infos(name, disk.props, **kwargs) for name, disk in disks.items()
     ]
 
     return {"disks": result}
 
 
-def disk_info(name, human_readable=False):
+def disk_info(name, **kwargs):
     bus = sd_bus_open_system()
     disk = Udisks2Manager(bus).get_disks().get(name)
+
+    human_readable = kwargs.get("human_readable", False)
 
     if not disk:
         return f"Unknown disk with name {name}" if human_readable else None
 
-    return _disk_infos(name, disk.props, human_readable)
+    return _disk_infos(name, disk.props, **kwargs)
