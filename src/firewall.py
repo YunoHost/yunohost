@@ -197,7 +197,7 @@ class YunoUPnP:
     def enabled(self, new_status: bool | None = None) -> bool:
         if new_status is not None:
             self.firewall.config["router_forwarding_upnp"] = new_status
-        self.firewall.write()
+            self.firewall.write()
         return self.firewall.config.get("router_forwarding_upnp", False)
 
     def ensure_listen_port(self) -> None:
