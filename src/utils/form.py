@@ -323,7 +323,7 @@ class BaseOption(BaseModel):
     Options are fields declaration that renders as form items, button, alert or text in the web-admin and printed or prompted in CLI.
     They are used in app manifests to declare the before installation form and in config panels.
 
-    [Have a look at the app config panel doc](/packaging_apps_config_panels) for details about Panels and Sections.
+    [Have a look at the app config panel doc](/packaging_config_panels) for details about Panels and Sections.
 
     ! IMPORTANT: as for Panels and Sections you have to choose an id, but this one should be unique in all this document, even if the question is in an other panel.
 
