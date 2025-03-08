@@ -53,7 +53,7 @@ do_pre_regen() {
     mkdir -p "$pending_dir/etc/systemd/system/"
     cp yunomdns.service "$pending_dir/etc/systemd/system/"
 
-    if ! getent passwd mdns &>/dev/null; then
+    if ! getent passwd mdns &> /dev/null; then
         useradd --no-create-home --shell /usr/sbin/nologin --system --user-group mdns
     fi
 
