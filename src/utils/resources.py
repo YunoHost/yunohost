@@ -1701,4 +1701,109 @@ class NodejsAppResource(AppResource):
             )
 
 
+class RubyAppResource(AppResource):
+    """
+    Installs a ruby version to be used by the app
+
+    ### Example
+    ```toml
+    [resources.ruby]
+    version = "3.2"
+    ```
+
+    ### Properties
+    - `version`: The ruby version needed by the app
+
+    ### Provision/Update
+    - FIXME: explain
+
+    ### Deprovision
+    - FIXME: explain
+    """
+
+    type = "ruby"
+    priority = 100
+    version: str = ""
+
+    default_properties: Dict[str, Any] = {
+        "version": None,
+    }
+
+    RBENV_ROOT = "/opt/rbenv"
+
+    @property
+    def rbenv(self):
+        return f"{self.RBENV_ROOT}/bin/rbenv"
+
+    def installed_versions(self):
+
+        return check_output(
+            f"{self.rbenv} versions --bare --skip-aliases | grep -Ev '/'",
+            env={"RBENV_ROOT": self.RBENV_ROOT}
+        ).strip().split("\n")
+
+    def update_rbenv(self):
+
+        self._run_script(
+            "provision_or_update",
+            f"""
+            _ynh_git_clone "https://github.com/rbenv/rbenv" "{self.RBENV_ROOT}"
+            _ynh_git_clone "https://github.com/rbenv/ruby-build" "{self.RBENV_ROOT}/plugins/ruby-build"
+            _ynh_git_clone "https://github.com/tpope/rbenv-aliases" "{self.RBENV_ROOT}/plugins/rbenv-aliase"
+            _ynh_git_clone "https://github.com/momo-lab/xxenv-latest" "{self.RBENV_ROOT}/plugins/xxenv-latest"
+            mkdir -p "{self.RBENV_ROOT}/cache"
+            mkdir -p "{self.RBENV_ROOT}/shims"
+        """
+        )
+
+    def provision_or_update(self, context: Dict = {}):
+
+        for package in ["gcc", "make", "libjemalloc-dev", "libffi-dev", "libyaml-dev", "zlib1g-dev"]:
+            if os.system(f'dpkg --list | grep -q "^ii  {package}"') != 0:
+                raise YunohostValidationError(f"{package} is required to install Ruby")
+
+        self.update_rbenv()
+
+        ruby_version = check_output(
+            f"{self.rbenv} latest --print '{self.version}'",
+            env={"RBENV_ROOT": self.RBENV_ROOT},
+        )
+        self.set_setting("ruby_version", ruby_version)
+        logger.info(f"Building Ruby {ruby_version}, this may take some time...")
+        self._run_script(
+            "provision_or_update",
+            f"""
+            #export RBENV_ROOT='{self.RBENV_ROOT}'
+            export RUBY_CONFIGURE_OPTS='--disable-install-doc --with-jemalloc'
+            export MAKE_OPTS='-j2'
+            {self.rbenv} install --skip-existing '{ruby_version}' 2>&1
+            if {self.rbenv} alias --list | grep --quiet '{self.app} '; then
+                {self.rbenv} alias {self.app} --remove
+            fi
+            {self.rbenv} alias {self.app} '{ruby_version}'
+        """
+        )
+        self.garbage_collect_unused_versions()
+
+    def deprovision(self, context: Dict = {}):
+
+        self.delete_setting("ruby_version")
+        self.garbage_collect_unused_versions()
+
+    def garbage_collect_unused_versions(self):
+
+        from yunohost.app import app_setting, _installed_apps
+
+        used_versions = []
+        for app in _installed_apps():
+            v = app_setting(app, "ruby_version")
+            if v:
+                used_versions.append(v)
+
+        unused_versions = set(self.installed_versions()) - set(used_versions)
+        if unused_versions:
+            cmds = [f"{self.rbenv} uninstall --force {version}" for version in unused_versions]
+            self._run_script("cleanup", "\n".join(cmds))
+
+
 AppResourceClassesByType = {c.type: c for c in AppResource.__subclasses__()}
