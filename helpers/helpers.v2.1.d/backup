@@ -45,7 +45,7 @@ ynh_backup() {
     local is_data=false
 
     # If the path starts with /var/log/$app or $data_dir
-    if [[ ( -n "${app:-}" && "$target" =~ ^/var/log/$app/?\*?$ ) || ( -n "${data_dir:-}" && "$target" =~ ^$data_dir ) ]]; then
+    if [[ (-n "${app:-}" && "$target" =~ ^/var/log/$app/?\*?$) || (-n "${data_dir:-}" && "$target" =~ ^$data_dir)     ]]; then
         is_data=true
     fi
 
@@ -55,7 +55,7 @@ ynh_backup() {
 
     # If backing up core only (used by ynh_backup_before_upgrade),
     # don't backup big data items
-    if [[ "$is_data" == true && ( "${do_not_backup_data:-0}" -eq 1 || ${BACKUP_CORE_ONLY:-0} -eq 1 ) ]]; then
+    if [[ "$is_data" == true && ("${do_not_backup_data:-0}" -eq 1 || ${BACKUP_CORE_ONLY:-0} -eq 1)   ]]; then
         if [ "$BACKUP_CORE_ONLY" -eq 1 ]; then
             ynh_print_info "$target will not be saved, because 'BACKUP_CORE_ONLY' is set."
         else
@@ -152,7 +152,7 @@ ynh_restore() {
     # If the path starts with /var/log/$app or $data_dir
     local is_data=false
     # If the path starts with /var/log/$app or $data_dir
-    if [[ ( -n "${app:-}" && "$target" =~ ^/var/log/$app/?\*?$ ) || ( -n "${data_dir:-}" && "$target" =~ ^$data_dir ) ]]; then
+    if [[ (-n "${app:-}" && "$target" =~ ^/var/log/$app/?\*?$) || (-n "${data_dir:-}" && "$target" =~ ^$data_dir)     ]]; then
         is_data=true
     fi
 

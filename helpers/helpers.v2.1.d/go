@@ -191,7 +191,7 @@ _ynh_go_cleanup() {
     done
 
     # If none Go version is required
-    if (( ${#required_go_versions[@]} == 0 )); then
+    if ((${#required_go_versions[@]} == 0)); then
         # Remove goenv environment configuration
         ynh_print_info "Removing of goenv"
         ynh_safe_rm "$GOENV_INSTALL_DIR"

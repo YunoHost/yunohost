@@ -148,7 +148,7 @@ EOF
         mapfile -a problematic_dependencies < <(grep -oP '(?<=-ynh-deps depends on ).*(?=; however)' "$TMPDIR/dpkg_log")
         # Fake an install of those dependencies to see the errors
         # The sed command here is, Print only from 'Reading state info' to the end.
-        if (( ${#problematic_dependencies[@]} != 0 )); then
+        if ((${#problematic_dependencies[@]} != 0)); then
             _ynh_apt_install "${problematic_dependencies[@]}" --dry-run 2>&1 | sed --quiet '/Reading state info/,$p' | grep -v "fix-broken\|Reading state info" >&2
         fi
         ynh_die "Unable to install apt dependencies"
@@ -280,7 +280,7 @@ EOF
     local apps_auto_installed
     mapfile -t apps_auto_installed < <(apt-mark showauto "${packages[@]}")
     _ynh_apt_install "${packages[@]}"
-    if (( ${#apps_auto_installed[@]} == 0 )); then
+    if ((${#apps_auto_installed[@]} == 0)); then
         apt-mark auto "${apps_auto_installed[@]}"
     fi
 
