@@ -61,8 +61,6 @@ fi
 #
 # - `$path_with_go` (the value of the modified `$PATH`, but you dont really need it?)
 # - `$go_dir` (the directory containing the specific go version)
-#
-# This helper also creates a /etc/profile.d/goenv.sh that configures PATH environment for goenv
 ynh_go_install() {
 
     [[ -n "${go_version:-}" ]] || ynh_die "\$go_version should be defined prior to calling ynh_go_install"

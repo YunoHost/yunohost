@@ -61,8 +61,6 @@ fi
 #
 # - `$path_with_ruby` to be used in the systemd config (`Environment="PATH=__PATH_WITH_RUBY__"`)
 # - `$ruby_dir`, the directory containing the specific version of ruby, which may be used in the systemd config too (e.g. `ExecStart=__RUBY_DIR__/ruby foo bar`)
-#
-# This helper also creates a /etc/profile.d/rbenv.sh that configures PATH environment for rbenv
 ynh_ruby_install() {
 
     [[ -n "${ruby_version:-}" ]] || ynh_die "\$ruby_version should be defined prior to calling ynh_ruby_install"

@@ -1612,6 +1612,12 @@ class NodejsAppResource(AppResource):
     """
     Installs a nodejs version using "n" to be used by the app
 
+    Sourcing the helpers will then automatically tweak the PATH variable such that you may call `npm` directly.
+
+    Sourcing the helpers will also automatically define:
+    - `$path_with_nodejs` to be used in the systemd config (`Environment="PATH=__PATH_WITH_NODEJS__"`)
+    - `$nodejs_dir`, the directory containing the specific version of nodejs, which may be used in the systemd config too (e.g. `ExecStart=__NODEJS_DIR__/node foo bar`)
+
     ### Example
     ```toml
     [resources.nodejs]
@@ -1622,12 +1628,13 @@ class NodejsAppResource(AppResource):
     - `version`: The nodejs version needed by the app
 
     ### Provision/Update
-    - Store "version" as "nodejs_version" in the app settings
     - Call "n" to install the corresponding nodejs version
+    - Resolve the "actual version" installed (typically if version `20` is requested, the actual version may be `20.1.2`)
+    - This "actual version" is stored as `nodejs_version` in the app settings
     - Garbage-collect unused versions
 
     ### Deprovision
-    - Delete the "nodejs_version" setting
+    - Delete the `nodejs_version` setting
     - Garbage-collect unused versions
     """
 
@@ -1703,7 +1710,15 @@ class NodejsAppResource(AppResource):
 
 class RubyAppResource(AppResource):
     """
-    Installs a ruby version to be used by the app
+    Installs a ruby version to be used by the app, using "rbenv"
+
+    Note that ruby is compiled on the target system, and therefore requires the following dependencies to be installed : `gcc, make, libjemalloc-dev, libffi-dev, libyaml-dev, zlib1g-dev`
+
+    Sourcing the helpers will then automatically tweak the `PATH` variable such that you may call `ruby` and `gem` directly.
+
+    Sourcing the helpers will also automatically define:
+    - `$path_with_ruby` to be used in the systemd config (`Environment="PATH=__PATH_WITH_RUBY__"`)
+    - `$ruby_dir`, the directory containing the specific version of ruby, which may be used in the systemd config too (e.g. `ExecStart=__RUBY_DIR__/ruby foo bar`)
 
     ### Example
     ```toml
@@ -1715,10 +1730,15 @@ class RubyAppResource(AppResource):
     - `version`: The ruby version needed by the app
 
     ### Provision/Update
-    - FIXME: explain
+    - Fetch/update a copy of the rbenv tool as well as ruby-build, rbenv-aliases and xxenv-latest
+    - Compute the actual "latest" version for the requested version, e.g. `3.2` may corresponds to `3.2.1`
+    - This "actual version" is stored as `ruby_version` in the app settings
+    - Install (compile) Ruby (may take some time)
+    - Garbage-collect unused versions
 
     ### Deprovision
-    - FIXME: explain
+    - Delete the `ruby_version` setting
+    - Garbage-collect unused versions
     """
 
     type = "ruby"
@@ -1808,7 +1828,12 @@ class RubyAppResource(AppResource):
 
 class GoAppResource(AppResource):
     """
-    Installs a go version to be used by the app
+    Installs a go version to be used by the app, using "goenv"
+
+    Sourcing the helpers will then automatically tweak the `PATH` variable such that you may call `go` directly.
+
+    Sourcing the helpers will also automatically define:
+    - `$go_dir`, the directory containing the specific version of Go
 
     ### Example
     ```toml
@@ -1820,10 +1845,15 @@ class GoAppResource(AppResource):
     - `version`: The go version needed by the app
 
     ### Provision/Update
-    - FIXME: explain
+    - Fetch/update a copy of the goenv tool and xxenv-latest
+    - Compute the actual "latest" version for the requested version, e.g. `1.20` may corresponds to `1.20.2`
+    - This "actual version" is stored as `go_version` in the app settings
+    - Install the corresponding Go version
+    - Garbage-collect unused versions
 
     ### Deprovision
-    - FIXME: explain
+    - Delete the `go_version` setting
+    - Garbage-collect unused versions
     """
 
     type = "go"
@@ -1908,6 +1938,10 @@ class ComposerAppResource(AppResource):
     """
     Installs a composer version to be used by the app
 
+    You may then use `ynh_composer_exec` in your script to run composer actions
+
+    Note that this resource requires that the app requires an `install_dir`, and installs php dependencies via the `apt` resource.
+
     ### Example
     ```toml
     [resources.composer]
@@ -1918,10 +1952,13 @@ class ComposerAppResource(AppResource):
     - `version`: The composer version needed by the app
 
     ### Provision/Update
-    - FIXME: explain
+    - Download `composer.phar` for the corresponding version from `getcomposer.org`
+    - `composer.phar` is placed in the `$install_dir` of the app
+    - Define `composer_version` as the requested version
 
     ### Deprovision
-    - FIXME: explain
+    - Delete `composer.phar`
+    - Delete the `composer_verison` setting
     """
 
     type = "composer"
