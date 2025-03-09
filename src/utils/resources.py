@@ -1904,4 +1904,62 @@ class GoAppResource(AppResource):
             )
 
 
+class ComposerAppResource(AppResource):
+    """
+    Installs a composer version to be used by the app
+
+    ### Example
+    ```toml
+    [resources.composer]
+    version = "2.7.7"
+    ```
+
+    ### Properties
+    - `version`: The composer version needed by the app
+
+    ### Provision/Update
+    - FIXME: explain
+
+    ### Deprovision
+    - FIXME: explain
+    """
+
+    type = "composer"
+    priority = 100
+    version: str = ""
+
+    default_properties: Dict[str, Any] = {
+        "version": None,
+    }
+
+    @property
+    def composer_url(self):
+        return f"https://getcomposer.org/download/{self.version}/composer.phar"
+
+    def provision_or_update(self, context: Dict = {}):
+
+        install_dir = self.get_setting("install_dir")
+        if not install_dir:
+            raise YunohostError("This app has no install_dir defined ? Packagers: please make sure to have the install_dir resource before composer")
+
+        if not self.get_setting("php_version"):
+            raise YunohostError("This app has no php_version defined ? Packagers: please make sure to install php dependencies using apt before composer")
+
+        import requests
+        composer_r = requests.get(self.composer_url, timeout=30)
+        assert composer_r.status_code == 200, "Uhoh, failed to download {self.composer_url} ? Return code: {composer_r.status_code}"
+
+        with open(f"{install_dir}/composer.phar", "wb") as f:
+            f.write(composer_r.content)
+
+        self.set_setting("composer_version", self.version)
+
+    def deprovision(self, context: Dict = {}):
+        install_dir = self.get_setting("install_dir")
+
+        self.delete_setting("composer_version")
+        if os.path.exists(f"{install_dir}/composer.phar"):
+            os.remove(f"{install_dir}/composer.phar")
+
+
 AppResourceClassesByType = {c.type: c for c in AppResource.__subclasses__()}
