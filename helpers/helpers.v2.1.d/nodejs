@@ -45,6 +45,13 @@ _ynh_load_nodejs_in_path_and_other_tweaks() {
     export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 }
 
+# Auto-load Nodejs path tweaks if this app uses the nodejs resource in the manifest
+if [ -n "${nodejs_version:-}" ] && (cat "$YNH_APP_BASEDIR/manifest.toml" | toml_to_json | jq -q ".resources.nodejs" >/dev/null)
+then
+    _ynh_load_nodejs_in_path_and_other_tweaks
+fi
+
+
 # Install a specific version of nodejs, using 'n'
 #
 # The installed version is defined by `$nodejs_version` which should be defined as global prior to calling this helper

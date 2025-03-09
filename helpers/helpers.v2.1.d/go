@@ -44,6 +44,12 @@ _ynh_load_go_in_path_and_other_tweaks() {
     popd
 }
 
+# Auto-load Nodejs path tweaks if this app uses the nodejs resource in the manifest
+if [ -n "${go_version:-}" ] && (cat "$YNH_APP_BASEDIR/manifest.toml" | toml_to_json | jq -q ".resources.go" >/dev/null)
+then
+    _ynh_load_go_in_path_and_other_tweaks
+fi
+
 # Install a specific version of Go using goenv
 #
 # The installed version is defined by `$go_version` which should be defined as global prior to calling this helper
