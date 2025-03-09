@@ -1608,4 +1608,97 @@ ynh_{db_helper_name}_user_exists "{db_user}" && ynh_{db_helper_name}_drop_user "
         self.delete_setting("db_pwd")
 
 
+class NodejsAppResource(AppResource):
+    """
+    Installs a nodejs version using "n" to be used by the app
+
+    ### Example
+    ```toml
+    [resources.nodejs]
+    version = "18.2"
+    ```
+
+    ### Properties
+    - `version`: The nodejs version needed by the app
+
+    ### Provision/Update
+    - Store "version" as "nodejs_version" in the app settings
+    - Call "n" to install the corresponding nodejs version
+    - Garbage-collect unused versions
+
+    ### Deprovision
+    - Delete the "nodejs_version" setting
+    - Garbage-collect unused versions
+    """
+
+    # Notes for future?
+    # deep_clean  -> ... trash unused versions
+    # backup -> nothing?
+    # restore -> nothing/re-provision
+
+    type = "nodejs"
+    priority = 100
+    version: str = ""
+
+    default_properties: Dict[str, Any] = {
+        "version": None,
+    }
+
+    N_INSTALL_DIR = "/opt/node_n"
+
+    @property
+    def n(self):
+        return f"/usr/share/yunohost/helpers.v{self.helpers_version}.d/vendor/n/n"
+
+    def installed_versions(self):
+
+        out = check_output(
+            f"{self.n} ls", env={"N_PREFIX": self.N_INSTALL_DIR}
+        )
+        return [
+            version.split("/")[-1] for version in out.strip().split("\n")
+        ]
+
+    def provision_or_update(self, context: Dict = {}):
+
+        os.makedirs(self.N_INSTALL_DIR, exist_ok=True)
+
+        cmd = f"{self.n} install {self.version}"
+        if system_arch() == "arm64":
+            cmd += " --arch=arm64"
+
+        self._run_script(
+            "provision_or_update", cmd, env={"N_PREFIX": self.N_INSTALL_DIR}
+        )
+        matching_versions = [v for v in self.installed_versions() if v == self.version or v.startswith(self.version + ".")]
+        assert matching_versions, f"Uhoh, no matching version found among {self.installed_versions()} after installing nodejs {self.version} ?"
+        sorted_versions = sorted(matching_versions, key=lambda s: list(map(int, s.split('.'))))
+        actual_version = sorted_versions[-1]
+
+        self.set_setting("nodejs_version", actual_version)
+        self.garbage_collect_unused_versions()
+
+    def deprovision(self, context: Dict = {}):
+
+        self.delete_setting("nodejs_version")
+        self.garbage_collect_unused_versions()
+
+    def garbage_collect_unused_versions(self):
+
+        from yunohost.app import app_setting, _installed_apps
+
+        used_versions = []
+        for app in _installed_apps():
+            v = app_setting(app, "nodejs_version")
+            if v:
+                used_versions.append(v)
+
+        unused_versions = set(self.installed_versions()) - set(used_versions)
+        if unused_versions:
+            cmds = [f"{self.n} rm {version}" for version in unused_versions]
+            self._run_script(
+                "cleanup", "\n".join(cmds), env={"N_PREFIX": self.N_INSTALL_DIR}
+            )
+
+
 AppResourceClassesByType = {c.type: c for c in AppResource.__subclasses__()}
