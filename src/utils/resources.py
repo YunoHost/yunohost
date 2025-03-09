@@ -1806,4 +1806,102 @@ class RubyAppResource(AppResource):
             self._run_script("cleanup", "\n".join(cmds))
 
 
+class GoAppResource(AppResource):
+    """
+    Installs a go version to be used by the app
+
+    ### Example
+    ```toml
+    [resources.go]
+    version = "1.20"
+    ```
+
+    ### Properties
+    - `version`: The go version needed by the app
+
+    ### Provision/Update
+    - FIXME: explain
+
+    ### Deprovision
+    - FIXME: explain
+    """
+
+    type = "go"
+    priority = 100
+    version: str = ""
+
+    default_properties: Dict[str, Any] = {
+        "version": None,
+    }
+
+    GOENV_ROOT = "/opt/goenv"
+
+    @property
+    def goenv(self):
+        return f"{self.GOENV_ROOT}/bin/goenv"
+
+    @property
+    def goenv_latest(self):
+        return f"{self.GOENV_ROOT}/plugins/xxenv-latest/bin/goenv-latest"
+
+    def update_goenv(self):
+
+        self._run_script(
+            "provision_or_update",
+            f"""
+            _ynh_git_clone https://github.com/syndbg/goenv '{self.GOENV_ROOT}'
+            _ynh_git_clone https://github.com/momo-lab/xxenv-latest '{self.GOENV_ROOT}/plugins/xxenv-latest'
+            mkdir -p '{self.GOENV_ROOT}/cache'
+            mkdir -p '{self.GOENV_ROOT}/shims'
+        """,
+        )
+
+    def provision_or_update(self, context: Dict = {}):
+
+        self.update_goenv()
+        go_version = check_output(
+            f"{self.goenv_latest} --print {self.version}",
+            env={"GOENV_ROOT": self.GOENV_ROOT, "PATH": self.GOENV_ROOT + "/bin/:" + os.environ["PATH"]},
+        )
+        self.set_setting("go_version", go_version)
+        self._run_script(
+            "provision_or_update",
+            f"{self.goenv} install --quiet --skip-existing '{go_version}' 2>&1",
+            env={"GOENV_ROOT": self.GOENV_ROOT},
+        )
+        self.garbage_collect_unused_versions()
+
+    def deprovision(self, context: Dict = {}):
+
+        self.delete_setting("go_version")
+        self.garbage_collect_unused_versions()
+
+    def garbage_collect_unused_versions(self):
+
+        installed_versions = check_output(
+            f"{self.goenv} versions --bare --skip-aliases",
+            env={"GOENV_ROOT": self.GOENV_ROOT},
+        )
+        installed_versions = [
+            version
+            for version in installed_versions.strip().split("\n")
+            if "\\" not in version
+        ]
+
+        used_versions = []
+        from yunohost.app import app_setting, _installed_apps
+
+        for app in _installed_apps():
+            v = app_setting(app, "go_version")
+            if v:
+                used_versions.append(v)
+
+        unused_versions = set(installed_versions) - set(used_versions)
+        if unused_versions:
+            cmds = [f"{self.goenv} uninstall --force '{version}'" for version in unused_versions]
+            self._run_script(
+                "cleanup", "\n".join(cmds), env={"GOENV_ROOT": self.GOENV_ROOT}
+            )
+
+
 AppResourceClassesByType = {c.type: c for c in AppResource.__subclasses__()}
