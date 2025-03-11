@@ -55,7 +55,7 @@ def _get_user_infos(
 
 def _get_portal_settings(
     domain: Union[str, None] = None, username: Union[str, None] = None
-):
+) -> dict[str, Any]:
     """
     Returns domain's portal settings which are a combo of domain's portal config panel options
     and the list of apps availables on this domain computed by `app.app_ssowatconf()`.
@@ -108,19 +108,32 @@ def _get_portal_settings(
     if username:
         # Add user allowed or public apps
         settings["apps"] = {
-            name: app
-            for name, app in apps.items()
-            if username in app["users"] or app["public"]
+            app: infos
+            for app, infos in apps.items()
+            if username in infos["users"] or infos["public"]
         }
     elif settings["public"]:
         # Add public apps (e.g. with "visitors" in group permission)
-        settings["apps"] = {name: app for name, app in apps.items() if app["public"]}
+        settings["apps"] = {
+            app: infos
+            for app, infos in apps.items()
+            if infos["public"] and not infos.get("hide_from_public")
+        }
+
+    # Sort dictionnary according to the "order" info
+    settings["apps"] = dict(
+        sorted(
+            [(app, infos) for app, infos in settings["apps"].items()],
+            key=lambda v: (v[1].get("order", 100), v[0]),
+        )
+    )
 
     return settings
 
 
 def portal_public():
-    """Get public settings
+    """
+    Get public settings
     If the portal is set as public, it will include the list of public apps
     """
 
@@ -191,7 +204,7 @@ def portal_update(
     username, domain, current_user = _get_user_infos(
         ["givenName", "sn", "cn", "mail", "maildrop", "memberOf"]
     )
-    new_attr_dict = {}
+    new_attr_dict: dict[str, Any] = {}
     portal_settings = _get_portal_settings(domain, username)
 
     if fullname is not None and fullname != current_user["cn"]:
@@ -200,11 +213,11 @@ def portal_update(
         lastname = (
             " ".join(fullname.split()[1:]) or " "
         )  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
-        new_attr_dict["givenName"] = [firstname]  # TODO: Validate
-        new_attr_dict["sn"] = [lastname]  # TODO: Validate
-        new_attr_dict["cn"] = new_attr_dict["displayName"] = [
-            (firstname + " " + lastname).strip()
-        ]
+        new_attr_dict["givenName"] = firstname  # TODO: Validate
+        new_attr_dict["sn"] = lastname  # TODO: Validate
+        new_attr_dict["cn"] = new_attr_dict["displayName"] = (
+            firstname + " " + lastname
+        ).strip()
 
     new_mails = current_user["mail"]
 
@@ -294,7 +307,7 @@ def portal_update(
         except YunohostValidationError as e:
             raise YunohostValidationError(e.key, path="newpassword")
 
-        new_attr_dict["userPassword"] = [_hash_user_password(newpassword)]
+        new_attr_dict["userPassword"] = _hash_user_password(newpassword)
 
     # Check that current password is valid
     # To be able to edit the user info, an authenticated ldap session is needed
@@ -324,7 +337,7 @@ def portal_update(
     # be run as root
     if all(field is not None for field in (fullname, mailalias, mailforward)):
         return {
-            "fullname": new_attr_dict["cn"][0],
+            "fullname": new_attr_dict["cn"],
             "mailalias": new_attr_dict["mail"][1:],
             "mailforward": new_attr_dict["maildrop"][1:],
         }

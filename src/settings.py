@@ -22,7 +22,7 @@ import os
 import subprocess
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Union, Callable
 
 from moulinette import m18n
 from moulinette.utils.filesystem import write_to_json
@@ -248,7 +248,7 @@ class SettingsConfigPanel(ConfigPanel):
             ldap = _get_ldap_interface()
             ldap.update(
                 "cn=admins,ou=sudo",
-                {"sudoOption": ["!authenticate"] if passwordless_sudo else []},
+                {"sudoOption": "!authenticate" if passwordless_sudo else set()},
             )
 
         global_portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/global_settings.json")
@@ -283,7 +283,7 @@ class SettingsConfigPanel(ConfigPanel):
 
 
 # Meant to be a dict of setting_name -> function to call
-post_change_hooks = {}
+post_change_hooks: dict[str, Callable] = {}
 
 
 def post_change_hook(setting_name):

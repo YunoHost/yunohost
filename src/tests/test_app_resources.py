@@ -371,12 +371,13 @@ def test_resource_permissions():
         "main": {
             "url": "/",
             "allowed": "visitors",
-            # TODO: test protected?
         },
     }
 
     res = user_permission_list(full=True)["permissions"]
-    assert not any(key.startswith("testapp.") for key in res)
+    # Nowadays there's always an implicit "main" perm but with default stuff such as empty url
+    assert res["testapp.main"]["url"] is None
+    assert res["testapp.main"]["allowed"] == []
 
     r(conf, "testapp", manager).provision_or_update()
 
@@ -411,4 +412,6 @@ def test_resource_permissions():
     r(conf, "testapp").deprovision()
 
     res = user_permission_list(full=True)["permissions"]
-    assert "testapp.main" not in res
+    assert "testapp.admin" not in res
+    # The main permission is still forced to exist
+    assert "testapp.main" in res

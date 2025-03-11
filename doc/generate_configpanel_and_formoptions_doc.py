@@ -18,15 +18,18 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import argparse
 import ast
 import datetime
 import subprocess
+from pathlib import Path
 
-version = open("../debian/changelog").readlines()[0].split()[1].strip("()")
-today = datetime.datetime.now().strftime("%d/%m/%Y")
+from jinja2 import Template
+
+YUNOHOST_SRCDIR = Path(__file__).resolve().parent.parent
 
 
-def get_current_commit():
+def get_current_commit() -> str:
     p = subprocess.Popen(
         "git rev-parse --verify HEAD",
         shell=True,
@@ -39,163 +42,115 @@ def get_current_commit():
     return current_commit
 
 
-current_commit = get_current_commit()
+def render(configpanel: dict[str, str], options) -> str:
+    template_file = YUNOHOST_SRCDIR / "doc" / "forms_doc_template.md.j2"
+    template = Template(template_file.read_text())
+    template.globals["now"] = datetime.datetime.utcnow
 
+    changelog_file = YUNOHOST_SRCDIR / "debian" / "changelog"
+    version = changelog_file.open("r").readline().split()[1].strip("()")
 
-def print_config_panel_docs():
-    fname = "../src/utils/configpanel.py"
-    content = open(fname).read()
-
-    # NB: This magic is because we want to be able to run this script outside of a YunoHost context,
-    # in which we cant really 'import' the file because it will trigger a bunch of moulinette/yunohost imports...
-    tree = ast.parse(content)
-
-    ConfigPanelClasses = reversed(
-        [
-            c
-            for c in tree.body
-            if isinstance(c, ast.ClassDef)
-            and c.name in {"SectionModel", "PanelModel", "ConfigPanelModel"}
-        ]
+    result = template.render(
+        configpanel=configpanel,
+        options=options,
+        date=datetime.datetime.now().strftime("%d/%m/%Y"),
+        version=version,
+        current_commit=get_current_commit(),
     )
-
-    print("## Configuration panel structure")
-
-    for c in ConfigPanelClasses:
-        doc = ast.get_docstring(c)
-        print("")
-        print(f"### {c.name.replace('Model', '')}")
-        print("")
-        print(doc)
-        print("")
-        print("---")
+    return result
 
 
-def print_form_doc():
-    fname = "../src/utils/form.py"
-    content = open(fname).read()
+##############################################################################
+
+
+def dict_key_first(dict: dict, key) -> dict:
+    value = dict.pop(key)
+    return {key: value, **dict}
+
+
+def list_config_panel() -> dict[str, str]:
+    configpanel_file = YUNOHOST_SRCDIR / "src" / "utils" / "configpanel.py"
 
     # NB: This magic is because we want to be able to run this script outside of a YunoHost context,
     # in which we cant really 'import' the file because it will trigger a bunch of moulinette/yunohost imports...
-    tree = ast.parse(content)
+    tree = ast.parse(configpanel_file.read_text())
 
-    OptionClasses = [
-        c
-        for c in tree.body
-        if isinstance(c, ast.ClassDef) and c.name.endswith("Option")
-    ]
+    classes: dict[str, str] = {}
 
-    OptionDocString = {}
+    for cl in reversed(tree.body):
+        if isinstance(cl, ast.ClassDef):
+            if cl.name in ["SectionModel", "PanelModel", "ConfigPanelModel"]:
+                docstring = ast.get_docstring(cl)
+                assert isinstance(docstring, str)
+                classes[cl.name.replace("Model", "")] = docstring
 
-    print("## List of all option types")
+    return classes
 
-    for c in OptionClasses:
-        if not isinstance(c.body[0], ast.Expr):
+
+def list_form_options() -> dict[str, str]:
+    configpanel_file = YUNOHOST_SRCDIR / "src" / "utils" / "form.py"
+
+    # NB: This magic is because we want to be able to run this script outside of a YunoHost context,
+    # in which we cant really 'import' the file because it will trigger a bunch of moulinette/yunohost imports...
+    tree = ast.parse(configpanel_file.read_text())
+
+    options: dict[str, str] = {}
+
+    for cl in tree.body:
+        if not isinstance(cl, ast.ClassDef):
             continue
-        option_type = None
-
-        if c.name in {"BaseOption", "BaseInputOption"}:
-            option_type = c.name
-        elif c.body[1].target.id == "type":
-            option_type = c.body[1].value.attr
-
-        generaltype = (
-            c.bases[0].id.replace("Option", "").replace("Base", "").lower()
-            if c.bases
-            else None
-        )
-
-        docstring = ast.get_docstring(c)
-        if docstring:
-            if "#### Properties" not in docstring:
-                docstring += """
-#### Properties
-
-- [common properties](#common-properties)"""
-            OptionDocString[option_type] = {
-                "doc": docstring,
-                "generaltype": generaltype,
-            }
-
-    # Dirty hack to have "BaseOption" as first and "BaseInputOption" as 2nd in list
-
-    base = OptionDocString.pop("BaseOption")
-    baseinput = OptionDocString.pop("BaseInputOption")
-    OptionDocString2 = {
-        "BaseOption": base,
-        "BaseInputOption": baseinput,
-    }
-    OptionDocString2.update(OptionDocString)
-
-    for option_type, infos in OptionDocString2.items():
-        if option_type == "display_text":
-            # display_text is kind of legacy x_x
+        if not cl.name.endswith("Option"):
             continue
-        print("")
-        if option_type == "BaseOption":
-            print("### Common properties")
-        elif option_type == "BaseInputOption":
-            print("### Common inputs properties")
+        if not isinstance(cl.body[0], ast.Expr):
+            continue
+
+        assert isinstance(cl.body[1], ast.AnnAssign)
+        assert isinstance(cl.body[1].target, ast.Name)
+        assert isinstance(cl.bases[0], ast.Name)
+
+        # Determine the title of the section
+        if cl.name == "BaseOption":
+            name = "Common properties"
+
+        elif cl.name == "BaseInputOption":
+            name = "Common inputs properties"
+
         else:
-            print(
-                f"### `{option_type}`"
-                + (f" ({infos['generaltype']})" if infos["generaltype"] else "")
-            )
-        print("")
-        print(infos["doc"])
-        print("")
-        print("---")
+            assert cl.body[1].target.id == "type"
+            assert isinstance(cl.body[1].value, ast.Attribute)
+            option_type = cl.body[1].value.attr
+
+            if option_type == "display_text":
+                # display_text is kind of legacy x_x
+                continue
+
+            name = f"`{option_type}`"
+
+            if cl.bases:
+                base_type = cl.bases[0].id.replace("Option", "")
+                base_type = base_type.replace("Base", "").lower()
+                name += f" ({base_type})"
+
+        docstring = ast.get_docstring(cl)
+        if docstring:
+            options[name] = docstring
+
+    # Dirty hack to have "Common properties" as first and "Common inputs properties" as 2nd in list
+    options = dict_key_first(options, "Common inputs properties")
+    options = dict_key_first(options, "Common properties")
+    return options
 
 
-print(
-    rf"""---
-title: Technical details for config panel structure and form option types
-template: docs
-taxonomy:
-    category: docs
-routes:
-  default: '/dev/forms'
----
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output", "-o", type=Path, required=True)
+    args = parser.parse_args()
 
-Doc auto-generated by [this script](https://github.com/YunoHost/yunohost/blob/{current_commit}/doc/generate_options_doc.py) on {today} (YunoHost version {version})
+    config_panel = list_config_panel()
+    options = list_form_options()
+    result = render(config_panel, options)
+    args.output.write_text(result)
 
-## Glossary
 
-You may encounter some named types which are used for simplicity.
-
-- `Translation`: a translated property
-    - used for properties: `ask`, `help` and `Pattern.error`
-    - a `dict` with locales as keys and translations as values:
-        ```toml
-        ask.en = "The text in english"
-        ask.fr = "Le texte en français"
-        ```
-        It is not currently possible for translators to translate those string in weblate.
-    - a single `str` for a single english default string
-        ```toml
-        help = "The text in english"
-        ```
-- `JSExpression`: a `str` JS expression to be evaluated to `true` or `false`:
-    - used for properties: `visible` and `enabled`
-    - operators availables: `==`, `!=`, `>`, `>=`, `<`, `<=`, `!`, `&&`, `||`, `+`, `-`, `*`, `/`, `%` and `match()`
-- `Binding`: bind a value to a file/property/variable/getter/setter/validator
-    - save the value in `settings.yaml` when not defined
-    - nothing at all with `"null"`
-    - a custom getter/setter/validator with `"null"` + a function starting with `get__`, `set__`, `validate__` in `scripts/config`
-    - a variable/property in a file with `:__FINALPATH__/my_file.php`
-    - a whole file with `__FINALPATH__/my_file.php`
-- `Pattern`: a `dict` with a regex to match the value against and an error message
-    ```toml
-    pattern.regexp = '^[A-F]\d\d$'
-    pattern.error = "Provide a room number such as F12: one uppercase and 2 numbers"
-    # or with translated error
-    pattern.error.en = "Provide a room number such as F12: one uppercase and 2 numbers"
-    pattern.error.fr = "Entrez un numéro de salle comme F12: une lettre majuscule et deux chiffres."
-    ```
-    - IMPORTANT: your `pattern.regexp` should be between simple quote, not double.
-
-"""
-)
-
-print_config_panel_docs()
-print_form_doc()
+if __name__ == "__main__":
+    main()

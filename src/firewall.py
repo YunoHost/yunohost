@@ -47,7 +47,34 @@ class YunoFirewall:
         self.read()
 
     def read(self) -> None:
-        self.config = yaml.safe_load(self.FIREWALL_FILE.read_text())
+        """
+        The config is expected to have a structure as below
+        See also conf/yunohost/firewall.yml
+
+        tcp:
+            123:
+                open: true
+                upnp: false
+                comment: "some comment"
+            456:
+                open: true
+                upnp: true
+                comment: "some other comment"
+        udp:
+            123:
+                open: true
+                upnp: false
+                comment: "some other other comment"
+
+        router_forwarding_upnp: false
+        """
+
+        self.config = yaml.safe_load(self.FIREWALL_FILE.read_text()) or {}
+
+        if "tcp" not in self.config or "udp" not in self.config:
+            raise Exception(
+                f"Uhoh, no 'tcp' or 'udp' key found in {self.FIREWALL_FILE} ?!"
+            )
 
     def write(self) -> None:
         old_file = self.FIREWALL_FILE.parent / (self.FIREWALL_FILE.name + ".old")
@@ -64,8 +91,12 @@ class YunoFirewall:
 
     @staticmethod
     def _validate_port(protocol: str, port: int | str) -> tuple[str, int | str]:
-        if isinstance(port, str) and ":" not in port:
-            port = int(port)
+        if isinstance(port, str):
+            # iptables used ":" and app packages might still do
+            port = port.replace(":", "-")
+            # Convert to int if it's not a range
+            if "-" not in port:
+                port = int(port)
         if protocol not in ["tcp", "udp"]:
             raise ValueError(f"protocol should be tcp or udp, not {protocol}")
         return protocol, port
@@ -142,7 +173,7 @@ class YunoFirewall:
         self.need_reload = False
 
         # Refresh port forwarding with UPnP
-        if self.config["router_forwarding_upnp"] and upnp:
+        if self.config.get("router_forwarding_upnp") and upnp:
             YunoUPnP(self).refresh(self)
         return True
 
@@ -163,7 +194,7 @@ class YunoUPnP:
         if new_status is not None:
             self.firewall.config["router_forwarding_upnp"] = new_status
         self.firewall.write()
-        return self.firewall.config["router_forwarding_upnp"]
+        return self.firewall.config.get("router_forwarding_upnp", False)
 
     def ensure_listen_port(self) -> None:
         self.firewall.open_port("udp", self.UPNP_PORT, self.UPNP_PORT_COMMENT)
@@ -237,18 +268,21 @@ class YunoUPnP:
 
         status = True
         for protocol, port in firewall.upnp_to_close:
-            status = status or self.close_port(protocol, port)
+            status = status and self.close_port(protocol, port)
 
-        for protocol, ports in firewall.config.items():
-            for port, info in ports.items():
+        for protocol in ["tcp", "udp"]:
+            for port, info in firewall.config[protocol].items():
                 if self.enabled():
-                    status = status or self.open_port(protocol, port, info["comment"])
+                    status = status and self.open_port(protocol, port, info["comment"])
                 else:
-                    status = status or self.close_port(protocol, port)
+                    status = status and self.close_port(protocol, port)
 
         return status
 
     def enable(self) -> None:
+        if not self.find_gid():
+            logger.error("Not enabling UPnP because no UPnP device was found")
+            return
         if not self.enabled():
             # Add cron job
             self.UPNP_CRON_JOB.write_text(
@@ -271,7 +305,7 @@ def firewall_is_open(
     Returns whether the specified port is open.
 
     Keyword arguments:
-        port -- Port or range of ports to open
+        port -- Port or dash-separated range of ports to open
         protocol -- Protocol type to allow (tcp/udp)
 
     """
@@ -290,7 +324,7 @@ def firewall_open(
     Allow connections on a port
 
     Keyword arguments:
-        port -- Port or range of ports to open
+        port -- Port or dash-separated range of ports to open
         protocol -- Protocol type to allow (tcp/udp)
         comment -- A reason for the port to be open
         no_upnp -- Do not add forwarding of this port with UPnP
@@ -340,7 +374,7 @@ def firewall_close(
     Disallow connections on a port
 
     Keyword arguments:
-        port -- Port or range of ports to close
+        port -- Port or dash-separated range of ports to close
         protocol -- Protocol type to disallow (tcp/udp)
         upnp_only -- Only remove forwarding of this port with UPnP
         no_reload -- Do not reload firewall rules
@@ -404,7 +438,7 @@ def firewall_delete(
 
     Keyword arguments:
         protocol -- Protocol type to disallow (tcp/udp)
-        port -- Port or range of ports to close
+        port -- Port or dash-separated range of ports to close
         no_reload -- Do not reload firewall rules
     """
     firewall = YunoFirewall()
@@ -474,6 +508,7 @@ def firewall_upnp(action: str = "status", no_refresh: bool = False) -> dict[str,
         upnp.enable()
     if action == "disable":
         upnp.disable()
+        no_refresh = True
     if no_refresh:
         # Only return current state
         return {"enabled": upnp.enabled()}

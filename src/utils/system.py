@@ -128,7 +128,12 @@ def binary_to_human(n: int) -> str:
     for s in reversed(symbols):
         if n >= prefix[s]:
             value = float(n) / prefix[s]
-            return "%.1f%s" % (value, s)
+            # Display one decimal, though only if value is lower than 10
+            # because it's prettier to say something is "42 KB" rather than "42.1 KB"
+            if value < 10:
+                return "%.1f%s" % (value, s)
+            else:
+                return "%.0f%s" % (value, s)
     return "%s" % n
 
 

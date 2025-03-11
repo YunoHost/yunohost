@@ -1,3 +1,44 @@
+yunohost (12.1.2) testing; urgency=low
+
+  - storage: Fix YAML indent for storage.disk.list.arguments in actionsmap.yml ([#2058](http://github.com/YunoHost/yunohost/pull/2058))
+  - yunohost app shell: fix env loading by remove 'ignore_errors=yes' from systemctl show output in some cases ([#2057](http://github.com/YunoHost/yunohost/pull/2057))
+  - app.py: fix path requirement validation for non-web apps and full-domain apps (75f5af054, 597aa0c6c)
+  - i18n: fix consistency for oc.json, the {logs} stuff got removed (37a3547c5)
+  - i18n: Reformat / remove stale translated strings ([#2059](http://github.com/YunoHost/yunohost/pull/2059))
+  - i18n: Translations updated for Basque, French, Galician
+
+  Thanks to all contributors <3 ! (Christophe Henry, Félix Piédallu, José M, ppr, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 05 Mar 2025 18:09:55 +0100
+
+yunohost (12.1.1) testing; urgency=low
+
+  - firewall: let's not try to refresh upnp after disabling it because it's just gonna fail (5b127c7a5)
+  - firewall: do not actually enable upnp if no upnp device is available on the network (207de4228)
+  - permission migration: missing app_ssowatconf at the end (c2da2d3ab)
+  - i18n: Translations updated for Chinese (Simplified)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, Poesty Li)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 02 Mar 2025 19:20:00 +0100
+
+yunohost (12.1.0) testing; urgency=low
+
+  - general: New "SSE" API to stream/broadcast logs of the current action, using zero-mq ([#1663](http://github.com/YunoHost/yunohost/pull/1663))
+  - apps/permissions: rework the way permission info are stored, introduce a new 'app core' config panel allowing to change the app logo, label, etc. ([#1917](http://github.com/YunoHost/yunohost/pull/1917))
+  - perf: tweaks to improve LDAP performances when updating records, especially when many user entries exist ([#1975](http://github.com/YunoHost/yunohost/pull/1975))
+  - firewall: complete rework of the code. Disable UPnP by default on new installs ([#2011](http://github.com/YunoHost/yunohost/pull/2011))
+  - storage/disk: add the beginning of a new section for storage management, for now retrieving disk list and info ([#1953](https://github.com/YunoHost/yunohost/pull/1953))
+  - apps: add a new --ignore-yunohost-version option to 'yunohost app install' to bypass ynh version requirement ([#2036](https://github.com/YunoHost/yunohost/pull/2036))
+  - portal: allow to login using the email address ([#2041](http://github.com/YunoHost/yunohost/pull/2041))
+  - portal: use samesite 'lax' for portal cookies ([#2018](https://github.com/YunoHost/yunohost/pull/2018))
+  - wording: simplify the "user portal" naming to just "portal" (642e1afba)
+  - i18n: Translations updated for Basque, Catalan, French, Galician, Italian, Spanish
+
+  Thanks to all contributors <3 ! (axolotle, Christophe Henry, Félix Piédallu, Joan, José M, Josué Tille, ljf, OniriCorpe, orhtej2, ppr, rosbeef andino, Tommi, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 23 Feb 2025 21:22:02 +0100
+
 yunohost (12.0.11) stable; urgency=low
 
   - users: Prevent to remove the last user from admins ([#2029](http://github.com/YunoHost/yunohost/pull/2029), [#2030](http://github.com/YunoHost/yunohost/pull/2030), [#2031](http://github.com/YunoHost/yunohost/pull/2031), a18928475, d7b57a87a, fc2596d04, 8d6fd9c32)

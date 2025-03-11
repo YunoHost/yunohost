@@ -26,7 +26,7 @@ import time
 from datetime import datetime, timedelta
 from logging import FileHandler, getLogger, Formatter, INFO
 from io import IOBase
-from typing import List
+from typing import List, Any
 
 import psutil
 import yaml
@@ -88,7 +88,7 @@ def _update_log_cache_symlinks():
 
     logs = glob.iglob(OPERATIONS_PATH + "*.yml")
     for log_md in logs:
-        if os.path.getctime(log_md) < one_year_ago:
+        if os.path.getmtime(log_md) < one_year_ago:
             # Let's ignore files older than one year because hmpf reading a shitload of yml is not free
             continue
 
@@ -110,9 +110,9 @@ def _update_log_cache_symlinks():
             logger.error(m18n.n("log_corrupted_md_file", md_file=log_md, error=e))
             continue
 
-        if not os.path.islink(success_symlink) or os.path.getctime(
+        if not os.path.islink(success_symlink) or os.path.getmtime(
             success_symlink
-        ) > os.path.getctime(log_md):
+        ) < os.path.getmtime(log_md):
             success = metadata.get("success", "?")
             if success is True:
                 success_target = "/usr/bin/true"
@@ -134,6 +134,9 @@ def _update_log_cache_symlinks():
                 logger.warning(f"Failed to create symlink {parent_symlink} ? {e}")
 
 
+log_list_cache: dict[str, dict[str, Any]] = {}
+
+
 def log_list(
     limit=None, with_details=False, with_suboperations=False, since_days_ago=365
 ):
@@ -150,6 +153,8 @@ def log_list(
         ... (e.g. initializing groups/permissions when installing an app)
     """
 
+    global log_list_cache
+
     operations = {}
 
     _update_log_cache_symlinks()
@@ -158,7 +163,7 @@ def log_list(
     logs = [
         x.split("/")[-1]
         for x in glob.iglob(OPERATIONS_PATH + "*.yml")
-        if os.path.getctime(x) > since
+        if os.path.getmtime(x) > since
     ]
     logs = list(reversed(sorted(logs)))
 
@@ -203,10 +208,10 @@ def log_list(
 
         if with_details or with_suboperations:
             if (
-                name in log_list.cache
-                and os.path.getmtime(md_path) == log_list.cache[name]["time"]
+                name in log_list_cache
+                and os.path.getmtime(md_path) == log_list_cache[name]["time"]
             ):
-                metadata = log_list.cache[name]["metadata"]
+                metadata = log_list_cache[name]["metadata"]
             else:
                 try:
                     metadata = (
@@ -219,7 +224,7 @@ def log_list(
                     )
                     continue
                 else:
-                    log_list.cache[name] = {
+                    log_list_cache[name] = {
                         "time": os.path.getmtime(md_path),
                         "metadata": metadata,
                     }
@@ -260,9 +265,6 @@ def log_list(
         operations = list(reversed(operations))
 
     return {"operation": operations}
-
-
-log_list.cache = {}
 
 
 def log_show(
@@ -469,7 +471,7 @@ def is_unit_operation(
     """
 
     def decorate(
-        func: Callable[Concatenate["OperationLogger", Param], RetType]
+        func: Callable[Concatenate["OperationLogger", Param], RetType],
     ) -> Callable[Param, RetType]:
         def func_wrapper(*args, **kwargs):
 
@@ -629,12 +631,8 @@ class OperationLogger:
                 except Exception:
                     # During postinstall, we're not actually authenticated so eeeh what happens exactly?
                     self.started_by = "root"
-            elif "SUDO_USER" in os.environ:
-                self.started_by = os.environ["SUDO_USER"]
-            elif not os.isatty(1):
-                self.started_by = "noninteractive"
             else:
-                self.started_by = "root"
+                self.started_by = _guess_who_started_process(psutil.Process())
 
         if not os.path.exists(OPERATIONS_PATH):
             os.makedirs(OPERATIONS_PATH)
@@ -674,7 +672,7 @@ class OperationLogger:
         # of the most recent file
 
         recent_operation_logs = sorted(
-            glob.iglob(OPERATIONS_PATH + "*.log"), key=os.path.getctime, reverse=True
+            glob.iglob(OPERATIONS_PATH + "*.log"), key=os.path.getmtime, reverse=True
         )[:20]
 
         proc = psutil.Process().parent()
@@ -683,7 +681,7 @@ class OperationLogger:
             # We only keep files matching a recent yunohost operation log
             active_logs = sorted(
                 (f.path for f in proc.open_files() if f.path in recent_operation_logs),
-                key=os.path.getctime,
+                key=os.path.getmtime,
                 reverse=True,
             )
             if active_logs != []:
@@ -864,6 +862,7 @@ class OperationLogger:
             self.started_at
             and isinstance(error, Exception)
             and not isinstance(error, YunohostValidationError)
+            and not self.flash
         ):
             error.log_ref = self.name
 
@@ -1000,3 +999,28 @@ def _get_description_from_name(name):
 @is_unit_operation(flash=True)
 def log_share(path):
     return log_show(path, share=True)
+
+
+def _guess_who_started_process(process):
+
+    if "SUDO_USER" in process.environ():
+        return process.environ()["SUDO_USER"]
+
+    parent = process.parent()
+    parent_cli = parent.cmdline()
+    pparent = parent.parent() if parent else None
+    pparent_cli = pparent.cmdline() if pparent else []
+    ppparent = pparent.parent() if pparent else None
+    ppparent_cli = ppparent.cmdline() if ppparent else []
+
+    if any("/usr/sbin/CRON" in cli for cli in [parent_cli, pparent_cli, ppparent_cli]):
+        return m18n.n("automatic_task")
+    elif any(
+        "/usr/bin/yunohost-api" in cli
+        for cli in [parent_cli, pparent_cli, ppparent_cli]
+    ):
+        return m18n.n("yunohost_api")
+    elif process.terminal() is None:
+        return m18n.n("noninteractive_task")
+    else:
+        return "root"

@@ -27,6 +27,7 @@ from pathlib import Path
 
 import jwt
 import ldap
+import ldap.filter
 import ldap.sasl
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
@@ -201,6 +202,13 @@ class Authenticator(BaseAuthenticator):
         except ValueError:
             raise YunohostError("invalid_credentials")
 
+        username = ldap.filter.escape_filter_chars(username)
+        # Search username, if user give a mail instead
+        if "@" in username:
+            user = _get_ldap_interface().search("ou=users", f"mail={username}", ["uid"])
+            if len(user) != 0:
+                username = user[0]["uid"][0]
+
         def _reconnect():
             con = ldap.ldapobject.ReconnectLDAPObject(URI, retry_max=2, retry_delay=0.5)
             con.simple_bind_s(USERDN.format(username=username), password)
@@ -270,7 +278,7 @@ class Authenticator(BaseAuthenticator):
             secure=True,
             httponly=True,
             path="/",
-            samesite="strict" if not is_dev else None,
+            samesite="lax" if not is_dev else None,
             domain=f".{request.get_header('host')}",
             max_age=SESSION_VALIDITY
             - 600,  # remove 1 minute such that cookie expires on the browser slightly sooner on browser side, just to help desimbuigate edge case near the expiration limit
@@ -323,7 +331,7 @@ class Authenticator(BaseAuthenticator):
             secure=True,
             httponly=True,
             path="/",
-            samesite="strict" if not is_dev else None,
+            samesite="lax" if not is_dev else None,
             domain=f".{request.get_header('host')}",
             max_age=SESSION_VALIDITY
             - 600,  # remove 1 minute such that cookie expires on the browser slightly sooner on browser side, just to help desimbuigate edge case near the expiration limit

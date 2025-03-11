@@ -48,7 +48,7 @@
 # mode ain't enough because you need conditional blocks or loops.
 #
 # For a full documentation of jinja's syntax you can refer to:
-# https://jinja.palletsprojects.com/en/3.1.x/templates/
+# <https://jinja.palletsprojects.com/en/3.1.x/templates/>
 #
 # Note that in YunoHost context, all variables are from shell variables and therefore are strings
 #
@@ -84,15 +84,16 @@ ynh_config_add() {
     # This is to cover a case where an attacker could have
     # created a file beforehand to have control over it
     # (cp won't overwrite ownership / modes by default...)
-    touch $destination
-    chmod 640 $destination
-    _ynh_apply_default_permissions $destination
+    touch "$destination"
+    chmod 640 "$destination"
+    _ynh_apply_default_permissions "$destination"
 
     if [[ "$jinja" == 1 ]]; then
         # This is ran in a subshell such that the "export" does not "contaminate" the main process
         (   
+            # shellcheck disable=SC2046
             export $(compgen -v)
-            j2 "$template_path" -f env -o $destination
+            j2 "$template_path" -f env -o "$destination"
         )
     else
         cp -f "$template_path" "$destination"
@@ -122,12 +123,13 @@ _ynh_replace_vars() {
     local file=$1
 
     # List unique (__ __) variables in $file
-    local uniques_vars=($(grep -oP '__[A-Z0-9]+?[A-Z0-9_]*?[A-Z0-9]*?__' $file | sort --unique | sed "s@__\([^.]*\)__@\L\1@g"))
+    local -a uniques_vars
+    mapfile -t uniques_vars < <(grep -oP '__[A-Z0-9]+?[A-Z0-9_]*?[A-Z0-9]*?__' "$file" | sort --unique | sed "s@__\([^.]*\)__@\L\1@g")
 
     set +o xtrace # set +x
 
     # Specific trick to make sure that __PATH__/ doesn't end up in "//" if $path=/
-    if [[ "${path:-}" == "/" ]] && grep -q '__PATH__/' $file; then
+    if [[ "${path:-}" == "/" ]] && grep -q '__PATH__/' "$file"; then
         sed --in-place "s@__PATH__/@/@g" "$file"
     fi
 
@@ -167,6 +169,8 @@ _ynh_replace_vars() {
 # if you have several identical keys in your files
 #
 # Example of line this helpers can managed correctly
+#
+# ```text
 # .yml
 #     title: YunoHost documentation
 #     email: 'yunohost@yunohost.org'
@@ -186,6 +190,8 @@ _ynh_replace_vars() {
 #     USER = 8102
 #     user = 'https://donate.local'
 #     CUSTOM['user'] = 'YunoHost'
+# ```
+#
 ynh_read_var_in_file() {
     # ============ Argument parsing =============
     local -A args_array=([f]=file= [k]=key= [a]=after=)
@@ -203,7 +209,7 @@ ynh_read_var_in_file() {
     # Get the line number after which we search for the variable
     local line_number=1
     if [[ -n "$after" ]]; then
-        line_number=$(grep -m1 -n $after $file | cut -d: -f1)
+        line_number=$(grep -m1 -n "$after" "$file" | cut -d: -f1)
         if [[ -z "$line_number" ]]; then
             set -o xtrace # set -x
             return 1
@@ -233,7 +239,7 @@ ynh_read_var_in_file() {
     var_part+='\s*'
 
     # Extract the part after assignation sign
-    local expression_with_comment="$( (tail +$line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL) | head -n1)"
+    local expression_with_comment="$( (tail "+$line_number" "$file" | grep -i -o -P "$var_part"'\K.*$' || echo YNH_NULL) | head -n1)"
     if [[ "$expression_with_comment" == "YNH_NULL" ]]; then
         set -o xtrace # set -x
         echo YNH_NULL
@@ -279,7 +285,7 @@ ynh_write_var_in_file() {
     # Get the line number after which we search for the variable
     local after_line_number=1
     if [[ -n "$after" ]]; then
-        after_line_number=$(grep -m1 -n $after $file | cut -d: -f1)
+        after_line_number=$(grep -m1 -n "$after" "$file" | cut -d: -f1)
         if [[ -z "$after_line_number" ]]; then
             set -o xtrace # set -x
             return 1
@@ -309,12 +315,12 @@ ynh_write_var_in_file() {
     var_part+='\s*'
 
     # Extract the part after assignation sign
-    local expression_with_comment="$( (tail +$after_line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL) | head -n1)"
+    local expression_with_comment="$( (tail "+$after_line_number" "$file" | grep -i -o -P "$var_part"'\K.*$' || echo YNH_NULL) | head -n1)"
     if [[ "$expression_with_comment" == "YNH_NULL" ]]; then
         set -o xtrace # set -x
         return 1
     fi
-    local value_line_number="$(tail +$after_line_number ${file} | grep -m1 -n -i -P $var_part'\K.*$' | cut -d: -f1)"
+    local value_line_number="$(tail "+$after_line_number" "$file" | grep -m1 -n -i -P "$var_part"'\K.*$' | cut -d: -f1)"
     value_line_number=$((after_line_number + value_line_number))
     local range="${after_line_number},${value_line_number} "
 
@@ -330,13 +336,13 @@ ynh_write_var_in_file() {
         # \ and sed is quite complex you need 2 \\ to get one in a sed
         # So we need \\\\ to go through 2 sed
         value="$(echo "$value" | sed 's/"/\\\\"/g')"
-        sed -ri "${range}s$delimiter"'(^'"${var_part}"'")([^"]|\\")*("[\s;,]*)(\s*'$comments'.*)?$'$delimiter'\1'"${value}"'"'"${endline}${delimiter}i" ${file}
+        sed -ri "${range}s$delimiter"'(^'"${var_part}"'")([^"]|\\")*("[\s;,]*)(\s*'"$comments"'.*)?$'$delimiter'\1'"${value}"'"'"${endline}${delimiter}i" "$file"
     elif [[ "$first_char" == "'" ]]; then
         # \ and sed is quite complex you need 2 \\ to get one in a sed
         # However double quotes implies to double \\ to
         # So we need \\\\\\\\ to go through 2 sed and 1 double quotes str
         value="$(echo "$value" | sed "s/'/\\\\\\\\'/g")"
-        sed -ri "${range}s$delimiter(^${var_part}')([^']|\\')*('"'[\s,;]*)(\s*'$comments'.*)?$'$delimiter'\1'"${value}'${endline}${delimiter}i" ${file}
+        sed -ri "${range}s$delimiter(^${var_part}')([^']|\\')*('"'[\s,;]*)(\s*'"$comments"'.*)?$'$delimiter'\1'"${value}'${endline}${delimiter}i" "$file"
     else
         if [[ "$value" == *"'"* ]] || [[ "$value" == *'"'* ]] || [[ "$ext" =~ ^php|py|json|js$ ]]; then
             value='\"'"$(echo "$value" | sed 's/"/\\\\"/g')"'\"'
@@ -344,7 +350,7 @@ ynh_write_var_in_file() {
         if [[ "$ext" =~ ^yaml|yml$ ]]; then
             value=" $value"
         fi
-        sed -ri "${range}s$delimiter(^${var_part}).*\$$delimiter\1${value}${endline}${delimiter}i" ${file}
+        sed -ri "${range}s$delimiter(^${var_part}).*\$$delimiter\1${value}${endline}${delimiter}i" "$file"
     fi
     set -o xtrace # set -x
 }

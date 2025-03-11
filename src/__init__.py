@@ -20,6 +20,7 @@
 
 import os
 import sys
+from pathlib import Path
 
 import moulinette
 from moulinette import m18n
@@ -49,7 +50,11 @@ def cli(debug, quiet, output_as, timeout, args, parser):
     sys.exit(ret)
 
 
-def api(debug, host, port):
+def api(debug, host, port, actionsmap=None):
+    actionsmap = actionsmap or "/usr/share/yunohost/actionsmap.yml"
+    path = Path(actionsmap).resolve()
+    if path.exists():
+        actionsmap = str(path)
 
     allowed_cors_origins = []
     allowed_cors_origins_file = "/etc/yunohost/.admin-api-allowed-cors-origins"
@@ -68,7 +73,7 @@ def api(debug, host, port):
     ret = moulinette.api(
         host=host,
         port=port,
-        actionsmap="/usr/share/yunohost/actionsmap.yml",
+        actionsmap=actionsmap,
         locales_dir="/usr/share/yunohost/locales/",
         routes={("GET", "/installed"): is_installed_api},
         allowed_cors_origins=allowed_cors_origins,
@@ -200,7 +205,9 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
             logging_configuration["loggers"]["moulinette"]["handlers"].append("cli")
             logging_configuration["root"]["handlers"].append("cli")
 
-        from yunohost.utils.sse import start_log_broker
+        if interface == "api":
+            from yunohost.utils.sse import start_log_broker
 
-        start_log_broker()
+            start_log_broker()
+
         configure_logging(logging_configuration)

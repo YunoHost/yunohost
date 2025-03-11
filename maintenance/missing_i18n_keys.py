@@ -184,6 +184,33 @@ def find_expected_string_keys():
                 if key in domain_settings_with_help_key:
                     yield f"domain_config_{key}_help"
 
+    # App config panel
+    app_config = toml.load(open(ROOT + "share/config_app.toml"))
+    app_settings_with_help_key = [
+        "logo",
+        "description",
+        "force_upgrade",
+    ]
+    for panel_key, panel in app_config.items():
+        if not isinstance(panel, dict):
+            continue
+        yield f"app_config_{panel_key}_name"
+        for section_key, section in panel.items():
+            if not isinstance(section, dict):
+                continue
+            if section_key != "permissions":
+                yield f"app_config_{section_key}_name"
+            for key, values in section.items():
+                if not isinstance(values, dict) or values.get("visible") is False:
+                    continue
+                if section_key == "permissions":
+                    key_ = "permission_" + key
+                else:
+                    key_ = key
+                yield f"app_config_{key_}"
+                if key in app_settings_with_help_key:
+                    yield f"app_config_{key_}_help"
+
     # Global settings
     global_config = toml.load(open(ROOT + "share/config_global.toml"))
     # Boring hard-coding because there's no simple other way idk
