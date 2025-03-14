@@ -415,7 +415,7 @@ class SourcesResource(AppResource):
 
     You can make sure that your autoupdate strategy is working well immediately (without waiting for the next check on the infra) by doing the following:
 
-    1. Clone this repo: <https://github.com/YunoHost/apps_tools>
+    1. Clone the apps_tools repository: `https://github.com/YunoHost/apps_tools`
     2. In `apps_tools` open a terminal to run the following commands:
 
         ```bash
