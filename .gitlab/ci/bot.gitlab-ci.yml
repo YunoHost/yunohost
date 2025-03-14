@@ -7,10 +7,7 @@ generate-helpers-doc:
     - git config --global user.name "$GITHUB_USER"
   script:
     - hub clone https://$GITHUB_TOKEN:x-oauth-basic@github.com/YunoHost/doc.git doc_repo
-    - python3 doc/generate_helpers_doc.py 2    -o doc_repo/pages/06.contribute/10.packaging_apps/20.scripts/10.helpers/packaging_app_scripts_helpers.md
-    - python3 doc/generate_helpers_doc.py 2.1  -o doc_repo/pages/06.contribute/10.packaging_apps/20.scripts/12.helpers21/packaging_app_scripts_helpers_v21.md
-    - python3 doc/generate_resource_doc.py -o doc_repo/pages/06.contribute/10.packaging_apps/10.manifest/10.appresources/packaging_app_manifest_resources.md
-    - python3 doc/generate_configpanel_and_formoptions_doc.py -o doc_repo/pages/06.contribute/15.dev/03.forms/forms.md
+    - doc_repo/scripts/generate_docs.sh "$PWD"
 
     - cd doc_repo
     # replace ${CI_COMMIT_REF_NAME} with ${CI_COMMIT_TAG} ?
