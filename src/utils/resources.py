@@ -381,7 +381,7 @@ class SourcesResource(AppResource):
 
     Strictly speaking, this has nothing to do with the actual app install. `autoupdate` is expected to contain metadata for automatic maintenance / update of the app sources info in the manifest. It is meant to be a simpler replacement for "autoupdate" GitHub workflow mechanism.
 
-    The infos are used by this script : <https://github.com/YunoHost/apps_tools/blob/main/autoupdate_app_sources/autoupdate_app_sources.py> which is ran by the YunoHost infrastructure periodically and will create the corresponding pull request automatically.
+    The infos are used by [this script](https://github.com/YunoHost/apps_tools/blob/main/autoupdate_app_sources/autoupdate_app_sources.py) which is ran by the YunoHost infrastructure periodically and will create the corresponding pull request automatically.
 
     The script will rely on the code repo specified in `code` in the upstream section of the manifest.
 
