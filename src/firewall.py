@@ -405,9 +405,13 @@ def firewall_allow(
     no_reload: bool = False,
     reload_only_if_change: bool = False,
 ) -> None:
-    return firewall_open(
-        port, protocol.lower(), "", not no_upnp, no_reload, reload_only_if_change
-    )
+    if protocol == "Both":
+        firewall_open(port, "tcp", "", not no_upnp, no_reload, reload_only_if_change)
+        firewall_open(port, "udp", "", not no_upnp, no_reload, reload_only_if_change)
+    else:
+        firewall_open(
+            port, protocol.lower(), "", not no_upnp, no_reload, reload_only_if_change
+        )
 
 
 def firewall_disallow(
@@ -419,7 +423,13 @@ def firewall_disallow(
     no_reload: bool = False,
     reload_only_if_change: bool = False,
 ) -> None:
-    firewall_close(port, protocol.lower(), upnp_only, no_reload, reload_only_if_change)
+    if protocol == "Both":
+        firewall_close(port, "tcp", upnp_only, no_reload, reload_only_if_change)
+        firewall_close(port, "udp", upnp_only, no_reload, reload_only_if_change)
+    else:
+        firewall_close(
+            port, protocol.lower(), upnp_only, no_reload, reload_only_if_change
+        )
 
     if os.environ.get("YNH_APP_ACTION", "") == "remove":
         ports_to_keep = [53, 1900]
