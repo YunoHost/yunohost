@@ -182,15 +182,12 @@ class YunoFirewall:
 
 
 class YunoUPnP:
-    UPNP_PORT = 55354  # Picked at random, this port has no real meaning
-    UPNP_PORT_COMMENT = "YunoHost UPnP firewall configurator"
     UPNP_CRON_JOB = Path("/etc/cron.d/yunohost-firewall-upnp")
 
     def __init__(self, firewall: "YunoFirewall") -> None:
         self.firewall = firewall
         self.description = "Yunohost firewall"
         self.upnpc = miniupnpc.UPnP()
-        self.upnpc.localport = self.UPNP_PORT
         self.upnpc.discoverdelay = 3000
         self.device_found = 0
 
@@ -199,9 +196,6 @@ class YunoUPnP:
             self.firewall.config["router_forwarding_upnp"] = new_status
             self.firewall.write()
         return self.firewall.config.get("router_forwarding_upnp", False)
-
-    def ensure_listen_port(self) -> None:
-        self.firewall.open_port("udp", self.UPNP_PORT, self.UPNP_PORT_COMMENT)
 
     def check_status(self) -> bool:
         if self.device_found < 1:
