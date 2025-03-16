@@ -1,4 +1,13 @@
-yunohost (12.0.11) stable; urgency=low
+yunohost (12.0.12) stable; urgency=low
+
+  - [fix] FDN dns resolver are not available for all AS ([#2066](http://github.com/YunoHost/yunohost/pull/2066))
+  - Update resolv.dnsmasq.conf + 1 DNS server Aquilenet ([#2068](http://github.com/YunoHost/yunohost/pull/2068))
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, OniriCorpe, ljf (zamentur), Sacha)
+
+ -- tituspijean <tituspijean@yunohost.org>  Sun, 16 Mar 2025 12:41:55 +0100
+
+ yunohost (12.0.11) stable; urgency=low
 
   - users: Prevent to remove the last user from admins ([#2029](http://github.com/YunoHost/yunohost/pull/2029), [#2030](http://github.com/YunoHost/yunohost/pull/2030), [#2031](http://github.com/YunoHost/yunohost/pull/2031), a18928475, d7b57a87a, fc2596d04, 8d6fd9c32)
   - apps: incorrect warning about amount of RAM during upgrade ([#1971](http://github.com/YunoHost/yunohost/pull/1971))
