@@ -224,7 +224,7 @@
     "log_operation_unit_unclosed_properly": "L'opération ne s'est pas terminée correctement",
     "log_app_change_url": "Changer l'URL de l'application '{}'",
     "log_app_install": "Installer l'application '{}'",
-    "log_app_remove": "Enlever l'application '{}'",
+    "log_app_remove": "Désinstaller l'application '{}'",
     "log_app_upgrade": "Mettre à jour l'application '{}'",
     "log_app_makedefault": "Faire de '{}' l'application par défaut",
     "log_available_on_yunopaste": "Le journal est désormais disponible via {url}",
