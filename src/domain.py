@@ -356,6 +356,7 @@ def domain_add(
                     "postfix",
                     "mdns",
                     "dovecot",
+                    "opendkim",
                 ]
             )
             app_ssowatconf()
@@ -549,7 +550,7 @@ def domain_remove(
             f"/etc/nginx/conf.d/{domain}.conf", new_conf=None, save=True
         )
 
-    regen_conf(names=["nginx", "dnsmasq", "postfix", "mdns"])
+    regen_conf(names=["nginx", "dnsmasq", "postfix", "mdns", "opendkim"])
     app_ssowatconf()
 
     hook_callback("post_domain_remove", args=[domain])
@@ -918,7 +919,7 @@ def _get_DomainConfigPanel():
 
             stuff_to_regen_conf = set()
             if "mail_in" in next_settings or "mail_out" in next_settings:
-                stuff_to_regen_conf.update({"nginx", "postfix", "dovecot"})
+                stuff_to_regen_conf.update({"nginx", "postfix", "dovecot", "opendkim"})
 
             if stuff_to_regen_conf:
                 regen_conf(names=list(stuff_to_regen_conf))
