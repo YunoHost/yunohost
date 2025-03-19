@@ -249,69 +249,8 @@ class AppResource:
         return out, err
 
     def _run_script(self, action, script, env={}):
-        from ..app import (
-            _make_environment_for_app_script,
-            _make_tmp_workdir_for_app,
-        )
-        from ..hook import hook_exec_with_script_debug_if_failure
-
-        workdir = self.workdir or _make_tmp_workdir_for_app(app=self.app)
-
-        env_ = _make_environment_for_app_script(
-            self.app,
-            workdir=workdir,
-            action=f"{action}_{self.type}",
-            force_include_app_settings=True,
-        )
-        env_.update(env)
-
-        script_path = f"{workdir}/{action}_{self.type}"
-        script = f"""
-source /usr/share/yunohost/helpers
-ynh_abort_if_errors
-
-{script}
-"""
-
-        write_to_file(script_path, script)
-
-        from ..log import OperationLogger
-
-        # FIXME ? : this is an ugly hack :(
-        active_operation_loggers = [
-            o for o in OperationLogger._instances if o.ended_at is None
-        ]
-        if active_operation_loggers:
-            operation_logger = active_operation_loggers[-1]
-        else:
-            operation_logger = OperationLogger(
-                "resource_snippet", [("app", self.app)], env=env_
-            )
-            operation_logger.start()
-
-        try:
-            (
-                call_failed,
-                failure_message_with_debug_instructions,
-            ) = hook_exec_with_script_debug_if_failure(
-                script_path,
-                env=env_,
-                operation_logger=operation_logger,
-                error_message_if_script_failed="An error occured inside the script snippet",
-                error_message_if_failed=lambda e: f"{action} failed for {self.type} : {e}",
-            )
-        finally:
-            if call_failed:
-                raise YunohostError(
-                    failure_message_with_debug_instructions, raw_msg=True
-                )
-            else:
-                # FIXME: currently in app install code, we have
-                # more sophisticated code checking if this broke something on the system etc.
-                # dunno if we want to do this here or manage it elsewhere
-                pass
-
-        # print(ret)
+        from yunohost.app import _run_app_script_or_snippet
+        _run_app_script_or_snippet(self.app, f"{action}_{self.type}", script, workdir=self.workdir, raise_exception_if_failure=True)
 
 
 class SourcesResource(AppResource):

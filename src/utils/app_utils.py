@@ -1472,3 +1472,79 @@ def _ask_confirmation(
 
     if not answer:
         raise YunohostError("aborting")
+
+
+def _run_app_script_or_snippet(app, action, script, env={}, workdir=None, as_app=False, raise_exception_if_failure=False):
+
+    import tempfile
+    from ..log import OperationLogger
+    from ..hook import hook_exec_with_script_debug_if_failure
+
+    if not workdir:
+        workdir = _make_tmp_workdir_for_app(app=app)
+        chmod(workdir, 0o700, recursive=True)
+        chown(workdir, app, recursive=True)
+        delete_workdir_at_the_end = True
+    else:
+        delete_workdir_at_the_end = False
+
+    env_ = _make_environment_for_app_script(
+        app,
+        workdir=workdir,
+        action=action,
+        force_include_app_settings=True,
+    )
+    env_.update(env)
+
+    # FIXME ? : this is an ugly hack :(
+    active_operation_loggers = [
+        o for o in OperationLogger._instances if o.ended_at is None
+    ]
+    if active_operation_loggers:
+        operation_logger = active_operation_loggers[-1]
+    else:
+        operation_logger = OperationLogger(
+            "app_script_or_snippet", [("app", app)], env=env_
+        )
+        operation_logger.start()
+
+    with tempfile.NamedTemporaryFile(prefix="ynh_") as script_path:
+        script_path = script_path.name
+        script_content = f"""
+source /usr/share/yunohost/helpers
+ynh_abort_if_errors
+
+{script}
+"""
+        write_to_file(script_path, script_content)
+        if as_app:
+            chmod(script_path, 0o500)
+            chown(script_path, app)
+
+        (
+            call_failed,
+            failure_message_with_debug_instructions,
+        ) = hook_exec_with_script_debug_if_failure(
+            script_path,
+            user=app if as_app else "root",
+            env=env_,
+            operation_logger=operation_logger,
+            error_message_if_script_failed="An error occured inside the script",
+            error_message_if_failed=lambda e: f"{action} failed for {app} : {e}",
+        )
+
+        if delete_workdir_at_the_end:
+            rm(workdir, recursive=True, force=True)
+
+        if call_failed:
+            if raise_exception_if_failure:
+                raise YunohostError(
+                    failure_message_with_debug_instructions, raw_msg=True
+                )
+        else:
+            # FIXME: currently in app install code, we have
+            # more sophisticated code checking if this broke something on the system etc.
+            # dunno if we want to do this here or manage it elsewhere
+            pass
+
+        return call_failed, failure_message_with_debug_instructions
