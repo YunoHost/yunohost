@@ -905,7 +905,7 @@ def _check_manifest_requirements(
     logger.debug(m18n.n("app_requirements_checking", app=app))
 
     # Packaging format
-    if manifest["packaging_format"] not in [1, 2]:
+    if manifest["packaging_format"] not in [1, 2, 3]:
         raise YunohostValidationError("app_packaging_format_not_supported")
 
     # Yunohost version

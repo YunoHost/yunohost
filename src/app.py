@@ -1527,18 +1527,35 @@ def app_install(
     # Execute the app install script
     install_failed = True
     try:
-        (
-            install_failed,
-            failure_message_with_debug_instructions,
-        ) = hook_exec_with_script_debug_if_failure(
-            os.path.join(extracted_app_folder, "scripts/install"),
-            env=env_dict,
-            operation_logger=operation_logger,
-            error_message_if_script_failed=m18n.n("app_install_script_failed"),
-            error_message_if_failed=lambda e: m18n.n(
-                "app_install_failed", app=app_id, error=e
-            ),
-        )
+        if packaging_format >= 3:
+            # FIXME: i18n
+            logger.info(f"Builing {app_instance_name}")
+            (
+                install_failed,
+                failure_message_with_debug_instructions
+            ) = _run_app_script_or_snippet(
+                app_instance_name,
+                "build",
+                """
+                source $YNH_APP_BASEDIR/scripts.sh
+                build
+                """,
+                env=env_dict,
+                as_app=True
+            )
+        else:
+            (
+                install_failed,
+                failure_message_with_debug_instructions,
+            ) = hook_exec_with_script_debug_if_failure(
+                os.path.join(extracted_app_folder, "scripts/install"),
+                env=env_dict,
+                operation_logger=operation_logger,
+                error_message_if_script_failed=m18n.n("app_install_script_failed"),
+                error_message_if_failed=lambda e: m18n.n(
+                    "app_install_failed", app=app_id, error=e
+                ),
+            )
     finally:
         # If success so far, validate that app didn't break important stuff
         if not install_failed:
