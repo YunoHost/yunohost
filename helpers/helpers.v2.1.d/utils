@@ -617,11 +617,7 @@ function _ynh_git_clone()
 {
     local url="$1"
     local dest_dir="$2"
-    # FIXME: hmmm we might want some way to specify the branch ? idk
-    #local url="$(cut -f1 -d: <<< "$url_and_branch")"
-    #local branch="$(cut -f2 -d: <<< "$url_and_branch")"
-    local branch
-    branch=${branch:-master}
+    local branch=${3:-master}
 
     mkdir -p "$dest_dir"
     pushd "$dest_dir" || return 1
