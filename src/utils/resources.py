@@ -1960,6 +1960,7 @@ class ComposerAppResource(AppResource):
 
         with open(f"{install_dir}/composer.phar", "wb") as f:
             f.write(composer_r.content)
+        chown(f"{install_dir}/composer.phar", self.app)
 
         self.set_setting("composer_version", self.version)
 
