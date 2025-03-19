@@ -78,7 +78,7 @@ ynh_go_install() {
     go_version=$final_go_version
     ynh_app_setting_set --app="$app" --key="go_version" --value="$go_version"
 
-    ynh_print_info "Installation Go $go_version"
+    ynh_print_info "Installing Go $go_version"
     $GOENV_ROOT/bin/goenv install --quiet --skip-existing "$go_version" 2>&1
 
     # Cleanup Go versions
@@ -116,7 +116,7 @@ _ynh_go_cleanup() {
     for installed_go_version in $installed_go_versions; do
         if ! grep -qE "^go_version: '?$installed_go_version'?" /etc/yunohost/apps/*/settings.yml
         then
-            ynh_print_info "Removing Go-$installed_go_version"
+            # ynh_print_info "Removing Go-$installed_go_version"
             $GOENV_ROOT/bin/goenv uninstall --force "$installed_go_version"
         fi
     done
@@ -124,7 +124,7 @@ _ynh_go_cleanup() {
     # If no app uses Go anymore
     if ! grep -q "^go_version:" /etc/yunohost/apps/*/settings.yml; then
         # Remove goenv environment configuration
-        ynh_print_info "Removing goenv"
+        # ynh_print_info "Removing goenv"
         ynh_safe_rm "$GOENV_ROOT"
         ynh_safe_rm "/etc/profile.d/goenv.sh"
     fi
