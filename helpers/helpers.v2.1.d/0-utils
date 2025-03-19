@@ -270,13 +270,21 @@ _ynh_apply_default_permissions() {
             # Files inside should be owned by $app with rw-r----- (+x for folders or files that already have +x)
             # The group needs read/dirtraversal (in particular if it's www-data)
             chmod -R u=rwX,g=rX,o=--- "$target"
-            chown -R "$app:$group" "$target"
+            # FIXME : packaging v3 ... can't change group of a file to a group the user ain't part of (in particular, www-data)
+            if [[ "$group" == "www-data" ]] && [[ "$(whoami)" == "root" ]]
+            then
+                chown -R "$app:$group" "$target"
+            fi
             return
         elif [ "$target" == "${data_dir:-}" ]; then
             # Read the group from the data manifest resource
             local group="$(ynh_read_manifest 'resources.data_dir.group' | sed 's/null//g' | sed "s/__APP__/$app/g" | cut -f1 -d:)"
             chmod 750 "$target"
-            chown -R "$app:${group:-$app}" "$target"
+            # FIXME : packaging v3 ... can't change group of a file to a group the user ain't part of (in particular, www-data)
+            if [[ "$group" == "www-data" ]] && [[ "$(whoami)" == "root" ]]
+            then
+                chown -R "$app:${group:-$app}" "$target"
+            fi
             return
         fi
     fi
