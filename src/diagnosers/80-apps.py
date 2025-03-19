@@ -80,9 +80,11 @@ class MyDiagnoser(Diagnoser):
         yunohost_version_req = (
             app["manifest"].get("requirements", {}).get("yunohost", "").strip(">= ")
         )
-        if yunohost_version_req.startswith("2.") or yunohost_version_req.startswith(
-            "3."
-        ) or yunohost_version_req.startswith("4."):
+        if (
+            yunohost_version_req.startswith("2.")
+            or yunohost_version_req.startswith("3.")
+            or yunohost_version_req.startswith("4.")
+        ):
             yield ("error", "diagnosis_apps_outdated_ynh_requirement")
 
         deprecated_helpers = [
