@@ -38,6 +38,8 @@ from ..utils.system import debian_version, debian_version_id, system_arch
 logger = getLogger("yunohost.utils.resources")
 
 
+SOURCES_CACHE_DIR = "/var/tmp/yunohost/download/"
+
 class AppResourceManager:
     def __init__(self, app: str, current: Dict, wanted: Dict, workdir=None):
         self.app = app
@@ -407,13 +409,19 @@ class SourcesResource(AppResource):
         super().__init__({"sources": properties}, *args, **kwargs)
 
     def deprovision(self, context: Dict = {}):
-        if os.path.isdir(f"/var/cache/yunohost/download/{self.app}/"):
-            rm(f"/var/cache/yunohost/download/{self.app}/", recursive=True)
+        if os.path.isdir(f"{SOURCES_CACHE_DIR}/{self.app}/"):
+            rm(f"{SOURCES_CACHE_DIR}/{self.app}/", recursive=True)
 
     def provision_or_update(self, context: Dict = {}):
         # Don't prefetch stuff during restore
         if context.get("action") == "restore":
             return
+
+        if not os.path.isdir(f"{SOURCES_CACHE_DIR}/{self.app}"):
+            mkdir(f"{SOURCES_CACHE_DIR}/{self.app}", parents=True)
+        # We later give ownership to $app in the system_user
+        chmod(f"{SOURCES_CACHE_DIR}/{self.app}", 0o700, recursive=True)
+        chown(f"{SOURCES_CACHE_DIR}/{self.app}", "root", recursive=True)
 
         for source_id, infos in self.sources.items():
             if not infos["prefetch"]:
@@ -444,9 +452,7 @@ class SourcesResource(AppResource):
     def prefetch(self, source_id, url, expected_sha256):
         logger.debug(f"Prefetching asset {source_id}: {url} ...")
 
-        if not os.path.isdir(f"/var/cache/yunohost/download/{self.app}/"):
-            mkdir(f"/var/cache/yunohost/download/{self.app}/", parents=True)
-        filename = f"/var/cache/yunohost/download/{self.app}/{source_id}"
+        filename = f"{SOURCES_CACHE_DIR}/{self.app}/{source_id}"
 
         # NB: we use wget and not requests.get() because we want to output to a file (ie avoid ending up with the full archive in RAM)
         # AND the nice --tries, --no-dns-cache, --timeout options ...
@@ -829,6 +835,10 @@ class SystemuserAppResource(AppResource):
                 == 0
             ):
                 regen_mail_app_user_config_for_dovecot_and_postfix()
+
+        # Allow user to access pre-fetch source (or create files in there during scripts)
+        if os.path.isdir(f"{SOURCES_CACHE_DIR}/{self.app}"):
+            chown(f"{SOURCES_CACHE_DIR}/{self.app}", self.app, recursive=True)
 
     def deprovision(self, context: Dict = {}):
         from ..app import regen_mail_app_user_config_for_dovecot_and_postfix
