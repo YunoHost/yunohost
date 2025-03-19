@@ -79,7 +79,7 @@ class MyDiagnoser(Diagnoser):
         )
         if yunohost_version_req.startswith("2.") or yunohost_version_req.startswith(
             "3."
-        ):
+        ) or yunohost_version_req.startswith("4."):
             yield ("error", "diagnosis_apps_outdated_ynh_requirement")
 
         deprecated_helpers = [
