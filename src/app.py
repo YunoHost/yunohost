@@ -92,7 +92,7 @@ else:
     logger = getLogger("yunohost.app")
 
 APPS_SETTING_PATH = "/etc/yunohost/apps/"
-APP_TMP_WORKDIRS = "/var/cache/yunohost/app_tmp_work_dirs"
+APP_TMP_WORKDIRS = "/var/tmp/yunohost/"
 PORTAL_SETTINGS_DIR = "/etc/yunohost/portal"
 
 re_app_instance_name = re.compile(
