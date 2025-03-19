@@ -1608,4 +1608,398 @@ ynh_{db_helper_name}_user_exists "{db_user}" && ynh_{db_helper_name}_drop_user "
         self.delete_setting("db_pwd")
 
 
+class NodejsAppResource(AppResource):
+    """
+    Installs a nodejs version using "n" to be used by the app
+
+    Sourcing the helpers will then automatically tweak the PATH variable such that you may call `npm` directly.
+
+    Sourcing the helpers will also automatically define:
+    - `$path_with_nodejs` to be used in the systemd config (`Environment="PATH=__PATH_WITH_NODEJS__"`)
+    - `$nodejs_dir`, the directory containing the specific version of nodejs, which may be used in the systemd config too (e.g. `ExecStart=__NODEJS_DIR__/node foo bar`)
+
+    ### Example
+    ```toml
+    [resources.nodejs]
+    version = "18.2"
+    ```
+
+    ### Properties
+    - `version`: The nodejs version needed by the app
+
+    ### Provision/Update
+    - Call "n" to install the corresponding nodejs version
+    - Resolve the "actual version" installed (typically if version `20` is requested, the actual version may be `20.1.2`)
+    - This "actual version" is stored as `nodejs_version` in the app settings
+    - Garbage-collect unused versions
+
+    ### Deprovision
+    - Delete the `nodejs_version` setting
+    - Garbage-collect unused versions
+    """
+
+    # Notes for future?
+    # deep_clean  -> ... trash unused versions
+    # backup -> nothing?
+    # restore -> nothing/re-provision
+
+    type = "nodejs"
+    priority = 100
+    version: str = ""
+
+    default_properties: Dict[str, Any] = {
+        "version": None,
+    }
+
+    N_INSTALL_DIR = "/opt/node_n"
+
+    @property
+    def n(self):
+        return f"/usr/share/yunohost/helpers.v{self.helpers_version}.d/vendor/n/n"
+
+    def installed_versions(self):
+
+        out = check_output(
+            f"{self.n} ls", env={"N_PREFIX": self.N_INSTALL_DIR}
+        )
+        return [
+            version.split("/")[-1] for version in out.strip().split("\n")
+        ]
+
+    def provision_or_update(self, context: Dict = {}):
+
+        os.makedirs(self.N_INSTALL_DIR, exist_ok=True)
+
+        cmd = f"{self.n} install {self.version}"
+        if system_arch() == "arm64":
+            cmd += " --arch=arm64"
+
+        self._run_script(
+            "provision_or_update", cmd, env={"N_PREFIX": self.N_INSTALL_DIR}
+        )
+        matching_versions = [v for v in self.installed_versions() if v == self.version or v.startswith(self.version + ".")]
+        assert matching_versions, f"Uhoh, no matching version found among {self.installed_versions()} after installing nodejs {self.version} ?"
+        sorted_versions = sorted(matching_versions, key=lambda s: list(map(int, s.split('.'))))
+        actual_version = sorted_versions[-1]
+
+        self.set_setting("nodejs_version", actual_version)
+        self.garbage_collect_unused_versions()
+
+    def deprovision(self, context: Dict = {}):
+
+        self.delete_setting("nodejs_version")
+        self.garbage_collect_unused_versions()
+
+    def garbage_collect_unused_versions(self):
+
+        from yunohost.app import app_setting, _installed_apps
+
+        used_versions = []
+        for app in _installed_apps():
+            v = app_setting(app, "nodejs_version")
+            if v:
+                used_versions.append(v)
+
+        unused_versions = set(self.installed_versions()) - set(used_versions)
+        if unused_versions:
+            cmds = [f"{self.n} rm {version}" for version in unused_versions]
+            self._run_script(
+                "cleanup", "\n".join(cmds), env={"N_PREFIX": self.N_INSTALL_DIR}
+            )
+
+
+class RubyAppResource(AppResource):
+    """
+    Installs a ruby version to be used by the app, using "rbenv"
+
+    Note that ruby is compiled on the target system, and therefore requires the following dependencies to be installed : `gcc, make, libjemalloc-dev, libffi-dev, libyaml-dev, zlib1g-dev`
+
+    Sourcing the helpers will then automatically tweak the `PATH` variable such that you may call `ruby` and `gem` directly.
+
+    Sourcing the helpers will also automatically define:
+    - `$path_with_ruby` to be used in the systemd config (`Environment="PATH=__PATH_WITH_RUBY__"`)
+    - `$ruby_dir`, the directory containing the specific version of ruby, which may be used in the systemd config too (e.g. `ExecStart=__RUBY_DIR__/ruby foo bar`)
+
+    ### Example
+    ```toml
+    [resources.ruby]
+    version = "3.2"
+    ```
+
+    ### Properties
+    - `version`: The ruby version needed by the app
+
+    ### Provision/Update
+    - Fetch/update a copy of the rbenv tool as well as ruby-build, rbenv-aliases and xxenv-latest
+    - Compute the actual "latest" version for the requested version, e.g. `3.2` may corresponds to `3.2.1`
+    - This "actual version" is stored as `ruby_version` in the app settings
+    - Install (compile) Ruby (may take some time)
+    - Garbage-collect unused versions
+
+    ### Deprovision
+    - Delete the `ruby_version` setting
+    - Garbage-collect unused versions
+    """
+
+    type = "ruby"
+    priority = 100
+    version: str = ""
+
+    default_properties: Dict[str, Any] = {
+        "version": None,
+    }
+
+    RBENV_ROOT = "/opt/rbenv"
+
+    @property
+    def rbenv(self):
+        return f"{self.RBENV_ROOT}/bin/rbenv"
+
+    def installed_versions(self):
+
+        return check_output(
+            f"{self.rbenv} versions --bare --skip-aliases | grep -Ev '/'",
+            env={"RBENV_ROOT": self.RBENV_ROOT}
+        ).strip().split("\n")
+
+    def update_rbenv(self):
+
+        self._run_script(
+            "provision_or_update",
+            f"""
+            _ynh_git_clone "https://github.com/rbenv/rbenv" "{self.RBENV_ROOT}"
+            _ynh_git_clone "https://github.com/rbenv/ruby-build" "{self.RBENV_ROOT}/plugins/ruby-build"
+            _ynh_git_clone "https://github.com/tpope/rbenv-aliases" "{self.RBENV_ROOT}/plugins/rbenv-aliase"
+            _ynh_git_clone "https://github.com/momo-lab/xxenv-latest" "{self.RBENV_ROOT}/plugins/xxenv-latest"
+            mkdir -p "{self.RBENV_ROOT}/cache"
+            mkdir -p "{self.RBENV_ROOT}/shims"
+        """
+        )
+
+    def provision_or_update(self, context: Dict = {}):
+
+        for package in ["gcc", "make", "libjemalloc-dev", "libffi-dev", "libyaml-dev", "zlib1g-dev"]:
+            if os.system(f'dpkg --list | grep -q "^ii  {package}"') != 0:
+                raise YunohostValidationError(f"{package} is required to install Ruby")
+
+        self.update_rbenv()
+
+        ruby_version = check_output(
+            f"{self.rbenv} latest --print '{self.version}'",
+            env={"RBENV_ROOT": self.RBENV_ROOT},
+        )
+        self.set_setting("ruby_version", ruby_version)
+        logger.info(f"Building Ruby {ruby_version}, this may take some time...")
+        self._run_script(
+            "provision_or_update",
+            f"""
+            #export RBENV_ROOT='{self.RBENV_ROOT}'
+            export RUBY_CONFIGURE_OPTS='--disable-install-doc --with-jemalloc'
+            # Use half of available CPUs for compiling
+            # The trick with 1 + ...  -1 is to prevent having '0' when there's only one CPU available.
+            NB_CPU_TO_USE="$(( 1 + ($(grep -c ^processor /proc/cpuinfo) - 1) / 2 ))"
+            export MAKE_OPTS="-j$(NB_CPU_TO_USE)"
+            {self.rbenv} install --skip-existing '{ruby_version}' 2>&1
+            if {self.rbenv} alias --list | grep --quiet '{self.app} '; then
+                {self.rbenv} alias {self.app} --remove
+            fi
+            {self.rbenv} alias {self.app} '{ruby_version}'
+        """
+        )
+        self.garbage_collect_unused_versions()
+
+    def deprovision(self, context: Dict = {}):
+
+        self.delete_setting("ruby_version")
+        self.garbage_collect_unused_versions()
+
+    def garbage_collect_unused_versions(self):
+
+        from yunohost.app import app_setting, _installed_apps
+
+        used_versions = []
+        for app in _installed_apps():
+            v = app_setting(app, "ruby_version")
+            if v:
+                used_versions.append(v)
+
+        unused_versions = set(self.installed_versions()) - set(used_versions)
+        if unused_versions:
+            cmds = [f"{self.rbenv} uninstall --force {version}" for version in unused_versions]
+            self._run_script("cleanup", "\n".join(cmds))
+
+
+class GoAppResource(AppResource):
+    """
+    Installs a go version to be used by the app, using "goenv"
+
+    Sourcing the helpers will then automatically tweak the `PATH` variable such that you may call `go` directly.
+
+    Sourcing the helpers will also automatically define:
+    - `$go_dir`, the directory containing the specific version of Go
+
+    ### Example
+    ```toml
+    [resources.go]
+    version = "1.20"
+    ```
+
+    ### Properties
+    - `version`: The go version needed by the app
+
+    ### Provision/Update
+    - Fetch/update a copy of the goenv tool and xxenv-latest
+    - Compute the actual "latest" version for the requested version, e.g. `1.20` may corresponds to `1.20.2`
+    - This "actual version" is stored as `go_version` in the app settings
+    - Install the corresponding Go version
+    - Garbage-collect unused versions
+
+    ### Deprovision
+    - Delete the `go_version` setting
+    - Garbage-collect unused versions
+    """
+
+    type = "go"
+    priority = 100
+    version: str = ""
+
+    default_properties: Dict[str, Any] = {
+        "version": None,
+    }
+
+    GOENV_ROOT = "/opt/goenv"
+
+    @property
+    def goenv(self):
+        return f"{self.GOENV_ROOT}/bin/goenv"
+
+    @property
+    def goenv_latest(self):
+        return f"{self.GOENV_ROOT}/plugins/xxenv-latest/bin/goenv-latest"
+
+    def update_goenv(self):
+
+        self._run_script(
+            "provision_or_update",
+            f"""
+            _ynh_git_clone https://github.com/syndbg/goenv '{self.GOENV_ROOT}'
+            _ynh_git_clone https://github.com/momo-lab/xxenv-latest '{self.GOENV_ROOT}/plugins/xxenv-latest'
+            mkdir -p '{self.GOENV_ROOT}/cache'
+            mkdir -p '{self.GOENV_ROOT}/shims'
+        """,
+        )
+
+    def provision_or_update(self, context: Dict = {}):
+
+        self.update_goenv()
+        go_version = check_output(
+            f"{self.goenv_latest} --print {self.version}",
+            env={"GOENV_ROOT": self.GOENV_ROOT, "PATH": self.GOENV_ROOT + "/bin/:" + os.environ["PATH"]},
+        )
+        self.set_setting("go_version", go_version)
+        self._run_script(
+            "provision_or_update",
+            f"{self.goenv} install --quiet --skip-existing '{go_version}' 2>&1",
+            env={"GOENV_ROOT": self.GOENV_ROOT},
+        )
+        self.garbage_collect_unused_versions()
+
+    def deprovision(self, context: Dict = {}):
+
+        self.delete_setting("go_version")
+        self.garbage_collect_unused_versions()
+
+    def garbage_collect_unused_versions(self):
+
+        installed_versions = check_output(
+            f"{self.goenv} versions --bare --skip-aliases",
+            env={"GOENV_ROOT": self.GOENV_ROOT},
+        )
+        installed_versions = [
+            version
+            for version in installed_versions.strip().split("\n")
+            if "\\" not in version
+        ]
+
+        used_versions = []
+        from yunohost.app import app_setting, _installed_apps
+
+        for app in _installed_apps():
+            v = app_setting(app, "go_version")
+            if v:
+                used_versions.append(v)
+
+        unused_versions = set(installed_versions) - set(used_versions)
+        if unused_versions:
+            cmds = [f"{self.goenv} uninstall --force '{version}'" for version in unused_versions]
+            self._run_script(
+                "cleanup", "\n".join(cmds), env={"GOENV_ROOT": self.GOENV_ROOT}
+            )
+
+
+class ComposerAppResource(AppResource):
+    """
+    Installs a composer version to be used by the app
+
+    You may then use `ynh_composer_exec` in your script to run composer actions
+
+    Note that this resource requires that the app requires an `install_dir`, and installs php dependencies via the `apt` resource.
+
+    ### Example
+    ```toml
+    [resources.composer]
+    version = "2.7.7"
+    ```
+
+    ### Properties
+    - `version`: The composer version needed by the app
+
+    ### Provision/Update
+    - Download `composer.phar` for the corresponding version from `getcomposer.org`
+    - `composer.phar` is placed in the `$install_dir` of the app
+    - Define `composer_version` as the requested version
+
+    ### Deprovision
+    - Delete `composer.phar`
+    - Delete the `composer_verison` setting
+    """
+
+    type = "composer"
+    priority = 100
+    version: str = ""
+
+    default_properties: Dict[str, Any] = {
+        "version": None,
+    }
+
+    @property
+    def composer_url(self):
+        return f"https://getcomposer.org/download/{self.version}/composer.phar"
+
+    def provision_or_update(self, context: Dict = {}):
+
+        install_dir = self.get_setting("install_dir")
+        if not install_dir:
+            raise YunohostError("This app has no install_dir defined ? Packagers: please make sure to have the install_dir resource before composer")
+
+        if not self.get_setting("php_version"):
+            raise YunohostError("This app has no php_version defined ? Packagers: please make sure to install php dependencies using apt before composer")
+
+        import requests
+        composer_r = requests.get(self.composer_url, timeout=30)
+        assert composer_r.status_code == 200, "Uhoh, failed to download {self.composer_url} ? Return code: {composer_r.status_code}"
+
+        with open(f"{install_dir}/composer.phar", "wb") as f:
+            f.write(composer_r.content)
+
+        self.set_setting("composer_version", self.version)
+
+    def deprovision(self, context: Dict = {}):
+        install_dir = self.get_setting("install_dir")
+
+        self.delete_setting("composer_version")
+        if os.path.exists(f"{install_dir}/composer.phar"):
+            os.remove(f"{install_dir}/composer.phar")
+
+
 AppResourceClassesByType = {c.type: c for c in AppResource.__subclasses__()}
