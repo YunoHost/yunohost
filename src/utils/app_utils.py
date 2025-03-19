@@ -69,7 +69,7 @@ else:
     logger = getLogger("yunohost.app")
 
 APPS_SETTING_PATH = "/etc/yunohost/apps/"
-APPS_TMP_WORKDIRS = "/var/cache/yunohost/app_tmp_work_dirs"
+APPS_TMP_WORKDIRS = "/var/tmp/yunohost/"
 GIT_CLONE_CACHE = "/var/cache/yunohost/gitclones"
 
 re_app_instance_name = re.compile(

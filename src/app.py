@@ -90,7 +90,6 @@ if TYPE_CHECKING:
 else:
     logger = getLogger("yunohost.app")
 
-
 PORTAL_SETTINGS_DIR = "/etc/yunohost/portal"
 APP_FILES_TO_COPY = [
     "manifest.json",

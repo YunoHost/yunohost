@@ -41,7 +41,7 @@ ynh_exit_properly() {
     local exit_code=$?
 
     if [[ "${YNH_APP_ACTION:-}" =~ ^install$|^upgrade$|^restore$ ]]; then
-        rm -rf "/var/cache/yunohost/download/"
+        rm -rf "${YNH_SOURCES_CACHE_DIR}/${YNH_APP_ID}"
     fi
 
     if [ "$exit_code" -eq 0 ]; then
