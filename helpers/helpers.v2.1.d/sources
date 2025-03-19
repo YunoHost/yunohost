@@ -95,8 +95,7 @@ ynh_setup_source() {
 
     # Make sure to keep composer.phar that may have been provisioned prior to this,
     # otherwise it'll get deleted right after when using --full-replace?
-    if [ -e "$dest_dir/composer.phar" ]
-    then
+    if [ -e "$dest_dir/composer.phar" ]; then
         keep+=" composer.phar"
     fi
 
