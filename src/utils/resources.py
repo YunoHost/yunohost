@@ -1795,7 +1795,10 @@ class RubyAppResource(AppResource):
             f"""
             #export RBENV_ROOT='{self.RBENV_ROOT}'
             export RUBY_CONFIGURE_OPTS='--disable-install-doc --with-jemalloc'
-            export MAKE_OPTS='-j2'
+            # Use half of available CPUs for compiling
+            # The trick with 1 + ...  -1 is to prevent having '0' when there's only one CPU available.
+            NB_CPU_TO_USE="$(( 1 + ($(grep -c ^processor /proc/cpuinfo) - 1) / 2 ))"
+            export MAKE_OPTS="-j$(NB_CPU_TO_USE)"
             {self.rbenv} install --skip-existing '{ruby_version}' 2>&1
             if {self.rbenv} alias --list | grep --quiet '{self.app} '; then
                 {self.rbenv} alias {self.app} --remove
