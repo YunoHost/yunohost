@@ -182,51 +182,67 @@ class YunoFirewall:
 
 
 class YunoUPnP:
-    UPNP_PORT = 55354  # Picked at random, this port has no real meaning
-    UPNP_PORT_COMMENT = "YunoHost UPnP firewall configurator"
     UPNP_CRON_JOB = Path("/etc/cron.d/yunohost-firewall-upnp")
 
     def __init__(self, firewall: "YunoFirewall") -> None:
         self.firewall = firewall
         self.description = "Yunohost firewall"
-        self.upnpc: miniupnpc.UPnP | None = None
+        self.upnpc = miniupnpc.UPnP()
+        self.upnpc.discoverdelay = 3000
+        self.device_found = 0
 
     def enabled(self, new_status: bool | None = None) -> bool:
         if new_status is not None:
             self.firewall.config["router_forwarding_upnp"] = new_status
-        self.firewall.write()
+            self.firewall.write()
         return self.firewall.config.get("router_forwarding_upnp", False)
 
-    def ensure_listen_port(self) -> None:
-        self.firewall.open_port("udp", self.UPNP_PORT, self.UPNP_PORT_COMMENT)
-
-    def find_gid(self) -> bool:
-        self.upnpc = miniupnpc.UPnP()
-        self.upnpc.localport = self.UPNP_PORT
-        self.upnpc.discoverdelay = 3000
-        # Discover UPnP device(s)
-        logger.debug("discovering UPnP devices...")
-        try:
-            nb_dev = self.upnpc.discover()
-        except Exception:
-            logger.warning("Failed to find any UPnP device on the network")
-            nb_dev = -1
-        if nb_dev < 1:
-            logger.error(m18n.n("upnp_dev_not_found"))
+    def check_status(self) -> bool:
+        if self.device_found < 1:
             return False
-        logger.debug("found %d UPnP device(s)", int(nb_dev))
+
+        try:
+            # Connection status, uptime and last connection error
+            connection_status, _, last_connection_error = self.upnpc.statusinfo()
+        except Exception:
+            logger.debug("Unable to check status of UPnP device", exc_info=1)
+            return False
+
+        return (
+            connection_status == "Connected" and last_connection_error == "ERROR_NONE"
+        )
+
+    def select_device(self) -> bool:
+        if self.device_found < 1:
+            return False
+
+        logger.debug("Select UPnP device...")
         try:
             # Select UPnP device
             self.upnpc.selectigd()
         except Exception:
-            logger.debug("unable to select UPnP device", exc_info=1)
+            logger.debug("Unable to select UPnP device", exc_info=1)
             return False
-        return True
+
+        return self.check_status()
+
+    def find_gid(self) -> bool:
+        # Discover UPnP device(s)
+        logger.debug("Discovering UPnP devices...")
+        try:
+            self.device_found = self.upnpc.discover()
+        except Exception:
+            logger.warning("Failed to find any UPnP device on the network")
+            self.device_found = -1
+        if self.device_found < 1:
+            logger.error(m18n.n("upnp_dev_not_found"))
+            return False
+        logger.debug("Found %d UPnP device(s)", int(self.device_found))
+        return self.select_device()
 
     def open_port(self, protocol: str, port: int | str, comment: str) -> bool:
-        if self.upnpc is None:
-            self.find_gid()
-        assert self.upnpc is not None
+        if not self.check_status() and not self.find_gid():
+            return False
 
         # FIXME: how should we handle port ranges ?
         if not isinstance(port, int):
@@ -249,14 +265,13 @@ class YunoUPnP:
                 port, protocol, self.upnpc.lanaddr, port, desc, ""
             )
         except Exception:
-            logger.debug("unable to add port %d using UPnP", port, exc_info=1)
+            logger.debug("Unable to add port %d using UPnP", port, exc_info=1)
             return False
         return True
 
     def close_port(self, protocol: str, port: int | str) -> bool:
-        if self.upnpc is None:
-            self.find_gid()
-        assert self.upnpc is not None
+        if not self.check_status() and not self.find_gid():
+            return False
 
         # FIXME: how should we handle port ranges ?
         if not isinstance(port, int):
@@ -273,7 +288,7 @@ class YunoUPnP:
         return True
 
     def refresh(self, firewall: "YunoFirewall") -> bool:
-        if not self.find_gid():
+        if not self.check_status() and not self.find_gid():
             return False
 
         status = True
@@ -290,7 +305,7 @@ class YunoUPnP:
         return status
 
     def enable(self) -> None:
-        if not self.find_gid():
+        if not self.check_status() and not self.find_gid():
             logger.error("Not enabling UPnP because no UPnP device was found")
             return
         if not self.enabled():
@@ -301,9 +316,8 @@ class YunoUPnP:
             self.enabled(True)
 
     def close_ports(self) -> None:
-        if self.upnpc is None:
-            self.find_gid()
-        assert self.upnpc is not None
+        if not self.check_status() and not self.find_gid():
+            return
 
         i = 0
         to_remove = []
