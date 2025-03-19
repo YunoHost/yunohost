@@ -192,7 +192,7 @@ def portal_me():
 
 def portal_update(
     fullname: Union[str, None] = None,
-    mainemail: Union[str, None] = None,
+    mail: Union[str, None] = None,
     mailforward: Union[list[str], None] = None,
     mailalias: Union[list[str], None] = None,
     currentpassword: Union[str, None] = None,
@@ -221,30 +221,30 @@ def portal_update(
 
     new_mails = current_user["mail"]
 
-    if mainemail is not None:
+    if mail is not None:
         is_allowed_to_edit_main_email = portal_settings["allow_edit_email"]
         if is_allowed_to_edit_main_email != 1:
             raise YunohostValidationError("mail_edit_operation_unauthorized")
 
-        if mainemail not in new_mails:
-            local_part, domain = mainemail.split("@")
+        if mail not in new_mails:
+            local_part, domain = mail.split("@")
             if local_part in ADMIN_ALIASES:
                 raise YunohostValidationError("mail_unavailable")
 
             try:
-                _get_ldap_interface().validate_uniqueness({"mail": mainemail})
+                _get_ldap_interface().validate_uniqueness({"mail": mail})
             except YunohostError:
                 raise YunohostValidationError(
-                    "mail_already_exists", mail=mainemail
+                    "mail_already_exists", mail=mail
                 )
 
             if domain not in domains or not user_is_allowed_on_domain(username, domain):
                 raise YunohostValidationError("mail_alias_unauthorized", domain=domain)
-            new_mails[0] = mainemail
+            new_mails[0] = mail
         else:
             # email already exist in the list we just move it on the first place
-            new_mails.remove(mainemail)
-            new_mails = [mainemail] + new_mails[1:]
+            new_mails.remove(mail)
+            new_mails = [mail] + new_mails[1:]
 
         new_attr_dict["mail"] = new_mails
 
@@ -338,6 +338,7 @@ def portal_update(
     if all(field is not None for field in (fullname, mailalias, mailforward)):
         return {
             "fullname": new_attr_dict["cn"],
+            "mail": new_attr_dict["mail"][0],
             "mailalias": new_attr_dict["mail"][1:],
             "mailforward": new_attr_dict["maildrop"][1:],
         }

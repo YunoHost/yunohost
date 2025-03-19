@@ -31,7 +31,7 @@ portal:
                         pattern: &pattern_fullname
                             - !!str ^([^\W_]{1,30}[ ,.'-]{0,3})+$
                             - "pattern_fullname"
-                --mainemail:
+                --mail:
                     help: Main email
                     extra:
                         pattern: &pattern_email
