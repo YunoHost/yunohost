@@ -74,11 +74,16 @@ class MyDiagnoser(Diagnoser):
 
         # Check for super old, deprecated practices
 
+        if app["manifest"].get("packaging_format", 0) < 2:
+            yield ("error", "diagnosis_apps_outdated_packaging_format")
+
         yunohost_version_req = (
             app["manifest"].get("requirements", {}).get("yunohost", "").strip(">= ")
         )
-        if yunohost_version_req.startswith("2.") or yunohost_version_req.startswith(
-            "3."
+        if (
+            yunohost_version_req.startswith("2.")
+            or yunohost_version_req.startswith("3.")
+            or yunohost_version_req.startswith("4.")
         ):
             yield ("error", "diagnosis_apps_outdated_ynh_requirement")
 

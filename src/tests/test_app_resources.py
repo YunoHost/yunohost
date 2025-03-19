@@ -19,9 +19,11 @@
 #
 
 import os
+import tempfile
 
 import pytest
 from moulinette.utils.process import check_output
+from subprocess import check_call
 
 from yunohost.app import app_setting
 from yunohost.domain import _get_maindomain
@@ -64,6 +66,7 @@ def setup_function(function):
     os.system("echo 'id: testapp' > /etc/yunohost/apps/testapp/settings.yml")
     os.system("echo 'packaging_format = 2' > /etc/yunohost/apps/testapp/manifest.toml")
     os.system("echo 'id = \"testapp\"' >> /etc/yunohost/apps/testapp/manifest.toml")
+    os.system("echo 'version = \"0.1\"' >> /etc/yunohost/apps/testapp/manifest.toml")
     os.system(
         "echo 'description.en = \"A dummy app to test app resources\"' >> /etc/yunohost/apps/testapp/manifest.toml"
     )
@@ -412,6 +415,203 @@ def test_resource_permissions():
     r(conf, "testapp").deprovision()
 
     res = user_permission_list(full=True)["permissions"]
+
     assert "testapp.admin" not in res
     # The main permission is still forced to exist
     assert "testapp.main" in res
+
+
+def test_resource_nodejs():
+
+    manager = AppResourceManager(
+        "testapp",
+        current={},
+        wanted={"name": "Test App", "integration": {"helpers_version": "2.1"}},
+    )
+
+    r = AppResourceClassesByType["nodejs"]
+    assert not app_setting("testapp", "nodejs_version")
+    conf = {
+        "version": "20",
+    }
+
+    r(conf, "testapp", manager).provision_or_update()
+
+    nodejs_version = app_setting("testapp", "nodejs_version")
+    assert nodejs_version
+    nodejs_dir = f"{r.N_INSTALL_DIR}/n/versions/node/{nodejs_version}/bin"
+    assert os.path.exists(nodejs_dir)
+
+    env = {
+        "N_PREFIX": r.N_INSTALL_DIR,
+        "PATH": f"{nodejs_dir}:{os.environ['PATH']}",
+    }
+
+    assert check_output("which node", env=env).startswith(nodejs_dir)
+    installed_version = check_output("node --version", env=env)
+    assert installed_version.startswith("v20.")
+    with tempfile.TemporaryDirectory(prefix="ynh_") as d:
+        # Install a random simple package to validate npm is in the path and working
+        check_call(["npm", "install", "ansi-styles"], cwd=d, env=env)
+        # FIXME: the resource should install stuff as non-root probably ?
+        assert os.path.exists(f"{d}/node_modules/")
+
+    r({}, "testapp", manager).deprovision()
+    assert not app_setting("testapp", "nodejs_version")
+    assert not os.path.exists(nodejs_dir)
+
+
+def test_resource_ruby():
+
+    os.system("echo '[integration]' >> /etc/yunohost/apps/testapp/manifest.toml")
+    os.system(
+        "echo 'helpers_version = \"2.1\"' >> /etc/yunohost/apps/testapp/manifest.toml"
+    )
+
+    manager = AppResourceManager(
+        "testapp",
+        current={},
+        wanted={"name": "Test App", "integration": {"helpers_version": "2.1"}},
+    )
+
+    r = AppResourceClassesByType["apt"]
+    conf = {
+        "packages": "make, gcc, libjemalloc-dev, libffi-dev, libyaml-dev, zlib1g-dev"
+    }
+    r(conf, "testapp", manager).provision_or_update()
+
+    r = AppResourceClassesByType["ruby"]
+    assert not app_setting("testapp", "ruby_version")
+    conf = {
+        "version": "3.3.5",
+    }
+
+    try:
+        r(conf, "testapp", manager).provision_or_update()
+    except Exception:
+        os.system("tail -n 40 /tmp/ruby-build*.log")
+        raise
+
+    ruby_version = app_setting("testapp", "ruby_version")
+    assert ruby_version
+    ruby_dir = f"{r.RBENV_ROOT}/versions/testapp/bin"
+    ruby_dir2 = f"{r.RBENV_ROOT}/versions/{ruby_version}/bin"
+    assert os.path.exists(ruby_dir)
+    assert os.path.exists(ruby_dir2)
+
+    env = {
+        "PATH": f"{ruby_dir}:{os.environ['PATH']}",
+    }
+
+    assert check_output("which ruby", env=env).startswith(ruby_dir)
+    assert check_output("which gem", env=env).startswith(ruby_dir)
+    assert "3.3.5" in check_output("ruby --version", env=env)
+    with tempfile.TemporaryDirectory(prefix="ynh_") as d:
+        # Install a random simple package to validate the path etc
+        check_call(
+            "gem install bundler passenger --no-document".split(), cwd=d, env=env
+        )
+        check_call(
+            "bundle config set --local without 'development test'".split(),
+            cwd=d,
+            env=env,
+        )
+        # FIXME: the resource should install stuff as non-root probably ?
+
+    r({}, "testapp", manager).deprovision()
+    assert not app_setting("testapp", "ruby_version")
+    assert not os.path.exists(ruby_dir)
+    assert not os.path.exists(ruby_dir2)
+
+
+def test_resource_go():
+
+    os.system("echo '[integration]' >> /etc/yunohost/apps/testapp/manifest.toml")
+    os.system(
+        "echo 'helpers_version = \"2.1\"' >> /etc/yunohost/apps/testapp/manifest.toml"
+    )
+
+    r = AppResourceClassesByType["go"]
+    assert not app_setting("testapp", "go_version")
+    conf = {
+        "version": "1.22",
+    }
+
+    r(conf, "testapp").provision_or_update()
+
+    go_version = app_setting("testapp", "go_version")
+    assert go_version and go_version.startswith("1.22.")
+    go_dir = f"{r.GOENV_ROOT}/versions/{go_version}/bin"
+    assert os.path.exists(go_dir)
+
+    env = {
+        "PATH": f"{go_dir}:{os.environ['PATH']}",
+    }
+
+    assert check_output("go version", env=env).startswith(
+        f"go version go{go_version} linux/"
+    )
+
+    with tempfile.TemporaryDirectory(prefix="ynh_") as d:
+        with open(f"{d}/helloworld.go", "w") as f:
+            f.write(
+                """
+                package main
+                import "fmt"
+                func main() { fmt.Println("hello world") }
+            """
+            )
+        env["HOME"] = d
+        check_call("go build helloworld.go".split(), cwd=d, env=env)
+        assert os.path.exists(f"{d}/helloworld")
+        assert "hello world" in check_output("./helloworld", cwd=d)
+
+    r({}, "testapp").deprovision()
+    assert not app_setting("testapp", "go_version")
+    assert not os.path.exists(go_dir)
+
+
+def test_resource_composer():
+
+    os.system("echo '[integration]' >> /etc/yunohost/apps/testapp/manifest.toml")
+    os.system(
+        "echo 'helpers_version = \"2.1\"' >> /etc/yunohost/apps/testapp/manifest.toml"
+    )
+
+    r = AppResourceClassesByType["system_user"]
+    r({}, "testapp").provision_or_update()
+
+    r = AppResourceClassesByType["install_dir"]
+    r({}, "testapp").provision_or_update()
+    install_dir = app_setting("testapp", "install_dir")
+
+    r = AppResourceClassesByType["apt"]
+    manager = AppResourceManager(
+        "testapp",
+        current={},
+        wanted={"name": "Test App", "integration": {"helpers_version": "2.1"}},
+    )
+    conf = {"packages": "php8.2-fpm"}
+    r(conf, "testapp", manager).provision_or_update()
+
+    r = AppResourceClassesByType["composer"]
+    assert not app_setting("testapp", "composer_version")
+    conf = {
+        "version": "2.8.3",
+    }
+
+    r(conf, "testapp").provision_or_update()
+    assert app_setting("testapp", "composer_version")
+    assert os.path.exists(install_dir + "/composer.phar")
+
+    r(conf, "testapp")._run_script(
+        "test_composer_exec",
+        f"cd {install_dir}; ynh_composer_exec require symfony/polyfill-mbstring 1.31.0",
+    )
+
+    assert os.path.exists(install_dir + "/.composer")
+    assert os.path.exists(install_dir + "/vendor/symfony/polyfill-mbstring")
+
+    r(conf, "testapp").deprovision()
+    assert not app_setting("testapp", "composer_version")
+    assert not os.path.exists(install_dir + "/composer.phar")

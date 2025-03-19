@@ -93,6 +93,12 @@ ynh_setup_source() {
     source_id="${source_id:-main}"
     # ===========================================
 
+    # Make sure to keep composer.phar that may have been provisioned prior to this,
+    # otherwise it'll get deleted right after when using --full-replace?
+    if [ -e "$dest_dir/composer.phar" ]; then
+        keep+=" composer.phar"
+    fi
+
     local sources_json=$(ynh_read_manifest "resources.sources[\"$source_id\"]")
     if jq -re ".url" <<< "$sources_json"; then
         local arch_prefix=""

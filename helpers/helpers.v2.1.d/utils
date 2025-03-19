@@ -607,3 +607,25 @@ ynh_smart_mktemp() {
 
     mktemp --directory --tmpdir="$tmpdir"
 }
+
+# Setup/update a git clone, meant to be used internally to fetch technical tools like goenv, rbenv
+#
+# [internal]
+#
+function _ynh_git_clone() {
+    local url="$1"
+    local dest_dir="$2"
+    local branch=${3:-master}
+
+    mkdir -p "$dest_dir"
+    pushd "$dest_dir" || return 1
+        if ! [ -d "$dest_dir/.git" ]; then
+            git init -q
+            git remote add origin "$url"
+    else
+            git remote set-url origin "$url"
+    fi
+        git fetch -q --tags --prune origin "$branch"
+        git reset --hard origin/"$branch"
+    popd || return 1
+}

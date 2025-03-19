@@ -26,8 +26,8 @@
 # | arg: --jinja         - Use jinja template instead of the simple `__MY_VAR__` templating format
 #
 # examples:
-# ynh_add_config --template=".env" --destination="$install_dir/.env"   # (use the template file "conf/.env" from the app's package)
-# ynh_add_config --jinja --template="config.j2" --destination="$install_dir/config"    # (use the template file "conf/config.j2" from the app's package)
+# ynh_config_add --template=".env" --destination="$install_dir/.env"   # (use the template file "conf/.env" from the app's package)
+# ynh_config_add --jinja --template="config.j2" --destination="$install_dir/config"    # (use the template file "conf/config.j2" from the app's package)
 #
 # The template can be 1) the name of a file in the `conf` directory of
 # the app, 2) a relative path or 3) an absolute path.
@@ -47,8 +47,7 @@
 # This option is meant for advanced use-cases where the "simple" templating
 # mode ain't enough because you need conditional blocks or loops.
 #
-# For a full documentation of jinja's syntax you can refer to:
-# <https://jinja.palletsprojects.com/en/3.1.x/templates/>
+# For a full documentation of jinja's syntax you can refer to [the official Jinja documentation](https://jinja.palletsprojects.com/en/3.1.x/templates/).
 #
 # Note that in YunoHost context, all variables are from shell variables and therefore are strings
 #

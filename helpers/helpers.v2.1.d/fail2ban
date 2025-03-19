@@ -62,8 +62,7 @@
 # matched by a group named "`host`". The tag "`<HOST>`" can be used for standard
 # IP/hostname matching and is only an alias for `(?:::f{4,6}:)?(?P<host>[\w\-.^_]+)`
 #
-# You can find some more explainations about how to make a regex here :
-# <https://www.fail2ban.org/wiki/index.php/MANUAL_0_8#Filters>
+# You can find some more explainations about how to make a regex on [the official fail2ban documentation](https://www.fail2ban.org/wiki/index.php/MANUAL_0_8#Filters).
 #
 # To validate your regex you can test with this command:
 #
