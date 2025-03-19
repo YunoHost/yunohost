@@ -1659,12 +1659,8 @@ class NodejsAppResource(AppResource):
 
     def installed_versions(self):
 
-        out = check_output(
-            f"{self.n} ls", env={"N_PREFIX": self.N_INSTALL_DIR}
-        )
-        return [
-            version.split("/")[-1] for version in out.strip().split("\n")
-        ]
+        out = check_output(f"{self.n} ls", env={"N_PREFIX": self.N_INSTALL_DIR})
+        return [version.split("/")[-1] for version in out.strip().split("\n")]
 
     def provision_or_update(self, context: Dict = {}):
 
@@ -1677,9 +1673,17 @@ class NodejsAppResource(AppResource):
         self._run_script(
             "provision_or_update", cmd, env={"N_PREFIX": self.N_INSTALL_DIR}
         )
-        matching_versions = [v for v in self.installed_versions() if v == self.version or v.startswith(self.version + ".")]
-        assert matching_versions, f"Uhoh, no matching version found among {self.installed_versions()} after installing nodejs {self.version} ?"
-        sorted_versions = sorted(matching_versions, key=lambda s: list(map(int, s.split('.'))))
+        matching_versions = [
+            v
+            for v in self.installed_versions()
+            if v == self.version or v.startswith(self.version + ".")
+        ]
+        assert (
+            matching_versions
+        ), f"Uhoh, no matching version found among {self.installed_versions()} after installing nodejs {self.version} ?"
+        sorted_versions = sorted(
+            matching_versions, key=lambda s: list(map(int, s.split(".")))
+        )
         actual_version = sorted_versions[-1]
 
         self.set_setting("nodejs_version", actual_version)
@@ -1757,10 +1761,14 @@ class RubyAppResource(AppResource):
 
     def installed_versions(self):
 
-        return check_output(
-            f"{self.rbenv} versions --bare --skip-aliases | grep -Ev '/'",
-            env={"RBENV_ROOT": self.RBENV_ROOT}
-        ).strip().split("\n")
+        return (
+            check_output(
+                f"{self.rbenv} versions --bare --skip-aliases | grep -Ev '/'",
+                env={"RBENV_ROOT": self.RBENV_ROOT},
+            )
+            .strip()
+            .split("\n")
+        )
 
     def update_rbenv(self):
 
@@ -1773,12 +1781,19 @@ class RubyAppResource(AppResource):
             _ynh_git_clone "https://github.com/momo-lab/xxenv-latest" "{self.RBENV_ROOT}/plugins/xxenv-latest"
             mkdir -p "{self.RBENV_ROOT}/cache"
             mkdir -p "{self.RBENV_ROOT}/shims"
-        """
+        """,
         )
 
     def provision_or_update(self, context: Dict = {}):
 
-        for package in ["gcc", "make", "libjemalloc-dev", "libffi-dev", "libyaml-dev", "zlib1g-dev"]:
+        for package in [
+            "gcc",
+            "make",
+            "libjemalloc-dev",
+            "libffi-dev",
+            "libyaml-dev",
+            "zlib1g-dev",
+        ]:
             if os.system(f'dpkg --list | grep -q "^ii  {package}"') != 0:
                 raise YunohostValidationError(f"{package} is required to install Ruby")
 
@@ -1804,7 +1819,7 @@ class RubyAppResource(AppResource):
                 {self.rbenv} alias {self.app} --remove
             fi
             {self.rbenv} alias {self.app} '{ruby_version}'
-        """
+        """,
         )
         self.garbage_collect_unused_versions()
 
@@ -1825,7 +1840,10 @@ class RubyAppResource(AppResource):
 
         unused_versions = set(self.installed_versions()) - set(used_versions)
         if unused_versions:
-            cmds = [f"{self.rbenv} uninstall --force {version}" for version in unused_versions]
+            cmds = [
+                f"{self.rbenv} uninstall --force {version}"
+                for version in unused_versions
+            ]
             self._run_script("cleanup", "\n".join(cmds))
 
 
@@ -1894,7 +1912,10 @@ class GoAppResource(AppResource):
         self.update_goenv()
         go_version = check_output(
             f"{self.goenv_latest} --print {self.version}",
-            env={"GOENV_ROOT": self.GOENV_ROOT, "PATH": self.GOENV_ROOT + "/bin/:" + os.environ["PATH"]},
+            env={
+                "GOENV_ROOT": self.GOENV_ROOT,
+                "PATH": self.GOENV_ROOT + "/bin/:" + os.environ["PATH"],
+            },
         )
         self.set_setting("go_version", go_version)
         self._run_script(
@@ -1931,7 +1952,10 @@ class GoAppResource(AppResource):
 
         unused_versions = set(installed_versions) - set(used_versions)
         if unused_versions:
-            cmds = [f"{self.goenv} uninstall --force '{version}'" for version in unused_versions]
+            cmds = [
+                f"{self.goenv} uninstall --force '{version}'"
+                for version in unused_versions
+            ]
             self._run_script(
                 "cleanup", "\n".join(cmds), env={"GOENV_ROOT": self.GOENV_ROOT}
             )
@@ -1980,14 +2004,21 @@ class ComposerAppResource(AppResource):
 
         install_dir = self.get_setting("install_dir")
         if not install_dir:
-            raise YunohostError("This app has no install_dir defined ? Packagers: please make sure to have the install_dir resource before composer")
+            raise YunohostError(
+                "This app has no install_dir defined ? Packagers: please make sure to have the install_dir resource before composer"
+            )
 
         if not self.get_setting("php_version"):
-            raise YunohostError("This app has no php_version defined ? Packagers: please make sure to install php dependencies using apt before composer")
+            raise YunohostError(
+                "This app has no php_version defined ? Packagers: please make sure to install php dependencies using apt before composer"
+            )
 
         import requests
+
         composer_r = requests.get(self.composer_url, timeout=30)
-        assert composer_r.status_code == 200, "Uhoh, failed to download {self.composer_url} ? Return code: {composer_r.status_code}"
+        assert (
+            composer_r.status_code == 200
+        ), "Uhoh, failed to download {self.composer_url} ? Return code: {composer_r.status_code}"
 
         with open(f"{install_dir}/composer.phar", "wb") as f:
             f.write(composer_r.content)

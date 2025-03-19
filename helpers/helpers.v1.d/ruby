@@ -220,8 +220,8 @@ ynh_install_ruby() {
     fi
     ynh_print_info --message="Installing Ruby $final_ruby_version"
     RUBY_CONFIGURE_OPTS="--disable-install-doc --with-jemalloc" \
-    MAKE_OPTS="-j2" \
-    rbenv install --skip-existing $final_ruby_version > /dev/null 2>&1
+        MAKE_OPTS="-j2" \
+        rbenv install --skip-existing $final_ruby_version > /dev/null 2>&1
 
     # Store ruby_version into the config of this app
     ynh_app_setting_set --app=$app --key=ruby_version --value=$final_ruby_version

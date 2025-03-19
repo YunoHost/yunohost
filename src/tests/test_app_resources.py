@@ -423,7 +423,11 @@ def test_resource_permissions():
 
 def test_resource_nodejs():
 
-    manager = AppResourceManager("testapp", current={}, wanted={"name": "Test App", "integration": {"helpers_version": "2.1"}})
+    manager = AppResourceManager(
+        "testapp",
+        current={},
+        wanted={"name": "Test App", "integration": {"helpers_version": "2.1"}},
+    )
 
     r = AppResourceClassesByType["nodejs"]
     assert not app_setting("testapp", "nodejs_version")
@@ -460,12 +464,20 @@ def test_resource_nodejs():
 def test_resource_ruby():
 
     os.system("echo '[integration]' >> /etc/yunohost/apps/testapp/manifest.toml")
-    os.system("echo 'helpers_version = \"2.1\"' >> /etc/yunohost/apps/testapp/manifest.toml")
+    os.system(
+        "echo 'helpers_version = \"2.1\"' >> /etc/yunohost/apps/testapp/manifest.toml"
+    )
 
-    manager = AppResourceManager("testapp", current={}, wanted={"name": "Test App", "integration": {"helpers_version": "2.1"}})
+    manager = AppResourceManager(
+        "testapp",
+        current={},
+        wanted={"name": "Test App", "integration": {"helpers_version": "2.1"}},
+    )
 
     r = AppResourceClassesByType["apt"]
-    conf = {"packages": "make, gcc, libjemalloc-dev, libffi-dev, libyaml-dev, zlib1g-dev"}
+    conf = {
+        "packages": "make, gcc, libjemalloc-dev, libffi-dev, libyaml-dev, zlib1g-dev"
+    }
     r(conf, "testapp", manager).provision_or_update()
 
     r = AppResourceClassesByType["ruby"]
@@ -496,8 +508,14 @@ def test_resource_ruby():
     assert "3.3.5" in check_output("ruby --version", env=env)
     with tempfile.TemporaryDirectory(prefix="ynh_") as d:
         # Install a random simple package to validate the path etc
-        check_call("gem install bundler passenger --no-document".split(), cwd=d, env=env)
-        check_call("bundle config set --local without 'development test'".split(), cwd=d, env=env)
+        check_call(
+            "gem install bundler passenger --no-document".split(), cwd=d, env=env
+        )
+        check_call(
+            "bundle config set --local without 'development test'".split(),
+            cwd=d,
+            env=env,
+        )
         # FIXME: the resource should install stuff as non-root probably ?
 
     r({}, "testapp", manager).deprovision()
@@ -509,7 +527,9 @@ def test_resource_ruby():
 def test_resource_go():
 
     os.system("echo '[integration]' >> /etc/yunohost/apps/testapp/manifest.toml")
-    os.system("echo 'helpers_version = \"2.1\"' >> /etc/yunohost/apps/testapp/manifest.toml")
+    os.system(
+        "echo 'helpers_version = \"2.1\"' >> /etc/yunohost/apps/testapp/manifest.toml"
+    )
 
     r = AppResourceClassesByType["go"]
     assert not app_setting("testapp", "go_version")
@@ -528,15 +548,19 @@ def test_resource_go():
         "PATH": f"{go_dir}:{os.environ['PATH']}",
     }
 
-    assert check_output("go version", env=env).startswith(f"go version go{go_version} linux/")
+    assert check_output("go version", env=env).startswith(
+        f"go version go{go_version} linux/"
+    )
 
     with tempfile.TemporaryDirectory(prefix="ynh_") as d:
         with open(f"{d}/helloworld.go", "w") as f:
-            f.write("""
+            f.write(
+                """
                 package main
                 import "fmt"
                 func main() { fmt.Println("hello world") }
-            """)
+            """
+            )
         env["HOME"] = d
         check_call("go build helloworld.go".split(), cwd=d, env=env)
         assert os.path.exists(f"{d}/helloworld")
@@ -550,7 +574,9 @@ def test_resource_go():
 def test_resource_composer():
 
     os.system("echo '[integration]' >> /etc/yunohost/apps/testapp/manifest.toml")
-    os.system("echo 'helpers_version = \"2.1\"' >> /etc/yunohost/apps/testapp/manifest.toml")
+    os.system(
+        "echo 'helpers_version = \"2.1\"' >> /etc/yunohost/apps/testapp/manifest.toml"
+    )
 
     r = AppResourceClassesByType["system_user"]
     r({}, "testapp").provision_or_update()
@@ -560,7 +586,11 @@ def test_resource_composer():
     install_dir = app_setting("testapp", "install_dir")
 
     r = AppResourceClassesByType["apt"]
-    manager = AppResourceManager("testapp", current={}, wanted={"name": "Test App", "integration": {"helpers_version": "2.1"}})
+    manager = AppResourceManager(
+        "testapp",
+        current={},
+        wanted={"name": "Test App", "integration": {"helpers_version": "2.1"}},
+    )
     conf = {"packages": "php8.2-fpm"}
     r(conf, "testapp", manager).provision_or_update()
 
@@ -576,7 +606,7 @@ def test_resource_composer():
 
     r(conf, "testapp")._run_script(
         "test_composer_exec",
-        f"cd {install_dir}; ynh_composer_exec require symfony/polyfill-mbstring 1.31.0"
+        f"cd {install_dir}; ynh_composer_exec require symfony/polyfill-mbstring 1.31.0",
     )
 
     assert os.path.exists(install_dir + "/.composer")

@@ -45,8 +45,7 @@ _ynh_load_ruby_in_path_and_other_tweaks() {
 }
 
 # Auto-load Ruby path tweaks if this app uses the ruby resource in the manifest
-if [ -n "${ruby_version:-}" ] && (cat "$YNH_APP_BASEDIR/manifest.toml" | toml_to_json | jq -q ".resources.ruby" >/dev/null)
-then
+if [ -n "${ruby_version:-}" ] && (cat "$YNH_APP_BASEDIR/manifest.toml" | toml_to_json | jq -q ".resources.ruby" > /dev/null); then
     _ynh_load_ruby_in_path_and_other_tweaks
 fi
 
@@ -79,8 +78,7 @@ ynh_ruby_install() {
     ruby_version=${final_ruby_version:-$ruby_version}
     ynh_app_setting_set --key=ruby_version --value="$ruby_version"
 
-    for PACKAGE in gcc make libjemalloc-dev libffi-dev libyaml-dev zlib1g-dev
-    do
+    for PACKAGE in gcc make libjemalloc-dev libffi-dev libyaml-dev zlib1g-dev; do
         _ynh_apt_package_is_installed "$PACKAGE" || ynh_die "$PACKAGE is required to install Ruby"
     done
 
@@ -129,8 +127,7 @@ _ynh_ruby_cleanup() {
     # Remove no more needed Ruby versions
     local installed_ruby_versions=$(rbenv versions --bare --skip-aliases | grep -Ev '/')
     for installed_ruby_version in $installed_ruby_versions; do
-        if ! grep -qE "^ruby_version: '?$installed_ruby_version'?" /etc/yunohost/apps/*/settings.yml
-        then
+        if ! grep -qE "^ruby_version: '?$installed_ruby_version'?" /etc/yunohost/apps/*/settings.yml; then
             ynh_print_info "Removing Ruby-$installed_ruby_version"
             $RBENV_ROOT/bin/rbenv uninstall --force "$installed_ruby_version"
         fi

@@ -46,11 +46,9 @@ _ynh_load_nodejs_in_path_and_other_tweaks() {
 }
 
 # Auto-load Nodejs path tweaks if this app uses the nodejs resource in the manifest
-if [ -n "${nodejs_version:-}" ] && (cat "$YNH_APP_BASEDIR/manifest.toml" | toml_to_json | jq -q ".resources.nodejs" >/dev/null)
-then
+if [ -n "${nodejs_version:-}" ] && (cat "$YNH_APP_BASEDIR/manifest.toml" | toml_to_json | jq -q ".resources.nodejs" > /dev/null); then
     _ynh_load_nodejs_in_path_and_other_tweaks
 fi
-
 
 # Install a specific version of nodejs, using 'n'
 #
@@ -108,10 +106,8 @@ ynh_nodejs_remove() {
 
     # Garbage-collect unused versions
     local installed_versions="$(N_PREFIX=/opt/node_n "$YNH_HELPERS_DIR/vendor/n/n" ls | awk -F/ '{print $2}')"
-    for version in $installed_versions
-    do
-        if ! grep -qE "^nodejs_version: '?$version'?" /etc/yunohost/apps/*/settings.yml
-        then
+    for version in $installed_versions; do
+        if ! grep -qE "^nodejs_version: '?$version'?" /etc/yunohost/apps/*/settings.yml; then
             "$YNH_HELPERS_DIR/vendor/n/n" rm "$version"
         fi
     done

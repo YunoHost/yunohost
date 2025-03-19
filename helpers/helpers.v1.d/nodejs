@@ -149,10 +149,8 @@ ynh_remove_nodejs() {
 
     # Garbage-collect unused versions
     local installed_versions="$(N_PREFIX=/opt/node_n "$YNH_HELPERS_DIR/vendor/n/n" ls | awk -F/ '{print $2}')"
-    for version in $installed_versions
-    do
-        if ! grep -qr "^nodejs_version: '$nodejs_version'" /etc/yunohost/apps/*/settings.yml
-        then
+    for version in $installed_versions; do
+        if ! grep -qr "^nodejs_version: '$nodejs_version'" /etc/yunohost/apps/*/settings.yml; then
             N_PREFIX=$N_INSTALL_DIR "$YNH_HELPERS_DIR/vendor/n/n" rm $nodejs_version
         fi
     done
