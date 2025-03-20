@@ -225,7 +225,7 @@
     "diagnosis_apps_deprecated_practices": "Instalatutako aplikazio honen bertsioak oraindik darabiltza zaharkitutako pakete-jarraibideak. Eguneratzea hausnartu beharko zenuke.",
     "diagnosis_apps_issue": "Arazo bat dago {app} aplikazioarekin",
     "diagnosis_apps_not_in_app_catalog": "Aplikazio hau ez da YunoHosten aplikazioen katalogokoa. Iraganean egon bazen eta orain ez badago, desinstalatzea litzateke onena, ez baitu eguneraketarik jasoko eta sistemaren integritate eta segurtasuna arriskuan jar lezakeelako.",
-    "diagnosis_apps_outdated_ynh_requirement": "Instalatutako aplikazio honen bertsioak yunohost >= 2.x edo 3.x baino ez du behar, eta horrek eguneratua izan ez dela eta egungo pakete-jardunbideekin bat ez datorrela iradokitzen du. Eguneratzen saiatu beharko zinateke.",
+    "diagnosis_apps_outdated_ynh_requirement": "Instalatutako aplikazio honen bertsioak yunohost >= 2.x, 3.x edo 4.x baino ez du behar, eta horrek eguneratua izan ez dela eta egungo pakete-jardunbideekin bat ez datorrela iradokitzen du. Eguneratzen saiatu beharko zinateke.",
     "diagnosis_description_apps": "Aplikazioak",
     "domain_dns_conf_special_use_tld": "Domeinu hau top-level domain (TLD) erabilera bereziko motakoa da .local edo .test bezala eta ez du DNS ezarpenik behar.",
     "log_user_delete": "Ezabatu '{}' erabiltzailea",
@@ -866,5 +866,6 @@
     "app_config_force_upgrade_help": "Bertsio-berritzea behartzea (bertsio berberera) aplikazioa eta konfigurazioa birsortzeko lagungarri izan daiteke batzuetan",
     "automatic_task": "Ataza automatikoa",
     "noninteractive_task": "Interakziorik gabeko ataza",
-    "yunohost_api": "YunoHosten APIa"
+    "yunohost_api": "YunoHosten APIa",
+    "diagnosis_apps_outdated_packaging_format": "Aplikazio honek zaharkitutako pakete-formatu bat darabil, eta aurki YunoHostekin bateragarri izateari utziko dio. Eguneratzen saiatu beharko zinateke."
 }
