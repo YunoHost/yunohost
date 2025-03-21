@@ -40,7 +40,7 @@ logger = getLogger("yunohost.hook")
 
 def hook_add(app, file):
     """
-    Store hook script to filsystem
+    Store hook script to filesystem
 
     Keyword argument:
         app -- App to link with
