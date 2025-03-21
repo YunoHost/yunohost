@@ -867,5 +867,5 @@
     "automatic_task": "Tâche automatique",
     "noninteractive_task": "Tâche non interactive",
     "yunohost_api": "API YunoHost",
-    "diagnosis_apps_outdated_packaging_format": "Cette application utilise un format de packaging obsolète et ne sera bientôt plus supportée par YunoHost. Vous devriez vraiment envisager de la mettre à jour."
+    "diagnosis_apps_outdated_packaging_format": "Cette application utilise un format de packaging obsolète qui ne sera bientôt plus supportée par YunoHost. Vous devriez vraiment envisager de la mettre à jour."
 }
