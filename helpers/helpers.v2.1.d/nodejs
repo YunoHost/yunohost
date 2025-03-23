@@ -80,8 +80,8 @@ ynh_nodejs_install() {
     fi
 
     # Find the last "real" version for this major version of node.
-    final_nodejs_version=$(find "$N_INSTALL_DIR/n/versions/node/$nodejs_version"* -maxdepth 0 | sort --version-sort | tail --lines=1)
-    final_nodejs_version=$(basename "$real_nodejs_version")
+    final_nodejs_version=$(find "$N_PREFIX/n/versions/node/$nodejs_version"* -maxdepth 0 | sort --version-sort | tail --lines=1)
+    final_nodejs_version=$(basename "$final_nodejs_version")
 
     # Store nodejs_version into the config of this app
     nodejs_version="$final_nodejs_version"
