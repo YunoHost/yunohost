@@ -45,7 +45,7 @@ _ynh_load_ruby_in_path_and_other_tweaks() {
 }
 
 # Auto-load Ruby path tweaks if this app uses the ruby resource in the manifest
-if [ -n "${ruby_version:-}" ] && (cat "$YNH_APP_BASEDIR/manifest.toml" | toml_to_json | jq -q ".resources.ruby" > /dev/null); then
+if [ -n "${ruby_version:-}" ] && (cat "$YNH_APP_BASEDIR/manifest.toml" | toml_to_json | jq ".resources.ruby" > /dev/null); then
     _ynh_load_ruby_in_path_and_other_tweaks
 fi
 
