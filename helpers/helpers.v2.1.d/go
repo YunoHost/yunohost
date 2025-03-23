@@ -45,7 +45,7 @@ _ynh_load_go_in_path_and_other_tweaks() {
 }
 
 # Auto-load Go path tweaks if this app uses the Go resource in the manifest
-if [ -n "${go_version:-}" ] && (cat "$YNH_APP_BASEDIR/manifest.toml" | toml_to_json | jq -q ".resources.go" > /dev/null); then
+if [ -n "${go_version:-}" ] && (cat "$YNH_APP_BASEDIR/manifest.toml" | toml_to_json | jq ".resources.go" > /dev/null); then
     _ynh_load_go_in_path_and_other_tweaks
 fi
 
