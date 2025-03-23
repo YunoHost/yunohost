@@ -1,4 +1,26 @@
-yunohost (12.1.2) testing; urgency=low
+yunohost (12.1.3) testing; urgency=low
+
+  - dev: Add autoreleases from tags github actions ([dc02a1395](http://github.com/YunoHost/yunohost/commit/dc02a1395))
+  - dev: Allow using an alternate actionsmap for development ([#2052](http://github.com/YunoHost/yunohost/pull/2052))
+  - dev: Shellcheck improvements ([#2017](http://github.com/YunoHost/yunohost/pull/2017), [#2056](http://github.com/YunoHost/yunohost/pull/2056))
+  - diagnosis: Complain about apps only requiring yunohost 4.x ([b244d7981](http://github.com/YunoHost/yunohost/commit/b244d7981)), and apps still using packaging v1 ([fa8cce212](http://github.com/YunoHost/yunohost/commit/fa8cce212))
+  - dns: Remove now restriced FDN resolvers, add Mullvad and DNS4all ([#2066](http://github.com/YunoHost/yunohost/pull/2066))
+  - dns: Add DNS server from Aquilenet ([#2068](http://github.com/YunoHost/yunohost/pull/2068))
+  - helpers2.1: Cleanup label parameters ([#2064](http://github.com/YunoHost/yunohost/pull/2064))
+  - helpers2.1/apps: Simplify helpers and implement new resources for nodejs/ruby/go/composer ([#2042](http://github.com/YunoHost/yunohost/pull/2042))
+  - helpers2.1: Make sure to keep composer.phar when using ynh_setup_source, otherwise that defeat the purpose of the composer resource (d1e93e3fb)
+  - firewall: Fix "Both" protocol for firewall allow/disallow ([#2067](http://github.com/YunoHost/yunohost/pull/2067))
+  - domains: Domain actions should trigger a regenconf for opendkim ([535ce3be0](http://github.com/YunoHost/yunohost/commit/535ce3be0))
+  - upnp: Various fixes and improvements ([#2055](http://github.com/YunoHost/yunohost/pull/2055))
+  - documentation: Scripts improvements ([#2061](http://github.com/YunoHost/yunohost/pull/2061), [#2062](http://github.com/YunoHost/yunohost/pull/2062), [#2045](http://github.com/YunoHost/yunohost/pull/2045), 29bbc1fd0, 3bf811193, 9b67ed825)
+  - documentation: Prepare migration to Docusaurus (([dc2b22541](http://github.com/YunoHost/yunohost/commit/dc2b22541)), ([77f7135f4](http://github.com/YunoHost/yunohost/commit/77f7135f4)))
+  - i18n: Translations updated for Basque, Catalan, Chinese (Simplified), Esperanto, French, Galician, German, Indonesian, Italian, Japanese, Occitan, Persian, Spanish, Ukrainian
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, Anonymous, Christophe Henry, Félix Piédallu, Josué Tille, Kay0u, Kayou, OniriCorpe, Quiwy, Salamandar, alexAubin, ljf (zamentur), ppr, sachaz, Éric Gaspar)
+
+ -- tituspijean <tituspijean@yunohost.org>  Sun, 23 Mar 2025 09:32:14 +0100
+ 
+ yunohost (12.1.2) testing; urgency=low
 
   - storage: Fix YAML indent for storage.disk.list.arguments in actionsmap.yml ([#2058](http://github.com/YunoHost/yunohost/pull/2058))
   - yunohost app shell: fix env loading by remove 'ignore_errors=yes' from systemctl show output in some cases ([#2057](http://github.com/YunoHost/yunohost/pull/2057))
