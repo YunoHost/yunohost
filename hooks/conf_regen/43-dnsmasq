@@ -67,9 +67,7 @@ do_pre_regen() {
         [[ ! $domain =~ \.local$ ]] || continue
         export domain
         mail_in="$(yunohost domain config get "${domain}" feature.mail.mail_in)"
-        mail_out="$(yunohost domain config get "${domain}" feature.mail.mail_out)"
         export mail_in
-        export mail_out
         ynh_render_template "domain.tpl" "${dnsmasq_dir}/${domain}"
     done
 
