@@ -18,6 +18,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+readonly YNH_SOURCES_CACHE_DIR="/var/tmp/yunohost/download"
+
 # Download, check integrity, uncompress and patch the source from app.src
 #
 # usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id] [--keep="file1 file2"] [--full_replace]
@@ -160,8 +162,8 @@ ynh_setup_source() {
     local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${source_id}"
 
     # Gotta use this trick with 'dirname' because source_id may contain slashes x_x
-    mkdir -p $(dirname /var/cache/yunohost/download/${YNH_APP_ID}/${source_id})
-    src_filename="/var/cache/yunohost/download/${YNH_APP_ID}/${source_id}"
+    mkdir -p "$(dirname "$YNH_SOURCES_CACHE_DIR/${YNH_APP_ID}/${source_id}")"
+    src_filename="$YNH_SOURCES_CACHE_DIR/${YNH_APP_ID}/${source_id}"
 
     if [ "$src_format" = "docker" ]; then
         src_platform="${src_platform:-"linux/$YNH_ARCH"}"
@@ -199,10 +201,9 @@ ynh_setup_source() {
 
     # Keep files to be backup/restored at the end of the helper
     # Assuming $dest_dir already exists
-    rm -rf /var/cache/yunohost/files_to_keep_during_setup_source/
+    local keep_dir="$(mktemp --directory --tmpdir="/var/tmp/" ynh_files_to_keep_during_setup_source.$YNH_APP_ID.XXXXX)"
     if [ -n "$keep" ] && [ -e "$dest_dir" ]; then
-        local keep_dir=/var/cache/yunohost/files_to_keep_during_setup_source/${YNH_APP_ID}
-        mkdir -p $keep_dir
+        mkdir -p "$keep_dir"
         local stuff_to_keep
         for stuff_to_keep in $keep; do
             if [ -e "$dest_dir/$stuff_to_keep" ]; then
@@ -279,13 +280,12 @@ ynh_setup_source() {
 
     # Add supplementary files
     if test -e "$YNH_APP_BASEDIR/sources/extra_files/${source_id}"; then
-        cp --archive $YNH_APP_BASEDIR/sources/extra_files/$source_id/. "$dest_dir"
+        cp --archive "$YNH_APP_BASEDIR/sources/extra_files/$source_id/." "$dest_dir"
     fi
 
     # Keep files to be backup/restored at the end of the helper
     # Assuming $dest_dir already exists
     if [ -n "$keep" ]; then
-        local keep_dir=/var/cache/yunohost/files_to_keep_during_setup_source/${YNH_APP_ID}
         local stuff_to_keep
         for stuff_to_keep in $keep; do
             if [ -e "$keep_dir/$stuff_to_keep" ]; then
@@ -300,5 +300,5 @@ ynh_setup_source() {
             fi
         done
     fi
-    rm -rf /var/cache/yunohost/files_to_keep_during_setup_source/
+    rm -rf "$keep_dir"
 }

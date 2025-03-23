@@ -92,7 +92,7 @@ else:
     logger = getLogger("yunohost.app")
 
 APPS_SETTING_PATH = "/etc/yunohost/apps/"
-APP_TMP_WORKDIRS = "/var/cache/yunohost/app_tmp_work_dirs"
+APP_TMP_WORKDIRS = "/var/tmp/yunohost/"
 PORTAL_SETTINGS_DIR = "/etc/yunohost/portal"
 
 re_app_instance_name = re.compile(
@@ -1098,6 +1098,80 @@ def _confirm_app_install(app: str, force: bool = False) -> None:
         _ask_confirmation("confirm_app_install_" + quality, kind="soft")
 
 
+def _run_app_script_or_snippet(app, action, script, env={}, workdir=None, as_app=False, raise_exception_if_failure=False):
+
+    from yunohost.hook import hook_exec_with_script_debug_if_failure
+
+    if not workdir:
+        workdir = _make_tmp_workdir_for_app(app=app)
+        chmod(workdir, 0o700, recursive=True)
+        chown(workdir, app, recursive=True)
+        delete_workdir_at_the_end = True
+    else:
+        delete_workdir_at_the_end = False
+
+    env_ = _make_environment_for_app_script(
+        app,
+        workdir=workdir,
+        action=action,
+        force_include_app_settings=True,
+    )
+    env_.update(env)
+
+    # FIXME ? : this is an ugly hack :(
+    active_operation_loggers = [
+        o for o in OperationLogger._instances if o.ended_at is None
+    ]
+    if active_operation_loggers:
+        operation_logger = active_operation_loggers[-1]
+    else:
+        operation_logger = OperationLogger(
+            "app_script_or_snippet", [("app", app)], env=env_
+        )
+        operation_logger.start()
+
+    with tempfile.NamedTemporaryFile(prefix="ynh_") as script_path:
+        script_path = script_path.name
+        script_content = f"""
+source /usr/share/yunohost/helpers
+ynh_abort_if_errors
+
+{script}
+"""
+        write_to_file(script_path, script_content)
+        if as_app:
+            chmod(script_path, 0o500)
+            chown(script_path, app)
+
+        (
+            call_failed,
+            failure_message_with_debug_instructions,
+        ) = hook_exec_with_script_debug_if_failure(
+            script_path,
+            user=app if as_app else "root",
+            env=env_,
+            operation_logger=operation_logger,
+            error_message_if_script_failed="An error occured inside the script",
+            error_message_if_failed=lambda e: f"{action} failed for {app} : {e}",
+        )
+    
+        if delete_workdir_at_the_end:
+            rm(workdir, recursive=True, force=True)
+
+        if call_failed:
+            if raise_exception_if_failure:
+                raise YunohostError(
+                    failure_message_with_debug_instructions, raw_msg=True
+                )
+        else:
+            # FIXME: currently in app install code, we have
+            # more sophisticated code checking if this broke something on the system etc.
+            # dunno if we want to do this here or manage it elsewhere
+            pass
+
+        return call_failed, failure_message_with_debug_instructions
+
+
 @is_unit_operation()
 def app_install(
     operation_logger: "OperationLogger",
@@ -1315,18 +1389,35 @@ def app_install(
     # Execute the app install script
     install_failed = True
     try:
-        (
-            install_failed,
-            failure_message_with_debug_instructions,
-        ) = hook_exec_with_script_debug_if_failure(
-            os.path.join(extracted_app_folder, "scripts/install"),
-            env=env_dict,
-            operation_logger=operation_logger,
-            error_message_if_script_failed=m18n.n("app_install_script_failed"),
-            error_message_if_failed=lambda e: m18n.n(
-                "app_install_failed", app=app_id, error=e
-            ),
-        )
+        if packaging_format >= 3:
+            # FIXME: i18n
+            logger.info(f"Builing {app_instance_name}")
+            (
+                install_failed,
+                failure_message_with_debug_instructions
+            ) = _run_app_script_or_snippet(
+                app_instance_name,
+                "build",
+                """
+                source $YNH_APP_BASEDIR/scripts.sh
+                build
+                """,
+                env=env_dict,
+                as_app=True
+            )
+        else:
+            (
+                install_failed,
+                failure_message_with_debug_instructions,
+            ) = hook_exec_with_script_debug_if_failure(
+                os.path.join(extracted_app_folder, "scripts/install"),
+                env=env_dict,
+                operation_logger=operation_logger,
+                error_message_if_script_failed=m18n.n("app_install_script_failed"),
+                error_message_if_failed=lambda e: m18n.n(
+                    "app_install_failed", app=app_id, error=e
+                ),
+            )
     finally:
         # If success so far, validate that app didn't break important stuff
         if not install_failed:
@@ -3138,7 +3229,7 @@ def _check_manifest_requirements(
     logger.debug(m18n.n("app_requirements_checking", app=app_id))
 
     # Packaging format
-    if manifest["packaging_format"] not in [1, 2]:
+    if manifest["packaging_format"] not in [1, 2, 3]:
         raise YunohostValidationError("app_packaging_format_not_supported")
 
     # Yunohost version
