@@ -12,11 +12,11 @@ do_pre_regen() {
     # Add sury
     mkdir -p ${pending_dir}/etc/apt/sources.list.d/
 
-    # FIXME: sury doesn't support trixie yet
+    # This switch case seems useless but allows overriding distros for unreleased debian versions
     case "$(lsb_release --codename --short)" in
         bullseye) sury_distro=bullseye ;;
         bookworm) sury_distro=bookworm ;;
-        trixie) sury_distro=bookworm ;;
+        trixie) sury_distro=trixie ;;
     esac
 
     echo "deb [signed-by=/etc/apt/trusted.gpg.d/extra_php_version.gpg] https://packages.sury.org/php/ $sury_distro main" > "${pending_dir}/etc/apt/sources.list.d/extra_php_version.list"
