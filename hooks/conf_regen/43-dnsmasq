@@ -21,6 +21,28 @@
 set -e
 . /usr/share/yunohost/helpers
 
+do_init_regen() {
+
+    cd /usr/share/yunohost/conf/dnsmasq
+
+    cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf > /etc/resolv.dnsmasq.conf
+    chown root /etc/resolv.dnsmasq.conf
+    chmod 644 /etc/resolv.dnsmasq.conf
+
+    cp plain/etcdefault /etc/default/dnsmasq
+
+    export wireless_interfaces=""
+    ynh_render_template "dnsmasq.conf.tpl" "${pending_dir}/etc/dnsmasq.conf"
+
+    # Remove / disable services likely to conflict with dnsmasq
+    for SERVICE in systemd-resolved bind9; do
+        systemctl is-enabled $SERVICE &> /dev/null && systemctl disable $SERVICE 2> /dev/null
+        systemctl is-active $SERVICE &> /dev/null && systemctl stop $SERVICE
+    done
+
+    systemctl restart dnsmasq
+}
+
 do_pre_regen() {
     pending_dir=$1
 

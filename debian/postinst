@@ -36,6 +36,7 @@ do_configure() {
             bash /usr/share/yunohost/hooks/conf_regen/02-ssl init
             bash /usr/share/yunohost/hooks/conf_regen/09-nslcd init
             bash /usr/share/yunohost/hooks/conf_regen/46-nsswitch init
+            bash /usr/share/yunohost/hooks/conf_regen/43-dnsmasq init
             bash /usr/share/yunohost/hooks/conf_regen/06-slapd init
             bash /usr/share/yunohost/hooks/conf_regen/15-nginx init
             bash /usr/share/yunohost/hooks/conf_regen/37-mdns init
