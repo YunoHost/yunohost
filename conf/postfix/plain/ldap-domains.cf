@@ -1,5 +1,0 @@
-server_host = localhost
-server_port = 389
-search_base = ou=domains,dc=yunohost,dc=org
-query_filter = (&(objectClass=mailDomain)(virtualdomain=%s))
-result_attribute = virtualdomain

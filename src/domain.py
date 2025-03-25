@@ -919,7 +919,9 @@ def _get_DomainConfigPanel():
 
             stuff_to_regen_conf = set()
             if "mail_in" in next_settings or "mail_out" in next_settings:
-                stuff_to_regen_conf.update({"nginx", "postfix", "dovecot", "opendkim"})
+                stuff_to_regen_conf.update(
+                    {"nginx", "postfix", "dovecot", "opendkim", "dnsmasq"}
+                )
 
             if stuff_to_regen_conf:
                 regen_conf(names=list(stuff_to_regen_conf))

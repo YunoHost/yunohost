@@ -84,6 +84,14 @@ do_pre_regen() {
     ynh_render_template "main.cf" "${postfix_dir}/main.cf"
     ynh_render_template "sni" "${postfix_dir}/sni"
 
+    # Activate mailbox only on domains with mail_in features
+    # If mail_in is disabled for a domain, this allows to send
+    # mails on external mailbox using this domain
+    # See: https://forum.yunohost.org/t/how-to-keep-your-mailbox-outside-yunohost/4860
+    echo "# This file is regenerated automatically" > "${postfix_dir}/virtual-mailbox-domains"
+    echo "# Please DO NOT edit manually ... changes will be overwritten!" >> "${postfix_dir}/virtual-mailbox-domains"
+    yunohost domain list --features mail_in --output-as json | jq -r ".domains[]" >> "${postfix_dir}/virtual-mailbox-domains"
+
     cat postsrsd \
         | sed "s/{{ main_domain }}/${main_domain}/g" \
         | sed "s/{{ domain_list }}/${domain_list}/g" \
