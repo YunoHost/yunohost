@@ -63,11 +63,17 @@ do_pre_regen() {
     export interfaces
     export ipv4
     export ipv6
+    domains_with_inbound_email_enabled=$(yunohost domain list --features mail_in --output-as json | jq -r ".domains[]")
     for domain in $YNH_DOMAINS; do
         [[ ! $domain =~ \.local$ ]] || continue
         export domain
-        mail_in="$(yunohost domain config get "${domain}" feature.mail.mail_in)"
-        export mail_in
+
+        if grep -q "^$domain$" <<< "$domains_with_mail_in"
+        then
+            export mail_in="True"
+        else
+            export mail_in="False"
+        fi
         ynh_render_template "domain.tpl" "${dnsmasq_dir}/${domain}"
     done
 
