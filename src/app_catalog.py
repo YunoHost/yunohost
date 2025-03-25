@@ -41,6 +41,7 @@ APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
 DEFAULT_APPS_CATALOG_LIST: list[dict[Literal["id", "url"], str]] = [
     {"id": "default", "url": APPS_CATALOG_DEFAULT_URL}
 ]
+SECURITY_FORMAT_SUPPORTED_VERSION = 1
 
 
 class AppCatalog(TypedDict):
@@ -156,6 +157,10 @@ def _actual_apps_catalog_api_url(base_url: str) -> str:
     return f"{base_url}/v{APPS_CATALOG_API_VERSION}/apps.json"
 
 
+def _actual_apps_catalog_security_url(base_url: str) -> str:
+    return f"{base_url}/v{APPS_CATALOG_API_VERSION}/security.json"
+
+
 def _update_apps_catalog() -> None:
     """
     Fetches the json for each apps_catalog and update the cache
@@ -211,6 +216,26 @@ def _update_apps_catalog() -> None:
                 f"Unable to write cache data for {apps_catalog_id} apps_catalog : {e}",
                 raw_msg=True,
             )
+
+        # Fetch and save the security json
+        actual_security_url = _actual_apps_catalog_api_url(apps_catalog["url"])
+        security_cache_file = f"{APPS_CATALOG_CACHE}/{apps_catalog_id}.security.json"
+        if os.path.exists(security_cache_file):
+            os.remove(security_cache_file)
+        try:
+            security_content = download_json(actual_security_url)
+        except Exception as e:
+            logger.warning(f"Failed to download security issue list from {actual_security_url}: {e}")
+        else:
+            if security_content["version"] < SECURITY_FORMAT_SUPPORTED_VERSION:
+                logger.warning(f"Format from {actual_security_url} is too recent, you should probably upgrade YunoHost.")
+            elif security_content["version"] > SECURITY_FORMAT_SUPPORTED_VERSION:
+                logger.warning(f"Format from {actual_security_url} is too old, this catalog should probably be upgraded to the recent standards?")
+            else:
+                try:
+                    write_to_json(cache_file, security_content)
+                except Exception as e:
+                    logger.warning(f"Unable to write security issue list for {apps_catalog_id} : {e}")
 
         # Download missing app logos
         logos_to_download = []
@@ -316,3 +341,44 @@ def _load_apps_catalog() -> AppCatalog:
         merged_catalog["antifeatures"] += apps_catalog_content.get("antifeatures", [])
 
     return merged_catalog
+
+
+class SecurityIssueInfos(TypedDict):
+
+    title: str
+    more_infos: str # typically an URL
+    fixed_in_version: str  # eg "1.2.3~ynh1" or "2.2.27-3+deb9u5"
+    level: Literal["warning", "error"]
+
+
+def _load_security_issues_list() -> dict[Literal["apps", "system"], dict[str, list[SecurityIssueInfos]]]:
+
+    apps_issues: dict[str, list[SecurityIssueInfos]] = {}
+    system_issues: dict[str, list[SecurityIssueInfos]] = {}
+
+    for apps_catalog_id in [L["id"] for L in _read_apps_catalog_list()]:
+        cache_file = f"{APPS_CATALOG_CACHE}/{apps_catalog_id}.security.json"
+        if not os.path.exists(cache_file):
+            continue
+
+        try:
+            content = read_json(cache_file) or {}
+            assert isinstance(content.get('apps'), dict)
+            assert isinstance(content.get('system'), dict)
+        except Exception as e:
+            raise YunohostError(
+                f"Unable to read cache for security issue list {cache_file} : {e}",
+                raw_msg=True,
+            )
+
+        for app, entries in content["apps"].items():
+            if app not in apps_issues:
+                apps_issues[app] = []
+            apps_issues[app] += entries
+
+        for package, entries in content["system"].items():
+            if package not in system_issues:
+                system_issues[package] = []
+            system_issues[package] += entries
+
+    return {"apps": apps_issues, "system": system_issues}

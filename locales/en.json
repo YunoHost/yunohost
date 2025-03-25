@@ -208,6 +208,8 @@
     "diagnosis_apps_not_in_app_catalog": "This application is not in YunoHost's application catalog. If it was in the past and was removed, you should consider uninstalling this app as it won't receive upgrades and may compromise the integrity and security of your system.",
     "diagnosis_apps_outdated_packaging_format": "This app uses a deprecated packaging format and will soon be unsupported by YunoHost. You should really consider upgrading it.",
     "diagnosis_apps_outdated_ynh_requirement": "This app's installed version only requires yunohost >= 2.x, 3.x or 4.x, which tends to indicate that it's not up to date with recommended packaging practices and helpers. You should really consider upgrading it.",
+    "diagnosis_apps_security_issue_warning": "Application {app} is currently in version '{installed_version}', which is vulnerable to a moderate security issue: {title}. It is recommended to upgrade to '{fixed_in_version}'. More infos: {more_infos}",
+    "diagnosis_apps_security_issue_error": "Application {app} is currently in version '{installed_version}', which is vulnerable to a MAJOR security issue: {title}. It is recommended to upgrade AS SOON AS POSSIBLE to version '{fixed_in_version}'. More infos: {more_infos}",
     "diagnosis_backports_in_sources_list": "It looks like apt (the package manager) is configured to use the backports repository. Unless you really know what you are doing, we strongly discourage installing packages from backports, because it's likely to create unstabilities or conflicts on your system.",
     "diagnosis_basesystem_hardware": "Server hardware architecture is {virt} {arch}",
     "diagnosis_basesystem_hardware_model": "Server model is {model}",
