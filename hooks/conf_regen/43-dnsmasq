@@ -68,8 +68,7 @@ do_pre_regen() {
         [[ ! $domain =~ \.local$ ]] || continue
         export domain
 
-        if grep -q "^$domain$" <<< "$domains_with_mail_in"
-        then
+        if grep -q "^$domain$" <<< "$domains_with_mail_in"; then
             export mail_in="True"
         else
             export mail_in="False"
