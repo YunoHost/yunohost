@@ -41,12 +41,22 @@ APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
 DEFAULT_APPS_CATALOG_LIST: list[dict[Literal["id", "url"], str]] = [
     {"id": "default", "url": APPS_CATALOG_DEFAULT_URL}
 ]
+SECURITY_INDEX_SUPPORTED_VERSION = 1
+
+
+class SecurityIssueInfos(TypedDict):
+    date: str
+    title: str
+    more_infos: str | list[str]  # typically an URL, for example a forum thread or github issue
+    fixed_in_version: str | dict[Literal["bookworm", "trixie"], str]  # eg "1.2.3~ynh1" or "2.2.27-3+deb9u5"
+    level: Literal["warning", "error"]
 
 
 class AppCatalog(TypedDict):
     apps: dict[str, dict[str, Any]]
     categories: NotRequired[list[dict[str, Any]]]
     antifeatures: NotRequired[list[dict[str, Any]]]
+    security: NotRequired[dict[Literal['apps', 'system'], dict[str, list[SecurityIssueInfos]]]]
     from_api_version: NotRequired[int]
 
 
@@ -155,6 +165,10 @@ def _read_apps_catalog_list() -> list[dict[Literal["id", "url"], str]]:
 
 def _actual_apps_catalog_api_url(base_url: str) -> str:
     return f"{base_url}/v{APPS_CATALOG_API_VERSION}/apps.json"
+
+
+def _actual_apps_catalog_security_url(base_url: str) -> str:
+    return f"{base_url}/v{APPS_CATALOG_API_VERSION}/security.json"
 
 
 def _update_apps_catalog() -> None:
@@ -345,3 +359,49 @@ def _load_apps_catalog() -> AppCatalog:
     _apps_catalog_cache_timestamp = timestamp
 
     return merged_catalog
+
+
+def _load_security_issues_list() -> dict[Literal["apps", "system"], dict[str, list[SecurityIssueInfos]]]:
+
+    apps_issues: dict[str, list[SecurityIssueInfos]] = {}
+    system_issues: dict[str, list[SecurityIssueInfos]] = {}
+
+    for apps_catalog_id in [L["id"] for L in _read_apps_catalog_list()]:
+        cache_file = Path(APPS_CATALOG_CACHE) / (apps_catalog_id + ".json")
+        if not cache_file.exists():
+            continue
+        content: AppCatalog
+        try:
+            content = read_json(str(cache_file)) or {}  # type: ignore[assignment]
+            assert content is not None, f"Uhoh, read json from {cache_file} is None!?"
+        except Exception as e:
+            raise YunohostError(
+                f"Unable to read cache for security issue list {cache_file} : {e}",
+                raw_msg=True,
+            )
+
+        security_index: dict[Literal['apps', 'system'], dict[str, list[SecurityIssueInfos]]] | None = content.get("security")
+        security_index_version: int | None = security_index.get("version") if security_index else None  # type: ignore[index,call-overload]
+        # Even if not mentioned in the typing, security_index has a "version" key
+        if security_index_version != SECURITY_INDEX_SUPPORTED_VERSION:
+            if security_index_version is None:
+                logger.warning(f"Catalog '{apps_catalog_id}' is missing the security vulnerability index. Please contact the people maintaing this catalog.")
+            elif security_index_version > SECURITY_INDEX_SUPPORTED_VERSION:
+                logger.warning(f"In catalog {apps_catalog_id}, the security index info is too recent. You should probably upgrade YunoHost.")
+            elif security_index_version < SECURITY_INDEX_SUPPORTED_VERSION:
+                logger.warning(f"Security index format from catalog '{apps_catalog_id}' is too old, please contact the people maintaining it to upgrade it to the recent standards?")
+            continue
+
+        assert security_index is not None
+
+        for app, entries in security_index["apps"].items():
+            if app not in apps_issues:
+                apps_issues[app] = []
+            apps_issues[app] += entries
+
+        for package, entries in security_index["system"].items():
+            if package not in system_issues:
+                system_issues[package] = []
+            system_issues[package] += entries
+
+    return {"apps": apps_issues, "system": system_issues}

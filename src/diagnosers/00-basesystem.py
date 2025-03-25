@@ -28,7 +28,8 @@ from typing import Any
 from ..diagnosis import Diagnoser
 from ..utils.file_utils import read_file, read_json, write_to_json
 from ..utils.process import check_output
-from ..utils.system import system_arch, system_virt, ynh_packages_version
+from ..utils.system import debian_version, system_arch, system_virt, ynh_packages_version, dpkg_list_installed_packages, dpkg_package_version, dpkg_compare_version
+from ..app_catalog import _load_security_issues_list, SecurityIssueInfos
 
 logger = logging.getLogger("yunohost.diagnosis")
 
@@ -79,10 +80,9 @@ class MyDiagnoser(Diagnoser):  # type: ignore
         )
 
         # Debian release
-        debian_version = read_file("/etc/debian_version").strip()
         yield dict(
             meta={"test": "host"},
-            data={"debian_version": debian_version},
+            data={"debian_version": debian_version()},
             status="INFO",
             summary="diagnosis_basesystem_host",
         )
@@ -201,6 +201,8 @@ class MyDiagnoser(Diagnoser):  # type: ignore
                 data={"rfkill_wifi_error": rfkill_wifi},
             )
 
+        yield from self.security_issues()
+
     def bad_sury_packages(self) -> Generator[tuple[str, str], None, None]:
         packages_to_check = ["openssl", "libssl1.1", "libssl-dev"]
         for package in packages_to_check:
@@ -317,3 +319,40 @@ class MyDiagnoser(Diagnoser):  # type: ignore
             return check_output(cmd)  # type: ignore
         else:
             return ""
+
+    def security_issues(self):
+
+        installed_packages = dpkg_list_installed_packages()
+        security_issues_list_per_pkg: dict[str, list[SecurityIssueInfos]] = _load_security_issues_list()["system"]
+        for package, issues in security_issues_list_per_pkg.items():
+            if package not in installed_packages:
+                continue
+
+            current_version = dpkg_package_version(package)
+            for issue in issues:
+                raw_fixed_in_version = issue["fixed_in_version"]
+                if isinstance(raw_fixed_in_version, dict):
+                    if debian_version() not in raw_fixed_in_version:
+                        logger.warning(f"Not able to check versions in which security issue is fixed for package '{package}' (no version specified for Debian {debian_version()})")
+                        continue
+                    fixed_in_version = raw_fixed_in_version[debian_version()]
+                else:
+                    fixed_in_version = raw_fixed_in_version
+
+                if dpkg_compare_version(current_version, fixed_in_version) >= 0:
+                    # installed version is >= to the version which fixes the issue, therefore there's no issue to report
+                    continue
+
+                level = "error" if issue["level"] == "danger" else "warning"
+                if isinstance(issue['more_infos'], list):
+                    more_infos_list = ", ".join(issue['more_infos'])
+                else:
+                    more_infos_list = issue['more_infos']
+                yield dict(
+                    meta={"package": package},
+                    status=level.upper(),
+                    # i18n: diagnosis_package_security_issue_warning
+                    # i18n: diagnosis_package_security_issue_error
+                    summary=f"diagnosis_package_security_issue_{level}",
+                    data={**issue, "more_infos_list": more_infos_list, "current_version": current_version},
+                )
