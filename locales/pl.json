@@ -259,7 +259,7 @@
     "domain_config_auth_token": "Token uwierzytelniający",
     "global_settings_setting_dns_exposure_help": "Uwaga: Ma to wpływ tylko na zalecaną konfigurację DNS i kontrole diagnostyczne. Nie ma to wpływu na konfigurację systemu.",
     "global_settings_setting_security_experimental_enabled_help": "Uruchom eksperymentalne funkcje bezpieczeństwa (nie włączaj, jeśli nie wiesz co robisz!)",
-    "global_settings_setting_smtp_allow_ipv6_help": "Zezwól na wykorzystywanie IPv7 do odbierania i wysyłania maili",
+    "global_settings_setting_smtp_allow_ipv6_help": "Zezwól na wykorzystywanie IPv6 do odbierania i wysyłania maili",
     "global_settings_setting_ssh_password_authentication": "Logowanie hasłem",
     "diagnosis_backports_in_sources_list": "Wygląda na to że apt (menedżer pakietów) został skonfigurowany tak, aby wykorzystywać repozytorium backported. Nie zalecamy wykorzystywania repozytorium backported, ponieważ może powodować problemy ze stabilnością i/lub konflikty z konfiguracją. No chyba, że wiesz co robisz.",
     "ask_dyndns_recovery_password_explain": "Proszę wybrać hasło odzyskiwania dla swojej domeny DynDNS, na wypadek gdybyś musiał go później zresetować.",
