@@ -2359,7 +2359,7 @@ ynh_app_config_run $1
             )
 
             next_settings = {
-                k: v for k, v in form.dict().items() if previous_settings.get(k) != v
+                k: v for k, v in form.model_dump().items() if previous_settings.get(k) != v
             }
 
             perm_changes: dict[str, dict[str, Any]] = {}
