@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,12 +17,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-import re
-import os
+
 import logging
+import os
+import re
 
 from moulinette import Moulinette
 from moulinette.utils.process import check_output
+
 from yunohost.utils.error import YunohostError
 
 logger = logging.getLogger("yunohost.utils.packages")
@@ -125,7 +128,12 @@ def binary_to_human(n: int) -> str:
     for s in reversed(symbols):
         if n >= prefix[s]:
             value = float(n) / prefix[s]
-            return "%.1f%s" % (value, s)
+            # Display one decimal, though only if value is lower than 10
+            # because it's prettier to say something is "42 KB" rather than "42.1 KB"
+            if value < 10:
+                return "%.1f%s" % (value, s)
+            else:
+                return "%.0f%s" % (value, s)
     return "%s" % n
 
 

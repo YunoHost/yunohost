@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,6 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+
 import glob
 import os
 import re
@@ -23,11 +25,11 @@ from collections import OrderedDict
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union, cast
 
-from pydantic import BaseModel, ConfigDict, field_validator
-
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
 from moulinette.utils.filesystem import mkdir, read_toml, read_yaml, write_to_yaml
+from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
+
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.form import (
     AnyOption,
@@ -51,8 +53,8 @@ if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
     from pydantic_core.core_schema import CoreSchema
 
-    from yunohost.utils.form import FormModel, Hooks
     from yunohost.log import OperationLogger
+    from yunohost.utils.form import FormModel, Hooks
 
 if TYPE_CHECKING:
     from moulinette.utils.log import MoulinetteLogger
@@ -100,6 +102,7 @@ class SectionModel(ContainerModel, OptionsModel):
     FIXME i'm not sure we have this in code.
 
     #### Examples
+
     ```toml
     [main]
 
@@ -115,17 +118,19 @@ class SectionModel(ContainerModel, OptionsModel):
     ```
 
     #### Properties
+
     - `name` (optional): `Translation` or `str`, displayed as the section's title if any
     - `help`: `Translation` or `str`, text to display before the first option
     - `services` (optional): `list` of services names to `reload-or-restart` when any option's value contained in the section changes
-        - `"__APP__` will refer to the app instance name
+      - `"__APP__` will refer to the app instance name
     - `optional`: `bool` (default: `true`), set the default `optional` prop of all Options in the section
     - `visible`: `bool` or `JSExpression` (default: `true`), allow to conditionally display a section depending on user's answers to previous questions.
-        - Be careful that the `visible` property should only refer to **previous** options's value. Hence, it should not make sense to have a `visible` property on the very first section.
+      - Be careful that the `visible` property should only refer to **previous** options's value. Hence, it should not make sense to have a `visible` property on the very first section.
     """
 
     visible: bool | str = True
     optional: bool = True
+    collapsed: bool = False
     is_action_section: bool = False
     bind: str | None = None
 
@@ -138,6 +143,7 @@ class SectionModel(ContainerModel, OptionsModel):
         help: Translation | None = None,
         visible: bool | str = True,
         optional: bool = True,
+        collapsed: bool = False,
         bind: str | None = None,
         **kwargs,
     ) -> None:
@@ -152,6 +158,7 @@ class SectionModel(ContainerModel, OptionsModel):
             services=services,
             help=help,
             visible=visible,
+            collapsed=collapsed,
             bind=bind,
             options=options,
             is_action_section=is_action_section,
@@ -189,6 +196,7 @@ class PanelModel(ContainerModel):
     Panels are, basically, sections grouped together. Panels are `dict`s defined inside a ConfigPanel file and require a unique id (in the below example, the id is `main`). Keep in mind that this id will be used in CLI to refer to the panel, so choose something short and meaningfull.
 
     #### Examples
+
     ```toml
     [main]
     name.en = "Main configuration"
@@ -199,11 +207,13 @@ class PanelModel(ContainerModel):
         [main.customization]
         # …refer to Sections doc
     ```
+
     #### Properties
+
     - `name`: `Translation` or `str`, displayed as the panel title
     - `help` (optional): `Translation` or `str`, text to display before the first section
     - `services` (optional): `list` of services names to `reload-or-restart` when any option's value contained in the panel changes
-        - `"__APP__` will refer to the app instance name
+      - `"__APP__` will refer to the app instance name
     - `actions`: FIXME not sure what this does
     """
 
@@ -270,7 +280,7 @@ class ConfigPanelModel(BaseModel):
 
     - `version`: `float` (default: `1.0`), version that the config panel supports in terms of features.
     - `i18n` (optional): `str`, an i18n property that let you internationalize options text.
-        - However this feature is only available in core configuration panel (like `yunohost domain config`), prefer the use `Translation` in `name`, `help`, etc.
+      - However this feature is only available in core configuration panel (like `yunohost domain config`), prefer the use `Translation` in `name`, `help`, etc.
 
     """
 
@@ -820,7 +830,13 @@ class ConfigPanel:
         self, prevalidate: bool = False
     ) -> tuple[ConfigPanelModel, "FormModel"]:
         raw_config = self._get_partial_raw_config()
-        config = ConfigPanelModel(**raw_config)
+        try:
+            config = ConfigPanelModel(**raw_config)
+        except ValidationError as e:
+            raise YunohostError(
+                "Error while parsing config panel: " + e.errors()[0]["msg"],
+                raw_msg=True,
+            )
         config, raw_settings = self._get_partial_raw_settings_and_mutate_config(config)
         config.translate()
         Settings = build_form(config.options)

@@ -1,0 +1,93 @@
+version = "1.0"
+i18n = "app_config"
+
+[_core]
+
+    # This is duplicated for each permission and named "permission_main", "permission_admin" etc.
+    # Keys are also made unique by prefixing them with "permission_main" / "permission_admin",
+    # for example the label key is "permission_{permid}_label"
+    [_core.permissions]
+
+        [_core.permissions.url]
+        type = "url"
+        visible = false
+
+        [_core.permissions.location]
+        type = "markdown"
+        # Core automatically add a "visible=false" if url is empty (but since the keys are dynamic, can't do it here)
+
+        [_core.permissions.label]
+        type = "string"
+
+        [_core.permissions.description]
+        type = "string"
+
+        [_core.permissions.show_tile]
+        type = "boolean"
+        # Core automatically add a "visible=false" if url is empty (but since the keys are dynamic, can't do it here)
+
+        [_core.permissions.logo]
+        type = "file"
+        accept = ["image/png"]
+
+        [_core.permissions.allowed]
+        type = "tags"
+        # Core automatically add a "readonly" if protected is true
+
+    [_core.operations]
+
+        [_core.operations.upgradable]
+        type = "string"
+        # can be 'yes', 'no', 'bad_quality' or 'url_required
+        visible = false
+        readonly = true
+
+        [_core.operations.upgradable_msg]
+        type = "alert"
+        # upgrade = no : success ?
+            # but advertise testing ?
+        # upgrade = yes : info ?
+        # upgrade = url_required : hmmmmmwarning ? "must be upgraded from CLI"
+        # upgrade = bad quality : hmmmmwarning ? "upgrade disabled"
+
+        [_core.operations.upgrade]
+        type = "button"
+        icon = "arrow-up"
+        style = "success"
+        visible = "upgradable == 'yes'"
+
+        [_core.operations.force_upgrade]
+        type = "button"
+        icon = "refresh"
+        style = "info"
+        visible = "upgradable == 'no'"
+
+        [_core.operations.change_url_supported]
+        type = "string"
+        # can be 'yes', 'no' or 'not_relevant'
+        visible = false
+
+        [_core.operations.change_url_unsupported_msg]
+        type = "alert"
+        visible = "change_url_supported == 'no'"
+
+        [_core.operations.change_url_domain]
+        type = "domain"
+        visible = "change_url_supported == 'yes'"
+
+        [_core.operations.change_url_path]
+        type = "path"
+        visible = "change_url_supported == 'yes'"
+
+        [_core.operations.change_url]
+        type = "button"
+        icon = "truck"
+        style = "info"
+        visible = "change_url_supported == 'yes'"
+
+        # FIXME: "make default" ? meh
+
+        [_core.operations.uninstall]
+        type = "button"
+        icon = "trash"
+        style = "danger"

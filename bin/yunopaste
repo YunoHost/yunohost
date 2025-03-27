@@ -1,34 +1,55 @@
 #!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
-import sys
-import requests
 import json
+import sys
+
+import requests
 
 SERVER_URL = "https://paste.yunohost.org"
 TIMEOUT = 3
 
-def create_snippet(data):
+
+def create_snippet(data: str) -> str:
     try:
-        url = SERVER_URL + "/documents"
-        response = requests.post(url, data=data.encode('utf-8'), timeout=TIMEOUT)
+        url = f"{SERVER_URL}/documents"
+        response = requests.post(url, data=data.encode("utf-8"), timeout=TIMEOUT)
         response.raise_for_status()
-        dockey = json.loads(response.text)['key']
-        return SERVER_URL + "/raw/" + dockey
+        dockey = json.loads(response.text)["key"]
+        return f"{SERVER_URL}/raw/{dockey}"
     except requests.exceptions.RequestException as e:
-        print("\033[31mError: {}\033[0m".format(e))
+        print(f"\033[31mError: {e}\033[0m", file=sys.stderr)
         sys.exit(1)
 
 
-def main():
+def main() -> None:
     output = sys.stdin.read()
 
     if not output:
-        print("\033[31mError: No input received from stdin.\033[0m")
+        print("\033[31mError: No input received from stdin.\033[0m", file=sys.stderr)
         sys.exit(1)
 
     url = create_snippet(output)
 
     print("\033[32mURL: {}\033[0m".format(url))
+
 
 if __name__ == "__main__":
     main()

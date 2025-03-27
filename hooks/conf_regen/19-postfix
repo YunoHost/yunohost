@@ -1,8 +1,29 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
+# Exit hook on subcommand error or unset variable
 set -e
 
-. /usr/share/yunohost/helpers
+# Source YNH helpers
+# shellcheck source=../../helpers/helpers
+source /usr/share/yunohost/helpers
 
 do_pre_regen() {
     pending_dir=$1
@@ -37,31 +58,39 @@ do_pre_regen() {
         relay_password="$(jq -r '.smtp_relay_password' <<< "$YNH_SETTINGS")"
 
         # Avoid to display "Relay account paswword" to other users
-        touch ${postfix_dir}/sasl_passwd
-        chmod 750 ${postfix_dir}/sasl_passwd
+        touch "${postfix_dir}/sasl_passwd"
+        chmod 750 "${postfix_dir}/sasl_passwd"
         # Avoid "postmap: warning: removing zero-length database file"
-        chown postfix ${pending_dir}/etc/postfix
-        chown postfix ${pending_dir}/etc/postfix/sasl_passwd
+        chown postfix "${pending_dir}/etc/postfix"
+        chown postfix "${pending_dir}/etc/postfix/sasl_passwd"
 
-        cat <<< "[${relay_host}]:${relay_port} ${relay_user}:${relay_password}" > ${postfix_dir}/sasl_passwd
+        cat <<< "[${relay_host}]:${relay_port} ${relay_user}:${relay_password}" > "${postfix_dir}/sasl_passwd"
     fi
 
     # Use this postfix server as a backup MX
     export backup_mx_domains="$(yunohost settings get 'email.smtp.smtp_backup_mx_domains' | sed "s/,/ /g")"
     export backup_mx_emails="$(yunohost settings get 'email.smtp.smtp_backup_mx_emails_whitelisted' | sed "s/,/ /g")"
-    rm -f ${postfix_dir}/relay_recipients
-    touch ${postfix_dir}/relay_recipients
+    rm -f "${postfix_dir}/relay_recipients"
+    touch "${postfix_dir}/relay_recipients"
     if [ -n "${backup_mx_domains}" ] && [ -n "${backup_mx_emails}" ]; then
         for mail in ${backup_mx_emails}; do
-            echo "$mail OK" >> ${postfix_dir}/relay_recipients
+            echo "$mail OK" >> "${postfix_dir}/relay_recipients"
         done
-        postmap ${postfix_dir}/relay_recipients
+        postmap "${postfix_dir}/relay_recipients"
     fi
 
     export main_domain
     export domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]" | tr '\n' ' ')"
     ynh_render_template "main.cf" "${postfix_dir}/main.cf"
     ynh_render_template "sni" "${postfix_dir}/sni"
+
+    # Activate mailbox only on domains with mail_in features
+    # If mail_in is disabled for a domain, this allows to send
+    # mails on external mailbox using this domain
+    # See: https://forum.yunohost.org/t/how-to-keep-your-mailbox-outside-yunohost/4860
+    echo "# This file is regenerated automatically" > "${postfix_dir}/virtual-mailbox-domains"
+    echo "# Please DO NOT edit manually ... changes will be overwritten!" >> "${postfix_dir}/virtual-mailbox-domains"
+    yunohost domain list --features mail_in --output-as json | jq -r ".domains[]" >> "${postfix_dir}/virtual-mailbox-domains"
 
     cat postsrsd \
         | sed "s/{{ main_domain }}/${main_domain}/g" \
@@ -105,4 +134,4 @@ do_post_regen() {
 
 }
 
-do_$1_regen ${@:2}
+"do_$1_regen" "$(echo "${*:2}" | xargs)"

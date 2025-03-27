@@ -102,7 +102,7 @@
     "log_tools_reboot": "إعادة تشغيل الخادم",
     "service_description_dnsmasq": "مُكلَّف بتحليل أسماء النطاقات (DNS)",
     "service_description_mysql": "يقوم بتخزين بيانات التطبيقات (قواعد بيانات SQL)",
-    "service_description_yunohost-firewall": "يُدير فتح وإغلاق منافذ الاتصال إلى الخدمات",
+    "service_description_nftables": "يُدير فتح وإغلاق منافذ الاتصال إلى الخدمات",
     "aborting": "إلغاء.",
     "app_start_install": "جارٍ تثبيت {app}…",
     "app_start_remove": "جارٍ حذف {app}…",

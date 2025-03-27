@@ -1,27 +1,47 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
 import base64
-import time
-import requests
-from pathlib import Path
 import os
+import time
+from pathlib import Path
 
-from .conftest import message, raiseYunohostError, get_test_apps_dir
+import requests
 
-from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
-from yunohost.user import user_create, user_list, user_delete, user_update
-from yunohost.authenticators.ldap_ynhuser import (
-    Authenticator,
-    SESSION_FOLDER,
-    short_hash,
-)
 from yunohost.app import (
+    app_change_url,
     app_install,
     app_remove,
     app_setting,
     app_ssowatconf,
-    app_change_url,
 )
+from yunohost.authenticators.ldap_ynhuser import (
+    SESSION_FOLDER,
+    Authenticator,
+    short_hash,
+)
+from yunohost.domain import _get_maindomain, domain_add, domain_list, domain_remove
 from yunohost.permission import user_permission_list, user_permission_update
+from yunohost.user import user_create, user_delete, user_list, user_update
 
+from .conftest import get_test_apps_dir, message, raiseYunohostError
 
 # Get main domain
 maindomain = open("/etc/yunohost/current_host").read().strip()
@@ -69,9 +89,9 @@ def setup_module(module):
 
 def teardown_module(module):
     if "alice" in user_list()["users"]:
-        user_delete("alice")
+        user_delete("alice", force=True)
     if "bob" in user_list()["users"]:
-        user_delete("bob")
+        user_delete("bob", force=True)
 
     app_remove("hellopy")
 

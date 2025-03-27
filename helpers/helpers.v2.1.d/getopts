@@ -1,4 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 # Internal helper design to allow helpers to use getopts to manage their arguments
 #
@@ -115,7 +133,7 @@ ynh_handle_getopts_args() {
                 # if there's a '=' at the end of the long option name, this option takes values
                 if [ "${args_array[$parameter]: -1}" != "=" ]; then
                     # 'eval ${option_var}' will use the content of 'option_var'
-                    eval ${option_var}=1
+                    eval "${option_var}"=1
                 else
                     # Read all other arguments to find multiple value for this option.
                     # Load args in a array
@@ -136,7 +154,7 @@ ynh_handle_getopts_args() {
                     fi
 
                     # Declare the content of option_var as a variable.
-                    eval ${option_var}=""
+                    eval "${option_var}"=""
                     # Then read the array value per value
                     local i
                     for i in $(seq 0 $((${#all_args[@]} - 1))); do
@@ -153,7 +171,7 @@ ynh_handle_getopts_args() {
                                 # Each value will be separated by ';'
                                 if [ -n "${!option_var}" ]; then
                                     # If there's already another value for this option, add a ; before adding the new value
-                                    eval ${option_var}+="\;"
+                                    eval "${option_var}"+="\;"
                                 fi
 
                                 # Remove the \ that escape - at beginning of values.
@@ -166,7 +184,7 @@ ynh_handle_getopts_args() {
                                 # declare -g ${option_var} will create a local variable (despite -g !) and will not be available for the helper itself.
                                 # So... Stop fucking arguing each time that eval is evil... Go find an other working solution if you can find one!
 
-                                eval ${option_var}+='"${all_args[$i]}"'
+                                eval "${option_var}"+='"${all_args[$i]}"'
                             fi
                             shift_value=$((shift_value + 1))
                         fi
@@ -175,7 +193,7 @@ ynh_handle_getopts_args() {
             fi
 
             # Shift the parameter and its argument(s)
-            shift $shift_value
+            shift "$shift_value"
         done
     }
 

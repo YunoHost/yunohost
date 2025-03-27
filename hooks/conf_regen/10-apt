@@ -1,6 +1,25 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
-set -e
+# Exit hook on subcommand error or unset variable
+set -Eeuo pipefail
 
 readonly YNH_DEFAULT_PHP_VERSION=8.2
 
@@ -10,7 +29,7 @@ do_pre_regen() {
     mkdir --parents "${pending_dir}/etc/apt/preferences.d"
 
     # Add sury
-    mkdir -p ${pending_dir}/etc/apt/sources.list.d/
+    mkdir -p "$pending_dir/etc/apt/sources.list.d/"
 
     # This switch case seems useless but allows overriding distros for unreleased debian versions
     case "$(lsb_release --codename --short)" in
@@ -81,11 +100,9 @@ Pin-Priority: -1
 }
 
 do_post_regen() {
-    regen_conf_files=$1
-
     # Purge expired keys (such as sury 95BD4743)
-    EXPIRED_KEYS="$(LC_ALL='en_US.UTF-8' apt-key list 2> /dev/null | grep -A1 'expired:' | grep -v 'expired\|^-' | sed 's/\s//g')"
-    for KEY in $EXPIRED_KEYS; do apt-key del $KEY 2> /dev/null; done
+    EXPIRED_KEYS="$(LC_ALL='en_US.UTF-8' apt-key list 2> /dev/null | grep -A1 'expired:' | grep -v 'expired\|^-' | sed 's/\s//g' || true)"
+    for KEY in $EXPIRED_KEYS; do apt-key del "$KEY" 2> /dev/null; done
 
     # Add sury key
     # We do this only at the post regen and if the key doesn't already exists, because we don't want the regenconf to fuck everything up if the regenconf runs while the network is down
@@ -104,4 +121,4 @@ do_post_regen() {
     fi
 }
 
-do_$1_regen ${@:2}
+"do_$1_regen" "$(echo "${*:2}" | xargs)"

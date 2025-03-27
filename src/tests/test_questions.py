@@ -1,35 +1,53 @@
-import inspect
-import sys
-import pytest
-import os
-import tempfile
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
+import inspect
+import os
+import sys
+import tempfile
 from contextlib import contextmanager
-from mock import patch
 from io import StringIO
 from typing import Any, Literal, Sequence, TypedDict, Union
 
+import pytest
 from _pytest.mark.structures import ParameterSet
-
+from mock import patch
 from moulinette import Moulinette
+
 from yunohost import app, domain, user
+from yunohost.utils import form
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.form import (
-    OPTIONS,
     FORBIDDEN_PASSWORD_CHARS,
+    OPTIONS,
     READONLY_TYPES,
-    ask_questions_and_parse_answers,
     BaseChoicesOption,
     BaseInputOption,
     BaseReadonlyOption,
-    DomainOption,
-    WebPathOption,
     BooleanOption,
+    DomainOption,
     FileOption,
+    WebPathOption,
+    ask_questions_and_parse_answers,
     evaluate_simple_js_expression,
 )
-from yunohost.utils import form
-from yunohost.utils.error import YunohostError, YunohostValidationError
-
 
 """
 Argument default format:

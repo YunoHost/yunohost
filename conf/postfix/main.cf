@@ -99,7 +99,7 @@ inet_interfaces = all
 message_size_limit = 35914708
 
 # Virtual Domains Control
-virtual_mailbox_domains = ldap:/etc/postfix/ldap-domains.cf
+virtual_mailbox_domains = /etc/postfix/virtual-mailbox-domains
 virtual_mailbox_maps = ldap:/etc/postfix/ldap-accounts.cf,hash:/etc/postfix/app_senders_login_maps
 virtual_mailbox_base =
 virtual_alias_maps = ldap:/etc/postfix/ldap-aliases.cf,ldap:/etc/postfix/ldap-groups.cf

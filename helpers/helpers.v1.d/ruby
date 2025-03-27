@@ -1,4 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 rbenv_install_dir="/opt/rbenv"
 ruby_version_path="$rbenv_install_dir/versions"
@@ -120,7 +138,6 @@ ynh_install_ruby() {
         if git remote -v 2> /dev/null | grep "https://github.com/rbenv/rbenv.git"; then
             ynh_print_info --message="Updating rbenv..."
             git pull -q --tags origin master
-            ynh_ruby_try_bash_extension
         else
             ynh_print_info --message="Reinstalling rbenv..."
             cd ..
@@ -130,7 +147,6 @@ ynh_install_ruby() {
             git init -q
             git remote add -f -t master origin https://github.com/rbenv/rbenv.git > /dev/null 2>&1
             git checkout -q -b master origin/master
-            ynh_ruby_try_bash_extension
             rbenv=$rbenv_install_dir/bin/rbenv
         fi
         popd
@@ -140,7 +156,6 @@ ynh_install_ruby() {
         git init -q
         git remote add -f -t master origin https://github.com/rbenv/rbenv.git > /dev/null 2>&1
         git checkout -q -b master origin/master
-        ynh_ruby_try_bash_extension
         rbenv=$rbenv_install_dir/bin/rbenv
         popd
     fi
@@ -204,7 +219,9 @@ ynh_install_ruby() {
         final_ruby_version=$ruby_version
     fi
     ynh_print_info --message="Installing Ruby $final_ruby_version"
-    RUBY_CONFIGURE_OPTS="--disable-install-doc --with-jemalloc" MAKE_OPTS="-j2" rbenv install --skip-existing $final_ruby_version > /dev/null 2>&1
+    RUBY_CONFIGURE_OPTS="--disable-install-doc --with-jemalloc" \
+        MAKE_OPTS="-j2" \
+        rbenv install --skip-existing $final_ruby_version > /dev/null 2>&1
 
     # Store ruby_version into the config of this app
     ynh_app_setting_set --app=$app --key=ruby_version --value=$final_ruby_version
@@ -288,13 +305,5 @@ ynh_cleanup_ruby() {
         ynh_print_info --message="Removing rbenv"
         ynh_secure_remove --file="$rbenv_install_dir"
         ynh_secure_remove --file="/etc/profile.d/rbenv.sh"
-    fi
-}
-
-ynh_ruby_try_bash_extension() {
-    if [ -x src/configure ]; then
-        src/configure && make -C src || {
-            ynh_print_info --message="Optional bash extension failed to build, but things will still work normally."
-        }
     fi
 }

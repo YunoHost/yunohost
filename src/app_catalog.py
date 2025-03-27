@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,22 +17,19 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+
+import hashlib
 import os
 import re
-import hashlib
 from logging import getLogger
+from typing import TypedDict, Any, NotRequired, Literal
 
 from moulinette import m18n
+from moulinette.utils.filesystem import mkdir, read_json, read_yaml, write_to_json
 from moulinette.utils.network import download_json
-from moulinette.utils.filesystem import (
-    read_json,
-    read_yaml,
-    write_to_json,
-    mkdir,
-)
 
-from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError
+from yunohost.utils.i18n import _value_for_locale
 
 logger = getLogger("yunohost.app_catalog")
 
@@ -40,10 +38,20 @@ APPS_CATALOG_LOGOS = "/usr/share/yunohost/applogos"
 APPS_CATALOG_CONF = "/etc/yunohost/apps_catalog.yml"
 APPS_CATALOG_API_VERSION = 3
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
-DEFAULT_APPS_CATALOG_LIST = [{"id": "default", "url": APPS_CATALOG_DEFAULT_URL}]
+DEFAULT_APPS_CATALOG_LIST: list[dict[Literal["id", "url"], str]] = [
+    {"id": "default", "url": APPS_CATALOG_DEFAULT_URL}
+]
 
 
-def app_catalog(full=False, with_categories=False, with_antifeatures=False):
+class AppCatalog(TypedDict):
+    apps: dict[str, dict[str, Any]]
+    categories: NotRequired[list[dict[str, Any]]]
+    antifeatures: NotRequired[list[dict[str, Any]]]
+
+
+def app_catalog(
+    full: bool = False, with_categories: bool = False, with_antifeatures: bool = False
+) -> AppCatalog:
     """
     Return a dict of apps available to installation from Yunohost's app catalog
     """
@@ -68,7 +76,7 @@ def app_catalog(full=False, with_categories=False, with_antifeatures=False):
                 "level": infos["level"],
             }
 
-    _catalog = {"apps": catalog["apps"]}
+    _catalog: AppCatalog = {"apps": catalog["apps"]}
 
     if with_categories:
         for category in catalog["categories"]:
@@ -101,7 +109,7 @@ def app_catalog(full=False, with_categories=False, with_antifeatures=False):
     return _catalog
 
 
-def app_search(string):
+def app_search(string: str) -> dict[Literal["apps"], dict]:
     """
     Return a dict of apps whose description or name match the search string
     """
@@ -110,17 +118,17 @@ def app_search(string):
     catalog_of_apps = app_catalog()
 
     # Selecting apps according to a match in app name or description
-    matching_apps = {"apps": {}}
+    matching_apps = {}
     for app in catalog_of_apps["apps"].items():
         if re.search(string, app[0], flags=re.IGNORECASE) or re.search(
             string, app[1]["description"], flags=re.IGNORECASE
         ):
-            matching_apps["apps"][app[0]] = app[1]
+            matching_apps[app[0]] = app[1]
 
-    return matching_apps
+    return {"apps": matching_apps}
 
 
-def _read_apps_catalog_list():
+def _read_apps_catalog_list() -> list[dict[Literal["id", "url"], str]]:
     """
     Read the json corresponding to the list of apps catalogs
     """
@@ -144,11 +152,11 @@ def _read_apps_catalog_list():
         )
 
 
-def _actual_apps_catalog_api_url(base_url):
+def _actual_apps_catalog_api_url(base_url: str) -> str:
     return f"{base_url}/v{APPS_CATALOG_API_VERSION}/apps.json"
 
 
-def _update_apps_catalog():
+def _update_apps_catalog() -> None:
     """
     Fetches the json for each apps_catalog and update the cache
 
@@ -217,8 +225,9 @@ def _update_apps_catalog():
                 f"(Will fetch {len(logos_to_download)} logos, this may take a couple minutes)"
             )
 
-        import requests
         from multiprocessing.pool import ThreadPool
+
+        import requests
 
         def fetch_logo(logo_hash):
             try:
@@ -244,16 +253,16 @@ def _update_apps_catalog():
             # Is this even needed to iterate on the results ?
             pass
 
-    logger.success(m18n.n("apps_catalog_update_success"))
+    logger.success(m18n.n("apps_catalog_update_success"))  # type: ignore
 
 
-def _load_apps_catalog():
+def _load_apps_catalog() -> AppCatalog:
     """
     Read all the apps catalog cache files and build a single dict (merged_catalog)
     corresponding to all known apps and categories
     """
 
-    merged_catalog = {"apps": {}, "categories": [], "antifeatures": []}
+    merged_catalog: AppCatalog = {"apps": {}, "categories": [], "antifeatures": []}
 
     for apps_catalog_id in [L["id"] for L in _read_apps_catalog_list()]:
         # Let's load the json from cache for this catalog

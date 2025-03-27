@@ -1,4 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 # Execute a mongo command
 #
@@ -90,10 +108,10 @@ ynh_mongo_create_user() {
     # ===========================================
 
     # Create the user and set the user as admin of the db
-    ynh_mongo_exec --database="$db_name" --command='db.createUser( { user: "'${db_user}'", pwd: "'${db_pwd}'", roles: [ { role: "readWrite", db: "'${db_name}'" } ] } );'
+    ynh_mongo_exec --database="$db_name" --command='db.createUser( { user: "'"$db_user"'", pwd: "'"$db_pwd"'", roles: [ { role: "readWrite", db: "'"$db_name"'" } ] } );'
 
     # Add clustermonitoring rights
-    ynh_mongo_exec --database="$db_name" --command='db.grantRolesToUser("'${db_user}'",[{ role: "clusterMonitor", db: "admin" }]);'
+    ynh_mongo_exec --database="$db_name" --command='db.grantRolesToUser("'"$db_user"'",[{ role: "clusterMonitor", db: "admin" }]);'
 }
 
 # Check if a mongo database exists
@@ -110,7 +128,7 @@ ynh_mongo_database_exists() {
     ynh_handle_getopts_args "$@"
     # ===========================================
 
-    if [ $(ynh_mongo_exec --command='db.getMongo().getDBNames().indexOf("'${database}'")') -lt 0 ]; then
+    if [ "$(ynh_mongo_exec --command='db.getMongo().getDBNames().indexOf("'"$database"'")')" -lt 0 ]; then
         return 1
     else
         return 0
@@ -152,7 +170,7 @@ ynh_mongo_drop_user() {
     ynh_handle_getopts_args "$@"
     # ===========================================
 
-    ynh_mongo_exec --database="$db_name" --command='db.dropUser("'$db_user'", {w: "majority", wtimeout: 5000})'
+    ynh_mongo_exec --database="$db_name" --command='db.dropUser("'"$db_user"'", {w: "majority", wtimeout: 5000})'
 }
 
 # Create a database, an user and its password. Then store the password in the app's config
@@ -183,7 +201,7 @@ ynh_mongo_setup_db() {
     ynh_mongo_create_user --db_user="$db_user" --db_pwd="$db_pwd" --db_name="$db_name"
 
     # Store the password in the app's config
-    ynh_app_setting_set --key=db_pwd --value=$db_pwd
+    ynh_app_setting_set --key=db_pwd --value="$db_pwd"
 }
 
 # Remove a database if it exists, and the associated user
@@ -201,14 +219,14 @@ ynh_mongo_remove_db() {
     ynh_handle_getopts_args "$@"
     # ===========================================
 
-    if ynh_mongo_database_exists --database=$db_name; then # Check if the database exists
-        ynh_mongo_drop_db --database=$db_name              # Remove the database
+    if ynh_mongo_database_exists --database="$db_name"; then # Check if the database exists
+        ynh_mongo_drop_db --database="$db_name"              # Remove the database
     else
         ynh_print_warn "Database $db_name not found"
     fi
 
     # Remove mongo user if it exists
-    ynh_mongo_drop_user --db_user=$db_user --db_name=$db_name
+    ynh_mongo_drop_user --db_user="$db_user" --db_name="$db_name"
 }
 
 # Install MongoDB and integrate MongoDB service in YunoHost
@@ -248,7 +266,7 @@ ynh_install_mongo() {
     yunohost service add $mongodb_servicename --description="MongoDB daemon" --log="/var/log/mongodb/$mongodb_servicename.log"
 
     # Store mongo_version into the config of this app
-    ynh_app_setting_set --key=mongo_version --value=$mongo_version
+    ynh_app_setting_set --key=mongo_version --value="$mongo_version"
 }
 
 # Remove MongoDB

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,6 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+
 import ast
 import datetime
 import operator as op
@@ -28,8 +30,6 @@ from enum import Enum
 from logging import getLogger
 from typing import (
     TYPE_CHECKING,
-    cast,
-    overload,
     Annotated,
     Any,
     Callable,
@@ -38,8 +38,13 @@ from typing import (
     Literal,
     Mapping,
     Type,
+    cast,
+    overload,
 )
 
+from moulinette import Moulinette, m18n
+from moulinette.interfaces.cli import colorize
+from moulinette.utils.filesystem import read_yaml, write_to_file
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -53,9 +58,6 @@ from pydantic.networks import EmailStr, HttpUrl, Url
 from pydantic.types import constr
 from pydantic_extra_types.color import Color
 
-from moulinette import Moulinette, m18n
-from moulinette.interfaces.cli import colorize
-from moulinette.utils.filesystem import read_yaml, write_to_file
 from yunohost.log import OperationLogger
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.i18n import _value_for_locale
@@ -324,7 +326,7 @@ class BaseOption(BaseModel):
     Options are fields declaration that renders as form items, button, alert or text in the web-admin and printed or prompted in CLI.
     They are used in app manifests to declare the before installation form and in config panels.
 
-    [Have a look at the app config panel doc](/packaging_apps_config_panels) for details about Panels and Sections.
+    [Have a look at the app config panel doc](/packaging_config_panels) for details about Panels and Sections.
 
     ! IMPORTANT: as for Panels and Sections you have to choose an id, but this one should be unique in all this document, even if the question is in an other panel.
 
@@ -349,28 +351,28 @@ class BaseOption(BaseModel):
 
     - `type`: the actual type of the option, such as 'markdown', 'password', 'number', 'email', ...
     - `ask`: `Translation` (default to the option's `id` if not defined):
-        - text to display as the option's label for inputs or text to display for readonly options
-        - in config panels, questions are displayed on the left side and therefore have not much space to be rendered. Therefore, it is better to use a short question, and use the `help` property to provide additional details if necessary.
+      - text to display as the option's label for inputs or text to display for readonly options
+      - in config panels, questions are displayed on the left side and therefore have not much space to be rendered. Therefore, it is better to use a short question, and use the `help` property to provide additional details if necessary.
     - `visible` (optional): `bool` or `JSExpression` (default: `true`)
-        - define if the option is diplayed/asked
-        - if `false` and used alongside `readonly = true`, you get a context only value that can still be used in `JSExpression`s
+      - define if the option is diplayed/asked
+      - if `false` and used alongside `readonly = true`, you get a context only value that can still be used in `JSExpression`s
     - `readonly` (optional): `bool` (default: `false`, forced to `true` for readonly types):
-        - If `true` for input types: forbid mutation of its value
+      - If `true` for input types: forbid mutation of its value
     - `bind` (optional): `Binding`, config panels only! A powerful feature that let you configure how and where the setting will be read, validated and written
-        - if not specified, the value will be read/written in the app `settings.yml`
-        - if `"null"`:
-            - the value will not be stored at all (can still be used in context evaluations)
-            - if in `scripts/config` there's a function named:
-                - `get__my_option_id`: the value will be gathered from this custom getter
-                - `set__my_option_id`: the value will be passed to this custom setter where you can do whatever you want with the value
-                - `validate__my_option_id`: the value will be passed to this custom validator before any custom setter
-        - if `bind` is a file path:
-            - if the path starts with `:`, the value be saved as its id's variable/property counterpart
-                - this only works for first level variables/properties and simple types (no array)
-            - else the value will be stored as the whole content of the file
-            - you can use `__FINALPATH__` or `__INSTALL_DIR__` in your path to point to dynamic install paths
-                - FIXME are other global variables accessible?
-        - [refer to `bind` doc for explaination and examples](#read-and-write-values-the)
+      - if not specified, the value will be read/written in the app `settings.yml`
+      - if `"null"`:
+        - the value will not be stored at all (can still be used in context evaluations)
+        - if in `scripts/config` there's a function named:
+          - `get__my_option_id`: the value will be gathered from this custom getter
+          - `set__my_option_id`: the value will be passed to this custom setter where you can do whatever you want with the value
+          - `validate__my_option_id`: the value will be passed to this custom validator before any custom setter
+      - if `bind` is a file path:
+        - if the path starts with `:`, the value be saved as its id's variable/property counterpart
+          - this only works for first level variables/properties and simple types (no array)
+        - else the value will be stored as the whole content of the file
+        - you can use `__FINALPATH__` or `__INSTALL_DIR__` in your path to point to dynamic install paths
+          - FIXME are other global variables accessible?
+      - [refer to `bind` doc for explaination and examples](#read-and-write-values-the)
     """
 
     type: OptionType
@@ -477,6 +479,7 @@ class MarkdownOption(BaseReadonlyOption):
     Markdown is currently only rendered in the web-admin
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "display_text"
@@ -508,12 +511,13 @@ class AlertOption(BaseReadonlyOption):
     style = "warning"
     icon = "warning"
     ```
+
     #### Properties
 
     - [common properties](#common-properties)
     - `style`: any of `"success|info|warning|danger"` (default: `"info"`)
     - `icon` (optional): any icon name from [Fork Awesome](https://forkaweso.me/Fork-Awesome/icons/)
-        - Currently only displayed in the web-admin
+      - Currently only displayed in the web-admin
     """
 
     type: Literal[OptionType.alert] = OptionType.alert
@@ -563,12 +567,12 @@ class ButtonOption(BaseReadonlyOption):
     #### Properties
 
     - [common properties](#common-properties)
-        - `bind`: forced to `"null"`
+      - `bind`: forced to `"null"`
     - `style`: any of `"success|info|warning|danger"` (default: `"success"`)
     - `enabled`: `JSExpression` or `bool` (default: `true`)
-        - when used with `JSExpression` you can enable/disable the button depending on context
+      - when used with `JSExpression` you can enable/disable the button depending on context
     - `icon` (optional): any icon name from [Fork Awesome](https://forkaweso.me/Fork-Awesome/icons/)
-        - Currently only displayed in the web-admin
+      - Currently only displayed in the web-admin
     """
 
     type: Literal[OptionType.button] = OptionType.button
@@ -614,7 +618,7 @@ class BaseInputOption(BaseOption):
     - `optional`: `bool` (default: `false`, but `true` in config panels)
     - `redact`: `bool` (default: `false`), to redact the value in the logs when the value contain private information
     - `default`: depends on `type`, the default value to assign to the option
-        - in case of readonly values, you can use this `default` to assign a value (or return a dynamic `default` from a custom getter)
+      - in case of readonly values, you can use this `default` to assign a value (or return a dynamic `default` from a custom getter)
     - `help` (optional): `Translation`, to display a short help message in cli and web-admin
     - `example` (optional): `str`, to display an example value in web-admin only
     - `placeholder` (optional): `str`, shown in the web-admin fields only
@@ -781,6 +785,7 @@ class StringOption(BaseStringOption):
     Ask for a simple string.
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "string"
@@ -790,8 +795,9 @@ class StringOption(BaseStringOption):
     ```
 
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `default`: `""`
+      - `default`: `""`
     - `pattern` (optional): `Pattern`, a regex to match the value against
     """
 
@@ -804,14 +810,17 @@ class TextOption(BaseStringOption):
     Renders as a `textarea` in the web-admin and by opening a text editor on the CLI.
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "text"
     default = "multi\\nline\\ncontent"
     ```
+
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `default`: `""`
+      - `default`: `""`
     - `pattern` (optional): `Pattern`, a regex to match the value against
     """
 
@@ -827,15 +836,18 @@ class PasswordOption(BaseInputOption):
     The password is tested as a regular user password (at least 8 chars)
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "password"
     ```
+
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `default`: forced to `""`
-        - `redact`: forced to `true`
-        - `example`: forbidden
+      - `default`: forced to `""`
+      - `redact`: forced to `true`
+      - `example`: forbidden
     """
 
     type: Literal[OptionType.password] = OptionType.password
@@ -884,14 +896,17 @@ class ColorOption(BaseInputOption):
     Renders as color picker in the web-admin and as a prompt that accept named color like `yellow` in CLI.
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "color"
     default = "#ff0"
     ```
+
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `default`: `""`
+      - `default`: `""`
     """
 
     type: Literal[OptionType.color] = OptionType.color
@@ -930,6 +945,7 @@ class NumberOption(BaseInputOption):
     Ask for a number (an integer).
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "number"
@@ -938,9 +954,11 @@ class NumberOption(BaseInputOption):
     max = 200
     step = 5
     ```
+
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `type`: `number` or `range` (input or slider in the web-admin)
+      - `type`: `number` or `range` (input or slider in the web-admin)
     - `min` (optional): minimal int value inclusive
     - `max` (optional): maximal int value inclusive
     - `step` (optional): currently only used in the webadmin as the `<input/>` step jump
@@ -1005,6 +1023,7 @@ class BooleanOption(BaseInputOption):
     Renders as a switch in the web-admin and a yes/no prompt in CLI.
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "boolean"
@@ -1012,13 +1031,15 @@ class BooleanOption(BaseInputOption):
     yes = "agree"
     no = "disagree"
     ```
+
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `default`: `0`
+      - `default`: `0`
     - `yes` (optional): (default: `1`) define as what the thruthy value should output
-        - can be `true`, `True`, `"yes"`, etc.
+      - can be `true`, `True`, `"yes"`, etc.
     - `no` (optional): (default: `0`) define as what the thruthy value should output
-        - can be `0`, `"false"`, `"n"`, etc.
+      - can be `0`, `"false"`, `"n"`, etc.
     """
 
     type: Literal[OptionType.boolean] = OptionType.boolean
@@ -1133,14 +1154,17 @@ class DateOption(BaseInputOption):
     Can also take a timestamp as value that will output as an ISO date string.
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "date"
     default = "2070-12-31"
     ```
+
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `default`: `""`
+      - `default`: `""`
     """
 
     type: Literal[OptionType.date] = OptionType.date
@@ -1176,14 +1200,17 @@ class TimeOption(BaseInputOption):
     Renders as a date-picker in the web-admin and a regular prompt in CLI.
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "time"
     default = "12:26"
     ```
+
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `default`: `""`
+      - `default`: `""`
     """
 
     type: Literal[OptionType.time] = OptionType.time
@@ -1223,14 +1250,17 @@ class EmailOption(BaseInputOption):
     Ask for an email. Validation made with [python-email-validator](https://github.com/JoshData/python-email-validator)
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "email"
     default = "Abc.123@test-example.com"
     ```
+
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `default`: `""`
+      - `default`: `""`
     """
 
     type: Literal[OptionType.email] = OptionType.email
@@ -1243,14 +1273,17 @@ class WebPathOption(BaseStringOption):
     Ask for an web path (the part of an url after the domain). Used by default in app install to define from where the app will be accessible.
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "path"
     default = "/"
     ```
+
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `default`: `""`
+      - `default`: `""`
     - `pattern` (optional): `Pattern`, a regex to match the value against
     """
 
@@ -1291,14 +1324,17 @@ class URLOption(BaseStringOption):
     Ask for any url.
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "url"
     default = "https://example.xn--zfr164b/@handle/"
     ```
+
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `default`: `""`
+      - `default`: `""`
     - `pattern` (optional): `Pattern`, a regex to match the value against
     """
 
@@ -1322,14 +1358,19 @@ def _base_value_post_validator(
     cls, value: Any, info: "ValidationInfo"
 ) -> tuple[bytes, str | None]:
     import mimetypes
-    from pathlib import Path
-    from magic import Magic
     from base64 import b64decode
+    from pathlib import Path
 
-    if Moulinette.interface.type != "api":
+    from magic import Magic
+
+    if Moulinette.interface.type != "api" or (
+        isinstance(value, str) and value.startswith("/")
+    ):
         path = Path(value)
         if not (path.exists() and path.is_absolute() and path.is_file()):
-            raise YunohostValidationError("File doesn't exists", raw_msg=True)
+            raise YunohostValidationError(
+                f"File {value} doesn't exists", raw_msg=True
+            )
         content = path.read_bytes()
     else:
         content = b64decode(value)
@@ -1354,6 +1395,7 @@ class FileOption(BaseInputOption):
     Renders a file prompt in the web-admin and ask for a path in CLI.
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "file"
@@ -1361,11 +1403,13 @@ class FileOption(BaseInputOption):
     # bind the file to a location to save the file there
     bind = "/tmp/my_file.json"
     ```
+
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `default`: `""`
+      - `default`: `""`
     - `accept`: a comma separated list of extension to accept like `".conf, .ini`
-        - /!\ currently only work on the web-admin
+      - /!\ currently only work on the web-admin
     """
 
     type: Literal[OptionType.file] = OptionType.file
@@ -1429,8 +1473,8 @@ class FileOption(BaseInputOption):
     def _python_value_post_validator(cls, value: Any, info: "ValidationInfo") -> str:
         """File handling for "python" config panels"""
 
-        from pathlib import Path
         import hashlib
+        from pathlib import Path
 
         if not value:
             return ""
@@ -1522,6 +1566,7 @@ class SelectOption(BaseChoicesOption):
     Renders as a regular `<select/>` in the web-admin and as a regular prompt in CLI with autocompletion of `choices`.
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "select"
@@ -1529,9 +1574,11 @@ class SelectOption(BaseChoicesOption):
     choices = "one,two,three"
     default = "two"
     ```
+
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `default`: `""`, obviously the default has to be empty or an available `choices` item.
+      - `default`: `""`, obviously the default has to be empty or an available `choices` item.
     - `choices`: a (coma separated) list of values
     """
 
@@ -1550,6 +1597,7 @@ class TagsOption(BaseChoicesOption):
     This output as a coma separated list of strings `"one,two,three"`
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "tags"
@@ -1561,13 +1609,15 @@ class TagsOption(BaseChoicesOption):
     # choices = "one,two,three"
     default = "two,three"
     ```
+
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `default`: `""`, obviously the default has to be empty or an available `choices` item.
+      - `default`: `""`, obviously the default has to be empty or an available `choices` item.
     - `pattern` (optional): `Pattern`, a regex to match all the values against
     - `choices` (optional): a (coma separated) list of values
     - `icon` (optional): any icon name from [Fork Awesome](https://forkaweso.me/Fork-Awesome/icons/)
-        - Currently only displayed in the web-admin
+      - Currently only displayed in the web-admin
     """
 
     type: Literal[OptionType.tags] = OptionType.tags
@@ -1658,13 +1708,16 @@ class DomainOption(BaseChoicesOption):
     Renders as a select in the web-admin and as a regular prompt in CLI with autocompletion of registered domains.
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "domain"
     ```
+
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `default`: forced to the instance main domain
+      - `default`: forced to the instance main domain
     """
 
     type: Literal[OptionType.domain] = OptionType.domain
@@ -1713,14 +1766,17 @@ class AppOption(BaseChoicesOption):
     Renders as a select in the web-admin and as a regular prompt in CLI with autocompletion of installed apps.
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "app"
     filter = "is_webapp"
     ```
+
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `default`: `""`
+      - `default`: `""`
     - `filter` (optional): `JSExpression` with what `yunohost app info <app_id> --full` returns as context (only first level keys)
     """
 
@@ -1762,13 +1818,16 @@ class UserOption(BaseChoicesOption):
     Renders as a select in the web-admin and as a regular prompt in CLI with autocompletion of available usernames.
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "user"
     ```
+
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `default`: the first admin user found
+      - `default`: the first admin user found
     """
 
     type: Literal[OptionType.user] = OptionType.user
@@ -1811,14 +1870,17 @@ class GroupOption(BaseChoicesOption):
     Renders as a select in the web-admin and as a regular prompt in CLI with autocompletion of available groups.
 
     #### Example
+
     ```toml
     [section.my_option_id]
     type = "group"
     default = "visitors"
     ```
+
     #### Properties
+
     - [common inputs properties](#common-inputs-properties)
-        - `default`: `"all_users"`, `"visitors"` or `"admins"` (default: `"all_users"`)
+      - `default`: `"all_users"`, `"visitors"` or `"admins"` (default: `"all_users"`)
     """
 
     type: Literal[OptionType.group] = OptionType.group
@@ -2105,6 +2167,7 @@ def prompt_or_validate_form(
     hooks: Hooks = {},
 ) -> FormModel:
     for option in options:
+
         interactive = Moulinette.interface.type == "cli" and os.isatty(1)
 
         if isinstance(option, ButtonOption):
@@ -2123,7 +2186,10 @@ def prompt_or_validate_form(
                 # - we doesn't want to give a specific value
                 # - we want to keep the previous value
                 # - we want the default value
-                context[option.id] = None
+                if option.readonly:
+                    context[option.id] = option.normalize(form[option.id])
+                else:
+                    context[option.id] = None
 
             continue
 
@@ -2278,14 +2344,14 @@ def ask_questions_and_parse_answers(
 
 
 @overload
-def parse_raw_options(
+def parse_raw_options(  # noqa: E704
     raw_options: dict[str, Any], serialize: Literal[True]
 ) -> list[dict[str, Any]]:
     ...
 
 
 @overload
-def parse_raw_options(
+def parse_raw_options(  # noqa: E704
     raw_options: dict[str, Any], serialize: Literal[False] = False
 ) -> list[AnyOption]:
     ...

@@ -1,6 +1,25 @@
-#! /usr/bin/python3
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 import argparse
+
 import yunohost
 
 # Default server configuration
@@ -8,7 +27,7 @@ DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 6787
 
 
-def _parse_api_args():
+def _parse_api_args() -> argparse.Namespace:
     """Parse main arguments for the api"""
     parser = argparse.ArgumentParser(
         add_help=False,
@@ -30,6 +49,13 @@ def _parse_api_args():
         type=int,
         help="Port to listen on (default: %d)" % DEFAULT_PORT,
     )
+    srv_group.add_argument(
+        "--actionsmap",
+        action="store",
+        default=None,
+        type=str,
+        help="Alternate actionsmap to use for moulinette; useful for development",
+    )
     glob_group = parser.add_argument_group("global arguments")
     glob_group.add_argument(
         "--debug",
@@ -49,4 +75,4 @@ def _parse_api_args():
 if __name__ == "__main__":
     opts = _parse_api_args()
     # Run the server
-    yunohost.api(debug=opts.debug, host=opts.host, port=opts.port)
+    yunohost.api(debug=opts.debug, host=opts.host, port=opts.port, actionsmap=opts.actionsmap)

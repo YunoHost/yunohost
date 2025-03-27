@@ -1,4 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 user=$1
 
@@ -16,12 +34,12 @@ mkdir -p "$MEDIA_DIRECTORY/$user/eBook"
 ln -sfn "$MEDIA_DIRECTORY/share" "$MEDIA_DIRECTORY/$user/Share"
 # Création du lien symbolique dans le home de l'utilisateur.
 #link will only be created if the home directory of the user exists and if it's located in '/home' folder
-user_home="$(getent passwd $user | cut -d: -f6 | grep '^/home/')"
+user_home="$(getent passwd "$user" | cut -d: -f6 | grep '^/home/')"
 if [[ -d "$user_home" ]]; then
     ln -sfn "$MEDIA_DIRECTORY/$user" "$user_home/Multimedia"
 fi
 # Propriétaires des dossiers utilisateurs.
-chown -R $user "$MEDIA_DIRECTORY/$user"
+chown -R "$user" "$MEDIA_DIRECTORY/$user"
 
 ## Application des droits étendus sur le dossier multimedia.
 # Droit d'écriture pour le groupe et le groupe multimedia en acl et droit de lecture pour other:

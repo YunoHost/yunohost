@@ -1,6 +1,25 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
-set -e
+# Exit hook on subcommand error or unset variable
+set -Eeuo pipefail
 
 ssl_dir="/usr/share/yunohost/ssl"
 template_dir="/usr/share/yunohost/conf/ssl"
@@ -36,7 +55,7 @@ regen_local_ca() {
         -keyout ca/cakey.pem \
         -nodes \
         -batch \
-        -subj /CN=${domain}/O=${domain%.*} 2>&1
+        -subj "/CN=${domain}/O=${domain%.*}" 2>&1
 
     chmod 640 ca/cacert.pem
     chmod 640 ca/cakey.pem
@@ -49,11 +68,10 @@ regen_local_ca() {
 }
 
 do_init_regen() {
-
     LOGFILE=/tmp/yunohost-ssl-init
-    echo "" > $LOGFILE
-    chown root:root $LOGFILE
-    chmod 640 $LOGFILE
+    touch "$LOGFILE"
+    chown root:root "$LOGFILE"
+    chmod 640 "$LOGFILE"
 
     # Make sure this conf exists
     mkdir -p ${ssl_dir}/{ca,certs,crl,newcerts}
@@ -61,11 +79,11 @@ do_init_regen() {
 
     # create default certificates
     if [[ ! -f "$ynh_ca" ]]; then
-        regen_local_ca yunohost.org >> $LOGFILE
+        regen_local_ca yunohost.org >> "$LOGFILE"
     fi
 
     if [[ ! -f "$ynh_crt" ]]; then
-        echo -e "\n# Creating initial key and certificate \n" >> $LOGFILE
+        echo -e "\n# Creating initial key and certificate \n" >> "$LOGFILE"
 
         openssl req -new \
             -config "${ssl_dir}/openssl.cnf" \
@@ -100,8 +118,6 @@ do_pre_regen() {
 }
 
 do_post_regen() {
-    regen_conf_files=$1
-
     current_local_ca_domain=$(openssl x509 -in $ynh_ca -text | tr ',' '\n' | grep Issuer | awk '{print $4}')
     main_domain=$(cat /etc/yunohost/current_host)
 
@@ -123,11 +139,11 @@ do_post_regen() {
     chmod o+r ${ssl_dir}/certs/yunohost_crt.pem
 
     if [[ "$current_local_ca_domain" != "$main_domain" ]]; then
-        regen_local_ca $main_domain
+        regen_local_ca "$main_domain"
         # Idk how useful this is, but this was in the previous python code (domain.main_domain())
-        ln -sf /etc/yunohost/certs/$main_domain/crt.pem /etc/ssl/certs/yunohost_crt.pem
-        ln -sf /etc/yunohost/certs/$main_domain/key.pem /etc/ssl/private/yunohost_key.pem
+        ln -sf "/etc/yunohost/certs/$main_domain/crt.pem" /etc/ssl/certs/yunohost_crt.pem
+        ln -sf "/etc/yunohost/certs/$main_domain/key.pem" /etc/ssl/private/yunohost_key.pem
     fi
 }
 
-do_$1_regen ${@:2}
+"do_$1_regen" "$(echo "${*:2}" | xargs)"

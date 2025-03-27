@@ -1,7 +1,51 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
+# Exit hook on subcommand error or unset variable
 set -e
-. /usr/share/yunohost/helpers
+
+# Source YNH helpers
+# shellcheck source=../../helpers/helpers
+source /usr/share/yunohost/helpers
+
+do_init_regen() {
+
+    cd /usr/share/yunohost/conf/dnsmasq
+
+    cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf > /etc/resolv.dnsmasq.conf
+    chown root /etc/resolv.dnsmasq.conf
+    chmod 644 /etc/resolv.dnsmasq.conf
+
+    cp plain/etcdefault /etc/default/dnsmasq
+
+    export wireless_interfaces=""
+    ynh_render_template "dnsmasq.conf.tpl" "${pending_dir}/etc/dnsmasq.conf"
+
+    # Remove / disable services likely to conflict with dnsmasq
+    for SERVICE in systemd-resolved bind9; do
+        systemctl is-enabled $SERVICE &> /dev/null && systemctl disable $SERVICE 2> /dev/null
+        systemctl is-active $SERVICE &> /dev/null && systemctl stop $SERVICE
+    done
+
+    systemctl restart dnsmasq
+}
 
 do_pre_regen() {
     pending_dir=$1
@@ -15,10 +59,10 @@ do_pre_regen() {
     mkdir -p "$etcdefault_dir"
 
     # add default conf files
-    cp plain/etcdefault ${pending_dir}/etc/default/dnsmasq
+    cp plain/etcdefault "${pending_dir}/etc/default/dnsmasq"
 
     # add resolver file
-    cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf > ${pending_dir}/etc/resolv.dnsmasq.conf
+    cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf > "${pending_dir}/etc/resolv.dnsmasq.conf"
 
     # retrieve variables
     ipv4=$(curl --max-time 10 -s -4 https://ip.yunohost.org 2> /dev/null || true)
@@ -27,9 +71,9 @@ do_pre_regen() {
     ynh_validate_ip6 "$ipv6" || ipv6=''
     interfaces="$(ip -j addr show | jq -r '[.[].ifname]|join(" ")')"
     wireless_interfaces="lo"
-    for dev in $(ls /sys/class/net); do
-        if [ -d "/sys/class/net/$dev/wireless" ] && grep -q "up" "/sys/class/net/$dev/operstate"; then
-            wireless_interfaces+=" $dev"
+    for dev in /sys/class/net/*; do
+        if [ -d "$dev/wireless" ] && grep -q "up" "$dev/operstate"; then
+            wireless_interfaces+=" $(basename "$dev")"
         fi
     done
 
@@ -41,16 +85,22 @@ do_pre_regen() {
     export interfaces
     export ipv4
     export ipv6
+    domains_with_inbound_email_enabled=$(yunohost domain list --features mail_in --output-as json | jq -r ".domains[]")
     for domain in $YNH_DOMAINS; do
         [[ ! $domain =~ \.local$ ]] || continue
         export domain
+
+        if grep -q "^$domain$" <<< "$domains_with_mail_in"; then
+            export mail_in="True"
+        else
+            export mail_in="False"
+        fi
         ynh_render_template "domain.tpl" "${dnsmasq_dir}/${domain}"
     done
 
     # remove old domain conf files
-    conf_files=$(ls -1 /etc/dnsmasq.d \
-        | awk '/^[^\.]+\.[^\.]+.*$/ { print $1 }')
-    for domain in $conf_files; do
+    for conf_file in /etc/dnsmasq.d/*.*; do
+        domain=$(basename "$conf_file")
         if [[ ! $YNH_DOMAINS =~ $domain ]] && [[ ! $domain =~ \.local$ ]]; then
             touch "${dnsmasq_dir}/${domain}"
         fi
@@ -93,4 +143,4 @@ do_post_regen() {
     systemctl restart dnsmasq
 }
 
-do_$1_regen ${@:2}
+"do_$1_regen" "$(echo "${*:2}" | xargs)"

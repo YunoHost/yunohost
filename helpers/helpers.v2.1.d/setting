@@ -1,4 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 # Get an application setting
 #
@@ -44,7 +62,7 @@ ynh_app_setting_set() {
 #
 # Hence it's meant as a replacement for this legacy overly complex syntax:
 #
-# ```
+# ```bash
 # if [ -z "${foo:-}" ]
 # then
 #     foo="bar"
@@ -68,7 +86,7 @@ ynh_app_setting_set_default() {
     # ===========================================
 
     if [ -z "${!key:-}" ]; then
-        eval $key=\$value
+        eval "$key=\$value"
         ynh_app_setting "set" "$app" "$key" "$value"
     fi
 }
@@ -130,7 +148,7 @@ EOF
 if [[ -n "${app:-}" ]] && [[ -n "${phpversion:-}" ]]; then
     if [[ -z "${php_version:-}" ]]; then
         php_version=$phpversion
-        ynh_app_setting_set --key=php_version --value=$php_version
+        ynh_app_setting_set --key=php_version --value="$php_version"
     fi
     ynh_app_setting_delete --key=phpversion
     unset phpversion

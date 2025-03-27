@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,26 +17,29 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-import re
-import os
-import time
-import yaml
-import subprocess
-from logging import getLogger
-from glob import glob
-from datetime import datetime
 
-from moulinette import m18n
-from yunohost.diagnosis import diagnosis_ignore, diagnosis_unignore
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from moulinette.utils.process import check_output
+import os
+import re
+import subprocess
+import time
+from datetime import datetime
+from glob import glob
+from logging import getLogger
+
+import yaml
+from moulinette import m18n, Moulinette
 from moulinette.utils.filesystem import (
-    read_file,
     append_to_file,
-    write_to_file,
+    read_file,
     read_yaml,
+    write_to_file,
     write_to_yaml,
 )
+from moulinette.utils.process import check_output
+
+from yunohost.log import is_unit_operation
+from yunohost.diagnosis import diagnosis_ignore, diagnosis_unignore
+from yunohost.utils.error import YunohostError, YunohostValidationError
 
 MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 
@@ -146,6 +150,7 @@ def service_remove(name):
     logger.success(m18n.n("service_removed", service=name))
 
 
+@is_unit_operation(flash=True)
 def service_start(names):
     """
     Start one or more services
@@ -162,14 +167,18 @@ def service_start(names):
             logger.success(m18n.n("service_started", service=name))
         else:
             if service_status(name)["status"] != "running":
+                logs = _get_journalctl_logs(name, number=25)
+                if Moulinette.interface.type != "api":
+                    logger.error(logs)
                 raise YunohostError(
                     "service_start_failed",
                     service=name,
-                    logs=_get_journalctl_logs(name),
+                    error_details=logs,
                 )
             logger.debug(m18n.n("service_already_started", service=name))
 
 
+@is_unit_operation(flash=True)
 def service_stop(names):
     """
     Stop one or more services
@@ -185,8 +194,13 @@ def service_stop(names):
             logger.success(m18n.n("service_stopped", service=name))
         else:
             if service_status(name)["status"] != "inactive":
+                logs = _get_journalctl_logs(name, number=25)
+                if Moulinette.interface.type != "api":
+                    logger.error(logs)
                 raise YunohostError(
-                    "service_stop_failed", service=name, logs=_get_journalctl_logs(name)
+                    "service_stop_failed",
+                    service=name,
+                    error_details=logs,
                 )
             logger.debug(m18n.n("service_already_stopped", service=name))
 
@@ -205,14 +219,18 @@ def service_reload(names):
         if _run_service_command("reload", name):
             logger.success(m18n.n("service_reloaded", service=name))
         else:
-            if service_status(name)["status"] != "inactive":
+            if service_status(name)["status"] != "running":
+                logs = _get_journalctl_logs(name, number=25)
+                if Moulinette.interface.type != "api":
+                    logger.error(logs)
                 raise YunohostError(
                     "service_reload_failed",
                     service=name,
-                    logs=_get_journalctl_logs(name),
+                    error_details=logs,
                 )
 
 
+@is_unit_operation(flash=True)
 def service_restart(names):
     """
     Restart one or more services. If the services are not running yet, they will be started.
@@ -227,11 +245,14 @@ def service_restart(names):
         if _run_service_command("restart", name):
             logger.success(m18n.n("service_restarted", service=name))
         else:
-            if service_status(name)["status"] != "inactive":
+            if service_status(name)["status"] != "running":
+                logs = _get_journalctl_logs(name, number=25)
+                if Moulinette.interface.type != "api":
+                    logger.error(logs)
                 raise YunohostError(
                     "service_restart_failed",
                     service=name,
-                    logs=_get_journalctl_logs(name),
+                    error_details=logs,
                 )
 
 
@@ -276,14 +297,18 @@ def service_reload_or_restart(names, test_conf=True):
         if _run_service_command("reload-or-restart", name):
             logger.success(m18n.n("service_reloaded_or_restarted", service=name))
         else:
-            if service_status(name)["status"] != "inactive":
+            if service_status(name)["status"] != "running":
+                logs = _get_journalctl_logs(name, number=25)
+                if Moulinette.interface.type != "api":
+                    logger.error(logs)
                 raise YunohostError(
                     "service_reload_or_restart_failed",
                     service=name,
-                    logs=_get_journalctl_logs(name),
+                    error_details=logs,
                 )
 
 
+@is_unit_operation(flash=True)
 def service_enable(names):
     """
     Enable one or more services
@@ -299,11 +324,10 @@ def service_enable(names):
             diagnosis_unignore(["services", f"service={name}"])
             logger.success(m18n.n("service_enabled", service=name))
         else:
-            raise YunohostError(
-                "service_enable_failed", service=name, logs=_get_journalctl_logs(name)
-            )
+            raise YunohostError("service_enable_failed", service=name)
 
 
+@is_unit_operation(flash=True)
 def service_disable(names):
     """
     Disable one or more services
@@ -319,9 +343,7 @@ def service_disable(names):
             diagnosis_ignore(["services", f"service={name}"])
             logger.success(m18n.n("service_disabled", service=name))
         else:
-            raise YunohostError(
-                "service_disable_failed", service=name, logs=_get_journalctl_logs(name)
-            )
+            raise YunohostError("service_disable_failed", service=name)
 
 
 def service_status(names=[]):
@@ -460,8 +482,8 @@ def _get_and_format_service_status(service, infos):
         raw_service.get("Type", "").lower() == "oneshot"
         and output["status"] == "exited"
     ):
-        # These are services like yunohost-firewall, hotspot, vpnclient,
-        # ... they will be "exited" why doesn't provide any info about
+        # These are services like hotspot, vpnclient...
+        # they will be "exited" why doesn't provide any info about
         # the real state of the service (unless they did provide a
         # test_status, c.f. previous condition)
         output["status"] = "unknown"

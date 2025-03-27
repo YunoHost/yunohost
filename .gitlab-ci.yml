@@ -13,8 +13,6 @@ default:
   interruptible: true
 
 code_quality:
-  tags:
-    - docker
   rules:
     - if: $CI_COMMIT_TAG # Only for tags
 

@@ -1,0 +1,32 @@
+name: Run Shellcheck on push and PR
+
+on:
+  push:
+    branches: [ "dev" ]
+  pull_request:
+
+jobs:
+  shellcheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run ShellCheck
+      uses: salamandar/action-shellcheck@master
+      env:
+        # Those are errors that we haven't fixed yet
+        SHELLCHECK_OPTS: -x -e SC2155,SC2012,SC2013,SC2038,SC2076,SC2034,SC2154,SC2001
+      with:
+        additional_files: |
+          bin/yunoprompt
+          debian/postinst
+          debian/postrm
+          debian/prerm
+          hooks/*/*
+          tests
+          helpers/helpers.v2.1.d/*
+
+        ignore_paths:
+          tests/test_helpers.v2.d
+          helpers/vendor
+          src/vendor

@@ -10,16 +10,18 @@ Package: yunohost
 Essential: yes
 Architecture: all
 Depends: python3-all (>= 3.11),
- , moulinette (>= 12.0), ssowat (>= 12.0),
+ , moulinette (>= 12.1), ssowat (>= 12.0),
  , python3-psutil, python3-requests, python3-dnspython, python3-openssl
  , python3-miniupnpc, python3-dbus, python3-jinja2 (>= 3.0)
  , python3-toml, python3-packaging, python3-publicsuffix2
  , python3-ldap, python3-zeroconf (>= 0.47), python3-lexicon,
  , python3-cryptography, python3-jwt, python3-passlib, python3-magic
  , python-is-python3, python3-email-validator, python3-pydantic, python3-pydantic-extra-types
+ , udisks2, udisks2-bcache, udisks2-btrfs, udisks2-lvm2, udisks2-zram
+ , python3-zmq
  , nginx, nginx-extras (>=1.22)
  , apt, apt-transport-https, apt-utils, aptitude, dirmngr
- , openssh-server, iptables, fail2ban, bind9-dnsutils
+ , openssh-server, nftables, fail2ban, bind9-dnsutils
  , openssl, ca-certificates, netcat-openbsd, iproute2
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
  , dnsmasq, resolvconf, libnss-myhostname
@@ -29,7 +31,7 @@ Depends: python3-all (>= 3.11),
  , acl
  , git, curl, wget, cron, unzip, jq, bc, at, procps, j2cli
  , lsb-release, haveged, fake-hwclock, lsof, whois
-Recommends: yunohost-admin, yunohost-portal (>= 12.0)
+Recommends: yunohost-admin (>= 12.1), yunohost-portal (>= 12.1)
  , ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog
  , unattended-upgrades
@@ -45,7 +47,7 @@ Conflicts: iptables-persistent
 #  , slapd (>= 2.6)
 #  , dovecot-core (>= 1:2.4)
 #  , fail2ban (>= 1.1)
-#  , iptables (>= 1.8.10)
+#  , nftables (>= 1.1)
 Description: manageable and configured self-hosting server
  YunoHost aims to make self-hosting accessible to everyone. It configures
  an email, Web and IM server alongside a LDAP base. It also provides

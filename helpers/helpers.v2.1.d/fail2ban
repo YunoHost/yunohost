@@ -1,4 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 # Create a dedicated fail2ban config (jail and filter conf files)
 #
@@ -12,7 +30,8 @@
 # `../conf/f2b_jail.conf` and `../conf/f2b_filter.conf`
 #
 # They will typically look like (for example here for synapse):
-# ```
+#
+# ```toml
 # f2b_jail.conf:
 #     [__APP__]
 #     enabled = true
@@ -21,7 +40,8 @@
 #     logpath = /var/log/__APP__/logfile.log
 #     maxretry = 5
 # ```
-# ```
+#
+# ```toml
 # f2b_filter.conf:
 #     [INCLUDES]
 #     before = common.conf
@@ -36,17 +56,17 @@
 #     ignoreregex =
 # ```
 #
-# ##### Regarding the the `failregex` option:
+# ##### Regarding the the `failregex` option
 #
 # regex to match the password failure messages in the logfile. The host must be
 # matched by a group named "`host`". The tag "`<HOST>`" can be used for standard
 # IP/hostname matching and is only an alias for `(?:::f{4,6}:)?(?P<host>[\w\-.^_]+)`
 #
-# You can find some more explainations about how to make a regex here :
-# https://www.fail2ban.org/wiki/index.php/MANUAL_0_8#Filters
+# You can find some more explainations about how to make a regex on [the official fail2ban documentation](https://www.fail2ban.org/wiki/index.php/MANUAL_0_8#Filters).
 #
 # To validate your regex you can test with this command:
-# ```
+#
+# ```bash
 # fail2ban-regex /var/log/YOUR_LOG_FILE_PATH /etc/fail2ban/filter.d/YOUR_APP.conf
 # ```
 ynh_config_add_fail2ban() {
@@ -82,22 +102,22 @@ ignoreregex =
     ynh_config_add --template="f2b_jail.conf" --destination="/etc/fail2ban/jail.d/$app.conf"
     ynh_config_add --template="f2b_filter.conf" --destination="/etc/fail2ban/filter.d/$app.conf"
 
-    # if "$logpath" doesn't exist (as if using --use_template argument), assign
-    # "$logpath" using the one in the previously generated fail2ban conf file
-    if [ -z "${logpath:-}" ]; then
-        # the first sed deletes possibles spaces and the second one extract the path
-        logpath=$(grep "^logpath" "/etc/fail2ban/jail.d/$app.conf" | sed "s/ //g" | sed "s/logpath=//g")
-    fi
-
     # Create the folder and logfile if they doesn't exist,
     # as fail2ban require an existing logfile before configuration
-    mkdir -p "/var/log/$app"
+    local logdir=$(dirname "$logpath")
+    if [ ! -d "$logdir" ]; then
+        mkdir -p "$logdir"
+        # Make sure log folder's permissions are correct
+        chown "$app:$app" "$logdir"
+        chmod u=rwX,g=rX,o= "$logdir"
+    fi
+
     if [ ! -f "$logpath" ]; then
         touch "$logpath"
+        # Make sure log file's permissions are correct
+        chown "$app:$app" "$logpath"
+        chmod u=rwX,g=rX,o= "$logpath"
     fi
-    # Make sure log folder's permissions are correct
-    chown -R "$app:$app" "/var/log/$app"
-    chmod -R u=rwX,g=rX,o= "/var/log/$app"
 
     ynh_systemctl --service=fail2ban --action=reload --wait_until="(Started|Reloaded) fail2ban.service" --log_path=systemd
 

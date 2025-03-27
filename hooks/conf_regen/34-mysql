@@ -1,7 +1,29 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
-set -e
-. /usr/share/yunohost/helpers
+# Exit hook on subcommand error or unset variable
+set -Eeuo pipefail
+
+# Source YNH helpers
+# shellcheck source=../../helpers/helpers
+source /usr/share/yunohost/helpers
 
 if ! dpkg --list | grep -q 'ii *mariadb-server '; then
     echo 'mysql/mariadb is not installed, skipping'
@@ -9,11 +31,8 @@ if ! dpkg --list | grep -q 'ii *mariadb-server '; then
 fi
 
 do_pre_regen() {
-    pending_dir=$1
-
-    #cd /usr/share/yunohost/conf/mysql
-
     # Nothing to do
+    :
 }
 
 do_post_regen() {
@@ -26,12 +45,14 @@ do_post_regen() {
         MYSQL_PKG="$(dpkg --list | sed -ne 's/^ii  \(mariadb-server-[[:digit:].]\+\) .*$/\1/p')"
         dpkg-reconfigure -freadline -u "$MYSQL_PKG" 2>&1
 
-        systemctl -q is-active mariadb.service \
-            || systemctl start mariadb
-
+        if ! systemctl -q is-active mariadb.service; then
+            systemctl start mariadb
+        fi
         sleep 5
 
-        echo "" | mysql && echo "Can't connect to mysql using unix_socket auth ... something went wrong during initial configuration of mysql !?" >&2
+        if ! echo "" | mysql; then
+            echo "Can't connect to mysql using unix_socket auth ... something went wrong during initial configuration of mysql !?" >&2
+        fi
     fi
 
     # mysql is supposed to be an alias to mariadb... but in some weird case is not
@@ -42,11 +63,14 @@ do_post_regen() {
         systemctl disable mysql -q
         systemctl disable mariadb -q
         systemctl enable mariadb -q
-        systemctl is-active mariadb -q || systemctl start mariadb
+        if ! systemctl is-active mariadb -q; then
+            systemctl start mariadb
+        fi
     fi
 
-    [[ -z "$regen_conf_files" ]] \
-        || systemctl restart mysql
+    if [[ -n "$regen_conf_files" ]]; then
+        systemctl restart mysql
+    fi
 }
 
-do_$1_regen ${@:2}
+"do_$1_regen" "$(echo "${*:2}" | xargs)"

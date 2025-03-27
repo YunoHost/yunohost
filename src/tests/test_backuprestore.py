@@ -1,31 +1,50 @@
-import pytest
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
 import os
 import shutil
 import subprocess
+
+import pytest
 from mock import patch
-
-from .conftest import message, raiseYunohostError, get_test_apps_dir
-
 from moulinette.utils.text import random_ascii
 
-from yunohost.app import app_install, app_remove, app_ssowatconf
-from yunohost.app import _is_installed
+from yunohost.app import _is_installed, app_install, app_remove, app_ssowatconf
 from yunohost.backup import (
-    backup_create,
-    backup_restore,
-    backup_list,
-    backup_info,
-    backup_delete,
     _recursive_umount,
+    backup_create,
+    backup_delete,
+    backup_info,
+    backup_list,
+    backup_restore,
 )
-from yunohost.domain import _get_maindomain, domain_list, domain_add, domain_remove
-from yunohost.user import user_create, user_list, user_delete
+from yunohost.domain import _get_maindomain, domain_add, domain_list, domain_remove
+from yunohost.hook import CUSTOM_HOOK_FOLDER
 from yunohost.permission import user_permission_list
 from yunohost.tests.test_permission import (
     check_LDAP_db_integrity,
     check_permission_for_apps,
 )
-from yunohost.hook import CUSTOM_HOOK_FOLDER
+from yunohost.user import user_create, user_delete, user_list
+
+from .conftest import get_test_apps_dir, message, raiseYunohostError
 
 # Get main domain
 maindomain = ""
@@ -105,7 +124,7 @@ def teardown_function(function):
         shutil.rmtree("/opt/test_backup_output_directory")
 
     if "alice" in user_list()["users"]:
-        user_delete("alice")
+        user_delete("alice", force=True)
 
     if "with_custom_domain" in markers:
         domain = markers["with_custom_domain"]["args"][0]

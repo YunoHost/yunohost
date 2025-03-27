@@ -1,4 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 readonly MEDIA_GROUP=multimedia
 readonly MEDIA_DIRECTORY=/home/yunohost.multimedia
@@ -29,12 +47,12 @@ ynh_multimedia_build_main_dir() {
         ln -sfn "$MEDIA_DIRECTORY/share" "$MEDIA_DIRECTORY/$user/Share"
         # Création du lien symbolique dans le home de l'utilisateur.
         #link will only be created if the home directory of the user exists and if it's located in '/home' folder
-        local user_home="$(getent passwd $user | cut -d: -f6 | grep '^/home/')"
+        local user_home="$(getent passwd "$user" | cut -d: -f6 | grep '^/home/')"
         if [[ -d "$user_home" ]]; then
             ln -sfn "$MEDIA_DIRECTORY/$user" "$user_home/Multimedia"
         fi
         # Propriétaires des dossiers utilisateurs.
-        chown -R $user "$MEDIA_DIRECTORY/$user"
+        chown -R "$user" "$MEDIA_DIRECTORY/$user"
     done
     # Default yunohost hooks for post_user_create,delete will take care
     # of creating/deleting corresponding multimedia folders when users
@@ -49,12 +67,12 @@ ynh_multimedia_build_main_dir() {
     setfacl -RL -m m::rwx "$MEDIA_DIRECTORY" || true
 }
 
-# Add a directory in yunohost.multimedia
+# Add a directory in `yunohost.multimedia`
 #
 # usage: ynh_multimedia_addfolder --source_dir="source_dir" --dest_dir="dest_dir"
 #
 # | arg: --source_dir= - Source directory - The real directory which contains your medias.
-# | arg: --dest_dir= - Destination directory - The name and the place of the symbolic link, relative to "/home/yunohost.multimedia"
+# | arg: --dest_dir= - Destination directory - The name and the place of the symbolic link, relative to `/home/yunohost.multimedia`
 #
 # This "directory" will be a symbolic link to a existing directory.
 ynh_multimedia_addfolder() {
@@ -85,5 +103,5 @@ ynh_multimedia_addfolder() {
 # | arg: user_name   - The name of the user which gain this access.
 ynh_multimedia_addaccess() {
     groupadd -f $MEDIA_GROUP
-    usermod -a -G $MEDIA_GROUP $1
+    usermod -a -G $MEDIA_GROUP "$1"
 }

@@ -1,4 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 YNH_APP_BASEDIR=${YNH_APP_BASEDIR:-$(realpath ..)}
 
@@ -56,7 +74,7 @@ fi
 #
 # usage: ynh_exec_as_app COMMAND [ARG ...]
 ynh_exec_as_app() {
-    sudo -u "$app" env PATH="$PATH" "$@"
+    sudo -u "$app" env PATH="$PATH" COREPACK_ENABLE_DOWNLOAD_PROMPT="0" "$@"
 }
 
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
@@ -74,7 +92,7 @@ ynh_exec_as_app() {
 # `$domain` and `$path` should be defined externally (and correspond to the domain.tld and the /path (of the app?))
 ynh_local_curl() {
     # Define url of page to curl
-    local local_page=$(ynh_normalize_url_path $1)
+    local local_page=$(ynh_normalize_url_path "$1")
     local full_path=$path$local_page
 
     if [ "${path}" == "/" ]; then
@@ -91,16 +109,18 @@ ynh_local_curl() {
     done
     if [ -n "$POST_data" ]; then
         # Add --data arg and remove the last character, which is an unecessary '&'
-        POST_data="--data ${POST_data::-1}"
+        POST_data_arg=(--data "${POST_data::-1}")
+    else
+        POST_data_arg=()
     fi
 
     # Wait untils nginx has fully reloaded (avoid curl fail with http2)
     sleep 2
 
     local cookiefile=/tmp/ynh-$app-cookie.txt
-    touch $cookiefile
-    chown root $cookiefile
-    chmod 700 $cookiefile
+    touch "$cookiefile"
+    chown root "$cookiefile"
+    chmod 700 "$cookiefile"
 
     # Temporarily enable visitors if needed...
     local visitors_enabled=$(ynh_permission_has_user --permission="main" --user="visitors" && echo yes || echo no)
@@ -109,7 +129,7 @@ ynh_local_curl() {
     fi
 
     # Curl the URL
-    curl --silent --show-error --insecure --location --header "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url" --cookie-jar $cookiefile --cookie $cookiefile
+    curl --silent --show-error --insecure --location --header "Host: $domain" --resolve "$domain:443:127.0.0.1" "${POST_data[@]}" "$full_page_url" --cookie-jar "$cookiefile" --cookie "$cookiefile"
 
     if [[ $visitors_enabled == "no" ]]; then
         ynh_permission_update --permission="main" --remove="visitors"
@@ -166,7 +186,7 @@ ynh_safe_rm() {
 # | arg: key - Name of the key to find
 # | ret: the value associate to that key
 ynh_read_manifest() {
-    cat $YNH_APP_BASEDIR/manifest.toml | toml_to_json | jq ".$1" --raw-output
+    cat "$YNH_APP_BASEDIR/manifest.toml" | toml_to_json | jq ".$1" --raw-output
 }
 
 # Return the app upstream version, deduced from `$YNH_APP_MANIFEST_VERSION` and strippig the `~ynhX` part
@@ -194,7 +214,7 @@ ynh_app_upgrading_from_version_before() {
     local version=$1
     [[ $version =~ '~ynh' ]] || ynh_die "Invalid argument for version, should include the ~ynhX prefix"
 
-    dpkg --compare-versions $YNH_APP_CURRENT_VERSION lt $version
+    dpkg --compare-versions "$YNH_APP_CURRENT_VERSION" lt "$version"
 }
 
 # Compare the current package version is lower or equal to another version given as an argument
@@ -204,7 +224,7 @@ ynh_app_upgrading_from_version_before_or_equal_to() {
     local version=$1
     [[ $version =~ '~ynh' ]] || ynh_die "Invalid argument for version, should include the ~ynhX prefix"
 
-    dpkg --compare-versions $YNH_APP_CURRENT_VERSION le $version
+    dpkg --compare-versions "$YNH_APP_CURRENT_VERSION" le "$version"
 }
 
 # Apply sane permissions for files installed by ynh_setup_source and ynh_config_add.
@@ -321,22 +341,22 @@ ynh_get_ram() {
     total=${total:-0}
     # ===========================================
 
-    if [ $free -eq $total ]; then
+    if [ "$free" -eq "$total" ]; then
         ynh_print_warn "You have to choose --free or --total when using ynh_get_ram"
         ram=0
-    elif [ $free -eq 1 ]; then
+    elif [ "$free" -eq 1 ]; then
         local free_ram=$(LC_ALL=C vmstat --stats --unit M | grep "free memory" | awk '{print $1}')
         local free_swap=$(LC_ALL=C vmstat --stats --unit M | grep "free swap" | awk '{print $1}')
         local free_ram_swap=$((free_ram + free_swap))
         local ram=$free_ram_swap
-    elif [ $total -eq 1 ]; then
+    elif [ "$total" -eq 1 ]; then
         local total_ram=$(LC_ALL=C vmstat --stats --unit M | grep "total memory" | awk '{print $1}')
         local total_swap=$(LC_ALL=C vmstat --stats --unit M | grep "total swap" | awk '{print $1}')
         local total_ram_swap=$((total_ram + total_swap))
         local ram=$total_ram_swap
     fi
 
-    echo $ram
+    echo "$ram"
 }
 
 # Check if the scripts are being run by the package_check in CI
@@ -379,77 +399,77 @@ ynh_user_list() {
 
 # Spawn a Bash shell with the app environment loaded
 #
-# usage: ynh_spawn_app_shell "appname"
+# usage: ynh_spawn_app_shell
 #
 # examples:
-#   ynh_spawn_app_shell "foobar" <<< 'echo "$USER"'
-#   ynh_spawn_app_shell "foobar" < /tmp/some_script.bash
+#   ynh_spawn_app_shell <<< 'echo "$USER"'
+#   ynh_spawn_app_shell < /tmp/some_script.bash
 #
 # The spawned shell will have environment variables loaded and environment files sourced
 # from the app's service configuration file (defaults to $app.service, overridable by the packager with `service` setting).
 # If the app relies on a specific PHP version, then `php` will be aliased that version. The PHP command will also be appended with the `phpflags` settings.
 ynh_spawn_app_shell() {
-    local app=$1
 
     # Force Bash to be used to run this helper
     [[ $0 =~ \/?bash$ ]] || ynh_die "Please use Bash as shell"
 
     # Make sure the app is installed
-    test -d /etc/yunohost/apps/$app || ynh_die "$app is not an installed app ?!"
+    test -d "/etc/yunohost/apps/$app" || ynh_die "$app is not an installed app ?!"
 
     # Make sure the app has its own user
     id -u "$app" &> /dev/null || ynh_die "There is no \"$app\" system user"
 
     # Make sure the app has an install_dir setting
-    local install_dir=$(ynh_app_setting_get --app=$app --key=install_dir)
-    [ -n "$install_dir" ] || ynh_die "$app has no install_dir setting (does it use packaging format >=2?)"
-
-    # Load the app's service name, or default to $app
-    local service=$(ynh_app_setting_get --app=$app --key=service)
-    [ -z "$service" ] && service=$app
+    [ -n "${install_dir:-}" ] || ynh_die "$app has no install_dir setting!"
 
     # Export HOME variable
     export HOME=$install_dir
 
-    # Load the Environment variables from the app's service
-    local env_var=$(systemctl show $service.service -p "Environment" --value)
-    [ -n "$env_var" ] && export $env_var
-
     # Force `php` to its intended version
     # We use `eval`+`export` since `alias` is not propagated to subshells, even with `export`
-    local phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
-    local phpflags=$(ynh_app_setting_get --app=$app --key=phpflags)
-    if [ -n "$phpversion" ]; then
-        eval "php() { php${phpversion} ${phpflags} \"\$@\"; }"
+    if [ -n "${php_version:-}" ]; then
+        eval "php() { php${php_version} ${phpflags:-} \"\$@\"; }"
         export -f php
     fi
 
-    # Source the EnvironmentFiles from the app's service
-    local env_files=($(systemctl show $service.service -p "EnvironmentFiles" --value))
-    if [ ${#env_files[*]} -gt 0 ]; then
-        # set -/+a enables and disables new variables being automatically exported. Needed when using `source`.
-        set -a
-        for file in ${env_files[*]}; do
-            [[ $file = /* ]] && source $file
-        done
-        set +a
+    # Load the app's service name, or default to $app
+    service=${service:-$app}
+    if systemctl list-units | grep -q "$service.service"; then
+        # Load the Environment variables from the app's service
+        local env_var=$(systemctl show "$service.service" -p "Environment" --value)
+        [ -n "${env_var:-}" ] && export "${env_var?}"
+
+        # Source the EnvironmentFiles from the app's service
+        local -a env_files
+        mapfile -t env_files < <(systemctl show "$service.service" -p "EnvironmentFiles" --value | sed 's| (ignore_errors=yes)||')
+        if [ ${#env_files[*]} -gt 0 ]; then
+            for file in "${env_files[@]}"; do
+                if [[ $file = /* ]]; then
+                    # set -/+a enables and disables new variables being automatically exported. Needed when using `source`.
+                    set -a
+                    # shellcheck disable=SC1090,SC1091
+                    source "$file"
+                    set +a
+                fi
+            done
+        fi
     fi
 
     # Activate the Python environment, if it exists
-    if [ -f $install_dir/venv/bin/activate ]; then
+    if [ -f "$install_dir/venv/bin/activate" ]; then
         # set -/+a enables and disables new variables being automatically exported. Needed when using `source`.
         set -a
-        source $install_dir/venv/bin/activate
+        # shellcheck disable=SC1090,SC1091
+        source "$install_dir/venv/bin/activate"
         set +a
     fi
 
     # cd into the WorkingDirectory set in the service, or default to the install_dir
-    local env_dir=$(systemctl show $service.service -p "WorkingDirectory" --value)
-    [ -z $env_dir ] && env_dir=$install_dir
-    cd $env_dir
+    local env_dir=$(systemctl show "$service.service" -p "WorkingDirectory" --value)
+    cd "${env_dir:-$install_dir}"
 
     # Spawn the app shell
-    su -s /bin/bash $app
+    su -s /bin/bash "$app"
 }
 
 # Add swap
@@ -468,11 +488,11 @@ ynh_add_swap() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    local swap_max_size=$(($size * 1024))
+    local swap_max_size=$((size * 1024))
 
     local free_space=$(df --output=avail / | sed 1d)
     # Because we don't want to fill the disk with a swap file, divide by 2 the available space.
-    local usable_space=$(($free_space / 2))
+    local usable_space=$((free_space / 2))
 
     SD_CARD_CAN_SWAP=${SD_CARD_CAN_SWAP:-0}
 
@@ -486,34 +506,34 @@ ynh_add_swap() {
     # And set a acceptable size from the request
     if [ $usable_space -ge $swap_max_size ]; then
         local swap_size=$swap_max_size
-    elif [ $usable_space -ge $(($swap_max_size / 2)) ]; then
-        local swap_size=$(($swap_max_size / 2))
-    elif [ $usable_space -ge $(($swap_max_size / 3)) ]; then
-        local swap_size=$(($swap_max_size / 3))
-    elif [ $usable_space -ge $(($swap_max_size / 4)) ]; then
-        local swap_size=$(($swap_max_size / 4))
+    elif [ $usable_space -ge $((swap_max_size / 2)) ]; then
+        local swap_size=$((swap_max_size / 2))
+    elif [ $usable_space -ge $((swap_max_size / 3)) ]; then
+        local swap_size=$((swap_max_size / 3))
+    elif [ $usable_space -ge $((swap_max_size / 4)) ]; then
+        local swap_size=$((swap_max_size / 4))
     else
         echo "Not enough space left for a swap file" >&2
         local swap_size=0
     fi
 
     # If there's enough space for a swap, and no existing swap here
-    if [ $swap_size -ne 0 ] && [ ! -e /swap_$app ]; then
+    if [ $swap_size -ne 0 ] && [ ! -e "/swap_$app" ]; then
         # Create file
-        truncate -s 0 /swap_$app
+        truncate -s 0 "/swap_$app"
 
         # set the No_COW attribute on the swapfile with chattr
-        chattr +C /swap_$app
+        chattr +C "/swap_$app"
 
         # Preallocate space for the swap file, fallocate may sometime not be used, use dd instead in this case
-        if ! fallocate -l ${swap_size}K /swap_$app; then
-            dd if=/dev/zero of=/swap_$app bs=1024 count=${swap_size}
+        if ! fallocate -l ${swap_size}K "/swap_$app"; then
+            dd if=/dev/zero of="/swap_$app" bs=1024 count=${swap_size}
         fi
-        chmod 0600 /swap_$app
+        chmod 0600 "/swap_$app"
         # Create the swap
-        mkswap /swap_$app
+        mkswap "/swap_$app"
         # And activate it
-        swapon /swap_$app
+        swapon "/swap_$app"
         # Then add an entry in fstab to load this swap at each boot.
         echo -e "/swap_$app swap swap defaults 0 0 #Swap added by $app" >> /etc/fstab
     fi
@@ -521,13 +541,13 @@ ynh_add_swap() {
 
 ynh_del_swap() {
     # If there a swap at this place
-    if [ -e /swap_$app ]; then
+    if [ -e "/swap_$app" ]; then
         # Clean the fstab
         sed -i "/#Swap added by $app/d" /etc/fstab
         # Desactive the swap file
-        swapoff /swap_$app
+        swapoff "/swap_$app"
         # And remove it
-        rm /swap_$app
+        rm "/swap_$app"
     fi
 }
 
@@ -542,9 +562,9 @@ ynh_is_main_device_a_sd_card() {
         return 1
     fi
 
-    local main_device=$(lsblk --output PKNAME --noheadings $(findmnt / --nofsroot --uniq --output source --noheadings --first-only))
+    local main_device=$(lsblk --output PKNAME --noheadings "$(findmnt / --nofsroot --uniq --output source --noheadings --first-only)")
 
-    if echo $main_device | grep --quiet "mmc" && [ $(tail -n1 /sys/block/$main_device/queue/rotational) == "0" ]; then
+    if echo "$main_device" | grep --quiet "mmc" && [ "$(tail -n1 "/sys/block/$main_device/queue/rotational")" == "0" ]; then
         return 0
     else
         return 1
@@ -565,12 +585,12 @@ ynh_smart_mktemp() {
 
     min_size="${min_size:-300}"
     # Transform the minimum size from megabytes to kilobytes
-    min_size=$(($min_size * 1024))
+    min_size=$((min_size * 1024))
 
     # Check if there's enough free space in a directory
     is_there_enough_space() {
         local free_space=$(df --output=avail "$1" | sed 1d)
-        test $free_space -ge $min_size
+        test "$free_space" -ge $min_size
     }
 
     if is_there_enough_space /tmp; then
@@ -585,5 +605,27 @@ ynh_smart_mktemp() {
         ynh_die "Insufficient free space to continue..."
     fi
 
-    echo "$(mktemp --directory --tmpdir="$tmpdir")"
+    mktemp --directory --tmpdir="$tmpdir"
+}
+
+# Setup/update a git clone, meant to be used internally to fetch technical tools like goenv, rbenv
+#
+# [internal]
+#
+function _ynh_git_clone() {
+    local url="$1"
+    local dest_dir="$2"
+    local branch=${3:-master}
+
+    mkdir -p "$dest_dir"
+    pushd "$dest_dir" || return 1
+        if ! [ -d "$dest_dir/.git" ]; then
+            git init -q
+            git remote add origin "$url"
+    else
+            git remote set-url origin "$url"
+    fi
+        git fetch -q --tags --prune origin "$branch"
+        git reset --hard origin/"$branch"
+    popd || return 1
 }

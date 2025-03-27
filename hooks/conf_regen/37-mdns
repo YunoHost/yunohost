@@ -1,14 +1,33 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
-set -e
+# Exit hook on subcommand error or unset variable
+set -Eeuo pipefail
 
 _generate_config() {
     echo "domains:"
     # Add yunohost.local (only if yunohost.local ain't already in ynh_domains)
-    if ! echo "$YNH_DOMAINS" | tr ' ' '\n' | grep -q --line-regexp 'yunohost.local'; then
+    if ! echo "${YNH_DOMAINS:-}" | tr ' ' '\n' | grep -q --line-regexp 'yunohost.local'; then
         echo "    - yunohost.local"
     fi
-    for domain in $YNH_DOMAINS; do
+    for domain in ${YNH_DOMAINS:-}; do
         # Only keep .local domains (don't keep
         [[ "$domain" =~ [^.]+\.[^.]+\.local$ ]] && echo "Subdomain $domain cannot be handled by Bonjour/Zeroconf/mDNS" >&2
         [[ "$domain" =~ ^[^.]+\.local$ ]] || continue
@@ -22,7 +41,7 @@ _generate_config() {
 }
 
 do_init_regen() {
-    do_pre_regen
+    do_pre_regen ""
     do_post_regen /etc/systemd/system/yunomdns.service
     systemctl enable yunomdns --quiet
 }
@@ -31,13 +50,15 @@ do_pre_regen() {
     pending_dir="$1"
 
     cd /usr/share/yunohost/conf/mdns
-    mkdir -p ${pending_dir}/etc/systemd/system/
-    cp yunomdns.service ${pending_dir}/etc/systemd/system/
+    mkdir -p "$pending_dir/etc/systemd/system/"
+    cp yunomdns.service "$pending_dir/etc/systemd/system/"
 
-    getent passwd mdns &> /dev/null || useradd --no-create-home --shell /usr/sbin/nologin --system --user-group mdns
+    if ! getent passwd mdns &> /dev/null; then
+        useradd --no-create-home --shell /usr/sbin/nologin --system --user-group mdns
+    fi
 
-    mkdir -p ${pending_dir}/etc/yunohost
-    _generate_config > ${pending_dir}/etc/yunohost/mdns.yml
+    mkdir -p "$pending_dir/etc/yunohost"
+    _generate_config > "$pending_dir/etc/yunohost/mdns.yml"
 }
 
 do_post_regen() {
@@ -56,8 +77,9 @@ do_post_regen() {
         sleep 2
     fi
 
-    [[ -z "$regen_conf_files" ]] \
-        || systemctl restart yunomdns
+    if [[ -n "$regen_conf_files" ]]; then
+        systemctl restart yunomdns
+    fi
 }
 
-do_$1_regen ${@:2}
+"do_$1_regen" "$(echo "${*:2}" | xargs)"

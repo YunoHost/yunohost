@@ -1,4 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 YNH_APT_INSTALL_DEPENDENCIES_REPLACE="true"
 
@@ -41,7 +59,7 @@ ynh_apt_install_dependencies() {
 
     if [[ -n "$specific_php_version" ]]; then
         # Cover a small edge case where a packager could have specified "php7.4-pwet php5-gni" which is confusing
-        [[ $(echo $specific_php_version | wc -l) -eq 1 ]] \
+        [[ $(echo "$specific_php_version" | wc -l) -eq 1 ]] \
             || ynh_die "Inconsistent php versions in dependencies ... found : $specific_php_version"
 
         dependencies+=", php${specific_php_version}, php${specific_php_version}-fpm, php${specific_php_version}-common"
@@ -56,14 +74,14 @@ ynh_apt_install_dependencies() {
             fi
         fi
         # Store php_version into the config of this app
-        ynh_app_setting_set --key=php_version --value=$specific_php_version
+        ynh_app_setting_set --key=php_version --value="$specific_php_version"
 
         # Set the default php version back as the default version for php-cli.
-        if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION; then
-            update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
+        if test -e "/usr/bin/php$YNH_DEFAULT_PHP_VERSION"; then
+            update-alternatives --set php "/usr/bin/php$YNH_DEFAULT_PHP_VERSION"
         fi
     elif grep --quiet 'php' <<< "$dependencies"; then
-        ynh_app_setting_set --key=php_version --value=$YNH_DEFAULT_PHP_VERSION
+        ynh_app_setting_set --key=php_version --value="$YNH_DEFAULT_PHP_VERSION"
     fi
 
     # Specific tweak related to Postgresql (cf end of the helper)
@@ -79,7 +97,7 @@ ynh_apt_install_dependencies() {
     else
         local current_dependencies=""
         if _ynh_apt_package_is_installed "${app_ynh_deps}"; then
-            current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${app_ynh_deps}) "
+            current_dependencies="$(dpkg-query --show --showformat='${Depends}' "${app_ynh_deps}") "
             current_dependencies=${current_dependencies// | /|}
         fi
         dependencies="$current_dependencies, $dependencies"
@@ -91,11 +109,11 @@ ynh_apt_install_dependencies() {
 
     # Prepare the virtual-dependency control file for dpkg-deb --build
     local TMPDIR=$(mktemp --directory)
-    mkdir -p ${TMPDIR}/${app_ynh_deps}/DEBIAN
+    mkdir -p "${TMPDIR}/${app_ynh_deps}/DEBIAN"
     # For some reason, dpkg-deb insists for folder perm to be 755 and sometimes it's 777 o_O?
-    chmod -R 755 ${TMPDIR}/${app_ynh_deps}
+    chmod -R 755 "${TMPDIR}/${app_ynh_deps}"
 
-    cat > ${TMPDIR}/${app_ynh_deps}/DEBIAN/control << EOF
+    cat > "${TMPDIR}/${app_ynh_deps}/DEBIAN/control" << EOF
 Section: misc
 Priority: optional
 Package: ${app_ynh_deps}
@@ -125,11 +143,14 @@ EOF
         # (the following is ran inside { } to not start a subshell otherwise ynh_die wouldnt exit the original process)
         # Parse the list of problematic dependencies from dpkg's log ...
         # (relevant lines look like: "foo-ynh-deps depends on bar; however:")
-        cat $TMPDIR/dpkg_log
-        local problematic_dependencies="$(grep -oP '(?<=-ynh-deps depends on ).*(?=; however)' $TMPDIR/dpkg_log | tr '\n' ' ')"
+        cat "$TMPDIR/dpkg_log"
+        local problematic_dependencies
+        mapfile -a problematic_dependencies < <(grep -oP '(?<=-ynh-deps depends on ).*(?=; however)' "$TMPDIR/dpkg_log")
         # Fake an install of those dependencies to see the errors
         # The sed command here is, Print only from 'Reading state info' to the end.
-        [[ -n "$problematic_dependencies" ]] && _ynh_apt_install $problematic_dependencies --dry-run 2>&1 | sed --quiet '/Reading state info/,$p' | grep -v "fix-broken\|Reading state info" >&2
+        if ((${#problematic_dependencies[@]} != 0)); then
+            _ynh_apt_install "${problematic_dependencies[@]}" --dry-run 2>&1 | sed --quiet '/Reading state info/,$p' | grep -v "fix-broken\|Reading state info" >&2
+        fi
         ynh_die "Unable to install apt dependencies"
     }
     rm --recursive --force "$TMPDIR" # Remove the temp dir.
@@ -156,21 +177,21 @@ ynh_apt_remove_dependencies() {
 
     local current_dependencies=""
     if _ynh_apt_package_is_installed "${app_ynh_deps}"; then
-        current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${app_ynh_deps}) "
+        current_dependencies="$(dpkg-query --show --showformat='${Depends}' "${app_ynh_deps}") "
         current_dependencies=${current_dependencies// | /|}
     fi
 
     # Edge case where the app dep may be on hold,
     # cf https://forum.yunohost.org/t/migration-error-cause-of-ffsync/20675/4
-    if apt-mark showhold | grep -q -w ${app_ynh_deps}; then
-        apt-mark unhold ${app_ynh_deps}
+    if apt-mark showhold | grep -q -w "${app_ynh_deps}"; then
+        apt-mark unhold "${app_ynh_deps}"
     fi
 
     # Remove the fake package and its dependencies if they not still used.
     # (except if dpkg doesn't know anything about the package,
     # which should be symptomatic of a failed install, and we don't want bash to report an error)
-    if dpkg-query --show ${app_ynh_deps} &> /dev/null; then
-        _ynh_apt autoremove --purge ${app_ynh_deps}
+    if dpkg-query --show "${app_ynh_deps}" &> /dev/null; then
+        _ynh_apt autoremove --purge "${app_ynh_deps}"
     fi
 }
 
@@ -189,6 +210,10 @@ ynh_apt_install_dependencies_from_extra_repository() {
     local key
     ynh_handle_getopts_args "$@"
     # ===========================================
+
+    # split package into packages list
+    local packages
+    read -r -a packages <<< "$package"
 
     # Split the repository into uri, suite and components.
     IFS=', ' read -r -a repo_parts <<< "$repo"
@@ -234,7 +259,7 @@ EOF
     if [ -n "$key" ] && [[ "$key" != "trusted=yes" ]]; then
         mkdir --parents "/etc/apt/trusted.gpg.d"
         # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
-        wget --timeout 900 --quiet "$key" --output-document=- | gpg --dearmor > /etc/apt/trusted.gpg.d/$app.gpg
+        wget --timeout 900 --quiet "$key" --output-document=- | gpg --dearmor > "/etc/apt/trusted.gpg.d/$app.gpg"
     fi
 
     # Update the list of package with the new repo NB: we use -o
@@ -252,9 +277,12 @@ EOF
 
     # Force to upgrade to the last version...
     # Without doing apt install, an already installed dep is not upgraded
-    local apps_auto_installed="$(apt-mark showauto $package)"
-    _ynh_apt_install "$package"
-    [ -z "$apps_auto_installed" ] || apt-mark auto $apps_auto_installed
+    local apps_auto_installed
+    mapfile -t apps_auto_installed < <(apt-mark showauto "${packages[@]}")
+    _ynh_apt_install "${packages[@]}"
+    if ((${#apps_auto_installed[@]} == 0)); then
+        apt-mark auto "${apps_auto_installed[@]}"
+    fi
 
     # Remove this extra repository after packages are installed
     ynh_safe_rm "/etc/apt/sources.list.d/$app.list"
@@ -284,7 +312,7 @@ _ynh_wait_dpkg_free() {
             local dpkg_dir="/var/lib/dpkg/updates/"
 
             # For each file in $dpkg_dir
-            while read dpkg_file <&9; do
+            while read -r dpkg_file <&9; do
                 # Check if the name of this file contains only numbers.
                 if echo "$dpkg_file" | grep --perl-regexp --quiet "^[[:digit:]]+$"; then
                     # If so, that a remaining of dpkg.
@@ -320,11 +348,11 @@ _ynh_apt_package_version() {
 # APT wrapper for non-interactive operation
 _ynh_apt() {
     _ynh_wait_dpkg_free
-    LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --assume-yes --quiet -o=Acquire::Retries=3 -o=Dpkg::Use-Pty=0 $@
+    LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --assume-yes --quiet -o=Acquire::Retries=3 -o=Dpkg::Use-Pty=0 "$@"
 }
 
 # Wrapper around "apt install" with the appropriate options
 _ynh_apt_install() {
     _ynh_apt --no-remove --option Dpkg::Options::=--force-confdef \
-        --option Dpkg::Options::=--force-confold install $@
+        --option Dpkg::Options::=--force-confold install "$@"
 }

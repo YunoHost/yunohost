@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -16,22 +17,24 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-import re
-import os
-import time
+
 import glob
+import os
+import re
+import time
 from importlib import import_module
 from logging import getLogger
 
-from moulinette import m18n, Moulinette
+from moulinette import Moulinette, m18n
 from moulinette.utils.filesystem import (
     read_json,
-    write_to_json,
     read_yaml,
+    write_to_json,
     write_to_yaml,
 )
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.log import is_unit_operation
 
 logger = getLogger("yunohost.diagnosis")
 
@@ -152,8 +155,13 @@ def _dump_human_readable_reports(reports):
     return output
 
 
+@is_unit_operation(sse_only=True)
 def diagnosis_run(
-    categories=[], force=False, except_if_never_ran_yet=False, email=False
+    operation_logger,
+    categories=[],
+    force=False,
+    except_if_never_ran_yet=False,
+    email=False,
 ):
     if (email or except_if_never_ran_yet) and not os.path.exists(DIAGNOSIS_CACHE):
         return
@@ -170,6 +178,8 @@ def diagnosis_run(
             raise YunohostValidationError(
                 "diagnosis_unknown_categories", categories=", ".join(unknown_categories)
             )
+
+    operation_logger.start()
 
     issues = []
     # Call the hook ...
@@ -208,10 +218,12 @@ def diagnosis_run(
         logger.warning(m18n.n("diagnosis_display_tip"))
 
 
+@is_unit_operation(flash=True)
 def diagnosis_ignore(filter, list=False):
     return _diagnosis_ignore(add_filter=filter, list=list)
 
 
+@is_unit_operation(flash=True)
 def diagnosis_unignore(filter):
     return _diagnosis_ignore(remove_filter=filter)
 
@@ -586,8 +598,9 @@ class Diagnoser:
     @staticmethod
     def remote_diagnosis(uri, data, ipversion, timeout=30):
         # Lazy loading for performance
-        import requests
         import socket
+
+        import requests
 
         # Monkey patch socket.getaddrinfo to force request() to happen in ipv4
         # or 6 ...
