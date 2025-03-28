@@ -1,3 +1,16 @@
+yunohost (12.1.4) testing; urgency=low
+
+  - helpers2.1: Make sure utils helpers are loaded first and fix jq usage ([#2073](http://github.com/YunoHost/yunohost/pull/2073))
+  - helpers2.1: More fixes for go/ruby/nodejs fixes ([#2074](http://github.com/YunoHost/yunohost/pull/2074))
+  - mail: Support sending mail to external mailbox of a managed domain ([#2075](http://github.com/YunoHost/yunohost/pull/2075))
+  - regenconf/dnsmasq: optimize the number of time we call 'yunohost domain' for perf + use True/False instead of 1/0 (f53f805c4)
+  - dnsmasq: properly initialize dnsmasq conf upon installing the yunohost package to prevent dns resolution not working during postinstall and making everything explode (f6e256152)
+  - i18n: Translations updated for Basque, French, German, Italian, Persian, Polish, Portuguese, Russian, Slovak
+
+  Thanks to all contributors <3 ! (Anonymous, harc, ljf, OniriCorpe, ppr, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 28 Mar 2025 10:40:45 +0100
+
 yunohost (12.1.3) testing; urgency=low
 
   - dev: Add autoreleases from tags github actions ([dc02a1395](http://github.com/YunoHost/yunohost/commit/dc02a1395))
