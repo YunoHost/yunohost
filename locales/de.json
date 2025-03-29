@@ -316,7 +316,7 @@
     "diagnosis_swap_none": "Das System hat gar keinen Swap. Du solltest überlegen mindestens {recommended} an Swap einzurichten, um Situationen zu verhindern, in welchen der RAM des Systems knapp wird.",
     "diagnosis_mail_ehlo_unreachable_details": "Konnte keine Verbindung zu deinem Server auf dem Port 25 herzustellen über IPv{ipversion}. Er scheint nicht erreichbar zu sein.<br>1. Das häufigste Problem ist, dass der Port 25 <a href='https://yunohost.org/isp_box_config'>nicht richtig zu deinem Server weitergeleitet ist</a>.<br>2. Du solltest auch sicherstellen, dass der Postfix-Dienst läuft.<br>3. In komplexeren Umgebungen: Stelle sicher, daß keine Firewall oder Reverse-Proxy stört.",
     "diagnosis_mail_ehlo_wrong": "Ein anderer SMTP-Server antwortet auf IPv{ipversion}. Dein Server wird wahrscheinlich nicht in der Lage sein, E-Mails zu empfangen.",
-    "service_reload_failed": "Der Dienst '{service}' konnte nicht erneut geladen werden.",
+    "service_reload_failed": "Der Dienst '{service}' konnte nicht erneut geladen werden",
     "service_reloaded": "Der Dienst '{service}' wurde erneut geladen",
     "service_restart_failed": "Der Dienst '{service}' konnte nicht erneut gestartet werden.",
     "app_manifest_install_ask_password": "Wähle ein Verwaltungspasswort für diese Applikation",
