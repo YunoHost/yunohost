@@ -52,10 +52,7 @@ def tools_versions():
 
 
 def tools_rootpw(new_password, check_strength=True):
-    import spwd
-
     from yunohost.utils.password import (
-        _hash_user_password,
         assert_password_is_compatible,
         assert_password_is_strong_enough,
     )
@@ -64,29 +61,17 @@ def tools_rootpw(new_password, check_strength=True):
     if check_strength:
         assert_password_is_strong_enough("admin", new_password)
 
-    new_hash = _hash_user_password(new_password)
+    proc = subprocess.run(
+        ["passwd"],
+        input=f"{new_password}\n{new_password}\n".encode("utf-8"), capture_output=True
+    )
 
-    # Write as root password
-    try:
-        hash_root = spwd.getspnam("root").sp_pwd
-
-        with open("/etc/shadow", "r") as before_file:
-            before = before_file.read()
-
-        with open("/etc/shadow", "w") as after_file:
-            after_file.write(
-                before.replace(
-                    "root:" + hash_root, "root:" + new_hash.replace("{CRYPT}", "")
-                )
-            )
-    # An IOError may be thrown if for some reason we can't read/write /etc/passwd
-    # A KeyError could also be thrown if 'root' is not in /etc/passwd in the first place (for example because no password defined ?)
-    # (c.f. the line about getspnam)
-    except (IOError, KeyError):
-        logger.warning(m18n.n("root_password_desynchronized"))
-        return
-    else:
+    if proc.returncode == 0:
         logger.info(m18n.n("root_password_changed"))
+    else:
+        logger.warning(proc.stdout)
+        logger.warning(proc.stderr)
+        logger.warning(m18n.n("root_password_desynchronized"))
 
 
 def tools_maindomain(new_main_domain=None):
