@@ -441,7 +441,7 @@ def _parse_app_doc_and_notifications(
     return doc, notifications
 
 
-def _hydrate_app_template(template: str, data: dict[str, Any]):
+def _hydrate_app_template(template: str, data: dict[str, Any], raise_exception_if_missing_var=False):
     # Apply jinja for stuff like {% if .. %} blocks,
     # but only if there's indeed an if block (to try to reduce overhead or idk)
     if "{%" in template:
@@ -450,6 +450,11 @@ def _hydrate_app_template(template: str, data: dict[str, Any]):
         template = Template(template).render(**data)
 
     stuff_to_replace = set(re.findall(r"__[A-Z0-9]+?[A-Z0-9_]*?[A-Z0-9]*?__", template))
+
+    if raise_exception_if_missing_var:
+        missing_vars = [v for v in stuff_to_replace if v.strip("_").lower() not in data]
+        if missing_vars:
+            raise YunohostError("app_uninitialized_variables", vars=', '.join(missing_vars))
 
     for stuff in stuff_to_replace:
         varname = stuff.strip("_").lower()
