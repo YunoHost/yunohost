@@ -1154,7 +1154,7 @@ ynh_abort_if_errors
             error_message_if_script_failed="An error occured inside the script",
             error_message_if_failed=lambda e: f"{action} failed for {app} : {e}",
         )
-    
+
         if delete_workdir_at_the_end:
             rm(workdir, recursive=True, force=True)
 
@@ -1333,7 +1333,7 @@ def app_install(
                 recursive=True,
             )
 
-    if packaging_format >= 2:
+    if int(packaging_format) == 2:
         from yunohost.utils.resources import AppResourceManager
 
         try:
@@ -1345,7 +1345,7 @@ def app_install(
         except (KeyboardInterrupt, EOFError, Exception) as e:
             shutil.rmtree(app_setting_path)
             raise e
-    else:
+    elif packaging_format <= 1:
         # Initialize the main permission for the app
         # The permission is initialized with no url associated, and with tile disabled
         # For web app, the root path of the app will be added as url and the tile
@@ -1366,13 +1366,14 @@ def app_install(
         action="install",
     )
 
-    # If packaging_format v2+, save all install options as settings
+    # Reinject user-provider passwords which are not in the app settings
+    ephemeral_vars_for_install = {}
     if packaging_format >= 2:
         for option in options:
-            # Reinject user-provider passwords which are not in the app settings
             # (cf a few line before)
             if option.type == "password":
                 env_dict[option.id] = form[option.id]
+                ephemeral_vars_for_install[option.id] = form[option.id]
 
     # We want to hav the env_dict in the log ... but not password values
     env_dict_for_logging = env_dict.copy()
@@ -1386,26 +1387,86 @@ def app_install(
 
     operation_logger.extra.update({"env": env_dict_for_logging})
 
+    def install_sequence():
+        app = app_instance_name
+        workdir = extracted_app_folder
+
+        from yunohost.utils.resources import AppResourceManager
+        from yunohost.utils.configurations import AppConfigurationsManager
+
+        try:
+            AppResourceManager(app, wanted=manifest, current={}).apply(
+                rollback_and_raise_exception_if_failure=True,
+                operation_logger=operation_logger,
+                action="install",
+            )
+        except (KeyboardInterrupt, EOFError, Exception) as e:
+            shutil.rmtree(app_setting_path)
+            raise e
+
+        app_scripts = check_output(f"bash -c \"source '{workdir}/scripts.sh'; declare -F | cut -d' ' -f3\"").strip().split("\n")
+
+        def _run_step(step):
+            if step not in app_scripts:
+                return
+            snippet = ["source $YNH_APP_BASEDIR/scripts.sh"]
+            if "common" in app_scripts:
+                snippet.append("common")
+            logger.debug(f"Running step: {step}")
+            snippet.append(step)
+            _run_app_script_or_snippet(
+                app,
+                "pre_build_as_root",
+                '\n'.join(snippet),
+                env=ephemeral_vars_for_install.copy(),
+                workdir=workdir,
+                as_app=(not step.endswith("_as_root"))
+            )
+
+        # FIXME: i18n / ux
+        logger.info(f"Building {app} ...")
+        _run_step("pre_build_as_root")
+        _run_step("build")
+        _run_step("post_build_as_root")
+
+        # FIXME : fix install_dir permissions somehow?
+
+        _run_step("pre_regenconf_as_root")
+        _run_step("pre_regenconf")
+
+        env = _make_environment_for_app_script(app, workdir=workdir)
+        # FIXME: error handling ?
+        AppConfigurationsManager(app, wanted=manifest, env=env, workdir=workdir).apply(
+            rollback_and_raise_exception_if_failure=True,
+            operation_logger=operation_logger
+        )
+
+        _run_step("post_regenconf")
+        _run_step("post_regenconf_as_root")
+
+        return
+
+        # FIXME: i18n / ux
+        logger.info(f"Initializing {app} ...")
+        _run_step("pre_init_as_root")
+        _run_step("init")
+        _run_step("post_init_as_root")
+
+        # FIXME: i18n / ux
+        logger.info(f"Finalizing ...")
+        _run_step("pre_finalize_as_root")
+        _run_step("finalize")
+        _run_step("post_finalize_as_root")
+
+
+    if packaging_format >= 3:
+        install_sequence()
+
     # Execute the app install script
     install_failed = True
     try:
-        if packaging_format >= 3:
-            # FIXME: i18n
-            logger.info(f"Builing {app_instance_name}")
-            (
-                install_failed,
-                failure_message_with_debug_instructions
-            ) = _run_app_script_or_snippet(
-                app_instance_name,
-                "build",
-                """
-                source $YNH_APP_BASEDIR/scripts.sh
-                build
-                """,
-                env=env_dict,
-                as_app=True
-            )
-        else:
+
+        if packaging_format < 3:
             (
                 install_failed,
                 failure_message_with_debug_instructions,
