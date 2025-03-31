@@ -54,5 +54,13 @@
     "global_settings_setting_ssh_compatibility_help": "Kompromis mezi kompatibilitou a bezpečností SSH serveru. Ovlivní šifry a další související bezpečnostní nastavení.",
     "global_settings_setting_ssh_port": "SSH port",
     "global_settings_setting_smtp_allow_ipv6_help": "Povolit použití IPv6 pro příjem a odesílání emailů",
-    "global_settings_setting_smtp_relay_enabled_help": "Použít SMTP relay hostitele pro odesílání emailů místo této YunoHost instance. Užitečné v různých situacích: port 25 je blokován vaším ISP nebo VPS poskytovatelem, IP adresa je na blacklistu (např. DUHL), nemůžete nastavit reverzní DNS záznam nebo tento server není přímo připojen do internetu a vy chcete použít jiný server k odesílání emailů."
+    "global_settings_setting_smtp_relay_enabled_help": "Použít SMTP relay hostitele pro odesílání emailů místo této YunoHost instance. Užitečné v různých situacích: port 25 je blokován vaším ISP nebo VPS poskytovatelem, IP adresa je na blacklistu (např. DUHL), nemůžete nastavit reverzní DNS záznam nebo tento server není přímo připojen do internetu a vy chcete použít jiný server k odesílání emailů.",
+    "app_config_upgrade": "Aktualizovat",
+    "admins": "Administrátoři",
+    "all_users": "Všichni uživatelé YunoHost",
+    "app_config_change_url": "Změnit URL",
+    "app_config_change_url_domain": "Nová doména",
+    "app_config_change_url_path": "Nová cesta",
+    "app_config_permission_logo_help": "Pouze PNG jsou podporovány",
+    "app_config_uninstall": "Odinstalovat"
 }
