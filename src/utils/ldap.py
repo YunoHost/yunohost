@@ -68,6 +68,7 @@ def _destroy_ldap_interface():
     global _ldap_interface
     if _ldap_interface is not None:
         del _ldap_interface
+        _ldap_interface = None
 
 
 atexit.register(_destroy_ldap_interface)

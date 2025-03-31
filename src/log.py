@@ -153,8 +153,6 @@ def log_list(
         ... (e.g. initializing groups/permissions when installing an app)
     """
 
-    global log_list_cache
-
     operations = {}
 
     _update_log_cache_symlinks()
