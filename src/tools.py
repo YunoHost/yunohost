@@ -62,12 +62,12 @@ def tools_rootpw(new_password, check_strength=True):
         assert_password_is_strong_enough("admin", new_password)
 
     proc = subprocess.Popen(
-        ["passwd"],
+        ["passwd", "--stdin"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
     )
-    out, err = proc.communicate(f"{new_password}\n{new_password}\n".encode("utf-8"))
+    out, err = proc.communicate(new_password.encode("utf-8"))
     result = proc.wait()
 
     if result == 0:
