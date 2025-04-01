@@ -5,8 +5,8 @@
     "admin_password": "Administrační heslo",
     "additional_urls_already_removed": "Další URL '{url}' již bylo odebráno u oprávnění '{permission}'",
     "additional_urls_already_added": "Další URL '{url}' již bylo přidáno pro oprávnění '{permission}'",
-    "action_invalid": "Nesprávné akce '{action}'",
-    "aborting": "Zrušeno.",
+    "action_invalid": "Nesprávná akce '{action}'",
+    "aborting": "Ukončuji.",
     "app_change_url_identical_domains": "Stará a nová doména/url_cesta jsou totožné ('{domain}{path}'), nebudou provedeny žádné změny.",
     "app_argument_invalid": "Vyberte správnou hodnotu pro argument '{name}': {error}",
     "app_argument_choice_invalid": "Vyberte jednu z možností '{choices}' pro argument'{name}'",
@@ -62,5 +62,6 @@
     "app_config_change_url_domain": "Nová doména",
     "app_config_change_url_path": "Nová cesta",
     "app_config_permission_logo_help": "Pouze PNG jsou podporovány",
-    "app_config_uninstall": "Odinstalovat"
+    "app_config_uninstall": "Odinstalovat",
+    "app_config__core_name": "Konfigurace a operace"
 }
