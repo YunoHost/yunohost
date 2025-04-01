@@ -54,7 +54,7 @@ from pydantic import (
     model_validator,
 )
 from pydantic.fields import Field
-from pydantic.networks import EmailStr, HttpUrl, Url
+from pydantic.networks import EmailStr, HttpUrl
 from pydantic.types import constr
 from pydantic_extra_types.color import Color
 
@@ -1345,7 +1345,7 @@ class URLOption(BaseStringOption):
     def _value_post_validator(
         cls, value: HttpUrl | None, info: "ValidationInfo"
     ) -> str | None:
-        if isinstance(value, Url):
+        if isinstance(value, HttpUrl):
             return str(value)
 
         return super(URLOption, URLOption)._value_post_validator(cls, value, info)
