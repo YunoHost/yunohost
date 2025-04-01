@@ -491,10 +491,10 @@ def app_change_url(
 
     # Normalize path and domain format
 
-    domain = DomainOption.normalize(domain)
-    old_domain = DomainOption.normalize(old_domain)
-    path = WebPathOption.normalize(path)
-    old_path = WebPathOption.normalize(old_path)
+    domain = DomainOption().normalize(domain)
+    old_domain = DomainOption().normalize(old_domain)
+    path = WebPathOption(default="/").normalize(path)
+    old_path = WebPathOption(default="/").normalize(old_path)
 
     if (domain, path) == (old_domain, old_path):
         raise YunohostValidationError(
@@ -1679,8 +1679,8 @@ def app_register_url(app: str, domain: str, path: str) -> None:
     )
     from yunohost.utils.form import DomainOption, WebPathOption
 
-    domain = DomainOption.normalize(domain)
-    path = WebPathOption.normalize(path)
+    domain = DomainOption().normalize(domain)
+    path = WebPathOption(default="/").normalize(path)
 
     # We cannot change the url of an app already installed simply by changing
     # the settings...
@@ -3341,8 +3341,8 @@ def _get_conflicting_apps(
     from yunohost.domain import _assert_domain_exists
     from yunohost.utils.form import DomainOption, WebPathOption
 
-    domain = DomainOption.normalize(domain)
-    path = WebPathOption.normalize(path)
+    domain = DomainOption().normalize(domain)
+    path = WebPathOption(default="/").normalize(path)
 
     # Abort if domain is unknown
     _assert_domain_exists(domain)
