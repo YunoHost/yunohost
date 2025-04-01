@@ -468,6 +468,13 @@ def test_resource_ruby():
         "echo 'helpers_version = \"2.1\"' >> /etc/yunohost/apps/testapp/manifest.toml"
     )
 
+    r = AppResourceClassesByType["system_user"]
+    r({}, "testapp").provision_or_update()
+
+    r = AppResourceClassesByType["install_dir"]
+    r({}, "testapp").provision_or_update()
+    install_dir = app_setting("testapp", "install_dir")
+
     manager = AppResourceManager(
         "testapp",
         current={},
@@ -530,6 +537,13 @@ def test_resource_go():
     os.system(
         "echo 'helpers_version = \"2.1\"' >> /etc/yunohost/apps/testapp/manifest.toml"
     )
+
+    r = AppResourceClassesByType["system_user"]
+    r({}, "testapp").provision_or_update()
+
+    r = AppResourceClassesByType["install_dir"]
+    r({}, "testapp").provision_or_update()
+    install_dir = app_setting("testapp", "install_dir")
 
     r = AppResourceClassesByType["go"]
     assert not app_setting("testapp", "go_version")

@@ -2413,9 +2413,6 @@ def _get_app_settings(app: str) -> Dict[str, Any]:
     """
     _assert_is_installed(app)
 
-    global app_settings_cache
-    global app_settings_cache_timestamp
-
     app_setting_path = os.path.join(APPS_SETTING_PATH, app, "settings.yml")
     app_setting_timestamp = os.path.getmtime(app_setting_path)
 
