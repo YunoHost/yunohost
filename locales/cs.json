@@ -63,5 +63,8 @@
     "app_config_change_url_path": "Nová cesta",
     "app_config_permission_logo_help": "Pouze PNG jsou podporovány",
     "app_config_uninstall": "Odinstalovat",
-    "app_config__core_name": "Konfigurace a operace"
+    "app_config__core_name": "Konfigurace a operace",
+    "app_arch_not_supported": "Tato aplikace může být nainstalována na architekturách {required}, ale architektura vašeho serveru je {current}",
+    "app_change_url_failed": "Nemohla se změnit adresa URL pro {app}: {error}",
+    "app_config_force_upgrade": "Vynutit aktualizaci"
 }
