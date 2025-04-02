@@ -71,10 +71,15 @@ test-questions:
   script:
     - python3 -m pytest src/tests/test_questions.py
 
-test-app-config:
+test-app-configpanel:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_app_config.py
+    - python3 -m pytest src/tests/test_app_configpanel.py
+
+test-app-regenconf:
+  extends: .test-stage
+  script:
+    - python3 -m pytest src/tests/test_app_regenconf.py
 
 test-app-resources:
   extends: .test-stage
@@ -147,7 +152,9 @@ coverage:
       artifacts: true
     - job: test-questions
       artifacts: true
-    - job: test-app-config
+    - job: test-app-configpanel
+      artifacts: true
+    - job: test-app-regenconf
       artifacts: true
     - job: test-app-resources
       artifacts: true
