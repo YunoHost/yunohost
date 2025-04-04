@@ -1,3 +1,10 @@
+yunohost (12.0.13) stable; urgency=low
+
+  - dnsmasq: properly initialize dnsmasq conf upon installing the yunohost package to prevent dns resolution not working during postinstall and making everything explode (1bd63fe0c)
+  - nginx: increase timeout for portal API, on slow hardware for some reason the login takes more than 5~10ish sec (that should be profiled and improved meh) but at least increasing the timeout prevents the 504 (bd7b79e98)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 04 Apr 2025 22:04:32 +0200
+
 yunohost (12.0.12) stable; urgency=low
 
   - [fix] FDN dns resolver are not available for all AS ([#2066](http://github.com/YunoHost/yunohost/pull/2066))
