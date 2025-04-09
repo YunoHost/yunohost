@@ -1,5 +1,5 @@
 Types: deb
-URIs: http://forge.yunohost.org/debian/
+URIs: http://repo.yunohost.org/debian/
 Suites: trixie
 Components: stable
 Signed-By: /etc/apt/trusted.gpg.d/yunohost-trixie.gpg
