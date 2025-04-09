@@ -1,5 +1,5 @@
 Types: deb
-URIs: http://forge.yunohost.org/debian/
+URIs: http://repo.yunohost.org/debian/
 Suites: bookworm
 Components: stable
 Signed-By: /etc/apt/trusted.gpg.d/yunohost-bookworm.gpg
