@@ -21,8 +21,10 @@
 import json
 import logging
 import os
+import re
 import subprocess
 from collections.abc import Generator
+from pathlib import Path
 from typing import Any
 
 from ..diagnosis import Diagnoser
@@ -154,12 +156,17 @@ class MyDiagnoser(Diagnoser):  # type: ignore
             )
 
         # Using yunohost testing channel
-        if (
-            os.system(
-                "grep -q '^\\s*deb\\s*.*yunohost.org.*\\stesting' /etc/apt/sources.list /etc/apt/sources.list.d/*"
-            )
-            == 0
-        ):
+        lists = list(Path("/etc/apt/").rglob("*.list"))
+        deb822 = list(Path("/etc/apt/").rglob("*.sources"))
+
+        lists_testing = any(re.match(r"^\s*deb\s*.*yunohost.org.*\btesting\b", file.read_text()) for file in lists)
+        deb822_testing = any(
+            re.findall(r"^\s*URIs\s*:.*yunohost.org", file.read_text(), flags=re.MULTILINE)
+            and re.findall(r"^\s*Components\s*:.*\btesting\b.*", file.read_text(), flags=re.MULTILINE)
+            for file in deb822
+        )
+
+        if lists_testing or deb822_testing:
             yield dict(
                 meta={"test": "apt_yunohost_channel"},
                 status="WARNING",
