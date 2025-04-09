@@ -1005,7 +1005,7 @@ def _guess_who_started_process(process):
         return process.environ()["SUDO_USER"]
 
     parent = process.parent()
-    parent_cli = parent.cmdline()
+    parent_cli = parent.cmdline() if parent else []
     pparent = parent.parent() if parent else None
     pparent_cli = pparent.cmdline() if pparent else []
     ppparent = pparent.parent() if pparent else None
