@@ -59,6 +59,9 @@ do_post_regen() {
         apt-key del "$KEY" 2> /dev/null
     done
 
+    # Ensure the yunohost repo is not in sources.list
+    sed '/yunohost.org/d' -i "/etc/apt/sources.list"
+
     # Download GPG keys
     # We do this only at the post regen and if the key doesn't already exists,
     # because we don't want the regenconf to fuck everything up if the regenconf
