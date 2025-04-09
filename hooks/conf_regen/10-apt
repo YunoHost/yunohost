@@ -27,93 +27,45 @@ do_pre_regen() {
     pending_dir=$1
 
     mkdir --parents "${pending_dir}/etc/apt/preferences.d"
+    mkdir --parents "${pending_dir}/etc/apt/sources.list.d"
 
-    # Add sury
-    mkdir -p "$pending_dir/etc/apt/sources.list.d/"
+    # Remove renamed files
+    touch "${pending_dir}/etc/apt/preferences.d/extra_php_version"
+    touch "${pending_dir}/etc/apt/preferences.d/ban_packages"
 
-    # This switch case seems useless but allows overriding distros for unreleased debian versions
-    case "$(lsb_release --codename --short)" in
-        bullseye) sury_distro=bullseye ;;
-        bookworm) sury_distro=bookworm ;;
-        trixie) sury_distro=trixie ;;
-    esac
+    # .list files were replaced with deb822 .sources files
+    touch "${pending_dir}/etc/apt/sources.list.d/extra_php_version.list"
+    touch "${pending_dir}/etc/apt/sources.list.d/yarn.list"
+    touch "${pending_dir}/etc/apt/sources.list.d/yunohost.list"
 
-    echo "deb [signed-by=/etc/apt/trusted.gpg.d/extra_php_version.gpg] https://packages.sury.org/php/ $sury_distro main" > "${pending_dir}/etc/apt/sources.list.d/extra_php_version.list"
+    # Copy the configuration files
+    cp /usr/share/yunohost/conf/apt/preferences.d/* "${pending_dir}/etc/apt/preferences.d"
+    cp /usr/share/yunohost/conf/apt/sources.list.d/* "${pending_dir}/etc/apt/sources.list.d"
+}
 
-    # Ban some packages from sury
-    echo "
-Package: php-common
-Pin: origin \"packages.sury.org\"
-Pin-Priority: 500" >> "${pending_dir}/etc/apt/preferences.d/extra_php_version"
+_update_key() {
+    url=$1
+    target=$2
 
-    packages_to_refuse_from_sury="php php-* openssl libssl1.1 libssl-dev"
-    for package in $packages_to_refuse_from_sury; do
-        echo "
-Package: $package
-Pin: origin \"packages.sury.org\"
-Pin-Priority: -1" >> "${pending_dir}/etc/apt/preferences.d/extra_php_version"
-    done
-
-    # Add yarn
-    echo "deb [signed-by=/etc/apt/trusted.gpg.d/yarn.gpg] https://dl.yarnpkg.com/debian/ stable main" > "${pending_dir}/etc/apt/sources.list.d/yarn.list"
-
-    # Ban everything from Yarn except Yarn
-    echo "
-Package: *
-Pin: origin \"dl.yarnpkg.com\"
-Pin-Priority: -1
-
-Package: yarn
-Pin: origin \"dl.yarnpkg.com\"
-Pin-Priority: 500" >> "${pending_dir}/etc/apt/preferences.d/yarn"
-
-    # Ban apache2, bind9
-    echo "
-
-# PLEASE READ THIS WARNING AND DON'T EDIT THIS FILE
-
-# You are probably reading this file because you tried to install apache2 or
-# bind9. These 2 packages conflict with YunoHost.
-
-# Installing apache2 will break nginx and break the entire YunoHost ecosystem
-# on your server, therefore don't remove those lines!
-
-# You have been warned.
-
-Package: apache2
-Pin: release *
-Pin-Priority: -1
-
-Package: apache2-bin
-Pin: release *
-Pin-Priority: -1
-
-# Also bind9 will conflict with dnsmasq.
-# Same story as for apache2.
-# Don't install it, don't remove those lines.
-
-Package: bind9
-Pin: release *
-Pin-Priority: -1
-" >> "${pending_dir}/etc/apt/preferences.d/ban_packages"
-
+    if [[ ! -s "$target" ]]; then
+        curl --connect-timeout 900 -s -o - "$url" | gpg --dearmor > "$target"
+    fi
 }
 
 do_post_regen() {
     # Purge expired keys (such as sury 95BD4743)
     EXPIRED_KEYS="$(LC_ALL='en_US.UTF-8' apt-key list 2> /dev/null | grep -A1 'expired:' | grep -v 'expired\|^-' | sed 's/\s//g' || true)"
-    for KEY in $EXPIRED_KEYS; do apt-key del "$KEY" 2> /dev/null; done
+    for KEY in $EXPIRED_KEYS; do
+        apt-key del "$KEY" 2> /dev/null
+    done
 
-    # Add sury key
-    # We do this only at the post regen and if the key doesn't already exists, because we don't want the regenconf to fuck everything up if the regenconf runs while the network is down
-    if [[ ! -s /etc/apt/trusted.gpg.d/extra_php_version.gpg ]]; then
-        wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor > "/etc/apt/trusted.gpg.d/extra_php_version.gpg"
-    fi
-
-    # Similar to Sury
-    if [[ ! -s /etc/apt/trusted.gpg.d/yarn.gpg ]]; then
-        wget --timeout 900 --quiet "https://dl.yarnpkg.com/debian/pubkey.gpg" --output-document=- | gpg --dearmor > "/etc/apt/trusted.gpg.d/yarn.gpg"
-    fi
+    # Download GPG keys
+    # We do this only at the post regen and if the key doesn't already exists,
+    # because we don't want the regenconf to fuck everything up if the regenconf
+    # runs while the network is down
+    _update_key "https://packages.sury.org/php/apt.gpg" "/etc/apt/trusted.gpg.d/extra_php_version.gpg"
+    _update_key "https://dl.yarnpkg.com/debian/pubkey.gpg" "/etc/apt/trusted.gpg.d/yarn.gpg"
+    _update_key "https://repo.yunohost.org/keys/yunohost_trixie.asc" "/etc/apt/trusted.gpg.d/yunohost-trixie.gpg"
 
     # Make sure php7.4 is the default version when using php in cli
     if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION; then
