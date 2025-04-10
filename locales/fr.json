@@ -275,7 +275,7 @@
     "file_does_not_exist": "Le fichier dont le chemin est {path} n'existe pas.",
     "hook_json_return_error": "Échec de la lecture au retour du script {path}. Erreur : {msg}. Contenu brut : {raw_content}",
     "pattern_password_app": "Désolé, les mots de passe ne peuvent pas contenir les caractères suivants : {forbidden_chars}",
-    "service_reload_failed": "Impossible de recharger le service '{service}'.",
+    "service_reload_failed": "Impossible de recharger le service '{service}'",
     "service_reloaded": "Le service '{service}' a été rechargé",
     "service_restart_failed": "Impossible de redémarrer le service '{service}'",
     "service_restarted": "Le service '{service}' a été redémarré",

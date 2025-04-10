@@ -26,7 +26,7 @@ location = /yunohost/api/error/502 {
 
 location /yunohost/portalapi/ {
 
-    proxy_read_timeout 5s;
+    proxy_read_timeout 30s;
     proxy_pass http://127.0.0.1:6788/;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;

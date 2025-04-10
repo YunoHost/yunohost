@@ -74,7 +74,29 @@ yunohost (12.1.0) testing; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 23 Feb 2025 21:22:02 +0100
 
-yunohost (12.0.11) stable; urgency=low
+yunohost (12.0.14) stable; urgency=low
+
+  - dnsmasq: remove DNS64 version of DNS4all resolver which is only intended to be used with NAT64 and causing a bunch of issues in the context of yunohost etc (606705274)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 09 Apr 2025 12:07:46 +0200
+
+yunohost (12.0.13) stable; urgency=low
+
+  - dnsmasq: properly initialize dnsmasq conf upon installing the yunohost package to prevent dns resolution not working during postinstall and making everything explode (1bd63fe0c)
+  - nginx: increase timeout for portal API, on slow hardware for some reason the login takes more than 5~10ish sec (that should be profiled and improved meh) but at least increasing the timeout prevents the 504 (bd7b79e98)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 04 Apr 2025 22:04:32 +0200
+
+yunohost (12.0.12) stable; urgency=low
+
+  - [fix] FDN dns resolver are not available for all AS ([#2066](http://github.com/YunoHost/yunohost/pull/2066))
+  - Update resolv.dnsmasq.conf + 1 DNS server Aquilenet ([#2068](http://github.com/YunoHost/yunohost/pull/2068))
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, OniriCorpe, ljf (zamentur), Sacha)
+
+ -- tituspijean <tituspijean@yunohost.org>  Sun, 16 Mar 2025 12:41:55 +0100
+
+ yunohost (12.0.11) stable; urgency=low
 
   - users: Prevent to remove the last user from admins ([#2029](http://github.com/YunoHost/yunohost/pull/2029), [#2030](http://github.com/YunoHost/yunohost/pull/2030), [#2031](http://github.com/YunoHost/yunohost/pull/2031), a18928475, d7b57a87a, fc2596d04, 8d6fd9c32)
   - apps: incorrect warning about amount of RAM during upgrade ([#1971](http://github.com/YunoHost/yunohost/pull/1971))
