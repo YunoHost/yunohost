@@ -145,7 +145,7 @@ EOF
         # (relevant lines look like: "foo-ynh-deps depends on bar; however:")
         cat "$TMPDIR/dpkg_log"
         local problematic_dependencies
-        mapfile -a problematic_dependencies < <(grep -oP '(?<=-ynh-deps depends on ).*(?=; however)' "$TMPDIR/dpkg_log")
+        mapfile -t problematic_dependencies < <(grep -oP '(?<=-ynh-deps depends on ).*(?=; however)' "$TMPDIR/dpkg_log")
         # Fake an install of those dependencies to see the errors
         # The sed command here is, Print only from 'Reading state info' to the end.
         if ((${#problematic_dependencies[@]} != 0)); then
