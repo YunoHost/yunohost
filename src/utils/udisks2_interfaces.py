@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from mock.mock import patch
+
 if TYPE_CHECKING:
     from typing import Any, Dict, List, Tuple, Optional
 
@@ -14,7 +16,7 @@ from sdbus import (
     DbusObjectManagerInterface,
     SdBus,
 )
-from sdbus.utils import parse_get_managed_objects
+from sdbus.utils import parse_get_managed_objects as sdbus_parse_get_managed_objects, parse
 from sortedcollections import ValueSortedDict
 
 
@@ -22,6 +24,31 @@ UDISKS2_SERVICE_NAME = "org.freedesktop.UDisks2"
 UDISKS2_BASE_PATH = "/org/freedesktop/UDisks2"
 UDISKS2_DRIVE_PATH = f"{UDISKS2_BASE_PATH}/drives"
 
+UDISKS2_DRIVE_IFC = "org.freedesktop.UDisks2.Drive"
+UDISKS2_DRIVE_ATA_IFC = "org.freedesktop.UDisks2.Drive.Ata"
+UDISKS2_DRIVE_NVME_IFC = "org.freedesktop.UDisks2.NVMe.Controller"
+
+
+def _get_class_from_interfaces(_1, interface_names_iter, _2):
+    if UDISKS2_DRIVE_ATA_IFC in interface_names_iter:
+        return AtaDisk
+    if UDISKS2_DRIVE_NVME_IFC in interface_names_iter:
+        return NvmeDisk
+    elif UDISKS2_DRIVE_IFC in interface_names_iter:
+        return Disk
+    return None
+
+def parse_get_managed_objects(
+    interfaces,
+    managed_objects_data,
+    on_unknown_interface,
+    on_unknown_member
+):
+    with patch(f"{parse.__name__}._get_class_from_interfaces") as f:
+        f.side_effect = _get_class_from_interfaces
+        return sdbus_parse_get_managed_objects(
+            interfaces, managed_objects_data, on_unknown_interface, on_unknown_member
+        )
 
 class GetDisksMixin(DbusInterfaceCommon):
     def __init__(

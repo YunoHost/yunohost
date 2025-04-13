@@ -4,11 +4,6 @@ from sdbus import sd_bus_open_system
 from yunohost.utils.system import binary_to_human
 from yunohost.utils.udisks2_interfaces import Udisks2Manager
 
-UDISK_DRIVE_PATH = "/org/freedesktop/UDisks2/drives/"
-UDISK_DRIVE_IFC = "org.freedesktop.UDisks2.Drive"
-UDISK_DRIVE_ATA_IFC = "org.freedesktop.UDisks2.Drive.Ata"
-UDISK_DRIVE_NVME_IFC = "org.freedesktop.UDisks2.Manager.NVMe"
-
 
 class DiskState(enum.StrEnum):
     """https://github.com/storaged-project/udisks/issues/1352#issuecomment-2678874537"""
