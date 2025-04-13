@@ -999,26 +999,21 @@ def log_share(path):
     return log_show(path, share=True)
 
 
-def _guess_who_started_process(process):
-
+def _guess_who_started_process(process: psutil.Process) -> str:
     if "SUDO_USER" in process.environ():
         return process.environ()["SUDO_USER"]
 
-    parent = process.parent()
-    parent_cli = parent.cmdline() if parent else []
-    pparent = parent.parent() if parent else None
-    pparent_cli = pparent.cmdline() if pparent else []
-    ppparent = pparent.parent() if pparent else None
-    ppparent_cli = ppparent.cmdline() if ppparent else []
+    parents = process.parents()
+    cmdlines = [parent.cmdline() for parent in parents]
 
-    if any("/usr/sbin/CRON" in cli for cli in [parent_cli, pparent_cli, ppparent_cli]):
+    if any("/usr/sbin/CRON" in cli for cli in cmdlines):
         return m18n.n("automatic_task")
-    elif any(
-        "/usr/bin/yunohost-api" in cli
-        for cli in [parent_cli, pparent_cli, ppparent_cli]
-    ):
+
+    elif any("/usr/bin/yunohost-api" in cli for cli in cmdlines):
         return m18n.n("yunohost_api")
+
     elif process.terminal() is None:
         return m18n.n("noninteractive_task")
+
     else:
         return "root"
