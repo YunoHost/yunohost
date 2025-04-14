@@ -1932,6 +1932,27 @@ def app_remove(
     _assert_system_is_sane_for_app(manifest, "post")
 
 
+# FIXME : should we have an operation logger ?
+def app_regen_conf(app: str, dry_run: bool, with_diff: bool = False) -> dict:
+
+    from .utils.configurations import AppConfigurationsManager
+
+    # FIXME : in fact we probably also want to regen ressources ?
+    # Which should be useful to properly reinstall apt dependencies etc...?
+    # Or semantically it should be a different function such as `regen_resources` ?
+
+    _assert_is_installed(app)
+
+    manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
+    assert manifest["packaging_format"] >= 3
+
+    manager = AppConfigurationsManager(app, wanted=manifest)
+    if dry_run:
+        return manager.dry_run(with_diff=with_diff)
+    else:
+        # FIXME : to be consistent, we should also call the pre / post regenconf hook of the app if there are any
+        return manager.apply()
+
 @is_unit_operation()
 def app_makedefault(
     operation_logger: "OperationLogger",

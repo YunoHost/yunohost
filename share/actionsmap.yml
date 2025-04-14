@@ -893,6 +893,22 @@ app:
                     help: Also remove all application data
                     action: store_true
 
+        ### app_regenconf()
+        regen-conf:
+            action_help: Regen configurations related to an app
+            api: PUT /apps/<app>/regenconf
+            arguments:
+                app:
+                    help: App to regen configurations for
+                -d:
+                    full: --with-diff
+                    help: Show differences in case of configuration changes
+                    action: store_true
+                -n:
+                    full: --dry-run
+                    help: Show what would have been regenerated
+                    action: store_true
+
         ### app_upgrade()
         upgrade:
             action_help: Upgrade app
