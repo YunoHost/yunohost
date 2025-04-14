@@ -441,7 +441,7 @@ ynh_spawn_app_shell() {
 
         # Source the EnvironmentFiles from the app's service
         local -a env_files
-        mapfile -t env_files < <(systemctl show "$service.service" -p "EnvironmentFiles" --value | sed 's| (ignore_errors=yes)||')
+        mapfile -t env_files < <(systemctl show "$service.service" -p "EnvironmentFiles" --value | sed 's| (ignore_errors=\w*)||')
         if [ ${#env_files[*]} -gt 0 ]; then
             for file in "${env_files[@]}"; do
                 if [[ $file = /* ]]; then
