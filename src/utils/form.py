@@ -2153,9 +2153,10 @@ def prompt_or_validate_form(
                 value = prefilled_answers[option.id]
             elif interactive:
                 value = option.humanize(value, option)
-                choices = (
-                    option.choices if isinstance(option, BaseChoicesOption) else []
-                )
+                if isinstance(option, BaseChoicesOption) and option.choices is not None:
+                    choices = option.choices
+                else:
+                    choices = []
                 value = Moulinette.prompt(
                     message=option._get_prompt_message(value),
                     is_password=isinstance(option, PasswordOption),
