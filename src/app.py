@@ -1194,7 +1194,7 @@ def app_install(
     # Retrieve arguments list for install script
     raw_options = manifest["install"]
     options, form = ask_questions_and_parse_answers(raw_options, prefilled_answers=args)
-    parsedargs = form.dict(exclude_none=True)
+    parsedargs = form.model_dump(exclude_none=True)
 
     # Validate domain / path availability for webapps
     # (ideally this should be handled by the resource system for manifest v >= 2
@@ -2042,7 +2042,7 @@ def _get_AppConfigPanel():
             previous_settings: dict[str, Any],
             exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
         ) -> None:
-            env = {key: str(value) for key, value in form.dict().items()}
+            env = {key: str(value) for key, value in form.model_dump().items()}
             return_content = self._call_config_script("apply", env=env)
 
             # If the script returned validation error
@@ -2058,7 +2058,7 @@ def _get_AppConfigPanel():
                     )
 
         def _run_action(self, form: "FormModel", action_id: str) -> None:
-            env = {key: str(value) for key, value in form.dict().items()}
+            env = {key: str(value) for key, value in form.model_dump().items()}
             self._call_config_script(action_id, env=env)
 
         def _call_config_script(
@@ -2359,7 +2359,7 @@ ynh_app_config_run $1
             )
 
             next_settings = {
-                k: v for k, v in form.dict().items() if previous_settings.get(k) != v
+                k: v for k, v in form.model_dump().items() if previous_settings.get(k) != v
             }
 
             perm_changes: dict[str, dict[str, Any]] = {}

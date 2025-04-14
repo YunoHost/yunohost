@@ -52,10 +52,7 @@ def tools_versions():
 
 
 def tools_rootpw(new_password, check_strength=True):
-    import spwd
-
     from yunohost.utils.password import (
-        _hash_user_password,
         assert_password_is_compatible,
         assert_password_is_strong_enough,
     )
@@ -64,29 +61,21 @@ def tools_rootpw(new_password, check_strength=True):
     if check_strength:
         assert_password_is_strong_enough("admin", new_password)
 
-    new_hash = _hash_user_password(new_password)
+    proc = subprocess.Popen(
+        ["passwd", "--stdin"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    out, err = proc.communicate(new_password.encode("utf-8"))
+    result = proc.wait()
 
-    # Write as root password
-    try:
-        hash_root = spwd.getspnam("root").sp_pwd
-
-        with open("/etc/shadow", "r") as before_file:
-            before = before_file.read()
-
-        with open("/etc/shadow", "w") as after_file:
-            after_file.write(
-                before.replace(
-                    "root:" + hash_root, "root:" + new_hash.replace("{CRYPT}", "")
-                )
-            )
-    # An IOError may be thrown if for some reason we can't read/write /etc/passwd
-    # A KeyError could also be thrown if 'root' is not in /etc/passwd in the first place (for example because no password defined ?)
-    # (c.f. the line about getspnam)
-    except (IOError, KeyError):
-        logger.warning(m18n.n("root_password_desynchronized"))
-        return
-    else:
+    if result == 0:
         logger.info(m18n.n("root_password_changed"))
+    else:
+        logger.warning(out)
+        logger.warning(err)
+        logger.warning(m18n.n("root_password_desynchronized"))
 
 
 def tools_maindomain(new_main_domain=None):
@@ -699,15 +688,6 @@ def tools_migrations_run(
                 return m
 
         raise YunohostValidationError("migrations_no_such_migration", id=target)
-
-    # Dirty hack to mark the bullseye->bookworm as done ...
-    # it may still be marked as 'pending' if for some reason the migration crashed,
-    # but the admins ran 'apt full-upgrade' to manually finish the migration
-    # ... in which case it won't be magically flagged as 'done' until here
-    migrate_to_bookworm = get_matching_migration("migrate_to_bookworm")
-    if migrate_to_bookworm.state == "pending":
-        migrate_to_bookworm.state = "done"
-        _write_migration_state(migrate_to_bookworm.id, "done")
 
     # auto, skip and force are exclusive options
     if auto + skip + force_rerun > 1:
