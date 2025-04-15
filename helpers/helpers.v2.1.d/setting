@@ -38,6 +38,9 @@ ynh_app_setting_get() {
 
 # Set an application setting
 #
+# When choosing the setting key name, note that including the following keywords will make the associated setting's value appear masked in the debug logs (cf. [related code](https://github.com/YunoHost/yunohost/blob/216210d5e97070b85c96ebb4548c6abf36987771/src/log.py#L571)): `pwd`, `pass`, `passwd`, `password`, `passphrase`, `secret\w*` (regex),  `\w+key` (regex), `token`, `PASSPHRASE` 
+# This is meant to allow sharing the logs while preserving confidential data, but having this in mind is useful would you expect to see those values while debugging your scripts.
+#
 # usage: ynh_app_setting_set --key=key --value=value
 # | arg: --app=     - the application id (global $app by default)
 # | arg: --key=     - the setting name to set
