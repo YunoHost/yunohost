@@ -7,6 +7,7 @@ from yunohost.utils.udisks2_interfaces import Udisks2Manager
 
 class DiskState(enum.StrEnum):
     """https://github.com/storaged-project/udisks/issues/1352#issuecomment-2678874537"""
+
     @staticmethod
     def _generate_next_value_(name, start, count, last_values):
         return name.upper()
@@ -36,7 +37,9 @@ def _disk_infos(name: str, drive: dict, **kwargs):
         "model": drive["model"],
         "serial": drive["serial"],
         "removable": bool(drive["media_removable"]),
-        "size": binary_to_human(drive["size"]) if human_readable_size else drive["size"],
+        "size": (
+            binary_to_human(drive["size"]) if human_readable_size else drive["size"]
+        ),
         "smartStatus": DiskState.parse(drive),
     }
 
@@ -72,9 +75,7 @@ def disk_list(**kwargs):
     if not with_info:
         return list(disks.keys())
 
-    result = [
-        _disk_infos(name, disk.props, **kwargs) for name, disk in disks.items()
-    ]
+    result = [_disk_infos(name, disk.props, **kwargs) for name, disk in disks.items()]
 
     return {"disks": result}
 

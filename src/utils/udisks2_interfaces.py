@@ -16,7 +16,10 @@ from sdbus import (
     DbusObjectManagerInterface,
     SdBus,
 )
-from sdbus.utils import parse_get_managed_objects as sdbus_parse_get_managed_objects, parse
+from sdbus.utils import (
+    parse_get_managed_objects as sdbus_parse_get_managed_objects,
+    parse,
+)
 from sortedcollections import ValueSortedDict
 
 
@@ -38,17 +41,16 @@ def _get_class_from_interfaces(_1, interface_names_iter, _2):
         return Disk
     return None
 
+
 def parse_get_managed_objects(
-    interfaces,
-    managed_objects_data,
-    on_unknown_interface,
-    on_unknown_member
+    interfaces, managed_objects_data, on_unknown_interface, on_unknown_member
 ):
     with patch(f"{parse.__name__}._get_class_from_interfaces") as f:
         f.side_effect = _get_class_from_interfaces
         return sdbus_parse_get_managed_objects(
             interfaces, managed_objects_data, on_unknown_interface, on_unknown_member
         )
+
 
 class GetDisksMixin(DbusInterfaceCommon):
     def __init__(
