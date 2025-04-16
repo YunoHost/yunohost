@@ -85,50 +85,31 @@ def diff(content_a: str, content_b: str) -> str:
         return "\n".join(out)
 
 
+OCT_TO_SYM: dict[int, str] = {
+    0: "---",
+    1: "--x",
+    2: "-w-",
+    3: "-wx",
+    4: "r--",
+    5: "r-x",
+    6: "rw-",
+    7: "rwx",
+}
+SYM_TO_OCT: dict[str, int] = {v:k for k,v in OCT_TO_SYM.items()}
+
 def sym_to_octal(sym: str) -> int:
 
     assert len(sym) == 9
-
-    owner_perm, group_perm, other_perm = sym[:3], sym[3:6], sym[6:]
-
-    owner_perm_octal = (
-        (4 if "r" in owner_perm else 0)
-        + (2 if "w" in owner_perm else 0)
-        + (1 if "x" in owner_perm else 0)
-    )
-
-    group_perm_octal = (
-        (4 if "r" in group_perm else 0)
-        + (2 if "w" in group_perm else 0)
-        + (1 if "x" in group_perm else 0)
-    )
-
-    other_perm_octal = (
-        (4 if "r" in other_perm else 0)
-        + (2 if "w" in other_perm else 0)
-        + (1 if "x" in other_perm else 0)
-    )
-
+    owner, group, other = sym[:3], sym[3:6], sym[6:]
     return (
-        0o100 * owner_perm_octal + 0o010 * group_perm_octal + 0o001 * other_perm_octal
+        0o100 * SYM_TO_OCT[owner] + 0o010 * SYM_TO_OCT[group] + 0o001 * SYM_TO_OCT[other]
     )
-
 
 def octal_to_sym(n: int) -> str:
 
     oct_perms = oct(n)[-3:]
-    oct_map = {
-        "0": "---",
-        "1": "--x",
-        "2": "-w-",
-        "3": "-wx",
-        "4": "r--",
-        "5": "r-x",
-        "6": "rw-",
-        "7": "rwx",
-    }
-
-    return oct_map[oct_perms[0]] + oct_map[oct_perms[1]] + oct_map[oct_perms[2]]
+    owner, group, other = int(oct_perms[0]), int(oct_perms[1]), int(oct_perms[2])
+    return OCT_TO_SYM[owner] + OCT_TO_SYM[group] + OCT_TO_SYM[other]
 
 
 def file_permissions(path: str) -> tuple[str, str, str] | None:
