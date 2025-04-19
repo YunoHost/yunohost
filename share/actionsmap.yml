@@ -2117,21 +2117,19 @@ storage:
     subcategories:
         disk:
             subcategory_help: Manage et get infos about hard-drives
-            storage_disks_common_args: &storage_disks_common_args
-                -H:
-                    full: --human-readable
-                    help: Print informations in a human-readable format
-                    action: store_true
-                --human-readable-size:
-                    help: Print sizes in a human-readable format
-                    action: store_true
             actions:
                 # storage_disks_list
                 list:
                     action_help: List hard-drives currently attached to this system optionnaly with infos
                     api: GET /storage/disk/list
                     arguments:
-                        <<: *storage_disks_common_args
+                        -H:
+                            full: --human-readable
+                            help: Print informations in a human-readable format
+                            action: store_true
+                        --human-readable-size:
+                            help: Print sizes in a human-readable format
+                            action: store_true
                         -i:
                             full: --with-info
                             help: Get all informations for each archive
@@ -2140,4 +2138,11 @@ storage:
                 info:
                     action_help: Get hard-drive information
                     api: GET /storage/disk/info/<name>
-                    arguments: *storage_disks_common_args
+                    arguments:
+                        -H:
+                            full: --human-readable
+                            help: Print informations in a human-readable format
+                            action: store_true
+                        --human-readable-size:
+                            help: Print sizes in a human-readable format
+                            action: store_true
