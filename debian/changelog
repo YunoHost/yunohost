@@ -1,10 +1,29 @@
+yunohost (12.1.5) testing; urgency=low
+
+  - disks: Add SMART status to disk infos ([#2046](http://github.com/YunoHost/yunohost/pull/2046))
+  - helpers: fix n_install_dir againix nodejs helper.v1 (93d696bbe)
+  - helpers: document keywords in settings' keys that trigger value masking in the logs ([#2093](http://github.com/YunoHost/yunohost/pull/2093))
+  - helpers2.1: fix edge case in ynh_apt_install_dependencies_from_extra_repository (6b18ca98c)
+  - helpers2.1: fix apt helper debug info when install fails (e0459dcaa)
+  - helpers2.1: fix `yunohost app shell` when `systemctl show` outputs ` (ignore_error=no)` ([#2086](http://github.com/YunoHost/yunohost/pull/2086))
+  - helpers2.1: fix unbound BACKUP_CORE_ONLY in ynh_backup ([#2092](http://github.com/YunoHost/yunohost/pull/2092))
+  - configpanels: fix form prompt when option is a "choice" but with no options ([#2087](http://github.com/YunoHost/yunohost/pull/2087))
+  - configpanels: fix helper `ynh_app_config_get_one` for $type = "text" and $bind = "settings" ([#2091](http://github.com/YunoHost/yunohost/pull/2091))
+  - nginx: fix template for TLS passthrough ([#2089](http://github.com/YunoHost/yunohost/pull/2089))
+  - sse: fix/refactor _guess_who_started_process when process doesn't have a parent (668e60e19, [#2083](http://github.com/YunoHost/yunohost/pull/2083))
+  - migrations: in 0032_firewall_config, explicitly enable nftables service (01277caa0)
+  - i18n: Translations updated for Czech, French, Galician, German
+
+  Thanks to all contributors <3 ! (Christophe Henry, demodé, Félix Piédallu, Florent, José M, Kay0u, Krakinou, oleole39, OniriCorpe, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 19 Apr 2025 17:19:21 +0200
+
 yunohost (12.1.4) testing; urgency=low
 
   - helpers2.1: Make sure utils helpers are loaded first and fix jq usage ([#2073](http://github.com/YunoHost/yunohost/pull/2073))
   - helpers2.1: More fixes for go/ruby/nodejs fixes ([#2074](http://github.com/YunoHost/yunohost/pull/2074))
   - mail: Support sending mail to external mailbox of a managed domain ([#2075](http://github.com/YunoHost/yunohost/pull/2075))
   - regenconf/dnsmasq: optimize the number of time we call 'yunohost domain' for perf + use True/False instead of 1/0 (f53f805c4)
-  - dnsmasq: properly initialize dnsmasq conf upon installing the yunohost package to prevent dns resolution not working during postinstall and making everything explode (f6e256152)
   - i18n: Translations updated for Basque, French, German, Italian, Persian, Polish, Portuguese, Russian, Slovak
 
   Thanks to all contributors <3 ! (Anonymous, harc, ljf, OniriCorpe, ppr, tituspijean, xabirequejo)
