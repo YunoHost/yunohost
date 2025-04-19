@@ -113,6 +113,7 @@ Udisks2's dbus interface descriptors are available at:
 https://github.com/storaged-project/udisks/blob/2.10.x-branch/data/org.freedesktop.UDisks2.xml  
 """
 
+
 class Udisks2Manager(  # type: ignore[call-arg]
     GetDisksMixin,
     interface_name="org.freedesktop.UDisks2.Manager",
