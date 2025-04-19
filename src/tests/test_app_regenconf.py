@@ -273,15 +273,65 @@ def test_conf_dummy_dryrun():
     assert todos["dummy.main"][0]["action"] == "remove"
 
 
-
-@pytest.mark.skip
 def test_conf_dummy_unexposed_property():
-    raise NotImplementedError
+
+    wanted = {"configurations": {"dummy": {"main": {"foo": "bar"}}}}
+    with pytest.raises(YunohostError):
+        AppConfigurationsManager("testapp", wanted=wanted).apply()
+
+    wanted = {"configurations": {"dummy": {"main": {"type": "foobar"}}}}
+    with pytest.raises(YunohostError):
+        AppConfigurationsManager("testapp", wanted=wanted).apply()
+
+    wanted = {"configurations": {"dummy": {"other": {"type": "foobar"}}}}
+    with pytest.raises(YunohostError):
+        AppConfigurationsManager("testapp", wanted=wanted).apply()
 
 
-@pytest.mark.skip
+
 def test_conf_dummy_ifclause():
-    raise NotImplementedError
+
+    # FIXME
+    wanted = {"configurations": {"dummy": {"main": {"if": "foo == 'bar'"}}}}
+
+    conf = "/tmp/dummyconfs/testapp.conf"
+    assert not os.path.exists(conf)
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+    assert os.path.exists(conf)
+
+    os.remove(conf)
+
+    wanted = {"configurations": {"dummy": {"main": {"if": "'__FOO__' == 'bar'"}}}}
+
+    assert not os.path.exists(conf)
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+    assert os.path.exists(conf)
+
+
+def test_conf_dummy_ifclause_not_fulfiled():
+
+    # FIXME
+    wanted = {"configurations": {"dummy": {"main": {"if": "foo == 'not the right value'"}}}}
+
+    conf = "/tmp/dummyconfs/testapp.conf"
+    assert not os.path.exists(conf)
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+    assert not os.path.exists(conf)
+
+    # FIXME
+    wanted = {"configurations": {"dummy": {"main": {"if": "\"__FOO__\" != 'bar'"}}}}
+
+    conf = "/tmp/dummyconfs/testapp.conf"
+    assert not os.path.exists(conf)
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+    assert not os.path.exists(conf)
+
+
+def test_conf_dummy_ifclause_syntaxissue():
+
+    wanted = {"configurations": {"dummy": {"main": {"if": "__FOO__ == 'bar'"}}}}
+    with pytest.raises(KeyError):
+        AppConfigurationsManager("testapp", wanted=wanted).apply()
 
 
 @pytest.mark.skip
