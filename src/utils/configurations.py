@@ -1,3 +1,4 @@
+import copy
 import os
 import base64
 import hashlib
@@ -5,6 +6,7 @@ import tempfile
 import subprocess
 import datetime
 import pwd
+import re
 from logging import getLogger
 from typing import Any, Literal, Generator, NotRequired, TypedDict
 from pydantic import BaseModel
@@ -26,6 +28,7 @@ from yunohost.app import (
 )
 from yunohost.service import service_reload_or_restart
 from yunohost.utils.error import YunohostError
+from yunohost.utils.eval import evaluate_simple_js_expression
 
 logger = getLogger("yunohost.utils.resources")
 
@@ -52,6 +55,17 @@ class ConfigurationUpdate(TypedDict):
 
 class ConfigurationRemove(TypedDict):
     path: str
+
+
+def evaluate_if_clause(if_clause, env):
+    if_clause_hydrated = _hydrate_app_template(if_clause, env)
+    try:
+        return evaluate_simple_js_expression(if_clause_hydrated, env)
+    except KeyError as e:
+        logger.error(f"Failed to interpret if clause « {if_clause} »")
+        if re.search(r"[A-Z0-9]__\s*[=!]+\s*['\"]\w", if_clause):
+            logger.error("Beware that when comparing __FOO__ to a string, __FOO__ should itself be wrapped in quotes")
+        raise e
 
 
 def diff(content_a: str, content_b: str) -> str:
@@ -123,7 +137,6 @@ def file_permissions(path: str) -> tuple[str, str, str] | None:
 
 class BaseConfiguration(BaseModel):
 
-    # if_clause: IFClause = True
     template: str
     path: str
 
@@ -137,6 +150,7 @@ class BaseConfiguration(BaseModel):
     owner: str = "root"
     group: str = "root"
     perms: str = "rw-r--r--"
+    exposed: list[str] = ["template", "path"]
 
     @property
     def name(self):
@@ -467,7 +481,7 @@ class AppConfigurationsManager:
 
     def __init__(self, app: str, wanted: dict, env: dict[str, str] = {}, workdir=None) -> None:
         self.app = app
-        self.wanted = wanted
+        self.wanted = copy.deepcopy(wanted)
         self.workdir = workdir if workdir is not None else os.path.join(APPS_SETTING_PATH, app)
         self.env = env
         if not self.env:
@@ -595,16 +609,27 @@ class AppConfigurationsManager:
             confs_properties = confs_properties.copy()
             if type_ not in ConfigurationClassesByType:
                 raise YunohostError(f"Unknown configuration type {type_}")
+
+            ConfigurationClass = ConfigurationClassesByType[type_]
+            exposed_properties = ConfigurationClass.__fields__["exposed"].default
+
             main_properties = confs_properties.pop("main", {})
-            confs.append(
-                ConfigurationClassesByType[type_](
-                    **main_properties,
-                    id="main",
-                    env=self.env,
-                    type=type_,
-                    app=self.app,
+            if_clause = main_properties.pop("if") if "if" in main_properties else None
+            incorrect_properties = [p for p in main_properties.keys() if p not in exposed_properties]
+            if incorrect_properties:
+                raise YunohostError(f"Uhoh, the following properties are unknown / not exposed for configuration {type}.main: {', '.join(incorrect_properties)}", raw_msg=True)
+
+            if if_clause is None or evaluate_if_clause(if_clause, self.env):
+                confs.append(
+                    ConfigurationClass(
+                        **main_properties,
+                        id="main",
+                        env=self.env,
+                        type=type_,
+                        app=self.app,
+                    )
                 )
-            )
+
             for key, values in confs_properties.items():
 
                 if not isinstance(values, dict):
@@ -613,17 +638,20 @@ class AppConfigurationsManager:
                         raw_msg=True,
                     )
 
-                # FIXME : Handle IF clause here ?!
-
-                confs.append(
-                    ConfigurationClassesByType[type_](
-                        **values,
-                        id=key,
-                        env=self.env,
-                        type=type_,
-                        app=self.app,
+                incorrect_properties = [p for p in values.keys() if p not in exposed_properties]
+                if incorrect_properties:
+                    raise YunohostError(f"Uhoh, the following properties are unknown / not exposed for for configuration {type}.{key}: {', '.join(incorrect_properties)}", raw_msg=True)
+                if_clause = values.pop("if") if "if" in values else None
+                if if_clause is None or evaluate_if_clause(if_clause, self.env):
+                    confs.append(
+                        ConfigurationClass(
+                            **values,
+                            id=key,
+                            env=self.env,
+                            type=type_,
+                            app=self.app,
+                        )
                     )
-                )
 
         template_dir = (self.workdir.rstrip("/") + "/conf/") if self.workdir else None
         for conf in confs:
