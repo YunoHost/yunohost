@@ -80,7 +80,7 @@ class GetDisksMixin(DbusInterfaceCommon):
         )
 
     def get_disks(self) -> dict[str, DiskResult]:
-        result = ValueSortedDict(lambda val: value.props["sort_key"])
+        result = ValueSortedDict(lambda it: it.props["sort_key"])
 
         for object_path, (iface, props) in parse_get_managed_objects(
             (Disk, AtaDisk, NvmeDisk),
@@ -113,10 +113,8 @@ Udisks2's dbus interface descriptors are available at:
 https://github.com/storaged-project/udisks/blob/2.10.x-branch/data/org.freedesktop.UDisks2.xml  
 """
 
-
-class Udisks2Manager(
+class Udisks2Manager(  # type: ignore[call-arg]
     GetDisksMixin,
-    DbusInterfaceCommon,
     interface_name="org.freedesktop.UDisks2.Manager",
 ):
 
@@ -232,7 +230,7 @@ class Udisks2Manager(
         raise NotImplementedError
 
 
-class Disk(
+class Disk(  # type: ignore[call-arg]
     DbusInterfaceCommon,
     interface_name="org.freedesktop.UDisks2.Drive",
 ):
@@ -463,7 +461,7 @@ class Disk(
         raise NotImplementedError
 
 
-class AtaController(
+class AtaController(  # type: ignore[call-arg]
     DbusInterfaceCommon,
     interface_name="org.freedesktop.UDisks2.Drive.Ata",
 ):
@@ -716,7 +714,7 @@ class AtaController(
         raise NotImplementedError
 
 
-class NVMeController(
+class NVMeController(  # type: ignore[call-arg]
     DbusInterfaceCommon,
     interface_name="org.freedesktop.UDisks2.NVMe.Controller",
 ):
