@@ -1,3 +1,12 @@
+yunohost (12.1.5.1) testing; urgency=low
+
+  - disks: Fix a lambda typo + MyPy error in src/utils/udisks2_interfaces.py ([#2094](http://github.com/YunoHost/yunohost/pull/2094))
+  - actionsmap: remove weird yaml magic that seems to make build expose (2f569679d)
+
+  Thanks to all contributors <3 ! (Christophe Henry)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 20 Apr 2025 19:58:58 +0200
+
 yunohost (12.1.5) testing; urgency=low
 
   - disks: Add SMART status to disk infos ([#2046](http://github.com/YunoHost/yunohost/pull/2046))
