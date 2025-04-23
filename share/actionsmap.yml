@@ -2123,21 +2123,26 @@ storage:
                     action_help: List hard-drives currently attached to this system optionnaly with infos
                     api: GET /storage/disk/list
                     arguments:
+                        -H:
+                            full: --human-readable
+                            help: Print informations in a human-readable format
+                            action: store_true
+                        --human-readable-size:
+                            help: Print sizes in a human-readable format
+                            action: store_true
                         -i:
                             full: --with-info
                             help: Get all informations for each archive
                             action: store_true
-                        -H:
-                            full: --human-readable
-                            help: Print sizes in human readable format
-                            action: store_true
+                # storage_disks_info
                 info:
                     action_help: Get hard-drive information
                     api: GET /storage/disk/info/<name>
                     arguments:
-                        name:
-                            help: Name of the hard drive as returned by 'list' command
                         -H:
                             full: --human-readable
-                            help: Print sizes in human readable format
+                            help: Print informations in a human-readable format
+                            action: store_true
+                        --human-readable-size:
+                            help: Print sizes in a human-readable format
                             action: store_true

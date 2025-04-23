@@ -46,7 +46,7 @@ _ynh_app_config_get_one() {
     # Get multiline text from settings or from a full file
     elif [[ "$type" == "text" ]]; then
         if [[ "$bind" == "settings" ]]; then
-            old[$short_setting]="$(ynh_app_setting_get "$app" "$short_setting")"
+            old[$short_setting]="$(ynh_app_setting_get --app="$app" --key="$short_setting")"
         elif [[ "$bind" == *":"* ]]; then
             ynh_die "For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
         else

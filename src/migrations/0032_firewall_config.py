@@ -25,7 +25,7 @@ import yaml
 
 from yunohost.tools import Migration
 from yunohost.app import app_list
-
+from yunohost.service import service_enable
 from yunohost.firewall import YunoFirewall
 
 logger = logging.getLogger("yunohost.migration")
@@ -78,6 +78,7 @@ class MyMigration(Migration):
 
     def run(self):
         self.firewall_file_migrate()
+        service_enable("nftables")
 
     def run_after_system_restore(self):
         self.run()
