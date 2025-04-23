@@ -207,14 +207,7 @@ ynh_setup_source() {
     elif [[ "$src_format" == "docker" ]]; then
         "$YNH_HELPERS_DIR/vendor/docker-image-extract/docker-image-extract" -p "$src_platform" -o "$dest_dir" "$src_url" 2>&1
     elif [[ "$src_format" == "git" ]]; then
-        if [ -d "$dest_dir/.git" ]; then
-            chown -R root:root "$dest_dir"
-            git -C "$dest_dir" fetch --quiet
-        else
-            git clone "$src_url" "$dest_dir" --quiet
-        fi
-        git -C "$dest_dir" checkout "$src_sum" --quiet
-        git -C "$dest_dir" submodule update --init --recursive
+        _ynh_git_clone "$src_url" "$dest_dir" "master" "$src_sum"
     elif [[ "$src_format" == "zip" ]]; then
         # Zip format
         # Using of a temp directory, because unzip doesn't manage --strip-components

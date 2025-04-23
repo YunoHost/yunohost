@@ -616,16 +616,23 @@ function _ynh_git_clone() {
     local url="$1"
     local dest_dir="$2"
     local branch=${3:-master}
+    local commit="$4"
 
     mkdir -p "$dest_dir"
     pushd "$dest_dir" || return 1
         if ! [ -d "$dest_dir/.git" ]; then
             git init -q
             git remote add origin "$url"
-    else
+        else
             git remote set-url origin "$url"
-    fi
+        fi
+    
         git fetch -q --tags --prune origin "$branch"
-        git reset --hard origin/"$branch"
+    
+        if [ -n "$commit" ]; then
+            git checkout -q "$commit"
+        else
+            git reset --hard origin/"$branch"
+        fi
     popd || return 1
 }
