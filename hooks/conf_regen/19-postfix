@@ -66,6 +66,7 @@ do_pre_regen() {
 
         cat <<< "[${relay_host}]:${relay_port} ${relay_user}:${relay_password}" > "${postfix_dir}/sasl_passwd"
     fi
+    export block_blacklisted_servers="$(jq -r '.block_blacklisted_servers' <<< "$YNH_SETTINGS" | int_to_bool)"
 
     # Use this postfix server as a backup MX
     export backup_mx_domains="$(yunohost settings get 'email.smtp.smtp_backup_mx_domains' | sed "s/,/ /g")"
