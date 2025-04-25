@@ -855,6 +855,9 @@ app:
                     help: Allowed app map for a user
                     extra:
                         pattern: *pattern_username
+#                -e:
+#                    full: --extra-domains
+#                    help: Return also the extra domains of the app
 
         ### app_install()
         install:
