@@ -634,5 +634,8 @@ function _ynh_git_clone() {
         else
             git reset --hard origin/"$branch"
         fi
+
+        git submodule update --init --recursive
+
     popd || return 1
 }
