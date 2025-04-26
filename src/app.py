@@ -821,6 +821,8 @@ def app_upgrade(
         operation_logger = OperationLogger("app_upgrade", related_to, env=env_dict)
         operation_logger.start()
 
+        hook_callback("pre_app_upgrade", env=env_dict)
+
         if manifest["packaging_format"] >= 2:
             from yunohost.utils.resources import AppResourceManager
 
