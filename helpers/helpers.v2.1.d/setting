@@ -122,6 +122,7 @@ ynh_app_setting() {
     local xtrace_enable=$(set +o | grep xtrace)
     set +o xtrace # set +x
     ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python3 - << EOF
+import json
 import os, yaml, sys
 app, action = os.environ['APP'], os.environ['ACTION'].lower()
 key, value = os.environ['KEY'], os.environ.get('VALUE', None)
@@ -131,7 +132,10 @@ with open(setting_file) as f:
     settings = yaml.safe_load(f)
 if action == "get":
     if key in settings:
-        print(settings[key])
+        if type(settings[key]) is str:
+            print(settings[key])
+        else:
+            print(json.dumps(settings[key]))
 else:
     if action == "delete":
         if key in settings:
