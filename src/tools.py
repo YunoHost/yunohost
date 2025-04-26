@@ -63,7 +63,8 @@ def tools_rootpw(new_password, check_strength=True):
 
     proc = subprocess.run(
         ["passwd"],
-        input=f"{new_password}\n{new_password}\n".encode("utf-8"), capture_output=True
+        input=f"{new_password}\n{new_password}\n".encode("utf-8"),
+        capture_output=True,
     )
 
     if proc.returncode == 0:
