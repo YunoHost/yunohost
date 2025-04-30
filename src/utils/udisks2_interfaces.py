@@ -19,10 +19,11 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import patch
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, List, Tuple, Optional
+    from typing import Any, Dict, List, Tuple
+
+from unittest.mock import patch
 
 from sdbus import (
     DbusInterfaceCommon,
@@ -49,6 +50,9 @@ UDISKS2_DRIVE_ATA_IFC = "org.freedesktop.UDisks2.Drive.Ata"
 UDISKS2_DRIVE_NVME_IFC = "org.freedesktop.UDisks2.NVMe.Controller"
 
 
+UDISKS2_DEFAULT_ARGS = {"auth.no_user_interaction": ("b", True)}
+
+
 def _get_class_from_interfaces(_1, interface_names_iter, _2):
     if UDISKS2_DRIVE_ATA_IFC in interface_names_iter:
         return AtaDisk
@@ -70,9 +74,7 @@ def parse_get_managed_objects(
 
 
 class GetDisksMixin(DbusInterfaceCommon):
-    def __init__(
-        self, service_name: str, object_path: str, bus: Optional[SdBus] = None
-    ):
+    def __init__(self, service_name: str, object_path: str, bus: SdBus):
         super().__init__(service_name, object_path, bus)
         self._object_manager = DbusObjectManagerInterface(
             UDISKS2_SERVICE_NAME, UDISKS2_BASE_PATH, bus
@@ -91,16 +93,23 @@ class GetDisksMixin(DbusInterfaceCommon):
                 object_path.startswith(UDISKS2_DRIVE_PATH)  # This is a drive
                 and not props["optical"]  # This is not a CD player
             ):
-                value = DiskResult(object_path, iface, props)
+                value = DiskResult(object_path, iface, props, self._dbus.attached_bus)
                 result[value.name] = value
 
         return result
 
 
 class DiskResult:
-    def __init__(self, object_path: str, iface: type[Disk], props: dict[str, Any]):
+    @property
+    def dbus_obj(self):
+        if not hasattr(self, "_dbus_obj"):
+            self._dbus_obj = self.iface(UDISKS2_SERVICE_NAME, self._object_path, self._bus)
+        return self._dbus_obj
+
+    def __init__(self, object_path: str, iface: type[Disk], props: dict[str, Any], bus: SdBus):
         self._object_path = object_path
-        self._iface = iface
+        self._bus = bus
+        self.iface = iface
         self.name = object_path.removeprefix(f"{UDISKS2_DRIVE_PATH}/")
         self.props = props
 
@@ -109,7 +118,7 @@ class DiskResult:
 The following interfaces were generated using the `python -m sdbus gen-from-file` command.
 See: https://python-sdbus.readthedocs.io/en/latest/code_generator.html
 Udisks2's dbus interface descriptors are available at:
-https://github.com/storaged-project/udisks/blob/2.10.x-branch/data/org.freedesktop.UDisks2.xml  
+https://github.com/storaged-project/udisks/blob/2.10.x-branch/data/org.freedesktop.UDisks2.xml
 """
 
 
@@ -117,7 +126,6 @@ class Udisks2Manager(  # type: ignore[call-arg]
     GetDisksMixin,
     interface_name="org.freedesktop.UDisks2.Manager",
 ):
-
     def __init__(self, bus: SdBus):
         super().__init__(UDISKS2_SERVICE_NAME, f"{UDISKS2_BASE_PATH}/Manager", bus)
 
@@ -461,8 +469,16 @@ class Disk(  # type: ignore[call-arg]
         raise NotImplementedError
 
 
+class SmartMixin:
+    """Common interface unifying SMART implementation for ATA, NVMe, etc."""
+
+    def get_smart_attributes(self) -> dict:
+        raise NotImplementedError
+
+
 class AtaController(  # type: ignore[call-arg]
     DbusInterfaceCommon,
+    SmartMixin,
     interface_name="org.freedesktop.UDisks2.Drive.Ata",
 ):
     @dbus_method(
@@ -476,21 +492,22 @@ class AtaController(  # type: ignore[call-arg]
         input_signature="a{sv}",
         result_signature="a(ysqiiixia{sv})",
         flags=DbusUnprivilegedFlag,
+        method_name="SmartGetAttributes",
     )
-    def smart_get_attributes(
+    def __smart_get_attributes(
         self, options: Dict[str, Tuple[str, Any]]
-    ) -> List[
-        Tuple[int, str, int, int, int, int, int, int, Dict[str, Tuple[str, Any]]]
-    ]:
+    ) -> List[Tuple[int, str, int, int, int, int, int, int, Dict[str, Tuple[str, Any]]]]:
         raise NotImplementedError
+
+    def get_smart_attributes(self) -> dict:
+        attrs = self.__smart_get_attributes(UDISKS2_DEFAULT_ARGS)
+        return {k: v for (_, k, _, v, *_) in attrs}
 
     @dbus_method(
         input_signature="sa{sv}",
         flags=DbusUnprivilegedFlag,
     )
-    def smart_selftest_start(
-        self, type: str, options: Dict[str, Tuple[str, Any]]
-    ) -> None:
+    def smart_selftest_start(self, type: str, options: Dict[str, Tuple[str, Any]]) -> None:
         raise NotImplementedError
 
     @dbus_method(
@@ -504,9 +521,7 @@ class AtaController(  # type: ignore[call-arg]
         input_signature="ba{sv}",
         flags=DbusUnprivilegedFlag,
     )
-    def smart_set_enabled(
-        self, value: bool, options: Dict[str, Tuple[str, Any]]
-    ) -> None:
+    def smart_set_enabled(self, value: bool, options: Dict[str, Tuple[str, Any]]) -> None:
         raise NotImplementedError
 
     @dbus_method(
@@ -716,6 +731,7 @@ class AtaController(  # type: ignore[call-arg]
 
 class NVMeController(  # type: ignore[call-arg]
     DbusInterfaceCommon,
+    SmartMixin,
     interface_name="org.freedesktop.UDisks2.NVMe.Controller",
 ):
     @dbus_method(
@@ -729,19 +745,22 @@ class NVMeController(  # type: ignore[call-arg]
         input_signature="a{sv}",
         result_signature="a{sv}",
         flags=DbusUnprivilegedFlag,
+        method_name="SmartGetAttributes",
     )
-    def smart_get_attributes(
+    def __smart_get_attributes(
         self, options: Dict[str, Tuple[str, Any]]
     ) -> Dict[str, Tuple[str, Any]]:
         raise NotImplementedError
+
+    def get_smart_attributes(self) -> dict:
+        attrs = self.__smart_get_attributes(UDISKS2_DEFAULT_ARGS)
+        return {k: v for k, (_, v) in attrs.items()}
 
     @dbus_method(
         input_signature="sa{sv}",
         flags=DbusUnprivilegedFlag,
     )
-    def smart_selftest_start(
-        self, type: str, options: Dict[str, Tuple[str, Any]]
-    ) -> None:
+    def smart_selftest_start(self, type: str, options: Dict[str, Tuple[str, Any]]) -> None:
         raise NotImplementedError
 
     @dbus_method(
@@ -857,7 +876,9 @@ class NVMeController(  # type: ignore[call-arg]
         raise NotImplementedError
 
 
-class AtaDisk(Disk, AtaController): ...
+class AtaDisk(Disk, AtaController):
+    pass
 
 
-class NvmeDisk(Disk, NVMeController): ...
+class NvmeDisk(Disk, NVMeController):
+    pass
