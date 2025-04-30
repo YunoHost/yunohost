@@ -1599,7 +1599,10 @@ class DatabaseAppResource(AppResource):
                 elif self.dbtypes[name] == "postgresql":
                     self._run_script(
                         "provision",
-                        f"ynh_psql_create_user '{db_user}' '{db_pwd}'; ynh_psql_create_db '{db_name}' '{db_user}'",
+                        f"""
+ynh_psql_user_exists "{db_user}" || ynh_psql_create_user '{db_user}' '{db_pwd}'
+ynh_psql_create_db '{db_name}' '{db_user}'
+""",
                     )
 
     def deprovision(self, context: Dict = {}):
