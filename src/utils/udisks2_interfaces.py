@@ -19,8 +19,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-
-from mock.mock import patch
+from unittest.mock import patch
 
 if TYPE_CHECKING:
     from typing import Any, Dict, List, Tuple, Optional
