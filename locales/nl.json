@@ -134,5 +134,10 @@
     "admins": "Beheerders",
     "all_users": "Alle YunoHost gebruikers",
     "domain_dns_push_failed_to_authenticate": "De authenticatie bij de API van het register voor domein '{domain}' is mislukt. Waarschijnlijk zijn de credentials incorrect? (Error: {error})",
-    "app_arch_not_supported": "Deze applicatie kan alleen geïnstalleerd op architecturen {required} maar jouw server architectuur is {current}"
+    "app_arch_not_supported": "Deze applicatie kan alleen geïnstalleerd op architecturen {required} maar jouw server architectuur is {current}",
+    "app_action_failed": "Mislukte actie {action} voor app {app}",
+    "app_config__core_name": "Configuratie en operaties",
+    "app_change_url_failed": "Het is niet gelukt de URL voor {app} te wijzigen: {error}",
+    "app_change_url_require_full_domain": "{app} kan niet naar deze nieuwe URL verplaatst worden, omdat het een eigen (sub)domein nodig heeft (dat wil zeggen, \"Pad\" = /)",
+    "app_change_url_script_failed": "Er is een fout opgetreden in het URL-wijzigings-script"
 }
