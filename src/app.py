@@ -1818,6 +1818,7 @@ def app_ssowatconf() -> None:
             "baikal",
             "ihatemoney",
             "keeweb",
+            "komga",
             "monica",
             "my_webdav",
             "nextcloud",
