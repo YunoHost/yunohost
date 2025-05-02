@@ -1623,13 +1623,33 @@ ynh_psql_create_db '{db_name}' '{db_user}'
                 "deprovision",
                 f"""
 ynh_{db_helper_name}_database_exists "{db_name}" && ynh_{db_helper_name}_drop_db "{db_name}" || true
-ynh_{db_helper_name}_user_exists "{db_user}" && ynh_{db_helper_name}_drop_user "{db_user}" || true
 """,
             )
 
             self.delete_setting(f"db_name{db_suffix}")
-            self.delete_setting("db_user")
-            self.delete_setting("db_pwd")
+
+            if self.dbtypes[name] == "mysql":
+                drop_user = os.system(f"""
+test "$(echo "SELECT COUNT(db) FROM mysql.db WHERE user='{db_user}';" | mysql -s)" -eq 0
+""") == 0
+            elif self.dbtypes[name] == "postgresql":
+                drop_user = os.system(f"""
+request="$(echo "
+SELECT COUNT(datname)
+FROM pg_database JOIN pg_authid ON pg_database.datdba = pg_authid.oid
+WHERE rolname = '{db_user}'" | sudo --login --user=postgres psql -qAt)"
+test "$request" -eq 0
+""") == 0
+
+            if drop_user:
+                self._run_script(
+                    "deprovision",
+                    f"""
+ynh_{db_helper_name}_user_exists "{db_user}" && ynh_{db_helper_name}_drop_user "{db_user}" || true
+""",
+                )
+                self.delete_setting("db_user")
+                self.delete_setting("db_pwd")
 
 
 class NodejsAppResource(AppResource):
