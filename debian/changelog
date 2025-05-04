@@ -1,3 +1,10 @@
+yunohost (12.0.16) stable; urgency=low
+
+  - yunoprompt: in fact if we dont chvt to another term it stays on the current one forever ~_~ (d36d2d542)
+  - auth: fix postinstall exploding just because we have no message queue / no session cookie ... (to be removed in 12.1) (5b06aaadc)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 05 May 2025 00:05:41 +0200
+
 yunohost (12.0.15) stable; urgency=low
 
   - yunoprompt: remove postinstall directly in tty after boot (for some reason it's not interactive and loops forever) (59e7f3b99)
