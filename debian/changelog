@@ -102,6 +102,13 @@ yunohost (12.1.0) testing; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 23 Feb 2025 21:22:02 +0100
 
+yunohost (12.0.15) stable; urgency=low
+
+  - yunoprompt: remove postinstall directly in tty after boot (for some reason it's not interactive and loops forever) (59e7f3b99)
+  - yunoprompt: add a reminder for the default login/password (3f376bf61)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 04 May 2025 21:04:54 +0200
+
 yunohost (12.0.14) stable; urgency=low
 
   - dnsmasq: remove DNS64 version of DNS4all resolver which is only intended to be used with NAT64 and causing a bunch of issues in the context of yunohost etc (606705274)
