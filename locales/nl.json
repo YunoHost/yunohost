@@ -160,5 +160,13 @@
     "app_config_upgradable_bad_quality": "Deze applicatie is als kapot aangemerkt in de YunoHost app catalogus. Het kan een tijdelijk probleem zijn terwijl het onderhoudsteam het probleem probeert op te lossen. In de tussentijd is de bijwerkfunctie uitgeschakeld.",
     "app_config_upgradable_msg": "Deze app kan worden bijgewerkt van `{current_version}` naar `{new_version}`",
     "app_config_force_upgrade_help": "Geforceerd bijwerken van de app (naar dezelfde versie) kan soms van pas komen om de app en de configuratie opnieuw op te bouwen",
-    "app_config_permission_allowed_warn_protected": "NB: dit privelege is 'beschermd' en daarom kan de 'bezoekers'-groep niet toegevoegd/verwijderd worden van de geautoriseerde groepen."
+    "app_config_permission_allowed_warn_protected": "NB: dit privelege is 'beschermd' en daarom kan de 'bezoekers'-groep niet toegevoegd/verwijderd worden van de geautoriseerde groepen.",
+    "app_config_upgradable_no": "Deze app is bijgewerkt. <small>(versie `{current_version}`)</small><br/><small><em>Opzoek naar een nieuwere versie van deze app? Misschien is er een 'test' versie waar je mee kan helpen in de YunoHost-pakketten git-opslagplaats!</em></small>",
+    "app_config_upgradable_url_required": "Deze app bestaat (niet meer?) in de catalogus en moet daarom handmatig geüpgraded worden vanaf de opdrachtregel, door 'yunohost app upgrade <app>' te gebruiken en de URL van de opslagplaats in te geven via de '-u' optie.",
+    "app_config_upgradable_yes": "Deze app kan worden geüpgraded van {current_version} naar {new_version}",
+    "app_config_upgrade": "Bijwerken",
+    "app_failed_to_download_asset": "Mislukte download voor hulpbron '{source_id}' ({url}) voor {app} : {out}",
+    "app_failed_to_upgrade_but_continue": "Het bewerken van de app {failed_app} is mislukt, maar YunoHost gaat verder met het bijwerken van het volgende zoals gevraagd. Voer 'yunohost log show {operation_logger_name}' uit om de mislukkingen log te zien",
+    "app_corrupt_source": "YunoHost kon de hulpbron '{source_id}' ({url}) voor {app} downloaden, maar de hulpbron heeft niet de verwachtte 'checksum'. Dit kan betekenen dat er een tijdelijk netwerk probleem is gebeurd op je server, OF dat de hulpbron op een manier veranderd is door de stroomopwaartse beheerder (of een kwaadwillende speler?) en dat de YunoHost pakketbeheerder dit moet onderzoeken en misschien het app manifest moet bijwerken om dit in rekening te brengen.\n     Verwachtte sha256 checksum: {expected_sha256}\n    Gedownloade sha256 checksum: {computed_sha256}\n    Gedownloade bestand grootte: {size}",
+    "app_manifest_install_ask_init_admin_permission": "Wie moet er toegang hebben tot de beheerders functies voor deze app? (Dit kan later worden aangepast)"
 }
