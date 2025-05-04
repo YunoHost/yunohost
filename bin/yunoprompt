@@ -102,15 +102,7 @@ time to read the administator documentation and in particular the sections
 the following URL: https://yunohost.org/admindoc
 ===============================================================================
 EOF
-
-    read -rp "Proceed with post-installation? (y/n) " -n 1
-    while [[ $REPLY =~ ^[Yy]$ ]]; do
-        if /usr/bin/yunohost tools postinstall; then
-            break
-        fi
-        echo -e "\n"
-        read -rp "Retry? (y/n) " -n 1
-    done
+    read -rp "Press any key to continue " -n 1
 
     chvt 1
     exit 0
