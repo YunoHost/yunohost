@@ -62,6 +62,7 @@ AppResourceClassesByType["dummy"] = DummyAppResource
 def setup_function(function):
     clean()
 
+    os.system("apt-get -y install postgresql")
     os.system("mkdir /etc/yunohost/apps/testapp")
     os.system("echo 'id: testapp' > /etc/yunohost/apps/testapp/settings.yml")
     os.system("echo 'packaging_format = 2' > /etc/yunohost/apps/testapp/manifest.toml")
