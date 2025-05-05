@@ -311,7 +311,6 @@ def regen_ssowatconf(setting_name, old_value, new_value):
         app_ssowatconf()
 
 
-@post_change_hook("tls_passthrough_enabled")
 @post_change_hook("tls_passthrough_list")
 @post_change_hook("nginx_redirect_to_https")
 @post_change_hook("nginx_compatibility")
