@@ -1628,28 +1628,52 @@ ynh_{db_helper_name}_database_exists "{db_name}" && ynh_{db_helper_name}_drop_db
 
             self.delete_setting(f"db_name{db_suffix}")
 
-            if self.dbtypes[name] == "mysql":
-                drop_user = os.system(f"""
-test "$(echo "SELECT COUNT(db) FROM mysql.db WHERE user='{db_user}';" | mysql -s)" -eq 0
+        # We need to be a bit carefull here because we need to handle multiple edge cases:
+        # - maybe postgresql or mysql is not installed, in this case we should avoid to call code which depends on psql/mysql because it will fail in all cases
+        # - a second DB is removed but we still have one, so we need to keep the user in the DB and the setting
+        # - maybe we need to deprovision a psql DB but we still have a mysql db and so the user need to be removed in postgresql but not in the settings
+        if shutil.which('mysql'):
+            # Note mysql still list the old removed database this way so we need to filter with mysqlshow
+            drop_user_mysql = os.system(f"""
+for d in $(echo "SELECT db FROM mysql.db WHERE user='{db_user}';" | mysql -s); do
+    if mysqlshow | grep -q -w "$d" 2>/dev/null >/dev/null; then
+        exit 1
+    fi
+done
 """) == 0
-            elif self.dbtypes[name] == "postgresql":
-                drop_user = os.system(f"""
-request="$(echo "
-SELECT COUNT(datname)
-FROM pg_database JOIN pg_authid ON pg_database.datdba = pg_authid.oid
-WHERE rolname = '{db_user}'" | sudo --login --user=postgres psql -qAt)"
-test "$request" -eq 0
-""") == 0
-
-            if drop_user:
+            if drop_user_mysql:
+                db_helper_name = "mysql"
                 self._run_script(
                     "deprovision",
                     f"""
 ynh_{db_helper_name}_user_exists "{db_user}" && ynh_{db_helper_name}_drop_user "{db_user}" || true
 """,
                 )
-                self.delete_setting("db_user")
-                self.delete_setting("db_pwd")
+        else:
+            drop_user_mysql = True
+
+        if shutil.which('psql'):
+            drop_user_psql = os.system(f"""
+request="$(echo "
+SELECT COUNT(datname)
+FROM pg_database JOIN pg_authid ON pg_database.datdba = pg_authid.oid
+WHERE rolname = '{db_user}'" | sudo --login --user=postgres psql -qAt)"
+test "$request" -eq 0
+""") == 0
+            if drop_user_psql:
+                db_helper_name = "psql"
+                self._run_script(
+                    "deprovision",
+                    f"""
+ynh_{db_helper_name}_user_exists "{db_user}" && ynh_{db_helper_name}_drop_user "{db_user}" || true
+""",
+                )
+        else:
+            drop_user_psql = True
+
+        if drop_user_mysql and drop_user_psql:
+            self.delete_setting("db_user")
+            self.delete_setting("db_pwd")
 
 
 class NodejsAppResource(AppResource):

@@ -315,6 +315,104 @@ def test_resource_database():
     assert not app_setting("testapp", "db_pwd")
 
 
+def test_resource_multi_databases():
+    r = AppResourceClassesByType["database"]
+    conf = {"main": {"type":"mysql"},
+            "othermysql": {"type": "mysql"},
+            "postgresqldb": {"type": "postgresql"}}
+
+    assert os.system("mysqlshow 'testapp' >/dev/null 2>/dev/null") != 0
+    assert os.system("mysqlshow | grep -q -w 'testapp_othermysql' >/dev/null 2>/dev/null") != 0
+    assert not app_setting("testapp", "db_name")
+    assert not app_setting("testapp", "db_name_othermysql")
+
+    assert os.system(
+        f"sudo --login --user=postgres psql 'testapp' -c ';' >/dev/null 2>/dev/null"
+    ) != 0
+    assert os.system(
+        f"sudo --login --user=postgres psql 'testapp_otherpostgres' -c ';' >/dev/null 2>/dev/null"
+    ) != 0
+    assert os.system(
+        f"sudo --login --user=postgres psql 'testapp_postgresqldb' -c ';' >/dev/null 2>/dev/null"
+    ) != 0
+    assert not app_setting("testapp", "db_name_otherpostgres")
+    assert not app_setting("testapp", "db_name_postgresqldb")
+
+    assert not app_setting("testapp", "db_user")
+    assert not app_setting("testapp", "db_pwd")
+
+    r(conf, "testapp").provision_or_update()
+
+    assert os.system("mysqlshow 'testapp' >/dev/null 2>/dev/null") == 0
+    assert os.system("mysqlshow | grep -q -w 'testapp_othermysql' >/dev/null 2>/dev/null") == 0
+    assert app_setting("testapp", "db_name")
+    assert app_setting("testapp", "db_name_othermysql")
+
+    assert os.system(
+        f"sudo --login --user=postgres psql 'testapp' -c ';' >/dev/null 2>/dev/null"
+    ) != 0
+    assert os.system(
+        f"sudo --login --user=postgres psql 'testapp_otherpostgres' -c ';' >/dev/null 2>/dev/null"
+    ) != 0
+    assert os.system(
+        f"sudo --login --user=postgres psql 'testapp_postgresqldb' -c ';' >/dev/null 2>/dev/null"
+    ) == 0
+    assert not app_setting("testapp", "db_name_otherpostgres")
+    assert app_setting("testapp", "db_name_postgresqldb")
+
+    assert app_setting("testapp", "db_user")
+    assert app_setting("testapp", "db_pwd")
+
+    conf = {"main": {"type":"mysql"},
+            "otherpostgres": {"type": "postgresql"},
+            "postgresqldb": {"type": "postgresql"}}
+
+    r({"othermysql": {"type": "mysql"}}, "testapp").deprovision()
+    r(conf, "testapp").provision_or_update()
+
+    assert os.system("mysqlshow 'testapp' >/dev/null 2>/dev/null") == 0
+    assert os.system("mysqlshow | grep -q -w 'testapp_othermysql' >/dev/null 2>/dev/null") != 0
+    assert app_setting("testapp", "db_name")
+    assert not app_setting("testapp", "db_name_othermysql")
+
+    assert os.system(
+        f"sudo --login --user=postgres psql 'testapp' -c ';' >/dev/null 2>/dev/null"
+    ) != 0
+    assert os.system(
+        f"sudo --login --user=postgres psql 'testapp_otherpostgres' -c ';' >/dev/null 2>/dev/null"
+    ) == 0
+    assert os.system(
+        f"sudo --login --user=postgres psql 'testapp_postgresqldb' -c ';' >/dev/null 2>/dev/null"
+    ) == 0
+    assert app_setting("testapp", "db_name_otherpostgres")
+    assert app_setting("testapp", "db_name_postgresqldb")
+
+    assert app_setting("testapp", "db_user")
+    assert app_setting("testapp", "db_pwd")
+
+    r(conf, "testapp").deprovision()
+
+    assert os.system("mysqlshow 'testapp' >/dev/null 2>/dev/null") != 0
+    assert os.system("mysqlshow | grep -q -w 'testapp_othermysql' >/dev/null 2>/dev/null") != 0
+    assert not app_setting("testapp", "db_name")
+    assert not app_setting("testapp", "db_name_othermysql")
+
+    assert os.system(
+        f"sudo --login --user=postgres psql 'testapp' -c ';' >/dev/null 2>/dev/null"
+    ) != 0
+    assert os.system(
+        f"sudo --login --user=postgres psql 'testapp_otherpostgres' -c ';' >/dev/null 2>/dev/null"
+    ) != 0
+    assert os.system(
+        f"sudo --login --user=postgres psql 'testapp_postgresqldb' -c ';' >/dev/null 2>/dev/null"
+    ) != 0
+    assert not app_setting("testapp", "db_name_otherpostgres")
+    assert not app_setting("testapp", "db_name_postgresqldb")
+
+    assert not app_setting("testapp", "db_user")
+    assert not app_setting("testapp", "db_pwd")
+
+
 def test_resource_apt():
     r = AppResourceClassesByType["apt"]
     conf = {
