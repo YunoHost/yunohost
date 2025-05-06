@@ -45,7 +45,8 @@ do_pre_regen() {
 
     tcp_ports=$(FILE=$firewall_file PROTO=tcp python3 -c "$PY_LIST_PORTS_OF")
     udp_ports=$(FILE=$firewall_file PROTO=udp python3 -c "$PY_LIST_PORTS_OF")
-    export tcp_ports udp_ports
+    reverse_proxy_list="$(jq -r '.reverse_proxy_list' <<< "$YNH_SETTINGS" | int_to_bool)"
+    export tcp_ports udp_ports reverse_proxy_list
 
     cd /usr/share/yunohost/conf/nftables
     mkdir -p "${pending_dir}/etc/nftables.d"
