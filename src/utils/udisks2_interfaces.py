@@ -109,7 +109,7 @@ class DiskResult:
 The following interfaces were generated using the `python -m sdbus gen-from-file` command.
 See: https://python-sdbus.readthedocs.io/en/latest/code_generator.html
 Udisks2's dbus interface descriptors are available at:
-https://github.com/storaged-project/udisks/blob/2.10.x-branch/data/org.freedesktop.UDisks2.xml  
+https://github.com/storaged-project/udisks/blob/2.10.x-branch/data/org.freedesktop.UDisks2.xml
 """
 
 
@@ -857,7 +857,9 @@ class NVMeController(  # type: ignore[call-arg]
         raise NotImplementedError
 
 
-class AtaDisk(Disk, AtaController): ...
+class AtaDisk(Disk, AtaController):
+    ...
 
 
-class NvmeDisk(Disk, NVMeController): ...
+class NvmeDisk(Disk, NVMeController):
+    ...
