@@ -19,7 +19,7 @@
 #
 
 PSQL_ROOT_PWD_FILE=/etc/yunohost/psql
-PSQL_VERSION=13
+PSQL_VERSION=15
 
 # Run SQL instructions in a database ($db_name by default)
 #
