@@ -1963,7 +1963,7 @@ def app_action_run(
             raise YunohostValidationError("Unknown app action {action}", raw_msg=True)
         return
     else:
-        operation_logger = OperationLogger("app_action_run", app)
+        operation_logger = OperationLogger("app_action_run", [("app", app)])
         AppConfigPanel, _ = _get_AppConfigPanel()
         config_panel = AppConfigPanel(app)
         return config_panel.run_action(
