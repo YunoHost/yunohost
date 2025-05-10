@@ -420,7 +420,7 @@ user:
 
                 ## user_permission_ldapsync()
                 ldapsync:
-                    action_help: Resynchronize permissions to LDAP from app settings. This is a purely technical command, only meant to be ran if you manually modified permission settings in app, which is absolutely not recommended. 
+                    action_help: Resynchronize permissions to LDAP from app settings. This is a purely technical command, only meant to be ran if you manually modified permission settings in app, which is absolutely not recommended.
 
         ssh:
             subcategory_help: Manage ssh access
@@ -2117,32 +2117,41 @@ storage:
     subcategories:
         disk:
             subcategory_help: Manage et get infos about hard-drives
+            storage_disks_common_args: &storage_disks_common_args
+                -H:
+                    full: --human-readable
+                    help: Print informations in a human-readable format
+                    action: store_true
+                --human-readable-size:
+                    help: Print sizes in a human-readable format
+                    action: store_true
             actions:
-                # storage_disks_list
+                # storage_disk_list
                 list:
                     action_help: List hard-drives currently attached to this system optionnaly with infos
                     api: GET /storage/disk/list
                     arguments:
-                        -H:
-                            full: --human-readable
-                            help: Print informations in a human-readable format
-                            action: store_true
-                        --human-readable-size:
-                            help: Print sizes in a human-readable format
-                            action: store_true
+                        <<: *storage_disks_common_args
                         -i:
                             full: --with-info
                             help: Get all informations for each archive
                             action: store_true
-                # storage_disks_info
+                # storage_disk_info
                 info:
                     action_help: Get hard-drive information
                     api: GET /storage/disk/info/<name>
                     arguments:
+                        name:
+                            help: Name of the disk for which to get infos
+                        <<: *storage_disks_common_args
+                # storage_disks_health
+                health:
+                    action_help: Get health-related informations about a disk
+                    api: GET /storage/disk/health/<name>
+                    arguments:
+                        name:
+                            help: Name of the disk for which to get infos
                         -H:
                             full: --human-readable
                             help: Print informations in a human-readable format
-                            action: store_true
-                        --human-readable-size:
-                            help: Print sizes in a human-readable format
                             action: store_true
