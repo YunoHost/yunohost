@@ -205,7 +205,8 @@ class MyDiagnoser(Diagnoser):
             # Additionally, for DKIM, because the key is pretty long,
             # some DNS registrar sometime split it into several pieces like this:
             # "p=foo" "bar" (with a space and quotes in the middle)...
-            expected = set(r["value"].strip(';" ').replace(";", " ").split())
+            expected = set(
+                r["value"].replace('" "', "").strip(';" ').replace(";", " ").split())
             current = set(
                 r["current"].replace('" "', "").strip(';" ').replace(";", " ").split()
             )
