@@ -721,5 +721,17 @@
     "dyndns_set_recovery_password_failed": "Konnte Wiederherstellungspasswort nicht einstellen: {error}",
     "dyndns_set_recovery_password_success": "Wiederherstellungspasswort eingestellt!",
     "global_settings_setting_ssh_port_help": "Ein Port unter 1024 wird bevorzugt, um Kaperversuche durch Nicht-Administratordienste auf dem Remote-Computer zu verhindern. Sie sollten auch vermeiden, einen bereits verwendeten Port zu verwenden, z. B. 80 oder 443.",
-    "migration_0027_patch_yunohost_conflicts": "Patch anwenden, um das Konfliktproblem zu umgehen…"
+    "migration_0027_patch_yunohost_conflicts": "Patch anwenden, um das Konfliktproblem zu umgehen…",
+    "app_config_force_upgrade_help": "Ein Zwangsupgrade einer Applikation (bei unveränderter Version) kann zum Neubauen der App und Konfigurationen manchmal nützlich sein",
+    "app_config_change_url_path": "Neuer Pfad",
+    "app_config_force_upgrade": "Upgrade erzwingen",
+    "app_config_permission_description": "Beschreibung",
+    "app_config_permission_extraperm_section_name": "Berechtigung '{perm}'",
+    "app_config_change_url": "URL ändern",
+    "app_config_change_url_domain": "Neue Domain",
+    "app_config_permission_logo": "Eigenes Logo",
+    "app_config_permission_logo_help": "Nur PNG wird unterstützt",
+    "app_config_uninstall": "Deinstallieren",
+    "app_config_upgradable_bad_quality": "Diese Applikation ist im YunoHost-Applikationskatalog als defekt markiert. Dies kann ein vorübergehendes Problem sein, während die Betreuer versuchen, das Problem zu beheben. Währenddessen ist ein Upgrade dieser Applikation deaktiviert.",
+    "app_config_upgradable_msg": "Diese Applikation kann von `{current_version}` zu`{new_version}` aktualisiert werden"
 }
