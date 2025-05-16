@@ -1586,9 +1586,15 @@ class DatabaseAppResource(AppResource):
             self.set_setting("db_pwd", db_pwd)
 
         for name in self.dbtypes.keys():
-            db_suffix = f"_{name}" if name != "main" else ""
-            db_name = self.get_setting(f"db_name{db_suffix}") or (db_user + db_suffix)
-            self.set_setting(f"db_name{db_suffix}", db_name)
+            db_suffix_settings = f"_{name}" if name != "main" else ""
+            # Note that the db name in the database will be "$app__$name"
+            # to avoid any conflict with an other app which has an ID which start by the same
+            # app name. By example we have `synapse` and `synapse_admin`.
+            # If we have `synapse` which create a second db with name admin,
+            # we need to avoid to conflict with `synapse_admin`
+            db_suffix_name = f"__{name}" if name != "main" else ""
+            db_name = self.get_setting(f"db_name{db_suffix_settings}") or (db_user + db_suffix_name)
+            self.set_setting(f"db_name{db_suffix_settings}", db_name)
 
             if not self.db_exists(db_name, name):
                 if self.dbtypes[name] == "mysql":
@@ -1609,8 +1615,14 @@ ynh_psql_create_db '{db_name}' '{db_user}'
         db_user = self.app.replace("-", "_").replace(".", "_")
 
         for name in self.dbtypes.keys():
-            db_suffix = f"_{name}" if name != "main" else ""
-            db_name = self.get_setting(f"db_name{db_suffix}") or (db_user + db_suffix)
+            db_suffix_settings = f"_{name}" if name != "main" else ""
+            # Note that the db name in the database will be "$app__$name"
+            # to avoid any conflict with an other app which has an ID which start by the same
+            # app name. By example we have `synapse` and `synapse_admin`.
+            # If we have `synapse` which create a second db with name admin,
+            # we need to avoid to conflict with `synapse_admin`
+            db_suffix_name = f"__{name}" if name != "main" else ""
+            db_name = self.get_setting(f"db_name{db_suffix_settings}") or (db_user + db_suffix_name)
 
             if self.dbtypes[name] == "mysql":
                 db_helper_name = "mysql"
@@ -1626,7 +1638,7 @@ ynh_{db_helper_name}_database_exists "{db_name}" && ynh_{db_helper_name}_drop_db
 """,
             )
 
-            self.delete_setting(f"db_name{db_suffix}")
+            self.delete_setting(f"db_name{db_suffix_settings}")
 
         # We need to be a bit carefull here because we need to handle multiple edge cases:
         # - maybe postgresql or mysql is not installed, in this case we should avoid to call code which depends on psql/mysql because it will fail in all cases
