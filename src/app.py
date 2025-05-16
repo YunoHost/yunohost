@@ -341,7 +341,7 @@ def _app_upgradable(
 
 
 def app_map(
-    app: str | None = None, raw: bool = False, user: str | None = None
+    app: str | None = None, raw: bool = False, user: str | None = None #, app_extra_domains: bool = False
 ) -> dict[str, Any]:
     """
     Returns a map of url <-> app id such as :
