@@ -733,5 +733,10 @@
     "app_config_permission_logo_help": "Nur PNG wird unterstützt",
     "app_config_uninstall": "Deinstallieren",
     "app_config_upgradable_bad_quality": "Diese Applikation ist im YunoHost-Applikationskatalog als defekt markiert. Dies kann ein vorübergehendes Problem sein, während die Betreuer versuchen, das Problem zu beheben. Währenddessen ist ein Upgrade dieser Applikation deaktiviert.",
-    "app_config_upgradable_msg": "Diese Applikation kann von `{current_version}` zu`{new_version}` aktualisiert werden"
+    "app_config_upgradable_msg": "Diese Applikation kann von `{current_version}` zu`{new_version}` aktualisiert werden",
+    "app_config__core_name": "Einrichtung und Betrieb",
+    "app_config_change_url_unsupported_msg": "Das Ändern der URL, unter der diese App installiert ist, wird für diese App derzeit nicht unterstützt.",
+    "app_config_operations_name": "Betrieb",
+    "app_config_permission_allowed": "Zugriffsberechtigte Gruppen/Konten",
+    "app_config_permission_allowed_warn_protected": "Hinweis: Diese Berechtigung ist „geschützt“, so dass die Gruppe „Besucher“ nicht zu den autorisierten Gruppen hinzugefügt oder entfernt werden kann."
 }
