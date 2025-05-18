@@ -1891,7 +1891,11 @@ def app_ssowatconf() -> None:
     write_to_json("/etc/ssowat/conf.json", conf_dict, sort_keys=True, indent=4)
 
     # Generate a file per possible portal with available apps
-    portal_email_settings = {k: v for k, v in settings_get("security.portal", export=True) if 'allow_edit_email' in k}
+    portal_email_settings = {
+        k: v
+        for k, v in settings_get("security.portal", export=True)
+        if "allow_edit_email" in k
+    }
     for domain, apps in portal_domains_apps.items():
         portal_settings = {}
         portal_settings.update(portal_email_settings)

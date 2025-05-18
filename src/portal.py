@@ -230,9 +230,7 @@ def portal_update(
             try:
                 _get_ldap_interface().validate_uniqueness({"mail": mail})
             except YunohostError:
-                raise YunohostValidationError(
-                    "mail_already_exists", mail=mail
-                )
+                raise YunohostValidationError("mail_already_exists", mail=mail)
 
             if domain not in domains or not user_is_allowed_on_domain(username, domain):
                 raise YunohostValidationError("mail_alias_unauthorized", domain=domain)
