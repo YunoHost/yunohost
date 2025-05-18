@@ -24,6 +24,7 @@ from logging import getLogger
 from typing import TYPE_CHECKING, Any, Union, Callable
 
 from moulinette import m18n
+
 from yunohost.firewall import firewall_reload
 from yunohost.log import is_unit_operation
 from yunohost.regenconf import regen_conf
