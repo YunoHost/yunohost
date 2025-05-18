@@ -188,7 +188,7 @@ class Authenticator(BaseAuthenticator):
                 raise YunohostAuthenticationError("unable_authenticate")
             # Boring fix because Moulinette wants to get the session ID during 'emit' called by the logger etc, for example during postinstall where we aint logged yet, and we don't want to crash just for this... (to be removed on 12.1)
             else:
-                return {'id': None}
+                return {"id": None}
 
         if not infos:
             raise YunohostAuthenticationError("unable_authenticate")
