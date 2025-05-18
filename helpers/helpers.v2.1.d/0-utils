@@ -629,3 +629,18 @@ function _ynh_git_clone() {
         git reset --hard origin/"$branch"
     popd || return 1
 }
+
+# Get the timezone information from tzdata/timedatectl
+#
+# usage: ynh_get_timezone
+function ynh_get_timezone() {
+    # bookworm has legacy /etc/timezone
+    # trixie has symlink /etc/localtime or timedatectl (slower)
+
+    if [[ $YNH_DEBIAN_VERSION == "bookworm" ]]; then
+        cat /etc/timezone
+    elif [[ $YNH_DEBIAN_VERSION == "trixie" ]]; then
+        # timedatectl show --value --property=Timezone
+        readlink -f /etc/localtime  | sed -e 's,/usr/share/zoneinfo/,,'
+    fi
+}
