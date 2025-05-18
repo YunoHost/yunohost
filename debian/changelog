@@ -1,3 +1,10 @@
+yunohost (12.0.17) stable; urgency=low
+
+  - regenconf: force YNH_HELPERS_VERSION to 2 when running regenconf script, because this var env may be inherited from app scripts running in 2.1 (6c92e77a6)
+  - helpers.v2.1: PSQL_VERSION should be 15 not 13 x_x (7db6422b7)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 18 May 2025 18:36:09 +0200
+
 yunohost (12.0.16) stable; urgency=low
 
   - yunoprompt: in fact if we dont chvt to another term it stays on the current one forever ~_~ (d36d2d542)
