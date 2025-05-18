@@ -1718,6 +1718,7 @@ def app_ssowatconf() -> None:
         domain_list,
     )
     from yunohost.permission import AppPermInfos, user_permission_list
+    from yunohost.settings import settings_get
 
     domain_portal_dict = _get_domain_portal_dict()
 
@@ -1888,8 +1889,10 @@ def app_ssowatconf() -> None:
     write_to_json("/etc/ssowat/conf.json", conf_dict, sort_keys=True, indent=4)
 
     # Generate a file per possible portal with available apps
+    portal_email_settings = {k: v for k, v in settings_get("security.portal", export=True) if 'allow_edit_email' in k}
     for domain, apps in portal_domains_apps.items():
         portal_settings = {}
+        portal_settings.update(portal_email_settings)
 
         portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
         if portal_settings_path.exists():
