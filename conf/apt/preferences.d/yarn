@@ -1,0 +1,9 @@
+# Ban everything from the yarn repo except yarn
+Package: *
+Pin: origin "dl.yarnpkg.com"
+Pin-Priority: -1
+
+# Install yarn from yarnpkg.com
+Package: yarn
+Pin: origin "dl.yarnpkg.com"
+Pin-Priority: 500
