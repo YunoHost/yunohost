@@ -142,8 +142,8 @@ i18n = "global_settings_setting"
         optional = true
         visible = "smtp_backup_mx_domains"
 
-    [email.spam]
-        [email.spam.block_blacklisted_servers]
+    [email.antispam]
+        [email.antispam.enable_blocklists]
         type = "boolean"
         default = true
 
