@@ -155,6 +155,11 @@ i18n = "global_settings_setting"
         optional = true
         visible = "smtp_backup_mx_domains"
 
+    [email.antispam]
+        [email.antispam.enable_blocklists]
+        type = "boolean"
+        default = true
+
 [misc]
 
     [misc.backup]
