@@ -1893,7 +1893,7 @@ def app_ssowatconf() -> None:
     # Generate a file per possible portal with available apps
     portal_email_settings = {
         k: v
-        for k, v in settings_get("security.portal", export=True)
+        for k, v in settings_get("security.portal", export=True).items()
         if "allow_edit_email" in k
     }
     for domain, apps in portal_domains_apps.items():
