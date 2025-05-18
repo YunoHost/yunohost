@@ -1,3 +1,9 @@
+yunohost (12.1.6.1) testing; urgency=low
+
+  - Typo T.T
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 18 May 2025 19:00:37 +0200
+
 yunohost (12.1.6) testing; urgency=low
 
   - portal: change default value of show_other_domains_apps to True (407eae5e0)
