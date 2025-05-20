@@ -840,5 +840,6 @@
     "global_settings_setting_enable_blocklists": "Habilitar la lista de bloqueo para el trafico entrante",
     "global_settings_setting_enable_blocklists_help": "Lista de servidores bloqueados por spamcop.net, spamhaus.org y abuseat.org para prevenir spam. Pero este puede causar problemas de entrega para ciertos servidores de correos que podrían estar en estas listas.",
     "mail_edit_operation_unauthorized": "No tiene autorización para hacer este cambio en su cuenta.",
-    "migration_0030_rebuild_python_venv_in_bookworm_failed": "Fue imposible reconstituir el ambiente python para {app}. La aplicación puede no funcionar mientras este problema no esta resuelto. Debe forzar la actualización con la ayuda de la interfaces de comando ingresando `yunohost app upgrade --force {app}'."
+    "migration_0030_rebuild_python_venv_in_bookworm_failed": "Fue imposible reconstituir el ambiente python para {app}. La aplicación puede no funcionar mientras este problema no esta resuelto. Debe forzar la actualización con la ayuda de la interfaces de comando ingresando `yunohost app upgrade --force {app}'.",
+    "migration_0030_rebuild_python_venv_in_bookworm_in_progress": "Estamos intentando reconstruir el ambiente virtual python para `{app}`"
 }
