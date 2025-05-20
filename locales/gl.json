@@ -867,5 +867,12 @@
     "automatic_task": "Tarefa automatizada",
     "noninteractive_task": "Tarefa non-interactiva",
     "yunohost_api": "API de YunoHost",
-    "diagnosis_apps_outdated_packaging_format": "Esta aplicación usa un sistema de empaquetado que está en desuso e deixará de estar mantida por YunoHost. Deberías considerar actualizala."
+    "diagnosis_apps_outdated_packaging_format": "Esta aplicación usa un sistema de empaquetado que está en desuso e deixará de estar mantida por YunoHost. Deberías considerar actualizala.",
+    "global_settings_setting_portal_allow_edit_email_alias": "Permitir ás usuarias engadir, retirar, editar alias de correo",
+    "global_settings_setting_portal_name": "Portal",
+    "global_settings_setting_portal_allow_edit_email": "Permitir ás usuarias editar o seu enderezo de correo principal",
+    "global_settings_setting_portal_allow_edit_email_forward": "Permitir ás usuarias engadir, retirar, editar reenvío de correo",
+    "global_settings_setting_enable_blocklists": "Activar listas de bloqueo para o tráfico entrante",
+    "mail_edit_operation_unauthorized": "Non tes permiso para facer este cambio na túa conta.",
+    "global_settings_setting_enable_blocklists_help": "Lista de servidores bloqueados procedente de spamcop.net, spamhaus.org e abuseat.org. Ten en conta que podería causar problemas para entregar o correo a algúns servidores que poderían aparecer nesas listas pero ser inofensivos, nese caso tampouco vas recibir correo procedente deses servidores."
 }
