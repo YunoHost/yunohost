@@ -160,6 +160,9 @@ do_pre_regen() {
     # disable default site
     mkdir -p "${nginx_dir}/sites-enabled"
     touch "${nginx_dir}/sites-enabled/default"
+
+    # Remove the file left by the bookworm migration
+    touch "${pending_dir}/usr/sbin/policy-rc.d"
 }
 
 do_post_regen() {
