@@ -297,7 +297,7 @@ class YunoUPnP:
 
         for protocol in ["tcp", "udp"]:
             for port, info in firewall.config[protocol].items():
-                if self.enabled():
+                if self.enabled() and info["open"] and info["upnp"]:
                     status = status and self.open_port(protocol, port, info["comment"])
                 else:
                     status = status and self.close_port(protocol, port)
