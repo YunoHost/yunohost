@@ -386,6 +386,7 @@ def hook_exec(
             r"cannot open '/etc/ssl/certs/java/cacerts'",
             # Misc
             r"update-binfmts: warning:",
+            r"Not building database; man-db",
         ]
         return all(not re.search(w, msg) for w in irrelevant_warnings)
 
