@@ -351,7 +351,7 @@ def hook_exec(
         irrelevant_warnings = [
             r"invalid value for trace file descriptor",
             r"Creating config file .* with new version",
-            r"Created symlink /etc/systemd",
+            r"Created symlink '?/etc/systemd",
             r"dpkg: warning: while removing .* not empty so not removed",
             r"apt-key output should not be parsed",
             r"update-rc.d: ",
