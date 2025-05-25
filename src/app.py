@@ -114,6 +114,7 @@ APP_FILES_TO_COPY = [
     "doc",
 ]
 
+# TODO: lol
 AppManifest = dict[str, Any]
 
 
@@ -205,9 +206,8 @@ def app_info(app: str, full: bool = False, upgradable: bool = False) -> AppInfo:
         if os.path.exists(f"{APPS_CATALOG_LOGOS}/{app}.png")
         else (main_perm.get("logo_hash") or from_catalog.get("logo_hash"))
     )
-    ret["upgradable"], ret["current_version"], ret["new_version"] = _app_upgradable(
-        app, local_manifest=local_manifest
-    )
+    upgradable_infos = _app_upgradable(app, local_manifest=local_manifest)
+    ret.update(upgradable_infos) # type: ignore[typeddict-item]
 
     ret["settings"] = settings
 
@@ -294,9 +294,17 @@ def app_info(app: str, full: bool = False, upgradable: bool = False) -> AppInfo:
     return ret
 
 
+class AppUpgradableInfo(TypedDict):
+
+    upgradable: Literal["yes", "no", "url_required", "bad_quality"]
+    current_version: str
+    new_version: str | None
+
+
 def _app_upgradable(
     app: str, local_manifest: dict | None = None
-) -> Tuple[Literal["yes", "no", "url_required", "bad_quality"], str | None, str | None]:
+) -> AppUpgradableInfo:
+
     base_app_id, _ = _parse_app_instance_name(app)
     app_in_catalog = _load_apps_catalog()["apps"].get(base_app_id, {})
 
@@ -309,9 +317,14 @@ def _app_upgradable(
     current_version = local_manifest.get("version", "0~ynh0")
 
     if not app_in_catalog:
-        return "url_required", current_version, None
+        return {
+            "upgradable": "url_required",
+            "current_version": current_version,
+            "new_version": None,
+        }
 
-    version_in_catalog = app_in_catalog.get("manifest", {}).get("version", "0~ynh0")
+    manifest_in_catalog = app_in_catalog.get("manifest", {})
+    version_in_catalog = manifest_in_catalog.get("version", "0~ynh0")
 
     # Do not advertise upgrades for bad-quality apps
     level = app_in_catalog.get("level", -1)
@@ -319,10 +332,18 @@ def _app_upgradable(
         not (isinstance(level, int) and level >= 5)
         or app_in_catalog.get("state") != "working"
     ):
-        return "bad_quality", current_version, None
+        return {
+            "upgradable": "bad_quality",
+            "current_version": current_version,
+            "new_version": None,
+        }
 
     if _parse_app_version(current_version) >= _parse_app_version(version_in_catalog):
-        return "no", current_version, version_in_catalog
+        return {
+            "upgradable": "no",
+            "current_version": current_version,
+            "new_version": version_in_catalog,
+        }
 
     # Not sure when this happens exactly considering we checked for ">=" before ...
     # maybe that's for "legacy versions" that do not respect the X.Y~ynhZ syntax
@@ -335,7 +356,11 @@ def _app_upgradable(
     else:
         new_version = version_in_catalog
 
-    return "yes", current_version, new_version
+    return {
+        "upgradable": "yes",
+        "current_version": current_version,
+        "new_version": version_in_catalog,
+    }
 
 
 def app_map(
@@ -719,19 +744,17 @@ def app_upgrade(
                     upgrade_type = "UPGRADE_APP"
 
         # Check requirements
-        for name, passed, values, err in _check_manifest_requirements(
-            manifest, action="upgrade"
-        ):
-            if not passed:
-                if name == "ram":
+        for check in _check_manifest_requirements(manifest, action="upgrade"):
+            if not check["passed"]:
+                if check["id"] == "ram":
                     # i18n: confirm_app_insufficient_ram
                     _ask_confirmation(
-                        "confirm_app_insufficient_ram", params=values, force=force
+                        "confirm_app_insufficient_ram", params=check["values"], force=force
                     )
-                elif name == "required_yunohost_version" and ignore_yunohost_version:
-                    logger.warning(m18n.n(err, **values))
+                elif check["id"] == "required_yunohost_version" and ignore_yunohost_version:
+                    logger.warning(m18n.n(check["error_i18n_key"], **(check["values"])))
                 else:
-                    raise YunohostValidationError(err, **values)
+                    raise YunohostValidationError(check["error_i18n_key"], **(check["values"]))
 
         # Display pre-upgrade notifications and ask for simple confirm
         if (
@@ -1062,16 +1085,14 @@ def app_manifest(app: str, with_screenshot: bool = False) -> AppManifest:
     shutil.rmtree(extracted_app_folder)
 
     manifest["requirements"] = {}
-    for name, passed, values, err in _check_manifest_requirements(
-        manifest, action="install"
-    ):
+    for check in _check_manifest_requirements(manifest, action="install"):
         if Moulinette.interface.type == "api":
-            manifest["requirements"][name] = {
-                "pass": passed,
-                "values": values,
+            manifest["requirements"][check["id"]] = {
+                "pass": check["passed"],
+                "values": check["values"],
             }
         else:
-            manifest["requirements"][name] = "ok" if passed else m18n.n(err, **values)
+            manifest["requirements"][check["id"]] = "ok" if check["passed"] else m18n.n(check["error_i18n_key"], **(check["values"]))
 
     return manifest
 
@@ -1164,18 +1185,16 @@ def app_install(
         )
 
     # Check requirements
-    for name, passed, values, err in _check_manifest_requirements(
-        manifest, action="install"
-    ):
-        if not passed:
-            if name == "ram":
+    for check in _check_manifest_requirements(manifest, action="install"):
+        if not check["passed"]:
+            if check["id"] == "ram":
                 _ask_confirmation(
-                    "confirm_app_insufficient_ram", params=values, force=force
+                    "confirm_app_insufficient_ram", params=check["values"], force=force
                 )
-            elif name == "required_yunohost_version" and ignore_yunohost_version:
-                logger.warning(m18n.n(err, **values))
+            elif check["id"] == "required_yunohost_version" and ignore_yunohost_version:
+                logger.warning(m18n.n(check["error_i18n_key"], **(check["values"])))
             else:
-                raise YunohostValidationError(err, **values)
+                raise YunohostValidationError(check["error_i18n_key"], **(check["values"]))
 
     _assert_system_is_sane_for_app(manifest, "pre")
 
@@ -2249,7 +2268,10 @@ ynh_app_config_run $1
             # Ugly trick to move 'operations' at the end
             raw_config["_core"]["operations"] = raw_config["_core"].pop("operations")
 
-            upgradable, current_version, new_version = _app_upgradable(self.entity)
+            app_upgradable_infos = _app_upgradable(self.entity)
+            upgradable = app_upgradable_infos["upgradable"]
+            current_version = app_upgradable_infos["current_version"]
+            new_version = app_upgradable_infos["new_version"]
             raw_config["_core"]["operations"]["upgradable"]["default"] = upgradable
             # i18n: app_config_upgradable_yes
             # i18n: app_config_upgradable_no
@@ -2849,7 +2871,7 @@ def _is_app_repo_url(string: str) -> bool:
     return bool(APP_REPO_URL.match(string))
 
 
-def _app_quality(src: str) -> str:
+def _app_quality(src: str) -> Literal["success", "warning", "danger", "thirdparty"]:
     """
     app may in fact be an app name, an url, or a path
     """
@@ -2889,7 +2911,7 @@ def _app_quality(src: str) -> str:
         raise YunohostValidationError("app_unknown")
 
 
-def _extract_app(src: str) -> Tuple[Dict, str]:
+def _extract_app(src: str) -> Tuple[AppManifest, str]:
     """
     src may be an app name, an url, or a path
     """
@@ -2931,7 +2953,7 @@ def _extract_app(src: str) -> Tuple[Dict, str]:
         raise YunohostValidationError("app_unknown")
 
 
-def _extract_app_from_folder(path: str) -> Tuple[Dict, str]:
+def _extract_app_from_folder(path: str) -> Tuple[AppManifest, str]:
     """
     Unzip / untar / copy application tarball or directory to a tmp work directory
 
@@ -2981,7 +3003,7 @@ def _extract_app_from_folder(path: str) -> Tuple[Dict, str]:
 
 def _extract_app_from_gitrepo(
     url: str, branch: Optional[str] = None, revision: str = "HEAD", app_info: Dict = {}
-) -> Tuple[Dict, str]:
+) -> Tuple[AppManifest, str]:
     logger.debug("Checking default branch")
 
     try:
@@ -3125,9 +3147,16 @@ def _get_all_installed_apps_id() -> str:
     return all_apps_ids_formatted
 
 
+class AppRequirementCheckResult(TypedDict):
+    id: str
+    passed: bool
+    values: dict[str, Any]
+    error_i18n_key: str
+
+
 def _check_manifest_requirements(
-    manifest: Dict, action: str = ""
-) -> Iterator[Tuple[str, bool, dict[str, Any], str]]:
+    manifest: AppManifest, action: Literal["install", "upgrade"]
+) -> Iterator[AppRequirementCheckResult]:
     """Check if required packages are met from the manifest"""
 
     app_id = manifest["id"]
@@ -3143,24 +3172,23 @@ def _check_manifest_requirements(
     )
     current_yunohost_version = get_ynh_package_version("yunohost")["version"]
 
-    yield (
-        "required_yunohost_version",
-        version.parse(required_yunohost_version)
-        <= version.parse(current_yunohost_version),
-        {"current": current_yunohost_version, "required": required_yunohost_version},
-        "app_yunohost_version_not_supported",  # i18n: app_yunohost_version_not_supported
-    )
+    yield {
+        "id": "required_yunohost_version",
+        "passed": version.parse(required_yunohost_version) <= version.parse(current_yunohost_version),
+        "values": {"current": current_yunohost_version, "required": required_yunohost_version},
+        "error_i18n_key": "app_yunohost_version_not_supported",  # i18n: app_yunohost_version_not_supported
+    }
 
     # Architectures
     arch_requirement = manifest["integration"]["architectures"]
     arch = system_arch()
 
-    yield (
-        "arch",
-        arch_requirement in ["all", "?"] or arch in arch_requirement,
-        {"current": arch, "required": ", ".join(arch_requirement)},
-        "app_arch_not_supported",  # i18n: app_arch_not_supported
-    )
+    yield {
+        "id": "arch",
+        "passed": arch_requirement in ["all", "?"] or arch in arch_requirement,
+        "values": {"current": arch, "required": ", ".join(arch_requirement) if arch_requirement != "all" else "all"},
+        "error_i18n_key": "app_arch_not_supported",  # i18n: app_arch_not_supported
+    }
 
     # Multi-instance
     if action == "install":
@@ -3172,12 +3200,12 @@ def _check_manifest_requirements(
             ]
             multi_instance = len(sibling_apps) == 0
 
-        yield (
-            "install",
-            multi_instance,
-            {"app": app_id},
-            "app_already_installed",  # i18n: app_already_installed
-        )
+        yield {
+            "id": "install",
+            "passed": multi_instance,
+            "values": {"app": app_id},
+            "error_i18n_key": "app_already_installed",  # i18n: app_already_installed
+            }
 
     # Disk
     if action == "install":
@@ -3192,12 +3220,12 @@ def _check_manifest_requirements(
             )
         free_space = binary_to_human(min(root_free_space, var_free_space))
 
-        yield (
-            "disk",
-            has_enough_disk,
-            {"current": free_space, "required": manifest["integration"]["disk"]},
-            "app_not_enough_disk",  # i18n: app_not_enough_disk
-        )
+        yield {
+            "id": "disk",
+            "passed": has_enough_disk,
+            "values": {"current": free_space, "required": manifest["integration"]["disk"]},
+            "error_i18n_key": "app_not_enough_disk",  # i18n: app_not_enough_disk
+        }
 
     # Ram
     ram_requirement = manifest["integration"]["ram"]
@@ -3243,12 +3271,12 @@ def _check_manifest_requirements(
     else:
         max_build_runtime = ram_requirement["runtime"]
 
-    yield (
-        "ram",
-        can_build and can_run,
-        {"current": binary_to_human(ram), "required": max_build_runtime},
-        "app_not_enough_ram",  # i18n: app_not_enough_ram
-    )
+    yield {
+        "id": "ram",
+        "passed": can_build and can_run,
+        "values": {"current": binary_to_human(ram), "required": max_build_runtime},
+        "error_i18n_key": "app_not_enough_ram",  # i18n: app_not_enough_ram
+    }
 
 
 def _guess_webapp_path_requirement(app_folder: str) -> str:
