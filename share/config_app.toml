@@ -38,17 +38,12 @@ i18n = "app_config"
 
         [_core.operations.upgradable]
         type = "string"
-        # can be 'yes', 'no', 'bad_quality' or 'url_required
+        # can be 'yes', 'no', 'bad_quality', 'url_required' or 'fail_requirements'
         visible = false
         readonly = true
 
         [_core.operations.upgradable_msg]
         type = "alert"
-        # upgrade = no : success ?
-            # but advertise testing ?
-        # upgrade = yes : info ?
-        # upgrade = url_required : hmmmmmwarning ? "must be upgraded from CLI"
-        # upgrade = bad quality : hmmmmwarning ? "upgrade disabled"
 
         [_core.operations.upgrade]
         type = "button"

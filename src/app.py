@@ -125,9 +125,10 @@ class AppInfo(TypedDict, total=False):
     version: Required[str]
     domain_path: str
     logo: str | None
-    upgradable: Literal["yes", "no", "url_required", "bad_quality"]
+    upgradable: Literal["yes", "no", "url_required", "bad_quality", "fail_requirements"]
     current_version: str | None
     new_version: str | None
+    upgrade_requirements: dict[str, "AppRequirementCheckResult"] | None
     settings: dict[str, Any]
     setting_path: str
     manifest: AppManifest
@@ -158,7 +159,7 @@ def app_list(
         except Exception as e:
             logger.error(f"Failed to read info for {app_id} : {e}")
             continue
-        if upgradable and app_info_dict.get("upgradable") != "yes":
+        if upgradable and app_info_dict.get("upgradable") not in ["yes", "fail_requirements"]:
             continue
         out.append(app_info_dict)
 
@@ -296,9 +297,10 @@ def app_info(app: str, full: bool = False, upgradable: bool = False) -> AppInfo:
 
 class AppUpgradableInfo(TypedDict):
 
-    upgradable: Literal["yes", "no", "url_required", "bad_quality"]
+    upgradable: Literal["yes", "no", "url_required", "bad_quality", "fail_requirements"]
     current_version: str
     new_version: str | None
+    upgrade_requirements: dict[str, "AppRequirementCheckResult"] | None
 
 
 def _app_upgradable(
@@ -321,6 +323,7 @@ def _app_upgradable(
             "upgradable": "url_required",
             "current_version": current_version,
             "new_version": None,
+            "upgrade_requirements": None
         }
 
     manifest_in_catalog = app_in_catalog.get("manifest", {})
@@ -336,6 +339,7 @@ def _app_upgradable(
             "upgradable": "bad_quality",
             "current_version": current_version,
             "new_version": None,
+            "upgrade_requirements": None
         }
 
     if _parse_app_version(current_version) >= _parse_app_version(version_in_catalog):
@@ -343,6 +347,7 @@ def _app_upgradable(
             "upgradable": "no",
             "current_version": current_version,
             "new_version": version_in_catalog,
+            "upgrade_requirements": None
         }
 
     # Not sure when this happens exactly considering we checked for ">=" before ...
@@ -356,10 +361,18 @@ def _app_upgradable(
     else:
         new_version = version_in_catalog
 
+    requirements = {
+        r["id"]: r
+        for r in _check_manifest_requirements(manifest_in_catalog, action="upgrade")
+    }
+
+    pass_requirements = all(r["passed"] for r in requirements.values())
+
     return {
-        "upgradable": "yes",
+        "upgradable": "yes" if pass_requirements else "fail_requirements",
         "current_version": current_version,
         "new_version": version_in_catalog,
+        "upgrade_requirements": requirements,
     }
 
 
@@ -697,7 +710,7 @@ def app_upgrade(
         elif app_dict["upgradable"] == "url_required":
             logger.warning(m18n.n("custom_app_url_required", app=app_instance_name))
             continue
-        elif app_dict["upgradable"] == "yes" or force:
+        elif app_dict["upgradable"] in ["yes", "fail_requirements"] or force:
             new_app_src = app_dict["manifest"]["id"]
         else:
             logger.success(m18n.n("app_already_up_to_date", app=app_instance_name))
@@ -744,17 +757,21 @@ def app_upgrade(
                     upgrade_type = "UPGRADE_APP"
 
         # Check requirements
-        for check in _check_manifest_requirements(manifest, action="upgrade"):
-            if not check["passed"]:
-                if check["id"] == "ram":
-                    # i18n: confirm_app_insufficient_ram
-                    _ask_confirmation(
-                        "confirm_app_insufficient_ram", params=check["values"], force=force
-                    )
-                elif check["id"] == "required_yunohost_version" and ignore_yunohost_version:
-                    logger.warning(m18n.n(check["error_i18n_key"], **(check["values"])))
-                else:
-                    raise YunohostValidationError(check["error_i18n_key"], **(check["values"]))
+        failed_requirements = {
+            r["id"]: r
+            for r in _check_manifest_requirements(manifest, action="upgrade")
+            if not r["passed"]
+        }
+        for id_, check in failed_requirements.items():
+            if id_ == "ram":
+                # i18n: confirm_app_insufficient_ram
+                _ask_confirmation(
+                    "confirm_app_insufficient_ram", params=check["values"], force=force
+                )
+            elif id_ == "required_yunohost_version" and ignore_yunohost_version:
+                logger.warning(m18n.n(check["error_i18n_key"], **(check["values"])))
+            else:
+                raise YunohostValidationError(check["error_i18n_key"], **(check["values"]))
 
         # Display pre-upgrade notifications and ask for simple confirm
         if (
@@ -1084,16 +1101,10 @@ def app_manifest(app: str, with_screenshot: bool = False) -> AppManifest:
 
     shutil.rmtree(extracted_app_folder)
 
-    manifest["requirements"] = {}
-    for check in _check_manifest_requirements(manifest, action="install"):
-        if Moulinette.interface.type == "api":
-            manifest["requirements"][check["id"]] = {
-                "pass": check["passed"],
-                "values": check["values"],
-            }
-        else:
-            manifest["requirements"][check["id"]] = "ok" if check["passed"] else m18n.n(check["error_i18n_key"], **(check["values"]))
-
+    manifest["requirements"] = {
+        r["id"]: r
+        for r in _check_manifest_requirements(manifest, action="install")
+    }
     return manifest
 
 
@@ -1185,16 +1196,20 @@ def app_install(
         )
 
     # Check requirements
-    for check in _check_manifest_requirements(manifest, action="install"):
-        if not check["passed"]:
-            if check["id"] == "ram":
-                _ask_confirmation(
-                    "confirm_app_insufficient_ram", params=check["values"], force=force
-                )
-            elif check["id"] == "required_yunohost_version" and ignore_yunohost_version:
-                logger.warning(m18n.n(check["error_i18n_key"], **(check["values"])))
-            else:
-                raise YunohostValidationError(check["error_i18n_key"], **(check["values"]))
+    failed_requirements = {
+        r["id"]: r
+        for r in _check_manifest_requirements(manifest, action="upgrade")
+        if not r["passed"]
+    }
+    for id_, check in failed_requirements.items():
+        if id_ == "ram":
+            _ask_confirmation(
+                "confirm_app_insufficient_ram", params=check["values"], force=force
+            )
+        elif id_ == "required_yunohost_version" and ignore_yunohost_version:
+            logger.warning(m18n.n(check["error_i18n_key"], **(check["values"])))
+        else:
+            raise YunohostValidationError(check["error_i18n_key"], **(check["values"]))
 
     _assert_system_is_sane_for_app(manifest, "pre")
 
@@ -2272,21 +2287,30 @@ ynh_app_config_run $1
             upgradable = app_upgradable_infos["upgradable"]
             current_version = app_upgradable_infos["current_version"]
             new_version = app_upgradable_infos["new_version"]
+            # TODO
+            upgrade_requirements = app_upgradable_infos["upgrade_requirements"]
+            if upgrade_requirements is not None:
+               failed_requirements = ' ; '.join([m18n.n(r["error_i18n_key"], **(r["values"])) for r in upgrade_requirements.values() if not r["passed"]])
+            else:
+                failed_requirements = ""
             raw_config["_core"]["operations"]["upgradable"]["default"] = upgradable
             # i18n: app_config_upgradable_yes
             # i18n: app_config_upgradable_no
             # i18n: app_config_upgradable_url_required
             # i18n: app_config_upgradable_bad_quality
+            # i18n: app_config_upgradable_fail_requirements
             raw_config["_core"]["operations"]["upgradable_msg"]["ask"] = m18n.n(
                 f"app_config_upgradable_{upgradable}",
                 current_version=current_version,
                 new_version=new_version,
+                failed_requirements=failed_requirements,
             )
             raw_config["_core"]["operations"]["upgradable_msg"]["style"] = {
                 "yes": "info",  # "App can be upgraded"
                 "no": "success",  # "It's up to date !" etc
                 "url_required": "warning",  # "App is unknown, gotta be upgraded manually by specifying the URL in CLI" etc
                 "bad_quality": "warning",  # "App is currently marked as bad quality" etc
+                "fail_requirements": "warning", # "App has a new version but some requirements are not satisfied: ..."
             }[upgradable]
 
             domain = settings.get("domain")

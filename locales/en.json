@@ -49,6 +49,7 @@
     "app_config_upgradable_no": "This app is up to date. <small>(version `{current_version}`)</small><br/><small><em>Looking for a new version from upstream? Maybe there's a 'testing' version you can help packagers with on the YunoHost package's git repository!</em></small>",
     "app_config_upgradable_url_required": "This app does not exists (anymore?) in the catalog and therefore must be upgraded manually from the command line, using `yunohost app upgrade <app>` and providing the url of the repo using the `-u` option.",
     "app_config_upgradable_yes": "The app can be upgraded from version {current_version} to {new_version}",
+    "app_config_upgradable_fail_requirements": "A new version is available for this app (`{new_version}`), but some requirements are not met: {failed_requirements}",
     "app_config_upgrade": "Upgrade",
     "app_corrupt_source": "YunoHost was able to download the asset '{source_id}' ({url}) for {app}, but the asset doesn't match the expected checksum. This could mean that some temporary network failure happened on your server, OR the asset was somehow changed by the upstream maintainer (or a malicious actor?) and YunoHost packagers need to investigate and perhaps update the app manifest to take this change into account.\n    Expected sha256 checksum: {expected_sha256}\n    Downloaded sha256 checksum: {computed_sha256}\n    Downloaded file size: {size}",
     "app_extraction_failed": "Could not extract the installation files",
