@@ -456,15 +456,15 @@ class BaseConfiguration(BaseModel):
         self.write(self.content_to_write)
 
     @classmethod
-    def prepare_rm(klass, id, path) -> Generator[ConfigurationRemove, None, None]:
+    def prepare_rm(cls, id, path) -> Generator[ConfigurationRemove, None, None]:
 
         if os.path.exists(path):
             yield ConfigurationRemove(path=path)
 
     @classmethod
-    def rm(klass, id, path):
+    def rm(cls, id, path):
 
-        type_ = klass.__fields__["type"].default
+        type_ = cls.__fields__["type"].default
         name = f"{type_}.{id}"
 
         if os.path.exists(path):
@@ -704,7 +704,7 @@ class NginxConfiguration(BaseConfiguration):
             os.makedirs(self.d_dir)
 
     @classmethod
-    def prepare_rm(klass, id, path) -> Generator[ConfigurationRemove, None, None]:
+    def prepare_rm(cls, id, path) -> Generator[ConfigurationRemove, None, None]:
         yield from super().prepare_rm(id, path)
         # FIXME d_dir etc
         # if id == "main" and os.path.isdir(d_dir):
@@ -713,7 +713,7 @@ class NginxConfiguration(BaseConfiguration):
         raise NotImplementedError()
 
     @classmethod
-    def rm(klass, id, path):
+    def rm(cls, id, path):
 
         super().remove(id, path)
 
