@@ -8,7 +8,7 @@ import datetime
 import pwd
 import re
 from logging import getLogger
-from typing import Any, Literal, Generator, NotRequired, TypedDict
+from typing import Any, Literal, Iterator, NotRequired, TypedDict
 from pydantic import BaseModel
 
 from moulinette import m18n
@@ -109,7 +109,8 @@ OCT_TO_SYM: dict[int, str] = {
     6: "rw-",
     7: "rwx",
 }
-SYM_TO_OCT: dict[str, int] = {v:k for k,v in OCT_TO_SYM.items()}
+SYM_TO_OCT: dict[str, int] = {v: k for k, v in OCT_TO_SYM.items()}
+
 
 def sym_to_octal(sym: str) -> int:
 
@@ -118,6 +119,7 @@ def sym_to_octal(sym: str) -> int:
     return (
         0o100 * SYM_TO_OCT[owner] + 0o010 * SYM_TO_OCT[group] + 0o001 * SYM_TO_OCT[other]
     )
+
 
 def octal_to_sym(n: int) -> str:
 
@@ -362,7 +364,7 @@ class BaseConfiguration(BaseModel):
 
         return (p.returncode == 0, merged_content)
 
-    def prepare(self) -> Generator[ConfigurationAdd | ConfigurationUpdate, None, None]:
+    def prepare(self) -> Iterator[ConfigurationAdd | ConfigurationUpdate]:
 
         self.render(read_file(self.template))
         assert self.content
@@ -456,7 +458,7 @@ class BaseConfiguration(BaseModel):
         self.write(self.content_to_write)
 
     @classmethod
-    def prepare_rm(cls, id, path) -> Generator[ConfigurationRemove, None, None]:
+    def prepare_rm(cls, id, path) -> Iterator[ConfigurationRemove]:
 
         if os.path.exists(path):
             yield ConfigurationRemove(path=path)
@@ -493,7 +495,7 @@ class AppConfigurationsManager:
 
     def compute_todos(
         self,
-    ) -> Generator[
+    ) -> Iterator[
         tuple[
             Literal["add", "update", "remove"],
             str,
@@ -501,9 +503,7 @@ class AppConfigurationsManager:
             BaseConfiguration | None,
             str | None,
             list[ConfigurationAdd | ConfigurationUpdate | ConfigurationRemove],
-        ],
-        None,
-        None,
+        ]
     ]:
 
         conf_settings = _get_app_settings(self.app).get("_configurations", {})
@@ -683,8 +683,8 @@ class NginxConfiguration(BaseConfiguration):
     def d_dir_exists(self):
         return os.path.isdir(self.d_dir)
 
-    def prepare(self) -> Generator[ConfigurationAdd | ConfigurationUpdate, None, None]:
-        yield from super().apply()
+    def prepare(self) -> Iterator[ConfigurationAdd | ConfigurationUpdate]:
+        yield from super().prepare()
         # FIXME d_dir etc
         raise NotImplementedError()
 
@@ -704,7 +704,7 @@ class NginxConfiguration(BaseConfiguration):
             os.makedirs(self.d_dir)
 
     @classmethod
-    def prepare_rm(cls, id, path) -> Generator[ConfigurationRemove, None, None]:
+    def prepare_rm(cls, id, path) -> Iterator[ConfigurationRemove]:
         yield from super().prepare_rm(id, path)
         # FIXME d_dir etc
         # if id == "main" and os.path.isdir(d_dir):
