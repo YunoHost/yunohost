@@ -22,7 +22,7 @@ import glob
 import os
 import pytest
 
-from moulinette.utils.filesystem import read_file, write_to_file
+from moulinette.utils.filesystem import read_file, write_to_file, write_to_yaml
 from yunohost.app import app_setting, _get_app_settings, _set_app_settings
 from yunohost.utils.error import YunohostError
 from yunohost.utils.configurations import (
@@ -32,6 +32,8 @@ from yunohost.utils.configurations import (
     DIR_TO_BACKUP_CONF_MANUALLY_MODIFIED,
 )
 from .conftest import message
+
+MAIN_DOMAIN = read_file("/etc/yunohost/current_host").strip()
 
 
 class DummyAppConfiguration(BaseConfiguration):
@@ -61,21 +63,33 @@ def setup_function(function):
     os.system("mkdir /etc/yunohost/apps/testapp")
     os.system("mkdir /etc/yunohost/apps/testapp/conf")
     os.system("mkdir /tmp/dummyconfs/")
-    os.system("echo 'id: testapp' > /etc/yunohost/apps/testapp/settings.yml")
-    os.system("echo 'foo: bar' >> /etc/yunohost/apps/testapp/settings.yml")
-    dummy_manifest = '\n'.join([
+
+    write_to_yaml("/etc/yunohost/apps/testapp/settings.yml", {
+        "id": "testapp",
+        "foo": "bar",
+        "domain": MAIN_DOMAIN,
+        "path": "/",
+        "install_dir": "/var/www/testapp",
+    })
+    write_to_file("/etc/yunohost/apps/testapp/manifest.toml", '\n'.join([
         'packaging_format = 3',
         'id = "testapp"',
         'version = "0.1"',
         'description.en = "A dummy app to test app resources"'
-    ])
-    write_to_file("/etc/yunohost/apps/testapp/manifest.toml", dummy_manifest)
-    dummy_conf = '\n'.join([
+    ]))
+    write_to_file("/etc/yunohost/apps/testapp/conf/dummy.conf", '\n'.join([
         '# This is a dummy conf file',
         'APP = __APP__',
         'FOO = __FOO__'
-    ])
-    write_to_file("/etc/yunohost/apps/testapp/conf/dummy.conf", dummy_conf)
+    ]))
+    write_to_file("/etc/yunohost/apps/testapp/conf/nginx.conf", """
+#sub_path_only rewrite ^__PATH__$ __PATH__/ permanent;
+location __PATH__/ {
+  alias __INSTALL_DIR__/;
+  index index.html;
+}
+""")
+    write_to_file("/etc/yunohost/apps/testapp/conf/nginx-foobar.conf", "# Foo bar")
 
 
 def teardown_function(function):
@@ -87,6 +101,8 @@ def clean():
     os.system("rm -rf /tmp/dummyconfs/")
     os.system(f"rm -rf {DIR_TO_BACKUP_CONF_MANUALLY_MODIFIED}/testapp/")
     os.system("userdel testapp 2>/dev/null")
+    os.system("rm -rf /etc/nginx/conf.d/*/*testapp*")
+    os.system("rm -rf /etc/nginx/conf.d/other_domain.test.d/")
 
 
 def test_conf_dummy_new():
@@ -288,7 +304,6 @@ def test_conf_dummy_unexposed_property():
         AppConfigurationsManager("testapp", wanted=wanted).apply()
 
 
-
 def test_conf_dummy_ifclause():
 
     # FIXME
@@ -308,7 +323,7 @@ def test_conf_dummy_ifclause():
     assert os.path.exists(conf)
 
 
-def test_conf_dummy_ifclause_not_fulfiled():
+def test_conf_dummy_ifclause_not_fulfilled():
 
     # FIXME
     wanted = {"configurations": {"dummy": {"main": {"if": "foo == 'not the right value'"}}}}
@@ -337,3 +352,48 @@ def test_conf_dummy_ifclause_syntaxissue():
 @pytest.mark.skip
 def test_conf_dummy_reload_fails():
     raise NotImplementedError
+
+
+def test_conf_nginx():
+
+    app_setting("testapp", "path", value="/")
+
+    wanted = {"configurations": {"nginx": {}}}
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+
+    assert os.path.exists(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.conf")
+    assert os.path.isdir(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.d")
+    content = read_file(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.conf")
+    assert "#sub_path_only" in content
+
+    # Change url path where the app is installed
+    app_setting("testapp", "path", value="/subpath")
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+
+    assert os.path.exists(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.conf")
+    assert os.path.isdir(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.d")
+    content = read_file(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.conf")
+    assert "#sub_path_only" not in content and "rewrite ^/subpath$" in content
+
+    write_to_file(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.d/dummy.conf", "# this is a dummy custom conf")
+
+    # Change domain where the app is installed
+    app_setting("testapp", "domain", value="other_domain.test")
+    os.system("mkdir /etc/nginx/conf.d/other_domain.test.d/")
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+
+    assert not os.path.exists(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.conf")
+    assert not os.path.isdir(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.d")
+    assert os.path.exists("/etc/nginx/conf.d/other_domain.test.d/testapp.conf")
+    assert os.path.isdir("/etc/nginx/conf.d/other_domain.test.d/testapp.d")
+    assert os.path.exists("/etc/nginx/conf.d/other_domain.test.d/testapp.d/dummy.conf")
+    assert read_file("/etc/nginx/conf.d/other_domain.test.d/testapp.d/dummy.conf") == "# this is a dummy custom conf"
+
+    # Remove nginx conf
+    wanted = {"configurations": {}}
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+
+    assert not os.path.exists(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.conf")
+    assert not os.path.exists(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.d")
+    assert not os.path.exists("/etc/nginx/conf.d/other_domain.test.d/testapp.conf")
+    assert not os.path.exists("/etc/nginx/conf.d/other_domain.test.d/testapp.d")

@@ -458,13 +458,13 @@ class BaseConfiguration(BaseModel):
         self.write(self.content_to_write)
 
     @classmethod
-    def prepare_rm(cls, id, path) -> Iterator[ConfigurationRemove]:
+    def prepare_rm(cls, app: str, id: str, path: str) -> Iterator[ConfigurationRemove]:
 
         if os.path.exists(path):
             yield ConfigurationRemove(path=path)
 
     @classmethod
-    def rm(cls, id, path):
+    def rm(cls, app, id, path):
 
         type_ = cls.__fields__["type"].default
         name = f"{type_}.{id}"
@@ -476,7 +476,12 @@ class BaseConfiguration(BaseModel):
             logger.warning(f"Configuration {name}: {path} is already absent")
             return
 
-        # FIXME : delete the old checksum in app settings?
+        app_settings = _get_app_settings(app)
+        if "_configurations" not in app_settings:
+            app_settings["_configurations"] = {}
+        if f"{type_}.{id}" in app_settings["_configurations"]:
+            del app_settings["_configurations"][f"{type_}.{id}"]
+            _set_app_settings(app, app_settings)
 
 
 class AppConfigurationsManager:
@@ -517,7 +522,7 @@ class AppConfigurationsManager:
         for key, path in current_confs.items():
             type_, id_ = key
             if key not in wanted_confs:
-                details = list(ConfigurationClassesByType[type_].prepare_rm(id_, path))
+                details = list(ConfigurationClassesByType[type_].prepare_rm(self.app, id_, path))
                 if details:
                     yield ("remove", type_, id_, None, path, details)
 
@@ -575,7 +580,7 @@ class AppConfigurationsManager:
                 if todo == "remove":
                     assert path_to_remove
                     logger.info(f"Removing {name} configuration...")
-                    ConfigurationClassesByType[type_].rm(id_, path_to_remove)
+                    ConfigurationClassesByType[type_].rm(self.app, id_, path_to_remove)
                 elif todo == "add":
                     assert new
                     logger.info(f"Adding {name} configuration...")
@@ -664,15 +669,17 @@ class NginxConfiguration(BaseConfiguration):
 
     type = "nginx"
 
+    exposed: list[str] = []
+
     def __init__(self, *args, **kwargs):
 
         # Default values for main and extras
         if kwargs["id"] == "main":
-            self.template = "nginx.conf"
-            self.path = "/etc/nginx/conf.d/__DOMAIN__.d/__APP__.conf"
+            kwargs["template"] = "nginx.conf"
+            kwargs["path"] = "/etc/nginx/conf.d/__DOMAIN__.d/__APP__.conf"
         else:
-            self.template = "nginx-__CONF_ID__.conf"
-            self.path = "/etc/nginx/conf.d/__DOMAIN__.d/__APP__.d/__CONF_ID__.conf"
+            kwargs["template"] = "nginx-__CONF_ID__.conf"
+            kwargs["path"] = "/etc/nginx/conf.d/__DOMAIN__.d/__APP__.d/__CONF_ID__.conf"
 
         super().__init__(*args, **kwargs)
 
@@ -683,47 +690,70 @@ class NginxConfiguration(BaseConfiguration):
     def d_dir_exists(self):
         return os.path.isdir(self.d_dir)
 
+    def render(self, template_content) -> None:
+        if "path" in self.env:
+            path = self.env["path"].strip()
+            if path != "/":
+                template_content = template_content.replace("#sub_path_only", "")
+            else:
+                template_content = template_content.replace("#root_path_only", "")
+                template_content = template_content.replace("__PATH__/", "/")
+
+        return super().render(template_content)
+
     def prepare(self) -> Iterator[ConfigurationAdd | ConfigurationUpdate]:
         yield from super().prepare()
-        # FIXME d_dir etc
-        raise NotImplementedError()
+
+        if self.id == "main":
+            current_path = self.current_path
+            if current_path and current_path != self.path:
+                current_d_dir = os.path.dirname(current_path) + f"/{self.app}.d"
+                if os.path.isdir(current_d_dir) and not self.d_dir_exists():
+                    yield ConfigurationUpdate(
+                        path=self.d_dir,
+                        old_path=current_d_dir,
+                        diff="",
+                        was_manually_modified=False,
+                    )
+            elif not self.d_dir_exists():
+                yield ConfigurationAdd(path=self.d_dir, content="")
 
     def apply(self):
+        old_path = self.current_path
+
         super().apply()
 
-        current_path = self.current_path
-        if current_path and current_path != self.path:
-            current_d_dir = os.path.dirname(current_path) + f"/{self.app}.d"
+        if old_path and old_path != self.path:
+
+            old_d_dir = os.path.dirname(old_path) + f"/{self.app}.d"
             if (
                 self.id == "main"
-                and os.path.isdir(current_d_dir)
+                and os.path.isdir(old_d_dir)
                 and not self.d_dir_exists()
             ):
-                os.rename(current_d_dir, self.d_dir)
+                os.rename(old_d_dir, self.d_dir)
         if self.id == "main" and not self.d_dir_exists():
             os.makedirs(self.d_dir)
 
     @classmethod
-    def prepare_rm(cls, id, path) -> Iterator[ConfigurationRemove]:
-        yield from super().prepare_rm(id, path)
-        # FIXME d_dir etc
-        # if id == "main" and os.path.isdir(d_dir):
-        #    logger.debug(f"Would also remove {d_dir}")
-        #    return
-        raise NotImplementedError()
+    def prepare_rm(cls, app: str, id: str, path: str) -> Iterator[ConfigurationRemove]:
+        yield from super().prepare_rm(app, id, path)
+        if id == "main":
+            d_dir = os.path.dirname(path) + f"/{app}.d"
+            if os.path.isdir(d_dir):
+                yield ConfigurationRemove(path=d_dir)
 
     @classmethod
-    def rm(cls, id, path):
+    def rm(cls, app, id, path):
 
-        super().remove(id, path)
+        super().rm(app, id, path)
 
-        # FIXME
-        d_dir = NotImplementedError()
-
-        # FIXME : or should we somehow backup the content of the .d dir ?
-        if id == "main" and os.path.isdir(d_dir):
-            logger.debug(f"Removing {d_dir}")
-            rm(d_dir, recursive=True)
+        if id == "main":
+            d_dir = os.path.dirname(path) + f"/{app}.d"
+            if os.path.isdir(d_dir):
+                # FIXME : or should we somehow backup the content of the .d dir ?
+                logger.debug(f"Removing {d_dir}")
+                rm(d_dir, recursive=True)
 
     @staticmethod
     def reload():
