@@ -222,5 +222,13 @@
     "app_manifest_install_ask_init_main_permission": "Wie moet toegang hebben tot deze app? (dit kan later worden aangepast)",
     "app_resource_failed": "Het toekennen ('provisioning') of afnemen ('deprovisioning') van hulpbronnen, of het bijwerken van hulpbronnen voor {app} is mislukt: {error}",
     "apps_failed_to_upgrade": "Deze applicaties konden niet worden bijgewerkt: {apps}",
-    "automatic_task": "Automatische taak"
+    "automatic_task": "Automatische taak",
+    "certmanager_cert_install_failed": "Let's Encrypt certificaat installatie mislukt voor {domains}",
+    "certmanager_attempt_to_renew_nonLE_cert": "Het certificaat voor het domein '{domain}' is niet uitgegeven door Let's Encrypt. Kan het niet automatisch vernieuwen!",
+    "certmanager_cannot_read_cert": "Er is iets misgegaan bij het proberen te openen van het huidige certificaat voor domein {domain} (bestand: {file}), reden: {reason}",
+    "certmanager_cert_install_success": "Let's Encrypt certificaat is nu geïnstalleerd voor het domein '{domain}'",
+    "certmanager_attempt_to_replace_valid_cert": "Je probeert een goed en geldig certificaat voor domein {domain} te overschrijven! (Gebruik --force om dit te omzeilen)",
+    "certmanager_cert_install_failed_selfsigned": "Zelfondertekend certificaat installatie mislukt voor {domains}",
+    "certmanager_acme_not_configured_for_domain": "De ACME-uitdaging kan momenteel niet worden uitgevoerd voor {domain} omdat de nginx-configuratie het bijbehorende codefragment mist... Zorg ervoor dat je nginx-configuratie up-to-date is door `yunohost tools regen-conf nginx --dry-run --with-diff` te gebruiken.",
+    "certmanager_attempt_to_renew_valid_cert": "Het certificaat voor het domein '{domain}' staat niet op het punt te verlopen! (Je kunt --force gebruiken als je weet wat je doet)"
 }
