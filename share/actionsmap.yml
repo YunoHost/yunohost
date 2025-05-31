@@ -1776,7 +1776,13 @@ tools:
 
         ### tools_basic_space_cleanup()
         basic-space-cleanup:
-            action_help: Basic space cleanup (apt, journalctl, logs, ...)
+            action_help: Basic space cleanup (apt, journalctl, system and YunoHost logs, ...)
+            arguments:
+                -d:
+                    full: --days
+                    help: YunoHost logs older than this will be deleted (default is 90)
+                    type: int
+                    default: 90
 
         ### tools_shutdown()
         shutdown:

@@ -603,7 +603,7 @@ def tools_shell(command=None):
         shell.interact()
 
 
-def tools_basic_space_cleanup():
+def tools_basic_space_cleanup(days=90):
     """
     Basic space cleanup.
 
@@ -611,6 +611,7 @@ def tools_basic_space_cleanup():
     apt autoclean
     journalctl vacuum (leaves 50M of logs)
     archived logs removal
+    yunohost logs removal (older than 90 days by default)
     """
     subprocess.run("apt autoremove && apt autoclean", shell=True)
     subprocess.run("journalctl --vacuum-size=50M", shell=True)
@@ -618,6 +619,7 @@ def tools_basic_space_cleanup():
     subprocess.run("rm /var/log/*/*.gz", shell=True)
     subprocess.run("rm /var/log/*.?", shell=True)
     subprocess.run("rm /var/log/*/*.?", shell=True)
+    subprocess.run(f"find /var/log/yunohost/operations/ -type f,l -mtime +{days} -execdir rm {} +", shell=True)
 
 
 # ############################################ #
