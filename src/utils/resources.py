@@ -28,7 +28,7 @@ from logging import getLogger
 from typing import Any, Callable, Dict, List, Union
 
 from moulinette import m18n
-from .file_utils import chmod, chown, mkdir, rm, write_to_file
+from .file_utils import chmod, chown, mkdir, rm
 from .process import check_output
 from .misc import random_ascii
 
@@ -39,6 +39,7 @@ logger = getLogger("yunohost.utils.resources")
 
 
 SOURCES_CACHE_DIR = "/var/tmp/yunohost/download/"
+
 
 class AppResourceManager:
     def __init__(self, app: str, current: Dict, wanted: Dict, workdir=None):

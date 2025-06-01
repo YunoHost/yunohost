@@ -1953,6 +1953,7 @@ def app_regen_conf(app: str, dry_run: bool, with_diff: bool = False) -> dict:
         # FIXME : to be consistent, we should also call the pre / post regenconf hook of the app if there are any
         return manager.apply()
 
+
 @is_unit_operation()
 def app_makedefault(
     operation_logger: "OperationLogger",

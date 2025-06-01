@@ -18,11 +18,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import ast
 import datetime
-import operator as op
 import os
-import re
 import shutil
 import tempfile
 import urllib.parse

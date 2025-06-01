@@ -22,11 +22,12 @@ import os
 import re
 import subprocess
 import time
+import yaml
 from datetime import datetime
 from glob import glob
 from logging import getLogger
+from typing import TYPE_CHECKING, cast
 
-import yaml
 from moulinette import Moulinette, m18n
 from .utils.file_utils import (
     append_to_file,
@@ -46,7 +47,11 @@ MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 SERVICES_CONF = "/etc/yunohost/services.yml"
 SERVICES_CONF_BASE = "/usr/share/yunohost/conf/yunohost/services.yml"
 
-logger = getLogger("yunohost.service")
+if TYPE_CHECKING:
+    from moulinette.utils.log import MoulinetteLogger
+    logger = cast(MoulinetteLogger, getLogger("yunohost.service"))
+else:
+    logger = getLogger("yunohost.service")
 
 
 def service_add(
