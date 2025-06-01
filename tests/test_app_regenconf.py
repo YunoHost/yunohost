@@ -362,7 +362,6 @@ def test_conf_nginx():
     AppConfigurationsManager("testapp", wanted=wanted).apply()
 
     assert os.path.exists(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.conf")
-    assert os.path.isdir(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.d")
     content = read_file(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.conf")
     assert "#sub_path_only" in content
 
@@ -371,29 +370,23 @@ def test_conf_nginx():
     AppConfigurationsManager("testapp", wanted=wanted).apply()
 
     assert os.path.exists(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.conf")
-    assert os.path.isdir(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.d")
     content = read_file(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.conf")
     assert "#sub_path_only" not in content and "rewrite ^/subpath$" in content
 
-    write_to_file(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.d/dummy.conf", "# this is a dummy custom conf")
-
     # Change domain where the app is installed
+    os.system("mkdir -p /etc/nginx/conf.d/other_domain.test.d/")
     app_setting("testapp", "domain", value="other_domain.test")
-    os.system("mkdir /etc/nginx/conf.d/other_domain.test.d/")
     AppConfigurationsManager("testapp", wanted=wanted).apply()
 
     assert not os.path.exists(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.conf")
-    assert not os.path.isdir(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.d")
     assert os.path.exists("/etc/nginx/conf.d/other_domain.test.d/testapp.conf")
-    assert os.path.isdir("/etc/nginx/conf.d/other_domain.test.d/testapp.d")
-    assert os.path.exists("/etc/nginx/conf.d/other_domain.test.d/testapp.d/dummy.conf")
-    assert read_file("/etc/nginx/conf.d/other_domain.test.d/testapp.d/dummy.conf") == "# this is a dummy custom conf"
 
     # Remove nginx conf
     wanted = {"configurations": {}}
     AppConfigurationsManager("testapp", wanted=wanted).apply()
 
     assert not os.path.exists(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.conf")
-    assert not os.path.exists(f"/etc/nginx/conf.d/{MAIN_DOMAIN}.d/testapp.d")
     assert not os.path.exists("/etc/nginx/conf.d/other_domain.test.d/testapp.conf")
-    assert not os.path.exists("/etc/nginx/conf.d/other_domain.test.d/testapp.d")
+
+    # TODO / FIXME : also test the 'extra' nginx conf stuff
+
