@@ -137,6 +137,12 @@ def ram_available() -> tuple[int, int]:
     return (psutil.virtual_memory().available, psutil.swap_memory().free)
 
 
+def ram_total() -> tuple[int, int]:
+    import psutil
+
+    return (psutil.virtual_memory().total, psutil.swap_memory().total)
+
+
 def get_ynh_package_version(package: str) -> dict[str, str]:
     # Returns the installed version and release version ('stable' or 'testing'
     # or 'unstable')

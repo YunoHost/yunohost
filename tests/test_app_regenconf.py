@@ -103,6 +103,8 @@ def clean():
     os.system("userdel testapp 2>/dev/null")
     os.system("rm -rf /etc/nginx/conf.d/*/*testapp*")
     os.system("rm -rf /etc/nginx/conf.d/other_domain.test.d/")
+    os.system("rm -rf /etc/php/*/fpm/pool.d/testapp.conf")
+    os.system("rm -rf /var/www/testapp")
 
 
 def test_conf_dummy_new():
@@ -390,3 +392,43 @@ def test_conf_nginx():
 
     # TODO / FIXME : also test the 'extra' nginx conf stuff
 
+
+def test_conf_php():
+
+    os.system("useradd testapp")
+    os.system("mkdir -p /var/www/testapp")
+    os.system("apt install php8.2-fpm php8.4-fpm --assume-yes")
+    app_setting("testapp", "php_version", value="8.2")
+
+    assert not os.path.exists("/etc/php/8.2/fpm/pool.d/testapp.conf")
+    assert not os.path.exists("/etc/php/8.4/fpm/pool.d/testapp.conf")
+
+    wanted = {"configurations": {"php": {}}}
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+
+    assert os.path.exists("/etc/php/8.2/fpm/pool.d/testapp.conf")
+    assert not os.path.exists("/etc/php/8.4/fpm/pool.d/testapp.conf")
+
+    app_setting("testapp", "php_version", value="8.4")
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+
+    assert not os.path.exists("/etc/php/8.2/fpm/pool.d/testapp.conf")
+    assert os.path.exists("/etc/php/8.4/fpm/pool.d/testapp.conf")
+
+    write_to_file("/etc/yunohost/apps/testapp/conf/extra_php-fpm.conf", "\n\n; Foobar\n\n")
+
+    assert "; Foobar" not in read_file("/etc/php/8.4/fpm/pool.d/testapp.conf")
+
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+
+    assert "; Foobar" in read_file("/etc/php/8.4/fpm/pool.d/testapp.conf")
+
+    assert "php_admin_value[post_max_size] = 50M" in read_file("/etc/php/8.4/fpm/pool.d/testapp.conf")
+
+    wanted = {"configurations": {"php": {"main": {"php_upload_max_filesize": "123M"}}}}
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+    assert "php_admin_value[post_max_size] = 123M" in read_file("/etc/php/8.4/fpm/pool.d/testapp.conf")
+
+    app_setting("testapp", "php_upload_max_filesize", value="321M")
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+    assert "php_admin_value[post_max_size] = 321M" in read_file("/etc/php/8.4/fpm/pool.d/testapp.conf")
