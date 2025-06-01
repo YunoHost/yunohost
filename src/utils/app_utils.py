@@ -445,9 +445,10 @@ def _hydrate_app_template(template: str, data: dict[str, Any], raise_exception_i
     # Apply jinja for stuff like {% if .. %} blocks,
     # but only if there's indeed an if block (to try to reduce overhead or idk)
     if "{%" in template:
-        from jinja2 import Template
+        from jinja2 import Template, Undefined, StrictUndefined
+        undefined = StrictUndefined if raise_exception_if_missing_var else Undefined
 
-        template = Template(template).render(**data)
+        template = Template(template, undefined=undefined).render(**data)
 
     stuff_to_replace = set(re.findall(r"__[A-Z0-9]+?[A-Z0-9_]*?[A-Z0-9]*?__", template))
 

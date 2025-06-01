@@ -256,7 +256,7 @@ def service_restart(names):
                 )
 
 
-def service_reload_or_restart(names, test_conf=True):
+def service_reload_or_restart(names: str | list[str], test_conf: bool = True, raise_exception_if_conf_broken: bool = False) -> None:
     """
     Reload one or more services if they support it. If not, restart them instead. If the services are not running yet, they will be started.
 
@@ -285,13 +285,21 @@ def service_reload_or_restart(names, test_conf=True):
             out, _ = p.communicate()
             if p.returncode != 0:
                 errors = out.decode().strip().split("\n")
-                logger.error(
-                    m18n.n(
+                # Should probably be the default but may break legacy idk...
+                if raise_exception_if_conf_broken:
+                    raise YunohostError(
                         "service_not_reloading_because_conf_broken",
                         name=name,
                         errors=errors,
                     )
-                )
+                else:
+                    logger.error(
+                        m18n.n(
+                            "service_not_reloading_because_conf_broken",
+                            name=name,
+                            errors=errors,
+                        )
+                    )
                 continue
 
         if _run_service_command("reload-or-restart", name):

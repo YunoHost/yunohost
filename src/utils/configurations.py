@@ -175,7 +175,7 @@ class BaseConfiguration(BaseModel):
         chown(self.path, self.owner, self.group)
         chmod(self.path, sym_to_octal(self.perms))
 
-    def hydrate_properties(self, template_dir: str | None):
+    def hydrate_properties(self, template_dir: str):
 
         for key, value in dict(self).items():
             if isinstance(value, str):
@@ -443,7 +443,11 @@ class BaseConfiguration(BaseModel):
 
             yield configuration_update
 
-    def apply(self):
+    def apply(self) -> Iterator[str]:
+
+        # Trick to make it explicit that this is a generator
+        # even though 'yield' is only used in children class overrides
+        yield from []
 
         if self.was_manually_modified():
             self.backup_current_conf()
@@ -464,7 +468,11 @@ class BaseConfiguration(BaseModel):
             yield ConfigurationRemove(path=path)
 
     @classmethod
-    def rm(cls, app, id, path):
+    def rm(cls, app: str, id: str, path: str) -> Iterator[str]:
+
+        # Trick to make it explicit that this is a generator
+        # even though 'yield' is only used in children class overrides
+        yield from []
 
         type_ = cls.__fields__["type"].default
         name = f"{type_}.{id}"
@@ -580,16 +588,17 @@ class AppConfigurationsManager:
                 if todo == "remove":
                     assert path_to_remove
                     logger.info(f"Removing {name} configuration...")
-                    ConfigurationClassesByType[type_].rm(self.app, id_, path_to_remove)
+                    g = ConfigurationClassesByType[type_].rm(self.app, id_, path_to_remove)
                 elif todo == "add":
                     assert new
                     logger.info(f"Adding {name} configuration...")
-                    new.apply()
+                    g = new.apply()
                 elif todo == "update":
                     assert new
                     logger.info(f"Updating {name} configuration...")
-                    new.apply()
-                ConfigurationClassesByType[type_].reload()
+                    g = new.apply()
+                services_to_reload = list(g)
+                service_reload_or_restart(services_to_reload, raise_exception_if_conf_broken=True)
             except (KeyboardInterrupt, Exception) as e:
                 if isinstance(e, KeyboardInterrupt):
                     logger.error(m18n.n("operation_interrupted"))
@@ -624,6 +633,7 @@ class AppConfigurationsManager:
             if incorrect_properties:
                 raise YunohostError(f"Uhoh, the following properties are unknown / not exposed for configuration {type}.main: {', '.join(incorrect_properties)}", raw_msg=True)
 
+            # Initialize the "main" conf
             if if_clause is None or evaluate_if_clause(if_clause, self.env):
                 confs.append(
                     ConfigurationClass(
@@ -635,6 +645,7 @@ class AppConfigurationsManager:
                     )
                 )
 
+            # Iterate on other confs than "main"
             for key, values in confs_properties.items():
 
                 if not isinstance(values, dict):
@@ -645,7 +656,7 @@ class AppConfigurationsManager:
 
                 incorrect_properties = [p for p in values.keys() if p not in exposed_properties]
                 if incorrect_properties:
-                    raise YunohostError(f"Uhoh, the following properties are unknown / not exposed for for configuration {type}.{key}: {', '.join(incorrect_properties)}", raw_msg=True)
+                    raise YunohostError(f"Uhoh, the following properties are unknown / not exposed for configuration {type}.{key}: {', '.join(incorrect_properties)}", raw_msg=True)
                 if_clause = values.pop("if") if "if" in values else None
                 if if_clause is None or evaluate_if_clause(if_clause, self.env):
                     confs.append(
@@ -683,13 +694,6 @@ class NginxConfiguration(BaseConfiguration):
 
         super().__init__(*args, **kwargs)
 
-    @property
-    def d_dir(self):
-        return os.path.dirname(self.path) + f"/{self.app}.d"
-
-    def d_dir_exists(self):
-        return os.path.isdir(self.d_dir)
-
     def render(self, template_content) -> None:
         if "path" in self.env:
             path = self.env["path"].strip()
@@ -701,63 +705,43 @@ class NginxConfiguration(BaseConfiguration):
 
         return super().render(template_content)
 
-    def prepare(self) -> Iterator[ConfigurationAdd | ConfigurationUpdate]:
-        yield from super().prepare()
+    def apply(self) -> Iterator[str]:
 
-        if self.id == "main":
-            current_path = self.current_path
-            if current_path and current_path != self.path:
-                current_d_dir = os.path.dirname(current_path) + f"/{self.app}.d"
-                if os.path.isdir(current_d_dir) and not self.d_dir_exists():
-                    yield ConfigurationUpdate(
-                        path=self.d_dir,
-                        old_path=current_d_dir,
-                        diff="",
-                        was_manually_modified=False,
-                    )
-            elif not self.d_dir_exists():
-                yield ConfigurationAdd(path=self.d_dir, content="")
+        old_path = self.current_path if self.current_path else None
+        old_parent_dir = os.path.dirname(old_path) if old_path else None
 
-    def apply(self):
-        old_path = self.current_path
+        new_path = self.path
+        parent_dir = os.path.dirname(new_path)
 
-        super().apply()
+        # Create the .d parent dir if needed
+        if self.id != "main" and parent_dir.endswith(f"/{self.app}.d") and not os.path.isdir(parent_dir):
+            os.makedirs(parent_dir)
 
-        if old_path and old_path != self.path:
+        yield from super().apply()
 
-            old_d_dir = os.path.dirname(old_path) + f"/{self.app}.d"
-            if (
-                self.id == "main"
-                and os.path.isdir(old_d_dir)
-                and not self.d_dir_exists()
-            ):
-                os.rename(old_d_dir, self.d_dir)
-        if self.id == "main" and not self.d_dir_exists():
-            os.makedirs(self.d_dir)
+        # Remove the old .d conf if it's now empty (for example after renaming the confs after changing the domain)
+        if self.id != "main" and old_parent_dir and old_parent_dir.endswith(f"/{self.app}.d") and os.path.isdir(old_parent_dir) and len(os.listdir(parent_dir)) == 0:
+            logger.debug(f"Removing {old_parent_dir}")
+            rm(old_parent_dir, recursive=True)
+
+        # Nginx should be reloaded after this
+        yield "nginx"
 
     @classmethod
-    def prepare_rm(cls, app: str, id: str, path: str) -> Iterator[ConfigurationRemove]:
-        yield from super().prepare_rm(app, id, path)
-        if id == "main":
-            d_dir = os.path.dirname(path) + f"/{app}.d"
-            if os.path.isdir(d_dir):
-                yield ConfigurationRemove(path=d_dir)
+    def rm(cls, app: str, id: str, path: str) -> Iterator[str]:
 
-    @classmethod
-    def rm(cls, app, id, path):
+        yield from super().rm(app, id, path)
 
-        super().rm(app, id, path)
+        # If we just removed the last file in the $app.d directory?
+        parent_dir = os.path.dirname(path)
+        if id != "main" and parent_dir.endswith(f"/{app}.d") and os.path.isdir(parent_dir) and len(os.listdir(parent_dir)) == 0:
+            logger.debug(f"Removing {parent_dir}")
+            rm(parent_dir, recursive=True)
 
-        if id == "main":
-            d_dir = os.path.dirname(path) + f"/{app}.d"
-            if os.path.isdir(d_dir):
-                # FIXME : or should we somehow backup the content of the .d dir ?
-                logger.debug(f"Removing {d_dir}")
-                rm(d_dir, recursive=True)
+        # Nginx should be reloaded after this
+        yield "nginx"
 
-    @staticmethod
-    def reload():
-        service_reload_or_restart("nginx")
+
 
 
 ConfigurationClassesByType = {
