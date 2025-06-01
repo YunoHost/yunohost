@@ -742,6 +742,88 @@ class NginxConfiguration(BaseConfiguration):
         yield "nginx"
 
 
+class PHPConfiguration(BaseConfiguration):
+
+    type = "php"
+
+    template = "/usr/share/yunohost/conf/php/template.conf.j2"
+    extra_template: str = "extra_php-fpm.conf"  # It's optional and just appended to the base template
+    path: str = "/etc/php/__PHP_VERSION__/fpm/pool.d/__APP__.conf"
+
+    php_group: str = "__APP__"
+    php_upload_max_filesize: str = "50M"
+    php_memory_limit: str = "128M"
+    php_process_management: Literal["ondemand", "dynamic", "static"] = "ondemand"
+    php_max_children: int  # defaults to `_default_php_max_children`
+
+    exposed: list[str] = ["php_group", "php_process_management", "php_memory_limit", "php_upload_max_filesize"]
+
+    def __init__(self, *args, **kwargs):
+
+        assert kwargs["id"] == "main", "Extra php configurations are not supported"
+        kwargs["php_max_children"] = PHPConfiguration._default_php_max_children()
+        super().__init__(*args, **kwargs)
+
+    def render(self, template_content) -> None:
+
+        self.env = self.env.copy()
+        for prop in ["php_group", "php_process_management", "php_memory_limit", "php_upload_max_filesize", "php_max_children"]:
+            if prop not in self.env:
+                self.env[prop] = getattr(self, prop)
+
+        if os.path.exists(self.extra_template):
+            template_content += "\n\n" + read_file(self.extra_template)
+
+        return super().render(template_content)
+
+    @staticmethod
+    def _default_php_max_children():
+
+        from .system import ram_total
+
+        total_vm, total_swap = ram_total()
+        total_ram_in_MB = (total_vm + total_swap) / (1024 * 1024)
+
+        # The value of pm.max_children is the total amount of ram divided by 2,
+        # divided again by 20MB (= a default, classic worker footprint) This is
+        # designed such that if PHP-FPM start the maximum of children, it won't
+        # exceed half of the ram.
+        php_max_children = total_ram_in_MB / 40
+        # Make sure we get at least max_children = 1
+        if php_max_children <= 0:
+            php_max_children = 1
+        # To not overload the proc, limit the number of children to 4 times the number of cores.
+        elif php_max_children > 4 * os.cpu_count():
+            php_max_children = 4 * os.cpu_count()
+
+        return php_max_children
+
+    def apply(self) -> Iterator[str]:
+
+        assert self.path.startswith("/etc/php/")
+        php_version = self.path.split("/")[3]
+        # Restart php-fpm after applying the conf
+        yield f"php{php_version}-fpm"
+
+        old_path = self.current_path if self.current_path else None
+        if old_path:
+            assert old_path.startswith("/etc/php/")
+            previous_php_version = old_path.split("/")[3]
+            # Also restart the previous php-fpm version (eg if we changed the php version)
+            if previous_php_version != php_version:
+                yield f"php{previous_php_version}-fpm"
+
+        yield from super().apply()
+
+    @classmethod
+    def rm(cls, app: str, id: str, path: str) -> Iterator[str]:
+
+        assert path.startswith("/etc/php/")
+        php_version = path.split("/")[3]
+        # Restart php-fpm after applying the conf
+        yield f"php{php_version}-fpm"
+
+        yield from super().rm(app, id, path)
 
 
 ConfigurationClassesByType = {
