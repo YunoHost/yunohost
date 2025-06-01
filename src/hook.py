@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2025 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -351,7 +351,7 @@ def hook_exec(
         irrelevant_warnings = [
             r"invalid value for trace file descriptor",
             r"Creating config file .* with new version",
-            r"Created symlink /etc/systemd",
+            r"Created symlink '?/etc/systemd",
             r"dpkg: warning: while removing .* not empty so not removed",
             r"apt-key output should not be parsed",
             r"update-rc.d: ",
@@ -386,6 +386,7 @@ def hook_exec(
             r"cannot open '/etc/ssl/certs/java/cacerts'",
             # Misc
             r"update-binfmts: warning:",
+            r"Not building database; man-db",
         ]
         return all(not re.search(w, msg) for w in irrelevant_warnings)
 

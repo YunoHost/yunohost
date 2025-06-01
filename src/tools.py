@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2025 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -61,20 +61,17 @@ def tools_rootpw(new_password, check_strength=True):
     if check_strength:
         assert_password_is_strong_enough("admin", new_password)
 
-    proc = subprocess.Popen(
+    proc = subprocess.run(
         ["passwd", "--stdin"],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        input=new_password.encode("utf-8"),
+        capture_output=True,
     )
-    out, err = proc.communicate(new_password.encode("utf-8"))
-    result = proc.wait()
 
-    if result == 0:
+    if proc.returncode == 0:
         logger.info(m18n.n("root_password_changed"))
     else:
-        logger.warning(out)
-        logger.warning(err)
+        logger.warning(proc.stdout)
+        logger.warning(proc.stderr)
         logger.warning(m18n.n("root_password_desynchronized"))
 
 
@@ -335,7 +332,7 @@ def tools_update(operation_logger, target=None):
         )
 
         # Filter boring message about "apt not having a stable CLI interface"
-        # Also keep track of wether or not we encountered a warning...
+        # Also keep track of whether or not we encountered a warning...
         warnings = []
 
         def is_legit_warning(m):
@@ -516,7 +513,7 @@ def tools_upgrade(operation_logger, target=None):
             # We do this so that the API / webadmin still gets the proper HTTP response
             # It's then up to the webadmin to implement a proper UX process to wait 10 sec and then auto-fresh the webadmin
             cmd = 'at -M now >/dev/null 2>&1 <<< "sleep 10; systemctl restart yunohost-api"'
-            # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
+            # For some reason subprocess doesn't like the redirections so we have to use bash -c explicitly...
             subprocess.check_call(["bash", "-c", cmd])
 
         if returncode != 0:
@@ -547,7 +544,7 @@ def tools_shutdown(operation_logger, force=False):
 
     if shutdown:
         operation_logger.start()
-        logger.warn(m18n.n("server_shutdown"))
+        logger.warning(m18n.n("server_shutdown"))
         subprocess.check_call(["systemctl", "poweroff"])
 
 
@@ -565,7 +562,7 @@ def tools_reboot(operation_logger, force=False):
                 reboot = True
     if reboot:
         operation_logger.start()
-        logger.warn(m18n.n("server_reboot"))
+        logger.warning(m18n.n("server_reboot"))
         subprocess.check_call(["systemctl", "reboot"])
 
 
@@ -584,16 +581,16 @@ def tools_shell(command=None):
         exec(command)
         return
 
-    logger.warn("The \033[1;34mldap\033[0m interface is available in this context")
+    logger.warning("The \033[1;34mldap\033[0m interface is available in this context")
     try:
         from IPython import embed
 
         embed()
     except (ImportError, ModuleNotFoundError):
-        logger.warn(
+        logger.warning(
             "You don't have IPython installed, consider installing it as it is way better than the standard shell."
         )
-        logger.warn("Falling back on the standard shell.")
+        logger.warning("Falling back on the standard shell.")
 
         import readline  # will allow Up/Down/History in the console
 
@@ -642,7 +639,7 @@ def tools_migrations_list(pending=False, done=False):
     # Get all migrations
     migrations = _get_migrations_list()
 
-    # Reduce to dictionnaries
+    # Reduce to dictionaries
     migrations = [
         {
             "id": migration.id,
@@ -731,7 +728,7 @@ def tools_migrations_run(
         # migrations to be ran manually by the user, stop there and ask the
         # user to run the migration manually.
         if auto and migration.mode == "manual":
-            logger.warn(m18n.n("migrations_to_be_ran_manually", id=migration.id))
+            logger.warning(m18n.n("migrations_to_be_ran_manually", id=migration.id))
 
             # We go to the next migration
             continue
@@ -759,7 +756,7 @@ def tools_migrations_run(
             # require the --accept-disclaimer option.
             # Otherwise, go to the next migration
             if not accept_disclaimer:
-                logger.warn(
+                logger.warning(
                     m18n.n(
                         "migrations_need_to_accept_disclaimer",
                         id=migration.id,
@@ -776,7 +773,7 @@ def tools_migrations_run(
         operation_logger.start()
 
         if skip:
-            logger.warn(m18n.n("migrations_skip_migration", id=migration.id))
+            logger.warning(m18n.n("migrations_skip_migration", id=migration.id))
             migration.state = "skipped"
             _write_migration_state(migration.id, "skipped")
             operation_logger.success()
@@ -968,7 +965,7 @@ class Migration:
     def run(self):
         raise NotImplementedError()
 
-    # The followings shouldn't be overriden
+    # The followings shouldn't be overridden
 
     def __init__(self, id_):
         self.id = id_

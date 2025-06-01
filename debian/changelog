@@ -1,10 +1,60 @@
+yunohost (12.1.6.1) testing; urgency=low
+
+  - Typo T.T
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 18 May 2025 19:00:37 +0200
+
+yunohost (12.1.6) testing; urgency=low
+
+  - portal: change default value of show_other_domains_apps to True (407eae5e0)
+  - portal: add setting to allow/disallow users to edit their main email, alias and forward from portal ([#1997](https://github.com/YunoHost/yunohost/pull/1997))
+  - mail: add setting to enable/disable blocklists ([#2096](https://github.com/YunoHost/yunohost/pull/2096))
+  - apps: Add pre_app_upgrade hook ([#2095](http://github.com/YunoHost/yunohost/pull/2095))
+  - settings: Replace spwd with direct call to passwd when changing root password ([#2081](http://github.com/YunoHost/yunohost/pull/2081))
+  - storage: fix patch import ([#2100](http://github.com/YunoHost/yunohost/pull/2100))
+  - configpanel: fix docstrings for proper doc generation (82e804f5c)
+  - configpanel: fix app_action_run operation logger instanciation ([#2107](http://github.com/YunoHost/yunohost/pull/2107))
+  - i18n: Translations updated for Dutch, German
+
+  Thanks to all contributors <3 ! (Boudewijn, bruno van den bosch, Christophe Henry, Félix Piédallu, Florent, Josue, Matthias Roy)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 18 May 2025 18:36:09 +0200
+
+yunohost (12.1.5.1) testing; urgency=low
+
+  - disks: Fix a lambda typo + MyPy error in src/utils/udisks2_interfaces.py ([#2094](http://github.com/YunoHost/yunohost/pull/2094))
+  - actionsmap: remove weird yaml magic that seems to make build expose (2f569679d)
+
+  Thanks to all contributors <3 ! (Christophe Henry)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 20 Apr 2025 19:58:58 +0200
+
+yunohost (12.1.5) testing; urgency=low
+
+  - disks: Add SMART status to disk infos ([#2046](http://github.com/YunoHost/yunohost/pull/2046))
+  - helpers: fix n_install_dir againix nodejs helper.v1 (93d696bbe)
+  - helpers: document keywords in settings' keys that trigger value masking in the logs ([#2093](http://github.com/YunoHost/yunohost/pull/2093))
+  - helpers2.1: fix edge case in ynh_apt_install_dependencies_from_extra_repository (6b18ca98c)
+  - helpers2.1: fix apt helper debug info when install fails (e0459dcaa)
+  - helpers2.1: fix `yunohost app shell` when `systemctl show` outputs ` (ignore_error=no)` ([#2086](http://github.com/YunoHost/yunohost/pull/2086))
+  - helpers2.1: fix unbound BACKUP_CORE_ONLY in ynh_backup ([#2092](http://github.com/YunoHost/yunohost/pull/2092))
+  - configpanels: fix form prompt when option is a "choice" but with no options ([#2087](http://github.com/YunoHost/yunohost/pull/2087))
+  - configpanels: fix helper `ynh_app_config_get_one` for $type = "text" and $bind = "settings" ([#2091](http://github.com/YunoHost/yunohost/pull/2091))
+  - nginx: fix template for TLS passthrough ([#2089](http://github.com/YunoHost/yunohost/pull/2089))
+  - sse: fix/refactor _guess_who_started_process when process doesn't have a parent (668e60e19, [#2083](http://github.com/YunoHost/yunohost/pull/2083))
+  - migrations: in 0032_firewall_config, explicitly enable nftables service (01277caa0)
+  - i18n: Translations updated for Czech, French, Galician, German
+
+  Thanks to all contributors <3 ! (Christophe Henry, demodé, Félix Piédallu, Florent, José M, Kay0u, Krakinou, oleole39, OniriCorpe, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 19 Apr 2025 17:19:21 +0200
+
 yunohost (12.1.4) testing; urgency=low
 
   - helpers2.1: Make sure utils helpers are loaded first and fix jq usage ([#2073](http://github.com/YunoHost/yunohost/pull/2073))
   - helpers2.1: More fixes for go/ruby/nodejs fixes ([#2074](http://github.com/YunoHost/yunohost/pull/2074))
   - mail: Support sending mail to external mailbox of a managed domain ([#2075](http://github.com/YunoHost/yunohost/pull/2075))
   - regenconf/dnsmasq: optimize the number of time we call 'yunohost domain' for perf + use True/False instead of 1/0 (f53f805c4)
-  - dnsmasq: properly initialize dnsmasq conf upon installing the yunohost package to prevent dns resolution not working during postinstall and making everything explode (f6e256152)
   - i18n: Translations updated for Basque, French, German, Italian, Persian, Polish, Portuguese, Russian, Slovak
 
   Thanks to all contributors <3 ! (Anonymous, harc, ljf, OniriCorpe, ppr, tituspijean, xabirequejo)
@@ -73,6 +123,27 @@ yunohost (12.1.0) testing; urgency=low
   Thanks to all contributors <3 ! (axolotle, Christophe Henry, Félix Piédallu, Joan, José M, Josué Tille, ljf, OniriCorpe, orhtej2, ppr, rosbeef andino, Tommi, xabirequejo)
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 23 Feb 2025 21:22:02 +0100
+
+yunohost (12.0.17) stable; urgency=low
+
+  - regenconf: force YNH_HELPERS_VERSION to 2 when running regenconf script, because this var env may be inherited from app scripts running in 2.1 (6c92e77a6)
+  - helpers.v2.1: PSQL_VERSION should be 15 not 13 x_x (7db6422b7)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 18 May 2025 18:36:09 +0200
+
+yunohost (12.0.16) stable; urgency=low
+
+  - yunoprompt: in fact if we dont chvt to another term it stays on the current one forever ~_~ (d36d2d542)
+  - auth: fix postinstall exploding just because we have no message queue / no session cookie ... (to be removed in 12.1) (5b06aaadc)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 05 May 2025 00:05:41 +0200
+
+yunohost (12.0.15) stable; urgency=low
+
+  - yunoprompt: remove postinstall directly in tty after boot (for some reason it's not interactive and loops forever) (59e7f3b99)
+  - yunoprompt: add a reminder for the default login/password (3f376bf61)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 04 May 2025 21:04:54 +0200
 
 yunohost (12.0.14) stable; urgency=low
 

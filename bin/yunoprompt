@@ -50,6 +50,14 @@ EOF
 
 # ' Put a quote in comment to make vim happy about syntax highlighting :s
 
+# Reminder for default login / password when postinstall is not done yet
+if [ ! -f /etc/yunohost/installed ]
+then
+   default_credentials_reminder="To log in in this console or via SSH, the default login and password are 'root' and 'yunohost' (until post-install is done)."
+else
+   default_credentials_reminder=""
+fi
+
 #
 # Build the actual message
 #
@@ -71,6 +79,8 @@ $LOGO
  ${fingerprint[0]}
  ${fingerprint[1]}
  ${fingerprint[2]}
+
+ ${default_credentials_reminder}
 
 EOF
 )
@@ -101,17 +111,13 @@ time to read the administator documentation and in particular the sections
 'Finalizing your setup' and 'Getting to know YunoHost'. It is available at
 the following URL: https://yunohost.org/admindoc
 ===============================================================================
+${default_credentials_reminder}
+
 EOF
 
-    read -rp "Proceed with post-installation? (y/n) " -n 1
-    while [[ $REPLY =~ ^[Yy]$ ]]; do
-        if /usr/bin/yunohost tools postinstall; then
-            break
-        fi
-        echo -e "\n"
-        read -rp "Retry? (y/n) " -n 1
-    done
+    read -rp "Press any key to continue " -n 1
 
-    chvt 1
+    chvt 3
+
     exit 0
 fi

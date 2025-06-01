@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2025 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -326,7 +326,7 @@ class BaseOption(BaseModel):
     Options are fields declaration that renders as form items, button, alert or text in the web-admin and printed or prompted in CLI.
     They are used in app manifests to declare the before installation form and in config panels.
 
-    [Have a look at the app config panel doc](/packaging_config_panels) for details about Panels and Sections.
+    [Have a look at the app config panel doc](/packaging/advanced/config_panels) for details about Panels and Sections.
 
     ! IMPORTANT: as for Panels and Sections you have to choose an id, but this one should be unique in all this document, even if the question is in an other panel.
 
@@ -372,7 +372,7 @@ class BaseOption(BaseModel):
         - else the value will be stored as the whole content of the file
         - you can use `__FINALPATH__` or `__INSTALL_DIR__` in your path to point to dynamic install paths
           - FIXME are other global variables accessible?
-      - [refer to `bind` doc for explaination and examples](#read-and-write-values-the)
+      - [refer to `bind` doc for explaination and examples](/packaging/advanced/config_panels#the-bind-statement)
     """
 
     type: OptionType
@@ -542,7 +542,7 @@ class ButtonOption(BaseReadonlyOption):
     Renders as a `button` in the web-admin and can be called with `yunohost [app|domain|settings] action run <action_id>` in CLI.
 
     Every options defined in an action section (a config panel section with at least one `button`) is guaranted to be shown/asked to the user and available in `scripts/config`'s scope.
-    [check examples in advanced use cases](#actions).
+    [check examples in advanced use cases](/packaging/advanced/config_panels#actions).
 
     #### Example
 

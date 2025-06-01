@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2025 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -75,8 +75,11 @@ def _get_portal_settings(
         "portal_theme": "system",
         "portal_tile_theme": "simple",
         "portal_title": "YunoHost",
-        "show_other_domains_apps": False,
+        "show_other_domains_apps": True,
         "domain": domain,
+        "allow_edit_email": False,
+        "allow_edit_email_alias": False,
+        "allow_edit_email_forward": False,
     }
 
     portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{domain}.json")
@@ -185,6 +188,7 @@ def portal_me():
 
 def portal_update(
     fullname: Union[str, None] = None,
+    mail: Union[str, None] = None,
     mailforward: Union[list[str], None] = None,
     mailalias: Union[list[str], None] = None,
     currentpassword: Union[str, None] = None,
@@ -197,6 +201,7 @@ def portal_update(
         ["givenName", "sn", "cn", "mail", "maildrop", "memberOf"]
     )
     new_attr_dict: dict[str, Any] = {}
+    portal_settings = _get_portal_settings(domain, username)
 
     if fullname is not None and fullname != current_user["cn"]:
         fullname = fullname.strip()
@@ -210,14 +215,45 @@ def portal_update(
             firstname + " " + lastname
         ).strip()
 
+    new_mails = current_user["mail"]
+
+    if mail is not None:
+        is_allowed_to_edit_main_email = portal_settings["allow_edit_email"]
+        if not is_allowed_to_edit_main_email:
+            raise YunohostValidationError("mail_edit_operation_unauthorized")
+
+        if mail not in new_mails:
+            local_part, domain = mail.split("@")
+            if local_part in ADMIN_ALIASES:
+                raise YunohostValidationError("mail_unavailable")
+
+            try:
+                _get_ldap_interface().validate_uniqueness({"mail": mail})
+            except YunohostError:
+                raise YunohostValidationError("mail_already_exists", mail=mail)
+
+            if domain not in domains or not user_is_allowed_on_domain(username, domain):
+                raise YunohostValidationError("mail_alias_unauthorized", domain=domain)
+            new_mails[0] = mail
+        else:
+            # email already exist in the list we just move it on the first place
+            new_mails.remove(mail)
+            new_mails = [mail] + new_mails[1:]
+
+        new_attr_dict["mail"] = new_mails
+
     if mailalias is not None:
+        is_allowed_to_edit_mail_alias = portal_settings["allow_edit_email_alias"]
+        if not is_allowed_to_edit_mail_alias:
+            raise YunohostValidationError("mail_edit_operation_unauthorized")
+
         mailalias = [mail.strip() for mail in mailalias if mail and mail.strip()]
         # keep first current mail unaltered
-        mails = [current_user["mail"][0]]
+        mails = [new_mails[0]]
 
         for index, mail in enumerate(mailalias):
-            if mail in current_user["mail"]:
-                if mail != current_user["mail"][0] and mail not in mails:
+            if mail in new_mails:
+                if mail != new_mails[0] and mail not in mails:
                     mails.append(mail)
                 continue  # already in mails, skip validation
 
@@ -242,6 +278,10 @@ def portal_update(
         new_attr_dict["mail"] = mails
 
     if mailforward is not None:
+        is_allowed_to_edit_mail_forward = portal_settings["allow_edit_email_forward"]
+        if not is_allowed_to_edit_mail_forward:
+            raise YunohostValidationError("mail_edit_operation_unauthorized")
+
         new_attr_dict["maildrop"] = [current_user["maildrop"][0]] + [
             mail.strip()
             for mail in mailforward
@@ -292,6 +332,7 @@ def portal_update(
     if all(field is not None for field in (fullname, mailalias, mailforward)):
         return {
             "fullname": new_attr_dict["cn"],
+            "mail": new_attr_dict["mail"][0],
             "mailalias": new_attr_dict["mail"][1:],
             "mailforward": new_attr_dict["maildrop"][1:],
         }

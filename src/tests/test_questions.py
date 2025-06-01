@@ -530,7 +530,7 @@ class BaseTest:
             expected_message = option.ask
             choices = []
 
-            if isinstance(option, BaseChoicesOption):
+            if isinstance(option, BaseChoicesOption) and option.choices is not None:
                 choices = option.choices
                 if choices:
                     expected_message += f" [{' | '.join(choices)}]"

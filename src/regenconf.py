@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2025 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -145,6 +145,7 @@ def regen_conf(
             domain_list(exclude_subdomains=True)["domains"]
         )
     env["YNH_CONTEXT"] = "regenconf"
+    env["YNH_HELPERS_VERSION"] = "2"
     # perf: Export all global settings as a environment variable
     # so that scripts dont have to call 'yunohost settings get' manually
     # which is painful performance-wise

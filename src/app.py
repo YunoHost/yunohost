@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2025 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -820,6 +820,8 @@ def app_upgrade(
         related_to = [("app", app_instance_name)]
         operation_logger = OperationLogger("app_upgrade", related_to, env=env_dict)
         operation_logger.start()
+
+        hook_callback("pre_app_upgrade", env=env_dict)
 
         if manifest["packaging_format"] >= 2:
             from yunohost.utils.resources import AppResourceManager
@@ -1718,6 +1720,7 @@ def app_ssowatconf() -> None:
         domain_list,
     )
     from yunohost.permission import AppPermInfos, user_permission_list
+    from yunohost.settings import settings_get
 
     domain_portal_dict = _get_domain_portal_dict()
 
@@ -1888,8 +1891,14 @@ def app_ssowatconf() -> None:
     write_to_json("/etc/ssowat/conf.json", conf_dict, sort_keys=True, indent=4)
 
     # Generate a file per possible portal with available apps
+    portal_email_settings = {
+        k: v
+        for k, v in settings_get("security.portal", export=True).items()
+        if "allow_edit_email" in k
+    }
     for domain, apps in portal_domains_apps.items():
         portal_settings = {}
+        portal_settings.update(portal_email_settings)
 
         portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
         if portal_settings_path.exists():
@@ -1961,7 +1970,7 @@ def app_action_run(
             raise YunohostValidationError("Unknown app action {action}", raw_msg=True)
         return
     else:
-        operation_logger = OperationLogger("app_action_run", app)
+        operation_logger = OperationLogger("app_action_run", [("app", app)])
         AppConfigPanel, _ = _get_AppConfigPanel()
         config_panel = AppConfigPanel(app)
         return config_panel.run_action(
