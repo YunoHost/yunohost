@@ -29,9 +29,9 @@ from typing import Any, Callable, Dict, List, Union
 
 from moulinette import m18n
 
-from ..utils.error import YunohostError, YunohostValidationError
-from ..utils.system import debian_version, debian_version_id, system_arch
 from .file_utils import chmod, chown, mkdir, rm, write_to_file
+from .error import YunohostError, YunohostValidationError
+from .system import debian_version, debian_version_id, system_arch
 from .misc import random_ascii
 from .process import check_output
 
@@ -39,6 +39,7 @@ logger = getLogger("yunohost.utils.resources")
 
 
 SOURCES_CACHE_DIR = "/var/tmp/yunohost/download/"
+
 
 class AppResourceManager:
     def __init__(self, app: str, current: Dict, wanted: Dict, workdir=None):
