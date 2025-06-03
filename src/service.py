@@ -277,7 +277,8 @@ def service_reload_or_restart(names: str | list[str], test_conf: bool = True, ra
     for name in names:
         logger.debug(f"Reloading service {name}")
 
-        test_conf_cmd = services.get(name, {}).get("test_conf")
+        service = services.get(name, {})
+        test_conf_cmd = service.get("test_conf")
         if test_conf and test_conf_cmd:
             p = subprocess.Popen(
                 test_conf_cmd,
@@ -307,7 +308,14 @@ def service_reload_or_restart(names: str | list[str], test_conf: bool = True, ra
                     )
                 continue
 
-        if _run_service_command("reload-or-restart", name):
+        if "wait_until" in service and "log" in service and isinstance(service["log"], str) and os.path.isfile(service["log"]):
+            wait_until_pattern = service["wait_until"]
+            log_to_watch = service["log"]
+        else:
+            wait_until_pattern = None
+            log_to_watch = None
+
+        if _run_service_command("reload-or-restart", name, wait_until_pattern=wait_until_pattern, log_to_watch=log_to_watch):
             logger.success(m18n.n("service_reloaded_or_restarted", service=name))
         else:
             if service_status(name)["status"] != "running":
@@ -584,7 +592,21 @@ def service_log(name, number=50):
     return result
 
 
-def _run_service_command(action: str, service: str) -> bool:
+def _run_service_command(
+    action: Literal[
+        "start",
+        "stop",
+        "restart",
+        "reload",
+        "reload-or-restart",
+        "enable",
+        "disable",
+    ],
+    service: str,
+    wait_until_pattern: str | None = None,
+    log_to_watch: str | Literal["journalctl"] | None = None,
+    timeout: int = 60,
+) -> bool:
     """
     Run services management command (start, stop, enable, disable, restart, reload)
 
@@ -594,26 +616,12 @@ def _run_service_command(action: str, service: str) -> bool:
 
     """
     services = _get_services()
-    if service not in services.keys():
-        raise YunohostValidationError("service_unknown", service=service)
-
-    possible_actions = [
-        "start",
-        "stop",
-        "restart",
-        "reload",
-        "reload-or-restart",
-        "enable",
-        "disable",
-    ]
-    if action not in possible_actions:
-        raise ValueError(
-            f"Unknown action '{action}', available actions are: {', '.join(possible_actions)}"
-        )
+    # if service not in services.keys():
+    #    raise YunohostValidationError("service_unknown", service=service)
 
     cmd = f"systemctl {action} {service}"
 
-    need_lock = services[service].get("need_lock", False) and action in [
+    need_lock = services.get(service, {}).get("need_lock", False) and action in [
         "start",
         "stop",
         "restart",
@@ -624,6 +632,20 @@ def _run_service_command(action: str, service: str) -> bool:
     if action in ["enable", "disable"]:
         cmd += " --quiet"
 
+    if wait_until_pattern:
+        assert log_to_watch is not None, "log_to_watch should be defined for _run_service_action when using wait_until_pattern"
+
+        if log_to_watch == "journalctl":
+            # '--since' in journalctl requires this boring format instead of classic epoch seconds ...
+            time_start = datetime.utcnow().replace(tzinfo=timezone.utc).strftime(r'%Y-%m-%d %H:%M:%S')
+            watch_log_cmd = f"( while true; do journalctl --unit='{service}' --since='{time_start} UTC' --quiet --no-pager --no-hostname | grep --extended-regexp --quiet '{wait_until_pattern}' && break || sleep 1; done; )"
+        else:
+            # Should we support log directories?
+            assert log_to_watch.startswith("/") and os.path.isfile(log_to_watch)
+            watch_log_cmd = f"tail -n 0 -f '{log_to_watch}' | grep -m 1 --extended-regexp --quiet '{wait_until_pattern}'"
+
+        watch_log_proc = subprocess.Popen(watch_log_cmd, shell=True, executable="/bin/bash", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
     try:
         # Launch the command
         logger.debug(f"Running '{cmd}'")
@@ -631,6 +653,7 @@ def _run_service_command(action: str, service: str) -> bool:
         # If this command needs a lock (because the service uses yunohost
         # commands inside), find the PID and add a lock for it
         if need_lock:
+            assert action != "enable" and action != "disable"
             PID = _give_lock(action, service, p)
         # Wait for the command to complete
         p.communicate()
@@ -644,9 +667,30 @@ def _run_service_command(action: str, service: str) -> bool:
         return False
 
     finally:
+        if wait_until_pattern:
+            watch_log_proc.terminate()
         # Remove the lock if one was given
         if need_lock and PID != 0:
             _remove_lock(PID)
+
+    if wait_until_pattern:
+        try:
+            out, err = watch_log_proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            # On the CI, displaye more logs to help with debugging
+            if os.environ.get("PACKAGE_CHECK_EXEC") == "1":
+                log_lines = 100
+            else:
+                log_lines = 20
+            logger.warning(f"Timed-out after waiting for service '{service}' to {action}")
+            logs = check_output(f"journalctl --quiet --no-hostname --no-pager --lines='{log_lines}' --unit='{service}'")
+            logger.warning("Here is an extract of the service logs, which may help to debug the issue:\n" + logs)
+            if log_to_watch != "journalctl":
+                logs = check_output(f"tail --lines='{log_lines}' '{log_to_watch}'")
+                logger.warning(f"\n ==== {log_to_watch} ====\n" + logs)
+            return False
+        finally:
+            watch_log_proc.terminate()
 
     return True
 
