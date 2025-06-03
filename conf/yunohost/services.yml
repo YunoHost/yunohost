@@ -8,6 +8,7 @@ fail2ban:
   log: /var/log/fail2ban.log
   category: security
   test_conf: fail2ban-server --test
+  wait_until: "(Reload finished|Jail 'yunohost' started)"
 mysql:
   log: [/var/log/mysql.log,/var/log/mysql.err,/var/log/mysql/error.log]
   actual_systemd_service: mariadb
