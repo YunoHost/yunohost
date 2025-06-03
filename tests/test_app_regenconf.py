@@ -21,9 +21,11 @@
 import glob
 import os
 import pytest
+import requests
 
 from moulinette.utils.filesystem import read_file, write_to_file, write_to_yaml
 from yunohost.app import app_setting, _get_app_settings, _set_app_settings
+from yunohost.service import _get_services, service_remove
 from yunohost.utils.error import YunohostError
 from yunohost.utils.configurations import (
     BaseConfiguration,
@@ -82,14 +84,6 @@ def setup_function(function):
         'APP = __APP__',
         'FOO = __FOO__'
     ]))
-    write_to_file("/etc/yunohost/apps/testapp/conf/nginx.conf", """
-#sub_path_only rewrite ^__PATH__$ __PATH__/ permanent;
-location __PATH__/ {
-  alias __INSTALL_DIR__/;
-  index index.html;
-}
-""")
-    write_to_file("/etc/yunohost/apps/testapp/conf/nginx-foobar.conf", "# Foo bar")
 
 
 def teardown_function(function):
@@ -105,6 +99,12 @@ def clean():
     os.system("rm -rf /etc/nginx/conf.d/other_domain.test.d/")
     os.system("rm -rf /etc/php/*/fpm/pool.d/testapp.conf")
     os.system("rm -rf /var/www/testapp")
+    if os.system("systemctl --quiet is-active testapp") == 0:
+        os.system("systemctl stop testapp")
+    os.system("rm -rf /etc/systemd/system/testapp*.service")
+    os.system("systemctl daemon-reload")
+    if "testapp" in _get_services():
+        service_remove("testapp")
 
 
 def test_conf_dummy_new():
@@ -356,7 +356,19 @@ def test_conf_dummy_reload_fails():
     raise NotImplementedError
 
 
+####################################################################################
+
+
 def test_conf_nginx():
+
+    write_to_file("/etc/yunohost/apps/testapp/conf/nginx.conf", """
+#sub_path_only rewrite ^__PATH__$ __PATH__/ permanent;
+location __PATH__/ {
+  alias __INSTALL_DIR__/;
+  index index.html;
+}
+""")
+    write_to_file("/etc/yunohost/apps/testapp/conf/nginx-foobar.conf", "# Foo bar")
 
     app_setting("testapp", "path", value="/")
 
@@ -432,3 +444,40 @@ def test_conf_php():
     app_setting("testapp", "php_upload_max_filesize", value="321M")
     AppConfigurationsManager("testapp", wanted=wanted).apply()
     assert "php_admin_value[post_max_size] = 321M" in read_file("/etc/php/8.4/fpm/pool.d/testapp.conf")
+
+
+def test_conf_systemd():
+
+    os.system("useradd testapp")
+    os.system("mkdir -p /var/www/testapp")
+    os.system("mkdir -p /var/log/testapp/")
+    os.system("mkdir -p /etc/yunohost/apps/testapp/conf/")
+
+    # Use stuff from the "hellopy" test app (used for sso/portal/auth tests)
+    # to have a template and service to actually run
+    hellopy_dir = os.path.dirname(__file__) + "/apps/hellopy_ynh"
+    os.system(f"sudo cp {hellopy_dir}/conf/server.py /var/www/testapp/")
+    os.system(f"sudo cp {hellopy_dir}/conf/systemd.service /etc/yunohost/apps/testapp/conf/")
+    os.system("chown -R testapp:testapp /var/www/testapp")
+    os.system("chown -R testapp:testapp /var/log/testapp")
+
+    app_setting("testapp", "port", value=1234)
+
+    assert "testapp" not in _get_services().keys()
+    assert os.system("systemctl --quiet is-active testapp") != 0
+
+    wanted = {"configurations": {"systemd": {
+        "main": {
+            "main_log": "/var/log/__APP__/__APP__.log",
+            "wait_until": "Server started"
+        }
+    }}}
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+
+    assert "testapp" in _get_services().keys()
+    assert os.system("systemctl --quiet is-active testapp") == 0
+    assert requests.get("http://127.0.0.1:1234/").ok
+
+    # FIXME / TODO : should also add test for "extra" conf
+
+    # FIXME / TODO : ... and handle case where the systemd conf is managed externally but still want the yunohost integration and/or wait_until?

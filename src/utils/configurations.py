@@ -26,11 +26,11 @@ from yunohost.app import (
     _set_app_settings,
     APPS_SETTING_PATH,
 )
-from yunohost.service import service_reload_or_restart
+from yunohost.service import _run_service_command, service_reload_or_restart, service_add, service_remove, _get_services
 from yunohost.utils.error import YunohostError
 from yunohost.utils.eval import evaluate_simple_js_expression
 
-logger = getLogger("yunohost.utils.resources")
+logger = getLogger("yunohost.utils.configurations")
 
 DIR_TO_BACKUP_CONF_MANUALLY_MODIFIED = "/var/cache/yunohost/appconfbackup"
 
@@ -317,7 +317,10 @@ class BaseConfiguration(BaseModel):
 
     def was_manually_modified(self) -> bool:
         if self.current_path:
-            return self.current_checksum() != self.original_checksum()
+            if self.original_checksum() is None:
+                return False
+            else:
+                return self.current_checksum() != self.original_checksum()
         else:
             return False
 
@@ -598,12 +601,17 @@ class AppConfigurationsManager:
                     logger.info(f"Updating {name} configuration...")
                     g = new.apply()
                 services_to_reload = list(g)
+                # NB: service_reload_or_restart also checks the conf (if there's a test_conf for that service)
                 service_reload_or_restart(services_to_reload, raise_exception_if_conf_broken=True)
             except (KeyboardInterrupt, Exception) as e:
                 if isinstance(e, KeyboardInterrupt):
                     logger.error(m18n.n("operation_interrupted"))
+                elif not isinstance(e, YunohostError):
+                    import traceback
+                    stacktrace = traceback.format_exc()
+                    logger.error(f"Failed to {todo} {name} configuration:\n {stacktrace}")
                 else:
-                    logger.error(f"Failed to {todo} {name} configuration : {e}")
+                    logger.error(f"Failed to {todo} {name} configuration: {e}")
 
                 if raise_exception_if_failure:
                     raise YunohostError("app_regenconf_failed", app=self.app, error=e)
@@ -824,6 +832,128 @@ class PHPConfiguration(BaseConfiguration):
         yield f"php{php_version}-fpm"
 
         yield from super().rm(app, id, path)
+
+
+class SystemdConfiguration(BaseConfiguration):
+
+    type = "systemd"
+
+    # FIXME : hmmm we should probably support the usecase where the service is setup externally (typically from a .deb?)
+    # and we don't want to actually handle the conf but we may want to integrate in yunohost
+
+    # FIXME : standardize the logging stuff ?
+
+    # FIXME : maybe study how we could simplify the writing of the conf
+
+    # FIXME : provide a __DESCRIPTION__ to autofill the descr using the manifest ? idk
+
+    # FIXME : look into hardening the conf, maybe provide a __STANDARD_CAPABILITIES__ stuff idk
+
+    service_name: str
+    auto: bool = True
+    wait_until: str | None = None
+    wait_until_stopped: str | None = None
+    integrate_in_yunohost: bool = True
+    main_log: str | None = None  # Oooooor should it be a dir from the log_dir resource ooooor idk
+    test_status: str | None = None
+    needs_exposed_ports: str | int | list[str | int] | None = None
+    needs_lock: bool = False
+
+    exposed: list[str] = [
+        "auto",
+        "wait_until",
+        "wait_until_stopped",
+        "integrate_in_yunohost",
+        "main_log",
+        "test_status",
+        "needs_exposed_ports",
+        "needs_lock"
+    ]
+
+    def __init__(self, *args, **kwargs):
+
+        # Default values for main and extras
+        if kwargs["id"] == "main":
+            kwargs["service_name"] = "__APP__"
+            kwargs["template"] = "systemd.service"
+            kwargs["path"] = "/etc/systemd/system/__APP__.service"
+        else:
+            kwargs["service_name"] = "__APP__-__CONF_ID__"
+            kwargs["template"] = "systemd-__CONF_ID__.service"
+            kwargs["path"] = "/etc/systemd/system/__APP__-__CONF_ID__.service"
+
+        super().__init__(*args, **kwargs)
+
+    def apply(self) -> Iterator[str]:
+
+        yield from super().apply()
+
+        os.system("systemctl daemon-reload")
+        _run_service_command("enable", self.service_name)
+
+        needs_exposed_ports: list[int]
+        if isinstance(self.needs_exposed_ports, int):
+            needs_exposed_ports = [self.needs_exposed_ports]
+        elif isinstance(self.needs_exposed_ports, str) and self.needs_exposed_ports.strip():
+            needs_exposed_ports = [int(self.needs_exposed_ports.strip())]
+        elif self.needs_exposed_ports:
+            needs_exposed_ports = [int(p) for p in self.needs_exposed_ports if isinstance(p, int) or p.strip()]
+        else:
+            needs_exposed_ports = []
+
+        # integrate/disintegrate the service in yunohost
+        # FIXME : we should store the 'wait until' infos for later use probably
+        if self.integrate_in_yunohost:
+            service_add(
+                self.service_name,
+                log=self.main_log,
+                test_status=self.test_status,
+                needs_exposed_ports=needs_exposed_ports,
+                need_lock=self.needs_lock
+            )
+        elif self.service_name in _get_services():
+            service_remove(self.service_name)
+
+        if self.auto:
+            self.start()
+
+    @classmethod
+    def rm(cls, app: str, id: str, path: str) -> Iterator[str]:
+
+        assert path.startswith("/etc/systemd/system/")
+        service_name = path.split("/")[-1].split(".")[0]
+
+        if os.system(f"systemctl --quiet is-active '{service_name}'") == 0:
+            _run_service_command("stop", service_name)
+        if os.system(f"systemctl --quiet is-enabled '{service_name}'") == 0:
+            _run_service_command("disable", service_name)
+
+        # Remove integration in YunoHost if it's there
+        if service_name in _get_services():
+            service_remove(service_name)
+
+        yield from super().rm(app, id, path)
+
+        os.system("systemctl daemon-reload")
+
+    def start(self):
+
+        if self.wait_until:
+            wait_until_args = {
+                "wait_until_pattern": self.wait_until,
+                "log_to_watch": self.main_log or "journalctl"
+            }
+        else:
+            wait_until_args = {}
+
+        success = _run_service_command("restart", self.service_name, **wait_until_args)
+        if success:
+            logger.info(f"Service {self.service_name} started")
+        elif os.system(f"systemctl --quiet is-active {self.service_name}") == 0:
+            # "Mixed" success ... service is active but did not find the wait_until pattern
+            logger.warning(f"Service {self.service_name} may not be fully started yet ... (did not find pattern '{self.wait_until}' in its logs)")
+        else:
+            raise YunohostError(f"Service {self.service_name} failed to start")
 
 
 ConfigurationClassesByType = {
