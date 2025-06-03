@@ -23,10 +23,10 @@ import re
 import subprocess
 import time
 import yaml
-from datetime import datetime
+from datetime import datetime, timezone
 from glob import glob
 from logging import getLogger
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast, Literal, TypedDict, NotRequired
 
 from moulinette import Moulinette, m18n
 from .utils.file_utils import (
@@ -55,14 +55,14 @@ else:
 
 
 def service_add(
-    name,
-    description=None,
-    log=None,
-    test_status=None,
-    test_conf=None,
-    needs_exposed_ports=None,
-    need_lock=False,
-):
+    name: str,
+    description: str | None = None,
+    log: str | list[str] | None = None,
+    test_status: str | None = None,
+    test_conf: str | None = None,
+    needs_exposed_ports: list[int] | None = None,
+    need_lock: bool = False,
+) -> None:
     """
     Add a custom service
 
@@ -77,7 +77,7 @@ def service_add(
     """
     services = _get_services()
 
-    services[name] = service = {}
+    services[name] = service = ServiceInfos()
 
     if log is not None:
         if not isinstance(log, list):
@@ -132,7 +132,7 @@ def service_add(
     logger.success(m18n.n("service_added", service=name))
 
 
-def service_remove(name):
+def service_remove(name: str):
     """
     Remove a custom service
 
@@ -156,7 +156,7 @@ def service_remove(name):
 
 
 @is_unit_operation(flash=True)
-def service_start(names):
+def service_start(names: str | list[str]) -> None:
     """
     Start one or more services
 
@@ -184,7 +184,7 @@ def service_start(names):
 
 
 @is_unit_operation(flash=True)
-def service_stop(names):
+def service_stop(names: str | list[str]) -> None:
     """
     Stop one or more services
 
@@ -210,7 +210,7 @@ def service_stop(names):
             logger.debug(m18n.n("service_already_stopped", service=name))
 
 
-def service_reload(names):
+def service_reload(names: str | list[str]) -> None:
     """
     Reload one or more services
 
@@ -236,7 +236,7 @@ def service_reload(names):
 
 
 @is_unit_operation(flash=True)
-def service_restart(names):
+def service_restart(names: str | list[str]) -> None:
     """
     Restart one or more services. If the services are not running yet, they will be started.
 
@@ -330,7 +330,7 @@ def service_reload_or_restart(names: str | list[str], test_conf: bool = True, ra
 
 
 @is_unit_operation(flash=True)
-def service_enable(names):
+def service_enable(names: str | list[str]) -> None:
     """
     Enable one or more services
 
@@ -349,7 +349,7 @@ def service_enable(names):
 
 
 @is_unit_operation(flash=True)
-def service_disable(names):
+def service_disable(names: str | list[str]) -> None:
     """
     Disable one or more services
 
@@ -367,7 +367,20 @@ def service_disable(names):
             raise YunohostError("service_disable_failed", service=name)
 
 
-def service_status(names=[]):
+# Gotta use this syntax because "configuration-details" has a dash
+# which prevents using it as a class attribute @_@
+# cf https://stackoverflow.com/a/73071890
+ServiceStatus = TypedDict("ServiceStatus", {
+    "description": str,
+    "status": Literal["unknown", "running", "failed"],
+    "start_on_boot": Literal["unknown", "enabled", "disabled"],
+    "last_state_change": Literal["unknown"] | datetime,
+    "configuration": Literal["unknown", "valid", "broken"],
+    "configuration-details": NotRequired[list[str]],
+})
+
+
+def service_status(names: str | list[str] = []) -> ServiceStatus | dict[str, ServiceStatus]:
     """
     Show status information about one or more services (all by default)
 
@@ -408,7 +421,7 @@ def service_status(names=[]):
     return output
 
 
-def _get_service_information_from_systemd(service):
+def _get_service_information_from_systemd(service: str) -> tuple[None, None] | tuple[dict, dict]:
     "this is the equivalent of 'systemctl status $service'"
     import dbus
 
@@ -425,17 +438,17 @@ def _get_service_information_from_systemd(service):
         service_proxy, "org.freedesktop.DBus.Properties"
     )
 
-    unit = properties_interface.GetAll("org.freedesktop.systemd1.Unit")
-    service = properties_interface.GetAll("org.freedesktop.systemd1.Service")
+    raw_unit_infos: dict = properties_interface.GetAll("org.freedesktop.systemd1.Unit")
+    raw_service_infos: dict = properties_interface.GetAll("org.freedesktop.systemd1.Service")
 
-    if unit.get("LoadState", "not-found") == "not-found":
+    if raw_unit_infos.get("LoadState", "not-found") == "not-found":
         # Service doesn't really exist
         return (None, None)
     else:
-        return (unit, service)
+        return (raw_unit_infos, raw_service_infos)
 
 
-def _get_and_format_service_status(service, infos):
+def _get_and_format_service_status(service: str, infos) -> ServiceStatus:
     systemd_service = infos.get("actual_systemd_service", service)
     raw_status, raw_service = _get_service_information_from_systemd(systemd_service)
 
@@ -450,6 +463,7 @@ def _get_and_format_service_status(service, infos):
             "description": "Error: failed to get information for this service, it doesn't exists for systemd",
             "configuration": "unknown",
         }
+    assert raw_service is not None
 
     # Try to get description directly from services.yml
     description = infos.get("description")
@@ -462,9 +476,9 @@ def _get_and_format_service_status(service, infos):
         else:
             description = str(raw_status.get("Description", ""))
 
-    output = {
-        "status": str(raw_status.get("SubState", "unknown")),
-        "start_on_boot": str(raw_status.get("UnitFileState", "unknown")),
+    output: ServiceStatus = {
+        "status": str(raw_status.get("SubState", "unknown")),  # type: ignore[typeddict-item]
+        "start_on_boot": str(raw_status.get("UnitFileState", "unknown")),  # type: ignore[typeddict-item]
         "last_state_change": "unknown",
         "description": description,
         "configuration": "unknown",
@@ -523,14 +537,13 @@ def _get_and_format_service_status(service, infos):
         if p.returncode == 0:
             output["configuration"] = "valid"
         else:
-            out = out.decode()
             output["configuration"] = "broken"
-            output["configuration-details"] = out.strip().split("\n")
+            output["configuration-details"] = out.decode().strip().split("\n")
 
     return output
 
 
-def service_log(name, number=50):
+def service_log(name: str, number: int = 50) -> dict[str, list[str]]:
     """
     Log every log files of a service
 
@@ -695,7 +708,18 @@ def _run_service_command(
     return True
 
 
-def _give_lock(action, service, p):
+def _give_lock(
+    action: Literal[
+        "start",
+        "stop",
+        "restart",
+        "reload",
+        "reload-or-restart",
+    ],
+    service: str,
+    p: subprocess.Popen
+) -> int:
+
     # Depending of the action, systemctl calls the PID differently :/
     if action == "start" or action == "restart":
         systemctl_PID_name = "MainPID"
@@ -721,7 +745,7 @@ def _give_lock(action, service, p):
     return son_PID
 
 
-def _remove_lock(PID_to_remove):
+def _remove_lock(PID_to_remove: int) -> None:
     # FIXME ironically not concurrency safe because it's not atomic...
 
     PIDs = read_file(MOULINETTE_LOCK).split("\n")
@@ -729,7 +753,21 @@ def _remove_lock(PID_to_remove):
     write_to_file(MOULINETTE_LOCK, "\n".join(PIDs_to_keep))
 
 
-def _get_services():
+class ServiceInfos(TypedDict, total=False):
+
+    description: str
+    needs_exposed_ports: list[int]
+    log: str | list[str]
+    need_lock: bool
+    ignore_if_package_is_not_installed: str
+    actual_systemd_service: str
+    test_status: str
+    test_conf: str
+    wait_until: str
+    category: Literal["web", "email", "database", "admin", "userportal", "security"]
+
+
+def _get_services() -> dict[str, ServiceInfos]:
     """
     Get a dict of managed services with their parameters
 
@@ -804,7 +842,7 @@ def _get_services():
     return services
 
 
-def _save_services(services):
+def _save_services(services: dict[str, ServiceInfos]) -> None:
     """
     Save managed services to files
 
@@ -817,9 +855,9 @@ def _save_services(services):
     # such that /etc/yunohost/services.yml contains the minimal
     # changes with respect to the base conf
 
-    conf_base = yaml.safe_load(open(SERVICES_CONF_BASE)) or {}
+    conf_base: dict[str, ServiceInfos] = yaml.safe_load(open(SERVICES_CONF_BASE)) or {}
 
-    diff = {}
+    diff: dict[str, ServiceInfos] = {}
 
     for service_name, service_infos in services.items():
         # Ignore php-fpm services, they are to be added dynamically by the core,
@@ -832,7 +870,7 @@ def _save_services(services):
 
         for key, value in service_infos.items():
             if service_conf_base.get(key) != value:
-                diff[service_name][key] = value
+                diff[service_name][key] = value  # type: ignore[literal-required]
 
     diff = {
         name: infos for name, infos in diff.items() if infos or name not in conf_base
@@ -841,7 +879,7 @@ def _save_services(services):
     write_to_yaml(SERVICES_CONF, diff)
 
 
-def _tail(file, n):
+def _tail(file: str, n):
     """
     Reads a n lines from f with an offset of offset lines.  The return
     value is a tuple in the form ``(lines, has_more)`` where `has_more` is
@@ -849,19 +887,21 @@ def _tail(file, n):
 
     This function works even with splitted logs (gz compression, log rotate...)
     """
-    avg_line_length = 74
+    avg_line_length = 74.0
     to_read = n
 
+    lines: list[str] = []
     try:
         if file.endswith(".gz"):
             import gzip
 
-            f = gzip.open(file)
-            lines = f.read().splitlines()
+            g = gzip.open(file)
+            lines = g.read().decode().splitlines()
+            g.close()
         else:
             f = open(file, errors="replace")
             pos = 1
-            lines = []
+
             while len(lines) < to_read and pos > 0:
                 try:
                     f.seek(-(avg_line_length * to_read), 2)
@@ -877,7 +917,7 @@ def _tail(file, n):
                     return lines[-to_read:]
 
                 avg_line_length *= 1.3
-        f.close()
+            f.close()
 
     except IOError as e:
         logger.warning("Error while tailing file '%s': %s", file, e, exc_info=1)
@@ -891,7 +931,7 @@ def _tail(file, n):
     return lines
 
 
-def _find_previous_log_file(file):
+def _find_previous_log_file(file: str) -> str | None:
     """
     Find the previous log file
     """
@@ -900,8 +940,8 @@ def _find_previous_log_file(file):
         file = splitext[0]
     splitext = os.path.splitext(file)
     ext = splitext[1]
-    i = re.findall(r"\.(\d+)", ext)
-    i = int(i[0]) + 1 if len(i) > 0 else 1
+    matches = re.findall(r"\.(\d+)", ext)
+    i = int(matches[0]) + 1 if len(matches) > 0 else 1
 
     previous_file = file if i == 1 else splitext[0]
     previous_file = previous_file + f".{i}"
@@ -915,7 +955,7 @@ def _find_previous_log_file(file):
     return None
 
 
-def _get_journalctl_logs(service, number="all"):
+def _get_journalctl_logs(service: str, number: int | Literal["all"] = "all"):
     services = _get_services()
     systemd_service = services.get(service, {}).get("actual_systemd_service", service)
     try:
