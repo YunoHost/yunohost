@@ -98,6 +98,7 @@ def clean():
     os.system("rm -rf /etc/nginx/conf.d/*/*testapp*")
     os.system("rm -rf /etc/nginx/conf.d/other_domain.test.d/")
     os.system("rm -rf /etc/php/*/fpm/pool.d/testapp.conf")
+    os.system("rm -rf /etc/fail2ban/*/testapp.conf")
     os.system("rm -rf /var/www/testapp")
     if os.system("systemctl --quiet is-active testapp") == 0:
         os.system("systemctl stop testapp")
@@ -481,3 +482,19 @@ def test_conf_systemd():
     # FIXME / TODO : should also add test for "extra" conf
 
     # FIXME / TODO : ... and handle case where the systemd conf is managed externally but still want the yunohost integration and/or wait_until?
+
+
+def test_conf_fail2ban():
+
+    assert not os.path.exists("/etc/fail2ban/jail.d/testapp.conf")
+    assert not os.path.exists("/etc/fail2ban/filter.d/testapp.conf")
+
+    wanted = {"configurations": {"fail2ban": {
+        "main": {
+            "auth_route": "/login",
+        }
+    }}}
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+
+    assert os.path.exists("/etc/fail2ban/jail.d/testapp.conf")
+    assert os.path.exists("/etc/fail2ban/filter.d/testapp.conf")

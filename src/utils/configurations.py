@@ -653,6 +653,20 @@ class AppConfigurationsManager:
                     )
                 )
 
+            # Boring trick for fail2ban which is actually 2 file conf (filter and jail)
+            # so we create one with the same inputs for main, but with id "jail" that will use a different template/path
+            if type_ == "fail2ban":
+                assert "jail" not in confs_properties.keys(), "Can't explicitly add properties for the 'jail' part of fail2ban, just set them via the main one"
+                confs.append(
+                    ConfigurationClass(
+                        **main_properties,
+                        id="jail",
+                        env=self.env,
+                        type=type_,
+                        app=self.app,
+                    )
+                )
+
             # Iterate on other confs than "main"
             for key, values in confs_properties.items():
 
@@ -954,6 +968,70 @@ class SystemdConfiguration(BaseConfiguration):
             logger.warning(f"Service {self.service_name} may not be fully started yet ... (did not find pattern '{self.wait_until}' in its logs)")
         else:
             raise YunohostError(f"Service {self.service_name} failed to start")
+
+
+class Fail2banConfiguration(BaseConfiguration):
+
+    type = "fail2ban"
+
+    log_to_watch: str
+    auth_route: str | None = None  # NB: relative to the app, NOT prefixed with __PATH__ (or should it be the other way around ?)
+    fail_regex: str | None = None
+
+    exposed: list[str] = ["template", "log_to_watch", "auth_route", "fail_regex"]
+
+    def __init__(self, *args, **kwargs):
+
+        assert kwargs["id"] in ["main", "jail"], "Having several fail2ban configuration per app is not supported for now"
+
+        n_keys = len([key for key in ["template", "auth_route", "fail_regex"] if key in kwargs])
+        if n_keys == 0:
+            raise YunohostError("Packager: you should define either 'auth_route' or 'fail_regex' in the fail2ban conf properties. Or a custom 'template' to use.")
+        elif n_keys > 1:
+            raise YunohostError("Packager: 'template', 'auth_route' and 'fail_regex' can't be used simulatenously in fail2ban conf properties. Choose exactly one!")
+
+        if "auth_route" in kwargs:
+            kwargs["log_to_watch"] = "/var/log/nginx/__DOMAIN__-access.log"
+
+        # Template/path values for main (=filter) and jail
+        if kwargs["id"] == "main":
+            if "template" not in kwargs:
+                kwargs["template"] = "/usr/share/yunohost/conf/fail2ban/app-filter.conf.j2"
+            kwargs["path"] = "/etc/fail2ban/filter.d/__APP__.conf"
+        else:
+            kwargs["template"] = "/usr/share/yunohost/conf/fail2ban/app-jail.conf.j2"
+            kwargs["path"] = "/etc/fail2ban/jail.d/__APP__.conf"
+
+        super().__init__(*args, **kwargs)
+
+    def render(self, template_content) -> str:
+
+        settings = _get_app_settings(self.app)
+        self.env = self.env.copy()
+        self.env["enabled"] = settings.get("f2b_enabled", True)
+        self.env["max_retry"] = settings.get("f2b_max_retry", 5)
+        for prop in ["log_to_watch", "auth_route", "fail_regex"]:
+            self.env[prop] = getattr(self, prop)
+
+        return super().render(template_content)
+
+    def apply(self) -> Iterator[str]:
+
+        if not os.path.isfile(self.log_to_watch):
+            raise YunohostError(f"Logfile for fail2ban {self.log_to_watch} doesn't exists (yet?), but it is necessary that this file exists for fail2ban to start")
+
+        yield from super().apply()
+
+        # FIXME : hmm that means fail2ban is restarted twice (once after applying the main conf=filter and after jail conf)
+        # we should really "group by" the todos per type in the manager stuff
+        yield "fail2ban"
+
+    @classmethod
+    def rm(cls, app: str, id: str, path: str) -> Iterator[str]:
+
+        yield from super().rm(app, id, path)
+
+        yield "fail2ban"
 
 
 ConfigurationClassesByType = {
