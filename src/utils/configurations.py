@@ -161,8 +161,8 @@ class BaseConfiguration(BaseModel):
     def exists(self):
         return os.path.exists(self.path)
 
-    def render(self, template_content) -> None:
-        self.content = _hydrate_app_template(
+    def render(self, template_content) -> str:
+        return _hydrate_app_template(
             template_content, self.env, raise_exception_if_missing_var=True
         )
 
@@ -175,16 +175,16 @@ class BaseConfiguration(BaseModel):
         chown(self.path, self.owner, self.group)
         chmod(self.path, sym_to_octal(self.perms))
 
-    def hydrate_properties(self, template_dir: str):
+    def hydrate_properties(self, app_template_dir: str):
 
         for key, value in dict(self).items():
             if isinstance(value, str):
                 if (
                     key.endswith("template")
                     and not value.startswith("/")
-                    and template_dir
+                    and app_template_dir
                 ):
-                    value = f"{template_dir}/{value}"
+                    value = f"{app_template_dir}/{value}"
                 setattr(
                     self,
                     key,
@@ -369,7 +369,7 @@ class BaseConfiguration(BaseModel):
 
     def prepare(self) -> Iterator[ConfigurationAdd | ConfigurationUpdate]:
 
-        self.render(read_file(self.template))
+        self.content = self.render(read_file(self.template))
         assert self.content
 
         was_manually_modified = self.was_manually_modified()
@@ -677,9 +677,9 @@ class AppConfigurationsManager:
                         )
                     )
 
-        template_dir = (self.workdir.rstrip("/") + "/conf/") if self.workdir else None
+        app_template_dir = (self.workdir.rstrip("/") + "/conf/") if self.workdir else None
         for conf in confs:
-            conf.hydrate_properties(template_dir=template_dir)
+            conf.hydrate_properties(app_template_dir=app_template_dir)
 
         return confs
 
@@ -702,7 +702,7 @@ class NginxConfiguration(BaseConfiguration):
 
         super().__init__(*args, **kwargs)
 
-    def render(self, template_content) -> None:
+    def render(self, template_content) -> str:
         if "path" in self.env:
             path = self.env["path"].strip()
             if path != "/":
@@ -772,7 +772,7 @@ class PHPConfiguration(BaseConfiguration):
         kwargs["php_max_children"] = PHPConfiguration._default_php_max_children()
         super().__init__(*args, **kwargs)
 
-    def render(self, template_content) -> None:
+    def render(self, template_content) -> str:
 
         self.env = self.env.copy()
         for prop in ["php_group", "php_process_management", "php_memory_limit", "php_upload_max_filesize", "php_max_children"]:
