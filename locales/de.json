@@ -739,5 +739,21 @@
     "app_config_operations_name": "Betrieb",
     "app_config_permission_allowed": "Zugriffsberechtigte Gruppen/Konten",
     "app_config_permission_allowed_warn_protected": "Hinweis: Diese Berechtigung ist „geschützt“, so dass die Gruppe „Besucher“ nicht zu den autorisierten Gruppen hinzugefügt oder entfernt werden kann.",
-    "app_config_upgrade": "Aktualisieren"
+    "app_config_upgrade": "Aktualisieren",
+    "diagnosis_apps_outdated_packaging_format": "Diese App nutzt ein Paketformat, dass bald nicht mehr von YunoHost unterstützt wird. Denken Sie daran, die App rechtzeitig zu aktualisieren.",
+    "global_settings_setting_nginx_name": "NGINX (Web Server)",
+    "global_settings_setting_network_name": "Netzwerk",
+    "confirm_tos_acknowledgement": "Ich habe die Nutzungsbedingungen gelesen und verstanden [{answers}]",
+    "domain_config_portal_title": "Eigener Titel",
+    "domain_dns_registrar_use_auto": "Automatische DNS Funktion nutzen",
+    "domain_config_cert_name": "Zertifikat",
+    "domain_config_dns_name": "DNS",
+    "domain_config_portal_name": "Portal anpassen",
+    "domain_config_search_engine": "URL der Suchmaschine",
+    "domain_config_feature_name": "Funktionen",
+    "domain_config_portal_logo": "Eigenes Logo",
+    "domain_config_search_engine_name": "Name der Suchmaschine",
+    "global_settings_setting_backup_name": "Sicherung",
+    "global_settings_setting_email_name": "E-Mail",
+    "global_settings_setting_misc_name": "Weitere Einstellungen"
 }
