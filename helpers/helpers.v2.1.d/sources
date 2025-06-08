@@ -218,6 +218,34 @@ ynh_setup_source() {
             unzip -quo "$src_filename" -d "$dest_dir"
         fi
         ynh_safe_rm "$src_filename"
+    elif [[ "$src_format" == "xz" ]]; then
+        # XZ format
+        # Using of a temp directory, because unzip doesn't manage --strip-components
+        if $src_in_subdir; then
+            ynh_die "XZ format does not support stripping components."
+        else
+            if [[ -n "$src_rename" ]]; then
+                unxz "$src_filename" -c > "$dest_dir/$src_rename"
+            else
+                # If no rename is specified, we use the basename of the source file
+                local src_basename=$(basename "$src_filename")
+                unxz "$src_filename" -c > "$dest_dir/$src_basename"
+            fi
+        fi
+        ynh_safe_rm "$src_filename"
+    elif [[ "$src_format" == "zst" ]]; then
+        # ZSTD format
+        # Using of a temp directory, because unzip doesn't manage --strip-components
+        if $src_in_subdir; then
+            ynh_die "ZSTD format does not support stripping components."
+        else
+            local name=()
+            if [[ -n "$src_rename" ]]; then
+                name=(-o "$src_rename")
+            fi
+            unzstd "$src_filename"  --output-dir-flat "$dest_dir" "${name[@]}"
+        fi
+        ynh_safe_rm "$src_filename"
     else
         local strip=()
         if [ "$src_in_subdir" != "false" ]; then
@@ -228,8 +256,12 @@ ynh_setup_source() {
             fi
             strip=(--strip-components "$sub_dirs")
         fi
-        if [[ "$src_format" =~ ^tar.gz|tar.bz2|tar.xz|tar$ ]]; then
-            tar --extract --file="$src_filename" --directory="$dest_dir" "${strip[@]}"
+        local use_program=()
+        if [[ "$src_format" =~ ^tar.zst$ ]]; then
+            use_program=(--use-compress-program=unzstd)
+        fi
+        if [[ "$src_format" =~ ^tar.gz|tar.bz2|tar.xz|tar.zst|tar$ ]]; then
+            tar --extract --file="$src_filename" --directory="$dest_dir" "${strip[@]}" "${use_program[@]}"
         else
             ynh_die "Archive format unrecognized."
         fi
