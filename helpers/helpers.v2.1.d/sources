@@ -237,13 +237,12 @@ ynh_setup_source() {
         # Using of a temp directory, because unzip doesn't manage --strip-components
         if $src_in_subdir; then
             ynh_die "ZSTD format does not support stripping components."
-        else
-            local name=()
-            if [[ -n "$src_rename" ]]; then
-                name=(-o "$src_rename")
-            fi
-            unzstd "$src_filename"  --output-dir-flat "$dest_dir" "${name[@]}"
         fi
+        local name=()
+        if [[ -n "$src_rename" ]]; then
+            name=(-o "$src_rename")
+        fi
+        unzstd "$src_filename"  --output-dir-flat "$dest_dir" "${name[@]}"
         ynh_safe_rm "$src_filename"
     else
         local strip=()
