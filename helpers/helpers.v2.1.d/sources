@@ -235,8 +235,8 @@ ynh_setup_source() {
     elif [[ "$src_format" == "zst" ]]; then
         # ZSTD format
         # Using of a temp directory, because unzip doesn't manage --strip-components
-        if $src_in_subdir; then
-            ynh_die "ZSTD format does not support stripping components."
+        if [[ "$src_in_subdir" == "true" ]]; then
+            ynh_die "ZSTD format does not support stripping components. (You should set in_subdir = false for this source)"
         fi
         local name=()
         if [[ -n "$src_rename" ]]; then
