@@ -220,7 +220,6 @@ ynh_setup_source() {
         ynh_safe_rm "$src_filename"
     elif [[ "$src_format" == "xz" ]]; then
         # XZ format
-        # Using of a temp directory, because unzip doesn't manage --strip-components
         if [[ "$src_in_subdir" == "true" ]]; then
             ynh_die "XZ format does not support stripping components. (You should set in_subdir = false for this source)"
         fi
@@ -234,7 +233,6 @@ ynh_setup_source() {
         ynh_safe_rm "$src_filename"
     elif [[ "$src_format" == "zst" ]]; then
         # ZSTD format
-        # Using of a temp directory, because unzip doesn't manage --strip-components
         if [[ "$src_in_subdir" == "true" ]]; then
             ynh_die "ZSTD format does not support stripping components. (You should set in_subdir = false for this source)"
         fi
