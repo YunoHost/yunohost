@@ -221,8 +221,8 @@ ynh_setup_source() {
     elif [[ "$src_format" == "xz" ]]; then
         # XZ format
         # Using of a temp directory, because unzip doesn't manage --strip-components
-        if $src_in_subdir; then
-            ynh_die "XZ format does not support stripping components."
+        if [[ "$src_in_subdir" == "true" ]]; then
+            ynh_die "XZ format does not support stripping components. (You should set in_subdir = false for this source)"
         fi
         if [[ -n "$src_rename" ]]; then
             unxz "$src_filename" -c > "$dest_dir/$src_rename"
