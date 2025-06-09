@@ -190,7 +190,7 @@ i18n = "global_settings_setting"
         [misc.tls_passthrough.tls_passthrough_list]
         type = "tags"
         # Regex is just <domain regex>;<destination>;<port>
-        pattern.regexp = '^(([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}));(([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?([^\W_]{2,}|[0-9]{1,3})));[0-9]{1,}$'
+        pattern.regexp = '^(?!,)(,?(([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}));(([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?([^\W_]{2,}|[0-9]{1,3})));[0-9]{1,})+$'
         pattern.error = "You should specify a list of items formatted as DOMAIN;DESTINATION;DESTPORT, such as yolo.test;192.168.1.42;443"
         default = ""
         visible = "tls_passthrough_enabled"
