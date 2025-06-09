@@ -24,6 +24,7 @@ import pytest
 import requests
 
 from moulinette.utils.filesystem import read_file, write_to_file, write_to_yaml
+from moulinette.utils.process import check_output
 from yunohost.app import app_setting, _get_app_settings, _set_app_settings
 from yunohost.service import _get_services, service_remove
 from yunohost.utils.error import YunohostError
@@ -588,3 +589,26 @@ def test_conf_logrotate():
     AppConfigurationsManager("testapp", wanted={}).apply()
 
     assert not os.path.exists("/etc/logrotate.d/testapp")
+
+
+def test_conf_app():
+
+    os.system("useradd testapp")
+    os.system("mkdir -p /var/www/testapp")
+    assert not os.path.exists("/var/www/testapp/conf.ini")
+
+    write_to_file("/etc/yunohost/apps/testapp/conf/conf.ini.template", '\n'.join([
+        '# This is a dummy conf file',
+        'APP = __APP__',
+        'FOO = __FOO__'
+    ]))
+
+    wanted = {"configurations": {"app": {"main": {
+        "path": "conf.ini",
+        "template": "conf.ini.template",
+    }}}}
+
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+
+    assert os.path.exists("/var/www/testapp/conf.ini")
+    assert check_output("ls -l /var/www/testapp/conf.ini").startswith("-r-------- 1 testapp testapp ")
