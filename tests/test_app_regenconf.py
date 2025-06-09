@@ -552,4 +552,20 @@ def test_conf_cron():
     assert not os.path.exists("/etc/cron.d/testapp-foobar")
 
 
+def test_conf_sudoers():
 
+    assert not os.path.exists("/etc/sudoers.d/testapp")
+
+    wanted = {"configurations": {"sudoers": { "main": {
+        "commands": ["/bin/true", "/bin/false"]
+    }}}}
+
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+
+    assert os.path.exists("/etc/sudoers.d/testapp")
+    assert "testapp ALL = (root) NOPASSWD: /bin/true\n" in read_file("/etc/sudoers.d/testapp")
+    assert "testapp ALL = (root) NOPASSWD: /bin/false" in read_file("/etc/sudoers.d/testapp")
+
+    AppConfigurationsManager("testapp", wanted={}).apply()
+
+    assert not os.path.exists("/etc/sudoers.d/testapp")

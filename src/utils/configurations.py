@@ -177,6 +177,13 @@ class BaseConfiguration(BaseModel):
 
     def hydrate_properties(self, app_template_dir: str):
 
+        def hydrate(value):
+            return _hydrate_app_template(
+                value,
+                {"app": self.app, "conf_id": self.id, **self.env},
+                raise_exception_if_missing_var=True,
+            )
+
         for key, value in dict(self).items():
             if isinstance(value, str):
                 if (
@@ -185,15 +192,9 @@ class BaseConfiguration(BaseModel):
                     and app_template_dir
                 ):
                     value = f"{app_template_dir}/{value}"
-                setattr(
-                    self,
-                    key,
-                    _hydrate_app_template(
-                        value,
-                        {"app": self.app, "conf_id": self.id, **self.env},
-                        raise_exception_if_missing_var=True,
-                    ),
-                )
+                setattr(self, key, hydrate(value))
+            elif isinstance(value, list):
+                setattr(self, key, [hydrate(v) for v in value])
 
     ###############################################################
     # The 'original' conf refers to the original configuration    #
@@ -367,9 +368,13 @@ class BaseConfiguration(BaseModel):
 
         return (p.returncode == 0, merged_content)
 
+    def template_content(self) -> str:
+
+        return read_file(self.template)
+
     def prepare(self) -> Iterator[ConfigurationAdd | ConfigurationUpdate]:
 
-        self.content = self.render(read_file(self.template))
+        self.content = self.render(self.template_content())
         assert self.content
 
         was_manually_modified = self.was_manually_modified()
@@ -1090,6 +1095,57 @@ class CronConfiguration(BaseConfiguration):
             self.env = self.env.copy()
             self.env["php"] = f"/usr/bin/php{self.env['php_version']}"
         return super().render(template_content)
+
+
+class SudoersConfiguration(BaseConfiguration):
+
+    type = "sudoers"
+
+    perms: str = "r--r-----"
+    template: str = "/dev/null"  # Not used, cf self.template_content()
+    # FIXME : ideally we should validate that every command is owned by root and not writable by a non-root user ...
+    commands: list[str] = []
+
+    exposed: list[str] = ["commands"]
+
+    def __init__(self, *args, **kwargs):
+
+        # Default values for main and extras
+        if kwargs["id"] == "main":
+            kwargs["path"] = "/etc/sudoers.d/__APP__"
+        else:
+            kwargs["path"] = "/etc/sudoers.d/__APP__-__CONF_ID__"
+
+        if "commands" in kwargs:
+            assert not any("," in command for command in kwargs["commands"]), "sudoers 'commands' arg is supposed to be a list of commands. The individual commands are not supposed to contain ','"
+
+        super().__init__(*args, **kwargs)
+
+    def template_content(self) -> str:
+        return """
+{% for command in commands %}
+__APP__ ALL = (root) NOPASSWD: {{command}}
+{%- endfor %}
+        """
+
+    def render(self, template_content) -> str:
+        self.env = self.env.copy()
+        self.env["commands"] = self.commands
+        return super().render(template_content)
+
+    def apply(self) -> Iterator[str]:
+        yield from super().apply()
+
+        # Validate logrotate conf
+        p = subprocess.Popen(
+            ["visudo", "-c"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        out, _ = p.communicate()
+        if p.returncode != 0:
+            errors = out.decode().strip()
+            raise YunohostError(f"Uhoh, sudoers conf is not valid ?\n\n{errors}", raw_msg=True)
 
 
 ConfigurationClassesByType = {
