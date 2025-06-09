@@ -99,6 +99,8 @@ def clean():
     os.system("rm -rf /etc/nginx/conf.d/other_domain.test.d/")
     os.system("rm -rf /etc/php/*/fpm/pool.d/testapp.conf")
     os.system("rm -rf /etc/fail2ban/*/testapp.conf")
+    os.system("rm -rf /etc/cron.d/testapp*")
+    os.system("rm -rf /etc/sudoers.d/testapp*")
     os.system("rm -rf /var/www/testapp")
     if os.system("systemctl --quiet is-active testapp") == 0:
         os.system("systemctl stop testapp")
@@ -498,3 +500,56 @@ def test_conf_fail2ban():
 
     assert os.path.exists("/etc/fail2ban/jail.d/testapp.conf")
     assert os.path.exists("/etc/fail2ban/filter.d/testapp.conf")
+
+
+def test_conf_cron():
+
+    assert not os.path.exists("/etc/cron.d/testapp")
+    assert not os.path.exists("/etc/cron.d/testapp-foobar")
+
+    # Nominal case with a template
+    write_to_file("/etc/yunohost/apps/testapp/conf/cron", '\n'.join([
+        '# Some comment',
+        '',
+        '@weekly __APP__ /bin/true',
+        '*/5 * * * * __APP__ /bin/ls'
+    ]))
+
+    wanted = {"configurations": {"cron": {}}}
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+
+    assert os.path.exists("/etc/cron.d/testapp")
+    assert "@weekly testapp /bin/true" in read_file("/etc/cron.d/testapp")
+
+    # Invalid template (missing user part)
+    write_to_file("/etc/yunohost/apps/testapp/conf/cron", '\n'.join([
+        '@weekly /bin/true',
+    ]))
+
+    with pytest.raises(YunohostError):
+        AppConfigurationsManager("testapp", wanted=wanted).apply()
+
+    # Nominal case with the more declarative paradigm
+    wanted = {"configurations": {"cron": {
+        "main": {
+            "timing": "*/15 * * * *",
+            "command": "/bin/true",
+        },
+        "foobar": {
+            "timing": "@yearly",
+            "command": "/bin/false",
+            "user": "root",
+            "workdir": "/root",
+        }
+    }}}
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+    assert "*/15 * * * * testapp cd '/var/www/testapp' && /bin/true" in read_file("/etc/cron.d/testapp")
+    assert "@yearly root cd '/root' && /bin/false" in read_file("/etc/cron.d/testapp-foobar")
+
+    AppConfigurationsManager("testapp", wanted={}).apply()
+
+    assert not os.path.exists("/etc/cron.d/testapp")
+    assert not os.path.exists("/etc/cron.d/testapp-foobar")
+
+
+
