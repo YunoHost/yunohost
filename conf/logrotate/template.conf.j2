@@ -1,0 +1,18 @@
+__LOG_GLOBS__ {
+    # Rotate if the logfile exceeds 100Mo
+    size 100M
+    # Keep 12 old log maximum
+    rotate 12
+    # Compress the logs with gzip
+    compress
+    # Compress the log at the next cycle. So keep always 2 non compressed logs
+    delaycompress
+    # Copy and truncate the log to allow to continue write on it. Instead of moving the log.
+    copytruncate
+    # Do not trigger an error if the log is missing
+    missingok
+    # Do not rotate if the log is empty
+    notifempty
+    # Keep old logs in the same dir
+    noolddir
+}

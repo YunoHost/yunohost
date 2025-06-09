@@ -101,6 +101,7 @@ def clean():
     os.system("rm -rf /etc/fail2ban/*/testapp.conf")
     os.system("rm -rf /etc/cron.d/testapp*")
     os.system("rm -rf /etc/sudoers.d/testapp*")
+    os.system("rm -rf /etc/logrotate.d/testapp*")
     os.system("rm -rf /var/www/testapp")
     if os.system("systemctl --quiet is-active testapp") == 0:
         os.system("systemctl stop testapp")
@@ -569,3 +570,21 @@ def test_conf_sudoers():
     AppConfigurationsManager("testapp", wanted={}).apply()
 
     assert not os.path.exists("/etc/sudoers.d/testapp")
+
+
+def test_conf_logrotate():
+
+    assert not os.path.exists("/etc/logrotate.d/testapp")
+
+    app_setting("testapp", "log_dir", "/var/log/testapp/")
+
+    # Nominal case
+    wanted = {"configurations": {"logrotate": {}}}
+
+    AppConfigurationsManager("testapp", wanted=wanted).apply()
+
+    assert os.path.exists("/etc/logrotate.d/testapp")
+
+    AppConfigurationsManager("testapp", wanted={}).apply()
+
+    assert not os.path.exists("/etc/logrotate.d/testapp")

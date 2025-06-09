@@ -1148,6 +1148,47 @@ __APP__ ALL = (root) NOPASSWD: {{command}}
             raise YunohostError(f"Uhoh, sudoers conf is not valid ?\n\n{errors}", raw_msg=True)
 
 
+class LogrotateConfiguration(BaseConfiguration):
+
+    type = "logrotate"
+
+    template: str = "/usr/share/yunohost/conf/logrotate/template.conf.j2"
+    path: str = "/etc/logrotate.d/__APP__"
+    logs: list[str] = ["__LOG_DIR__/*.log"]
+
+    exposed: list[str] = ["logs"]
+
+    # FIXME : the lograte helper did apply some chown / chmod ...
+    # but i suppose it should rather be handled by the upcoming log_dir resource ?
+
+    def __init__(self, *args, **kwargs):
+
+        assert kwargs["id"] == "main", "Only having a 'main' logrotate conf is supported"
+
+        super().__init__(*args, **kwargs)
+
+    def render(self, template_content) -> str:
+
+        self.env = self.env.copy()
+        self.env["log_globs"] = ' '.join(self.logs)
+
+        return super().render(template_content)
+
+    def apply(self) -> Iterator[str]:
+        yield from super().apply()
+
+        # Validate logrotate conf
+        p = subprocess.Popen(
+            ["logrotate", "-d", self.path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        out, _ = p.communicate()
+        if p.returncode != 0:
+            errors = out.decode().strip()
+            raise YunohostError(f"Uhoh, logrotate conf is not valid ?\n\n{errors}", raw_msg=True)
+
+
 ConfigurationClassesByType = {
     c.__fields__["type"].default: c for c in BaseConfiguration.__subclasses__()
 }
