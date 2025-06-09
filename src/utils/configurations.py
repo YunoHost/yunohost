@@ -1034,6 +1034,64 @@ class Fail2banConfiguration(BaseConfiguration):
         yield "fail2ban"
 
 
+class CronConfiguration(BaseConfiguration):
+
+    type = "cron"
+
+    # FIXME : support either a template or specifying timing / user / command via properties ?
+    # if we auto-generate the cron file, maybe auto-cd to __INSTALL_DIR__ an look at other trick to simplify syntax
+
+    user: str = "__APP__"
+    command: str = ""
+    timing: str = ""
+    workdir: str = "__INSTALL_DIR__"
+
+    exposed: list[str] = ["user", "command", "timing", "workdir"]
+
+    def __init__(self, *args, **kwargs):
+
+        kwargs["path"] = "/etc/cron.d/__APP__" if kwargs["id"] == "main" else "/etc/cron.d/__APP__-__CONF_ID__"
+
+        if "command" in kwargs and "timing" in kwargs:
+            if "template" in kwargs:
+                raise YunohostError("Packager: you can't specify a template file when using 'command' and 'timing' for cron configurations", raw_msg=True)
+            kwargs["template"] = "/dev/null"  # See method template_content()
+            if "user" not in kwargs:
+                kwargs["user"] = "__APP__"
+            if not kwargs["timing"].startswith("@") and len(kwargs["timing"].split()) != 5:
+                raise YunohostError("Packager: it sounds like property 'timing' has an incorrect format", raw_msg=True)
+        else:
+            if any(f in kwargs for f in ["user", "command", "timing", "workdir"]):
+                raise YunohostError("Packager: you can't specify any 'command' / 'timing' / 'user' / 'workdir' property when using template mode for cron configurations", raw_msg=True)
+            kwargs["template"] = "cron" if kwargs["id"] == "main" else "cron-__CONF_ID__"
+
+        super().__init__(*args, **kwargs)
+
+    def template_content(self) -> str:
+
+        if self.template == "/dev/null":
+            return f"{self.timing} {self.user} cd '{self.workdir}' && {self.command}"
+
+        # Rough check of the cron syntax, because apparently forgetting to specify the user is a common mistake
+        # lines starting with '*' or a digit should have the user __APP__ or root in 6th column
+        faulty_lines = subprocess.check_output(["awk", r'/^\s*\*/ || /^\s*[0-9]/ {if (($6 != "__APP__") && ($6 != "root")) print }', self.template]).decode().split("\n")
+        # lines starting @ should have the user __APP__ or root in 2nd column
+        faulty_lines += subprocess.check_output(["awk", r'/^\s*@/ {if (($2 != "__APP__") && ($2 != "root")) print }', self.template]).decode().split("\n")
+        faulty_lines = [line for line in faulty_lines if line.strip()]
+        if faulty_lines:
+            faulty_lines_joined = '\n'.join(faulty_lines)
+            raise YunohostError(f"Packager: it looks like your cron template is faulty ? The 'user' part should be __APP__ or root. Faulty lines:\n{faulty_lines_joined}", raw_msg=True)
+
+        return read_file(self.template)
+
+    def render(self, template_content) -> str:
+        # Trick to be able to use __PHP__ to simplify the cron syntax
+        if "php_version" in self.env:
+            self.env = self.env.copy()
+            self.env["php"] = f"/usr/bin/php{self.env['php_version']}"
+        return super().render(template_content)
+
+
 ConfigurationClassesByType = {
     c.__fields__["type"].default: c for c in BaseConfiguration.__subclasses__()
 }
