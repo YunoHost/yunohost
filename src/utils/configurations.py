@@ -1189,6 +1189,50 @@ class LogrotateConfiguration(BaseConfiguration):
             raise YunohostError(f"Uhoh, logrotate conf is not valid ?\n\n{errors}", raw_msg=True)
 
 
+class AppConfiguration(BaseConfiguration):
+
+    type = "app"
+    perms: str = "r--------"
+
+    # FIXME / TODO : in many cases we can expect the app config
+    # to be related to the app service (or php fpm service) and
+    # maybe we want to auto-restart the service (or php fpm) when
+    # it's updated ? (There's some overlap with this and the config panel mechanism)
+
+    exposed: list[str] = ["path", "template", "owner", "group", "perms"]
+
+    def __init__(self, *args, **kwargs):
+
+        app = kwargs["app"]
+
+        assert "path" in kwargs, "Property 'path' is mandatory for 'app' configurations"
+
+        if not kwargs["path"].startswith("/"):
+            kwargs["path"] = "__INSTALL_DIR__/" + kwargs["path"]
+        elif kwargs["path"].startswith(f"/etc/{app}"):
+            logger.warning(f"Packagers, please use /etc/__APP__ instead of /etc/{app} when definining the path configuration")
+        elif kwargs["path"].startswith(f"/home/yunohost.app/{app}"):
+            logger.warning(f"Packagers, please use __DATA_DIR__ instead of /home/yunohost.app/{app} when definining the path configuration")
+
+        if "group" in kwargs and "perms" not in kwargs:
+            logger.warning(f"Packagers, in the app '{kwargs['id']}' configuration, specifying 'group' without changing the 'perms' is probably irrelevant because the default perms are 'r--------'. (In most cases, config files are only read by the app and it shouldnt be necessary to expose them to other users?)")
+
+        classic_app_conf_dirs = [
+            "__INSTALL_DIR__",
+            "__DATA_DIR__",
+            "/etc/__APP__",
+            "/var/lib/__APP__",
+            "/usr/share/__APP__"
+        ]
+        probably_app_conf = any(kwargs["path"].startswith(d) for d in classic_app_conf_dirs)
+        if "owner" not in kwargs and probably_app_conf:
+            kwargs["owner"] = app
+        if "group" not in kwargs and probably_app_conf:
+            kwargs["group"] = app
+
+        super().__init__(*args, **kwargs)
+
+
 ConfigurationClassesByType = {
     c.__fields__["type"].default: c for c in BaseConfiguration.__subclasses__()
 }
