@@ -21,6 +21,7 @@
 import copy
 import os
 import random
+import re
 import shutil
 import subprocess
 import tempfile
@@ -28,6 +29,7 @@ from logging import getLogger
 from typing import Any, Callable, Dict, List, Union
 
 from moulinette import m18n
+from moulinette.core import MoulinetteError
 from moulinette.utils.filesystem import chmod, chown, mkdir, rm, write_to_file
 from moulinette.utils.process import check_output
 from moulinette.utils.text import random_ascii
@@ -669,19 +671,6 @@ class PermissionsResource(AppResource):
 
         super().__init__({"permissions": properties}, *args, **kwargs)
 
-        from yunohost.app import _get_app_settings, _hydrate_app_template
-
-        settings = _get_app_settings(self.app)
-        for perm, infos in self.permissions.items():
-            if infos.get("url") and "__" in infos.get("url"):
-                infos["url"] = _hydrate_app_template(infos["url"], settings)
-
-            if infos.get("additional_urls"):
-                infos["additional_urls"] = [
-                    _hydrate_app_template(url, settings)
-                    for url in infos["additional_urls"]
-                ]
-
     def provision_or_update(self, context: Dict = {}):
         from yunohost.permission import (
             permission_create,
@@ -691,6 +680,18 @@ class PermissionsResource(AppResource):
             user_permission_update,
         )
         from yunohost.app import app_ssowatconf
+        from yunohost.app import _get_app_settings, _hydrate_app_template
+
+        settings = _get_app_settings(self.app)
+        for perm, infos in self.permissions.items():
+            if infos.get("url"):
+                infos["url"] = _hydrate_app_template(infos["url"], settings)
+
+            if infos.get("additional_urls"):
+                infos["additional_urls"] = [
+                    _hydrate_app_template(url, settings)
+                    for url in infos["additional_urls"]
+                ]
 
         # Delete legacy is_public setting if not already done
         self.delete_setting("is_public")
@@ -1606,6 +1607,96 @@ ynh_{db_helper_name}_user_exists "{db_user}" && ynh_{db_helper_name}_drop_user "
         self.delete_setting("db_name")
         self.delete_setting("db_user")
         self.delete_setting("db_pwd")
+
+
+class ExtraDomainsAppResource(AppResource):
+    """
+    Provide some extra domain in addition to the main app domain.
+    Generally if the app domain is yolo.tld the extra domain will be a subdomain so by example admin.yolo.tld
+    But we can think that at some point it could be something else like admin-yolo.tld (usefull if the user don't want to have a subdomain, or in local network case).
+
+    ### Example
+    ```toml
+    [resources.extradomains]
+    admin.name = "admin" # Will create an extra domain named `admin`.
+    ```
+
+    In the previous example, a new variable named `$domain_admin` in addition to `$domain` will be provided.
+
+    ### Provision/Update
+    - Create a light domain in Yunohost. In comparison to an the other "normal" domain:
+        - the domain is not registered in LDAP
+        - only a nginx config is created with some simplification
+        - a certificate will be linked to the main app domain, so we don't have a separate certificate
+        - there are no mail configuration for this domain
+    ### Deprovision
+    - This will mainly remove all thing created in the provisioning so:
+        - the nginx config
+    """
+
+    type = "extradomains"
+    priority = 20
+
+    default_properties: Dict[str, Any] = {}
+
+    extra_domains = {}
+
+    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
+        from yunohost.utils.ldap import _get_ldap_interface
+        ldap = _get_ldap_interface()
+        for domain_key, infos in properties.items():
+            domain_name = infos.get('name', None)
+            if domain_name is None:
+                raise YunohostError(
+                    "Specifying the name of extra domain is mandatory for extra domain resources",
+                    raw_msg=True,
+                )
+            if not re.fullmatch(r'[a-z]([a-z-]?[a-z]+)*', infos['name']):
+                raise YunohostError(
+                    "Invalid extra domain. Please ensure that it match '[a-z]([a-z-.][a-z])*'",
+                    raw_msg=True,
+                )
+            try:
+                ldap.validate_uniqueness({"virtualdomain": domain_name})
+            except MoulinetteError:
+                raise YunohostValidationError("domain_exists")
+
+        super().__init__({"extra_domains": properties}, *args, **kwargs)
+
+    def provision_or_update(self, context: Dict = {}):
+        # TODO
+        # Register in app settings the subdomain so we can reuse it later (for cert renew, nginx regen-conf, app-map)
+        # Add nginx config
+        # Renew cert with subdomain
+        # handle dyndns
+
+        from yunohost.app import _get_app_settings
+        from yunohost.domain import domain_add, domain_list
+
+        app_domain = _get_app_settings(self.app)["domain"]
+        self.set_setting('_extra_domains', {k: f"{info['name']}.{app_domain}" for k, info in self.extra_domains.items()})
+
+        for domain_key, domain_infos in self.extra_domains.items():
+            domain_name = f"{domain_infos['name']}.{app_domain}"
+            self.set_setting("domain_" + domain_key, domain_name)
+            if domain_name not in domain_list()["domains"]:
+                domain_add(domain_name)
+
+
+    def deprovision(self, context: Dict = {}):
+        from yunohost.domain import domain_remove, domain_list
+        from yunohost.app import _get_app_settings
+        # TODO
+        app_domain = _get_app_settings(self.app)["domain"]
+        for domain_key, domain_infos in self.extra_domains.items():
+            domain_name = f"{domain_infos['name']}.{app_domain}"
+            if domain_name in domain_list()["domains"]:
+                domain_remove(domain_name)
+
+    # Extra TODO:
+    # Handle change-url script !!
+    # If we don't add the domain in ldap we need to check uniqueness when we create a new domain
+    # review domain_list
 
 
 class NodejsAppResource(AppResource):

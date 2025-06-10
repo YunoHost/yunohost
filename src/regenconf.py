@@ -144,6 +144,7 @@ def regen_conf(
         env["YNH_MAIN_DOMAINS"] = " ".join(
             domain_list(exclude_subdomains=True)["domains"]
         )
+        #env["YNH_APP_EXTRA_DOMAINS"] = " ".join(set(domain_list(include_app_extra_domains=True)) - set(domain_list()))
     env["YNH_CONTEXT"] = "regenconf"
     env["YNH_HELPERS_VERSION"] = "2"
     # perf: Export all global settings as a environment variable

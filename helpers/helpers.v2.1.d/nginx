@@ -34,23 +34,30 @@
 # This allows to enable/disable specific behaviors dependenging on the install
 # location
 ynh_config_add_nginx() {
+    local finalnginxconf
+    local domain_var_name
+    local extra_domains_list
+    extra_domains_list="$(ynh_app_setting_get --app="$app" --key=_extra_domains |
+        jq -r 'to_entries | .[] | {key: ("_" + .key), value: .value} | join(",")')"
 
-    local finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
+    for entry in ",$domain" $extra_domains_list; do
+        finalnginxconf="/etc/nginx/conf.d/${entry#*,}.d/$app.conf"
 
-    ynh_config_add --template="nginx.conf" --destination="$finalnginxconf"
+        ynh_config_add --template="nginx${entry%,*}.conf" --destination="$finalnginxconf"
 
-    if [ "${path:-}" != "/" ]; then
-        ynh_replace --match="^#sub_path_only" --replace="" --file="$finalnginxconf"
-    else
-        ynh_replace --match="^#root_path_only" --replace="" --file="$finalnginxconf"
-    fi
+        if [ "${path:-}" != "/" ]; then
+            ynh_replace --match="^#sub_path_only" --replace="" --file="$finalnginxconf"
+        else
+            ynh_replace --match="^#root_path_only" --replace="" --file="$finalnginxconf"
+        fi
 
-    # Delete REMOTE_USER mapping, it's already provided by
-    # /etc/nginx/fastcgi_params which all PHP apps include, and maps to the
-    # appropriate YNH_USER HTTP header instead of $remote_user
-    sed -i '/fastcgi_param\s*REMOTE_USER/d' "$finalnginxconf"
+        # Delete REMOTE_USER mapping, it's already provided by
+        # /etc/nginx/fastcgi_params which all PHP apps include, and maps to the
+        # appropriate YNH_USER HTTP header instead of $remote_user
+        sed -i '/fastcgi_param\s*REMOTE_USER/d' "$finalnginxconf"
 
-    ynh_store_file_checksum "$finalnginxconf"
+        ynh_store_file_checksum "$finalnginxconf"
+    done
 
     ynh_systemctl --service=nginx --action=reload
 }
@@ -67,15 +74,22 @@ ynh_config_remove_nginx() {
 #
 # usage: ynh_config_change_url_nginx
 ynh_config_change_url_nginx() {
+    local domain_var_name
+    local extra_domains_list
+    extra_domains_name="$(ynh_app_setting_get --app="$app" --key=_extra_domains | jq -r 'keys | ("_" + .[])')"
 
-    # Make a backup of the original NGINX config file if manually modified
-    # (nb: this is possibly different from the same instruction called by
-    # ynh_config_add inside ynh_config_add_nginx because the path may have
-    # changed if we're changing the domain too...)
-    local old_nginx_conf_path=/etc/nginx/conf.d/$old_domain.d/$app.conf
-    ynh_backup_if_checksum_is_different "$old_nginx_conf_path"
-    ynh_delete_file_checksum "$old_nginx_conf_path"
-    ynh_safe_rm "$old_nginx_conf_path"
+    for entry in "" $extra_domains_name; do
+        domain_var_name="old_domain$entry"
+
+        # Make a backup of the original NGINX config file if manually modified
+        # (nb: this is possibly different from the same instruction called by
+        # ynh_config_add inside ynh_config_add_nginx because the path may have
+        # changed if we're changing the domain too...)
+        local old_nginx_conf_path=/etc/nginx/conf.d/${!domain_var_name}.d/$app.conf
+        ynh_backup_if_checksum_is_different "$old_nginx_conf_path"
+        ynh_delete_file_checksum "$old_nginx_conf_path"
+        ynh_safe_rm "$old_nginx_conf_path"
+    done
 
     # Regen the nginx conf
     ynh_config_add_nginx
