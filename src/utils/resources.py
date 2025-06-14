@@ -1665,7 +1665,7 @@ class RedisDatabaseAppResource(AppResource):
         colliding_names = set(db_names) & set(alt_names)
         if colliding_names:
             raise YunohostError(
-                f"Cannot define properties whose names are also specified as previous_names: {", ".join(colliding_names)}",
+                f'Cannot define properties whose names are also specified as previous_names: {", ".join(colliding_names)}',
                 raw_msg=True
             )
         super().__init__({"redis": properties}, *args, **kwargs)
