@@ -28,8 +28,8 @@ from moulinette import m18n
 from moulinette.utils.filesystem import mkdir, read_json, read_yaml, write_to_json
 from moulinette.utils.network import download_json
 
-from yunohost.utils.error import YunohostError
-from yunohost.utils.i18n import _value_for_locale
+from .utils.error import YunohostError
+from .utils.i18n import _value_for_locale
 
 logger = getLogger("yunohost.app_catalog")
 
@@ -56,7 +56,7 @@ def app_catalog(
     Return a dict of apps available to installation from Yunohost's app catalog
     """
 
-    from yunohost.app import _installed_apps
+    from .app import _installed_apps
 
     # Get app list from catalog cache
     catalog = _load_apps_catalog()

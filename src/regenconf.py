@@ -31,9 +31,9 @@ from moulinette import m18n
 from moulinette.utils.filesystem import mkdir
 from moulinette.utils.process import check_output
 
-from yunohost.hook import hook_callback, hook_list
-from yunohost.log import is_unit_operation
-from yunohost.utils.error import YunohostError
+from .hook import hook_callback, hook_list
+from .log import is_unit_operation
+from .utils.error import YunohostError
 
 BASE_CONF_PATH = "/var/cache/yunohost/regenconf"
 BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, "backup")
@@ -66,7 +66,7 @@ def regen_conf(
 
     """
 
-    from yunohost.settings import settings_get
+    from .settings import settings_get
 
     if names is None:
         names = []
@@ -132,7 +132,7 @@ def regen_conf(
     # [Optimization] We compute and feed the domain list to the conf regen
     # hooks to avoid having to call "yunohost domain list" so many times which
     # ends up in wasted time (about 3~5 seconds per call on a RPi2)
-    from yunohost.domain import domain_list
+    from .domain import domain_list
 
     env = {}
     # Well we can only do domain_list() if postinstall is done ...

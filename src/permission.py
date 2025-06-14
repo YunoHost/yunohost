@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, BinaryIO, Literal, TypedDict, NotRequired, cas
 
 from moulinette import m18n
 from moulinette.utils.filesystem import read_yaml, write_to_yaml
-from yunohost.utils.error import YunohostError, YunohostValidationError
+from .utils.error import YunohostError, YunohostValidationError
 
 if TYPE_CHECKING:
     from moulinette.utils.log import MoulinetteLogger
@@ -83,8 +83,8 @@ def user_permission_list(
     """
 
     # Fetch relevant informations
-    from yunohost.app import _installed_apps, _get_app_settings
-    from yunohost.user import user_group_list
+    from .app import _installed_apps, _get_app_settings
+    from .user import user_group_list
 
     # Parse / organize information to be outputed
     filter_ = apps
@@ -210,8 +210,8 @@ def user_permission_update(
         protected      -- (optional) Define if the permission can be added/removed to the visitor group
         force          -- (optional) Give the possibility to add/remove access from the visitor group to a protected permission
     """
-    from yunohost.user import user_group_list
-    from yunohost.app import app_ssowatconf
+    from .user import user_group_list
+    from .app import app_ssowatconf
 
     # By default, manipulate main permission
     if "." not in permission:
@@ -402,8 +402,8 @@ def permission_create(
        re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
     """
 
-    from yunohost.app import _is_installed, app_ssowatconf
-    from yunohost.user import user_group_list
+    from .app import _is_installed, app_ssowatconf
+    from .user import user_group_list
 
     # By default, manipulate main permission
     if "." not in permission:
@@ -470,7 +470,7 @@ def permission_url(
         auth_header -- (optional) Define for the URL of this permission, if SSOwat pass the authentication header to the application
         clear_urls  -- (optional) Clean all urls (url and additional_urls)
     """
-    from yunohost.app import app_setting, app_ssowatconf
+    from .app import app_setting, app_ssowatconf
 
     # By default, manipulate main permission
     if "." not in permission:
@@ -569,7 +569,7 @@ def permission_url(
 def permission_delete(
     permission: str, force: bool = False, sync_perm: bool = True
 ) -> None:
-    from yunohost.app import app_setting, _assert_is_installed, app_ssowatconf
+    from .app import app_setting, _assert_is_installed, app_ssowatconf
 
     # By default, manipulate main permission
     if "." not in permission:
@@ -605,7 +605,7 @@ def _sync_permissions_with_ldap() -> None:
     Sychronize the 'memberUid' / 'inheritPermission' attributes in the ldap permission object
     according to the group members and permission "allowed" info from app settings (from user_permission_list)
     """
-    from yunohost.utils.ldap import _get_ldap_interface
+    from .utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
 
@@ -716,7 +716,7 @@ def _update_app_permission_setting(
     hide_from_public: bool | None = None,
     order: int | None = None,
 ) -> None:
-    from yunohost.app import app_setting
+    from .app import app_setting
 
     app, sub_permission = permission.split(".")
     update_settings: AppPermInfos = {}  # type: ignore
@@ -743,7 +743,7 @@ def _update_app_permission_setting(
 
     elif logo is not None:
 
-        from yunohost.app import APPS_CATALOG_LOGOS
+        from .app import APPS_CATALOG_LOGOS
         import hashlib
 
         logo_content = logo.read()
@@ -817,7 +817,7 @@ def _update_app_permission_setting(
             old_allowed_users - new_allowed_users - effectively_removed_users
         )
 
-        from yunohost.hook import hook_callback
+        from .hook import hook_callback
 
         if effectively_added_users or effectively_added_group:
             hook_callback(
@@ -933,8 +933,8 @@ def _validate_and_sanitize_permission_url(
         re:^/api/.*|/scripts/api.js$
     """
 
-    from yunohost.app import _assert_no_conflicting_apps
-    from yunohost.domain import _assert_domain_exists
+    from .app import _assert_no_conflicting_apps
+    from .domain import _assert_domain_exists
 
     #
     # Regexes

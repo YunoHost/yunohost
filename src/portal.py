@@ -25,11 +25,11 @@ from typing import Any, Union
 import ldap
 from moulinette.utils.filesystem import read_json
 
-from yunohost.authenticators.ldap_ynhuser import Authenticator as Auth
-from yunohost.authenticators.ldap_ynhuser import user_is_allowed_on_domain
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.ldap import LDAPInterface, _get_ldap_interface, _ldap_path_extract
-from yunohost.utils.password import (
+from .authenticators.ldap_ynhuser import Authenticator as Auth
+from .authenticators.ldap_ynhuser import user_is_allowed_on_domain
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.ldap import LDAPInterface, _get_ldap_interface, _ldap_path_extract
+from .utils.password import (
     _hash_user_password,
     assert_password_is_compatible,
     assert_password_is_strong_enough,
@@ -194,7 +194,7 @@ def portal_update(
     currentpassword: Union[str, None] = None,
     newpassword: Union[str, None] = None,
 ):
-    from yunohost.domain import domain_list
+    from .domain import domain_list
 
     domains = domain_list()["domains"]
     username, domain, current_user = _get_user_infos(

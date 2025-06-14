@@ -35,8 +35,8 @@ from moulinette.core import MoulinetteError
 from moulinette.utils.filesystem import read_file, read_yaml
 from moulinette.utils.log import SUCCESS
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.system import get_ynh_package_version
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.system import get_ynh_package_version
 
 logger = getLogger("yunohost.log")
 
@@ -341,7 +341,7 @@ def log_show(
         infos["name"] = base_filename
 
     if share:
-        from yunohost.utils.yunopaste import yunopaste
+        from .utils.yunopaste import yunopaste
 
         content = ""
         if os.path.exists(md_path):
@@ -418,7 +418,7 @@ def log_show(
 
     # Display logs if exist
     if os.path.exists(log_path):
-        from yunohost.service import _tail
+        from .service import _tail
 
         if number and filter_irrelevant:
             logs = _tail(log_path, int(number * 6))
@@ -622,7 +622,7 @@ class OperationLogger:
         if not self.parent:
             if Moulinette.interface.type == "api":
                 try:
-                    from yunohost.authenticators.ldap_admin import Authenticator as Auth
+                    from .authenticators.ldap_admin import Authenticator as Auth
 
                     auth = Auth().get_session_cookie()
                     self.started_by = auth["user"]
@@ -740,7 +740,7 @@ class OperationLogger:
 
         # Only do this one for the main parent operation
         if not self.parent:
-            from yunohost.utils.sse import SSELogStreamingHandler
+            from .utils.sse import SSELogStreamingHandler
 
             self.sse_handler = SSELogStreamingHandler(self.name, flash=self.flash)
             self.sse_handler.level = INFO if not self.flash else SUCCESS

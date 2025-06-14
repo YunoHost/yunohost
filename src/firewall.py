@@ -28,8 +28,8 @@ import miniupnpc
 import yaml
 from moulinette import m18n
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.regenconf import regen_conf
+from .utils.error import YunohostError, YunohostValidationError
+from .regenconf import regen_conf
 
 
 logger: Any = getLogger("yunohost.firewall")
