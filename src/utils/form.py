@@ -1102,7 +1102,7 @@ class BooleanOption(BaseInputOption):
         }
         return attrs
 
-    def _get_prompt_message(self, value: bool | None) -> str:
+    def _get_prompt_message(self, value: Any) -> str:
         message = super()._get_prompt_message(value)
 
         if not self.readonly:

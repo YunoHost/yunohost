@@ -161,15 +161,15 @@ def user_permission_list(
             g: infos["members"] for g, infos in user_group_list()["groups"].items()
         }
         for infos in permissions.values():
-            infos["corresponding_users"] = set()
+            corresponding_users: set[str] = set()
             for group in infos["allowed"]:
                 # FIXME: somewhere we may want to have some sort of garbage collection
                 # to automatically remove user/groups from the "allowed" info when they
                 # somehow disappeared from the system (for example this may happen when
                 # restoring an app on which not all the user/group exist)
                 users_in_group = set(map_group_to_users.get(group, []))
-                infos["corresponding_users"] |= users_in_group
-            infos["corresponding_users"] = list(sorted(infos["corresponding_users"]))
+                corresponding_users |= users_in_group
+            infos["corresponding_users"] = list(sorted(corresponding_users))
     else:
         # Keep the output concise when used without --full, meant to not bloat CLI
         for infos in permissions.values():
@@ -621,25 +621,22 @@ def _sync_permissions_with_ldap() -> None:
     }
 
     # Compute the todolist by comparing the current state vs. the wanted state for each perm
-
-    todos: dict[str, dict[str, set[str]] | list[str]] = {
-        "create": {},
-        "delete": [],
-        "update": {},
-    }
+    todos_create: dict[str, set[str]]
+    todos_delete: list[str]
+    todos_update: dict[str, set[str]]
 
     for perm in permissions_current.keys():
         if perm not in permissions_wanted:
-            todos["delete"].append(perm)  # type: ignore
+            todos_delete.append(perm)  # type: ignore
     for perm, members_wanted in permissions_wanted.items():
         if perm not in permissions_current:
-            todos["create"][perm] = members_wanted
+            todos_create[perm] = members_wanted
         elif members_wanted != permissions_current[perm]:
-            todos["update"][perm] = members_wanted
+            todos_update[perm] = members_wanted
 
     # Actually perform the delete / create / update operations
 
-    for perm in todos["delete"]:
+    for perm in todos_delete:
         logger.debug(f"Removing LDAP perm {perm}")
         try:
             ldap.remove(f"cn={perm},ou=permission")
@@ -647,7 +644,7 @@ def _sync_permissions_with_ldap() -> None:
             raise YunohostError("permission_deletion_failed", permission=perm, error=e)
 
     all_gids = {str(x.gr_gid) for x in grp.getgrall()}
-    for perm in todos["create"]:
+    for perm in todos_create:
         logger.debug(f"Creating LDAP perm {perm}")
         app = perm.split(".")[0]
         if app in SYSTEM_PERMS:
@@ -682,7 +679,7 @@ def _sync_permissions_with_ldap() -> None:
             ldap.add(f"cn={perm},ou=permission", attr_dict)
         except Exception as e:
             raise YunohostError("permission_creation_failed", permission=perm, error=e)
-    for perm in todos["update"]:
+    for perm in todos_update:
         logger.debug(f"Updating LDAP perm {perm}")
         try:
             # Same note about redundant memberUid vs inheritPermission as before
