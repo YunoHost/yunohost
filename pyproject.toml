@@ -1,0 +1,92 @@
+[project]
+name = "yunohost"
+description = "An operating system aiming to simplify as much as possible the administration of a server"
+readme = "README.md"
+dynamic = ["version"]
+authors = [
+    { name = "YunoHost", email = "yunohost@yunohost.org" }
+]
+
+requires-python = ">=3.11"
+
+
+[tool.mypy]
+ignore_missing_imports = true
+follow_imports = "silent"
+exclude = [
+    "acme_tiny",
+    "migrations",
+    "tests"
+]
+
+
+[tool.black]
+
+
+[tool.pytest.ini_options]
+addopts = "-s -v"
+norecursedirs = ["dist", "doc", "build", ".tox", ".eggs"]
+testpaths = ["tests/"]
+markers = [
+    "with_system_archive_from_3p8",
+    "with_backup_recommended_app_installed",
+    "clean_opt_dir",
+    "with_wordpress_archive_from_3p8",
+    "with_legacy_app_installed",
+    "with_backup_recommended_app_installed_with_ynh_restore",
+    "with_permission_app_installed",
+    "other_domains",
+    "with_custom_domain",
+]
+filterwarnings = [
+    "ignore::urllib3.exceptions.InsecureRequestWarning",
+]
+
+
+[tool.coverage.run]
+relative_files = true
+branch = true
+source = ["src/"]
+
+[tool.coverage.report]
+omit = [
+    "src/tests/*",
+    "src/vendor/*",
+    "/usr/lib/moulinette/yunohost/*",
+    "/usr/lib/python3/dist-packages/yunohost/tests/*",
+    "/usr/lib/python3/dist-packages/yunohost/vendor/*",
+]
+
+
+[tool.tox]
+env_list = ["py311-lint", "py311-invalidcode", "py311-black-check", "py311-black-run"]
+
+[tool.tox.env_run_base]
+skip_install = true
+allowlist_externals = ["black"]
+
+[tool.tox.env.py311-lint]
+deps = ["flake8"]
+commands = [[
+    "flake8", "src", "doc", "maintenance", "tests",
+    "--exclude", "src/tests,src/vendor", "--ignore", "E402,E501,E203,W503,E741"
+]]
+
+[tool.tox.env.py311-invalidcode]
+deps = ["flake8"]
+commands = [[
+    "flake8", "src", "bin", "maintenance",
+    "--exclude", "src/tests,src/vendor", "--select", "F,E722,W605"
+]]
+
+[tool.tox.env.py311-mypy]
+deps = ["mypy>=0.900"]
+commands = [["mypy", "--install-types", "--non-interactive", "src/",]]
+
+[tool.tox.env.py311-black-check]
+deps = ["flake8"]
+commands = [["black", "bin", "src", "doc", "maintenance", "tests", "--check", "--diff"]]
+
+[tool.tox.env.py311-black-run]
+deps = ["black"]
+commands = [["black", "bin", "src", "doc", "maintenance", "tests"]]
