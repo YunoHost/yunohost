@@ -9,6 +9,32 @@ authors = [
 
 requires-python = ">=3.11"
 
+# These dependencies might not be up to date, please see debian/control instead
+dependencies = [
+    "cryptography",
+    "dbus-python",
+    "dnspython",
+    "email-validator",
+    "jinja2",
+    "jwt",
+    "lexicon",
+    "miniupnpc",
+    "packaging",
+    "passlib",
+    "psutil",
+    "publicsuffix2",
+    "pydantic",
+    "pyopenssl",
+    "python-ldap",
+    "python-magic",
+    "requests",
+    "sdbus",
+    "sortedcollections",
+    "toml",
+    "zeroconf",
+    "zmq",
+]
+
 
 [tool.mypy]
 ignore_missing_imports = true
