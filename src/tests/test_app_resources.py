@@ -84,6 +84,7 @@ def clean():
     os.system("rm -rf /home/yunohost.app/testapp")
     os.system("apt remove lolcat sl nyancat influxdb2 >/dev/null 2>/dev/null")
     os.system("userdel testapp 2>/dev/null")
+    os.system("redis-cli flushall")
 
     for p in user_permission_list()["permissions"]:
         if p.startswith("testapp."):
@@ -324,7 +325,7 @@ def test_resource_redis():
     r(conf, "testapp").provision_or_update()
     assert os.system("redis-cli INFO keyspace | grep -q '^db0'") == 0
     assert os.system("redis-cli INFO keyspace | grep -q '^db1'") != 0
-    assert app_setting("testapp", "redis_db")
+    assert app_setting("testapp", "redis_db") ==  0
 
     conf = {
         "redis_db": {},
@@ -351,8 +352,8 @@ def test_resource_redis():
     assert not app_setting("testapp", "celery_db")
 
     conf = {
-        "celery_redis_db": {
-            "previous_names": "celery_db"
+        "celery_redis_db_renamed": {
+            "previous_names": ["celery_db", "celery_redis_db"]
         }
     }
     r(conf, "testapp").provision_or_update()
@@ -360,7 +361,8 @@ def test_resource_redis():
     assert os.system("redis-cli INFO keyspace | grep -q '^db1'") == 0
     assert os.system("redis-cli INFO keyspace | grep -q '^db2'") != 0
     assert app_setting("testapp", "redis_db") is None
-    assert app_setting("testapp", "celery_redis_db") == 1
+    assert app_setting("testapp", "celery_redis_db") is None
+    assert app_setting("testapp", "celery_redis_db_renamed") == 1
 
     r(conf, "testapp").deprovision()
     assert os.system("redis-cli INFO keyspace | grep -q '^db'") != 0

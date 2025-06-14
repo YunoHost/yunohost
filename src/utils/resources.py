@@ -1670,8 +1670,12 @@ class RedisDatabaseAppResource(AppResource):
             )
         super().__init__({"redis": properties}, *args, **kwargs)
 
+    def _ensure_array(self, val: str|list[str]):
+        return [val] if isinstance(val, str) else val
+
     def _get_all_alt_names(self, properties: Dict[str, Any]):
-        return [alt_name for subprops in properties.values() for alt_name in subprops.get('previous_names', [])]
+        # FIXME: Maybe this is a bit too condensed
+        return [alt_name for subprops in properties.values() for alt_name in self._ensure_array(subprops.get('previous_names', []))]
 
     def _free_db(self, count=1):
         info = check_output(
@@ -1680,12 +1684,13 @@ class RedisDatabaseAppResource(AppResource):
         databases_num_str = re.findall(r'^db(\d+):', info, flags=re.MULTILINE)
         databases_num = [int(num) for num in databases_num_str]
         redis_conf_path='/etc/redis/redis.conf'
-        max_dbs = searchf(r'^(?<=database\s+)(\d+)', redis_conf_path, flags=re.MULTILINE)
-        if max_dbs is None:
+        max_dbs_match = searchf(r'^databases\s+(\d+)', redis_conf_path, count=1, flags=re.MULTILINE)
+        if max_dbs_match is None:
             raise YunohostError(
                 f"Can't read the maximal number of Redis database allowed in {redis_conf_path}",
                 raw_msg=True
             )
+        max_dbs = int(max_dbs_match)
         free_dbs = set(range(0, max_dbs)) - set(databases_num)
         if len(free_dbs) < count:
             raise YunohostError(
@@ -1704,7 +1709,8 @@ class RedisDatabaseAppResource(AppResource):
             if self.get_setting(db_name) is not None:
                 dbs_to_provision.remove(db_name)
                 continue
-            for alt_name in self.redis.get(db_name, {}).get('previous_names', []):
+            previous_names = self.redis.get(db_name, {}).get('previous_names', [])
+            for alt_name in self._ensure_array(previous_names):
                 db_num = self.get_setting(alt_name)
                 if db_num is not None:
                     self.set_setting(db_name, db_num)
@@ -1715,10 +1721,13 @@ class RedisDatabaseAppResource(AppResource):
         new_db_nums = self._free_db(len(dbs_to_provision))
         for (db_name, db_num) in zip(dbs_to_provision, new_db_nums):
             self.set_setting(db_name, db_num)
+            # Set some unrelevant key so it is reserved for this app
+            # even if no key is put
+            os.system(f'redis-cli -n "{db_num}" SET __YNH_PROVISIONNED true')
 
     def deprovision(self, context: Dict = {}):
         for env in self.redis:
-            os.system(f"redis-cli -n \"{self.get_setting(env)}\" flushdb")
+            os.system(f'redis-cli -n "{self.get_setting(env)}" flushdb')
             self.delete_setting(env)
 
 
