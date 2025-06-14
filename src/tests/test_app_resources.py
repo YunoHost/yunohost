@@ -70,6 +70,7 @@ def setup_function(function):
     os.system(
         "echo 'description.en = \"A dummy app to test app resources\"' >> /etc/yunohost/apps/testapp/manifest.toml"
     )
+    os.system('apt install redis-server -y')
 
 
 def teardown_function(function):
@@ -314,6 +315,57 @@ def test_resource_database():
     assert not app_setting("testapp", "db_user")
     assert not app_setting("testapp", "db_pwd")
 
+def test_resource_redis():
+    r = AppResourceClassesByType["redis"]
+    conf = {}
+    assert os.system("redis-cli INFO keyspace | grep -q '^db'") != 0
+    assert not app_setting("testapp", "redis_db")
+
+    r(conf, "testapp").provision_or_update()
+    assert os.system("redis-cli INFO keyspace | grep -q '^db0'") == 0
+    assert os.system("redis-cli INFO keyspace | grep -q '^db1'") != 0
+    assert app_setting("testapp", "redis_db")
+
+    conf = {
+        "redis_db": {},
+        "celery_db": {}
+    }
+    r(conf, "testapp").provision_or_update()
+    assert os.system("redis-cli INFO keyspace | grep -q '^db0'") == 0
+    assert os.system("redis-cli INFO keyspace | grep -q '^db1'") == 0
+    assert app_setting("testapp", "redis_db") == 0
+    assert app_setting("testapp", "celery_db") == 1
+
+    conf = {
+        "redis_db": {},
+        "celery_redis_db": {
+            "previous_names": "celery_db"
+        }
+    }
+    r(conf, "testapp").provision_or_update()
+    assert os.system("redis-cli INFO keyspace | grep -q '^db0'") == 0
+    assert os.system("redis-cli INFO keyspace | grep -q '^db1'") == 0
+    assert os.system("redis-cli INFO keyspace | grep -q '^db2'") != 0
+    assert app_setting("testapp", "redis_db") == 0
+    assert app_setting("testapp", "celery_redis_db") == 1
+    assert not app_setting("testapp", "celery_db")
+
+    conf = {
+        "celery_redis_db": {
+            "previous_names": "celery_db"
+        }
+    }
+    r(conf, "testapp").provision_or_update()
+    assert os.system("redis-cli INFO keyspace | grep -q '^db0'") != 0
+    assert os.system("redis-cli INFO keyspace | grep -q '^db1'") == 0
+    assert os.system("redis-cli INFO keyspace | grep -q '^db2'") != 0
+    assert app_setting("testapp", "redis_db") is None
+    assert app_setting("testapp", "celery_redis_db") == 1
+
+    r(conf, "testapp").deprovision()
+    assert os.system("redis-cli INFO keyspace | grep -q '^db'") != 0
+    assert app_setting("testapp", "redis_db") is None
+    assert app_setting("testapp", "celery_redis_db") is None
 
 def test_resource_apt():
     r = AppResourceClassesByType["apt"]
