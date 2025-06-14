@@ -21,6 +21,7 @@
 import copy
 import os
 import random
+import re
 import shutil
 import subprocess
 import tempfile
@@ -30,7 +31,7 @@ from typing import Any, Callable, Dict, List, Union
 from moulinette import m18n
 from moulinette.utils.filesystem import chmod, chown, mkdir, rm, write_to_file
 from moulinette.utils.process import check_output
-from moulinette.utils.text import random_ascii
+from moulinette.utils.text import random_ascii, searchf
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import debian_version, debian_version_id, system_arch
@@ -1606,6 +1607,119 @@ ynh_{db_helper_name}_user_exists "{db_user}" && ynh_{db_helper_name}_drop_user "
         self.delete_setting("db_name")
         self.delete_setting("db_user")
         self.delete_setting("db_pwd")
+
+
+class RedisDatabaseAppResource(AppResource):
+    """
+    Initialize one or many Redis databases. By default, it initializes a single one, whose database number is stored in $redis_db.
+    In case you want to create more, you may specify the `env_vars` attributes.
+
+    Your app may need to store info in a Redis database for typically store user session info.
+
+    **⚠️ Important**: It is supposed that info in Redis databases are transient, and thus they are not backed up.
+
+    ### Example
+
+    ```toml
+    [resources.redis]
+    # This should be fine empty for most cases. If you want to customize the env variable or to provision other redis databases,
+
+    [resources.redis.redis_db] # Will provision a database available as $redis_db (or __REDIS_DB__ in conf files)
+
+    [resources.redis.celery_redis_db] # Will provision a database available as $celery_redis_db (or __CELERY_REDIS_DB__ in conf files)
+    previous_names = [ "celery_db" ] # During an upgrade, if `$celery_db` exists, it will be renamed to `$celery_redis_db`.
+    ```
+
+    ### Properties (for each databases)
+
+    - `previous_names`: (optional) an array of previous names. It is meant to help you rename your env variables during an upgrade.
+
+    ### Provision/Update
+
+    - When `[resources.redis]` is specified but empty, it will provision a single redis database whose number will be available in the variable named `$redis_db`.
+    - In order to provision multiple databases, specify them as `[resources.redis.your_fancy_name]` for each one. In this example, the database number will be available as `$your_fancy_name`.
+    - You may specify new env variables or remove ones, the upgrade handles database addition / removals.
+
+    ### Deprovision
+
+    - Deletes all the data in the Redis database
+
+    ### Legacy
+
+    - If you used to provision a single redis database and store its value in the settings as `$redis_db`, just specify `[resources.redis]` without anything else to worry about
+    - Otherwise, just specify the redis databases you want to create as specified in the example and in the "Provision/Update" section above.
+
+    """
+
+    type = "redis"
+    priority = 90
+
+    default_properties: Dict[str, Any] = {}
+    redis: Dict[str, Dict[str, Any]]
+
+    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
+        if not properties:
+            properties = { "redis_db": {} }
+        db_names = [name for name in properties]
+        alt_names = self._get_all_alt_names(properties)
+        colliding_names = set(db_names) & set(alt_names)
+        if colliding_names:
+            raise YunohostError(
+                f"Cannot define properties whose names are also specified as previous_names: {", ".join(colliding_names)}",
+                raw_msg=True
+            )
+        super().__init__({"redis": properties}, *args, **kwargs)
+
+    def _get_all_alt_names(self, properties: Dict[str, Any]):
+        return [alt_name for subprops in properties.values() for alt_name in subprops.get('previous_names', [])]
+
+    def _free_db(self, count=1):
+        info = check_output(
+            "redis-cli INFO keyspace"
+        )
+        databases_num_str = re.findall(r'^db(\d+):', info, flags=re.MULTILINE)
+        databases_num = [int(num) for num in databases_num_str]
+        redis_conf_path='/etc/redis/redis.conf'
+        max_dbs = searchf(r'^(?<=database\s+)(\d+)', redis_conf_path, flags=re.MULTILINE)
+        if max_dbs is None:
+            raise YunohostError(
+                f"Can't read the maximal number of Redis database allowed in {redis_conf_path}",
+                raw_msg=True
+            )
+        free_dbs = set(range(0, max_dbs)) - set(databases_num)
+        if len(free_dbs) < count:
+            raise YunohostError(
+                f'Uhoh, you seem to have reached the maximum of Redis databases allowed. You may increase the value of "database" in {redis_conf_path} to increase it.',
+                raw_msg=True
+            )
+        return list(free_dbs)[:count]
+
+    def provision_or_update(self, context: Dict = {}):
+        # I would like to fetch the previous properties so I can deprovision redis databases missing after an upgrade
+
+        db_names = [name for name in self.redis]
+        dbs_to_provision = set(db_names)
+        for db_name in db_names:
+            # First check whether the env variable exist in the app's settings
+            if self.get_setting(db_name) is not None:
+                dbs_to_provision.remove(db_name)
+                continue
+            for alt_name in self.redis.get(db_name, {}).get('previous_names', []):
+                db_num = self.get_setting(alt_name)
+                if db_num is not None:
+                    self.set_setting(db_name, db_num)
+                    self.delete_setting(alt_name)
+                    dbs_to_provision.remove(db_name)
+                    break
+
+        new_db_nums = self._free_db(len(dbs_to_provision))
+        for (db_name, db_num) in zip(dbs_to_provision, new_db_nums):
+            self.set_setting(db_name, db_num)
+
+    def deprovision(self, context: Dict = {}):
+        for env in self.redis:
+            os.system(f"redis-cli -n \"{self.get_setting(env)}\" flushdb")
+            self.delete_setting(env)
 
 
 class NodejsAppResource(AppResource):
