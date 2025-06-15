@@ -258,12 +258,8 @@ ynh_setup_source() {
             fi
             strip=(--strip-components "$sub_dirs")
         fi
-        local use_program=()
-        if [[ "$src_format" =~ ^tar.zst$ ]]; then
-            use_program=(--use-compress-program=unzstd)
-        fi
         if [[ "$src_format" =~ ^tar.gz|tar.bz2|tar.xz|tar.zst|tar$ ]]; then
-            tar --extract --file="$src_filename" --directory="$dest_dir" "${strip[@]}" "${use_program[@]}"
+            tar --extract --file="$src_filename" --directory="$dest_dir" "${strip[@]}"
         else
             ynh_die "Archive format unrecognized."
         fi
