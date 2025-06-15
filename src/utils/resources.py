@@ -1735,7 +1735,7 @@ class RedisDatabaseAppResource(AppResource):
             # Set some unrelevant key so it is reserved for this app
             # even if no key is put
             assert (
-                os.system(f'redis-cli -n "{db_num}" SET __YNH_PROVISIONNED true > /dev/null') == 0
+                os.system(f'redis-cli -n "{db_num}" SET __YNH_PROVISIONNED {self.app} > /dev/null') == 0
             ), "Uhoh, cannot provision a Redis DB"
 
         self.set_setting('provisionned_redis_db_names', ",".join(db_names))

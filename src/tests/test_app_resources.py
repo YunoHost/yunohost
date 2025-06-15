@@ -353,7 +353,7 @@ def test_resource_redis():
 
     conf = {
         "celery_redis_db_renamed": {
-            "previous_names": ["celery_db", "celery_redis_db"]
+            "previous_names": ["celery_db", "celery_redis_db"] # Check with an array
         }
     }
     r(conf, "testapp").provision_or_update()
@@ -363,6 +363,19 @@ def test_resource_redis():
     assert app_setting("testapp", "redis_db") is None
     assert app_setting("testapp", "celery_redis_db") is None
     assert app_setting("testapp", "celery_redis_db_renamed") == 1
+
+    conf = {
+        "takes_redis_db_place": {},
+        "celery_redis_db_renamed": {
+            "previous_names": ["celery_db", "celery_redis_db"]
+        }
+    }
+    r(conf, "testapp").provision_or_update()
+    assert os.system("redis-cli INFO keyspace | grep -q '^db0'") == 0
+    assert os.system("redis-cli INFO keyspace | grep -q '^db1'") == 0
+    assert os.system("redis-cli INFO keyspace | grep -q '^db2'") != 0
+    assert app_setting("testapp", "celery_redis_db_renamed") == 1
+    assert app_setting("testapp", "takes_redis_db_place") == 0
 
     r(conf, "testapp").deprovision()
     assert os.system("redis-cli INFO keyspace | grep -q '^db'") != 0
