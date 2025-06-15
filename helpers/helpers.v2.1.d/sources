@@ -234,9 +234,7 @@ ynh_setup_source() {
         if [[ -n "$src_rename" ]]; then
             unxz "$src_filename" -c > "$dest_dir/$src_rename"
         else
-            # If no rename is specified, we use the basename of the source file
-            local src_basename=$(basename "$src_filename")
-            unxz "$src_filename" -c > "$dest_dir/$src_basename"
+            ynh_die "XZ format requires renaming. (You should set rename = \"your_name\" for this source)"
         fi
         ynh_safe_rm "$src_filename"
     elif [[ "$src_format" == "zst" ]]; then
@@ -244,11 +242,11 @@ ynh_setup_source() {
         if [[ "$src_in_subdir" == "true" ]]; then
             ynh_die "ZSTD format does not support stripping components. (You should set in_subdir = false for this source)"
         fi
-        local name=()
         if [[ -n "$src_rename" ]]; then
-            name=(-o "$dest_dir/$src_rename")
+            unzstd "$src_filename" -o "$dest_dir/$src_rename"
+        else
+            ynh_die "ZSTD format requires renaming. (You should set rename = \"your_name\" for this source)"
         fi
-        unzstd "$src_filename"  --output-dir-flat "$dest_dir" "${name[@]}"
         ynh_safe_rm "$src_filename"
     else
         local strip=()
