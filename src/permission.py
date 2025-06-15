@@ -621,9 +621,9 @@ def _sync_permissions_with_ldap() -> None:
     }
 
     # Compute the todolist by comparing the current state vs. the wanted state for each perm
-    todos_create: dict[str, set[str]]
-    todos_delete: list[str]
-    todos_update: dict[str, set[str]]
+    todos_create: dict[str, set[str]] = {}
+    todos_delete: list[str] = []
+    todos_update: dict[str, set[str]] = {}
 
     for perm in permissions_current.keys():
         if perm not in permissions_wanted:
