@@ -26,7 +26,7 @@ import shutil
 import subprocess
 import tempfile
 from logging import getLogger
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, List, Union, Self
 
 from moulinette import m18n
 from moulinette.utils.filesystem import chmod, chown, mkdir, rm, write_to_file
@@ -138,12 +138,14 @@ class AppResourceManager:
                 current_resource = AppResourceClassesByType[name](
                     infos_, self.app, self
                 )
+                wanted_resource.old = current_resource
                 yield ("update", name, current_resource, wanted_resource)
 
 
 class AppResource:
     type: str = ""
     default_properties: Dict[str, Any] = {}
+    old: Self|None = None
 
     def __init__(self, properties: Dict[str, Any], app: str, manager=None):
         self.app = app
@@ -1660,7 +1662,7 @@ class RedisDatabaseAppResource(AppResource):
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
         if not properties:
             properties = { "redis_db": {} }
-        db_names = [name for name in properties]
+        db_names = self._get_all_names(properties)
         alt_names = self._get_all_alt_names(properties)
         colliding_names = set(db_names) & set(alt_names)
         if colliding_names:
@@ -1672,6 +1674,9 @@ class RedisDatabaseAppResource(AppResource):
 
     def _ensure_array(self, val: str|list[str]):
         return [val] if isinstance(val, str) else val
+
+    def _get_all_names(self, properties: Dict[str, Any]):
+        return [name for name in properties]
 
     def _get_all_alt_names(self, properties: Dict[str, Any]):
         return [
@@ -1707,7 +1712,7 @@ class RedisDatabaseAppResource(AppResource):
         self.delete_setting(db_name)
 
     def provision_or_update(self, context: Dict = {}):
-        db_names = [name for name in self.redis]
+        db_names = self._get_all_names(self.redis)
         dbs_to_provision = set(db_names)
         for db_name in db_names:
             # First check whether the env variable exist in the app's settings
@@ -1723,11 +1728,16 @@ class RedisDatabaseAppResource(AppResource):
                     dbs_to_provision.remove(db_name)
                     break
 
-        previously_provisioned_db = set(str(self.get_setting('provisionned_redis_db_names') or '').split(","))
-        dbs_to_deprovision = previously_provisioned_db - set(db_names) - set(self._get_all_alt_names(self.redis))
-        for db_to_deprovision in dbs_to_deprovision:
-            if self.get_setting(db_to_deprovision) is not None:
-                self._deprovision_db(db_to_deprovision)
+        if context.get("action") == "upgrade":
+            if not self.old:
+                raise YunohostError(
+                    "Oops, this should not happen. Please report an error to Yunohost with all the details.",
+                    raw_msg = True
+                )
+            dbs_to_deprovision = set(self._get_all_names(self.old.redis)) - set(db_names) - set(self._get_all_alt_names(self.redis))
+            for db_to_deprovision in dbs_to_deprovision:
+                if self.get_setting(db_to_deprovision) is not None:
+                    self._deprovision_db(db_to_deprovision)
 
         new_db_nums = self._free_db(len(dbs_to_provision))
         for (db_name, db_num) in zip(dbs_to_provision, new_db_nums):

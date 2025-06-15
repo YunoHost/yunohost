@@ -317,12 +317,20 @@ def test_resource_database():
     assert not app_setting("testapp", "db_pwd")
 
 def test_resource_redis():
-    r = AppResourceClassesByType["redis"]
+    wanted = AppResourceClassesByType["redis"]
+    old = None
+    def r(conf, app):
+        nonlocal old
+        wanted.old = old
+        result = wanted(conf, app)
+        old = result
+        return result
+
     conf = {}
     assert os.system("redis-cli INFO keyspace | grep -q '^db'") != 0
     assert not app_setting("testapp", "redis_db")
 
-    r(conf, "testapp").provision_or_update()
+    r(conf, "testapp").provision_or_update({"action": "install"})
     assert os.system("redis-cli INFO keyspace | grep -q '^db0'") == 0
     assert os.system("redis-cli INFO keyspace | grep -q '^db1'") != 0
     assert app_setting("testapp", "redis_db") ==  0
@@ -331,7 +339,7 @@ def test_resource_redis():
         "redis_db": {},
         "celery_db": {}
     }
-    r(conf, "testapp").provision_or_update()
+    r(conf, "testapp").provision_or_update({"action": "upgrade"})
     assert os.system("redis-cli INFO keyspace | grep -q '^db0'") == 0
     assert os.system("redis-cli INFO keyspace | grep -q '^db1'") == 0
     assert app_setting("testapp", "redis_db") == 0
@@ -343,7 +351,7 @@ def test_resource_redis():
             "previous_names": "celery_db" # Check that it works with a str instead of a list[str]
         }
     }
-    r(conf, "testapp").provision_or_update()
+    r(conf, "testapp").provision_or_update({"action": "upgrade"})
     assert os.system("redis-cli INFO keyspace | grep -q '^db0'") == 0
     assert os.system("redis-cli INFO keyspace | grep -q '^db1'") == 0
     assert os.system("redis-cli INFO keyspace | grep -q '^db2'") != 0
@@ -356,7 +364,7 @@ def test_resource_redis():
             "previous_names": ["celery_db", "celery_redis_db"] # Check with an array
         }
     }
-    r(conf, "testapp").provision_or_update()
+    r(conf, "testapp").provision_or_update({"action": "upgrade"})
     assert os.system("redis-cli INFO keyspace | grep -q '^db0'") != 0
     assert os.system("redis-cli INFO keyspace | grep -q '^db1'") == 0
     assert os.system("redis-cli INFO keyspace | grep -q '^db2'") != 0
