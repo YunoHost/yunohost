@@ -1674,8 +1674,11 @@ class RedisDatabaseAppResource(AppResource):
         return [val] if isinstance(val, str) else val
 
     def _get_all_alt_names(self, properties: Dict[str, Any]):
-        # FIXME: Maybe this is a bit too condensed
-        return [alt_name for subprops in properties.values() for alt_name in self._ensure_array(subprops.get('previous_names', []))]
+        return [
+            alt_name
+            for subprops in properties.values()
+                for alt_name in self._ensure_array(subprops.get('previous_names', []))
+        ]
 
     def _free_db(self, count=1):
         info = check_output(
@@ -1699,9 +1702,11 @@ class RedisDatabaseAppResource(AppResource):
             )
         return list(free_dbs)[:count]
 
-    def provision_or_update(self, context: Dict = {}):
-        # I would like to fetch the previous properties so I can deprovision redis databases missing after an upgrade
+    def _deprovision_db(self, db_name):
+        os.system(f'redis-cli -n "{self.get_setting(db_name)}" flushdb >/dev/null 2>/dev/null')
+        self.delete_setting(db_name)
 
+    def provision_or_update(self, context: Dict = {}):
         db_names = [name for name in self.redis]
         dbs_to_provision = set(db_names)
         for db_name in db_names:
@@ -1718,17 +1723,26 @@ class RedisDatabaseAppResource(AppResource):
                     dbs_to_provision.remove(db_name)
                     break
 
+        previously_provisioned_db = set(str(self.get_setting('provisionned_redis_db_names') or '').split(","))
+        dbs_to_deprovision = previously_provisioned_db - set(db_names) - set(self._get_all_alt_names(self.redis))
+        for db_to_deprovision in dbs_to_deprovision:
+            if self.get_setting(db_to_deprovision) is not None:
+                self._deprovision_db(db_to_deprovision)
+
         new_db_nums = self._free_db(len(dbs_to_provision))
         for (db_name, db_num) in zip(dbs_to_provision, new_db_nums):
             self.set_setting(db_name, db_num)
             # Set some unrelevant key so it is reserved for this app
             # even if no key is put
-            os.system(f'redis-cli -n "{db_num}" SET __YNH_PROVISIONNED true')
+            assert (
+                os.system(f'redis-cli -n "{db_num}" SET __YNH_PROVISIONNED true > /dev/null') == 0
+            ), "Uhoh, cannot provision a Redis DB"
+
+        self.set_setting('provisionned_redis_db_names', ",".join(db_names))
 
     def deprovision(self, context: Dict = {}):
-        for env in self.redis:
-            os.system(f'redis-cli -n "{self.get_setting(env)}" flushdb')
-            self.delete_setting(env)
+        for db_name in self.redis:
+            self._deprovision_db(db_name)
 
 
 class NodejsAppResource(AppResource):

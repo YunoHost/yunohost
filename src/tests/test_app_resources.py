@@ -84,7 +84,7 @@ def clean():
     os.system("rm -rf /home/yunohost.app/testapp")
     os.system("apt remove lolcat sl nyancat influxdb2 >/dev/null 2>/dev/null")
     os.system("userdel testapp 2>/dev/null")
-    os.system("redis-cli flushall")
+    os.system("redis-cli flushall > /dev/null")
 
     for p in user_permission_list()["permissions"]:
         if p.startswith("testapp."):
@@ -340,7 +340,7 @@ def test_resource_redis():
     conf = {
         "redis_db": {},
         "celery_redis_db": {
-            "previous_names": "celery_db"
+            "previous_names": "celery_db" # Check that it works with a str instead of a list[str]
         }
     }
     r(conf, "testapp").provision_or_update()
