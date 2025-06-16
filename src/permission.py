@@ -182,7 +182,7 @@ def user_permission_list(
                 "show_tile",
             ]:
                 if key in infos:
-                    del infos[key]
+                    del infos[key]  # type: ignore
 
     return {"permissions": permissions}
 
