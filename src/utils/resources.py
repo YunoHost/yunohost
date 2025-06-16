@@ -673,7 +673,7 @@ class PermissionsResource(AppResource):
 
         settings = _get_app_settings(self.app)
         for perm, infos in self.permissions.items():
-            if infos.get("url") and "__" in infos.get("url"):
+            if infos.get("url") and "__" in infos.get("url"):  # type: ignore
                 infos["url"] = _hydrate_app_template(infos["url"], settings)
 
             if infos.get("additional_urls"):
