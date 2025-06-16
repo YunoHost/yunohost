@@ -1,0 +1,31 @@
+name: Run Python linting
+
+on:
+  push:
+    branches: [ "dev" ]
+  pull_request:
+
+jobs:
+  python-lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.11
+    - name: Install tox and any other packages
+      run: pip install tox toml pyyaml
+
+    - if: success() || failure()
+      run: tox -e py311-lint
+
+    - if: success() || failure()
+      run: tox -e py311-invalidcode
+
+    - if: success() || failure()
+      run: tox -e py311-mypy
+
+    - name: Check i18n keys
+      if: success() || failure()
+      run: python3 maintenance/missing_i18n_keys.py --check
