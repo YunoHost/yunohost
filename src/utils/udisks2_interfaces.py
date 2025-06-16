@@ -857,7 +857,9 @@ class NVMeController(  # type: ignore[call-arg]
         raise NotImplementedError
 
 
-class AtaDisk(Disk, AtaController): ...  # noqa: E704
+class AtaDisk(Disk, AtaController):
+    pass
 
 
-class NvmeDisk(Disk, NVMeController): ...  # noqa: E704
+class NvmeDisk(Disk, NVMeController):
+    pass
