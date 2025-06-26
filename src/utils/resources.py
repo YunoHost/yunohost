@@ -334,7 +334,8 @@ class SourcesResource(AppResource):
         autoupdate.strategy = "latest_github_tag"
     ```
 
-    Or more complex examples with several element, including one with asset that depends on the arch
+    Or more complex examples with several element, including one with asset that depends on the CPU architecture.
+    With [packaging format v2.x](https://github.com/YunoHost/apps/blob/a5c97003e730dfd2303631a57ade2fc755f960ca/schemas/manifest.v2.schema.json#L169-L172), YunoHost currently supports `amd64`, `armhf`, `arm64` and `i386` architectures.
 
     ```toml
     [resources.sources]
