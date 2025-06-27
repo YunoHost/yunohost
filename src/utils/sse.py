@@ -84,7 +84,7 @@ class SSELogStreamingHandler(Handler):
         self.socket = self.context.socket(zmq.PUB)
         self.socket.connect(LOG_BROKER_BACKEND_ENDPOINT)
 
-        from yunohost.log import OPERATIONS_PATH
+        from ..log import OPERATIONS_PATH
 
         if not flash:
             # Since we're starting this operation, garbage all the previous streamcache
@@ -174,7 +174,7 @@ class SSELogStreamingHandler(Handler):
 
 def get_current_operation():
 
-    from yunohost.log import _guess_who_started_process
+    from ..log import _guess_who_started_process
 
     try:
         with open("/var/run/moulinette_yunohost.lock") as f:
@@ -213,7 +213,7 @@ def sse_stream():
 
     # We need zmq.green to uh have some sort of async ? (I think)
     import zmq.green as zmq
-    from yunohost.log import log_list, OPERATIONS_PATH
+    from ..log import log_list, OPERATIONS_PATH
 
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)

@@ -23,10 +23,10 @@ from typing import Any
 
 import yaml
 
-from yunohost.tools import Migration
-from yunohost.app import app_list
-from yunohost.service import service_enable
-from yunohost.firewall import YunoFirewall
+from ..tools import Migration
+from ..app import app_list
+from ..service import service_enable
+from ..firewall import YunoFirewall
 
 logger = logging.getLogger("yunohost.migration")
 

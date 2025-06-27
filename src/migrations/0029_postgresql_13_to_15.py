@@ -25,9 +25,9 @@ from logging import getLogger
 
 from moulinette import m18n
 
-from yunohost.tools import Migration
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.system import free_space_in_directory, space_used_by_directory
+from ..tools import Migration
+from ..utils.error import YunohostError, YunohostValidationError
+from ..utils.system import free_space_in_directory, space_used_by_directory
 
 logger = getLogger("yunohost.migration")
 

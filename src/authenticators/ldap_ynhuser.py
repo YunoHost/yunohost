@@ -37,8 +37,8 @@ from moulinette.authentication import BaseAuthenticator
 from moulinette.utils.filesystem import read_json
 from moulinette.utils.text import random_ascii
 
-from yunohost.utils.error import YunohostAuthenticationError, YunohostError
-from yunohost.utils.ldap import _get_ldap_interface
+from ..utils.error import YunohostAuthenticationError, YunohostError
+from ..utils.ldap import _get_ldap_interface
 
 logger = logging.getLogger("yunohostportal.authenticators.ldap_ynhuser")
 
