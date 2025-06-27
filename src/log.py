@@ -544,6 +544,17 @@ def is_unit_operation(
     return decorate
 
 
+# This is just a wrapper to is_unit_operation for proper typing purposes
+def is_flash_unit_operation(
+    entities=["app", "domain", "group", "service", "user"],
+    exclude=["password"],
+    sse_only=False,
+) -> Callable[[Callable[Param, RetType]], Callable[Param, RetType]]:
+    return is_unit_operation(
+        entities, exclude, sse_only, True
+    )  # type: ignore
+
+
 class RedactingFormatter(Formatter):
     def __init__(self, format_string, data_to_redact):
         super(RedactingFormatter, self).__init__(format_string)

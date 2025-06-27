@@ -64,7 +64,7 @@ from .hook import (
     hook_list,
     hook_remove,
 )
-from .log import OperationLogger, is_unit_operation
+from .log import OperationLogger, is_unit_operation, is_flash_unit_operation
 from .regenconf import regen_conf
 from .tools import (
     _tools_migrations_run_after_system_restore,
@@ -2471,7 +2471,7 @@ def backup_info(name, with_details=False, human_readable=False):
     return result
 
 
-@is_unit_operation(flash=True)
+@is_flash_unit_operation()
 def backup_delete(name):
     """
     Delete a backup
