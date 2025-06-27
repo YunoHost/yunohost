@@ -1890,6 +1890,7 @@ tools:
                     help: Change the current main domain
                     extra:
                         pattern: *pattern_domain
+                        autocomplete: *domains_list
 
         ### tools_postinstall()
         postinstall:
@@ -2123,7 +2124,7 @@ hook:
 
         ### hook_info()
         info:
-            hide_in_help: true
+            hide_in_help: false
             action_help: Get information about a given hook
             arguments:
                 action:
@@ -2149,6 +2150,12 @@ hook:
                         - conf_regen
                 name:
                     help: Hook name
+                    extra:
+                        autocomplete: &hooks_list_case
+                            ynh_selector: hook list
+                            jq_selector: '.hooks[]'
+                            depends: previous
+                            use_cache: false
 
         ### hook_list()
         list:
