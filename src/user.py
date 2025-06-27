@@ -31,7 +31,7 @@ from typing import TYPE_CHECKING, Any, Callable, TextIO, BinaryIO, Union, cast, 
 from moulinette import Moulinette, m18n
 from moulinette.utils.process import check_output
 
-from .log import is_unit_operation
+from .log import is_unit_operation, is_flash_unit_operation
 from .service import service_status
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.system import binary_to_human
@@ -1503,7 +1503,7 @@ def user_permission_list(
     return user_permission_list(full=full, absolute_urls=True, apps=apps)
 
 
-@is_unit_operation(flash=True)  # type: ignore
+@is_flash_unit_operation()
 def user_permission_update(
     permission: str,
     label: str | None = None,
@@ -1556,7 +1556,7 @@ def user_permission_update(
     return app_permissions.get(permname, "")
 
 
-@is_unit_operation(flash=True)  # type: ignore
+@is_flash_unit_operation()
 def user_permission_add(
     permission: str,
     names: list[str],
@@ -1571,7 +1571,7 @@ def user_permission_add(
     )
 
 
-@is_unit_operation(flash=True)  # type: ignore
+@is_flash_unit_operation()
 def user_permission_remove(
     permission: str,
     names: list[str],

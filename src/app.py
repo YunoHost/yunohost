@@ -65,7 +65,7 @@ from .app_catalog import (  # noqa
     app_catalog,
     app_search,
 )
-from .log import OperationLogger, is_unit_operation
+from .log import OperationLogger, is_unit_operation, is_flash_unit_operation
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.i18n import _value_for_locale
 from .utils.system import (
@@ -1919,7 +1919,7 @@ def app_ssowatconf() -> None:
     logger.debug(m18n.n("ssowat_conf_generated"))
 
 
-@is_unit_operation(flash=True)
+@is_flash_unit_operation()
 def app_change_label(app: str, new_label: str) -> None:
 
     installed = _is_installed(app)
@@ -3612,7 +3612,7 @@ def _assert_system_is_sane_for_app(manifest: AppManifest, when: Literal["pre", "
             raise YunohostError("this_action_broke_dpkg")
 
 
-@is_unit_operation(flash=True)
+@is_flash_unit_operation()
 def app_dismiss_notification(app: str, name: Literal["post_install", "post_upgrade"]):
     assert isinstance(name, str)
     name_ = name.lower()
