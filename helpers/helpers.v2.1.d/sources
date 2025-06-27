@@ -127,8 +127,6 @@ ynh_setup_source() {
             src_format="tar.xz"
         elif [[ "$src_url" =~ ^.*\.tar\.zst$ ]]; then
             src_format="tar.zst"
-        elif [[ "$src_url" =~ ^.*\.tar\.xz$ ]]; then
-            src_format="tar.xz"
         elif [[ "$src_url" =~ ^.*\.tar\.bz2$ ]]; then
             src_format="tar.bz2"
         elif [[ "$src_url" =~ ^.*\.tar$ ]]; then
