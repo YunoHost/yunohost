@@ -487,11 +487,14 @@ def permission_url(
         if domain is None or path is None:
             raise YunohostError("unknown_main_domain_path", app=app)
         else:
+            assert isinstance(domain, str)
+            assert isinstance(path, str)
             app_main_path = domain + path
 
     # Fetch existing permission
     update_settings: AppPermInfos = {}  # type: ignore
     existing_permission = app_setting(app, "_permissions") or {}
+    assert isinstance(existing_permission, dict)
     if sub_permission not in existing_permission:
         existing_permission[sub_permission] = {}
     existing_permission = existing_permission[sub_permission]
@@ -550,6 +553,7 @@ def permission_url(
     # Actually commit the change
     try:
         perm_settings = app_setting(app, "_permissions") or {}
+        assert isinstance(perm_settings, dict)
         if sub_permission not in perm_settings:
             perm_settings[sub_permission] = {}
 
@@ -589,6 +593,7 @@ def permission_delete(
 
     # Actually delete the permission
     perm_settings = app_setting(app, "_permissions") or {}
+    assert isinstance(perm_settings, dict)
     if subperm in perm_settings:
         del perm_settings[subperm]
     app_setting(app, "_permissions", perm_settings)
@@ -721,6 +726,7 @@ def _update_app_permission_setting(
     app, sub_permission = permission.split(".")
     update_settings: AppPermInfos = {}  # type: ignore
     perm_settings = app_setting(app, "_permissions") or {}
+    assert isinstance(perm_settings, dict)
     if sub_permission not in perm_settings:
         perm_settings[sub_permission] = {}
 

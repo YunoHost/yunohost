@@ -124,7 +124,7 @@ class AppInfo(TypedDict, total=False):
     description: Required[str]
     version: Required[str]
     domain_path: str
-    logo: str
+    logo: str | None
     upgradable: Literal["yes", "no", "url_required", "bad_quality"]
     current_version: str | None
     new_version: str | None
@@ -369,10 +369,10 @@ def app_map(
     }
     """
 
-    from .permission import user_permission_list
+    from .permission import user_permission_list, AppPermInfos
 
     apps = []
-    result = {}
+    result: dict[str, Any] = {}
 
     if app is not None:
         _assert_is_installed(app)
@@ -411,24 +411,23 @@ def app_map(
             if user not in main_perm["corresponding_users"]:
                 continue
 
-        this_app_perms = {
-            p: i
+        this_app_perms: dict[str, AppPermInfos] = {
+            p: i  # type: ignore
             for p, i in permissions.items()
-            if p.startswith(app + ".") and (i["url"] or i["additional_urls"])
+            if p.startswith(app + ".") and (i["url"] or i["additional_urls"])  # type: ignore
         }
 
-        for perm_name, perm_info in this_app_perms.items():
+        for perm_info in this_app_perms.values():
             # If we're building the map for a specific user, check the user
             # actually is allowed for this specific perm
             if user and user not in perm_info["corresponding_users"]:
                 continue
 
             perm_label = perm_info["label"]
-            perm_all_urls = (
-                []
-                + ([perm_info["url"]] if perm_info["url"] else [])
-                + perm_info["additional_urls"]
-            )
+            perm_all_urls = list(filter(None, [
+                perm_info["url"],
+                *perm_info["additional_urls"]
+            ]))
 
             for url in perm_all_urls:
                 # Here, we decide to completely ignore regex-type urls ...
@@ -1610,8 +1609,8 @@ def app_makedefault(
 
 
 def app_setting(
-    app: str, key: str, value: str | int | None = None, delete: bool = False
-) -> None | Any:
+    app: str, key: str, value: str | int | dict[str, Any] | None = None, delete: bool = False
+) -> str | int | dict[str, Any] | None:
     """
     Set or get an app setting value
 
@@ -1726,7 +1725,7 @@ def app_ssowatconf() -> None:
 
     domains = domain_list()["domains"]
     portal_domains = domain_list(exclude_subdomains=True)["domains"]
-    all_permissions: dict[str, AppPermInfos] = user_permission_list(
+    all_permissions: dict[str, AppPermInfos] = user_permission_list(  # type: ignore
         full=True, ignore_system_perms=True, absolute_urls=True
     )["permissions"]
 
@@ -1782,12 +1781,10 @@ def app_ssowatconf() -> None:
     # New permission system
     for perm_name, perm_info in all_permissions.items():
 
-        uris = (
-            []
-            + ([perm_info["url"]] if perm_info.get("url") else [])
-            + perm_info.get("additional_urls", [])
-        )
-
+        uris = list(filter(None, [
+            perm_info.get("url"),
+            *perm_info.get("additional_urls", [])
+        ]))
         # Ignore permissions for which there's no url defined
         if not uris:
             continue
@@ -2299,9 +2296,9 @@ ynh_app_config_run $1
 
         def _get_raw_settings(self) -> "RawSettings":
 
-            from .permission import user_permission_list
+            from .permission import user_permission_list, AppPermInfos
 
-            perms = user_permission_list(full=True, apps=[self.entity])["permissions"]
+            perms: dict[str, AppPermInfos] = user_permission_list(full=True, apps=[self.entity])["permissions"]  # type: ignore
             app_settings = _get_app_settings(self.entity)
             perms_as_app_settings = app_settings.get("_permissions", {})
 
