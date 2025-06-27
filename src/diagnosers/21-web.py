@@ -25,10 +25,10 @@ from typing import List
 import requests
 from moulinette.utils.filesystem import mkdir, read_file, rm
 
-from yunohost.diagnosis import Diagnoser
-from yunohost.domain import domain_list
-from yunohost.settings import settings_get
-from yunohost.utils.dns import is_special_use_tld
+from ..diagnosis import Diagnoser
+from ..domain import domain_list
+from ..settings import settings_get
+from ..utils.dns import is_special_use_tld
 
 DIAGNOSIS_SERVER = "diagnosis.yunohost.org"
 

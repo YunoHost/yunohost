@@ -31,8 +31,8 @@ from moulinette import m18n
 from moulinette.authentication import BaseAuthenticator
 from moulinette.utils.text import random_ascii
 
-from yunohost.utils.error import YunohostAuthenticationError, YunohostError
-from yunohost.utils.ldap import _get_ldap_interface
+from ..utils.error import YunohostAuthenticationError, YunohostError
+from ..utils.ldap import _get_ldap_interface
 
 logger = logging.getLogger("yunohost.authenticators.ldap_admin")
 
@@ -80,7 +80,7 @@ class Authenticator(BaseAuthenticator):
             time.sleep(10)  # waits 10 secondes so we are sure that slapd has restarted
 
             # Force-reset existing LDAP interface
-            from yunohost.utils import ldap as ldaputils
+            from ..utils import ldap as ldaputils
 
             ldaputils._ldap_interface = None
 
