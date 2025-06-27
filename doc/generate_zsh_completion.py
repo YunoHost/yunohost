@@ -49,6 +49,8 @@ AUTHORS:
 
 import os
 import re
+from typing import Union, Tuple, Optional
+
 import yaml
 
 
@@ -228,6 +230,157 @@ def make_action(action_name: str, action_map: dict) -> str:
     return action.replace("YNH_ACTION", args).replace("ACTION", action_name)
 
 
+def make_argument_action(
+    name: str,
+    details: dict,
+) -> Tuple[Optional[str], Optional[Tuple[str, str]]]:
+    #
+    # Generation of the completion hints
+    #
+    action = make_argument_completion(details)
+
+    #
+    # Check if the argument should be hidden (API only)
+    if action is None:
+        return (None, None)
+
+    #
+    # Check if the argument is a function with a case
+    case_tuple = None
+    if isinstance(action, tuple):
+        var, case = action
+        var = var.replace("YNH_ARGNAME", name)
+        case = case.replace("YNH_ARGNAME", name)
+        case_tuple = (var, case)
+        action = var
+
+    return (action, case_tuple)
+
+
+def make_argument_mandatory(
+    name: str,
+    details: dict,
+    position: int = 0,
+) -> Tuple[Optional[str], Optional[Tuple[str, str]]]:
+    #
+    # Initializing the argument dict to make sure all fields are defined
+    # - id: identifier (`-n` or `--name`). If none (e.g. `ynh app install
+    # APP_NAME`), this field is the arguments position or cardinality (from
+    # `nargs`)
+    # - excludes: usually the argument itself. Only used for optional args
+    # - desc: the argument description
+    # - completion: the completion function name
+    #
+    arg = {"excludes": "", "spec": "", "desc": "", "mess": "", "action": "", "func": ""}
+
+    #
+    # Generation of the completion hints
+    #
+    arg["action"], case_tuple = make_argument_action(name, details)
+
+    # Hidden argument
+    if arg["action"] is None:
+        return (None, None)
+
+    # This parameter may be used more than once, else we use the position counter
+    if details.get("nargs", "") in ["+", "*"]:
+        if details["nargs"] == "+":
+            arg["spec"] = "'{{{},*}}'".format(str(position))
+        else:  # argument_details["nargs"] == "*":
+            arg["spec"] = "*"
+    else:
+        arg["spec"] = str(position)
+    arg["mess"] = details.get("help", name)
+
+    #
+    # If defined, add the default value as a hint
+    if "default" in details:
+        arg["mess"] += " (default: {})".format(details["default"])
+    # Escape special character in the description
+    arg["mess"] = _escape(arg["mess"])
+
+    # ----
+    # NOTE: a double colon marks for an optional argument:
+    # '::Username to update:__ynh_user_list'
+    # ----
+    placeholder = "'{}{}{}:{}:{}'"
+
+    # Escape special character in the description
+    arg["desc"] = _escape(arg["desc"])
+    action = placeholder.format(
+        arg["excludes"], arg["spec"], arg["desc"], arg["mess"], arg["action"]
+    )
+    return (action, case_tuple)
+
+
+def make_argument_optional(
+    name: str,
+    details: dict,
+) -> Tuple[Optional[str], Optional[Tuple[str, str]]]:
+    #
+    # Initializing the argument dict to make sure all fields are defined
+    # - id: identifier (`-n` or `--name`). If none (e.g. `ynh app install
+    # APP_NAME`), this field is the arguments position or cardinality (from
+    # `nargs`)
+    # - excludes: usually the argument itself. Only used for optional args
+    # - desc: the argument description
+    # - completion: the completion function name
+    #
+    arg = {"excludes": "", "spec": "", "desc": "", "mess": "", "action": "", "func": ""}
+
+    #
+    # Generation of the completion hints
+    #
+    arg["action"], case_tuple = make_argument_action(name, details)
+
+    # Hidden argument
+    if arg["action"] is None:
+        return (None, None)
+
+    # `full` is the extended form of the argument (e.g.: -n is short for --number)
+    if "full" in details:
+        full_name = details["full"]
+        arg["mess"] = str(full_name).lstrip("--")
+        arg["spec"] = "'{{{},{}}}'".format(name, full_name)
+        arg["excludes"] = "({} {})".format(name, full_name)
+    else:
+        arg["mess"] = str(name).lstrip("--")
+        arg["spec"] = name
+    # Escape special character in the description
+    arg["mess"] = _escape(arg["mess"])
+
+    # The description of the parameter
+    # Getting the `help` field if any, else simply by using it's name
+    arg["desc"] = "[{}]".format(details.get("help", arg["mess"]))
+
+    has_action = True
+    # Add a pattern field to match multiple arguments
+    if details.get("nargs", "") in ["+", "*"]:
+        if arg["excludes"]:
+            # suppose that `arg["excludes"] = (-f --foo)`
+            arg["excludes"] = "(* " + arg["excludes"][1:]
+        else:
+            arg["excludes"] = "(*)"
+        arg["mess"] = "*:" + arg["mess"]
+        has_action = True
+
+    # Options without arguments should skip the message and action fields
+    elif details.get("action", "").startswith("store_"):
+        has_action = False
+
+    # Place holder for the parameters
+    if has_action:
+        placeholder = "'{}{}{}:{}:{}'"
+    else:
+        placeholder = "'{}{}{}'"
+    # Escape special character in the description
+    arg["desc"] = _escape(arg["desc"])
+    action = placeholder.format(
+        arg["excludes"], arg["spec"], arg["desc"], arg["mess"], arg["action"]
+    )
+    return (action, case_tuple)
+
+
 def make_argument_list(action_map: dict, spaces: str = 4 * " ") -> str:
     """
     Builds the actions list.
@@ -244,120 +397,55 @@ def make_argument_list(action_map: dict, spaces: str = 4 * " ") -> str:
     if "arguments" not in action_map:
         return ""
 
-    for argument_name, argument_details in action_map["arguments"].items():
-        #
-        # Initializing the argument dict to make sure all fields are defined
-        # - id: identifier (`-n` or `--name`). If none (e.g. `ynh app install
-        # APP_NAME`), this field is the arguments position or cardinality (from
-        # `nargs`)
-        # - excludes: usually the argument itself. Only used for optional args
-        # - desc: the argument description
-        # - completion: the completion function name
-        #
-        arg = {"excludes": "", "spec": "", "desc": "", "mess": "", "action": ""}
+    cases = {}
 
+    for argument_name, argument_details in action_map["arguments"].items():
         #
         # Forcing to str, as the yaml parser inteprets numbers as integers
         # (eg.: `firewall allow... -4`)
         argument_name = str(argument_name)
 
         #
-        # Check if the argument should be hidden (API only)
-        #
-        if (
-            argument_details.get("extra", {})
-            .get("autocomplete", {})
-            .get("hide_in_help", False)
-        ):
-            continue
-
-        #
-        # Generation of the completion hints
-        #
-        arg["action"] = make_argument_completion(argument_details)
-
+        # This is an optional parameter, beginning with a `-`
+        if argument_name[0] == "-":
+            action, case_tuple = make_argument_optional(argument_name, argument_details)
         #
         # A parameter not beginning with `-` is considered mandatory.
-        if argument_name[0] != "-":
-            position += 1
-            # This parameter may be used more than once, else we use the position counter
-            if argument_details.get("nargs", "") in ["+", "*"]:
-                if argument_details["nargs"] == "+":
-                    arg["spec"] = "'{{{},*}}'".format(str(position))
-                else:  # argument_details["nargs"] == "*":
-                    arg["spec"] = "*"
-            else:
-                arg["spec"] = str(position)
-            arg["mess"] = argument_details.get("help", argument_name)
-
-            #
-            # If defined, add the default value as a hint
-            if "default" in argument_details:
-                arg["mess"] += " (default: {})".format(argument_details["default"])
-            # Escape special character in the description
-            arg["mess"] = _escape(arg["mess"])
-
-            # ----
-            # NOTE: a double colon marks for an optional argument:
-            # '::Username to update:__ynh_user_list'
-            # ----
-            placeholder = "'{}{}{}:{}:{}'"
-
-        #
-        # This is an optional parameter, beginning with a `-`
         else:
-            # `full` is the extended form of the argument (e.g.: -n is short for --number)
-            if "full" in argument_details:
-                full_name = argument_details["full"]
-                arg["mess"] = str(full_name).lstrip("--")
-                arg["spec"] = "'{{{},{}}}'".format(argument_name, full_name)
-                arg["excludes"] = "({} {})".format(argument_name, full_name)
-            else:
-                arg["mess"] = str(argument_name).lstrip("--")
-                arg["spec"] = argument_name
-            # Escape special character in the description
-            arg["mess"] = _escape(arg["mess"])
+            position += 1
+            action, case_tuple = make_argument_mandatory(argument_name, argument_details, position)
 
-            # The description of the parameter
-            # Getting the `help` field if any, else simply by using it's name
-            arg["desc"] = "[{}]".format(argument_details.get("help", arg["mess"]))
+        # If action is None, do not display the parameter
+        if action is None:
+            continue
 
-            has_action = True
-            # Add a pattern field to match multiple arguments
-            if argument_details.get("nargs", "") in ["+", "*"]:
-                if arg["excludes"]:
-                    # suppose that `arg["excludes"] = (-f --foo)`
-                    arg["excludes"] = "(* " + arg["excludes"][1:]
-                else:
-                    arg["excludes"] = "(*)"
-                arg["mess"] = "*:" + arg["mess"]
-                has_action = True
-
-            # Options without arguments should skip the message and action fields
-            elif argument_details.get("action", "").startswith("store_"):
-                has_action = False
-
-            # Place holder for the parameters
-            if has_action:
-                placeholder = "'{}{}{}:{}:{}'"
-            else:
-                placeholder = "'{}{}{}'"
+        # If case_tuple is not None, add a case below the arguments list
+        if case_tuple and isinstance(case_tuple, tuple):
+            var, case = case_tuple
+            cases[var] = case
 
         #
         # Putting it all together
-        # Escape special character in the description
-        arg["desc"] = _escape(arg["desc"])
         action_list = action_list.replace(
-            "YNH_ACTION",
-            "{} \\\n{}YNH_ACTION".format(placeholder, spaces).format(
-                arg["excludes"], arg["spec"], arg["desc"], arg["mess"], arg["action"]
-            ),
+            "YNH_ACTION", "{} \\\n{}YNH_ACTION".format(action, spaces)
         )
+
+    if cases:
+        # Removing the extra tag and backslash,
+        action_list = re.sub(r"\s*\\\n(\s*)YNH_ACTION", "\nYNH_ACTION", action_list)
+
+        # Add the switch cases
+        functions = make_argument_cases(cases)
+
+        action_list = action_list.replace(
+            "YNH_ACTION", "{} \\\n{}YNH_ACTION".format(functions, spaces)
+        )
+
     # Removing the extra tag and backslash,
     return re.sub(r"\s*\\\n(\s*)YNH_ACTION", "", action_list)
 
 
-def make_argument_completion(argument_details: dict) -> str:
+def make_argument_completion(argument_details: dict) -> Union[None, str, Tuple[str, str]]:
     """
     Finds the completion function for the given argument, if defined.
     :param dict argument_details: The mapping of the argument
@@ -369,19 +457,28 @@ def make_argument_completion(argument_details: dict) -> str:
     # `choices` and `autocomplete` should not be present at the same time (`choices` takes precedence)
 
     #
-    # A list of choices is defined
-    if "choices" in argument_details:
-        return "({})".format(" ".join(argument_details["choices"]))
-
-    #
     # An autocompletion function is defined
     if "extra" in argument_details and "autocomplete" in argument_details["extra"]:
         autocomplete = argument_details["extra"]["autocomplete"]
 
         #
+        # Check if the argument should be hidden (API only)
+        if autocomplete.get("hide_in_help", False):
+            return None
+
+        #
         # This is a combinaision of YunoHost and jq commands
         #
         if "ynh_selector" in autocomplete and "jq_selector" in autocomplete:
+            #
+            # Function dependent on previous arguments
+            #
+            if "depends" in autocomplete:
+                if autocomplete["depends"] == "previous":
+                    case = TEMPLATES["action_function_case"]
+                    case = case.replace("YNH_SELECTOR", autocomplete["ynh_selector"]).replace("JQ_SELECTOR", autocomplete["jq_selector"])
+                    return ("->YNH_ARGNAME", case)
+
             # Create this function's name
             function_name = _remove_special_chars(
                 "__ynh_" + _norm_name(autocomplete["ynh_selector"])
@@ -454,8 +551,33 @@ def make_argument_completion(argument_details: dict) -> str:
         elif "zsh_completion" in autocomplete:
             return autocomplete["zsh_completion"]
 
+    #
+    # A list of choices is defined
+    if "choices" in argument_details:
+        return "({})".format(" ".join(argument_details["choices"]))
+
     return ""
 
+def make_argument_cases(cases: dict, spaces: str = 8 * " ") -> str:
+    """
+    Add a switch with different cases.
+    :param dict cases: The argument name with the shell call
+    :return str: The piece of code filled from the template.
+    """
+
+    if not cases:
+        return ""
+
+    func = TEMPLATES["action_function"]
+    #
+    # The switch cases
+    for name, case_str in cases.items():
+        func = func.replace(
+            "YNH_CASE",
+            "{} \\\n{}YNH_CASE".format(case_str, spaces),
+        )
+
+    return re.sub(r"\s*\\\n(\s*)YNH_CASE", "", func)
 
 def build_completion_functions(functions: dict) -> str:
     """
@@ -707,6 +829,27 @@ function _yunohost_COMMAND_ACTION() {
 # (( $+functions[_yunohost_COMMAND_ACTION] )) ||
 function _yunohost_COMMAND_ACTION() { }
 
+""",
+    # --------------------------------------------------------------------
+    "action_function": r"""
+    local context state state_descr line
+    typeset -A opt_args
+
+    if (($CURRENT > 2)); then
+        case "$state" in
+            YNH_CASE
+        esac
+    fi
+    return $?
+""",
+    # --------------------------------------------------------------------
+    "action_function_case": r"""
+            YNH_ARGNAME)
+                local previous="$words[${CURRENT} - 1]"
+                local cmd_ret=$(sudo yunohost YNH_SELECTOR "${previous}" --output-as json | jq -cr 'JQ_SELECTOR' | xargs)
+                local -a cmd_list=("${(s/ /)cmd_ret}")
+                _values 'YNH_ARGNAME' $cmd_list
+                ;;
 """,
     # --------------------------------------------------------------------
     "completion_shell_call": r"""
