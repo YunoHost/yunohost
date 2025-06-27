@@ -211,7 +211,7 @@ def js_to_python(expr):
     return py_expr
 
 
-def evaluate_simple_js_expression(expr: str, context: dict[str, Any] = {}) -> bool:
+def evaluate_simple_js_expression(expr: str, context: Mapping[str, Any] = {}) -> bool:
     if not expr.strip():
         return False
     node = ast.parse(js_to_python(expr), mode="eval").body
@@ -2237,7 +2237,7 @@ def prompt_or_validate_form(
 
 def ask_questions_and_parse_answers(
     raw_options: dict[str, Any],
-    prefilled_answers: str | Mapping[str, Any] = {},
+    prefilled_answers: str | Mapping[str, Any] | None = {},
     current_values: Mapping[str, Any] = {},
     hooks: Hooks = {},
 ) -> tuple[list[AnyOption], FormModel]:

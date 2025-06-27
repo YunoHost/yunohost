@@ -44,8 +44,8 @@ from .utils.error import YunohostError, YunohostValidationError
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
-    from .utils.configpanel import RawConfig, RawSettings
-    from .utils.form import ConfigPanelModel, FormModel
+    from .utils.configpanel import RawConfig, RawSettings, ConfigPanelModel
+    from .utils.form import FormModel
 
 logger = getLogger("yunohost.domain")
 
@@ -826,9 +826,11 @@ def _get_DomainConfigPanel():
             )
             if remove_auto_dns_feature:
                 # disable auto dns by reseting every registrar form values
+                registrar_section = config.get_section("registrar")
+                assert registrar_section is not None
                 options = [
                     option
-                    for option in config.get_section("registrar").options
+                    for option in registrar_section.options
                     if not option.readonly
                     and option.id != "use_auto_dns"
                     and hasattr(form, option.id)

@@ -1497,13 +1497,13 @@ def user_group_remove_mailalias(
 
 def user_permission_list(
     full: bool = False, apps: list[str] = []
-) -> dict[Literal["permissions"], "PermInfos"]:
+) -> dict[Literal["permissions"], dict[str, "PermInfos"]]:
     from .permission import user_permission_list
 
     return user_permission_list(full=full, absolute_urls=True, apps=apps)
 
 
-@is_unit_operation(flash=True)
+@is_unit_operation(flash=True)  # type: ignore
 def user_permission_update(
     permission: str,
     label: str | None = None,
@@ -1524,7 +1524,9 @@ def user_permission_update(
     app, permname = permission.split(".", 1)
     _assert_is_installed(app)
 
-    if permname not in (app_setting(app, "_permissions") or {}):
+    app_permissions = app_setting(app, "_permissions") or {}
+    assert isinstance(app_permissions, dict)
+    if permname not in app_permissions:
         raise YunohostValidationError(
             f"Unknown permission {permname} for app {app}", raw_msg=True
         )
@@ -1549,10 +1551,12 @@ def user_permission_update(
 
     logger.success(m18n.n("permission_updated", permission=permission))
 
-    return (app_setting(app, "_permissions") or {}).get(permname, "")
+    app_permissions = app_setting(app, "_permissions") or {}
+    assert isinstance(app_permissions, dict)
+    return app_permissions.get(permname, "")
 
 
-@is_unit_operation(flash=True)
+@is_unit_operation(flash=True)  # type: ignore
 def user_permission_add(
     permission: str,
     names: list[str],
@@ -1567,7 +1571,7 @@ def user_permission_add(
     )
 
 
-@is_unit_operation(flash=True)
+@is_unit_operation(flash=True)  # type: ignore
 def user_permission_remove(
     permission: str,
     names: list[str],
