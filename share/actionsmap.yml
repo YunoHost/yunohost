@@ -37,32 +37,6 @@ _global:
     authentication:
         api: ldap_admin
         cli: null
-    arguments:
-        -h:
-            full: --help
-            help: Show this help message and exit
-        --version:
-            help: Display YunoHost packages versions
-            action: callback
-            callback:
-                method: yunohost.utils.packages.ynh_packages_version
-                return: true
-        --output-as:
-            help: Output result in another format
-            choices:
-               - json
-               - plain
-               - none
-        --debug:
-            help: Log and print debug messages
-            action: store_true
-        --quiet:
-            help: Don't produce any output
-            action: store_true
-        --timeout:
-            help: Number of seconds before this command will timeout because it can't acquire the lock (meaning that another command is currently running), by default there is no timeout and the command will wait until it can get the lock
-            type: int
-
 
 #############################
 #           User            #
