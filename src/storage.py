@@ -26,3 +26,9 @@ def storage_disk_info(name, **kargs):
     from yunohost.disk import disk_info
 
     return disk_info(name, **kargs)
+
+
+def storage_disk_health(name, **kargs):
+    from yunohost.disk import disk_health
+
+    return disk_health(name, **kargs)

@@ -16,11 +16,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+import dataclasses
 import enum
+from datetime import datetime
 
 from sdbus import sd_bus_open_system
+
 from yunohost.utils.system import binary_to_human
-from yunohost.utils.udisks2_interfaces import Udisks2Manager
+from yunohost.utils.udisks2_interfaces import Udisks2Manager, SmartMixin
 
 
 class DiskState(enum.StrEnum):
@@ -47,7 +50,7 @@ class DiskState(enum.StrEnum):
                 return DiskState.UNKNOWN
 
 
-def _disk_infos(name: str, drive: dict, **kwargs):
+def _format_infos(name: str, drive: dict, **kwargs):
     human_readable = kwargs.get("human_readable", False)
     human_readable_size = kwargs.get("human_readable_size", human_readable)
     result = {
@@ -55,9 +58,7 @@ def _disk_infos(name: str, drive: dict, **kwargs):
         "model": drive["model"],
         "serial": drive["serial"],
         "removable": bool(drive["media_removable"]),
-        "size": (
-            binary_to_human(drive["size"]) if human_readable_size else drive["size"]
-        ),
+        "size": (binary_to_human(drive["size"]) if human_readable_size else drive["size"]),
         "smartStatus": DiskState.parse(drive),
     }
 
@@ -93,7 +94,7 @@ def disk_list(**kwargs):
     if not with_info:
         return list(disks.keys())
 
-    result = [_disk_infos(name, disk.props, **kwargs) for name, disk in disks.items()]
+    result = [_format_infos(name, disk.props, **kwargs) for name, disk in disks.items()]
 
     return {"disks": result}
 
@@ -107,4 +108,58 @@ def disk_info(name, **kwargs):
     if not disk:
         return f"Unknown disk with name {name}" if human_readable else None
 
-    return _disk_infos(name, disk.props, **kwargs)
+    return _format_infos(name, disk.props, **kwargs)
+
+
+@dataclasses.dataclass
+class Health:
+    uptime: int | None
+    temperature: int | None
+    smartStatus: DiskState
+    smartSelftest: str
+    smartSelftestUpdated: datetime | int | None
+    smartAttributes: dict[str, str] | None = None
+
+    def asdict(self):
+        return dataclasses.asdict(self)
+
+
+def disk_health(name, **kwargs):
+    bus = sd_bus_open_system()
+    disk = Udisks2Manager(bus).get_disks().get(name)
+
+    human_readable = kwargs.get("human_readable", False)
+
+    if not disk or not not disk.props.get("smart_supported"):
+        # If disk does not exist or SMART is not supported by disk
+        return None
+
+    match disk.props:
+        case {"smart_power_on_seconds": uptime}:
+            # ATA
+            uptime = uptime * 3600
+        case {"smart_power_on_hours": uptime}:
+            # NVMe
+            pass
+        case _:
+            return None
+
+    smart_attributes = None
+    if issubclass(disk.iface, SmartMixin):
+        smart_attributes = disk.dbus_obj.get_smart_attributes()
+
+    temperature = disk.props["smart_temperature"]
+    smart_updated = disk.props["smart_updated"]
+    if not smart_updated:
+        smart_updated = None
+    if human_readable:
+        smart_updated = datetime.fromtimestamp(smart_updated) if smart_updated else "Unknown"
+
+    return Health(
+        uptime=uptime,
+        temperature=temperature,
+        smartStatus=DiskState.parse(disk.props),
+        smartSelftest=disk.props["smart_selftest_status"],
+        smartSelftestUpdated=smart_updated,
+        smartAttributes=smart_attributes,
+    ).asdict()
