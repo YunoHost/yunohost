@@ -19,18 +19,20 @@
 #
 
 import os
-from typing import List
+from packaging import version
 
-from yunohost.app import app_list
+from yunohost.app import app_list, AppInfo
 from yunohost.diagnosis import Diagnoser
-
+from yunohost.app_catalog import _load_security_issues_list, SecurityIssueInfos
 
 class MyDiagnoser(Diagnoser):
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
-    dependencies: List[str] = []
+    dependencies: list[str] = []
 
     def run(self):
+        self.security_issues_list = _load_security_issues_list()["apps"]
+
         apps = app_list(full=True)["apps"]
         for app in apps:
             app["issues"] = list(self.issues(app))
@@ -53,13 +55,28 @@ class MyDiagnoser(Diagnoser):
                 )
 
                 yield dict(
-                    meta={"test": "apps", "app": app["name"]},
+                    meta={"test": "apps", "app": app["name"], "installed_version": app["version"]},
                     status=level,
                     summary="diagnosis_apps_issue",
                     details=[issue[1] for issue in app["issues"]],
                 )
 
-    def issues(self, app):
+    def issues(self, app: AppInfo) -> None:
+
+        # Check for security issues reported in the security issue list
+
+        app_base_id = app["manifest"]["id"]
+        if app_base_id in self.security_issues_list:
+            app_version = version.parse(app["version"])
+            security_issues_for_this_app: list[SecurityIssueInfos] = self.security_issues_list[app_base_id]
+            for issue in security_issues_for_this_app:
+                if app_version >= version.parse(issue["fixed_in_version"]):
+                    continue
+                level = issue["level"]
+                # i18n: diagnosis_apps_security_issue_warning
+                # i18n: diagnosis_apps_security_issue_error
+                yield (level, (f"diagnosis_apps_security_issue_{level}", issue))
+
         # Check quality level in catalog
 
         if not app.get("from_catalog") or app["from_catalog"].get("state") != "working":
