@@ -424,10 +424,9 @@ def app_map(
                 continue
 
             perm_label = perm_info["label"]
-            perm_all_urls = list(filter(None, [
-                perm_info["url"],
-                *perm_info["additional_urls"]
-            ]))
+            perm_all_urls = list(
+                filter(None, [perm_info["url"], *perm_info["additional_urls"]])
+            )
 
             for url in perm_all_urls:
                 # Here, we decide to completely ignore regex-type urls ...
@@ -1609,7 +1608,10 @@ def app_makedefault(
 
 
 def app_setting(
-    app: str, key: str, value: str | int | dict[str, Any] | None = None, delete: bool = False
+    app: str,
+    key: str,
+    value: str | int | dict[str, Any] | None = None,
+    delete: bool = False,
 ) -> str | int | dict[str, Any] | None:
     """
     Set or get an app setting value
@@ -1781,10 +1783,9 @@ def app_ssowatconf() -> None:
     # New permission system
     for perm_name, perm_info in all_permissions.items():
 
-        uris = list(filter(None, [
-            perm_info.get("url"),
-            *perm_info.get("additional_urls", [])
-        ]))
+        uris = list(
+            filter(None, [perm_info.get("url"), *perm_info.get("additional_urls", [])])
+        )
         # Ignore permissions for which there's no url defined
         if not uris:
             continue
