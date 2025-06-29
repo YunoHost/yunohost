@@ -77,10 +77,8 @@ source = ["src/"]
 
 [tool.coverage.report]
 omit = [
-    "src/tests/*",
     "src/vendor/*",
     "/usr/lib/moulinette/yunohost/*",
-    "/usr/lib/python3/dist-packages/yunohost/tests/*",
     "/usr/lib/python3/dist-packages/yunohost/vendor/*",
 ]
 
@@ -96,14 +94,14 @@ allowlist_externals = ["black"]
 deps = ["flake8"]
 commands = [[
     "flake8", "src", "doc", "maintenance", "tests",
-    "--exclude", "src/tests,src/vendor", "--ignore", "E402,E501,E203,W503,E741"
+    "--exclude", "src/vendor", "--ignore", "E402,E501,E203,W503,E741"
 ]]
 
 [tool.tox.env.py311-invalidcode]
 deps = ["flake8"]
 commands = [[
     "flake8", "src", "bin", "maintenance",
-    "--exclude", "src/tests,src/vendor", "--select", "F,E722,W605"
+    "--exclude", "src/vendor", "--select", "F,E722,W605"
 ]]
 
 [tool.tox.env.py311-mypy]

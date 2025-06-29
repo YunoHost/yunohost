@@ -21,7 +21,7 @@
 import pytest
 
 from yunohost.domain import _get_maindomain
-from yunohost.tests.test_permission import check_LDAP_db_integrity
+from .test_permission import check_LDAP_db_integrity
 from yunohost.user import (
     FIELDS_FOR_IMPORT,
     user_create,

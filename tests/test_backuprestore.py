@@ -38,7 +38,7 @@ from yunohost.backup import (
 from yunohost.domain import _get_maindomain, domain_add, domain_list, domain_remove
 from yunohost.hook import CUSTOM_HOOK_FOLDER
 from yunohost.permission import user_permission_list
-from yunohost.tests.test_permission import (
+from .test_permission import (
     check_LDAP_db_integrity,
     check_permission_for_apps,
 )
