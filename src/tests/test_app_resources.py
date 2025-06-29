@@ -70,6 +70,7 @@ def setup_function(function):
     os.system(
         "echo 'description.en = \"A dummy app to test app resources\"' >> /etc/yunohost/apps/testapp/manifest.toml"
     )
+    os.system('apt install redis-server -y')
 
 
 def teardown_function(function):
@@ -83,6 +84,7 @@ def clean():
     os.system("rm -rf /home/yunohost.app/testapp")
     os.system("apt remove lolcat sl nyancat influxdb2 >/dev/null 2>/dev/null")
     os.system("userdel testapp 2>/dev/null")
+    os.system("redis-cli flushall > /dev/null")
 
     for p in user_permission_list()["permissions"]:
         if p.startswith("testapp."):
@@ -314,6 +316,79 @@ def test_resource_database():
     assert not app_setting("testapp", "db_user")
     assert not app_setting("testapp", "db_pwd")
 
+def test_resource_redis():
+    wanted = AppResourceClassesByType["redis"]
+    old = None
+    def r(conf, app):
+        nonlocal old
+        wanted.old = old
+        result = wanted(conf, app)
+        old = result
+        return result
+
+    conf = {}
+    assert os.system("redis-cli INFO keyspace | grep -q '^db'") != 0
+    assert not app_setting("testapp", "redis_db")
+
+    r(conf, "testapp").provision_or_update({"action": "install"})
+    assert os.system("redis-cli INFO keyspace | grep -q '^db0'") == 0
+    assert os.system("redis-cli INFO keyspace | grep -q '^db1'") != 0
+    assert app_setting("testapp", "redis_db") ==  0
+
+    conf = {
+        "redis_db": {},
+        "celery_db": {}
+    }
+    r(conf, "testapp").provision_or_update({"action": "upgrade"})
+    assert os.system("redis-cli INFO keyspace | grep -q '^db0'") == 0
+    assert os.system("redis-cli INFO keyspace | grep -q '^db1'") == 0
+    assert app_setting("testapp", "redis_db") == 0
+    assert app_setting("testapp", "celery_db") == 1
+
+    conf = {
+        "redis_db": {},
+        "celery_redis_db": {
+            "previous_names": "celery_db" # Check that it works with a str instead of a list[str]
+        }
+    }
+    r(conf, "testapp").provision_or_update({"action": "upgrade"})
+    assert os.system("redis-cli INFO keyspace | grep -q '^db0'") == 0
+    assert os.system("redis-cli INFO keyspace | grep -q '^db1'") == 0
+    assert os.system("redis-cli INFO keyspace | grep -q '^db2'") != 0
+    assert app_setting("testapp", "redis_db") == 0
+    assert app_setting("testapp", "celery_redis_db") == 1
+    assert not app_setting("testapp", "celery_db")
+
+    conf = {
+        "celery_redis_db_renamed": {
+            "previous_names": ["celery_db", "celery_redis_db"] # Check with an array
+        }
+    }
+    r(conf, "testapp").provision_or_update({"action": "upgrade"})
+    assert os.system("redis-cli INFO keyspace | grep -q '^db0'") != 0
+    assert os.system("redis-cli INFO keyspace | grep -q '^db1'") == 0
+    assert os.system("redis-cli INFO keyspace | grep -q '^db2'") != 0
+    assert app_setting("testapp", "redis_db") is None
+    assert app_setting("testapp", "celery_redis_db") is None
+    assert app_setting("testapp", "celery_redis_db_renamed") == 1
+
+    conf = {
+        "takes_redis_db_place": {},
+        "celery_redis_db_renamed": {
+            "previous_names": ["celery_db", "celery_redis_db"]
+        }
+    }
+    r(conf, "testapp").provision_or_update()
+    assert os.system("redis-cli INFO keyspace | grep -q '^db0'") == 0
+    assert os.system("redis-cli INFO keyspace | grep -q '^db1'") == 0
+    assert os.system("redis-cli INFO keyspace | grep -q '^db2'") != 0
+    assert app_setting("testapp", "celery_redis_db_renamed") == 1
+    assert app_setting("testapp", "takes_redis_db_place") == 0
+
+    r(conf, "testapp").deprovision()
+    assert os.system("redis-cli INFO keyspace | grep -q '^db'") != 0
+    assert app_setting("testapp", "redis_db") is None
+    assert app_setting("testapp", "celery_redis_db") is None
 
 def test_resource_apt():
     r = AppResourceClassesByType["apt"]
