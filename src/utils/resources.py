@@ -1474,15 +1474,21 @@ class DatabaseAppResource(AppResource):
     """
     Initialize a database, either using MySQL or Postgresql. Relevant DB infos are stored in settings `$db_name`, `$db_user` and `$db_pwd`.
 
-    NB: only one DB can be handled in such a way (is there really an app that would need two completely different DB ?...)
-
     NB2: no automagic migration will happen in an suddenly change `type` from `mysql` to `postgresql` or viceversa in its life
 
-    ### Example
+    ### Example for single DB
 
     ```toml
     [resources.database]
     type = "mysql"   # or : "postgresql". Only these two values are supported
+    ```
+
+    ### Example for 2 DB
+
+    ```toml
+    [resources.database]
+    main.type = "mysql"   # first DB
+    second.type = "postgresql" # Second DB
     ```
 
     ### Properties
@@ -1492,6 +1498,7 @@ class DatabaseAppResource(AppResource):
     ### Provision/Update
 
     - (Re)set the `$db_name` and `$db_user` settings with the sanitized app name (replacing `-` and `.` with `_`)
+    - for other db also set `$db_name_other` setting
     - If `$db_pwd` doesn't already exists, pick a random database password and store it in that setting
     - If the database doesn't exists yet, create the SQL user and DB using `ynh_mysql_create_db` or `ynh_psql_create_db`.
 
@@ -1512,33 +1519,41 @@ class DatabaseAppResource(AppResource):
 
     type = "database"
     priority = 90
-    dbtype: str = ""
+    dbtypes: dict[str, str] = {}
 
     default_properties: Dict[str, Any] = {
-        "dbtype": None,
+        "dbtypes": None,
     }
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
-        if "type" not in properties or properties["type"] not in [
-            "mysql",
-            "postgresql",
-        ]:
-            raise YunohostError(
-                "Specifying the type of db ('mysql' or 'postgresql') is mandatory for db resources",
-                raw_msg=True,
-            )
+        db_properties: Dict[str, Dict[str, str]]
+        if len(properties) > 0 and isinstance(list(properties.values())[0], dict):
+            # Multi DB
+            db_properties = properties
+        else:
+            db_properties = {"main": properties}
 
-        # Hack so that people can write type = "mysql/postgresql" in toml but it's loaded as dbtype
+        for k, v in db_properties.items():
+            if "type" not in v or v["type"] not in [
+                "mysql",
+                "postgresql",
+            ]:
+                raise YunohostError(
+                    "Specifying the type of db ('mysql' or 'postgresql') is mandatory for db resources",
+                    raw_msg=True,
+                )
+
+        # Hack so that people can write type = "mysql/postgresql" in toml but it's loaded as dbtypes
         # to avoid conflicting with the generic self.type of the resource object...
         # dunno if that's really a good idea :|
-        properties = {"dbtype": properties["type"]}
+        properties = {"dbtypes": {k: v["type"] for k, v in db_properties.items()}}
 
         super().__init__(properties, *args, **kwargs)
 
-    def db_exists(self, db_name):
-        if self.dbtype == "mysql":
+    def db_exists(self, db_name, name):
+        if self.dbtypes[name] == "mysql":
             return os.system(f"mysqlshow | grep -q -w '{db_name}' 2>/dev/null") == 0
-        elif self.dbtype == "postgresql":
+        elif self.dbtypes[name] == "postgresql":
             return (
                 os.system(
                     f"sudo --login --user=postgres psql '{db_name}' -c ';' >/dev/null 2>/dev/null"
@@ -1551,8 +1566,6 @@ class DatabaseAppResource(AppResource):
     def provision_or_update(self, context: Dict = {}):
         # This is equivalent to ynh_sanitize_dbid
         db_user = self.app.replace("-", "_").replace(".", "_")
-        db_name = self.get_setting("db_name") or db_user
-        self.set_setting("db_name", db_name)
         self.set_setting("db_user", db_user)
 
         db_pwd = None
@@ -1561,7 +1574,7 @@ class DatabaseAppResource(AppResource):
         else:
             # Legacy setting migration
             legacypasswordsetting = (
-                "psqlpwd" if self.dbtype == "postgresql" else "mysqlpwd"
+                "psqlpwd" if self.dbtypes["main"] == "postgresql" else "mysqlpwd"
             )
             if self.get_setting(legacypasswordsetting):
                 db_pwd = self.get_setting(legacypasswordsetting)
@@ -1572,40 +1585,107 @@ class DatabaseAppResource(AppResource):
             db_pwd = random_ascii(24)
             self.set_setting("db_pwd", db_pwd)
 
-        if not self.db_exists(db_name):
-            if self.dbtype == "mysql":
-                self._run_script(
-                    "provision",
-                    f"ynh_mysql_create_db '{db_name}' '{db_user}' '{db_pwd}'",
-                )
-            elif self.dbtype == "postgresql":
-                self._run_script(
-                    "provision",
-                    f"ynh_psql_create_user '{db_user}' '{db_pwd}'; ynh_psql_create_db '{db_name}' '{db_user}'",
-                )
+        for name in self.dbtypes.keys():
+            db_suffix_settings = f"_{name}" if name != "main" else ""
+            # Note that the db name in the database will be "$app__$name"
+            # to avoid any conflict with an other app which has an ID which start by the same
+            # app name. By example we have `synapse` and `synapse_admin`.
+            # If we have `synapse` which create a second db with name admin,
+            # we need to avoid to conflict with `synapse_admin`
+            db_suffix_name = f"__{name}" if name != "main" else ""
+            db_name = self.get_setting(f"db_name{db_suffix_settings}") or (db_user + db_suffix_name)
+            self.set_setting(f"db_name{db_suffix_settings}", db_name)
+
+            if not self.db_exists(db_name, name):
+                if self.dbtypes[name] == "mysql":
+                    self._run_script(
+                        "provision",
+                        f"ynh_mysql_create_db '{db_name}' '{db_user}' '{db_pwd}'",
+                    )
+                elif self.dbtypes[name] == "postgresql":
+                    self._run_script(
+                        "provision",
+                        f"""
+ynh_psql_user_exists "{db_user}" || ynh_psql_create_user '{db_user}' '{db_pwd}'
+ynh_psql_create_db '{db_name}' '{db_user}'
+""",
+                    )
 
     def deprovision(self, context: Dict = {}):
         db_user = self.app.replace("-", "_").replace(".", "_")
-        db_name = self.get_setting("db_name") or db_user
 
-        if self.dbtype == "mysql":
-            db_helper_name = "mysql"
-        elif self.dbtype == "postgresql":
-            db_helper_name = "psql"
-        else:
-            raise RuntimeError(f"Invalid dbtype {self.dbtype}")
+        for name in self.dbtypes.keys():
+            db_suffix_settings = f"_{name}" if name != "main" else ""
+            # Note that the db name in the database will be "$app__$name"
+            # to avoid any conflict with an other app which has an ID which start by the same
+            # app name. By example we have `synapse` and `synapse_admin`.
+            # If we have `synapse` which create a second db with name admin,
+            # we need to avoid to conflict with `synapse_admin`
+            db_suffix_name = f"__{name}" if name != "main" else ""
+            db_name = self.get_setting(f"db_name{db_suffix_settings}") or (db_user + db_suffix_name)
 
-        self._run_script(
-            "deprovision",
-            f"""
+            if self.dbtypes[name] == "mysql":
+                db_helper_name = "mysql"
+            elif self.dbtypes[name] == "postgresql":
+                db_helper_name = "psql"
+            else:
+                raise RuntimeError(f"Invalid dbtypes {self.dbtypes[name]}")
+
+            self._run_script(
+                "deprovision",
+                f"""
 ynh_{db_helper_name}_database_exists "{db_name}" && ynh_{db_helper_name}_drop_db "{db_name}" || true
+""",
+            )
+
+            self.delete_setting(f"db_name{db_suffix_settings}")
+
+        # We need to be a bit carefull here because we need to handle multiple edge cases:
+        # - maybe postgresql or mysql is not installed, in this case we should avoid to call code which depends on psql/mysql because it will fail in all cases
+        # - a second DB is removed but we still have one, so we need to keep the user in the DB and the setting
+        # - maybe we need to deprovision a psql DB but we still have a mysql db and so the user need to be removed in postgresql but not in the settings
+        if shutil.which('mysql'):
+            # Note mysql still list the old removed database this way so we need to filter with mysqlshow
+            drop_user_mysql = os.system(f"""
+for d in $(echo "SELECT db FROM mysql.db WHERE user='{db_user}';" | mysql -s); do
+    if mysqlshow | grep -q -w "$d" 2>/dev/null >/dev/null; then
+        exit 1
+    fi
+done
+""") == 0
+            if drop_user_mysql:
+                db_helper_name = "mysql"
+                self._run_script(
+                    "deprovision",
+                    f"""
 ynh_{db_helper_name}_user_exists "{db_user}" && ynh_{db_helper_name}_drop_user "{db_user}" || true
 """,
-        )
+                )
+        else:
+            drop_user_mysql = True
 
-        self.delete_setting("db_name")
-        self.delete_setting("db_user")
-        self.delete_setting("db_pwd")
+        if shutil.which('psql'):
+            drop_user_psql = os.system(f"""
+request="$(echo "
+SELECT COUNT(datname)
+FROM pg_database JOIN pg_authid ON pg_database.datdba = pg_authid.oid
+WHERE rolname = '{db_user}'" | sudo --login --user=postgres psql -qAt)"
+test "$request" -eq 0
+""") == 0
+            if drop_user_psql:
+                db_helper_name = "psql"
+                self._run_script(
+                    "deprovision",
+                    f"""
+ynh_{db_helper_name}_user_exists "{db_user}" && ynh_{db_helper_name}_drop_user "{db_user}" || true
+""",
+                )
+        else:
+            drop_user_psql = True
+
+        if drop_user_mysql and drop_user_psql:
+            self.delete_setting("db_user")
+            self.delete_setting("db_pwd")
 
 
 class NodejsAppResource(AppResource):
