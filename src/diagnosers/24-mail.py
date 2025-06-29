@@ -28,10 +28,10 @@ from moulinette.utils.filesystem import read_yaml
 from moulinette.utils.process import check_output
 
 import dns.resolver
-from yunohost.diagnosis import Diagnoser
-from yunohost.domain import _get_maindomain, domain_list
-from yunohost.settings import settings_get
-from yunohost.utils.dns import dig
+from ..diagnosis import Diagnoser
+from ..domain import _get_maindomain, domain_list
+from ..settings import settings_get
+from ..utils.dns import dig
 
 DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/dnsbl_list.yml"
 

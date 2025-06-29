@@ -25,7 +25,7 @@ import re
 from moulinette import Moulinette
 from moulinette.utils.process import check_output
 
-from yunohost.utils.error import YunohostError
+from ..utils.error import YunohostError
 
 logger = logging.getLogger("yunohost.utils.packages")
 

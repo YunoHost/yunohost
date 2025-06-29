@@ -88,17 +88,19 @@ def patch_isatty(isatty):
 
 @contextmanager
 def patch_interface(interface: Literal["api", "cli"] = "api"):
-    with patch.object(Moulinette.interface, "type", interface), patch_isatty(
-        interface == "cli"
+    with (
+        patch.object(Moulinette.interface, "type", interface),
+        patch_isatty(interface == "cli"),
     ):
         yield
 
 
 @contextmanager
 def patch_prompt(return_value):
-    with patch_interface("cli"), patch.object(
-        Moulinette, "prompt", return_value=return_value
-    ) as prompt:
+    with (
+        patch_interface("cli"),
+        patch.object(Moulinette, "prompt", return_value=return_value) as prompt,
+    ):
         yield prompt
 
 
@@ -1536,11 +1538,14 @@ def patch_domains(*, domains, main_domain):
     Data mocking for DomainOption:
     - yunohost.domain.domain_list
     """
-    with patch.object(
-        domain,
-        "domain_list",
-        return_value={"domains": domains, "main": main_domain},
-    ), patch.object(domain, "_get_maindomain", return_value=main_domain):
+    with (
+        patch.object(
+            domain,
+            "domain_list",
+            return_value={"domains": domains, "main": main_domain},
+        ),
+        patch.object(domain, "_get_maindomain", return_value=main_domain),
+    ):
         yield
 
 
@@ -1869,12 +1874,13 @@ class TestGroup(BaseTest):
 
 @pytest.fixture
 def patch_entities():
-    with patch_domains(domains=domains2, main_domain=main_domain), patch_apps(
-        apps=[installed_webapp, installed_non_webapp]
-    ), patch_users(
-        users={admin_username: admin_user, regular_username: regular_user},
-    ), patch_groups(
-        groups=groups2
+    with (
+        patch_domains(domains=domains2, main_domain=main_domain),
+        patch_apps(apps=[installed_webapp, installed_non_webapp]),
+        patch_users(
+            users={admin_username: admin_user, regular_username: regular_user},
+        ),
+        patch_groups(groups=groups2),
     ):
         yield
 
@@ -2018,9 +2024,10 @@ def test_question_string_input_test_ask_with_example():
     }
     answers = {}
 
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
+    with (
+        patch.object(Moulinette, "prompt", return_value="some_value") as prompt,
+        patch.object(os, "isatty", return_value=True),
+    ):
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert example_text in prompt.call_args[1]["message"]
@@ -2039,9 +2046,10 @@ def test_question_password_input_test_ask_with_example():
     }
     answers = {}
 
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
+    with (
+        patch.object(Moulinette, "prompt", return_value="some_value") as prompt,
+        patch.object(os, "isatty", return_value=True),
+    ):
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert example_text in prompt.call_args[1]["message"]
@@ -2060,9 +2068,10 @@ def test_question_path_input_test_ask_with_example():
     }
     answers = {}
 
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
+    with (
+        patch.object(Moulinette, "prompt", return_value="some_value") as prompt,
+        patch.object(os, "isatty", return_value=True),
+    ):
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert example_text in prompt.call_args[1]["message"]
@@ -2081,9 +2090,10 @@ def test_question_number_input_test_ask_with_example():
     }
     answers = {}
 
-    with patch.object(
-        Moulinette, "prompt", return_value="1111"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
+    with (
+        patch.object(Moulinette, "prompt", return_value="1111") as prompt,
+        patch.object(os, "isatty", return_value=True),
+    ):
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert example_value in prompt.call_args[1]["message"]

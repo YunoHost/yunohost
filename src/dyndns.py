@@ -30,12 +30,12 @@ from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.filesystem import chmod, chown, rm, write_to_file
 
-from yunohost.domain import _get_maindomain
-from yunohost.log import is_unit_operation
-from yunohost.regenconf import regen_conf
-from yunohost.utils.dns import dig, is_yunohost_dyndns_domain
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.network import get_public_ip
+from .domain import _get_maindomain
+from .log import is_unit_operation
+from .regenconf import regen_conf
+from .utils.dns import dig, is_yunohost_dyndns_domain
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.network import get_public_ip
 
 logger = getLogger("yunohost.dyndns")
 
@@ -135,7 +135,7 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
         logger.warning(m18n.n("dyndns_no_recovery_password"))
 
     if recovery_password:
-        from yunohost.utils.password import assert_password_is_strong_enough
+        from .utils.password import assert_password_is_strong_enough
 
         assert_password_is_strong_enough("admin", recovery_password)
         operation_logger.data_to_redact.append(recovery_password)
@@ -295,7 +295,7 @@ def dyndns_set_recovery_password(domain, recovery_password):
     if not keys:
         raise YunohostValidationError("dyndns_key_not_found")
 
-    from yunohost.utils.password import assert_password_is_strong_enough
+    from .utils.password import assert_password_is_strong_enough
 
     assert_password_is_strong_enough("admin", recovery_password)
     secret = str(domain) + ":" + str(recovery_password).strip()
@@ -340,7 +340,7 @@ def dyndns_list():
     Returns all currently subscribed DynDNS domains ( deduced from the key files )
     """
 
-    from yunohost.domain import domain_list
+    from .domain import domain_list
 
     domains = domain_list(exclude_subdomains=True)["domains"]
     dyndns_domains = [
@@ -371,7 +371,7 @@ def dyndns_update(
     import dns.tsig
     import dns.tsigkeyring
     import dns.update
-    from yunohost.dns import _build_dns_conf
+    from .dns import _build_dns_conf
 
     # If domain is not given, update all DynDNS domains
     if domain is None:

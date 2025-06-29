@@ -58,9 +58,9 @@ from pydantic.networks import EmailStr, HttpUrl
 from pydantic.types import constr
 from pydantic_extra_types.color import Color
 
-from yunohost.log import OperationLogger
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.i18n import _value_for_locale
+from ..log import OperationLogger
+from ..utils.error import YunohostError, YunohostValidationError
+from ..utils.i18n import _value_for_locale
 
 if TYPE_CHECKING:
     from pydantic import GetJsonSchemaHandler
@@ -214,7 +214,7 @@ def js_to_python(expr):
     return py_expr
 
 
-def evaluate_simple_js_expression(expr: str, context: dict[str, Any] = {}) -> bool:
+def evaluate_simple_js_expression(expr: str, context: Mapping[str, Any] = {}) -> bool:
     if not expr.strip():
         return False
     node = ast.parse(js_to_python(expr), mode="eval").body
@@ -883,7 +883,7 @@ class PasswordOption(BaseInputOption):
                 )
 
             # If it's an optional argument the value should be empty or strong enough
-            from yunohost.utils.password import assert_password_is_strong_enough
+            from ..utils.password import assert_password_is_strong_enough
 
             assert_password_is_strong_enough("user", value)
 
@@ -1125,7 +1125,7 @@ class BooleanOption(BaseInputOption):
         }
         return attrs
 
-    def _get_prompt_message(self, value: bool | None) -> str:
+    def _get_prompt_message(self, value: Any) -> str:
         message = super()._get_prompt_message(value)
 
         if not self.readonly:
@@ -1728,7 +1728,7 @@ class DomainOption(BaseChoicesOption):
     @classmethod
     def inject_domains_choices(cls, values: Values) -> Values:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        from yunohost.domain import domain_list
+        from ..domain import domain_list
 
         data = domain_list()
         values["choices"] = {
@@ -1742,7 +1742,7 @@ class DomainOption(BaseChoicesOption):
     @classmethod
     def inject_default(cls, values: Values) -> Values:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        from yunohost.domain import _get_maindomain
+        from ..domain import _get_maindomain
 
         values["default"] = _get_maindomain()
         return values
@@ -1788,7 +1788,7 @@ class AppOption(BaseChoicesOption):
     @classmethod
     def inject_apps_choices(cls, values: Values) -> Values:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        from yunohost.app import app_list
+        from ..app import app_list
 
         apps = app_list(full=True)["apps"]
 
@@ -1837,7 +1837,7 @@ class UserOption(BaseChoicesOption):
     @model_validator(mode="before")
     def inject_users_choices_and_default(cls, values: Values) -> Values:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        from yunohost.user import user_list
+        from ..user import user_list
 
         users = user_list(fields=["username", "fullname", "mail", "groups"])["users"]
 
@@ -1892,7 +1892,7 @@ class GroupOption(BaseChoicesOption):
     @classmethod
     def inject_groups_choices(cls, values: Values) -> Values:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        from yunohost.user import user_group_list
+        from ..user import user_group_list
 
         groups = list(user_group_list(include_primary_groups=False)["groups"].keys())
 
@@ -2305,7 +2305,7 @@ def prompt_or_validate_form(
 
 def ask_questions_and_parse_answers(
     raw_options: dict[str, Any],
-    prefilled_answers: str | Mapping[str, Any] = {},
+    prefilled_answers: str | Mapping[str, Any] | None = {},
     current_values: Mapping[str, Any] = {},
     hooks: Hooks = {},
 ) -> tuple[list[AnyOption], FormModel]:

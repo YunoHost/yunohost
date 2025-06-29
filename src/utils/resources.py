@@ -32,8 +32,8 @@ from moulinette.utils.filesystem import chmod, chown, mkdir, rm, write_to_file
 from moulinette.utils.process import check_output
 from moulinette.utils.text import random_ascii
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.system import debian_version, debian_version_id, system_arch
+from ..utils.error import YunohostError, YunohostValidationError
+from ..utils.system import debian_version, debian_version_id, system_arch
 
 logger = getLogger("yunohost.utils.resources")
 
@@ -214,22 +214,22 @@ class AppResource:
             setattr(self, key, value)
 
     def get_setting(self, key):
-        from yunohost.app import app_setting
+        from ..app import app_setting
 
         return app_setting(self.app, key)
 
     def set_setting(self, key, value):
-        from yunohost.app import app_setting
+        from ..app import app_setting
 
         app_setting(self.app, key, value=value)
 
     def delete_setting(self, key):
-        from yunohost.app import app_setting
+        from ..app import app_setting
 
         app_setting(self.app, key, delete=True)
 
     def check_output_bash_snippet(self, snippet, env={}):
-        from yunohost.app import _make_environment_for_app_script
+        from ..app import _make_environment_for_app_script
 
         env_ = _make_environment_for_app_script(
             self.app,
@@ -249,11 +249,11 @@ class AppResource:
         return out, err
 
     def _run_script(self, action, script, env={}):
-        from yunohost.app import (
+        from ..app import (
             _make_environment_for_app_script,
             _make_tmp_workdir_for_app,
         )
-        from yunohost.hook import hook_exec_with_script_debug_if_failure
+        from ..hook import hook_exec_with_script_debug_if_failure
 
         workdir = self.workdir or _make_tmp_workdir_for_app(app=self.app)
 
@@ -275,7 +275,7 @@ ynh_abort_if_errors
 
         write_to_file(script_path, script)
 
-        from yunohost.log import OperationLogger
+        from ..log import OperationLogger
 
         # FIXME ? : this is an ugly hack :(
         active_operation_loggers = [
@@ -669,11 +669,11 @@ class PermissionsResource(AppResource):
 
         super().__init__({"permissions": properties}, *args, **kwargs)
 
-        from yunohost.app import _get_app_settings, _hydrate_app_template
+        from ..app import _get_app_settings, _hydrate_app_template
 
         settings = _get_app_settings(self.app)
         for perm, infos in self.permissions.items():
-            if infos.get("url") and "__" in infos.get("url"):
+            if infos.get("url") and "__" in infos.get("url"):  # type: ignore
                 infos["url"] = _hydrate_app_template(infos["url"], settings)
 
             if infos.get("additional_urls"):
@@ -683,14 +683,14 @@ class PermissionsResource(AppResource):
                 ]
 
     def provision_or_update(self, context: Dict = {}):
-        from yunohost.permission import (
+        from ..permission import (
             permission_create,
             permission_delete,
             _sync_permissions_with_ldap,
             permission_url,
             user_permission_update,
         )
-        from yunohost.app import app_ssowatconf
+        from ..app import app_ssowatconf
 
         # Delete legacy is_public setting if not already done
         self.delete_setting("is_public")
@@ -755,11 +755,11 @@ class PermissionsResource(AppResource):
         app_ssowatconf()
 
     def deprovision(self, context: Dict = {}):
-        from yunohost.permission import (
+        from ..permission import (
             permission_delete,
             _sync_permissions_with_ldap,
         )
-        from yunohost.app import app_ssowatconf
+        from ..app import app_ssowatconf
 
         existing_perms = list((self.get_setting("_permissions") or {}).keys())
         for perm in existing_perms:
@@ -822,7 +822,7 @@ class SystemuserAppResource(AppResource):
     home: str = ""
 
     def provision_or_update(self, context: Dict = {}):
-        from yunohost.app import regen_mail_app_user_config_for_dovecot_and_postfix
+        from ..app import regen_mail_app_user_config_for_dovecot_and_postfix
 
         # FIXME : validate that no yunohost user exists with that name?
         # and/or that no system user exists during install ?
@@ -891,7 +891,7 @@ class SystemuserAppResource(AppResource):
                 regen_mail_app_user_config_for_dovecot_and_postfix()
 
     def deprovision(self, context: Dict = {}):
-        from yunohost.app import regen_mail_app_user_config_for_dovecot_and_postfix
+        from ..app import regen_mail_app_user_config_for_dovecot_and_postfix
 
         if os.system(f"getent passwd {self.app} >/dev/null 2>/dev/null") == 0:
             os.system(f"deluser {self.app} >/dev/null")
@@ -1410,7 +1410,7 @@ class PortsResource(AppResource):
         return [exposed.lower()]
 
     def provision_or_update(self, context: Dict = {}):
-        from yunohost.firewall import YunoFirewall
+        from ..firewall import YunoFirewall
 
         firewall = YunoFirewall()
 
@@ -1454,7 +1454,7 @@ class PortsResource(AppResource):
             firewall.apply()
 
     def deprovision(self, context: Dict = {}):
-        from yunohost.firewall import YunoFirewall
+        from ..firewall import YunoFirewall
 
         firewall = YunoFirewall()
 
@@ -1696,7 +1696,7 @@ class NodejsAppResource(AppResource):
 
     def garbage_collect_unused_versions(self):
 
-        from yunohost.app import app_setting, _installed_apps
+        from ..app import app_setting, _installed_apps
 
         used_versions = []
         for app in _installed_apps():
@@ -1830,7 +1830,7 @@ class RubyAppResource(AppResource):
 
     def garbage_collect_unused_versions(self):
 
-        from yunohost.app import app_setting, _installed_apps
+        from ..app import app_setting, _installed_apps
 
         used_versions = []
         for app in _installed_apps():
@@ -1943,7 +1943,7 @@ class GoAppResource(AppResource):
         ]
 
         used_versions = []
-        from yunohost.app import app_setting, _installed_apps
+        from ..app import app_setting, _installed_apps
 
         for app in _installed_apps():
             v = app_setting(app, "go_version")

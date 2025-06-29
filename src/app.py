@@ -59,16 +59,16 @@ from moulinette.utils.filesystem import (
 from moulinette.utils.process import check_output, run_commands
 from packaging import version
 
-from yunohost.app_catalog import (  # noqa
+from .app_catalog import (  # noqa
     APPS_CATALOG_LOGOS,
     _load_apps_catalog,
     app_catalog,
     app_search,
 )
-from yunohost.log import OperationLogger, is_unit_operation
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.i18n import _value_for_locale
-from yunohost.utils.system import (
+from .log import OperationLogger, is_unit_operation, is_flash_unit_operation
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.i18n import _value_for_locale
+from .utils.system import (
     binary_to_human,
     debian_version,
     dpkg_is_broken,
@@ -83,8 +83,8 @@ from yunohost.utils.system import (
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
-    from yunohost.utils.configpanel import ConfigPanelModel, RawSettings, RawConfig
-    from yunohost.utils.form import FormModel
+    from .utils.configpanel import ConfigPanelModel, RawSettings, RawConfig
+    from .utils.form import FormModel
     from moulinette.utils.log import MoulinetteLogger
 
     logger = cast(MoulinetteLogger, getLogger("yunohost.app"))
@@ -124,7 +124,7 @@ class AppInfo(TypedDict, total=False):
     description: Required[str]
     version: Required[str]
     domain_path: str
-    logo: str
+    logo: str | None
     upgradable: Literal["yes", "no", "url_required", "bad_quality"]
     current_version: str | None
     new_version: str | None
@@ -169,8 +169,8 @@ def app_info(app: str, full: bool = False, upgradable: bool = False) -> AppInfo:
     """
     Get info for a specific app
     """
-    from yunohost.domain import _get_raw_domain_settings
-    from yunohost.permission import user_permission_list
+    from .domain import _get_raw_domain_settings
+    from .permission import user_permission_list
 
     _assert_is_installed(app)
 
@@ -369,10 +369,10 @@ def app_map(
     }
     """
 
-    from yunohost.permission import user_permission_list
+    from .permission import user_permission_list, AppPermInfos
 
     apps = []
-    result = {}
+    result: dict[str, Any] = {}
 
     if app is not None:
         _assert_is_installed(app)
@@ -411,23 +411,21 @@ def app_map(
             if user not in main_perm["corresponding_users"]:
                 continue
 
-        this_app_perms = {
-            p: i
+        this_app_perms: dict[str, AppPermInfos] = {
+            p: i  # type: ignore
             for p, i in permissions.items()
-            if p.startswith(app + ".") and (i["url"] or i["additional_urls"])
+            if p.startswith(app + ".") and (i["url"] or i["additional_urls"])  # type: ignore
         }
 
-        for perm_name, perm_info in this_app_perms.items():
+        for perm_info in this_app_perms.values():
             # If we're building the map for a specific user, check the user
             # actually is allowed for this specific perm
             if user and user not in perm_info["corresponding_users"]:
                 continue
 
             perm_label = perm_info["label"]
-            perm_all_urls = (
-                []
-                + ([perm_info["url"]] if perm_info["url"] else [])
-                + perm_info["additional_urls"]
+            perm_all_urls = list(
+                filter(None, [perm_info["url"], *perm_info["additional_urls"]])
             )
 
             for url in perm_all_urls:
@@ -471,9 +469,9 @@ def app_change_url(
         path -- New path at which the application will be move
 
     """
-    from yunohost.hook import hook_callback, hook_exec_with_script_debug_if_failure
-    from yunohost.service import service_reload_or_restart
-    from yunohost.utils.form import DomainOption, WebPathOption
+    from .hook import hook_callback, hook_exec_with_script_debug_if_failure
+    from .service import service_reload_or_restart
+    from .utils.form import DomainOption, WebPathOption
 
     installed = _is_installed(app)
     if not installed:
@@ -618,21 +616,21 @@ def app_upgrade(
         no_safety_backup -- Disable the safety backup during upgrade
 
     """
-    from yunohost.backup import (
+    from .backup import (
         backup_create,
         backup_delete,
         backup_list,
         backup_restore,
     )
-    from yunohost.hook import (
+    from .hook import (
         hook_add,
         hook_callback,
         hook_exec_with_script_debug_if_failure,
         hook_remove,
     )
-    from yunohost.permission import _sync_permissions_with_ldap
-    from yunohost.regenconf import manually_modified_files
-    from yunohost.utils.legacy import _patch_legacy_helpers
+    from .permission import _sync_permissions_with_ldap
+    from .regenconf import manually_modified_files
+    from .utils.legacy import _patch_legacy_helpers
 
     apps = app
     # Check if disk space available
@@ -824,7 +822,7 @@ def app_upgrade(
         hook_callback("pre_app_upgrade", env=env_dict)
 
         if manifest["packaging_format"] >= 2:
-            from yunohost.utils.resources import AppResourceManager
+            from .utils.resources import AppResourceManager
 
             AppResourceManager(
                 app_instance_name,
@@ -1038,7 +1036,7 @@ def app_upgrade(
 
 
 def app_manifest(app: str, with_screenshot: bool = False) -> AppManifest:
-    from yunohost.utils.form import parse_raw_options
+    from .utils.form import parse_raw_options
 
     manifest, extracted_app_folder = _extract_app(app)
 
@@ -1121,24 +1119,24 @@ def app_install(
         force -- Do not ask for confirmation when installing experimental / low-quality apps
     """
 
-    from yunohost.hook import (
+    from .hook import (
         hook_add,
         hook_callback,
         hook_exec,
         hook_exec_with_script_debug_if_failure,
         hook_remove,
     )
-    from yunohost.log import OperationLogger
-    from yunohost.permission import (
+    from .log import OperationLogger
+    from .permission import (
         permission_create,
         permission_delete,
         _sync_permissions_with_ldap,
         user_permission_list,
     )
-    from yunohost.regenconf import manually_modified_files
-    from yunohost.user import user_list
-    from yunohost.utils.form import ask_questions_and_parse_answers
-    from yunohost.utils.legacy import _patch_legacy_helpers
+    from .regenconf import manually_modified_files
+    from .user import user_list
+    from .utils.form import ask_questions_and_parse_answers
+    from .utils.legacy import _patch_legacy_helpers
 
     # Check if disk space available
     if free_space_in_directory("/") <= 512 * 1000 * 1000:
@@ -1262,7 +1260,7 @@ def app_install(
             )
 
     if packaging_format >= 2:
-        from yunohost.utils.resources import AppResourceManager
+        from .utils.resources import AppResourceManager
 
         try:
             AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
@@ -1399,7 +1397,7 @@ def app_install(
                 )
 
             if packaging_format >= 2:
-                from yunohost.utils.resources import AppResourceManager
+                from .utils.resources import AppResourceManager
 
                 AppResourceManager(
                     app_instance_name, wanted={}, current=manifest
@@ -1480,14 +1478,14 @@ def app_remove(
         purge -- Remove with all app data
         force_workdir -- Special var to force the working directoy to use, in context such as remove-after-failed-upgrade or remove-after-failed-restore
     """
-    from yunohost.domain import _get_raw_domain_settings, domain_config_set, domain_list
-    from yunohost.hook import hook_callback, hook_exec, hook_remove
-    from yunohost.permission import (
+    from .domain import _get_raw_domain_settings, domain_config_set, domain_list
+    from .hook import hook_callback, hook_exec, hook_remove
+    from .permission import (
         permission_delete,
         _sync_permissions_with_ldap,
         user_permission_list,
     )
-    from yunohost.utils.legacy import _patch_legacy_helpers
+    from .utils.legacy import _patch_legacy_helpers
 
     _assert_is_installed(app)
 
@@ -1540,7 +1538,7 @@ def app_remove(
 
     packaging_format = manifest["packaging_format"]
     if packaging_format >= 2:
-        from yunohost.utils.resources import AppResourceManager
+        from .utils.resources import AppResourceManager
 
         AppResourceManager(app, wanted={}, current=manifest).apply(
             rollback_and_raise_exception_if_failure=False,
@@ -1589,7 +1587,7 @@ def app_makedefault(
         domain
 
     """
-    from yunohost.domain import _assert_domain_exists, domain_config_set
+    from .domain import _assert_domain_exists, domain_config_set
 
     app_settings = _get_app_settings(app)
     app_domain = app_settings["domain"]
@@ -1610,8 +1608,11 @@ def app_makedefault(
 
 
 def app_setting(
-    app: str, key: str, value: str | int | None = None, delete: bool = False
-) -> None | Any:
+    app: str,
+    key: str,
+    value: str | int | dict[str, Any] | None = None,
+    delete: bool = False,
+) -> str | int | dict[str, Any] | None:
     """
     Set or get an app setting value
 
@@ -1674,12 +1675,12 @@ def app_register_url(app: str, domain: str, path: str) -> None:
         domain -- The domain on which the app should be registered (e.g. your.domain.tld)
         path -- The path to be registered (e.g. /coffee)
     """
-    from yunohost.permission import (
+    from .permission import (
         _sync_permissions_with_ldap,
         permission_url,
         user_permission_update,
     )
-    from yunohost.utils.form import DomainOption, WebPathOption
+    from .utils.form import DomainOption, WebPathOption
 
     domain = DomainOption.normalize(domain)
     path = WebPathOption.normalize(path)
@@ -1714,19 +1715,19 @@ def app_ssowatconf() -> None:
     Regenerate SSOwat configuration file
 
     """
-    from yunohost.domain import (
+    from .domain import (
         _get_domain_portal_dict,
         _get_raw_domain_settings,
         domain_list,
     )
-    from yunohost.permission import AppPermInfos, user_permission_list
-    from yunohost.settings import settings_get
+    from .permission import AppPermInfos, user_permission_list
+    from .settings import settings_get
 
     domain_portal_dict = _get_domain_portal_dict()
 
     domains = domain_list()["domains"]
     portal_domains = domain_list(exclude_subdomains=True)["domains"]
-    all_permissions: dict[str, AppPermInfos] = user_permission_list(
+    all_permissions: dict[str, AppPermInfos] = user_permission_list(  # type: ignore
         full=True, ignore_system_perms=True, absolute_urls=True
     )["permissions"]
 
@@ -1782,12 +1783,9 @@ def app_ssowatconf() -> None:
     # New permission system
     for perm_name, perm_info in all_permissions.items():
 
-        uris = (
-            []
-            + ([perm_info["url"]] if perm_info.get("url") else [])
-            + perm_info.get("additional_urls", [])
+        uris = list(
+            filter(None, [perm_info.get("url"), *perm_info.get("additional_urls", [])])
         )
-
         # Ignore permissions for which there's no url defined
         if not uris:
             continue
@@ -1922,7 +1920,7 @@ def app_ssowatconf() -> None:
     logger.debug(m18n.n("ssowat_conf_generated"))
 
 
-@is_unit_operation(flash=True)
+@is_flash_unit_operation()
 def app_change_label(app: str, new_label: str) -> None:
 
     installed = _is_installed(app)
@@ -1951,7 +1949,7 @@ def app_action_run(
     if core:
         _assert_is_installed(app)
 
-        from yunohost.utils.form import parse_prefilled_values
+        from .utils.form import parse_prefilled_values
 
         parsedargs = parse_prefilled_values(args)
 
@@ -2033,7 +2031,7 @@ def app_config_set(
 
 
 def _get_AppConfigPanel():
-    from yunohost.utils.configpanel import ConfigPanel
+    from .utils.configpanel import ConfigPanel
 
     class AppConfigPanel(ConfigPanel):
         entity_type = "app"
@@ -2073,7 +2071,7 @@ def _get_AppConfigPanel():
         def _call_config_script(
             self, action: str, env: dict[str, Any] | None = None
         ) -> dict[str, Any]:
-            from yunohost.hook import hook_exec
+            from .hook import hook_exec
 
             if env is None:
                 env = {}
@@ -2205,7 +2203,7 @@ ynh_app_config_run $1
 
         def _get_raw_config(self) -> "RawConfig":
 
-            from yunohost.user import user_list, user_group_list
+            from .user import user_list, user_group_list
 
             raw_config = super()._get_raw_config()
             i18n_prefix = raw_config["i18n"]
@@ -2299,9 +2297,9 @@ ynh_app_config_run $1
 
         def _get_raw_settings(self) -> "RawSettings":
 
-            from yunohost.permission import user_permission_list
+            from .permission import user_permission_list, AppPermInfos
 
-            perms = user_permission_list(full=True, apps=[self.entity])["permissions"]
+            perms: dict[str, AppPermInfos] = user_permission_list(full=True, apps=[self.entity])["permissions"]  # type: ignore
             app_settings = _get_app_settings(self.entity)
             perms_as_app_settings = app_settings.get("_permissions", {})
 
@@ -2361,7 +2359,7 @@ ynh_app_config_run $1
             exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
         ) -> None:
 
-            from yunohost.user import (
+            from .user import (
                 user_permission_update,
                 user_permission_add,
                 user_permission_remove,
@@ -3347,8 +3345,8 @@ def _get_conflicting_apps(
         ignore_app -- An optional app id to ignore (c.f. the change_url usecase)
     """
 
-    from yunohost.domain import _assert_domain_exists
-    from yunohost.utils.form import DomainOption, WebPathOption
+    from .domain import _assert_domain_exists
+    from .utils.form import DomainOption, WebPathOption
 
     domain = DomainOption.normalize(domain)
     path = WebPathOption.normalize(path)
@@ -3569,7 +3567,7 @@ def unstable_apps() -> list[str]:
 
 
 def _assert_system_is_sane_for_app(manifest: AppManifest, when: Literal["pre", "post"]):
-    from yunohost.service import service_status
+    from .service import service_status
 
     logger.debug("Checking that required services are up and running...")
 
@@ -3615,7 +3613,7 @@ def _assert_system_is_sane_for_app(manifest: AppManifest, when: Literal["pre", "
             raise YunohostError("this_action_broke_dpkg")
 
 
-@is_unit_operation(flash=True)
+@is_flash_unit_operation()
 def app_dismiss_notification(app: str, name: Literal["post_install", "post_upgrade"]):
     assert isinstance(name, str)
     name_ = name.lower()
@@ -3732,7 +3730,7 @@ def regen_mail_app_user_config_for_dovecot_and_postfix(
     dovecot = True if only in [None, "dovecot"] else False
     postfix = True if only in [None, "postfix"] else False
 
-    from yunohost.utils.password import _hash_user_password
+    from .utils.password import _hash_user_password
 
     postfix_map = []
     dovecot_passwd = []

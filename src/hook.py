@@ -30,7 +30,7 @@ from logging import getLogger
 from moulinette import Moulinette, m18n
 from moulinette.utils.filesystem import cp, read_yaml
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
+from .utils.error import YunohostError, YunohostValidationError
 
 HOOK_FOLDER = "/usr/share/yunohost/hooks/"
 CUSTOM_HOOK_FOLDER = "/etc/yunohost/hooks.d/"

@@ -19,8 +19,8 @@
 import enum
 
 from sdbus import sd_bus_open_system
-from yunohost.utils.system import binary_to_human
-from yunohost.utils.udisks2_interfaces import Udisks2Manager
+from .utils.system import binary_to_human
+from .utils.udisks2_interfaces import Udisks2Manager
 
 
 class DiskState(enum.StrEnum):

@@ -46,7 +46,7 @@ def teardown_function(function):
 def install_changeurl_app(path):
     app_install(
         os.path.join(get_test_apps_dir(), "change_url_app_ynh"),
-        args="domain={}&path={}".format(maindomain, path),
+        args="domain={}&path={}&is_public=1".format(maindomain, path),
         force=True,
     )
 
@@ -62,6 +62,7 @@ def check_changeurl_app(path):
         "https://127.0.0.1%s/" % path, headers={"Host": maindomain}, verify=False
     )
     assert r.status_code == 200
+    assert "This is a dummy app to test the change url feature." in r.text
 
 
 def test_appchangeurl():

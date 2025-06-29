@@ -28,9 +28,9 @@ from moulinette.utils.filesystem import read_file
 from moulinette.utils.network import download_text
 from moulinette.utils.process import check_output
 
-from yunohost.diagnosis import Diagnoser
-from yunohost.settings import settings_get
-from yunohost.utils.network import get_network_interfaces
+from ..diagnosis import Diagnoser
+from ..settings import settings_get
+from ..utils.network import get_network_interfaces
 
 logger = logging.getLogger("yunohost.diagnosis")
 

@@ -30,8 +30,8 @@ from moulinette.interfaces.cli import colorize
 from moulinette.utils.filesystem import mkdir, read_toml, read_yaml, write_to_yaml
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.form import (
+from .error import YunohostError, YunohostValidationError
+from .form import (
     AnyOption,
     BaseInputOption,
     BaseReadonlyOption,
@@ -44,7 +44,7 @@ from yunohost.utils.form import (
     parse_prefilled_values,
     prompt_or_validate_form,
 )
-from yunohost.utils.i18n import _value_for_locale
+from .i18n import _value_for_locale
 
 if TYPE_CHECKING:
     from pydantic import GetJsonSchemaHandler
@@ -53,8 +53,8 @@ if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
     from pydantic_core.core_schema import CoreSchema
 
-    from yunohost.log import OperationLogger
-    from yunohost.utils.form import FormModel, Hooks
+    from ..log import OperationLogger
+    from .form import FormModel, Hooks
 
 if TYPE_CHECKING:
     from moulinette.utils.log import MoulinetteLogger
@@ -961,7 +961,7 @@ class ConfigPanel:
         raise NotImplementedError()
 
     def _reload_services(self) -> None:
-        from yunohost.service import service_reload_or_restart
+        from ..service import service_reload_or_restart
 
         services_to_reload = self.config.services if self.config else []
 

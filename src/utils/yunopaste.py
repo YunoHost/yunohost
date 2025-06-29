@@ -24,9 +24,9 @@ import re
 
 import requests
 
-from yunohost.domain import _get_maindomain, domain_list
-from yunohost.utils.error import YunohostError
-from yunohost.utils.network import get_public_ip
+from ..domain import _get_maindomain, domain_list
+from ..utils.error import YunohostError
+from ..utils.network import get_public_ip
 
 logger = logging.getLogger("yunohost.utils.yunopaste")
 

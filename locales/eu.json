@@ -867,5 +867,6 @@
     "automatic_task": "Ataza automatikoa",
     "noninteractive_task": "Interakziorik gabeko ataza",
     "yunohost_api": "YunoHosten APIa",
-    "diagnosis_apps_outdated_packaging_format": "Aplikazio honek zaharkitutako pakete-formatu bat darabil, eta aurki YunoHostekin bateragarri izateari utziko dio. Eguneratzen saiatu beharko zinateke."
+    "diagnosis_apps_outdated_packaging_format": "Aplikazio honek zaharkitutako pakete-formatu bat darabil, eta aurki YunoHostekin bateragarri izateari utziko dio. Eguneratzen saiatu beharko zinateke.",
+    "global_settings_setting_portal_name": "Ataria"
 }
