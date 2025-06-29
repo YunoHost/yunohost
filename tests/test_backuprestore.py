@@ -38,13 +38,10 @@ from yunohost.backup import (
 from yunohost.domain import _get_maindomain, domain_add, domain_list, domain_remove
 from yunohost.hook import CUSTOM_HOOK_FOLDER
 from yunohost.permission import user_permission_list
-from .test_permission import (
-    check_LDAP_db_integrity,
-    check_permission_for_apps,
-)
 from yunohost.user import user_create, user_delete, user_list
 
 from .conftest import get_test_apps_dir, message, raiseYunohostError
+from .test_permission import check_LDAP_db_integrity, check_permission_for_apps
 
 # Get main domain
 maindomain = ""

@@ -20,10 +20,10 @@
 
 import os
 import tempfile
+from subprocess import check_call
 
 import pytest
 from moulinette.utils.process import check_output
-from subprocess import check_call
 
 from yunohost.app import app_setting
 from yunohost.domain import _get_maindomain
