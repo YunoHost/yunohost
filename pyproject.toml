@@ -11,12 +11,13 @@ requires-python = ">=3.11"
 
 # These dependencies might not be up to date, please see debian/control instead
 dependencies = [
+    "bottle",
     "cryptography",
     "dbus-python",
     "dnspython",
     "email-validator",
     "jinja2",
-    "jwt",
+    "pyjwt>=1.7,<2.0",
     "lexicon",
     "miniupnpc",
     "packaging",
@@ -27,6 +28,7 @@ dependencies = [
     "pyopenssl",
     "python-ldap",
     "python-magic",
+    "pyyaml",
     "requests",
     "sdbus",
     "sortedcollections",
