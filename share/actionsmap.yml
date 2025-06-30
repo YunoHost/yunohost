@@ -806,7 +806,6 @@ domain:
                             nargs: "*"
                             extra:
                                 autocomplete: *domains_list
-
                         --full:
                             help: Show more details
                             action: store_true
@@ -2129,7 +2128,7 @@ hook:
                             ynh_selector: hook list
                             jq_selector: '.hooks[]'
                             depends: previous
-                            use_cache: false
+                            use_cache: true
 
         ### hook_list()
         list:
@@ -2284,7 +2283,6 @@ diagnosis:
                             ynh_selector: diagnosis list
                             jq_selector: '.categories[]'
                             use_cache: false
-
                 --full:
                     help: Display additional information
                     action: store_true
