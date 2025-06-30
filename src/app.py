@@ -244,18 +244,14 @@ def app_info(app: str, full: bool = False, with_upgrade_infos: bool = False, wit
             _get_raw_domain_settings(settings["domain"]).get("default_app") == app
         )
 
-    ret["supports_change_url"] = os.path.exists(
-        os.path.join(setting_path, "scripts", "change_url")
-    )
-    ret["supports_backup_restore"] = os.path.exists(
-        os.path.join(setting_path, "scripts", "backup")
-    ) and os.path.exists(os.path.join(setting_path, "scripts", "restore"))
+    setting_path = Path(APPS_SETTING_PATH) / app
+    ret["supports_change_url"] = (setting_path / "scripts" / "change_url").exists()
+    ret["supports_backup_restore"] = (setting_path / "scripts" / "backup").exists() \
+        and (setting_path / "scripts" / "restore").exists()
     ret["supports_multi_instance"] = local_manifest.get("integration", {}).get(
         "multi_instance", False
     )
-    ret["supports_config_panel"] = os.path.exists(
-        os.path.join(setting_path, "config_panel.toml")
-    )
+    ret["supports_config_panel"] = (setting_path / "config_panel.toml").exists()
     ret["supports_purge"] = (
         local_manifest["packaging_format"] >= 2
         and local_manifest["resources"].get("data_dir") is not None
@@ -667,9 +663,9 @@ def app_upgrade(
     Upgrade app
 
     Keyword argument:
-        file -- Folder or tarball for upgrade
         app -- App(s) to upgrade (default all)
         url -- Git url to fetch for upgrade
+        file -- Folder or tarball for upgrade
         no_safety_backup -- Disable the safety backup during upgrade
 
     """
@@ -850,8 +846,6 @@ def app_upgrade(
         # We'll check that the app didn't brutally edit some system configuration
         manually_modified_files_before_install = manually_modified_files()
 
-        app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
-
         # Attempt to patch legacy helpers ...
         _patch_legacy_helpers(extracted_app_folder)
 
@@ -978,6 +972,8 @@ def app_upgrade(
                         hook_add(
                             app_instance_name, extracted_app_folder + "/hooks/" + hook
                         )
+
+                app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
 
                 # Replace scripts and manifest and conf (if exists)
                 # Move scripts and manifest to the right place

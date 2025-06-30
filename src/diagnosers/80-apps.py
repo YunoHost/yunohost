@@ -21,7 +21,7 @@
 import os
 from typing import List
 
-from ..app import app_list
+from ..app import app_list, APPS_SETTING_PATH
 from ..diagnosis import Diagnoser
 
 
@@ -87,6 +87,7 @@ class MyDiagnoser(Diagnoser):
         ):
             yield ("error", "diagnosis_apps_outdated_ynh_requirement")
 
+        app_setting_path = os.path.join(APPS_SETTING_PATH, app['id'])
         deprecated_helpers = [
             "yunohost app setting",
             "yunohost app checkurl",
@@ -97,7 +98,7 @@ class MyDiagnoser(Diagnoser):
         for deprecated_helper in deprecated_helpers:
             if (
                 os.system(
-                    f"grep -hr '{deprecated_helper}' {app['setting_path']}/scripts/ | grep -v -q '^\\s*#'"
+                    f"grep -hr '{deprecated_helper}' {app_setting_path}/scripts/ | grep -v -q '^\\s*#'"
                 )
                 == 0
             ):
@@ -106,7 +107,7 @@ class MyDiagnoser(Diagnoser):
         old_arg_regex = r"^domain=\${?[0-9]"
         if (
             os.system(
-                f"grep -q '{old_arg_regex}' {app['setting_path']}/scripts/install"
+                f"grep -q '{old_arg_regex}' {app_setting_path}/scripts/install"
             )
             == 0
         ):
