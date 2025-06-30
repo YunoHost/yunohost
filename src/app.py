@@ -35,11 +35,9 @@ from typing import (
     Iterator,
     List,
     Literal,
-    Optional,
     Required,
-    Tuple,
     TypedDict,
-    Union,
+    NotRequired,
     cast,
 )
 
@@ -56,7 +54,7 @@ from moulinette.utils.filesystem import (
     write_to_file,
     write_to_json,
 )
-from moulinette.utils.process import check_output, run_commands
+from moulinette.utils.process import check_output
 from packaging import version
 
 from .app_catalog import (  # noqa
@@ -125,10 +123,7 @@ class AppInfo(TypedDict, total=False):
     version: Required[str]
     domain_path: str
     logo: str | None
-    upgradable: Literal["yes", "no", "url_required", "bad_quality", "fail_requirements"]
-    current_version: str | None
-    new_version: str | None
-    upgrade_requirements: dict[str, "AppRequirementCheckResult"] | None
+    upgrade: "AppUpgradeInfos"
     settings: dict[str, Any]
     setting_path: str
     manifest: AppManifest
@@ -145,9 +140,7 @@ class AppInfo(TypedDict, total=False):
     notifications: dict[str, dict[str, str]]
 
 
-def app_list(
-    full: bool = False, upgradable: bool = False
-) -> dict[Literal["apps"], list[AppInfo]]:
+def app_list(full: bool = False) -> dict[Literal["apps"], list[AppInfo]]:
     """
     List installed apps
     """
@@ -155,21 +148,17 @@ def app_list(
     out = []
     for app_id in sorted(_installed_apps()):
         try:
-            app_info_dict = app_info(app_id, full=full, upgradable=upgradable)
+            app_info_dict = app_info(app_id, full=full)
         except Exception as e:
             logger.error(f"Failed to read info for {app_id} : {e}")
-            continue
-        if upgradable and app_info_dict.get("upgradable") not in ["yes", "fail_requirements"]:
             continue
         out.append(app_info_dict)
 
     return {"apps": out}
 
 
-def app_info(app: str, full: bool = False, upgradable: bool = False) -> AppInfo:
-    """
-    Get info for a specific app
-    """
+def app_info(app: str, full: bool = False, with_upgrade_infos: bool = False, with_settings: bool = False) -> AppInfo:
+
     from .domain import _get_raw_domain_settings
     from .permission import user_permission_list
 
@@ -193,38 +182,26 @@ def app_info(app: str, full: bool = False, upgradable: bool = False) -> AppInfo:
     if "domain" in settings and "path" in settings:
         ret["domain_path"] = settings["domain"] + settings["path"]
 
-    # FIXME: this 'upgradable' option only seems to be used here an is equivalent to full = True?
-    if not upgradable and not full:
-        return ret
+    if full or with_upgrade_infos:
+        ret["upgrade"] = _app_upgrade_infos(app, current_version=ret["version"])
 
-    absolute_app_name, _ = _parse_app_instance_name(app)
-    from_catalog = _load_apps_catalog()["apps"].get(absolute_app_name, {})
-
-    # Check if $app.png exists in the app logo folder, this is a trick to be able to easily customize the logo
-    # of an app just by creating $app.png (instead of the hash.png) in the corresponding folder
-    ret["logo"] = (
-        app
-        if os.path.exists(f"{APPS_CATALOG_LOGOS}/{app}.png")
-        else (main_perm.get("logo_hash") or from_catalog.get("logo_hash"))
-    )
-    upgradable_infos = _app_upgradable(app, local_manifest=local_manifest)
-    ret.update(upgradable_infos) # type: ignore[typeddict-item]
-
-    ret["settings"] = settings
+    if full or with_settings:
+        ret["settings"] = settings
 
     if not full:
         return ret
 
-    ret["setting_path"] = setting_path
     ret["manifest"] = local_manifest
 
-    # FIXME: maybe this is not needed ? default ask questions are
-    # already set during the _get_manifest_of_app earlier ?
-    ret["manifest"]["install"] = _set_default_ask_questions(
-        ret["manifest"].get("install", {})
-    )
+    absolute_app_name, _ = _parse_app_instance_name(app)
+    ret["from_catalog"] = _load_apps_catalog()["apps"].get(absolute_app_name, {})
 
-    ret["from_catalog"] = from_catalog
+    # Check if $app.png exists in the app logo folder, this is a trick to be able to easily customize the logo
+    # of an app just by creating $app.png (instead of the hash.png) in the corresponding folder
+    if (Path(APPS_CATALOG_LOGOS) / f"{app}.png").exists():
+        ret["logo"] = app
+    else:
+        ret["logo"] = main_perm.get("logo_hash") or ret["from_catalog"].get("logo_hash")  # type: ignore[typeddict-item]
 
     # Hydrate app notifications and doc
     rendered_doc: dict[str, dict[str, str]] = {}
@@ -295,84 +272,129 @@ def app_info(app: str, full: bool = False, upgradable: bool = False) -> AppInfo:
     return ret
 
 
-class AppUpgradableInfo(TypedDict):
+class AppUpgradeInfos(TypedDict):
 
-    upgradable: Literal["yes", "no", "url_required", "bad_quality", "fail_requirements"]
+    status: Literal["upgradable", "up_to_date", "url_required", "bad_quality", "fail_requirements"]
+    url: str | None
     current_version: str
     new_version: str | None
-    upgrade_requirements: dict[str, "AppRequirementCheckResult"] | None
+    new_revision: str | None
+    requirements: dict[str, "AppRequirementCheckResult"] | None
+    specific_channel: str | None
+    specific_channel_pr_url: str | None
+    notifications: NotRequired[dict[str, str]]
 
 
-def _app_upgradable(
-    app: str, local_manifest: dict | None = None
-) -> AppUpgradableInfo:
+def _app_upgrade_infos(
+    app: str, current_version: str | None = None
+) -> AppUpgradeInfos:
 
     base_app_id, _ = _parse_app_instance_name(app)
     app_in_catalog = _load_apps_catalog()["apps"].get(base_app_id, {})
 
-    # Local manifest can be provided to avoid re-reading the manifest from scratch (eg when in app_info)
+    # current_version can be provided to avoid re-reading the manifest from scratch (eg when in app_info)
     # Otherwise we read it here
-    if local_manifest is None:
-        setting_path = os.path.join(APPS_SETTING_PATH, app)
-        local_manifest = _get_manifest_of_app(setting_path)
+    if current_version is None:
+        current_version = _get_manifest_of_app(app).get("version", "0~ynh0")
 
-    current_version = local_manifest.get("version", "0~ynh0")
+    assert current_version
 
-    if not app_in_catalog:
+    if not app_in_catalog or "git" not in app_in_catalog:
         return {
-            "upgradable": "url_required",
+            "status": "url_required",
+            "url": None,
             "current_version": current_version,
             "new_version": None,
-            "upgrade_requirements": None
+            "new_revision": None,
+            "requirements": None,
+            "specific_channel": None,
+            "specific_channel_pr_url": None,
         }
 
+    url = app_in_catalog["git"]["url"]
+    current_revision = _get_app_settings(app).get("current_revision", "?")[:7]
+    available_upgrade_channels = app_in_catalog.get("alternative_branches", {})
+    specific_channel: str | None = _get_app_settings(app).get("upgrade_channel")
+    specific_channel_pr_url: str | None = None
     manifest_in_catalog = app_in_catalog.get("manifest", {})
-    version_in_catalog = manifest_in_catalog.get("version", "0~ynh0")
+
+    if specific_channel and specific_channel in available_upgrade_channels:
+        channel = available_upgrade_channels[specific_channel]
+        ahead = channel["ahead"]
+        if ahead:
+            level = channel["level"]
+            new_revision = channel["revision"]
+            new_version = channel["version"]
+            specific_channel_pr_url = channel["pr_url"]
+        else:
+            logger.debug(f"Ignoring specific upgrade channel '{specific_channel}' for '{app}', because it's not currently ahead of the default branch. The default branch will be used instead.")
+            specific_channel = None
+    elif specific_channel:
+        logger.warning(f"Unknown specific upgrade channel '{specific_channel}' for '{app}'. Falling back to default.")
+        specific_channel = None
+
+    if specific_channel is None:
+        new_version = manifest_in_catalog.get("version", "0~ynh0")
+        new_revision = app_in_catalog.get("git", {}).get("revision", "?")
+        level = app_in_catalog.get("level", -1)
 
     # Do not advertise upgrades for bad-quality apps
-    level = app_in_catalog.get("level", -1)
     if (
         not (isinstance(level, int) and level >= 5)
         or app_in_catalog.get("state") != "working"
     ):
         return {
-            "upgradable": "bad_quality",
+            "status": "bad_quality",
+            "url": url,
             "current_version": current_version,
             "new_version": None,
-            "upgrade_requirements": None
+            "new_revision": None,
+            "requirements": None,
+            "specific_channel": specific_channel,
+            "specific_channel_pr_url": specific_channel_pr_url,
         }
 
-    if _parse_app_version(current_version) >= _parse_app_version(version_in_catalog):
+    if _parse_app_version(current_version) >= _parse_app_version(new_version) and (specific_channel is None or new_revision == current_revision):
         return {
-            "upgradable": "no",
+            "status": "up_to_date",
+            "url": None,
             "current_version": current_version,
-            "new_version": version_in_catalog,
-            "upgrade_requirements": None
+            "new_version": new_version,
+            "new_revision": new_revision,
+            "requirements": None,
+            "specific_channel": specific_channel,
+            "specific_channel_pr_url": specific_channel_pr_url,
         }
 
     # Not sure when this happens exactly considering we checked for ">=" before ...
     # maybe that's for "legacy versions" that do not respect the X.Y~ynhZ syntax
-    if current_version == version_in_catalog:
-        current_revision = _get_app_settings(app).get("current_revision", "?")[:7]
-        new_revision = app_in_catalog.get("git", {}).get("revision", "?")[:7]
-
-        current_version = f" ({current_revision})"
-        new_version = f" ({new_revision})"
+    #
+    # Update: well it does cover the alternative upgrade channel now (typically testing)
+    # where the version may not have been bumped but we want a way to advertise it anyway
+    # and distinguish the two versions, using the commit id
+    if current_version == new_version:
+        current_version += f"({current_revision})"
+        new_version = f"{new_version} ({new_revision})"
     else:
-        new_version = version_in_catalog
+        new_version = new_version
+
+    # Check requirements
 
     requirements = {
         r["id"]: r
         for r in _check_manifest_requirements(manifest_in_catalog, action="upgrade")
     }
-
     pass_requirements = all(r["passed"] for r in requirements.values())
 
     return {
-        "upgradable": "yes" if pass_requirements else "fail_requirements",
+        "status": "upgradable" if pass_requirements else "fail_requirements",
+        "url": url,
         "current_version": current_version,
-        "new_version": version_in_catalog,
-        "upgrade_requirements": requirements,
+        "new_version": new_version,
+        "new_revision": new_revision,
+        "requirements": requirements,
+        "specific_channel": specific_channel,
+        "specific_channel_pr_url": specific_channel_pr_url,
     }
 
 
@@ -2076,7 +2098,7 @@ def _get_AppConfigPanel():
             form: "FormModel",
             config: "ConfigPanelModel",
             previous_settings: dict[str, Any],
-            exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
+            exclude: "AbstractSetIntStr" | "MappingIntStrAny" | None = None,
         ) -> None:
             env = {key: str(value) for key, value in form.dict().items()}
             return_content = self._call_config_script("apply", env=env)
@@ -2396,7 +2418,7 @@ ynh_app_config_run $1
             form: "FormModel",
             config: "ConfigPanelModel",
             previous_settings: dict[str, Any],
-            exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
+            exclude: "AbstractSetIntStr" | "MappingIntStrAny" | None = None,
         ) -> None:
             from .user import (
                 user_permission_add,
@@ -2935,7 +2957,7 @@ def _app_quality(src: str) -> Literal["success", "warning", "danger", "thirdpart
         raise YunohostValidationError("app_unknown")
 
 
-def _extract_app(src: str) -> Tuple[AppManifest, str]:
+def _extract_app(src: str) -> tuple[AppManifest, str]:
     """
     src may be an app name, an url, or a path
     """
@@ -2977,7 +2999,7 @@ def _extract_app(src: str) -> Tuple[AppManifest, str]:
         raise YunohostValidationError("app_unknown")
 
 
-def _extract_app_from_folder(path: str) -> Tuple[AppManifest, str]:
+def _extract_app_from_folder(path: str) -> tuple[AppManifest, str]:
     """
     Unzip / untar / copy application tarball or directory to a tmp work directory
 
@@ -3025,20 +3047,20 @@ def _extract_app_from_folder(path: str) -> Tuple[AppManifest, str]:
     return manifest, extracted_app_folder
 
 
-def _extract_app_from_gitrepo(
-    url: str, branch: Optional[str] = None, revision: str = "HEAD", app_info: Dict = {}
-) -> Tuple[AppManifest, str]:
-    logger.debug("Checking default branch")
+def _git_clone_light(
+    dest_dir: str,
+    url: str,
+    branch: str | None = None,
+    revision: str = "HEAD"
+) -> str:
 
-    try:
-        git_ls_remote = check_output(
-            ["git", "ls-remote", "--symref", url, "HEAD"],
-            env={"GIT_TERMINAL_PROMPT": "0", "LC_ALL": "C"},
-            shell=False,
-        )
-    except Exception as e:
-        logger.error(str(e))
-        raise YunohostError("app_sources_fetch_failed")
+    logger.debug(f"Fetching {url} (branch={branch}, revision={revision})")
+
+    git_ls_remote = check_output(
+        ["git", "ls-remote", "--symref", url, "HEAD"],
+        env={"GIT_TERMINAL_PROMPT": "0", "LC_ALL": "C"},
+        shell=False,
+    )
 
     if not branch:
         default_branch = None
@@ -3066,24 +3088,46 @@ def _extract_app_from_gitrepo(
 
     logger.debug(m18n.n("downloading"))
 
+    # Download only specified commit
+    # We don't use git clone because, git clone can't download
+    # a specific revision only
+    ref = branch if revision == "HEAD" else revision
+    assert ref
+    subprocess.check_call(["git", "init", dest_dir], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    cmds = [
+        ["git", "remote", "add", "origin", url],
+        ["git", "fetch", "--depth=1", "origin", ref],
+        ["git", "reset", "--hard", "FETCH_HEAD"]
+    ]
+    for cmd in cmds:
+        subprocess.check_call(cmd, cwd=dest_dir, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+    logger.debug(m18n.n("done"))
+
+    if revision == "HEAD":
+        try:
+            # Get git last commit hash
+            cmd2 = f"git ls-remote --exit-code {url} {branch} | awk '{{print $1}}'"
+            actual_revision = check_output(cmd2)
+        except Exception as e:
+            logger.warning(f"cannot get last commit hash because: {e}")
+            actual_revision = "HEAD"
+    else:
+        actual_revision = revision
+
+    return actual_revision
+
+
+def _extract_app_from_gitrepo(
+    url: str, branch: str | None = None, revision: str = "HEAD", app_info: Dict = {}
+) -> tuple[AppManifest, str]:
+
     extracted_app_folder = _make_tmp_workdir_for_app()
 
-    # Download only this commit
     try:
-        # We don't use git clone because, git clone can't download
-        # a specific revision only
-        ref = branch if revision == "HEAD" else revision
-        run_commands([["git", "init", extracted_app_folder]], shell=False)
-        run_commands(
-            [
-                ["git", "remote", "add", "origin", url],
-                ["git", "fetch", "--depth=1", "origin", ref],
-                ["git", "reset", "--hard", "FETCH_HEAD"],
-            ],
-            cwd=extracted_app_folder,
-            shell=False,
-        )
-    except subprocess.CalledProcessError:
+        actual_revision = _git_clone_light(extracted_app_folder, url, branch, revision)
+    except Exception as e:
+        logger.error(e)
         raise YunohostError("app_sources_fetch_failed")
     else:
         logger.debug(m18n.n("done"))
@@ -3091,16 +3135,8 @@ def _extract_app_from_gitrepo(
     manifest = _get_manifest_of_app(extracted_app_folder)
 
     # Store remote repository info into the returned manifest
-    manifest["remote"] = {"type": "git", "url": url, "branch": branch}
-    if revision == "HEAD":
-        try:
-            # Get git last commit hash
-            cmd = f"git ls-remote --exit-code {url} {branch} | awk '{{print $1}}'"
-            manifest["remote"]["revision"] = check_output(cmd)
-        except Exception as e:
-            logger.warning(f"cannot get last commit hash because: {e}")
-    else:
-        manifest["remote"]["revision"] = revision
+    manifest["remote"] = {"type": "git", "url": url, "branch": branch, "revision": actual_revision}
+    if revision != "HEAD":
         manifest["lastUpdate"] = app_info.get("lastUpdate")
 
     manifest["quality"] = {
@@ -3111,26 +3147,6 @@ def _extract_app_from_gitrepo(
     manifest["potential_alternative_to"] = app_info.get("potential_alternative_to", [])
 
     return manifest, extracted_app_folder
-
-
-def _list_upgradable_apps() -> list[AppInfo]:
-    upgradable_apps = list(app_list(upgradable=True)["apps"])
-
-    # Retrieve next manifest pre_upgrade notifications
-    for app in upgradable_apps:
-        absolute_app_name, _ = _parse_app_instance_name(app["id"])
-        manifest, extracted_app_folder = _extract_app(absolute_app_name)
-        app["notifications"] = {}
-        if manifest["notifications"]["PRE_UPGRADE"]:
-            app["notifications"]["PRE_UPGRADE"] = _filter_and_hydrate_notifications(
-                manifest["notifications"]["PRE_UPGRADE"],
-                app["current_version"],
-                app["settings"],
-            )
-        del app["settings"]
-        shutil.rmtree(extracted_app_folder)
-
-    return upgradable_apps
 
 
 #
@@ -3517,7 +3533,7 @@ def _make_environment_for_app_script(
     return env_dict
 
 
-def _parse_app_instance_name(app_instance_name: str) -> Tuple[str, int]:
+def _parse_app_instance_name(app_instance_name: str) -> tuple[str, int]:
     """
     Parse a Yunohost app instance name and extracts the original appid
     and the application instance number

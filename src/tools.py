@@ -25,6 +25,7 @@ import subprocess
 import time
 from importlib import import_module
 from logging import getLogger
+from typing import TYPE_CHECKING
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.filesystem import chown, cp, mkdir, read_yaml, rm, write_to_yaml
@@ -41,6 +42,9 @@ from .utils.system import (
     dpkg_lock_available,
     ynh_packages_version,
 )
+
+if TYPE_CHECKING:
+    from yunohost.app import AppInfo
 
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
@@ -308,7 +312,6 @@ def tools_update(operation_logger, target=None):
     """
     Update apps & system package cache
     """
-    from .app import _list_upgradable_apps
     from .app_catalog import _update_apps_catalog
 
     if not target:
@@ -380,7 +383,8 @@ def tools_update(operation_logger, target=None):
         except YunohostError as e:
             logger.error(str(e))
 
-        upgradable_apps = _list_upgradable_apps()
+        apps = _list_apps_with_upgrade_infos()
+        upgradable_apps = [app for app in apps if app["upgrade"]["status"] in ["upgradable", "fail_requirements"]]
 
     if len(upgradable_apps) == 0 and len(upgradable_system_packages) == 0:
         logger.info(m18n.n("already_up_to_date"))
@@ -404,10 +408,57 @@ def tools_update(operation_logger, target=None):
 
     return {
         "system": upgradable_system_packages,
-        "apps": upgradable_apps,
+        "apps": apps,
         "important_yunohost_upgrade": important_yunohost_upgrade,
         "pending_migrations": pending_migrations,
     }
+
+
+def _list_apps_with_upgrade_infos(with_pre_upgrade_notifications: bool = True) -> list["AppInfo"]:
+
+    from tempfile import TemporaryDirectory
+    from yunohost.app import APP_TMP_WORKDIRS, app_info, _git_clone_light, _installed_apps, _parse_app_doc_and_notifications, _filter_and_hydrate_notifications
+
+    apps = []
+    for app_id in sorted(_installed_apps()):
+        try:
+            app_info_dict = app_info(app_id, with_upgrade_infos=True, with_settings=True)
+        except Exception as e:
+            logger.error(f"Failed to read info for {app_id} : {e}")
+            continue
+        apps.append(app_info_dict)
+
+    if not with_pre_upgrade_notifications:
+        return apps
+
+    # Retrieve next manifest pre_upgrade notifications
+    for app in apps:
+
+        status = app["upgrade"]["status"]
+
+        if status in ["up_to_date", "url_required"]:
+            del app["settings"]
+            continue
+
+        url = app["upgrade"]["url"]
+        specific_channel = app["upgrade"]["specific_channel"]
+        new_revision = app["upgrade"]["new_revision"]
+        assert url
+        assert new_revision
+
+        with TemporaryDirectory(prefix="app_", dir=APP_TMP_WORKDIRS) as d:
+            _git_clone_light(d, url, branch=specific_channel, revision=new_revision)
+            _, notifications = _parse_app_doc_and_notifications(d)
+
+        if notifications["PRE_UPGRADE"]:
+            app["upgrade"]["notifications"] = _filter_and_hydrate_notifications(
+                notifications["PRE_UPGRADE"],
+                app["version"],
+                app["settings"],
+            )
+        del app["settings"]
+
+    return apps
 
 
 @is_unit_operation()
@@ -420,7 +471,7 @@ def tools_upgrade(operation_logger, target=None):
        system -- True to upgrade system
     """
 
-    from .app import app_list, app_upgrade
+    from .app import app_upgrade
 
     if dpkg_is_broken():
         raise YunohostValidationError("dpkg_is_broken")
@@ -443,7 +494,8 @@ def tools_upgrade(operation_logger, target=None):
     if target == "apps":
         # Make sure there's actually something to upgrade
 
-        upgradable_apps = [app["id"] for app in app_list(upgradable=True)["apps"]]
+        apps = _list_apps_with_upgrade_infos(with_pre_upgrade_notifications=False)
+        upgradable_apps = [app["id"] for app in apps if app["upgrade"]["status"] in ["upgradable", "fail_requirements"]]
 
         if not upgradable_apps:
             logger.info(m18n.n("apps_already_up_to_date"))
