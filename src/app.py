@@ -787,13 +787,12 @@ def app_upgrade(
         for id_, check in failed_requirements.items():
             if id_ == "ram":
                 # i18n: confirm_app_insufficient_ram
-                _ask_confirmation(
-                    "confirm_app_insufficient_ram", params=check["values"], force=force
-                )
+                logger.warning(check["error"])
+                _ask_confirmation("confirm_app_insufficient_ram", force=force)
             elif id_ == "required_yunohost_version" and ignore_yunohost_version:
-                logger.warning(m18n.n(check["error_i18n_key"], **(check["values"])))
+                logger.warning(check["error"])
             else:
-                raise YunohostValidationError(check["error_i18n_key"], **(check["values"]))
+                raise YunohostValidationError(check["error"])
 
         # Display pre-upgrade notifications and ask for simple confirm
         if (
@@ -1225,13 +1224,12 @@ def app_install(
     }
     for id_, check in failed_requirements.items():
         if id_ == "ram":
-            _ask_confirmation(
-                "confirm_app_insufficient_ram", params=check["values"], force=force
-            )
+            logger.warning(check["error"])
+            _ask_confirmation("confirm_app_insufficient_ram", force=force)
         elif id_ == "required_yunohost_version" and ignore_yunohost_version:
-            logger.warning(m18n.n(check["error_i18n_key"], **(check["values"])))
+            logger.warning(check["error"])
         else:
-            raise YunohostValidationError(check["error_i18n_key"], **(check["values"]))
+            raise YunohostValidationError(check["error"])
 
     _assert_system_is_sane_for_app(manifest, "pre")
 
@@ -3190,8 +3188,7 @@ def _get_all_installed_apps_id() -> str:
 class AppRequirementCheckResult(TypedDict):
     id: str
     passed: bool
-    values: dict[str, Any]
-    error_i18n_key: str
+    error: str
 
 
 def _check_manifest_requirements(
@@ -3215,8 +3212,11 @@ def _check_manifest_requirements(
     yield {
         "id": "required_yunohost_version",
         "passed": version.parse(required_yunohost_version) <= version.parse(current_yunohost_version),
-        "values": {"current": current_yunohost_version, "required": required_yunohost_version},
-        "error_i18n_key": "app_yunohost_version_not_supported",  # i18n: app_yunohost_version_not_supported
+        "error": m18n.n(
+            "app_yunohost_version_not_supported",
+            current=current_yunohost_version,
+            required=required_yunohost_version
+        )
     }
 
     # Architectures
@@ -3226,8 +3226,11 @@ def _check_manifest_requirements(
     yield {
         "id": "arch",
         "passed": arch_requirement in ["all", "?"] or arch in arch_requirement,
-        "values": {"current": arch, "required": ", ".join(arch_requirement) if arch_requirement != "all" else "all"},
-        "error_i18n_key": "app_arch_not_supported",  # i18n: app_arch_not_supported
+        "error": m18n.n(
+            "app_arch_not_supported",
+            current=arch,
+            required=", ".join(arch_requirement) if arch_requirement != "all" else "all"
+        )
     }
 
     # Multi-instance
@@ -3243,9 +3246,8 @@ def _check_manifest_requirements(
         yield {
             "id": "install",
             "passed": multi_instance,
-            "values": {"app": app_id},
-            "error_i18n_key": "app_already_installed",  # i18n: app_already_installed
-            }
+            "error": m18n.n("app_already_installed", app=app_id)
+        }
 
     # Disk
     if action == "install":
@@ -3263,8 +3265,7 @@ def _check_manifest_requirements(
         yield {
             "id": "disk",
             "passed": has_enough_disk,
-            "values": {"current": free_space, "required": manifest["integration"]["disk"]},
-            "error_i18n_key": "app_not_enough_disk",  # i18n: app_not_enough_disk
+            "error": m18n.n("app_not_enough_disk", current=free_space, required=manifest["integration"]["disk"])
         }
 
     # Ram
@@ -3314,8 +3315,7 @@ def _check_manifest_requirements(
     yield {
         "id": "ram",
         "passed": can_build and can_run,
-        "values": {"current": binary_to_human(ram), "required": max_build_runtime},
-        "error_i18n_key": "app_not_enough_ram",  # i18n: app_not_enough_ram
+        "error": m18n.n("app_not_enough_ram", current=binary_to_human(ram), required=max_build_runtime)
     }
 
 
