@@ -44,7 +44,7 @@ from .utils.error import YunohostError, YunohostValidationError
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
-    from .utils.configpanel import RawConfig, RawSettings, ConfigPanelModel
+    from .utils.configpanel import ConfigPanelModel, RawConfig, RawSettings
     from .utils.form import FormModel
 
 logger = getLogger("yunohost.domain")

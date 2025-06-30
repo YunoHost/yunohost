@@ -33,8 +33,8 @@ from moulinette.utils.filesystem import (
     write_to_yaml,
 )
 
-from .utils.error import YunohostError, YunohostValidationError
 from .log import is_unit_operation
+from .utils.error import YunohostError, YunohostValidationError
 
 logger = getLogger("yunohost.diagnosis")
 

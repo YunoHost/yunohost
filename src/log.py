@@ -24,9 +24,9 @@ import os
 import re
 import time
 from datetime import datetime, timedelta
-from logging import FileHandler, getLogger, Formatter, INFO
 from io import IOBase
-from typing import List, Any
+from logging import INFO, FileHandler, Formatter, getLogger
+from typing import Any, List
 
 import psutil
 import yaml

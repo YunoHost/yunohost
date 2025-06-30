@@ -2,17 +2,17 @@ import os
 from logging import getLogger
 
 from moulinette.utils.filesystem import read_yaml
-from ..utils.ldap import _get_ldap_interface, _ldap_path_extract
-from ..tools import Migration
-from ..regenconf import regen_conf
+
+from ..app import app_setting, app_ssowatconf
 from ..permission import (
-    _sync_permissions_with_ldap,
     _set_system_perms,
+    _sync_permissions_with_ldap,
     permission_create,
 )
-from ..app import app_setting, app_ssowatconf
+from ..regenconf import regen_conf
+from ..tools import Migration
 from ..user import user_group_list
-
+from ..utils.ldap import _get_ldap_interface, _ldap_path_extract
 
 logger = getLogger("yunohost.migration")
 

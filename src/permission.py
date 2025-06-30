@@ -20,14 +20,15 @@
 
 import copy
 import grp
+import os
 import random
 import re
-import os
 from logging import getLogger
-from typing import TYPE_CHECKING, BinaryIO, Literal, TypedDict, NotRequired, cast
+from typing import TYPE_CHECKING, BinaryIO, Literal, NotRequired, TypedDict, cast
 
 from moulinette import m18n
 from moulinette.utils.filesystem import read_yaml, write_to_yaml
+
 from .utils.error import YunohostError, YunohostValidationError
 
 if TYPE_CHECKING:
@@ -83,7 +84,7 @@ def user_permission_list(
     """
 
     # Fetch relevant informations
-    from .app import _installed_apps, _get_app_settings
+    from .app import _get_app_settings, _installed_apps
     from .user import user_group_list
 
     # Parse / organize information to be outputed
@@ -210,8 +211,8 @@ def user_permission_update(
         protected      -- (optional) Define if the permission can be added/removed to the visitor group
         force          -- (optional) Give the possibility to add/remove access from the visitor group to a protected permission
     """
-    from .user import user_group_list
     from .app import app_ssowatconf
+    from .user import user_group_list
 
     # By default, manipulate main permission
     if "." not in permission:
@@ -573,7 +574,7 @@ def permission_url(
 def permission_delete(
     permission: str, force: bool = False, sync_perm: bool = True
 ) -> None:
-    from .app import app_setting, _assert_is_installed, app_ssowatconf
+    from .app import _assert_is_installed, app_setting, app_ssowatconf
 
     # By default, manipulate main permission
     if "." not in permission:
@@ -749,8 +750,9 @@ def _update_app_permission_setting(
 
     elif logo is not None:
 
-        from .app import APPS_CATALOG_LOGOS
         import hashlib
+
+        from .app import APPS_CATALOG_LOGOS
 
         logo_content = logo.read()
         if not logo_content.startswith(b"\x89PNG\r\n\x1a\n"):

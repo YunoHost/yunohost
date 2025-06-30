@@ -28,6 +28,7 @@ from moulinette.utils.filesystem import read_yaml
 from moulinette.utils.process import check_output
 
 import dns.resolver
+
 from ..diagnosis import Diagnoser
 from ..domain import _get_maindomain, domain_list
 from ..settings import settings_get

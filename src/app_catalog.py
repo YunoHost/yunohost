@@ -22,7 +22,7 @@ import hashlib
 import os
 import re
 from logging import getLogger
-from typing import TypedDict, Any, NotRequired, Literal
+from typing import Any, Literal, NotRequired, TypedDict
 
 from moulinette import m18n
 from moulinette.utils.filesystem import mkdir, read_json, read_yaml, write_to_json

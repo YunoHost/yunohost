@@ -21,7 +21,7 @@
 import os
 import subprocess
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Union, Callable
+from typing import TYPE_CHECKING, Any, Callable, Union
 
 from moulinette import m18n
 

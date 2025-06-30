@@ -17,11 +17,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 import glob
-import os
 import json
+import os
 import time
-import psutil
 from logging import Handler
+
+import psutil
 
 LOG_BROKER_BACKEND_ENDPOINT = "ipc:///var/run/yunohost/log_broker_backend"
 LOG_BROKER_FRONTEND_ENDPOINT = "ipc:///var/run/yunohost/log_broker_frontend"
@@ -213,7 +214,8 @@ def sse_stream():
 
     # We need zmq.green to uh have some sort of async ? (I think)
     import zmq.green as zmq
-    from ..log import log_list, OPERATIONS_PATH
+
+    from ..log import OPERATIONS_PATH, log_list
 
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)

@@ -34,12 +34,12 @@ from typing import (
     Dict,
     Iterator,
     List,
-    Optional,
-    Tuple,
-    Union,
     Literal,
-    TypedDict,
+    Optional,
     Required,
+    Tuple,
+    TypedDict,
+    Union,
     cast,
 )
 
@@ -65,7 +65,7 @@ from .app_catalog import (  # noqa
     app_catalog,
     app_search,
 )
-from .log import OperationLogger, is_unit_operation, is_flash_unit_operation
+from .log import OperationLogger, is_flash_unit_operation, is_unit_operation
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.i18n import _value_for_locale
 from .utils.system import (
@@ -79,13 +79,12 @@ from .utils.system import (
     system_arch,
 )
 
-
 if TYPE_CHECKING:
+    from moulinette.utils.log import MoulinetteLogger
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
-    from .utils.configpanel import ConfigPanelModel, RawSettings, RawConfig
+    from .utils.configpanel import ConfigPanelModel, RawConfig, RawSettings
     from .utils.form import FormModel
-    from moulinette.utils.log import MoulinetteLogger
 
     logger = cast(MoulinetteLogger, getLogger("yunohost.app"))
 else:
@@ -369,7 +368,7 @@ def app_map(
     }
     """
 
-    from .permission import user_permission_list, AppPermInfos
+    from .permission import AppPermInfos, user_permission_list
 
     apps = []
     result: dict[str, Any] = {}
@@ -1128,9 +1127,9 @@ def app_install(
     )
     from .log import OperationLogger
     from .permission import (
+        _sync_permissions_with_ldap,
         permission_create,
         permission_delete,
-        _sync_permissions_with_ldap,
         user_permission_list,
     )
     from .regenconf import manually_modified_files
@@ -1481,8 +1480,8 @@ def app_remove(
     from .domain import _get_raw_domain_settings, domain_config_set, domain_list
     from .hook import hook_callback, hook_exec, hook_remove
     from .permission import (
-        permission_delete,
         _sync_permissions_with_ldap,
+        permission_delete,
         user_permission_list,
     )
     from .utils.legacy import _patch_legacy_helpers
@@ -2203,7 +2202,7 @@ ynh_app_config_run $1
 
         def _get_raw_config(self) -> "RawConfig":
 
-            from .user import user_list, user_group_list
+            from .user import user_group_list, user_list
 
             raw_config = super()._get_raw_config()
             i18n_prefix = raw_config["i18n"]
@@ -2297,7 +2296,7 @@ ynh_app_config_run $1
 
         def _get_raw_settings(self) -> "RawSettings":
 
-            from .permission import user_permission_list, AppPermInfos
+            from .permission import AppPermInfos, user_permission_list
 
             perms: dict[str, AppPermInfos] = user_permission_list(full=True, apps=[self.entity])["permissions"]  # type: ignore
             app_settings = _get_app_settings(self.entity)
@@ -2360,9 +2359,9 @@ ynh_app_config_run $1
         ) -> None:
 
             from .user import (
-                user_permission_update,
                 user_permission_add,
                 user_permission_remove,
+                user_permission_update,
             )
 
             next_settings = {

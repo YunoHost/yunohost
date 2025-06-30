@@ -683,14 +683,14 @@ class PermissionsResource(AppResource):
                 ]
 
     def provision_or_update(self, context: Dict = {}):
+        from ..app import app_ssowatconf
         from ..permission import (
+            _sync_permissions_with_ldap,
             permission_create,
             permission_delete,
-            _sync_permissions_with_ldap,
             permission_url,
             user_permission_update,
         )
-        from ..app import app_ssowatconf
 
         # Delete legacy is_public setting if not already done
         self.delete_setting("is_public")
@@ -755,11 +755,11 @@ class PermissionsResource(AppResource):
         app_ssowatconf()
 
     def deprovision(self, context: Dict = {}):
-        from ..permission import (
-            permission_delete,
-            _sync_permissions_with_ldap,
-        )
         from ..app import app_ssowatconf
+        from ..permission import (
+            _sync_permissions_with_ldap,
+            permission_delete,
+        )
 
         existing_perms = list((self.get_setting("_permissions") or {}).keys())
         for perm in existing_perms:
@@ -1696,7 +1696,7 @@ class NodejsAppResource(AppResource):
 
     def garbage_collect_unused_versions(self):
 
-        from ..app import app_setting, _installed_apps
+        from ..app import _installed_apps, app_setting
 
         used_versions = []
         for app in _installed_apps():
@@ -1830,7 +1830,7 @@ class RubyAppResource(AppResource):
 
     def garbage_collect_unused_versions(self):
 
-        from ..app import app_setting, _installed_apps
+        from ..app import _installed_apps, app_setting
 
         used_versions = []
         for app in _installed_apps():
@@ -1943,7 +1943,7 @@ class GoAppResource(AppResource):
         ]
 
         used_versions = []
-        from ..app import app_setting, _installed_apps
+        from ..app import _installed_apps, app_setting
 
         for app in _installed_apps():
             v = app_setting(app, "go_version")
