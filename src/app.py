@@ -715,6 +715,7 @@ def app_upgrade(
 
     notifications = {}
     failed_to_upgrade_apps = []
+    specific_channel: str | None = None
 
     for number, app_instance_name in enumerate(apps):
         logger.info(m18n.n("app_upgrade_app_name", app=app_instance_name))
@@ -728,11 +729,17 @@ def app_upgrade(
             new_app_src = file
         elif url:
             new_app_src = url
-        elif app_dict["upgradable"] == "url_required":
+        elif app_dict["upgrade"]["status"] == "url_required":
             logger.warning(m18n.n("custom_app_url_required", app=app_instance_name))
             continue
-        elif app_dict["upgradable"] in ["yes", "fail_requirements"] or force:
-            new_app_src = app_dict["manifest"]["id"]
+        elif app_dict["upgrade"]["status"] in ["upgradable", "fail_requirements"] or force:
+            specific_channel = app_dict["upgrade"]["specific_channel"]
+            if specific_channel:
+                assert app_dict["upgrade"]["url"]
+                assert app_dict["upgrade"]["new_revision"]
+                new_app_src = app_dict["upgrade"]["url"] + "/tree/" + app_dict["upgrade"]["new_revision"]
+            else:
+                new_app_src = app_dict["manifest"]["id"]
         else:
             logger.success(m18n.n("app_already_up_to_date", app=app_instance_name))
             continue
@@ -749,18 +756,10 @@ def app_upgrade(
         if "~ynh" in str(app_current_version_raw) and "~ynh" in str(
             app_new_version_raw
         ):
-            if app_current_version >= app_new_version and not force:
+            if app_current_version >= app_new_version and not force and not specific_channel:
                 # In case of upgrade from file or custom repository
                 # No new version available
                 logger.success(m18n.n("app_already_up_to_date", app=app_instance_name))
-                # Save update time
-                now = int(time.time())
-                app_setting(app_instance_name, "update_time", now)
-                app_setting(
-                    app_instance_name,
-                    "current_revision",
-                    manifest.get("remote", {}).get("revision", "?"),
-                )
                 continue
 
             if app_current_version > app_new_version:
