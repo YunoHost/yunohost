@@ -2301,35 +2301,46 @@ ynh_app_config_run $1
             # Ugly trick to move 'operations' at the end
             raw_config["_core"]["operations"] = raw_config["_core"].pop("operations")
 
-            app_upgradable_infos = _app_upgradable(self.entity)
-            upgradable = app_upgradable_infos["upgradable"]
-            current_version = app_upgradable_infos["current_version"]
-            new_version = app_upgradable_infos["new_version"]
+            upgrade_infos = _app_upgrade_infos(self.entity)
+            status = upgrade_infos["status"]
+            specific_channel = upgrade_infos["specific_channel"]
+            specific_channel_pr_url = upgrade_infos["specific_channel_pr_url"]
+            current_version = upgrade_infos["current_version"]
+            new_version = upgrade_infos["new_version"]
             # TODO
-            upgrade_requirements = app_upgradable_infos["upgrade_requirements"]
-            if upgrade_requirements is not None:
-               failed_requirements = ' ; '.join([m18n.n(r["error_i18n_key"], **(r["values"])) for r in upgrade_requirements.values() if not r["passed"]])
+            requirements = upgrade_infos["requirements"]
+            if requirements is not None:
+                failed_requirements = ' ; '.join([r["error"] for r in requirements.values() if not r["passed"]])
             else:
                 failed_requirements = ""
-            raw_config["_core"]["operations"]["upgradable"]["default"] = upgradable
-            # i18n: app_config_upgradable_yes
-            # i18n: app_config_upgradable_no
-            # i18n: app_config_upgradable_url_required
-            # i18n: app_config_upgradable_bad_quality
-            # i18n: app_config_upgradable_fail_requirements
-            raw_config["_core"]["operations"]["upgradable_msg"]["ask"] = m18n.n(
-                f"app_config_upgradable_{upgradable}",
+            raw_config["_core"]["operations"]["upgrade_status"]["default"] = status
+            # i18n: app_config_upgrade_status_upgradable
+            # i18n: app_config_upgrade_status_up_to_date
+            # i18n: app_config_upgrade_status_url_required
+            # i18n: app_config_upgrade_status_bad_quality
+            # i18n: app_config_upgrade_status_fail_requirements
+            raw_config["_core"]["operations"]["upgrade_msg"]["ask"] = m18n.n(
+                f"app_config_upgrade_status_{status}",
                 current_version=current_version,
                 new_version=new_version,
                 failed_requirements=failed_requirements,
             )
-            raw_config["_core"]["operations"]["upgradable_msg"]["style"] = {
-                "yes": "info",  # "App can be upgraded"
-                "no": "success",  # "It's up to date !" etc
+            raw_config["_core"]["operations"]["upgrade_msg"]["style"] = {
+                "upgradable": "info",  # "App can be upgraded"
+                "up_to_date": "success",  # "It's up to date !" etc
                 "url_required": "warning",  # "App is unknown, gotta be upgraded manually by specifying the URL in CLI" etc
                 "bad_quality": "warning",  # "App is currently marked as bad quality" etc
-                "fail_requirements": "warning", # "App has a new version but some requirements are not satisfied: ..."
-            }[upgradable]
+                "fail_requirements": "warning",  # "App has a new version but some requirements are not satisfied: ..."
+            }[status]
+
+            if specific_channel:
+                raw_config["_core"]["operations"]["upgrade_specific_channel_msg"]["ask"] = m18n.n(
+                    "app_config_specific_upgrade_channel",
+                    channel=specific_channel,
+                    pr_url=specific_channel_pr_url,
+                )
+            else:
+                del raw_config["_core"]["operations"]["upgrade_specific_channel_msg"]
 
             domain = settings.get("domain")
             path = settings.get("path")

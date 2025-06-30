@@ -36,26 +36,30 @@ i18n = "app_config"
 
     [_core.operations]
 
-        [_core.operations.upgradable]
+        [_core.operations.upgrade_specific_channel_msg]
+        type = "alert"
+        style = "warning"
+
+        [_core.operations.upgrade_status]
         type = "string"
-        # can be 'yes', 'no', 'bad_quality', 'url_required' or 'fail_requirements'
+        # can be 'upgradable', 'up_to_date', 'bad_quality', 'url_required' or 'fail_requirements'
         visible = false
         readonly = true
 
-        [_core.operations.upgradable_msg]
+        [_core.operations.upgrade_msg]
         type = "alert"
 
         [_core.operations.upgrade]
         type = "button"
         icon = "arrow-up"
         style = "success"
-        visible = "upgradable == 'yes'"
+        visible = "upgrade_status == 'upgradable'"
 
         [_core.operations.force_upgrade]
         type = "button"
         icon = "refresh"
         style = "info"
-        visible = "upgradable == 'no'"
+        visible = "upgrade_status == 'up_to_date'"
 
         [_core.operations.change_url_supported]
         type = "string"
