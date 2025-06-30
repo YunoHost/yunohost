@@ -26,6 +26,12 @@ jobs:
           args: -i=4 -kp -sr -bn -ci -w hooks/ helpers/helpers helpers/helpers.v1.d/ helpers/helpers.v2.1.d/
         continue-on-error: true
 
+      - name: Sort python imports with isort
+        uses: isort/isort-action@v1
+        with:
+          sort-paths: src
+          configuration: ""
+
       - name: Check files using the black formatter
         uses: psf/black@stable
         with:
