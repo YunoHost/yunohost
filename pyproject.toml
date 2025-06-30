@@ -45,6 +45,8 @@ exclude = [
     "tests"
 ]
 
+[tool.isort]
+profile = "black"
 
 [tool.black]
 
