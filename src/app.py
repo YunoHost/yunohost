@@ -164,8 +164,7 @@ def app_info(app: str, full: bool = False, with_upgrade_infos: bool = False, wit
 
     _assert_is_installed(app)
 
-    setting_path = os.path.join(APPS_SETTING_PATH, app)
-    local_manifest = _get_manifest_of_app(setting_path)
+    local_manifest = _get_manifest_of_app(app)
     settings = _get_app_settings(app)
     main_perm = settings.get("_permissions", {}).get("main", {})
 
@@ -1894,8 +1893,7 @@ def app_ssowatconf() -> None:
         if not perm_info.get("show_tile", False):
             continue
 
-        setting_path = os.path.join(APPS_SETTING_PATH, app_id)
-        local_manifest = _get_manifest_of_app(setting_path)
+        local_manifest = _get_manifest_of_app(app_id)
 
         app_domain = uris[0].split("/")[0]
         # get "topest" domain
@@ -2555,8 +2553,7 @@ def _parse_app_version(v: str) -> tuple[version.Version, int]:
         raise YunohostError(f"Failed to parse app version '{v}' : {e}", raw_msg=True)
 
 
-def _get_manifest_of_app(path: str) -> AppManifest:
-    "Get app manifest stored in json or in toml"
+def _get_manifest_of_app(path_or_app_id: str) -> AppManifest:
 
     # sample data to get an idea of what is going on
     # this toml extract:
@@ -2660,6 +2657,11 @@ def _get_manifest_of_app(path: str) -> AppManifest:
     #     ¦   ¦   ¦   },
     #     ¦   ¦   ¦   "example": "example.com"
     #     ¦   ¦   },
+
+    if "/" in path_or_app_id:
+        path = path_or_app_id
+    else:
+        path = os.path.join(APPS_SETTING_PATH, path_or_app_id)
 
     if os.path.exists(os.path.join(path, "manifest.toml")):
         manifest = read_toml(os.path.join(path, "manifest.toml"))
@@ -3459,9 +3461,8 @@ def _make_environment_for_app_script(
     action=None,
     force_include_app_settings=False,
 ) -> dict[str, str]:
-    app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 
-    manifest = _get_manifest_of_app(workdir if workdir else app_setting_path)
+    manifest = _get_manifest_of_app(workdir if workdir else app)
 
     app_id, app_instance_nb = _parse_app_instance_name(app)
 
