@@ -15,7 +15,9 @@ jobs:
       with:
         python-version: 3.11
     - name: Install tox and any other packages
-      run: pip install tox toml pyyaml
+      run: |
+        pip install tox toml pyyaml
+        pip install pyproject.toml --group tests
 
     - if: success() || failure()
       run: tox -e py311-lint
