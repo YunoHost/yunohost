@@ -270,13 +270,14 @@ def app_info(app: str, full: bool = False, with_upgrade_infos: bool = False, wit
 class AppUpgradeInfos(TypedDict):
 
     status: Literal["upgradable", "up_to_date", "url_required", "bad_quality", "fail_requirements"]
+    message: str
     url: str | None
     current_version: str
     new_version: str | None
     new_revision: str | None
     requirements: dict[str, "AppRequirementCheckResult"] | None
     specific_channel: str | None
-    specific_channel_pr_url: str | None
+    specific_channel_message: str | None
     notifications: NotRequired[dict[str, str]]
 
 
@@ -297,13 +298,14 @@ def _app_upgrade_infos(
     if not app_in_catalog or "git" not in app_in_catalog:
         return {
             "status": "url_required",
+            "message": m18n.n("app_config_upgrade_url_required"),
             "url": None,
             "current_version": current_version,
             "new_version": None,
             "new_revision": None,
             "requirements": None,
             "specific_channel": None,
-            "specific_channel_pr_url": None,
+            "specific_channel_message": None,
         }
 
     url = app_in_catalog["git"]["url"]
@@ -311,6 +313,7 @@ def _app_upgrade_infos(
     available_upgrade_channels = app_in_catalog.get("alternative_branches", {})
     specific_channel: str | None = _get_app_settings(app).get("upgrade_channel")
     specific_channel_pr_url: str | None = None
+    specific_channel_message: str | None = None
     manifest_in_catalog = app_in_catalog.get("manifest", {})
 
     if specific_channel and specific_channel in available_upgrade_channels:
@@ -321,6 +324,7 @@ def _app_upgrade_infos(
             new_revision = channel["revision"]
             new_version = channel["version"]
             specific_channel_pr_url = channel["pr_url"]
+            specific_channel_message = m18n.n("app_upgrade_specific_channel_msg", channel=specific_channel, pr_url=specific_channel_pr_url)
         else:
             logger.debug(f"Ignoring specific upgrade channel '{specific_channel}' for '{app}', because it's not currently ahead of the default branch. The default branch will be used instead.")
             specific_channel = None
@@ -340,25 +344,27 @@ def _app_upgrade_infos(
     ):
         return {
             "status": "bad_quality",
+            "message": m18n.n("app_config_upgrade_bad_quality"),
             "url": url,
             "current_version": current_version,
             "new_version": None,
             "new_revision": None,
             "requirements": None,
             "specific_channel": specific_channel,
-            "specific_channel_pr_url": specific_channel_pr_url,
+            "specific_channel_message": specific_channel_message,
         }
 
     if _parse_app_version(current_version) >= _parse_app_version(new_version) and (specific_channel is None or new_revision == current_revision):
         return {
             "status": "up_to_date",
+            "message": m18n.n("app_config_upgrade_up_to_date", current_version=current_version),
             "url": None,
             "current_version": current_version,
             "new_version": new_version,
             "new_revision": new_revision,
             "requirements": None,
             "specific_channel": specific_channel,
-            "specific_channel_pr_url": specific_channel_pr_url,
+            "specific_channel_message": specific_channel_message,
         }
 
     # Not sure when this happens exactly considering we checked for ">=" before ...
@@ -380,16 +386,26 @@ def _app_upgrade_infos(
         for r in _check_manifest_requirements(manifest_in_catalog, action="upgrade")
     }
     pass_requirements = all(r["passed"] for r in requirements.values())
+    failed_requirements = ' ; '.join([r["error"] for r in requirements.values() if not r["passed"]])
 
+    status: Literal["upgradable", "fail_requirements"] = "upgradable" if pass_requirements else "fail_requirements"
     return {
-        "status": "upgradable" if pass_requirements else "fail_requirements",
+        "status": status,
+        # i18n: app_config_upgrade_upgradable
+        # i18n: app_config_upgrade_fail_requirements
+        "message": m18n.n(
+            f"app_config_upgrade_{status}",
+            current_version=current_version,
+            new_version=new_version,
+            failed_requirements=failed_requirements
+        ),
         "url": url,
         "current_version": current_version,
         "new_version": new_version,
         "new_revision": new_revision,
         "requirements": requirements,
         "specific_channel": specific_channel,
-        "specific_channel_pr_url": specific_channel_pr_url,
+        "specific_channel_message": specific_channel_message,
     }
 
 
