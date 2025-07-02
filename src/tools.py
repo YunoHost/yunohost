@@ -38,6 +38,7 @@ from .utils.system import (
     _apt_log_line_is_relevant,
     _dump_sources_list,
     _list_upgradable_apt_packages,
+    _group_packages_per_categories,
     dpkg_is_broken,
     dpkg_lock_available,
     ynh_packages_version,
@@ -376,6 +377,7 @@ def tools_update(operation_logger, target=None):
         upgradable_system_packages = list(_list_upgradable_apt_packages())
         logger.debug(m18n.n("done"))
 
+    apps = []
     upgradable_apps = []
     if target in ["apps", "all"]:
         try:
@@ -398,6 +400,8 @@ def tools_update(operation_logger, target=None):
         new_version = yunohost["new_version"].split(".")[:2]
         important_yunohost_upgrade = current_version != new_version
 
+    upgradable_system_packages_per_categories = _group_packages_per_categories(upgradable_system_packages)
+
     # Wrapping this in a try/except just in case for some reason we can't load
     # the migrations, which would result in the update/upgrade process being blocked...
     try:
@@ -407,7 +411,7 @@ def tools_update(operation_logger, target=None):
         pending_migrations = []
 
     return {
-        "system": upgradable_system_packages,
+        "system": upgradable_system_packages_per_categories,
         "apps": apps,
         "important_yunohost_upgrade": important_yunohost_upgrade,
         "pending_migrations": pending_migrations,

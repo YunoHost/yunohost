@@ -216,6 +216,62 @@ def _list_upgradable_apt_packages():
         }
 
 
+# Corresponds to the 'Section' in apt/dpkg infos
+PACKAGE_CATEGORIES_REMAP = {
+    # "Base"
+    "kernel": "kernel",
+    "admin": "base",
+    "shells": "base",
+    "interpreters": "base",
+    "net": "base",
+    # Libs, build tools
+    "oldlibs": "libs",
+    "libs": "libs",
+    "devel": "build",
+    "libdevel": "build",
+    # Languages
+    "python": "python",
+    "perl": "perl",
+    "javascript": "javascript",
+    "php": "php",
+    # Other technologies
+    "database": "database",
+    "mail": "mail",
+    "httpd": "webserver",
+}
+
+
+def _group_packages_per_categories(packages: list[dict[str, str]]) -> dict[str, list[dict[str, str]]]:
+
+    cmd = (
+        'grep "^Package:\|^Section:" /var/lib/dpkg/status '
+        r'| tr "\n" "\r" '
+        '| sed -e "s/Package: //g" -e "s/\rSection://g" '
+        r'| tr "\r" "\n"'
+    )
+    out = subprocess.check_output(cmd, shell=True).decode().strip()
+
+    all_packages_and_categories = {}
+    for line in out.split("\n"):
+        package, category = line.split(" ")
+        if "yunohost" in package or package in ["moulinette", "ssowat"]:
+            category = "yunohost"
+        elif category in PACKAGE_CATEGORIES_REMAP:
+            category = PACKAGE_CATEGORIES_REMAP[category]
+        else:
+            category = "misc"
+        all_packages_and_categories[package] = category
+
+    packages_grouped_by_categories: dict[str, list[dict[str, str]]] = {}
+    for package in packages:
+        category = all_packages_and_categories.get(package['name'], "misc")
+        if category not in packages_grouped_by_categories:
+            packages_grouped_by_categories[category] = []
+        packages_grouped_by_categories[category].append(package)
+
+    return dict(sorted(packages_grouped_by_categories.items()))
+
+
 def _dump_sources_list():
     from glob import glob
 
