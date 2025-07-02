@@ -446,11 +446,15 @@ def _list_apps_with_upgrade_infos(with_pre_upgrade_notifications: bool = True) -
         assert url
         assert new_revision
 
-        with TemporaryDirectory(prefix="app_", dir=APP_TMP_WORKDIRS) as d:
-            _git_clone_light(d, url, branch=specific_channel, revision=new_revision)
-            _, notifications = _parse_app_doc_and_notifications(d)
+        try:
+            with TemporaryDirectory(prefix="app_", dir=APP_TMP_WORKDIRS) as d:
+                _git_clone_light(d, url, branch=specific_channel, revision=new_revision)
+                _, notifications = _parse_app_doc_and_notifications(d)
+        except Exception as e:
+            logger.warning(f"Failed to check pre-upgrade notifications for {app['id']} : {e}")
+            notifications = {}
 
-        if notifications["PRE_UPGRADE"]:
+        if notifications.get("PRE_UPGRADE"):
             app["upgrade"]["notifications"] = _filter_and_hydrate_notifications(
                 notifications["PRE_UPGRADE"],
                 app["version"],
