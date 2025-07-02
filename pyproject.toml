@@ -49,13 +49,24 @@ tests = [
 ]
 
 [tool.mypy]
-ignore_missing_imports = true
 follow_imports = "silent"
 exclude = [
     "acme_tiny",
     "migrations",
     "tests"
 ]
+
+[[tool.mypy.overrides]]
+# We don't provide (yet) typing in moulinette
+module = "moulinette.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Those are the public, external modules that don't provide typing
+module = ["jwt", "sortedcollections", "IPython", "ldap.*", "dbus", "sdbus.*",
+    "psutil", "bottle", "miniupnpc", "lexicon.*", "publicsuffix2"]
+ignore_missing_imports = true
+
 
 [tool.isort]
 profile = "black"
