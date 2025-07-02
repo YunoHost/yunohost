@@ -39,9 +39,12 @@ dependencies = [
 
 [dependency-groups]
 tests = [
+    "mypy",
     "types-passlib",
-    "types-pyOpenSSL",
+    "types-passlib",
     "types-psutil",
+    "types-pyOpenSSL",
+    "types-pyYAML",
     "types-requests",
 ]
 
