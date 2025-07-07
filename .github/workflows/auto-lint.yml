@@ -1,4 +1,4 @@
-name: Run Python linting
+name: Run code lint
 
 on:
   push:
@@ -7,13 +7,16 @@ on:
 
 jobs:
   python-lint:
+    name: Python lint
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: 3.11
+
     - name: Install tox and any other packages
       run: |
         pip install tox toml pyyaml
@@ -31,3 +34,27 @@ jobs:
     - name: Check i18n keys
       if: success() || failure()
       run: python3 maintenance/missing_i18n_keys.py --check
+
+
+  bash-lint:
+    name: Bash lint
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Run ShellCheck
+      uses: salamandar/action-shellcheck@master
+      with:
+        additional_files: |
+          bin/yunoprompt
+          debian/postinst
+          debian/postrm
+          debian/prerm
+          hooks/*/*
+          tests
+          helpers/helpers.v2.1.d/*
+
+        ignore_paths:
+          tests/test_helpers.v2.d
+          helpers/vendor
+          src/vendor
