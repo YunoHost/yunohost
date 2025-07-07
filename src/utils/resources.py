@@ -1228,8 +1228,8 @@ class AptDependenciesAppResource(AppResource):
         for key, values in self.extras.items():
             if isinstance(values.get("packages"), str):
                 values["packages"] = [
-                    value.strip() for value in values["packages"].split(",")
-                ]  # type: ignore
+                    value.strip() for value in values["packages"].split(",")  # type: ignore
+                ]
 
             if isinstance(values.get("packages_from_raw_bash"), str):
                 out, err = self.check_output_bash_snippet(
