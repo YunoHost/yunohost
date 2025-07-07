@@ -31,7 +31,6 @@ mypy:
   image: "build-and-lint"
   needs: []
   script:
-    - pip install --break-system-packages --group tests
     - tox -e py311-mypy
 
 i18n-keys:
