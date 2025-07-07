@@ -1370,8 +1370,32 @@ class TestFile(BaseTest):
         "intake",
         [
             # fmt: off
-            False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {},
-            "none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n"
+            False,
+            True,
+            0,
+            1,
+            -1,
+            1337,
+            13.37,
+            [],
+            ["one"],
+            {},
+            "none",
+            "_none",
+            "False",
+            "True",
+            "0",
+            "1",
+            "-1",
+            "1337",
+            "13.37",
+            "[]",
+            ",",
+            "['one']",
+            "one,two",
+            r"{}",
+            "value",
+            "value\n",
             # fmt: on
         ],
     )
@@ -2260,9 +2284,9 @@ def test_simple_evaluate():
         if result == bool:
             assert bool(evaluate_simple_js_expression(expression, context)), expression
         else:
-            assert (
-                evaluate_simple_js_expression(expression, context) == result
-            ), expression
+            assert evaluate_simple_js_expression(expression, context) == result, (
+                expression
+            )
 
     for expression, error in trigger_errors.items():
         with pytest.raises(error):

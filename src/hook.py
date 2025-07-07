@@ -528,7 +528,7 @@ def _hook_exec_python(path, args, env, loggers):
         and len(ret) == 2
         and isinstance(ret[0], int)
         and isinstance(ret[1], dict)
-    ), ("Module %s did not return a (int, dict) tuple !" % module)
+    ), "Module %s did not return a (int, dict) tuple !" % module
     return ret
 
 

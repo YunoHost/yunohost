@@ -422,7 +422,6 @@ def test_resource_permissions():
 
 
 def test_resource_nodejs():
-
     manager = AppResourceManager(
         "testapp",
         current={},
@@ -462,7 +461,6 @@ def test_resource_nodejs():
 
 
 def test_resource_ruby():
-
     os.system("echo '[integration]' >> /etc/yunohost/apps/testapp/manifest.toml")
     os.system(
         "echo 'helpers_version = \"2.1\"' >> /etc/yunohost/apps/testapp/manifest.toml"
@@ -532,7 +530,6 @@ def test_resource_ruby():
 
 
 def test_resource_go():
-
     os.system("echo '[integration]' >> /etc/yunohost/apps/testapp/manifest.toml")
     os.system(
         "echo 'helpers_version = \"2.1\"' >> /etc/yunohost/apps/testapp/manifest.toml"
@@ -586,7 +583,6 @@ def test_resource_go():
 
 
 def test_resource_composer():
-
     os.system("echo '[integration]' >> /etc/yunohost/apps/testapp/manifest.toml")
     os.system(
         "echo 'helpers_version = \"2.1\"' >> /etc/yunohost/apps/testapp/manifest.toml"

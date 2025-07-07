@@ -374,9 +374,7 @@ class BaseOption(BaseModel):
 
     type: OptionType
     id: str
-    mode: Mode = (
-        "bash"  # TODO use "python" as default mode with AppConfigPanel setuping it to "bash"
-    )
+    mode: Mode = "bash"  # TODO use "python" as default mode with AppConfigPanel setuping it to "bash"
     ask: Translation | None
     readonly: bool = False
     visible: JSExpression | bool = True
@@ -1064,12 +1062,12 @@ class BooleanOption(BaseInputOption):
         no_answers = BooleanOption._no_answers
         yes_answers = BooleanOption._yes_answers
 
-        assert (
-            str(technical_yes).lower() not in no_answers
-        ), f"'yes' value can't be in {no_answers}"
-        assert (
-            str(technical_no).lower() not in yes_answers
-        ), f"'no' value can't be in {yes_answers}"
+        assert str(technical_yes).lower() not in no_answers, (
+            f"'yes' value can't be in {no_answers}"
+        )
+        assert str(technical_no).lower() not in yes_answers, (
+            f"'no' value can't be in {yes_answers}"
+        )
 
         no_answers.add(str(technical_no).lower())
         yes_answers.add(str(technical_yes).lower())
@@ -2102,7 +2100,6 @@ def prompt_or_validate_form(
     hooks: Hooks = {},
 ) -> FormModel:
     for option in options:
-
         interactive = Moulinette.interface.type == "cli" and os.isatty(1)
 
         if isinstance(option, ButtonOption):

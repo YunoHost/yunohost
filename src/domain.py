@@ -109,12 +109,10 @@ def _get_domains(exclude_subdomains=False):
 
 
 def _get_domain_portal_dict():
-
     domains = _get_domains()
     out = OrderedDict()
 
     for domain in domains:
-
         parent = None
 
         # Use the topest parent domain if any
@@ -467,7 +465,7 @@ def domain_remove(
                 (
                     app,
                     (
-                        f"    - {app} \"{label}\" on https://{domain}{settings['path']}"
+                        f'    - {app} "{label}" on https://{domain}{settings["path"]}'
                         if "path" in settings
                         else app
                     ),

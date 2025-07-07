@@ -36,7 +36,6 @@ SSE_HEARTBEAT_PERIOD = 10  # seconds
 
 
 def start_log_broker():
-
     from multiprocessing import Process
 
     def server():
@@ -62,7 +61,6 @@ def start_log_broker():
 
 
 class SSELogStreamingHandler(Handler):
-
     def __init__(self, operation_id, flash=False):
         super().__init__()
         self.operation_id = operation_id
@@ -105,7 +103,6 @@ class SSELogStreamingHandler(Handler):
         time.sleep(1)
 
     def emit(self, record):
-
         self._encode_and_pub(
             {
                 "type": "msg" if not self.flash else "toast",
@@ -126,7 +123,6 @@ class SSELogStreamingHandler(Handler):
         )
 
     def emit_operation_start(self, time, title, started_by):
-
         self._encode_and_pub(
             {
                 "type": "start",
@@ -137,7 +133,6 @@ class SSELogStreamingHandler(Handler):
         )
 
     def emit_operation_end(self, time, success, errormsg):
-
         self._encode_and_pub(
             {
                 "type": "end",
@@ -148,7 +143,6 @@ class SSELogStreamingHandler(Handler):
         )
 
     def _encode_and_pub(self, data):
-
         data["operation_id"] = self.operation_id
         data["ref_id"] = self.ref_id
         type = data.pop("type")
@@ -174,7 +168,6 @@ class SSELogStreamingHandler(Handler):
 
 
 def get_current_operation():
-
     from ..log import _guess_who_started_process
 
     try:
@@ -211,7 +204,6 @@ def get_current_operation():
 
 
 def sse_stream():
-
     # We need zmq.green to uh have some sort of async ? (I think)
     import zmq.green as zmq
 

@@ -297,7 +297,6 @@ def app_info(app: str, full: bool = False, upgradable: bool = False) -> AppInfo:
 def _app_upgradable(
     app: str, local_manifest: dict | None = None
 ) -> Tuple[Literal["yes", "no", "url_required", "bad_quality"], str | None, str | None]:
-
     base_app_id, _ = _parse_app_instance_name(app)
     app_in_catalog = _load_apps_catalog()["apps"].get(base_app_id, {})
 
@@ -1781,7 +1780,6 @@ def app_ssowatconf() -> None:
 
     # New permission system
     for perm_name, perm_info in all_permissions.items():
-
         uris = list(
             filter(None, [perm_info.get("url"), *perm_info.get("additional_urls", [])])
         )
@@ -1921,7 +1919,6 @@ def app_ssowatconf() -> None:
 
 @is_flash_unit_operation()
 def app_change_label(app: str, new_label: str) -> None:
-
     installed = _is_installed(app)
     if not installed:
         raise YunohostValidationError(
@@ -1942,7 +1939,6 @@ def app_action_list(app: str) -> None:
 def app_action_run(
     app: str, action: str, args: str | None = None, args_file=None, core: bool = False
 ) -> None:
-
     if action.startswith("_core"):
         core = True
     if core:
@@ -2111,7 +2107,6 @@ ynh_app_config_run $1
             return values
 
         def _get_partial_raw_config(self):
-
             raw_config = super()._get_partial_raw_config()
 
             self._compute_binds(raw_config)
@@ -2201,7 +2196,6 @@ ynh_app_config_run $1
             )
 
         def _get_raw_config(self) -> "RawConfig":
-
             from .user import user_group_list, user_list
 
             raw_config = super()._get_raw_config()
@@ -2281,24 +2275,25 @@ ynh_app_config_run $1
                 Path(APPS_SETTING_PATH) / self.entity / "scripts" / "change_url"
             ).exists():
                 change_url_supported = "yes"
-                raw_config["_core"]["operations"]["change_url_domain"][
-                    "default"
-                ] = domain
+                raw_config["_core"]["operations"]["change_url_domain"]["default"] = (
+                    domain
+                )
                 raw_config["_core"]["operations"]["change_url_path"]["default"] = path
             else:
                 change_url_supported = "no"
 
-            raw_config["_core"]["operations"]["change_url_supported"][
-                "default"
-            ] = change_url_supported
+            raw_config["_core"]["operations"]["change_url_supported"]["default"] = (
+                change_url_supported
+            )
 
             return raw_config
 
         def _get_raw_settings(self) -> "RawSettings":
-
             from .permission import AppPermInfos, user_permission_list
 
-            perms: dict[str, AppPermInfos] = user_permission_list(full=True, apps=[self.entity])["permissions"]  # type: ignore
+            perms: dict[str, AppPermInfos] = user_permission_list(
+                full=True, apps=[self.entity]
+            )["permissions"]  # type: ignore
             app_settings = _get_app_settings(self.entity)
             perms_as_app_settings = app_settings.get("_permissions", {})
 
@@ -2357,7 +2352,6 @@ ynh_app_config_run $1
             previous_settings: dict[str, Any],
             exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
         ) -> None:
-
             from .user import (
                 user_permission_add,
                 user_permission_remove,
@@ -2480,7 +2474,6 @@ def _set_app_settings(app: str, settings: dict[str, Any]) -> None:
 
 
 def _parse_app_version(v: str) -> tuple[version.Version, int]:
-
     if v in ["?", "-"]:
         return (version.parse("0"), 0)
 

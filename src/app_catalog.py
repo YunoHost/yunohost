@@ -235,9 +235,9 @@ def _update_apps_catalog() -> None:
                     f"{apps_catalog['url']}/v{APPS_CATALOG_API_VERSION}/logos/{logo_hash}.png",
                     timeout=10,
                 )
-                assert (
-                    r.status_code == 200
-                ), f"Got status code {r.status_code}, expected 200"
+                assert r.status_code == 200, (
+                    f"Got status code {r.status_code}, expected 200"
+                )
                 if hashlib.sha256(r.content).hexdigest() != logo_hash:
                     raise Exception(
                         f"Found inconsistent hash while downloading logo {logo_hash}"

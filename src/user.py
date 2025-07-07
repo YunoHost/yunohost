@@ -1513,7 +1513,6 @@ def user_permission_update(
     hide_from_public: bool | None = None,
     order: int | None = None,
 ) -> dict[str, Any]:
-
     from .app import _assert_is_installed, app_setting, app_ssowatconf
     from .permission import _update_app_permission_setting
 

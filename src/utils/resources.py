@@ -536,9 +536,9 @@ class SourcesResource(AppResource):
                 out=out.decode(),
             )
 
-        assert os.path.exists(
-            filename
-        ), f"For some reason, wget worked but {filename} doesnt exists?"
+        assert os.path.exists(filename), (
+            f"For some reason, wget worked but {filename} doesnt exists?"
+        )
 
         computed_sha256 = check_output(f"sha256sum {filename}").split()[0]
         if computed_sha256 != expected_sha256:
@@ -1227,7 +1227,9 @@ class AptDependenciesAppResource(AppResource):
 
         for key, values in self.extras.items():
             if isinstance(values.get("packages"), str):
-                values["packages"] = [value.strip() for value in values["packages"].split(",")]  # type: ignore
+                values["packages"] = [
+                    value.strip() for value in values["packages"].split(",")
+                ]  # type: ignore
 
             if isinstance(values.get("packages_from_raw_bash"), str):
                 out, err = self.check_output_bash_snippet(
@@ -1238,7 +1240,9 @@ class AptDependenciesAppResource(AppResource):
                         f"Error while running apt resource packages_from_raw_bash snippet for '{key}' extras:"
                     )
                     logger.error(err)
-                values["packages"] = values.get("packages", []) + [value.strip() for value in out.split("\n") if value.strip()]  # type: ignore
+                values["packages"] = values.get("packages", []) + [
+                    value.strip() for value in out.split("\n") if value.strip()
+                ]  # type: ignore
 
             if (
                 not isinstance(values.get("repo"), str)
@@ -1262,14 +1266,11 @@ class AptDependenciesAppResource(AppResource):
                 "repo"
             ] == "deb https://dl.yarnpkg.com/debian/ stable main" and self.extras[key][
                 "packages"
-            ] == [
-                "yarn"
-            ]:
+            ] == ["yarn"]:
                 self.packages.append("yarn")
                 del self.extras[key]
 
     def provision_or_update(self, context: Dict = {}):
-
         if self.helpers_version >= 2.1:
             ynh_apt_install_dependencies = "ynh_apt_install_dependencies"
             ynh_apt_install_dependencies_from_extra_repository = (
@@ -1658,12 +1659,10 @@ class NodejsAppResource(AppResource):
         return f"/usr/share/yunohost/helpers.v{self.helpers_version}.d/vendor/n/n"
 
     def installed_versions(self):
-
         out = check_output(f"{self.n} ls", env={"N_PREFIX": self.N_INSTALL_DIR})
         return [version.split("/")[-1] for version in out.strip().split("\n")]
 
     def provision_or_update(self, context: Dict = {}):
-
         os.makedirs(self.N_INSTALL_DIR, exist_ok=True)
 
         cmd = f"{self.n} install {self.version}"
@@ -1678,9 +1677,9 @@ class NodejsAppResource(AppResource):
             for v in self.installed_versions()
             if v == self.version or v.startswith(self.version + ".")
         ]
-        assert (
-            matching_versions
-        ), f"Uhoh, no matching version found among {self.installed_versions()} after installing nodejs {self.version} ?"
+        assert matching_versions, (
+            f"Uhoh, no matching version found among {self.installed_versions()} after installing nodejs {self.version} ?"
+        )
         sorted_versions = sorted(
             matching_versions, key=lambda s: list(map(int, s.split(".")))
         )
@@ -1690,12 +1689,10 @@ class NodejsAppResource(AppResource):
         self.garbage_collect_unused_versions()
 
     def deprovision(self, context: Dict = {}):
-
         self.delete_setting("nodejs_version")
         self.garbage_collect_unused_versions()
 
     def garbage_collect_unused_versions(self):
-
         from ..app import _installed_apps, app_setting
 
         used_versions = []
@@ -1760,7 +1757,6 @@ class RubyAppResource(AppResource):
         return f"{self.RBENV_ROOT}/bin/rbenv"
 
     def installed_versions(self):
-
         return (
             check_output(
                 f"{self.rbenv} versions --bare --skip-aliases | grep -Ev '/'",
@@ -1771,7 +1767,6 @@ class RubyAppResource(AppResource):
         )
 
     def update_rbenv(self):
-
         self._run_script(
             "provision_or_update",
             f"""
@@ -1785,7 +1780,6 @@ class RubyAppResource(AppResource):
         )
 
     def provision_or_update(self, context: Dict = {}):
-
         for package in [
             "gcc",
             "make",
@@ -1824,12 +1818,10 @@ class RubyAppResource(AppResource):
         self.garbage_collect_unused_versions()
 
     def deprovision(self, context: Dict = {}):
-
         self.delete_setting("ruby_version")
         self.garbage_collect_unused_versions()
 
     def garbage_collect_unused_versions(self):
-
         from ..app import _installed_apps, app_setting
 
         used_versions = []
@@ -1896,7 +1888,6 @@ class GoAppResource(AppResource):
         return f"{self.GOENV_ROOT}/plugins/xxenv-latest/bin/goenv-latest"
 
     def update_goenv(self):
-
         self._run_script(
             "provision_or_update",
             f"""
@@ -1908,7 +1899,6 @@ class GoAppResource(AppResource):
         )
 
     def provision_or_update(self, context: Dict = {}):
-
         self.update_goenv()
         go_version = check_output(
             f"{self.goenv_latest} --print {self.version}",
@@ -1926,12 +1916,10 @@ class GoAppResource(AppResource):
         self.garbage_collect_unused_versions()
 
     def deprovision(self, context: Dict = {}):
-
         self.delete_setting("go_version")
         self.garbage_collect_unused_versions()
 
     def garbage_collect_unused_versions(self):
-
         installed_versions = check_output(
             f"{self.goenv} versions --bare --skip-aliases",
             env={"GOENV_ROOT": self.GOENV_ROOT},
@@ -2001,7 +1989,6 @@ class ComposerAppResource(AppResource):
         return f"https://getcomposer.org/download/{self.version}/composer.phar"
 
     def provision_or_update(self, context: Dict = {}):
-
         install_dir = self.get_setting("install_dir")
         if not install_dir:
             raise YunohostError(
@@ -2016,9 +2003,9 @@ class ComposerAppResource(AppResource):
         import requests
 
         composer_r = requests.get(self.composer_url, timeout=30)
-        assert (
-            composer_r.status_code == 200
-        ), "Uhoh, failed to download {self.composer_url} ? Return code: {composer_r.status_code}"
+        assert composer_r.status_code == 200, (
+            "Uhoh, failed to download {self.composer_url} ? Return code: {composer_r.status_code}"
+        )
 
         with open(f"{install_dir}/composer.phar", "wb") as f:
             f.write(composer_r.content)

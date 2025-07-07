@@ -422,9 +422,9 @@ def permission_create(
         if group not in all_existing_groups:
             raise YunohostValidationError("group_unknown", group=group)
 
-    assert _is_installed(
-        app
-    ), f"'{app}' is not a currently installed app, can not create perm {permission}"
+    assert _is_installed(app), (
+        f"'{app}' is not a currently installed app, can not create perm {permission}"
+    )
 
     permission_url(
         permission,
@@ -501,7 +501,6 @@ def permission_url(
     existing_permission = existing_permission[sub_permission]
 
     if url is not None:
-
         url = _validate_and_sanitize_permission_url(url, app_main_path, app)
         update_settings["url"] = url
         assert url
@@ -749,7 +748,6 @@ def _update_app_permission_setting(
             del perm_settings[sub_permission]["logo_hash"]
 
     elif logo is not None:
-
         import hashlib
 
         from .app import APPS_CATALOG_LOGOS
@@ -852,9 +850,9 @@ def _update_app_permission_setting(
 def _get_system_perms() -> dict[str, SystemPermInfos]:
     try:
         system_perm_conf = read_yaml(SYSTEM_PERM_CONF) or {}
-        assert isinstance(
-            system_perm_conf, dict
-        ), "Uhoh, the system perm conf read is not a dict ?!"
+        assert isinstance(system_perm_conf, dict), (
+            "Uhoh, the system perm conf read is not a dict ?!"
+        )
     except Exception as e:
         logger.warning(f"Failed to read system perm configuration ? : {e}")
         system_perm_conf = {}
@@ -883,7 +881,6 @@ def _get_system_perms() -> dict[str, SystemPermInfos]:
 
 
 def _set_system_perms(system_perm_conf: dict[str, SystemPermInfos]) -> None:
-
     # We actually only write the 'allowed' groups info
     conf_to_write = {
         p: {"allowed": infos["allowed"]} for p, infos in system_perm_conf.items()

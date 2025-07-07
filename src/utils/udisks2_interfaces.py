@@ -116,7 +116,6 @@ class Udisks2Manager(  # type: ignore[call-arg]
     GetDisksMixin,
     interface_name="org.freedesktop.UDisks2.Manager",
 ):
-
     def __init__(self, bus: SdBus):
         super().__init__(UDISKS2_SERVICE_NAME, f"{UDISKS2_BASE_PATH}/Manager", bus)
 

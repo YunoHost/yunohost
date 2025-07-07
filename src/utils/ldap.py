@@ -129,9 +129,7 @@ def modifyModlist_finegrained(old_entry: dict, new_entry: dict) -> list:
 
 
 class LDAPInterface:
-
     def __init__(self, user=None, password=None):
-
         if user is None:
             if os.getuid() == 0:
                 logger.debug("initializing root ldap interface")
@@ -149,7 +147,6 @@ class LDAPInterface:
         self.connect()
 
     def connect(self):
-
         def _reconnect():
             con = ldap.ldapobject.ReconnectLDAPObject(URI, retry_max=10, retry_delay=2)
             self._connect(con)

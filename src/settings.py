@@ -357,7 +357,6 @@ def reconfigure_postfix(setting_name, old_value, new_value):
 
 @post_change_hook("pop3_enabled")
 def reconfigure_dovecot(setting_name, old_value, new_value):
-
     environment = os.environ.copy()
     environment.update({"DEBIAN_FRONTEND": "noninteractive"})
 

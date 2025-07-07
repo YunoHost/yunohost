@@ -96,7 +96,7 @@ def setup_function(function):
         assert not app_is_installed("permissions_app")
         user_create("alice", maindomain, "test123Ynh", fullname="Alice White")
         with patch.object(os, "isatty", return_value=False):
-            install_app("permissions_app_ynh", "/urlpermissionapp" "&admin=alice")
+            install_app("permissions_app_ynh", "/urlpermissionapp&admin=alice")
         assert app_is_installed("permissions_app")
 
     if "with_custom_domain" in markers:

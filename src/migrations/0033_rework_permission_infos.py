@@ -20,7 +20,6 @@ SYSTEM_PERMS = ["mail", "sftp", "ssh"]
 
 
 class MyMigration(Migration):
-
     introduced_in_version = "12.1"
     dependencies = []
 
@@ -28,7 +27,6 @@ class MyMigration(Migration):
 
     @Migration.ldap_migration
     def run(self, *args):
-
         regen_conf(["slapd"], force=True)
 
         self.ldap_migration_started = True
@@ -44,7 +42,6 @@ class MyMigration(Migration):
         app_ssowatconf()
 
     def run_after_system_restore(self):
-
         regen_conf(["slapd"], force=True)
 
         _, permission_system = self.read_legacy_permissions()
@@ -55,7 +52,6 @@ class MyMigration(Migration):
         app_ssowatconf()
 
     def run_before_app_restore(self, app_id):
-
         # Prior to 12.1, the truth source for app permission was the LDAP db rather than app settings.
         # The LDAP db corresponding to the app was dump into a separate yaml
         permfile = f"/etc/yunohost/apps/{app_id}/permissions.yml"
@@ -97,7 +93,6 @@ class MyMigration(Migration):
         app_ssowatconf()
 
     def read_legacy_permissions(self):
-
         ldap = _get_ldap_interface()
         permissions_infos = ldap.search(
             "ou=permission",
@@ -147,7 +142,6 @@ class MyMigration(Migration):
         return permissions_per_app, permissions_system
 
     def delete_legacy_permissions(self):
-
         try:
             ldap = _get_ldap_interface()
             permissions_infos = ldap.search(
@@ -165,7 +159,7 @@ class MyMigration(Migration):
             os.system("systemctl restart slapd")
             for infos in permissions_infos:
                 ldap.update(
-                    f'cn={infos["cn"][0]},ou=permission',
+                    f"cn={infos['cn'][0]},ou=permission",
                     {
                         "label": [],
                         "authHeader": [],
