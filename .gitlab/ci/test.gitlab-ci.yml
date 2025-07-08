@@ -1,7 +1,7 @@
 .install_debs: &install_debs
     # Temporary hack for the CI to install python3-zmq not yet in the image
     - DEBIAN_FRONTEND=noninteractive apt update
-    - DEBIAN_FRONTEND=noninteractive apt --assume-yes install python3-zmq 
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes install python3-zmq
     - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ${CI_PROJECT_DIR}/*.deb
 
 .test-stage:
@@ -44,87 +44,87 @@ test-helpers2.1:
 test-domains:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_domains.py
+    - python3 -m pytest tests/test_domains.py
 
 test-dns:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_dns.py
+    - python3 -m pytest tests/test_dns.py
 
 test-apps:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_apps.py
+    - python3 -m pytest tests/test_apps.py
 
 test-appscatalog:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_app_catalog.py
+    - python3 -m pytest tests/test_app_catalog.py
 
 test-appurl:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_appurl.py
+    - python3 -m pytest tests/test_appurl.py
 
 test-questions:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_questions.py
+    - python3 -m pytest tests/test_questions.py
 
 test-app-config:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_app_config.py
+    - python3 -m pytest tests/test_app_config.py
 
 test-app-resources:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_app_resources.py
+    - python3 -m pytest tests/test_app_resources.py
 
 test-changeurl:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_changeurl.py
+    - python3 -m pytest tests/test_changeurl.py
 
 test-backuprestore:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_backuprestore.py
+    - python3 -m pytest tests/test_backuprestore.py
 
 test-permission:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_permission.py
+    - python3 -m pytest tests/test_permission.py
 
 test-settings:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_settings.py
+    - python3 -m pytest tests/test_settings.py
 
 test-user-group:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_user-group.py
+    - python3 -m pytest tests/test_user-group.py
 
 test-regenconf:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_regenconf.py
+    - python3 -m pytest tests/test_regenconf.py
 
 test-service:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_service.py
+    - python3 -m pytest tests/test_service.py
 
 test-ldapauth:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_ldapauth.py
+    - python3 -m pytest tests/test_ldapauth.py
 
 test-sso-and-portalapi:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_sso_and_portalapi.py
+    - python3 -m pytest tests/test_sso_and_portalapi.py
 
 ########################################
 # COVERAGE REPORT

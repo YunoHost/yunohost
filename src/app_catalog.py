@@ -22,14 +22,14 @@ import hashlib
 import os
 import re
 from logging import getLogger
-from typing import TypedDict, Any, NotRequired, Literal
+from typing import Any, Literal, NotRequired, TypedDict
 
 from moulinette import m18n
 from moulinette.utils.filesystem import mkdir, read_json, read_yaml, write_to_json
 from moulinette.utils.network import download_json
 
-from yunohost.utils.error import YunohostError
-from yunohost.utils.i18n import _value_for_locale
+from .utils.error import YunohostError
+from .utils.i18n import _value_for_locale
 
 logger = getLogger("yunohost.app_catalog")
 
@@ -56,7 +56,7 @@ def app_catalog(
     Return a dict of apps available to installation from Yunohost's app catalog
     """
 
-    from yunohost.app import _installed_apps
+    from .app import _installed_apps
 
     # Get app list from catalog cache
     catalog = _load_apps_catalog()
@@ -235,9 +235,9 @@ def _update_apps_catalog() -> None:
                     f"{apps_catalog['url']}/v{APPS_CATALOG_API_VERSION}/logos/{logo_hash}.png",
                     timeout=10,
                 )
-                assert (
-                    r.status_code == 200
-                ), f"Got status code {r.status_code}, expected 200"
+                assert r.status_code == 200, (
+                    f"Got status code {r.status_code}, expected 200"
+                )
                 if hashlib.sha256(r.content).hexdigest() != logo_hash:
                     raise Exception(
                         f"Found inconsistent hash while downloading logo {logo_hash}"

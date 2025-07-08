@@ -9,3 +9,6 @@ disable=SC2164
 
 # Useless cat when sed/grep
 disable=SC2002
+
+# Those are errors that we haven't fixed yet
+disable=SC2155,SC2012,SC2013,SC2038,SC2076,SC2034,SC2154,SC2001

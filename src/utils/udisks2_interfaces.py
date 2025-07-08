@@ -26,19 +26,18 @@ if TYPE_CHECKING:
 
 from sdbus import (
     DbusInterfaceCommon,
+    DbusObjectManagerInterface,
     DbusPropertyEmitsChangeFlag,
     DbusUnprivilegedFlag,
+    SdBus,
     dbus_method,
     dbus_property,
-    DbusObjectManagerInterface,
-    SdBus,
 )
 from sdbus.utils import (
-    parse_get_managed_objects as sdbus_parse_get_managed_objects,
     parse,
 )
+from sdbus.utils import parse_get_managed_objects as sdbus_parse_get_managed_objects
 from sortedcollections import ValueSortedDict
-
 
 UDISKS2_SERVICE_NAME = "org.freedesktop.UDisks2"
 UDISKS2_BASE_PATH = "/org/freedesktop/UDisks2"
@@ -117,7 +116,6 @@ class Udisks2Manager(  # type: ignore[call-arg]
     GetDisksMixin,
     interface_name="org.freedesktop.UDisks2.Manager",
 ):
-
     def __init__(self, bus: SdBus):
         super().__init__(UDISKS2_SERVICE_NAME, f"{UDISKS2_BASE_PATH}/Manager", bus)
 

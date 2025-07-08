@@ -21,8 +21,8 @@
 import os
 from typing import List
 
-from yunohost.diagnosis import Diagnoser
-from yunohost.service import service_status
+from ..diagnosis import Diagnoser
+from ..service import service_status
 
 
 class MyDiagnoser(Diagnoser):

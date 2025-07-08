@@ -26,7 +26,7 @@ from logging import getLogger
 from moulinette.core import MoulinetteError
 from moulinette.utils.filesystem import read_file, write_to_file
 
-from yunohost.utils.error import YunohostValidationError
+from ..utils.error import YunohostValidationError
 
 logger = getLogger("yunohost.utils.legacy")
 

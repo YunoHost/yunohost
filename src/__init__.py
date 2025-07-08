@@ -82,7 +82,6 @@ def api(debug, host, port, actionsmap=None):
 
 
 def portalapi(debug, host, port):
-
     allowed_cors_origins = []
     allowed_cors_origins_file = "/etc/yunohost/.portal-api-allowed-cors-origins"
 
@@ -195,9 +194,9 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
     #  Logging configuration for API                                          #
     else:
         # We use a WatchedFileHandler instead of regular FileHandler to possibly support log rotation etc
-        logging_configuration["handlers"]["file"][
-            "class"
-        ] = "logging.handlers.WatchedFileHandler"
+        logging_configuration["handlers"]["file"]["class"] = (
+            "logging.handlers.WatchedFileHandler"
+        )
 
         # This is for when launching yunohost-api in debug mode, we want to display stuff in the console
         if debug:
@@ -206,7 +205,7 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
             logging_configuration["root"]["handlers"].append("cli")
 
         if interface == "api":
-            from yunohost.utils.sse import start_log_broker
+            from .utils.sse import start_log_broker
 
             start_log_broker()
 

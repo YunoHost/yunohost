@@ -37,8 +37,8 @@ from moulinette.authentication import BaseAuthenticator
 from moulinette.utils.filesystem import read_json
 from moulinette.utils.text import random_ascii
 
-from yunohost.utils.error import YunohostAuthenticationError, YunohostError
-from yunohost.utils.ldap import _get_ldap_interface
+from ..utils.error import YunohostAuthenticationError, YunohostError
+from ..utils.ldap import _get_ldap_interface
 
 logger = logging.getLogger("yunohostportal.authenticators.ldap_ynhuser")
 
@@ -73,7 +73,6 @@ PORTAL_SETTINGS_DIR = "/etc/yunohost/portal"
 # - if the user has an email on the domain, yes
 # - otherwise, no
 def user_is_allowed_on_domain(user: str, domain: str) -> bool:
-
     assert "/" not in domain
 
     portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
@@ -285,7 +284,7 @@ class Authenticator(BaseAuthenticator):
         )
 
         # Create the session file (expiration mechanism)
-        session_file = f'{SESSION_FOLDER}/{infos["id"]}'
+        session_file = f"{SESSION_FOLDER}/{infos['id']}"
         os.system(f'touch "{session_file}"')
 
     def get_session_cookie(self, decrypt_pwd=False):
@@ -357,7 +356,6 @@ class Authenticator(BaseAuthenticator):
         response.delete_cookie("yunohost.portal", path="/")
 
     def purge_expired_session_files(self):
-
         for session_file in Path(SESSION_FOLDER).iterdir():
             print(session_file.stat().st_mtime - time.time())
             if abs(session_file.stat().st_mtime - time.time()) > SESSION_VALIDITY:
@@ -368,7 +366,6 @@ class Authenticator(BaseAuthenticator):
 
     @staticmethod
     def invalidate_all_sessions_for_user(user):
-
         for file in Path(SESSION_FOLDER).glob(f"{short_hash(user)}*"):
             try:
                 file.unlink()

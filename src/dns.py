@@ -28,7 +28,7 @@ from logging import getLogger
 from moulinette import Moulinette, m18n
 from moulinette.utils.filesystem import mkdir, read_file, read_toml, write_to_file
 
-from yunohost.domain import (
+from .domain import (
     _assert_domain_exists,
     _get_domain_settings,
     _get_parent_domain_of,
@@ -36,11 +36,11 @@ from yunohost.domain import (
     _set_domain_settings,
     domain_config_get,
 )
-from yunohost.hook import hook_callback
-from yunohost.log import is_unit_operation
-from yunohost.utils.dns import dig, is_special_use_tld, is_yunohost_dyndns_domain
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.network import get_public_ip
+from .hook import hook_callback
+from .log import is_unit_operation
+from .utils.dns import dig, is_special_use_tld, is_yunohost_dyndns_domain
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.network import get_public_ip
 
 logger = getLogger("yunohost.domain")
 
@@ -132,7 +132,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
     }
     """
 
-    from yunohost.settings import settings_get
+    from .settings import settings_get
 
     basic = []
     mail = []
@@ -608,7 +608,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
 
     # FIXME: in the future, properly unify this with yunohost dyndns update
     if registrar == "yunohost":
-        from yunohost.dyndns import dyndns_update
+        from .dyndns import dyndns_update
 
         dyndns_update(domain=domain, force=force)
         return {}

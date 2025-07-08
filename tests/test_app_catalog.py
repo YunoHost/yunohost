@@ -86,7 +86,6 @@ def teardown_function(function):
 
 
 def test_apps_catalog_emptylist():
-
     # Let's imagine somebody removed the default apps catalog because uh idk they dont want to use our default apps catalog
     os.system("rm %s" % APPS_CATALOG_CONF)
     os.system("touch %s" % APPS_CATALOG_CONF)
@@ -96,13 +95,12 @@ def test_apps_catalog_emptylist():
 
 
 def test_apps_catalog_update_nominal(mocker):
-
     # Cache is empty
     assert not glob.glob(APPS_CATALOG_CACHE + "/*")
 
     # Update
     with requests_mock.Mocker() as m:
-        _actual_apps_catalog_api_url,
+        (_actual_apps_catalog_api_url,)
         # Mock the server response with a dummy apps catalog
         m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, text=DUMMY_APP_CATALOG)
 
@@ -127,7 +125,6 @@ def test_apps_catalog_update_nominal(mocker):
 
 
 def test_apps_catalog_update_404(mocker):
-
     with requests_mock.Mocker() as m:
         # 404 error
         m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, status_code=404)
@@ -139,7 +136,6 @@ def test_apps_catalog_update_404(mocker):
 
 
 def test_apps_catalog_update_timeout(mocker):
-
     with requests_mock.Mocker() as m:
         # Timeout
         m.register_uri(
@@ -153,7 +149,6 @@ def test_apps_catalog_update_timeout(mocker):
 
 
 def test_apps_catalog_update_sslerror(mocker):
-
     with requests_mock.Mocker() as m:
         # SSL error
         m.register_uri(
@@ -167,7 +162,6 @@ def test_apps_catalog_update_sslerror(mocker):
 
 
 def test_apps_catalog_update_corrupted(mocker):
-
     with requests_mock.Mocker() as m:
         # Corrupted json
         m.register_uri(
@@ -181,7 +175,6 @@ def test_apps_catalog_update_corrupted(mocker):
 
 
 def test_apps_catalog_load_with_empty_cache(mocker):
-
     # Cache is empty
     assert not glob.glob(APPS_CATALOG_CACHE + "/*")
 
@@ -205,7 +198,6 @@ def test_apps_catalog_load_with_empty_cache(mocker):
 
 
 def test_apps_catalog_load_with_conflicts_between_lists(mocker):
-
     conf = [
         {"id": "default", "url": APPS_CATALOG_DEFAULT_URL},
         {
@@ -241,7 +233,6 @@ def test_apps_catalog_load_with_conflicts_between_lists(mocker):
 
 
 def test_apps_catalog_load_with_outdated_api_version():
-
     # Update
     with requests_mock.Mocker() as m:
         m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, text=DUMMY_APP_CATALOG)

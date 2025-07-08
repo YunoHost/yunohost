@@ -34,7 +34,7 @@ pip-log.txt
 src/locales
 
 # Test
-src/tests/apps
+tests/apps
 
 # Tmp/local doc stuff
 doc/bash-completion.sh

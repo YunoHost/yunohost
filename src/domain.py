@@ -37,15 +37,15 @@ from moulinette.utils.filesystem import (
     write_to_yaml,
 )
 
-from yunohost.log import is_unit_operation
-from yunohost.regenconf import _force_clear_hashes, _process_regen_conf, regen_conf
-from yunohost.utils.error import YunohostError, YunohostValidationError
+from .log import is_unit_operation
+from .regenconf import _force_clear_hashes, _process_regen_conf, regen_conf
+from .utils.error import YunohostError, YunohostValidationError
 
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
-    from yunohost.utils.configpanel import RawConfig, RawSettings
-    from yunohost.utils.form import ConfigPanelModel, FormModel
+    from .utils.configpanel import ConfigPanelModel, RawConfig, RawSettings
+    from .utils.form import FormModel
 
 logger = getLogger("yunohost.domain")
 
@@ -82,7 +82,7 @@ def _get_domains(exclude_subdomains=False):
         not domain_list_cache
         or abs(domain_list_cache_timestamp - time.time()) > DOMAIN_CACHE_DURATION
     ):
-        from yunohost.utils.ldap import _get_ldap_interface
+        from .utils.ldap import _get_ldap_interface
 
         ldap = _get_ldap_interface()
         result = [
@@ -109,12 +109,10 @@ def _get_domains(exclude_subdomains=False):
 
 
 def _get_domain_portal_dict():
-
     domains = _get_domains()
     out = OrderedDict()
 
     for domain in domains:
-
         parent = None
 
         # Use the topest parent domain if any
@@ -185,9 +183,9 @@ def domain_info(domain):
         domain     -- Domain to be checked
     """
 
-    from yunohost.app import _get_app_settings, _installed_apps, app_info
-    from yunohost.certificate import certificate_status
-    from yunohost.dns import _get_registar_settings
+    from .app import _get_app_settings, _installed_apps, app_info
+    from .certificate import certificate_status
+    from .dns import _get_registar_settings
 
     _assert_domain_exists(domain)
 
@@ -263,16 +261,16 @@ def domain_add(
         ignore_dyndns -- If we want to just add the DynDNS domain to the list, without subscribing
         install_letsencrypt_cert -- If adding a subdomain of an already added domain, try to install a Let's Encrypt certificate
     """
-    from yunohost.app import app_ssowatconf
-    from yunohost.certificate import (
+    from .app import app_ssowatconf
+    from .certificate import (
         _certificate_install_letsencrypt,
         _certificate_install_selfsigned,
         certificate_status,
     )
-    from yunohost.hook import hook_callback
-    from yunohost.utils.dns import is_yunohost_dyndns_domain
-    from yunohost.utils.ldap import _get_ldap_interface
-    from yunohost.utils.password import assert_password_is_strong_enough
+    from .hook import hook_callback
+    from .utils.dns import is_yunohost_dyndns_domain
+    from .utils.ldap import _get_ldap_interface
+    from .utils.password import assert_password_is_strong_enough
 
     if dyndns_recovery_password:
         operation_logger.data_to_redact.append(dyndns_recovery_password)
@@ -298,8 +296,8 @@ def domain_add(
         and len(domain.split(".")) == 3
     )
     if dyndns:
-        from yunohost.app import _ask_confirmation
-        from yunohost.dyndns import is_subscribing_allowed
+        from .app import _ask_confirmation
+        from .dyndns import is_subscribing_allowed
 
         # Do not allow to subscribe to multiple dyndns domains...
         if not is_subscribing_allowed():
@@ -420,16 +418,16 @@ def domain_remove(
     """
     import glob
 
-    from yunohost.app import (
+    from .app import (
         _get_app_settings,
         _installed_apps,
         app_info,
         app_remove,
         app_ssowatconf,
     )
-    from yunohost.hook import hook_callback
-    from yunohost.utils.dns import is_yunohost_dyndns_domain
-    from yunohost.utils.ldap import _get_ldap_interface
+    from .hook import hook_callback
+    from .utils.dns import is_yunohost_dyndns_domain
+    from .utils.ldap import _get_ldap_interface
 
     if dyndns_recovery_password:
         operation_logger.data_to_redact.append(dyndns_recovery_password)
@@ -467,7 +465,7 @@ def domain_remove(
                 (
                     app,
                     (
-                        f"    - {app} \"{label}\" on https://{domain}{settings['path']}"
+                        f'    - {app} "{label}" on https://{domain}{settings["path"]}'
                         if "path" in settings
                         else app
                     ),
@@ -562,7 +560,7 @@ def domain_dyndns_subscribe(*args, **kwargs):
     """
     Subscribe to a DynDNS domain
     """
-    from yunohost.dyndns import dyndns_subscribe
+    from .dyndns import dyndns_subscribe
 
     dyndns_subscribe(*args, **kwargs)
 
@@ -571,7 +569,7 @@ def domain_dyndns_unsubscribe(*args, **kwargs):
     """
     Unsubscribe from a DynDNS domain
     """
-    from yunohost.dyndns import dyndns_unsubscribe
+    from .dyndns import dyndns_unsubscribe
 
     dyndns_unsubscribe(*args, **kwargs)
 
@@ -580,7 +578,7 @@ def domain_dyndns_list():
     """
     Returns all currently subscribed DynDNS domains
     """
-    from yunohost.dyndns import dyndns_list
+    from .dyndns import dyndns_list
 
     return dyndns_list()
 
@@ -589,7 +587,7 @@ def domain_dyndns_update(*args, **kwargs):
     """
     Update a DynDNS domain
     """
-    from yunohost.dyndns import dyndns_update
+    from .dyndns import dyndns_update
 
     dyndns_update(*args, **kwargs)
 
@@ -598,7 +596,7 @@ def domain_dyndns_set_recovery_password(*args, **kwargs):
     """
     Set a recovery password for an already registered dyndns domain
     """
-    from yunohost.dyndns import dyndns_set_recovery_password
+    from .dyndns import dyndns_set_recovery_password
 
     dyndns_set_recovery_password(*args, **kwargs)
 
@@ -612,7 +610,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
         new_main_domain -- The new domain to be set as the main domain
 
     """
-    from yunohost.tools import _set_hostname
+    from .tools import _set_hostname
 
     # If no new domain specified, we return the current main domain
     if not new_main_domain:
@@ -640,7 +638,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
     if os.path.exists("/etc/yunohost/installed"):
         regen_conf()
 
-        from yunohost.user import _update_admins_group_aliases
+        from .user import _update_admins_group_aliases
 
         _update_admins_group_aliases(
             old_main_domain=old_main_domain, new_main_domain=new_main_domain
@@ -658,7 +656,7 @@ def domain_url_available(domain, path):
         path -- The path to check (e.g. /coffee)
     """
 
-    from yunohost.app import _get_conflicting_apps
+    from .app import _get_conflicting_apps
 
     return len(_get_conflicting_apps(domain, path)) == 0
 
@@ -706,7 +704,7 @@ def domain_config_set(
     """
     Apply a new domain configuration
     """
-    from yunohost.utils.form import BaseOption
+    from .utils.form import BaseOption
 
     DomainConfigPanel = _get_DomainConfigPanel()
     BaseOption.operation_logger = operation_logger
@@ -715,8 +713,8 @@ def domain_config_set(
 
 
 def _get_DomainConfigPanel():
-    from yunohost.dns import _set_managed_dns_records_hashes
-    from yunohost.utils.configpanel import ConfigPanel
+    from .dns import _set_managed_dns_records_hashes
+    from .utils.configpanel import ConfigPanel
 
     class DomainConfigPanel(ConfigPanel):
         entity_type = "domain"
@@ -741,7 +739,7 @@ def _get_DomainConfigPanel():
             # e.g. we don't want to trigger the whole _get_registary_config_section
             # when just getting the current value from the feature section
             if not any_filter or panel_id == "dns":
-                from yunohost.dns import _get_registrar_config_section
+                from .dns import _get_registrar_config_section
 
                 raw_config["dns"]["registrar"] = _get_registrar_config_section(
                     self.entity
@@ -749,7 +747,7 @@ def _get_DomainConfigPanel():
 
             # Cert stuff
             if not any_filter or panel_id == "cert":
-                from yunohost.certificate import certificate_status
+                from .certificate import certificate_status
 
                 status = certificate_status([self.entity], full=True)["certificates"][
                     self.entity
@@ -805,7 +803,7 @@ def _get_DomainConfigPanel():
             }
 
             if "default_app" in next_settings:
-                from yunohost.app import app_map
+                from .app import app_map
 
                 if "/" in app_map(raw=True).get(self.entity, {}):
                     raise YunohostValidationError(
@@ -826,9 +824,11 @@ def _get_DomainConfigPanel():
             )
             if remove_auto_dns_feature:
                 # disable auto dns by reseting every registrar form values
+                registrar_section = config.get_section("registrar")
+                assert registrar_section is not None
                 options = [
                     option
-                    for option in config.get_section("registrar").options
+                    for option in registrar_section.options
                     if not option.readonly
                     and option.id != "use_auto_dns"
                     and hasattr(form, option.id)
@@ -861,7 +861,7 @@ def _get_DomainConfigPanel():
             if _get_parent_domain_of(self.entity, topest=True) is None and any(
                 option in next_settings for option in portal_options
             ):
-                from yunohost.portal import PORTAL_SETTINGS_DIR
+                from .portal import PORTAL_SETTINGS_DIR
 
                 # Portal options are also saved in a `domain.portal.yml` file
                 # that can be read by the portal API.
@@ -913,7 +913,7 @@ def _get_DomainConfigPanel():
                 "default_app" in next_settings
                 or "enable_public_apps_page" in next_settings
             ):
-                from yunohost.app import app_ssowatconf
+                from .app import app_ssowatconf
 
                 app_ssowatconf()
 
@@ -933,9 +933,9 @@ def domain_action_run(domain, action, args=None):
     import urllib.parse
 
     if action == "cert.cert_.cert_install":
-        from yunohost.certificate import certificate_install as action_func
+        from .certificate import certificate_install as action_func
     elif action == "cert.cert_.cert_renew":
-        from yunohost.certificate import certificate_renew as action_func
+        from .certificate import certificate_renew as action_func
 
     args = dict(urllib.parse.parse_qsl(args or "", keep_blank_values=True))
     no_checks = args["cert_no_checks"] in ("y", "yes", "on", "1")
@@ -966,30 +966,30 @@ def _set_domain_settings(domain: str, settings: dict) -> None:
 
 
 def domain_cert_status(domain_list, full=False):
-    from yunohost.certificate import certificate_status
+    from .certificate import certificate_status
 
     return certificate_status(domain_list, full)
 
 
 def domain_cert_install(domain_list, force=False, no_checks=False, self_signed=False):
-    from yunohost.certificate import certificate_install
+    from .certificate import certificate_install
 
     return certificate_install(domain_list, force, no_checks, self_signed)
 
 
 def domain_cert_renew(domain_list, force=False, no_checks=False, email=False):
-    from yunohost.certificate import certificate_renew
+    from .certificate import certificate_renew
 
     return certificate_renew(domain_list, force, no_checks, email)
 
 
 def domain_dns_suggest(domain):
-    from yunohost.dns import domain_dns_suggest
+    from .dns import domain_dns_suggest
 
     return domain_dns_suggest(domain)
 
 
 def domain_dns_push(domain, dry_run, force, purge):
-    from yunohost.dns import domain_dns_push
+    from .dns import domain_dns_push
 
     return domain_dns_push(domain, dry_run, force, purge)

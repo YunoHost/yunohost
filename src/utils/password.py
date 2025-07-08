@@ -64,7 +64,7 @@ def assert_password_is_compatible(password):
         # on top (at least not the moulinette ones)
         # because the moulinette needs to be correctly initialized
         # as well as modules available in python's path.
-        from yunohost.utils.error import YunohostValidationError
+        from ..utils.error import YunohostValidationError
 
         raise YunohostValidationError("password_too_long")
 
@@ -121,7 +121,7 @@ class PasswordValidator:
         # on top (at least not the moulinette ones)
         # because the moulinette needs to be correctly initialized
         # as well as modules available in python's path.
-        from yunohost.utils.error import YunohostValidationError
+        from ..utils.error import YunohostValidationError
 
         status, msg = self.validation_summary(password)
         if status == "error":

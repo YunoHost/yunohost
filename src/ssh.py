@@ -24,7 +24,7 @@ import re
 
 from moulinette.utils.filesystem import chmod, chown, mkdir, read_file, write_to_file
 
-from yunohost.utils.error import YunohostValidationError
+from .utils.error import YunohostValidationError
 
 SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
 
@@ -178,7 +178,7 @@ def _get_user_for_ssh(username, attrs=None):
         }
 
     # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html
-    from yunohost.utils.ldap import _get_ldap_interface
+    from .utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
     user = ldap.search(

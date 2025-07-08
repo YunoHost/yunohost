@@ -17,11 +17,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 import glob
-import os
 import json
+import os
 import time
-import psutil
 from logging import Handler
+
+import psutil
 
 LOG_BROKER_BACKEND_ENDPOINT = "ipc:///var/run/yunohost/log_broker_backend"
 LOG_BROKER_FRONTEND_ENDPOINT = "ipc:///var/run/yunohost/log_broker_frontend"
@@ -35,7 +36,6 @@ SSE_HEARTBEAT_PERIOD = 10  # seconds
 
 
 def start_log_broker():
-
     from multiprocessing import Process
 
     def server():
@@ -61,7 +61,6 @@ def start_log_broker():
 
 
 class SSELogStreamingHandler(Handler):
-
     def __init__(self, operation_id, flash=False):
         super().__init__()
         self.operation_id = operation_id
@@ -84,7 +83,7 @@ class SSELogStreamingHandler(Handler):
         self.socket = self.context.socket(zmq.PUB)
         self.socket.connect(LOG_BROKER_BACKEND_ENDPOINT)
 
-        from yunohost.log import OPERATIONS_PATH
+        from ..log import OPERATIONS_PATH
 
         if not flash:
             # Since we're starting this operation, garbage all the previous streamcache
@@ -104,7 +103,6 @@ class SSELogStreamingHandler(Handler):
         time.sleep(1)
 
     def emit(self, record):
-
         self._encode_and_pub(
             {
                 "type": "msg" if not self.flash else "toast",
@@ -125,7 +123,6 @@ class SSELogStreamingHandler(Handler):
         )
 
     def emit_operation_start(self, time, title, started_by):
-
         self._encode_and_pub(
             {
                 "type": "start",
@@ -136,7 +133,6 @@ class SSELogStreamingHandler(Handler):
         )
 
     def emit_operation_end(self, time, success, errormsg):
-
         self._encode_and_pub(
             {
                 "type": "end",
@@ -147,7 +143,6 @@ class SSELogStreamingHandler(Handler):
         )
 
     def _encode_and_pub(self, data):
-
         data["operation_id"] = self.operation_id
         data["ref_id"] = self.ref_id
         type = data.pop("type")
@@ -173,8 +168,7 @@ class SSELogStreamingHandler(Handler):
 
 
 def get_current_operation():
-
-    from yunohost.log import _guess_who_started_process
+    from ..log import _guess_who_started_process
 
     try:
         with open("/var/run/moulinette_yunohost.lock") as f:
@@ -210,10 +204,10 @@ def get_current_operation():
 
 
 def sse_stream():
-
     # We need zmq.green to uh have some sort of async ? (I think)
     import zmq.green as zmq
-    from yunohost.log import log_list, OPERATIONS_PATH
+
+    from ..log import OPERATIONS_PATH, log_list
 
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)

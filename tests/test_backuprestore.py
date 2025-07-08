@@ -38,13 +38,10 @@ from yunohost.backup import (
 from yunohost.domain import _get_maindomain, domain_add, domain_list, domain_remove
 from yunohost.hook import CUSTOM_HOOK_FOLDER
 from yunohost.permission import user_permission_list
-from yunohost.tests.test_permission import (
-    check_LDAP_db_integrity,
-    check_permission_for_apps,
-)
 from yunohost.user import user_create, user_delete, user_list
 
 from .conftest import get_test_apps_dir, message, raiseYunohostError
+from .test_permission import check_LDAP_db_integrity, check_permission_for_apps
 
 # Get main domain
 maindomain = ""
@@ -99,7 +96,7 @@ def setup_function(function):
         assert not app_is_installed("permissions_app")
         user_create("alice", maindomain, "test123Ynh", fullname="Alice White")
         with patch.object(os, "isatty", return_value=False):
-            install_app("permissions_app_ynh", "/urlpermissionapp" "&admin=alice")
+            install_app("permissions_app_ynh", "/urlpermissionapp&admin=alice")
         assert app_is_installed("permissions_app")
 
     if "with_custom_domain" in markers:

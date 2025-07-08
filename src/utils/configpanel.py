@@ -30,8 +30,8 @@ from moulinette.interfaces.cli import colorize
 from moulinette.utils.filesystem import mkdir, read_toml, read_yaml, write_to_yaml
 from pydantic import BaseModel, Extra, ValidationError, validator
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.form import (
+from .error import YunohostError, YunohostValidationError
+from .form import (
     AnyOption,
     BaseInputOption,
     BaseReadonlyOption,
@@ -44,14 +44,14 @@ from yunohost.utils.form import (
     parse_prefilled_values,
     prompt_or_validate_form,
 )
-from yunohost.utils.i18n import _value_for_locale
+from .i18n import _value_for_locale
 
 if TYPE_CHECKING:
     from pydantic.fields import ModelField
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
-    from yunohost.log import OperationLogger
-    from yunohost.utils.form import FormModel, Hooks
+    from ..log import OperationLogger
+    from .form import FormModel, Hooks
 
 if TYPE_CHECKING:
     from moulinette.utils.log import MoulinetteLogger
@@ -544,9 +544,9 @@ class ConfigPanel:
                                 self.form[option.id], option
                             )
                             if option.type is OptionType.password:
-                                result[key][
-                                    "value"
-                                ] = "**************"  # Prevent displaying password in `config get`
+                                result[key]["value"] = (
+                                    "**************"  # Prevent displaying password in `config get`
+                                )
 
         return result
 
@@ -855,7 +855,7 @@ class ConfigPanel:
         for panel in config.panels:
             if interactive and verbose:
                 Moulinette.display(
-                    colorize(f"\n{'='*40}\n>>>> {panel.name}\n{'='*40}", "purple")
+                    colorize(f"\n{'=' * 40}\n>>>> {panel.name}\n{'=' * 40}", "purple")
                 )
 
             # A section or option may only evaluate its conditions (`visible`
@@ -941,7 +941,7 @@ class ConfigPanel:
         raise NotImplementedError()
 
     def _reload_services(self) -> None:
-        from yunohost.service import service_reload_or_restart
+        from ..service import service_reload_or_restart
 
         services_to_reload = self.config.services if self.config else []
 

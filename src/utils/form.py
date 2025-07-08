@@ -58,9 +58,9 @@ from pydantic.fields import Field
 from pydantic.networks import EmailStr, HttpUrl
 from pydantic.types import constr
 
-from yunohost.log import OperationLogger
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.i18n import _value_for_locale
+from ..log import OperationLogger
+from ..utils.error import YunohostError, YunohostValidationError
+from ..utils.i18n import _value_for_locale
 
 if TYPE_CHECKING:
     from pydantic.fields import FieldInfo, ModelField
@@ -211,7 +211,7 @@ def js_to_python(expr):
     return py_expr
 
 
-def evaluate_simple_js_expression(expr: str, context: dict[str, Any] = {}) -> bool:
+def evaluate_simple_js_expression(expr: str, context: Mapping[str, Any] = {}) -> bool:
     if not expr.strip():
         return False
     node = ast.parse(js_to_python(expr), mode="eval").body
@@ -374,9 +374,7 @@ class BaseOption(BaseModel):
 
     type: OptionType
     id: str
-    mode: Mode = (
-        "bash"  # TODO use "python" as default mode with AppConfigPanel setuping it to "bash"
-    )
+    mode: Mode = "bash"  # TODO use "python" as default mode with AppConfigPanel setuping it to "bash"
     ask: Translation | None
     readonly: bool = False
     visible: JSExpression | bool = True
@@ -862,7 +860,7 @@ class PasswordOption(BaseInputOption):
                 )
 
             # If it's an optional argument the value should be empty or strong enough
-            from yunohost.utils.password import assert_password_is_strong_enough
+            from ..utils.password import assert_password_is_strong_enough
 
             assert_password_is_strong_enough("user", value)
 
@@ -1064,12 +1062,12 @@ class BooleanOption(BaseInputOption):
         no_answers = BooleanOption._no_answers
         yes_answers = BooleanOption._yes_answers
 
-        assert (
-            str(technical_yes).lower() not in no_answers
-        ), f"'yes' value can't be in {no_answers}"
-        assert (
-            str(technical_no).lower() not in yes_answers
-        ), f"'no' value can't be in {yes_answers}"
+        assert str(technical_yes).lower() not in no_answers, (
+            f"'yes' value can't be in {no_answers}"
+        )
+        assert str(technical_no).lower() not in yes_answers, (
+            f"'no' value can't be in {yes_answers}"
+        )
 
         no_answers.add(str(technical_no).lower())
         yes_answers.add(str(technical_yes).lower())
@@ -1674,7 +1672,7 @@ class DomainOption(BaseChoicesOption):
         cls, value: dict[str, str] | None, values: Values
     ) -> dict[str, str]:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        from yunohost.domain import domain_list
+        from ..domain import domain_list
 
         data = domain_list()
         return {
@@ -1685,7 +1683,7 @@ class DomainOption(BaseChoicesOption):
     @validator("default", pre=True, always=True)
     def inject_default(cls, value: str | None, values: Values) -> str | None:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        from yunohost.domain import _get_maindomain
+        from ..domain import _get_maindomain
 
         return _get_maindomain()
 
@@ -1731,7 +1729,7 @@ class AppOption(BaseChoicesOption):
         cls, value: dict[str, str] | None, values: Values
     ) -> dict[str, str]:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        from yunohost.app import app_list
+        from ..app import app_list
 
         apps = app_list(full=True)["apps"]
 
@@ -1778,7 +1776,7 @@ class UserOption(BaseChoicesOption):
     @root_validator(pre=True)
     def inject_users_choices_and_default(cls, values: Values) -> Values:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        from yunohost.user import user_list
+        from ..user import user_list
 
         users = user_list(fields=["username", "fullname", "mail", "groups"])["users"]
 
@@ -1834,7 +1832,7 @@ class GroupOption(BaseChoicesOption):
         cls, value: dict[str, str] | None, values: Values
     ) -> dict[str, str]:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        from yunohost.user import user_group_list
+        from ..user import user_group_list
 
         groups = list(user_group_list(include_primary_groups=False)["groups"].keys())
 
@@ -2102,7 +2100,6 @@ def prompt_or_validate_form(
     hooks: Hooks = {},
 ) -> FormModel:
     for option in options:
-
         interactive = Moulinette.interface.type == "cli" and os.isatty(1)
 
         if isinstance(option, ButtonOption):
@@ -2237,7 +2234,7 @@ def prompt_or_validate_form(
 
 def ask_questions_and_parse_answers(
     raw_options: dict[str, Any],
-    prefilled_answers: str | Mapping[str, Any] = {},
+    prefilled_answers: str | Mapping[str, Any] | None = {},
     current_values: Mapping[str, Any] = {},
     hooks: Hooks = {},
 ) -> tuple[list[AnyOption], FormModel]:

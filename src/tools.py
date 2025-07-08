@@ -31,9 +31,9 @@ from moulinette.utils.filesystem import chown, cp, mkdir, read_yaml, rm, write_t
 from moulinette.utils.process import call_async_output
 from packaging import version
 
-from yunohost.log import OperationLogger, is_unit_operation
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.system import (
+from .log import OperationLogger, is_unit_operation
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.system import (
     _apt_log_line_is_relevant,
     _dump_sources_list,
     _list_upgradable_apt_packages,
@@ -52,7 +52,7 @@ def tools_versions():
 
 
 def tools_rootpw(new_password, check_strength=True):
-    from yunohost.utils.password import (
+    from .utils.password import (
         assert_password_is_compatible,
         assert_password_is_strong_enough,
     )
@@ -76,7 +76,7 @@ def tools_rootpw(new_password, check_strength=True):
 
 
 def tools_maindomain(new_main_domain=None):
-    from yunohost.domain import domain_main_domain
+    from .domain import domain_main_domain
 
     logger.warning(
         m18n.g(
@@ -135,15 +135,15 @@ def tools_postinstall(
 ):
     import psutil
 
-    from yunohost.app import _ask_confirmation
-    from yunohost.app_catalog import _update_apps_catalog
-    from yunohost.domain import domain_add, domain_main_domain
-    from yunohost.dyndns import _dyndns_available, dyndns_unsubscribe
-    from yunohost.permission import _set_system_perms
-    from yunohost.service import _run_service_command
-    from yunohost.user import ADMIN_ALIASES, user_create
-    from yunohost.utils.dns import is_yunohost_dyndns_domain
-    from yunohost.utils.password import (
+    from .app import _ask_confirmation
+    from .app_catalog import _update_apps_catalog
+    from .domain import domain_add, domain_main_domain
+    from .dyndns import _dyndns_available, dyndns_unsubscribe
+    from .permission import _set_system_perms
+    from .service import _run_service_command
+    from .user import ADMIN_ALIASES, user_create
+    from .utils.dns import is_yunohost_dyndns_domain
+    from .utils.password import (
         assert_password_is_compatible,
         assert_password_is_strong_enough,
     )
@@ -288,8 +288,7 @@ def tools_postinstall(
 def tools_regen_conf(
     names=[], with_diff=False, force=False, dry_run=False, list_pending=False
 ):
-
-    from yunohost.regenconf import regen_conf
+    from .regenconf import regen_conf
 
     if (names == [] or "nftables" in names) and tools_migrations_state()[
         "migrations"
@@ -309,8 +308,8 @@ def tools_update(operation_logger, target=None):
     """
     Update apps & system package cache
     """
-    from yunohost.app import _list_upgradable_apps
-    from yunohost.app_catalog import _update_apps_catalog
+    from .app import _list_upgradable_apps
+    from .app_catalog import _update_apps_catalog
 
     if not target:
         target = "all"
@@ -421,7 +420,7 @@ def tools_upgrade(operation_logger, target=None):
        system -- True to upgrade system
     """
 
-    from yunohost.app import app_list, app_upgrade
+    from .app import app_list, app_upgrade
 
     if dpkg_is_broken():
         raise YunohostValidationError("dpkg_is_broken")
@@ -573,7 +572,7 @@ def tools_shell(command=None):
     This is entirely aim for development.
     """
 
-    from yunohost.utils.ldap import _get_ldap_interface
+    from .utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
 
@@ -866,9 +865,9 @@ def _get_migration_by_name(migration_name):
         if re.match(r"^\d+_%s\.py$" % migration_name, x)
     ]
 
-    assert (
-        len(migrations_found) == 1
-    ), f"Unable to find migration with name {migration_name}"
+    assert len(migrations_found) == 1, (
+        f"Unable to find migration with name {migration_name}"
+    )
 
     return _load_migration(migrations_found[0])
 
@@ -963,9 +962,9 @@ class Migration:
     # Those are to be implemented by daughter classes
 
     mode = "auto"
-    dependencies: list[str] = (
-        []
-    )  # List of migration ids required before running this migration
+    dependencies: list[
+        str
+    ] = []  # List of migration ids required before running this migration
 
     @property
     def disclaimer(self):

@@ -28,9 +28,9 @@ from moulinette.utils.filesystem import read_file
 from moulinette.utils.network import download_text
 from moulinette.utils.process import check_output
 
-from yunohost.diagnosis import Diagnoser
-from yunohost.settings import settings_get
-from yunohost.utils.network import get_network_interfaces
+from ..diagnosis import Diagnoser
+from ..settings import settings_get
+from ..utils.network import get_network_interfaces
 
 logger = logging.getLogger("yunohost.diagnosis")
 
@@ -206,9 +206,9 @@ class MyDiagnoser(Diagnoser):
         if protocol == 6:
             resolvers = [r for r in resolvers if ":" in r]
 
-        assert (
-            resolvers != []
-        ), f"Uhoh, need at least one IPv{protocol} DNS resolver in {resolver_file} ..."
+        assert resolvers != [], (
+            f"Uhoh, need at least one IPv{protocol} DNS resolver in {resolver_file} ..."
+        )
 
         # So let's try to ping the first 4~5 resolvers (shuffled)
         # If we succesfully ping any of them, we conclude that we are indeed connected

@@ -87,9 +87,9 @@ def find_expected_string_keys():
                 # Ignore some name fragments which are actually concatenated with other stuff..
                 continue
             yield m
-        yield "diagnosis_description_" + os.path.basename(python_file)[:-3].split("-")[
-            -1
-        ]
+        yield (
+            "diagnosis_description_" + os.path.basename(python_file)[:-3].split("-")[-1]
+        )
 
     # For each migration, expect to find "migration_description_<name>"
     for path in glob.glob(ROOT + "src/migrations/*.py"):
@@ -270,9 +270,7 @@ if mode == "check":
     # removed by the other autoreformat script,
     # but still informative to display them
     if unused_keys:
-        print(
-            "Those i18n keys appears unused:\n" "    - " + "\n    - ".join(unused_keys)
-        )
+        print("Those i18n keys appears unused:\n    - " + "\n    - ".join(unused_keys))
 
     if undefined_keys:
         print(
