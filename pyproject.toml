@@ -129,6 +129,7 @@ commands = [[
 ]]
 
 [tool.tox.env.py311-mypy]
+skip_install = false
 deps = ["mypy>=0.900"]
 dependency_groups = ["tests"]
 commands = [["mypy", "--install-types", "--non-interactive", "src/",]]
