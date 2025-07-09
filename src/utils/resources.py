@@ -1241,9 +1241,9 @@ class AptDependenciesAppResource(AppResource):
                         f"Error while running apt resource packages_from_raw_bash snippet for '{key}' extras:"
                     )
                     logger.error(err)
-                values["packages"] = values.get("packages", []) + [
+                values["packages"] = values.get("packages", []) + [  # type: ignore
                     value.strip() for value in out.split("\n") if value.strip()
-                ]  # type: ignore
+                ]
 
             if (
                 not isinstance(values.get("repo"), str)
