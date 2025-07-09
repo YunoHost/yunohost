@@ -45,7 +45,7 @@ from moulinette.utils.process import check_output
 from moulinette.utils.text import random_ascii
 from packaging import version
 
-import yunohost.domain
+from . import domain
 
 from .app import (
     _get_manifest_of_app,
@@ -1265,7 +1265,7 @@ class RestoreManager:
         else:
             operation_logger.success()
 
-        yunohost.domain.domain_list_cache = {}
+        domain.domain_list_cache = {}
 
         regen_conf()
 
