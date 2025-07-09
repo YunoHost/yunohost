@@ -24,7 +24,7 @@ dependencies = [
     "passlib",
     "psutil",
     "publicsuffix2",
-    "pydantic",
+    "pydantic>=1.0,<2.0",
     "pyopenssl",
     "python-ldap",
     "python-magic",
