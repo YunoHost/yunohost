@@ -913,7 +913,7 @@ class ConfigPanel:
         # get settings keys filtered by filter_key
         partial_settings_keys = form.__fields__.keys()
         # get filtered settings
-        partial_settings = form.dict(exclude_defaults=exclude_defaults, exclude=exclude)  # type: ignore
+        partial_settings = form.dict(exclude_defaults=exclude_defaults, exclude=exclude)
         # get previous settings that we will updated with new settings
         current_settings = self.raw_settings.copy()
 

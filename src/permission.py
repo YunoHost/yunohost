@@ -632,7 +632,7 @@ def _sync_permissions_with_ldap() -> None:
 
     for perm in permissions_current.keys():
         if perm not in permissions_wanted:
-            todos_delete.append(perm)  # type: ignore
+            todos_delete.append(perm)
     for perm, members_wanted in permissions_wanted.items():
         if perm not in permissions_current:
             todos_create[perm] = members_wanted
