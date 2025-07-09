@@ -523,12 +523,12 @@ class ConfigPanel:
 
         for panel in self.config.panels:
             for section in panel.sections:
-                if section.is_action_section and mode != "full":
+                if section.is_action_section and mode != "full":  # type: ignore
                     continue
 
                 for option in section.options:
                     # FIXME not sure why option resolves as possibly `None`
-                    option = cast(AnyOption, option)
+                    option = cast(AnyOption, option)  # type: ignore
 
                     if mode == "export":
                         if isinstance(option, BaseInputOption):
