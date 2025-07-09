@@ -750,7 +750,7 @@ def _update_app_permission_setting(
     elif logo is not None:
         import hashlib
 
-        from .app import APPS_CATALOG_LOGOS
+        from .app_catalog import APPS_CATALOG_LOGOS
 
         logo_content = logo.read()
         if not logo_content.startswith(b"\x89PNG\r\n\x1a\n"):
