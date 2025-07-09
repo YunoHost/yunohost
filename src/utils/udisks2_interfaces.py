@@ -112,7 +112,7 @@ https://github.com/storaged-project/udisks/blob/2.10.x-branch/data/org.freedeskt
 """
 
 
-class Udisks2Manager(  # type: ignore[call-arg]
+class Udisks2Manager(
     GetDisksMixin,
     interface_name="org.freedesktop.UDisks2.Manager",
 ):
@@ -228,7 +228,7 @@ class Udisks2Manager(  # type: ignore[call-arg]
         raise NotImplementedError
 
 
-class Disk(  # type: ignore[call-arg]
+class Disk(
     DbusInterfaceCommon,
     interface_name="org.freedesktop.UDisks2.Drive",
 ):
@@ -459,7 +459,7 @@ class Disk(  # type: ignore[call-arg]
         raise NotImplementedError
 
 
-class AtaController(  # type: ignore[call-arg]
+class AtaController(
     DbusInterfaceCommon,
     interface_name="org.freedesktop.UDisks2.Drive.Ata",
 ):
@@ -712,7 +712,7 @@ class AtaController(  # type: ignore[call-arg]
         raise NotImplementedError
 
 
-class NVMeController(  # type: ignore[call-arg]
+class NVMeController(
     DbusInterfaceCommon,
     interface_name="org.freedesktop.UDisks2.NVMe.Controller",
 ):
