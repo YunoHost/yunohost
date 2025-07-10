@@ -176,7 +176,25 @@ def init_logging(
     if not os.path.isdir(logdir):
         os.makedirs(logdir, 0o750)
 
-    base_handlers = ["file"] + (["cli"] if interface == "cli" else [])
+    base_handlers = ["file"]
+    root_handlers = ["file", "cli"] if debug else ["file"]
+
+
+    # Logging configuration for API
+    if interface in ["api", "portalapi"]:
+        # We use a WatchedFileHandler instead of regular FileHandler to possibly support log rotation etc
+        file_class = "logging.handlers.WatchedFileHandler"
+
+        # This is for when launching yunohost-api in debug mode, we want to display stuff in the console
+        if debug:
+            base_handlers.append("cli")
+
+    # Logging configuration for CLI (or any other interface than api...)
+    else:
+        file_class = "logging.FileHandler"
+
+        if not quiet:
+            base_handlers.append("cli")
 
     logging_configuration = {
         "version": 1,
@@ -196,7 +214,7 @@ def init_logging(
                 "formatter": "tty-debug" if debug else "",
             },
             "file": {
-                "class": "logging.FileHandler",
+                "class": file_class,
                 "formatter": "precise",
                 "filename": logfile,
             },
@@ -204,41 +222,24 @@ def init_logging(
         "loggers": {
             "yunohost": {
                 "level": "DEBUG",
-                "handlers": base_handlers if not quiet else ["file"],
+                "handlers": base_handlers,
                 "propagate": False,
             },
             "moulinette": {
                 "level": "DEBUG",
-                "handlers": base_handlers if not quiet else ["file"],
+                "handlers": base_handlers,
                 "propagate": False,
             },
         },
         "root": {
             "level": "DEBUG",
-            "handlers": base_handlers if debug else ["file"],
+            "handlers": root_handlers,
         },
     }
 
-    #  Logging configuration for CLI (or any other interface than api...)     #
-    if interface not in ["api", "portalapi"]:
-        configure_logging(logging_configuration)
+    if interface == "api":
+        from .utils.sse import start_log_broker
 
-    #  Logging configuration for API                                          #
-    else:
-        # We use a WatchedFileHandler instead of regular FileHandler to possibly support log rotation etc
-        logging_configuration["handlers"]["file"]["class"] = (
-            "logging.handlers.WatchedFileHandler"
-        )
+        start_log_broker()
 
-        # This is for when launching yunohost-api in debug mode, we want to display stuff in the console
-        if debug:
-            logging_configuration["loggers"]["yunohost"]["handlers"].append("cli")
-            logging_configuration["loggers"]["moulinette"]["handlers"].append("cli")
-            logging_configuration["root"]["handlers"].append("cli")
-
-        if interface == "api":
-            from .utils.sse import start_log_broker
-
-            start_log_broker()
-
-        configure_logging(logging_configuration)
+    configure_logging(logging_configuration)
