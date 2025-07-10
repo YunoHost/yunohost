@@ -179,7 +179,6 @@ def init_logging(
     base_handlers = ["file"]
     root_handlers = ["file", "cli"] if debug else ["file"]
 
-
     # Logging configuration for API
     if interface in ["api", "portalapi"]:
         # We use a WatchedFileHandler instead of regular FileHandler to possibly support log rotation etc
