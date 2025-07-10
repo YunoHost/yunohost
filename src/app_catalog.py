@@ -109,7 +109,7 @@ def app_catalog(
     return _catalog
 
 
-def app_search(string: str) -> dict[Literal["apps"], dict]:
+def app_search(string: str) -> dict[Literal["apps"], dict[str, Any]]:
     """
     Return a dict of apps whose description or name match the search string
     """
@@ -229,7 +229,7 @@ def _update_apps_catalog() -> None:
 
         import requests
 
-        def fetch_logo(logo_hash):
+        def fetch_logo(logo_hash: str) -> bool:
             try:
                 r = requests.get(
                     f"{apps_catalog['url']}/v{APPS_CATALOG_API_VERSION}/logos/{logo_hash}.png",
