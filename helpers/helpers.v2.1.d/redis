@@ -41,6 +41,10 @@ ynh_redis_get_free_db() {
 
     test "$db" -eq -1 && ynh_die "No available Redis databases..."
 
+    # Reserve this Database by simply setting a string.
+    # Also let's indicate which app is used for debugging.
+    redis-cli -n "$db" SET __YNH_PROVISIONNED "$app"
+
     echo "$db"
 }
 
