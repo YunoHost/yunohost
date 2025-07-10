@@ -20,6 +20,12 @@
 
 import os
 import sys
+from typing import TYPE_CHECKING, NoReturn, Literal
+
+if TYPE_CHECKING:
+    import argparse
+    from moulinette.core import MoulinetteLock
+
 from pathlib import Path
 
 import moulinette
@@ -28,11 +34,20 @@ from moulinette.interfaces.cli import colorize, get_locale
 from moulinette.utils.log import configure_logging
 
 
-def is_installed():
+def is_installed() -> bool:
+    """Returns whether YunoHost is installed on the system."""
     return os.path.isfile("/etc/yunohost/installed")
 
 
-def cli(debug, quiet, output_as, timeout, args, parser):
+def cli(
+    debug: bool,
+    quiet: bool,
+    output_as: str,
+    timeout: int | None,
+    args: list[str],
+    parser: "argparse.ArgumentParser",
+) -> NoReturn:
+    """Entry point for YunoHost CLI"""
     init_logging(interface="cli", debug=debug, quiet=quiet)
 
     # Check that YunoHost is installed
@@ -50,7 +65,8 @@ def cli(debug, quiet, output_as, timeout, args, parser):
     sys.exit(ret)
 
 
-def api(debug, host, port, actionsmap=None):
+def api(debug: bool, host: str, port: int, actionsmap: str | None = None) -> NoReturn:
+    """Entry point for YunoHost API server"""
     actionsmap = actionsmap or "/usr/share/yunohost/actionsmap.yml"
     path = Path(actionsmap).resolve()
     if path.exists():
@@ -64,7 +80,7 @@ def api(debug, host, port, actionsmap=None):
 
     init_logging(interface="api", debug=debug)
 
-    def is_installed_api():
+    def is_installed_api() -> dict[Literal["installed"], bool]:
         return {"installed": is_installed()}
 
     # FIXME : someday, maybe find a way to disable route /postinstall if
@@ -81,7 +97,8 @@ def api(debug, host, port, actionsmap=None):
     sys.exit(ret)
 
 
-def portalapi(debug, host, port):
+def portalapi(debug: bool, host: str, port: int) -> NoReturn:
+    """Entry point for YunoHost Portal API server"""
     allowed_cors_origins = []
     allowed_cors_origins_file = "/etc/yunohost/.portal-api-allowed-cors-origins"
 
@@ -101,7 +118,8 @@ def portalapi(debug, host, port):
     sys.exit(ret)
 
 
-def check_command_is_valid_before_postinstall(args):
+def check_command_is_valid_before_postinstall(args: list[str]) -> None:
+    """Asserts if the given command is valid before running postinstall, or exits 1"""
     allowed_if_not_postinstalled = [
         "tools postinstall",
         "tools versions",
@@ -117,7 +135,12 @@ def check_command_is_valid_before_postinstall(args):
         sys.exit(1)
 
 
-def init(interface="cli", debug=False, quiet=False, logdir="/var/log/yunohost"):
+def init(
+    interface: str = "cli",
+    debug: bool = False,
+    quiet: bool = False,
+    logdir: str = "/var/log/yunohost",
+) -> "MoulinetteLock":
     """
     This is a small util function ONLY meant to be used to initialize a Yunohost
     context when ran from tests or from scripts.
@@ -131,14 +154,23 @@ def init(interface="cli", debug=False, quiet=False, logdir="/var/log/yunohost"):
     return lock
 
 
-def init_i18n():
-    # This should only be called when not willing to go through moulinette.cli
-    # or moulinette.api but still willing to call m18n.n/g...
+def init_i18n() -> None:
+    """
+    Initialize the i18n locale dir and locale.
+    This should only be called when not willing to go through moulinette.cli
+    or moulinette.api but still willing to call m18n.n/g...
+    """
     m18n.set_locales_dir("/usr/share/yunohost/locales/")
     m18n.set_locale(get_locale())
 
 
-def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yunohost"):
+def init_logging(
+    interface: str = "cli",
+    debug: bool = False,
+    quiet: bool = False,
+    logdir: str = "/var/log/yunohost",
+) -> None:
+    """Initialize logging and logger objects"""
     logfile = os.path.join(logdir, "yunohost-%s.log" % interface)
 
     if not os.path.isdir(logdir):
