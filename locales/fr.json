@@ -874,5 +874,9 @@
     "global_settings_setting_portal_allow_edit_email_forward": "Permettre aux utilisateurs d'ajouter, de supprimer et de modifier les transferts/redirections de courrier.",
     "mail_edit_operation_unauthorized": "Vous n'êtes pas autorisé à effectuer cette modification pour votre propre compte/profil.",
     "global_settings_setting_enable_blocklists": "Activer les listes de blocage pour le trafic entrant",
-    "global_settings_setting_enable_blocklists_help": "Bloque les serveurs répertoriés par spamcop.net, spamhaus.org et abuseat.org afin de prévenir le spam. Toutefois, cela peut entraîner des problèmes de distribution pour certains serveurs de messagerie inoffensifs qui peuvent être répertoriés par ces tiers, auquel cas le courrier envoyé à partir de ces serveurs ne sera pas reçu."
+    "global_settings_setting_enable_blocklists_help": "Bloque les serveurs répertoriés par spamcop.net, spamhaus.org et abuseat.org afin de prévenir le spam. Toutefois, cela peut entraîner des problèmes de distribution pour certains serveurs de messagerie inoffensifs qui peuvent être répertoriés par ces tiers, auquel cas le courrier envoyé à partir de ces serveurs ne sera pas reçu.",
+    "global_settings_setting_portal_allow_edit_email_help": "Si c'est désactivé, ils doivent demander aux administrateurs de le faire pour eux.",
+    "global_settings_setting_portal_allow_edit_email_alias_help": "Si c'est désactivé, ils doivent demander aux administrateurs de le faire pour eux.",
+    "global_settings_setting_antispam_name": "Antispam",
+    "global_settings_setting_portal_allow_edit_email_forward_help": "Si c'est désactivé, ils doivent demander aux administrateurs de le faire pour eux."
 }
