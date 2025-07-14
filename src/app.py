@@ -2323,16 +2323,13 @@ ynh_app_config_run $1
                     f"permission_{perm}_{k}": v for k, v in perm_config_template.items()
                 }
                 raw_config["_core"][f"permission_{perm}"] = this_perm_config
-                if perm == "main":
-                    # i18n: app_config_permission_main_section_name
-                    section_name = m18n.n(f"{i18n_prefix}_permission_main_section_name")
-                else:
+                if perm != "main":
                     # i18n: app_config_permission_extraperm_section_name
                     section_name = m18n.n(
                         f"{i18n_prefix}_permission_extraperm_section_name", perm=perm
                     )
-                raw_config["_core"][f"permission_{perm}"]["collapsed"] = True
-                raw_config["_core"][f"permission_{perm}"]["name"] = section_name
+                    raw_config["_core"][f"permission_{perm}"]["collapsed"] = True
+                    raw_config["_core"][f"permission_{perm}"]["name"] = section_name
 
             return raw_config
 
