@@ -308,12 +308,18 @@ def tools_regen_conf(
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 
+def tools_update_norefresh():
+    return tools_update(no_refresh=True)
+
+
 @is_unit_operation(sse_only=True)
-def tools_update(operation_logger, target=None):
+def tools_update(operation_logger, target=None, no_refresh=False):
     """
     Update apps & system package cache
     """
     from .app_catalog import _update_apps_catalog
+
+    refresh = not no_refresh
 
     if not target:
         target = "all"
@@ -324,7 +330,8 @@ def tools_update(operation_logger, target=None):
             raw_msg=True,
         )
 
-    operation_logger.start()
+    if refresh:
+        operation_logger.start()
 
     upgradable_system_packages = []
     if target in ["system", "all"]:
@@ -358,32 +365,35 @@ def tools_update(operation_logger, target=None):
             ),
         )
 
-        logger.info(m18n.n("updating_apt_cache"))
+        if refresh:
+            logger.info(m18n.n("updating_apt_cache"))
 
-        returncode = call_async_output(command, callbacks, shell=True)
+            returncode = call_async_output(command, callbacks, shell=True)
 
-        if returncode != 0:
-            raise YunohostError(
-                "update_apt_cache_failed", sourceslist="\n".join(_dump_sources_list())
-            )
-        elif warnings:
-            logger.error(
-                m18n.n(
-                    "update_apt_cache_warning",
-                    sourceslist="\n".join(_dump_sources_list()),
+            if returncode != 0:
+                raise YunohostError(
+                    "update_apt_cache_failed", sourceslist="\n".join(_dump_sources_list())
                 )
-            )
+            elif warnings:
+                logger.error(
+                    m18n.n(
+                        "update_apt_cache_warning",
+                        sourceslist="\n".join(_dump_sources_list()),
+                    )
+                )
+
+            logger.debug(m18n.n("done"))
 
         upgradable_system_packages = list(_list_upgradable_apt_packages())
-        logger.debug(m18n.n("done"))
 
     apps = []
     upgradable_apps = []
     if target in ["apps", "all"]:
-        try:
-            _update_apps_catalog()
-        except YunohostError as e:
-            logger.error(str(e))
+        if refresh:
+            try:
+                _update_apps_catalog()
+            except YunohostError as e:
+                logger.error(str(e))
 
         apps = _list_apps_with_upgrade_infos()
         upgradable_apps = [app for app in apps if app["upgrade"]["status"] in ["upgradable", "fail_requirements"]]

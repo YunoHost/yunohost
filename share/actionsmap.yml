@@ -1735,6 +1735,14 @@ tools:
                     help: Automatically reply to the terms of services prompt, for example for non-interactive installations
                     action: store_true
 
+
+        update_norefresh:
+            # This exists mainly for the API, such that there's an explicit read-only (GET) route 
+            # vs the old/regular/legacy(?)/ambiguous PUT /update route ...
+            hide_in_help: True
+            action_help: List available system/apps updates (without refreshing caches)
+            api: GET /update
+
         ### tools_update()
         update:
             action_help: YunoHost update
@@ -1749,6 +1757,9 @@ tools:
                     nargs: "?"
                     metavar: TARGET
                     default: all
+                --no-refresh:
+                    help: Does not run apt update or fetch the apps catalog, only list upgradable packages and apps
+                    action: store_true
 
         ### tools_upgrade()
         upgrade:
