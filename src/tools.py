@@ -410,11 +410,25 @@ def tools_update(operation_logger, target=None):
         logger.error(e)
         pending_migrations = []
 
+    try:
+        last_apt_update_in_seconds = int(time.time() - os.stat("/var/cache/apt/pkgcache.bin").st_mtime)
+    except Exception as e:
+        logger.warning("Failed to compute last apt update time ? {e}")
+        last_apt_update_in_seconds = 99999 * 3600
+
+    try:
+        last_apps_catalog_update_in_seconds = int(time.time() - os.stat("/var/cache/yunohost/repo/default.json").st_mtime)
+    except Exception as e:
+        logger.warning("Failed to compute last apps catalog update time ? {e}")
+        last_apps_catalog_update_in_seconds = 99999 * 3600
+
     return {
         "system": upgradable_system_packages_per_categories,
         "apps": apps,
         "important_yunohost_upgrade": important_yunohost_upgrade,
         "pending_migrations": pending_migrations,
+        "last_apt_update": last_apt_update_in_seconds,
+        "last_apps_catalog_update": last_apps_catalog_update_in_seconds,
     }
 
 
