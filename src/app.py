@@ -90,6 +90,7 @@ else:
 
 APPS_SETTING_PATH = "/etc/yunohost/apps/"
 APP_TMP_WORKDIRS = "/var/cache/yunohost/app_tmp_work_dirs"
+GIT_CLONE_CACHE = "/var/cache/yunohost/gitclones"
 PORTAL_SETTINGS_DIR = "/etc/yunohost/portal"
 
 re_app_instance_name = re.compile(
@@ -157,7 +158,7 @@ def app_list(full: bool = False) -> dict[Literal["apps"], list[AppInfo]]:
     return {"apps": out}
 
 
-def app_info(app: str, full: bool = False, with_upgrade_infos: bool = False, with_settings: bool = False) -> AppInfo:
+def app_info(app: str, full: bool = False, with_upgrade_infos: bool = False, with_pre_upgrade_notifications: bool = False, with_settings: bool = False) -> AppInfo:
 
     from .domain import _get_raw_domain_settings
     from .permission import user_permission_list
@@ -183,6 +184,31 @@ def app_info(app: str, full: bool = False, with_upgrade_infos: bool = False, wit
 
     if full or with_upgrade_infos:
         ret["upgrade"] = _app_upgrade_infos(app, current_version=ret["version"])
+
+    if "upgrade" in ret and with_pre_upgrade_notifications \
+        and ret["upgrade"]["status"] not in ["up_to_date", "url_required"]:
+
+        url = ret["upgrade"]["url"]
+        specific_channel = ret["upgrade"]["specific_channel"]
+        new_revision = ret["upgrade"]["new_revision"]
+        assert url and new_revision
+        from tempfile import TemporaryDirectory
+        try:
+            with TemporaryDirectory(prefix="app_", dir=APP_TMP_WORKDIRS) as d:
+                _git_clone_light(d, url, branch=specific_channel, revision=new_revision)
+                _, tmp_notifications = _parse_app_doc_and_notifications(d)
+        except Exception as e:
+            logger.warning(f"Failed to check pre-upgrade notifications for {app['id']} : {e}")
+            tmp_notifications = {}
+
+        if tmp_notifications.get("PRE_UPGRADE"):
+            ret["upgrade"]["notifications"] = _filter_and_hydrate_notifications(
+                tmp_notifications["PRE_UPGRADE"],
+                ret["version"],
+                ret["settings"],
+            )
+
+        ret["upgrade"]["notifications"] = {"main": "gni", "other": "other"}
 
     if full or with_settings:
         ret["settings"] = settings
@@ -3013,7 +3039,29 @@ def _git_clone_light(
     revision: str = "HEAD"
 ) -> str:
 
-    logger.debug(f"Fetching {url} (branch={branch}, revision={revision})")
+    # Cleanup stale caches (older than 24 hours)
+    if not Path(GIT_CLONE_CACHE).exists():
+        os.makedirs(GIT_CLONE_CACHE)
+        chmod(GIT_CLONE_CACHE, 0o700)
+        chown(GIT_CLONE_CACHE, "root", "root")
+
+    for cache in Path(GIT_CLONE_CACHE).iterdir():
+        if cache.is_dir() and (time.time() - cache.stat().st_ctime) > 24 * 3600:
+            try:
+                shutil.rmtree(cache)
+            except Exception as e:
+                logger.debug(f"Uhoh, failed to cleanup cache {cache} ? {e}")
+
+    # There's a cache mechanism to avoid re-git-cloning the same stuff over and over again
+    # which can be ~costly, for example when checking up the PRE-UPGRADE notifs for app upgrades
+    if revision != "HEAD":
+        git_clone_cache = Path(GIT_CLONE_CACHE) / revision
+        if git_clone_cache.exists():
+            logger.debug(f"Reusing cache for {url} (branch={branch}, revision={revision}")
+            shutil.copytree(git_clone_cache, dest_dir, dirs_exist_ok=True)
+            return revision
+
+    logger.debug(f"Fetching {url} (branch={branch}, revision={revision}")
 
     git_ls_remote = check_output(
         ["git", "ls-remote", "--symref", url, "HEAD"],
@@ -3073,6 +3121,11 @@ def _git_clone_light(
             actual_revision = "HEAD"
     else:
         actual_revision = revision
+        # Save as cache
+        git_clone_cache = Path(GIT_CLONE_CACHE) / revision
+        if git_clone_cache.exists():
+            shutil.rmtree(git_clone_cache)
+        shutil.copytree(dest_dir, git_clone_cache)
 
     return actual_revision
 

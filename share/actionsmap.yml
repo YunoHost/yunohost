@@ -833,6 +833,9 @@ app:
                     full: --full
                     help: Display all details, including the app manifest and various other infos
                     action: store_true
+                --with-pre-upgrade-notifications:
+                    help: Also fetch pre-upgrade notifications, if an upgrade is available (this is meant for the web API)
+                    action: store_true
 
         ### app_map()
         map:

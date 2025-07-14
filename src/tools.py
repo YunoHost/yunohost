@@ -450,45 +450,17 @@ def _list_apps_with_upgrade_infos(with_pre_upgrade_notifications: bool = True) -
     apps = []
     for app_id in sorted(_installed_apps()):
         try:
-            app_info_dict = app_info(app_id, with_upgrade_infos=True, with_settings=True)
+            app_info_dict = app_info(app_id, with_upgrade_infos=True, with_pre_upgrade_notifications=with_pre_upgrade_notifications)
         except Exception as e:
             logger.error(f"Failed to read info for {app_id} : {e}")
             continue
+        if "settings" in app_info_dict:
+            del app_info_dict["settings"]
+
         apps.append(app_info_dict)
 
     if not with_pre_upgrade_notifications:
         return apps
-
-    # Retrieve next manifest pre_upgrade notifications
-    for app in apps:
-
-        status = app["upgrade"]["status"]
-
-        if status in ["up_to_date", "url_required"]:
-            del app["settings"]
-            continue
-
-        url = app["upgrade"]["url"]
-        specific_channel = app["upgrade"]["specific_channel"]
-        new_revision = app["upgrade"]["new_revision"]
-        assert url
-        assert new_revision
-
-        try:
-            with TemporaryDirectory(prefix="app_", dir=APP_TMP_WORKDIRS) as d:
-                _git_clone_light(d, url, branch=specific_channel, revision=new_revision)
-                _, notifications = _parse_app_doc_and_notifications(d)
-        except Exception as e:
-            logger.warning(f"Failed to check pre-upgrade notifications for {app['id']} : {e}")
-            notifications = {}
-
-        if notifications.get("PRE_UPGRADE"):
-            app["upgrade"]["notifications"] = _filter_and_hydrate_notifications(
-                notifications["PRE_UPGRADE"],
-                app["version"],
-                app["settings"],
-            )
-        del app["settings"]
 
     return apps
 
