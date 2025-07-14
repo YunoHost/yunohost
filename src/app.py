@@ -409,7 +409,7 @@ def _app_upgrade_infos(
 
     requirements = {
         r["id"]: r
-        for r in _check_manifest_requirements(manifest_in_catalog, action="upgrade")
+        for r in _check_manifest_requirements(manifest_in_catalog, action="upgrade", app=app)
     }
     pass_requirements = all(r["passed"] for r in requirements.values())
     failed_requirements = ' ; '.join([r["error"] for r in requirements.values() if not r["passed"]])
@@ -817,7 +817,7 @@ def app_upgrade(
         # Check requirements
         failed_requirements = {
             r["id"]: r
-            for r in _check_manifest_requirements(manifest, action="upgrade")
+            for r in _check_manifest_requirements(manifest, action="upgrade", app=app_instance_name)
             if not r["passed"]
         }
         for id_, check in failed_requirements.items():
@@ -1160,7 +1160,7 @@ def app_manifest(app: str, with_screenshot: bool = False) -> AppManifest:
 
     manifest["requirements"] = {
         r["id"]: r
-        for r in _check_manifest_requirements(manifest, action="install")
+        for r in _check_manifest_requirements(manifest, action="install", app=manifest['id'])
     }
     return manifest
 
@@ -1247,15 +1247,22 @@ def app_install(
 
     app_id = manifest["id"]
 
-    if app_id in user_list()["users"].keys():
+    instance_number = _next_instance_number_for_app(app_id)
+    if instance_number > 1:
+        # Change app_id to the forked app id
+        app_instance_name = app_id + "__" + str(instance_number)
+    else:
+        app_instance_name = app_id
+
+    if app_instance_name in user_list()["users"].keys():
         raise YunohostValidationError(
-            f"There is already a YunoHost user called {app_id} ...", raw_msg=True
+            f"There is already a YunoHost user called {app_instance_name} ...", raw_msg=True
         )
 
     # Check requirements
     failed_requirements = {
         r["id"]: r
-        for r in _check_manifest_requirements(manifest, action="upgrade")
+        for r in _check_manifest_requirements(manifest, action="upgrade", app=app_instance_name)
         if not r["passed"]
     }
     for id_, check in failed_requirements.items():
@@ -1268,14 +1275,6 @@ def app_install(
             raise YunohostValidationError(check["error"])
 
     _assert_system_is_sane_for_app(manifest, "pre")
-
-    # Check if app can be forked
-    instance_number = _next_instance_number_for_app(app_id)
-    if instance_number > 1:
-        # Change app_id to the forked app id
-        app_instance_name = app_id + "__" + str(instance_number)
-    else:
-        app_instance_name = app_id
 
     app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
 
@@ -3206,12 +3205,12 @@ class AppRequirementCheckResult(TypedDict):
 
 
 def _check_manifest_requirements(
-    manifest: AppManifest, action: Literal["install", "upgrade"]
+    manifest: AppManifest, action: Literal["install", "upgrade"], app: str
 ) -> Iterator[AppRequirementCheckResult]:
     """Check if required packages are met from the manifest"""
 
-    app_id = manifest["id"]
-    logger.debug(m18n.n("app_requirements_checking", app=app_id))
+    app_base_id = manifest["id"]
+    logger.debug(m18n.n("app_requirements_checking", app=app))
 
     # Packaging format
     if manifest["packaging_format"] not in [1, 2]:
@@ -3253,14 +3252,14 @@ def _check_manifest_requirements(
         if not multi_instance:
             apps = _installed_apps()
             sibling_apps = [
-                a for a in apps if a == app_id or a.startswith(f"{app_id}__")
+                a for a in apps if a == app_base_id or a.startswith(f"{app_base_id}__")
             ]
             multi_instance = len(sibling_apps) == 0
 
         yield {
             "id": "install",
             "passed": multi_instance,
-            "error": m18n.n("app_already_installed", app=app_id)
+            "error": m18n.n("app_already_installed", app=app_base_id)
         }
 
     # Disk
