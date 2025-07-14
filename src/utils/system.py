@@ -21,6 +21,7 @@
 import logging
 import os
 import re
+import subprocess
 
 from moulinette import Moulinette
 from moulinette.utils.process import check_output
@@ -218,22 +219,20 @@ def _list_upgradable_apt_packages():
 
 # Corresponds to the 'Section' in apt/dpkg infos
 PACKAGE_CATEGORIES_REMAP = {
-    # "Base"
-    "kernel": "kernel",
-    "admin": "base",
-    "shells": "base",
-    "interpreters": "base",
-    "net": "base",
-    # Libs, build tools
-    "oldlibs": "libs",
-    "libs": "libs",
-    "devel": "build",
-    "libdevel": "build",
+    "admin": "misc utils and libs",
+    "shells": "misc utils and libs",
+    "interpreters": "misc utils and libs",
+    "net": "misc utils and libs",
+    # Libs
+    "oldlibs": "misc utils and libs",
+    "libs": "misc utils and libs",
+    "libdevel": "misc utils and libs",
     # Languages
     "python": "python",
     "perl": "perl",
     "javascript": "javascript",
     "php": "php",
+    "lua": "lua",
     # Other technologies
     "database": "database",
     "mail": "mail",
@@ -244,7 +243,7 @@ PACKAGE_CATEGORIES_REMAP = {
 def _group_packages_per_categories(packages: list[dict[str, str]]) -> dict[str, list[dict[str, str]]]:
 
     cmd = (
-        'grep "^Package:\|^Section:" /var/lib/dpkg/status '
+        r'grep "^Package:\|^Section:" /var/lib/dpkg/status '
         r'| tr "\n" "\r" '
         '| sed -e "s/Package: //g" -e "s/\rSection://g" '
         r'| tr "\r" "\n"'
@@ -256,18 +255,26 @@ def _group_packages_per_categories(packages: list[dict[str, str]]) -> dict[str, 
         package, category = line.split(" ")
         if "yunohost" in package or package in ["moulinette", "ssowat"]:
             category = "yunohost"
+        elif package.startswith("perl-") or "libperl" in package:
+            category = "perl"
+        elif "libpython" in package:
+            category = "python"
+        elif "libmariadb" in package:
+            category = "database"
+        elif category == "kernel" or any(keyword in package for keyword in ["initramfs", "systemd", "udev", "libc6", "base-files", "sudo", "passwd", "openssh"]) or package in ["netbase", "apt", "dpkg", "aptitude"]:
+            category = "kernel, systemd, and other critical packages"
         elif category in PACKAGE_CATEGORIES_REMAP:
             category = PACKAGE_CATEGORIES_REMAP[category]
         else:
-            category = "misc"
+            category = "misc utils and libs"
         all_packages_and_categories[package] = category
 
     packages_grouped_by_categories: dict[str, list[dict[str, str]]] = {}
-    for package in packages:
-        category = all_packages_and_categories.get(package['name'], "misc")
+    for package_infos in packages:
+        category = all_packages_and_categories.get(package_infos['name'], "misc")
         if category not in packages_grouped_by_categories:
             packages_grouped_by_categories[category] = []
-        packages_grouped_by_categories[category].append(package)
+        packages_grouped_by_categories[category].append(package_infos)
 
     return dict(sorted(packages_grouped_by_categories.items()))
 
