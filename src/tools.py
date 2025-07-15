@@ -45,7 +45,7 @@ from .utils.system import (
 )
 
 if TYPE_CHECKING:
-    from yunohost.app import AppInfo
+    from .app import AppInfo
 
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
@@ -444,7 +444,7 @@ def tools_update(operation_logger, target=None, no_refresh=False):
 
 def _list_apps_with_upgrade_infos(with_pre_upgrade_notifications: bool = True) -> list["AppInfo"]:
 
-    from yunohost.app import _installed_apps, app_info
+    from .app import _installed_apps, app_info
 
     apps = []
     for app_id in sorted(_installed_apps()):
