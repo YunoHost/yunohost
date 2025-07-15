@@ -1413,51 +1413,45 @@ class PortsResource(AppResource):
     # restore -> nothing (restore port setting)
 
     type = "ports"
-    priority = 70
+    multi = True
 
-    default_properties: Dict[str, Any] = {}
+    default: int | None = None
+    exposed: bool | Literal["TCP", "UDP", "Both"] = False
+    fixed: bool = False
+    # FIXME : maybe add a 'comment' for ports exposed ? for packaging v3 ?
 
-    default_port_properties = {
-        "default": None,
-        "exposed": False,  # or True(="Both"), "TCP", "UDP"
-        "fixed": False,
-        "upnp": False,
-    }
+    exposed_properties = ["default", "exposed", "fixed"]
 
-    ports: Dict[str, Dict[str, Any]]
+    # Internal
+    need_firewall_reload: bool = False
 
-    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
-        if "main" not in properties:
-            properties["main"] = {}
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
-        for port, infos in properties.items():
-            properties[port] = copy.copy(self.default_port_properties)
-            properties[port].update(infos)
+        if kwargs.get("default") is None:
+            kwargs["default"] = random.randint(10000, 60000)
 
-            if properties[port]["default"] is None:
-                properties[port]["default"] = random.randint(10000, 60000)
+        super().__init__(**kwargs)
 
-        # This is to prevent using twice the same port during provisionning.
-        self.ports_used_by_self: list[int] = []
-
-        super().__init__({"ports": properties}, *args, **kwargs)
-
-    def _port_is_used(self, port):
+    def _port_is_used(self, port: int) -> bool:
         # FIXME : this could be less brutal than two os.system...
         used_by_process = (
             os.system(
-                "ss --numeric --listening --tcp --udp | awk '{print$5}' | grep --quiet --extended-regexp ':%s$'"
-                % port
+                "ss --numeric --listening --tcp --udp "
+                "| awk '{print$5}' "
+                f"| grep --quiet --extended-regexp ':{port}$'"
             )
             == 0
         )
         # This second command is mean to cover (most) case where an app is using a port yet ain't currently using it for some reason (typically service ain't up)
+        # FIXME : hmm shouldnt we check for <something>_port and port_<something> here, instead of just 'port' ?
         used_by_app = (
             os.system(
                 f"grep --quiet --extended-regexp \"port: '?{port}'?\" /etc/yunohost/apps/*/settings.yml"
             )
             == 0
         )
+
+        # Prevent to use twice the same port when provisioning
         used_by_self_provisioning = port in self.ports_used_by_self
 
         return used_by_process or used_by_app or used_by_self_provisioning
@@ -1469,65 +1463,92 @@ class PortsResource(AppResource):
             return ["tcp", "udp"]
         return [exposed.lower()]
 
-    def provision_or_update(self, context: Dict = {}):
-        from ..firewall import YunoFirewall
-
-        firewall = YunoFirewall()
-
-        for name, infos in self.ports.items():
-            setting_name = f"port_{name}" if name != "main" else "port"
-            port_value = self.get_setting(setting_name)
-            if not port_value and name != "main":
-                # Automigrate from legacy setting foobar_port (instead of port_foobar)
-                legacy_setting_name = f"{name}_port"
-                port_value = self.get_setting(legacy_setting_name)
-                if port_value:
-                    self.set_setting(setting_name, port_value)
-                    self.delete_setting(legacy_setting_name)
-                    continue
-
-            if not port_value:
-                port_value = infos["default"]
-
-                if infos["fixed"]:
-                    if self._port_is_used(port_value):
-                        raise YunohostValidationError(
-                            f"Port {port_value} is already used by another process or app.",
-                            raw_msg=True,
-                        )
-                else:
-                    while self._port_is_used(port_value):
-                        port_value += 1
-
-            self.ports_used_by_self.append(port_value)
-            self.set_setting(setting_name, port_value)
-
-            comment = f"{self.app} {name}"
-            if infos["exposed"]:
-                for proto in self._exposed_to_protos(infos["exposed"]):
-                    firewall.open_port(proto, port_value, comment, infos["upnp"])
+    @property
+    def ports_used_by_self(self) -> list[int]:
+        from ..app import _get_app_settings
+        out = []
+        for key, value in _get_app_settings(self.app).items():
+            if key != "port" and not key.startswith("port_") and not key.endswith("_port"):
+                continue
+            try:
+                value = int(str(value).strip())
+            except Exception:
+                logger.debug(f"In ports_used_by_self: ignoring non-int value {value} for {key}. (This is probably not a huge deal?)")
             else:
-                for proto in ["tcp", "udp"]:
-                    firewall.close_port(proto, port_value)
+                out.append(value)
+        return out
 
-        if firewall.need_reload:
-            firewall.apply()
+    @property
+    def setting_name(self) -> str:
+        return f"port_{self.id}" if self.id != "main" else "port"
 
-    def deprovision(self, context: Dict = {}):
+    def provision_or_update(self) -> None:
         from ..firewall import YunoFirewall
 
         firewall = YunoFirewall()
 
-        for name, infos in self.ports.items():
-            setting_name = f"port_{name}" if name != "main" else "port"
-            value = self.get_setting(setting_name)
-            self.delete_setting(setting_name)
-            if value and str(value).strip():
-                for proto in self._exposed_to_protos(infos["exposed"]):
-                    firewall.delete_port(proto, value)
+        port_value = self.get_setting(self.setting_name)
+        if not port_value and self.id != "main":
+            # Automigrate from legacy setting foobar_port (instead of port_foobar)
+            legacy_setting_name = f"{self.id}_port"
+            port_value = self.get_setting(legacy_setting_name)
+            if port_value:
+                self.set_setting(self.setting_name, port_value)
+                self.delete_setting(legacy_setting_name)
+                # FIXME : hmmm chck this return ?
+                return
+
+        if not port_value:
+            assert self.default
+            port_value = self.default
+
+            if self.fixed:
+                if self._port_is_used(port_value):
+                    raise YunohostValidationError(
+                        f"Port {port_value} is already used by another process or app.",
+                        raw_msg=True,
+                    )
+            else:
+                while self._port_is_used(port_value):
+                    port_value += 1
+
+        self.set_setting(self.setting_name, port_value)
+
+        if self.exposed:
+            comment = f"{self.app} {self.id}"
+            for proto in self._exposed_to_protos(self.exposed):
+                firewall.open_port(proto, port_value, comment)
+        else:
+            for proto in ["tcp", "udp"]:
+                firewall.close_port(proto, port_value)
 
         if firewall.need_reload:
-            firewall.apply()
+            # cf group_trigger_after_apply
+            self.need_firewall_reload = True
+
+    def deprovision(self) -> None:
+        from ..firewall import YunoFirewall
+
+        firewall = YunoFirewall()
+
+        value = self.get_setting(self.setting_name)
+        self.delete_setting(self.setting_name)
+        if value and str(value).strip():
+            for proto in self._exposed_to_protos(self.exposed):
+                firewall.delete_port(proto, value)
+
+        if firewall.need_reload:
+            # cf group_trigger_after_apply
+            self.need_firewall_reload = True
+
+    # FIXME : meh i don't know what to call this
+    @staticmethod
+    def grouped_trigger_after_apply(resources: list["PortsResource"]) -> None:
+        if any(r.need_firewall_reload for r in resources):
+            from ..firewall import YunoFirewall
+            YunoFirewall().apply()
+
+        # FIXME : we could also want to gargage-collect all the "port" vars not referenced anymore
 
 
 class DatabaseAppResource(AppResource):
