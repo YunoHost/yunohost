@@ -26,6 +26,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+from pathlib import Path
 from pydantic import BaseModel
 from logging import getLogger
 from typing import Any, Callable, Dict, List, Union, Literal, Iterator, TYPE_CHECKING
@@ -508,66 +509,87 @@ class SourcesResource(AppResource):
     """
 
     type = "sources"
-    priority = 10
+    multi = True
 
-    default_sources_properties: Dict[str, Any] = {
-        "prefetch": True,
-        "url": None,
-        "sha256": None,
-    }
+    url: str | dict[Literal["amd64", "i386", "armhf", "arm64"], str]
+    sha256: str | dict[Literal["amd64", "i386", "armhf", "arm64"], str]
+    prefetch: bool = True
+    format: str | None = None
+    in_subdir: bool | None = None
+    extract: bool | None = None
+    rename: str | None = None
+    platform: str | None = None
+    autoupdate: dict | None = None
 
-    sources: Dict[str, Dict[str, Any]] = {}
+    exposed_properties = ["prefetch", "url", "sha256", "prefetch", "format", "in_subdir", "extract", "rename", "platform", "autoupdate"]
 
-    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
-        for source_id, infos in properties.items():
-            properties[source_id] = copy.copy(self.default_sources_properties)
-            properties[source_id].update(infos)
+    action_is_restore: str | None
 
-        super().__init__({"sources": properties}, *args, **kwargs)
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
-    def deprovision(self, context: Dict = {}):
-        if os.path.isdir(f"{SOURCES_CACHE_DIR}/{self.app}/"):
-            rm(f"{SOURCES_CACHE_DIR}/{self.app}/", recursive=True)
+        # Writing 'amd64.url = ...' in the manifest is practical and neat,
+        # but not easy to handle in term of datastructure and typing
+        # hence we invert it to have url (str) = "..."" (arch-agnostic) or url (dict[Literal, str]) = {'amd64': "...", ...} (arch-specific)
+        url_per_arch = {}
+        sha256_per_arch = {}
+        for arch in ["amd64", "i386", "armhf", "arm64"]:
+            if arch in kwargs:
+                if not isinstance(kwargs[arch], dict) or "url" not in kwargs[arch] or "sha256" not in kwargs[arch]:
+                    raise YunohostPackagingError(f"Uhoh, it sounds like there's an issue when parsing arch-specific info for source '{kwargs['id']}', expected to find a dict with an 'url' and 'sha256' key")
+                arch_infos = kwargs.pop(arch)
+                url_per_arch[arch] = arch_infos["url"]
+                sha256_per_arch[arch] = arch_infos["sha256"]
 
-    def provision_or_update(self, context: Dict = {}):
+        if url_per_arch:
+            if "url" in kwargs or "sha256" in kwargs:
+                raise YunohostPackagingError(f"Packager, you can't mix arch-specific and arch-agnostic url/sha256 (when initializing source '{kwargs['id']}')")
+            kwargs["url"] = url_per_arch
+            kwargs["sha256"] = sha256_per_arch
+
+        super().__init__(**kwargs)
+
+        self.action_is_restore = kwargs["env"].get("YNH_APP_ACTION") == "restore"
+
+    def deprovision(self) -> None:
+        cache_dir = Path(SOURCES_CACHE_DIR) / self.app
+        cache_file = cache_dir / self.id
+        if cache_file.exists():
+            cache_file.unlink()
+        if not list(cache_dir.iterdir()):
+            cache_dir.rmdir()
+
+    def provision_or_update(self) -> None:
         # Don't prefetch stuff during restore
-        if context.get("action") == "restore":
+        if self.action_is_restore == "restore":
             return
 
-        if not os.path.isdir(f"{SOURCES_CACHE_DIR}/{self.app}"):
-            mkdir(f"{SOURCES_CACHE_DIR}/{self.app}", parents=True)
+        cache_dir = Path(SOURCES_CACHE_DIR) / self.app
+        cache_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
         # We later give ownership to $app in the system_user
-        chmod(f"{SOURCES_CACHE_DIR}/{self.app}", 0o700, recursive=True)
-        chown(f"{SOURCES_CACHE_DIR}/{self.app}", "root", recursive=True)
+        chown(str(cache_dir), "root", recursive=True)
 
-        for source_id, infos in self.sources.items():
-            if not infos["prefetch"]:
-                continue
+        if not self.prefetch:
+            return
 
-            if infos["url"] is None:
-                arch = system_arch()
-                if (
-                    arch in infos
-                    and isinstance(infos[arch], dict)
-                    and isinstance(infos[arch].get("url"), str)
-                    and isinstance(infos[arch].get("sha256"), str)
-                ):
-                    self.prefetch(source_id, infos[arch]["url"], infos[arch]["sha256"])
-                else:
-                    raise YunohostPackagingError(
-                        f"In resources.sources: it looks like you forgot to define url/sha256 or {arch}.url/{arch}.sha256"
-                    )
-            else:
-                if infos["sha256"] is None:
-                    raise YunohostPackagingError(
-                        f"In resources.sources: it looks like the sha256 is missing for {source_id}"
-                    )
-                self.prefetch(source_id, infos["url"], infos["sha256"])
+        if isinstance(self.url, dict):
+            assert isinstance(self.sha256, dict)
+            arch = system_arch()
+            if arch not in self.url:
+                raise YunohostPackagingError(
+                    f"In resources.sources: it looks like you forgot to define url/sha256 or {arch}.url/{arch}.sha256"
+                )
+            url = self.url[arch]
+            sha256 = self.sha256[arch]
+        else:
+            url = self.url
+            assert isinstance(self.sha256, str)
+            sha256 = self.sha256
+        self.prefetch_asset(url, sha256)
 
-    def prefetch(self, source_id, url, expected_sha256):
-        logger.debug(f"Prefetching asset {source_id}: {url} ...")
+    def prefetch_asset(self, url: str, expected_sha256: str) -> None:
+        logger.debug(f"Prefetching asset {self.id}: {url} ...")
 
-        filename = f"{SOURCES_CACHE_DIR}/{self.app}/{source_id}"
+        cache_file = Path(SOURCES_CACHE_DIR) / self.app / self.id
 
         # NB: we use wget and not requests.get() because we want to output to a file (ie avoid ending up with the full archive in RAM)
         # AND the nice --tries, --no-dns-cache, --timeout options ...
@@ -578,7 +600,7 @@ class SourcesResource(AppResource):
                 "--no-dns-cache",
                 "--timeout=900",
                 "--no-verbose",
-                "--output-document=" + filename,
+                "--output-document=" + str(cache_file),
                 url,
             ],
             stdout=subprocess.PIPE,
@@ -587,27 +609,27 @@ class SourcesResource(AppResource):
         out, _ = p.communicate()
         returncode = p.returncode
         if returncode != 0:
-            if os.path.exists(filename):
-                rm(filename)
+            if cache_file.exists():
+                cache_file.unlink()
             raise YunohostError(
                 "app_failed_to_download_asset",
-                source_id=source_id,
+                source_id=self.id,
                 url=url,
                 app=self.app,
                 out=out.decode(),
             )
 
-        assert os.path.exists(filename), (
-            f"For some reason, wget worked but {filename} doesnt exists?"
+        assert cache_file.exists(), (
+            f"For some reason, wget worked but {cache_file} doesnt exists?"
         )
 
-        computed_sha256 = check_output(f"sha256sum {filename}").split()[0]
+        computed_sha256 = check_output(f"sha256sum {cache_file}").split()[0]
         if computed_sha256 != expected_sha256:
-            size = check_output(f"du -hs {filename}").split()[0]
-            rm(filename)
+            size = check_output(f"du -hs {cache_file}").split()[0]
+            cache_file.unlink()
             raise YunohostError(
                 "app_corrupt_source",
-                source_id=source_id,
+                source_id=self.id,
                 url=url,
                 app=self.app,
                 expected_sha256=expected_sha256,
