@@ -27,7 +27,7 @@ from yunohost.app import (
     APPS_SETTING_PATH,
 )
 from yunohost.service import _run_service_command, service_reload_or_restart, service_add, service_remove, _get_services
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostPackagingError
 from yunohost.utils.eval import evaluate_simple_js_expression
 
 logger = getLogger("yunohost.utils.configurations")
@@ -251,7 +251,7 @@ class BaseConfiguration(BaseModel):
                 original_conf_file, base64.b64encode(self.content.encode()).decode()
             )
         except Exception as e:
-            raise YunohostError(f"Failed to write original conf for {self.name}? {e}")
+            raise YunohostError(f"Failed to write original conf for {self.name}? {e}", raw_msg=True)
 
         app_settings = _get_app_settings(self.app)
         if "_configurations" not in app_settings:
@@ -635,7 +635,7 @@ class AppConfigurationsManager:
 
             confs_properties = confs_properties.copy()
             if type_ not in ConfigurationClassesByType:
-                raise YunohostError(f"Unknown configuration type {type_}")
+                raise YunohostPackagingError(f"Unknown configuration type {type_}")
 
             ConfigurationClass = ConfigurationClassesByType[type_]
             exposed_properties = ConfigurationClass.__fields__["exposed"].default
@@ -644,7 +644,7 @@ class AppConfigurationsManager:
             if_clause = main_properties.pop("if") if "if" in main_properties else None
             incorrect_properties = [p for p in main_properties.keys() if p not in exposed_properties]
             if incorrect_properties:
-                raise YunohostError(f"Uhoh, the following properties are unknown / not exposed for configuration {type}.main: {', '.join(incorrect_properties)}", raw_msg=True)
+                raise YunohostPackagingError(f"Uhoh, the following properties are unknown / not exposed for configuration {type}.main: {', '.join(incorrect_properties)}")
 
             # Initialize the "main" conf
             if if_clause is None or evaluate_if_clause(if_clause, self.env):
@@ -676,14 +676,13 @@ class AppConfigurationsManager:
             for key, values in confs_properties.items():
 
                 if not isinstance(values, dict):
-                    raise YunohostError(
-                        f"Uhoh, in {type_} conf properties, {key} should be associated with a dict ... (did you meant <conf_id>.{key} ?)",
-                        raw_msg=True,
+                    raise YunohostPackagingError(
+                        f"Uhoh, in {type_} conf properties, {key} should be associated with a dict ... (did you meant <conf_id>.{key} ?)"
                     )
 
                 incorrect_properties = [p for p in values.keys() if p not in exposed_properties]
                 if incorrect_properties:
-                    raise YunohostError(f"Uhoh, the following properties are unknown / not exposed for configuration {type}.{key}: {', '.join(incorrect_properties)}", raw_msg=True)
+                    raise YunohostPackagingError(f"Uhoh, the following properties are unknown / not exposed for configuration {type}.{key}: {', '.join(incorrect_properties)}")
                 if_clause = values.pop("if") if "if" in values else None
                 if if_clause is None or evaluate_if_clause(if_clause, self.env):
                     confs.append(
@@ -991,9 +990,9 @@ class Fail2banConfiguration(BaseConfiguration):
 
         n_keys = len([key for key in ["template", "auth_route", "fail_regex"] if key in kwargs])
         if n_keys == 0:
-            raise YunohostError("Packager: you should define either 'auth_route' or 'fail_regex' in the fail2ban conf properties. Or a custom 'template' to use.")
+            raise YunohostPackagingError("Packager: you should define either 'auth_route' or 'fail_regex' in the fail2ban conf properties. Or a custom 'template' to use.")
         elif n_keys > 1:
-            raise YunohostError("Packager: 'template', 'auth_route' and 'fail_regex' can't be used simulatenously in fail2ban conf properties. Choose exactly one!")
+            raise YunohostPackagingError("Packager: 'template', 'auth_route' and 'fail_regex' can't be used simulatenously in fail2ban conf properties. Choose exactly one!")
 
         if "auth_route" in kwargs:
             kwargs["log_to_watch"] = "/var/log/nginx/__DOMAIN__-access.log"
@@ -1023,7 +1022,7 @@ class Fail2banConfiguration(BaseConfiguration):
     def apply(self) -> Iterator[str]:
 
         if not os.path.isfile(self.log_to_watch):
-            raise YunohostError(f"Logfile for fail2ban {self.log_to_watch} doesn't exists (yet?), but it is necessary that this file exists for fail2ban to start")
+            raise YunohostPackagingError(f"Logfile for fail2ban {self.log_to_watch} doesn't exists (yet?), but it is necessary that this file exists for fail2ban to start")
 
         yield from super().apply()
 
@@ -1059,15 +1058,15 @@ class CronConfiguration(BaseConfiguration):
 
         if "command" in kwargs and "timing" in kwargs:
             if "template" in kwargs:
-                raise YunohostError("Packager: you can't specify a template file when using 'command' and 'timing' for cron configurations", raw_msg=True)
+                raise YunohostPackagingError("Packager: you can't specify a template file when using 'command' and 'timing' for cron configurations")
             kwargs["template"] = "/dev/null"  # See method template_content()
             if "user" not in kwargs:
                 kwargs["user"] = "__APP__"
             if not kwargs["timing"].startswith("@") and len(kwargs["timing"].split()) != 5:
-                raise YunohostError("Packager: it sounds like property 'timing' has an incorrect format", raw_msg=True)
+                raise YunohostPackagingError("Packager: it sounds like property 'timing' has an incorrect format")
         else:
             if any(f in kwargs for f in ["user", "command", "timing", "workdir"]):
-                raise YunohostError("Packager: you can't specify any 'command' / 'timing' / 'user' / 'workdir' property when using template mode for cron configurations", raw_msg=True)
+                raise YunohostPackagingError("Packager: you can't specify any 'command' / 'timing' / 'user' / 'workdir' property when using template mode for cron configurations")
             kwargs["template"] = "cron" if kwargs["id"] == "main" else "cron-__CONF_ID__"
 
         super().__init__(*args, **kwargs)
@@ -1085,7 +1084,7 @@ class CronConfiguration(BaseConfiguration):
         faulty_lines = [line for line in faulty_lines if line.strip()]
         if faulty_lines:
             faulty_lines_joined = '\n'.join(faulty_lines)
-            raise YunohostError(f"Packager: it looks like your cron template is faulty ? The 'user' part should be __APP__ or root. Faulty lines:\n{faulty_lines_joined}", raw_msg=True)
+            raise YunohostPackagingError(f"Packager: it looks like your cron template is faulty ? The 'user' part should be __APP__ or root. Faulty lines:\n{faulty_lines_joined}")
 
         return read_file(self.template)
 
@@ -1145,7 +1144,7 @@ __APP__ ALL = (root) NOPASSWD: {{command}}
         out, _ = p.communicate()
         if p.returncode != 0:
             errors = out.decode().strip()
-            raise YunohostError(f"Uhoh, sudoers conf is not valid ?\n\n{errors}", raw_msg=True)
+            raise YunohostPackagingError(f"Uhoh, sudoers conf is not valid ?\n\n{errors}")
 
 
 class LogrotateConfiguration(BaseConfiguration):
@@ -1186,7 +1185,7 @@ class LogrotateConfiguration(BaseConfiguration):
         out, _ = p.communicate()
         if p.returncode != 0:
             errors = out.decode().strip()
-            raise YunohostError(f"Uhoh, logrotate conf is not valid ?\n\n{errors}", raw_msg=True)
+            raise YunohostPackagingError(f"Uhoh, logrotate conf is not valid ?\n\n{errors}")
 
 
 class AppConfiguration(BaseConfiguration):

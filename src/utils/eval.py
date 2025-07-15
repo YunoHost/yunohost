@@ -21,6 +21,7 @@ import ast
 import operator as op
 import re
 from typing import Any, Mapping, Callable
+from .error import YunohostPackagingError
 
 
 # ╭───────────────────────────────────────────────────────╮
@@ -134,9 +135,7 @@ def evaluate_simple_ast(
     # Unauthorized opcode
     else:
         opcode = str(type(node))
-        raise YunohostError(
-            f"Unauthorize opcode '{opcode}' in visible attribute", raw_msg=True
-        )
+        raise YunohostPackagingError(f"Unauthorized opcode '{opcode}' in visible attribute")
 
 
 def js_to_python(expr: str) -> str:

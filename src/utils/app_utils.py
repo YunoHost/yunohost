@@ -48,7 +48,7 @@ from .file_utils import (
 from .process import check_output
 from packaging import version
 
-from .error import YunohostError, YunohostValidationError
+from .error import YunohostError, YunohostValidationError, YunohostPackagingError
 from .i18n import _value_for_locale
 from .system import (
     binary_to_human,
@@ -455,7 +455,7 @@ def _hydrate_app_template(template: str, data: dict[str, Any], raise_exception_i
     if raise_exception_if_missing_var:
         missing_vars = [v for v in stuff_to_replace if v.strip("_").lower() not in data]
         if missing_vars:
-            raise YunohostError("app_uninitialized_variables", vars=', '.join(missing_vars))
+            raise YunohostPackagingError("app_uninitialized_variables", vars=', '.join(missing_vars))
 
     for stuff in stuff_to_replace:
         varname = stuff.strip("_").lower()

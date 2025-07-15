@@ -32,8 +32,8 @@ from .file_utils import chmod, chown, mkdir, rm
 from .process import check_output
 from .misc import random_ascii
 
-from ..utils.error import YunohostError, YunohostValidationError
-from ..utils.system import debian_version, debian_version_id, system_arch
+from .error import YunohostError, YunohostValidationError, YunohostPackagingError
+from .system import debian_version, debian_version_id, system_arch
 
 logger = getLogger("yunohost.utils.resources")
 
@@ -438,15 +438,13 @@ class SourcesResource(AppResource):
                 ):
                     self.prefetch(source_id, infos[arch]["url"], infos[arch]["sha256"])
                 else:
-                    raise YunohostError(
-                        f"In resources.sources: it looks like you forgot to define url/sha256 or {arch}.url/{arch}.sha256",
-                        raw_msg=True,
+                    raise YunohostPackagingError(
+                        f"In resources.sources: it looks like you forgot to define url/sha256 or {arch}.url/{arch}.sha256"
                     )
             else:
                 if infos["sha256"] is None:
-                    raise YunohostError(
-                        f"In resources.sources: it looks like the sha256 is missing for {source_id}",
-                        raw_msg=True,
+                    raise YunohostPackagingError(
+                        f"In resources.sources: it looks like the sha256 is missing for {source_id}"
                     )
                 self.prefetch(source_id, infos["url"], infos["sha256"])
 
@@ -574,26 +572,22 @@ class PermissionsResource(AppResource):
             if "auth_header" in infos and not isinstance(
                 infos.get("auth_header"), bool
             ):
-                raise YunohostError(
-                    f"In manifest, for permission '{perm}', 'auth_header' should be a boolean",
-                    raw_msg=True,
+                raise YunohostPackagingError(
+                    f"In manifest, for permission '{perm}', 'auth_header' should be a boolean"
                 )
             if "show_tile" in infos and not isinstance(infos.get("show_tile"), bool):
-                raise YunohostError(
-                    f"In manifest, for permission '{perm}', 'show_tile' should be a boolean",
-                    raw_msg=True,
+                raise YunohostPackagingError(
+                    f"In manifest, for permission '{perm}', 'show_tile' should be a boolean"
                 )
             if "protected" in infos and not isinstance(infos.get("protected"), bool):
-                raise YunohostError(
-                    f"In manifest, for permission '{perm}', 'protected' should be a boolean",
-                    raw_msg=True,
+                raise YunohostPackagingError(
+                    f"In manifest, for permission '{perm}', 'protected' should be a boolean"
                 )
             if "additional_urls" in infos and not isinstance(
                 infos.get("additional_urls"), list
             ):
-                raise YunohostError(
+                raise YunohostPackagingError(
                     f"In manifest, for permission '{perm}', 'additional_urls' should be a list",
-                    raw_msg=True,
                 )
 
         if "main" not in properties:
@@ -609,9 +603,8 @@ class PermissionsResource(AppResource):
             not isinstance(properties["main"].get("url"), str)
             or properties["main"]["url"] != "/"
         ):
-            raise YunohostError(
-                "URL for the 'main' permission should be '/' for webapps (or left undefined for non-webapps). Note that / refers to the install url of the app, i.e $domain.tld/$path/",
-                raw_msg=True,
+            raise YunohostPackagingError(
+                "URL for the 'main' permission should be '/' for webapps (or left undefined for non-webapps). Note that / refers to the install url of the app, i.e $domain.tld/$path/"
             )
 
         super().__init__({"permissions": properties}, *args, **kwargs)
@@ -1201,9 +1194,8 @@ class AptDependenciesAppResource(AppResource):
                 or not isinstance(values.get("key"), str)
                 or not isinstance(values.get("packages"), list)
             ):
-                raise YunohostError(
+                raise YunohostPackagingError(
                     "In apt resource in the manifest: 'extras' repo should have the keys 'repo', 'key' defined as strings, 'packages' defined as list or 'packages_from_raw_bash' defined as string",
-                    raw_msg=True,
                 )
 
         # Drop 'extras' entries associated to no packages
@@ -1476,9 +1468,8 @@ class DatabaseAppResource(AppResource):
             "mysql",
             "postgresql",
         ]:
-            raise YunohostError(
-                "Specifying the type of db ('mysql' or 'postgresql') is mandatory for db resources",
-                raw_msg=True,
+            raise YunohostPackagingError(
+                "Specifying the type of db ('mysql' or 'postgresql') is mandatory for db resources"
             )
 
         # Hack so that people can write type = "mysql/postgresql" in toml but it's loaded as dbtype
@@ -1741,7 +1732,7 @@ class RubyAppResource(AppResource):
             "zlib1g-dev",
         ]:
             if os.system(f'dpkg --list | grep -q "^ii  {package}"') != 0:
-                raise YunohostValidationError(f"{package} is required to install Ruby")
+                raise YunohostPackagingError(f"{package} is required to install Ruby")
 
         self.update_rbenv()
 
@@ -1943,12 +1934,12 @@ class ComposerAppResource(AppResource):
     def provision_or_update(self, context: Dict = {}):
         install_dir = self.get_setting("install_dir")
         if not install_dir:
-            raise YunohostError(
+            raise YunohostPackagingError(
                 "This app has no install_dir defined ? Packagers: please make sure to have the install_dir resource before composer"
             )
 
         if not self.get_setting("php_version"):
-            raise YunohostError(
+            raise YunohostPackagingError(
                 "This app has no php_version defined ? Packagers: please make sure to install php dependencies using apt before composer"
             )
 
