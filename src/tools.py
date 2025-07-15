@@ -423,13 +423,13 @@ def tools_update(operation_logger, target=None, no_refresh=False):
     try:
         last_apt_update_in_seconds = int(time.time() - os.stat("/var/cache/apt/pkgcache.bin").st_mtime)
     except Exception as e:
-        logger.warning("Failed to compute last apt update time ? {e}")
+        logger.warning(f"Failed to compute last apt update time ? {e}")
         last_apt_update_in_seconds = 99999 * 3600
 
     try:
         last_apps_catalog_update_in_seconds = int(time.time() - os.stat("/var/cache/yunohost/repo/default.json").st_mtime)
     except Exception as e:
-        logger.warning("Failed to compute last apps catalog update time ? {e}")
+        logger.warning(f"Failed to compute last apps catalog update time ? {e}")
         last_apps_catalog_update_in_seconds = 99999 * 3600
 
     return {
@@ -444,8 +444,7 @@ def tools_update(operation_logger, target=None, no_refresh=False):
 
 def _list_apps_with_upgrade_infos(with_pre_upgrade_notifications: bool = True) -> list["AppInfo"]:
 
-    from tempfile import TemporaryDirectory
-    from yunohost.app import APP_TMP_WORKDIRS, app_info, _git_clone_light, _installed_apps, _parse_app_doc_and_notifications, _filter_and_hydrate_notifications
+    from yunohost.app import _installed_apps, app_info
 
     apps = []
     for app_id in sorted(_installed_apps()):
