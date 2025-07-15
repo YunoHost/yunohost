@@ -1253,22 +1253,26 @@ class AptDependenciesAppResource(AppResource):
     # restore = provision
 
     type = "apt"
-    priority = 50
+    multi = False
 
-    default_properties: Dict[str, Any] = {"packages": [], "extras": {}}
-
-    packages: List = []
+    packages: List[str] = []
+    packages_for_build_only: List[str] = []
+    if_bookworm: List[str] = []
+    if_trixie: List[str] = []
     packages_from_raw_bash: str = ""
-    extras: Dict[str, Dict[str, Union[str, List]]] = {}
+    extras: Dict[str, Dict[str, str | List]] = {}
 
-    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
-        super().__init__(properties, *args, **kwargs)
+    exposed_properties = ["packages", "packages_for_build_only", "if_bookworm", "if_trixie", "packages_from_raw_bash", "extras"]
 
-        if isinstance(self.packages, str):
-            if self.packages.strip() == "":
-                self.packages = []
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
+
+        if "packages" in kwargs and isinstance(kwargs["packages"], str):
+            if kwargs["packages"].strip() == "":
+                kwargs["packages"] = []
             else:
-                self.packages = [value.strip() for value in self.packages.split(",")]
+                kwargs["packages"] = [value.strip() for value in kwargs["packages"].split(",")]
+
+        super().__init__(**kwargs)
 
         if self.packages_from_raw_bash:
             out, err = self.check_output_bash_snippet(self.packages_from_raw_bash)
@@ -1281,15 +1285,13 @@ class AptDependenciesAppResource(AppResource):
 
         for key, values in self.extras.items():
             if isinstance(values.get("packages"), str):
-                values["packages"] = [
-                    value.strip()
-                    for value in values["packages"].split(",")  # type: ignore
-                ]
+                packages: str = values["packages"]  # type: ignore
+                values["packages"] = [value.strip() for value in packages.split(",")]
 
             if isinstance(values.get("packages_from_raw_bash"), str):
-                out, err = self.check_output_bash_snippet(
-                    values.get("packages_from_raw_bash")
-                )
+                snippet = values.get("packages_from_raw_bash")
+                assert isinstance(snippet, str)
+                out, err = self.check_output_bash_snippet(snippet)
                 if err:
                     logger.error(
                         f"Error while running apt resource packages_from_raw_bash snippet for '{key}' extras:"
@@ -1324,7 +1326,8 @@ class AptDependenciesAppResource(AppResource):
                 self.packages.append("yarn")
                 del self.extras[key]
 
-    def provision_or_update(self, context: Dict = {}):
+    def provision_or_update(self) -> None:
+
         if self.helpers_version >= 2.1:
             ynh_apt_install_dependencies = "ynh_apt_install_dependencies"
             ynh_apt_install_dependencies_from_extra_repository = (
@@ -1348,11 +1351,13 @@ class AptDependenciesAppResource(AppResource):
                     f"--package='{' '.join(values['packages'])}'",
                 ]
             )
-            # FIXME : we're feeding the raw value of values['packages'] to the helper .. if we want to be consistent, may they should be comma-separated, though in the majority of cases, only a single package is installed from an extra repo..
+            # FIXME : we're feeding the raw value of values['packages'] to the helper ..
+            # if we want to be consistent, may they should be comma-separated,
+            # though in the majority of cases, only a single package is installed from an extra repo..
 
         self._run_script("provision_or_update", script)
 
-    def deprovision(self, context: Dict = {}):
+    def deprovision(self) -> None:
         if self.helpers_version >= 2.1:
             ynh_apt_remove_dependencies = "ynh_apt_remove_dependencies"
         else:
