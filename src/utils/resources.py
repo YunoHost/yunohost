@@ -526,7 +526,7 @@ class SourcesResource(AppResource):
     platform: str | None = None
     autoupdate: dict | None = None
 
-    exposed_properties = ["prefetch", "url", "sha256", "prefetch", "format", "in_subdir", "extract", "rename", "platform", "autoupdate"]
+    exposed_properties: list[str] = ["prefetch", "url", "sha256", "prefetch", "format", "in_subdir", "extract", "rename", "platform", "autoupdate"]
 
     action_is_restore: str | None
 
@@ -701,7 +701,7 @@ class PermissionsResource(AppResource):
     show_tile: bool | None = None  # Automagically set to True by default if an url is defined and show_tile not provided
     protected: bool = False
 
-    exposed_properties = ["url", "additional_urls", "auth_header", "allowed", "show_tile", "protected"]
+    exposed_properties: list[str] = ["url", "additional_urls", "auth_header", "allowed", "show_tile", "protected"]
 
     def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
         # FIXME : if url != None, we should check that there's indeed a domain/path defined ? ie that app is a webapp
@@ -845,7 +845,7 @@ class SystemuserAppResource(AppResource):
     # FIXME : support something like additional arbitrary groups ?
     home: str = "/var/www/__APP__"
 
-    exposed_properties = ["allow_ssh", "allow_sftp", "allow_email", "allow_certs", "home"]
+    exposed_properties: list[str] = ["allow_ssh", "allow_sftp", "allow_email", "allow_certs", "home"]
 
     def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
@@ -1015,7 +1015,7 @@ class InstalldirAppResource(AppResource):
     # FIXME : cant we find a better name ?
     content: dict[Literal["cache", "conf", "data", "static", "source", "logs", "dependencies"], list[str]] = {}
 
-    exposed_properties = ["dir", "paths_for_www_data", "content"]
+    exposed_properties: list[str] = ["dir", "paths_for_www_data", "content"]
 
     @staticmethod
     def convert_packaging_v2_props(props: dict[str, Any]) -> None:
@@ -1154,7 +1154,7 @@ class DatadirAppResource(AppResource):
     paths_for_www_data: list[str] = []
     purge = False
 
-    exposed_properties = ["dir", "subdirs", "paths_for_www_data"]
+    exposed_properties: list[str] = ["dir", "subdirs", "paths_for_www_data"]
 
     @staticmethod
     def convert_packaging_v2_props(props: dict[str, Any]) -> None:
@@ -1265,7 +1265,7 @@ class AptDependenciesAppResource(AppResource):
     packages_from_raw_bash: str = ""
     extras: Dict[str, Dict[str, str | List]] = {}
 
-    exposed_properties = ["packages", "packages_for_build_only", "if_bookworm", "if_trixie", "packages_from_raw_bash", "extras"]
+    exposed_properties: list[str] = ["packages", "packages_for_build_only", "if_bookworm", "if_trixie", "packages_from_raw_bash", "extras"]
 
     def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
@@ -1423,7 +1423,7 @@ class PortsResource(AppResource):
     fixed: bool = False
     # FIXME : maybe add a 'comment' for ports exposed ? for packaging v3 ?
 
-    exposed_properties = ["default", "exposed", "fixed"]
+    exposed_properties: list[str] = ["default", "exposed", "fixed"]
 
     # Internal
     need_firewall_reload: bool = False
@@ -1600,7 +1600,7 @@ class DatabaseAppResource(AppResource):
     # NB : it's actually 'type' in the toml for convenience but autoconverted to 'dbtype' in the code
     dbtype: Literal["mysql", "postgresql"]
 
-    exposed_properties = ["dbtype"]
+    exposed_properties: list[str] = ["dbtype"]
 
     @staticmethod
     def convert_packaging_v2_props(props: dict[str, Any]) -> None:
@@ -1716,7 +1716,7 @@ class NodejsAppResource(AppResource):
     multi = False
 
     version: str
-    exposed_properties = ["version"]
+    exposed_properties: list[str] = ["version"]
 
     @property
     def n(self) -> str:
@@ -1814,7 +1814,7 @@ class RubyAppResource(AppResource):
     multi = False
 
     version: str = ""
-    exposed_properties = ["version"]
+    exposed_properties: list[str] = ["version"]
 
     @property
     def rbenv(self) -> str:
@@ -1937,7 +1937,7 @@ class GoAppResource(AppResource):
     multi = False
 
     version: str
-    exposed_properties = ["version"]
+    exposed_properties: list[str] = ["version"]
 
     @property
     def goenv(self) -> str:
@@ -2041,7 +2041,7 @@ class ComposerAppResource(AppResource):
     multi = False
 
     version: str
-    exposed_properties = ["version"]
+    exposed_properties: list[str] = ["version"]
 
     @property
     def composer_url(self) -> str:
