@@ -18,14 +18,17 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import copy
+# mypy: disallow_untyped_defs
+
 import os
 import random
+import re
 import shutil
 import subprocess
 import tempfile
+from pydantic import BaseModel
 from logging import getLogger
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, List, Union, Literal, Iterator, TYPE_CHECKING
 
 from moulinette import m18n
 from .file_utils import chmod, chown, mkdir, rm
@@ -33,21 +36,41 @@ from .process import check_output
 from .misc import random_ascii
 
 from .error import YunohostError, YunohostValidationError, YunohostPackagingError
-from .system import debian_version, debian_version_id, system_arch
+from .system import system_arch
+
+if TYPE_CHECKING:
+    from ..log import OperationLogger
 
 logger = getLogger("yunohost.utils.resources")
-
 
 SOURCES_CACHE_DIR = "/var/tmp/yunohost/download/"
 
 
+def evaluate_if_clause(if_clause: str, env: dict[str, Any]) -> bool:
+    from .eval import evaluate_simple_js_expression
+    from ..app import _hydrate_app_template
+    if_clause_hydrated = _hydrate_app_template(if_clause, env, raise_exception_if_missing_var=True)
+    try:
+        return evaluate_simple_js_expression(if_clause_hydrated, env)
+    except KeyError as e:
+        logger.error(f"Failed to interpret if clause « {if_clause} »")
+        if re.search(r"[A-Z0-9]__\s*[=!]+\s*['\"]\w", if_clause):
+            logger.error("Beware that when comparing __FOO__ to a string, __FOO__ should itself be wrapped in quotes")
+        raise e
+
+
+AppResourceTodo = \
+    tuple[Literal["provision"], tuple[str, str], None, "AppResource"] | \
+    tuple[Literal["update"], tuple[str, str], "AppResource", "AppResource"] | \
+    tuple[Literal["deprovision"], tuple[str, str], "AppResource", None]
+
+
 class AppResourceManager:
 
-    def __init__(self, app: str, current: Dict, wanted: Dict, env: dict[str, Any], workdir: str | None = None):
+    def __init__(self, app: str, current: Dict, wanted: Dict, env: dict[str, Any]):
         self.app = app
         self.current = current
         self.wanted = wanted
-        self.workdir = workdir
         self.env = env
 
         if "resources" not in self.current:
@@ -55,70 +78,126 @@ class AppResourceManager:
         if "resources" not in self.wanted:
             self.wanted["resources"] = {}
 
-        self.todos = list(self.compute_todos(env))
+        self.todos = self.compute_todos(env)
+
+    def compute_todos(self, env: dict[str, Any]) -> dict[str, list["AppResourceTodo"]]:
+
+        current = {(r.type, r.id): r for r in self.load_resources(self.current, env)}
+        wanted = {(r.type, r.id): r for r in self.load_resources(self.wanted, env)}
+
+        todos_by_type: dict[str, list["AppResourceTodo"]] = {}
+
+        for type_and_id, res in reversed(current.items()):
+            type_, id_ = type_and_id
+            if type_and_id not in wanted.keys():
+                if type_ not in todos_by_type:
+                    todos_by_type[type_] = []
+                todos_by_type[type_].append(("deprovision", type_and_id, res, None))
+
+        for type_and_id, res in wanted.items():
+            type_, id_ = type_and_id
+            if type_ not in todos_by_type:
+                todos_by_type[type_] = []
+            if type_and_id not in current.keys():
+                todos_by_type[type_].append(("provision", type_and_id, None, res))
+            else:
+                todos_by_type[type_].append(("update", type_and_id, current[type_and_id], res))
+
+        return todos_by_type
 
     def apply(
         self,
         rollback_and_raise_exception_if_failure: bool,
-        operation_logger: "OperationLogger" | None = None
+        operation_logger: Union["OperationLogger", None] = None
     ) -> None:
 
-        completed = []
+        completed: dict[str, list] = {type_: [] for type_ in self.todos.keys()}
         rollback = False
         exception = None
 
-        for todo, name, old, new in self.todos:
-            try:
-                if todo == "deprovision":
-                    # FIXME : i18n, better info strings
-                    logger.info(f"Deprovisioning {name}...")
-                    assert old
-                    old.deprovision()
-                elif todo == "provision":
-                    logger.info(f"Provisioning {name}...")
-                    assert new
-                    new.provision_or_update()
-                elif todo == "update":
-                    logger.info(f"Updating {name}...")
-                    assert new
-                    new.provision_or_update()
-            except (KeyboardInterrupt, Exception) as e:
-                exception = e
-                if isinstance(e, KeyboardInterrupt):
-                    logger.error(m18n.n("operation_interrupted"))
-                else:
-                    logger.warning(f"Failed to {todo} {name} : {e}")
-                if rollback_and_raise_exception_if_failure:
-                    rollback = True
-                    completed.append((todo, name, old, new))
-                    break
-                else:
-                    pass
-            else:
-                completed.append((todo, name, old, new))
-
-        if rollback:
-            for todo, name, old, new in completed:
+        for type_, todos in self.todos.items():
+            for todo, name, old, new in todos:
                 try:
-                    # (NB. here we want to undo the todo)
                     if todo == "deprovision":
                         # FIXME : i18n, better info strings
-                        logger.info(f"Reprovisioning {name}...")
-                        assert old
-                        old.provision_or_update()
-                    elif todo == "provision":
                         logger.info(f"Deprovisioning {name}...")
-                        assert new
-                        new.deprovision()
-                    elif todo == "update":
-                        logger.info(f"Reverting {name}...")
                         assert old
-                        old.provision_or_update()
+                        old.deprovision()
+                    elif todo == "provision":
+                        logger.info(f"Provisioning {name}...")
+                        assert new
+                        new.provision_or_update()
+                    elif todo == "update":
+                        logger.info(f"Updating {name}...")
+                        assert new
+                        new.provision_or_update()
                 except (KeyboardInterrupt, Exception) as e:
+                    exception = e
                     if isinstance(e, KeyboardInterrupt):
                         logger.error(m18n.n("operation_interrupted"))
                     else:
-                        logger.error(f"Failed to rollback {name} : {e}")
+                        logger.warning(f"Failed to {todo} {name} : {e}")
+                    if rollback_and_raise_exception_if_failure:
+                        rollback = True
+                        completed[type_].append((todo, name, old, new))
+                        break
+                    else:
+                        # We actually want to continue if rollback_and_raise_exception_if_failure is False
+                        # for example in the context of a remove script, we want to cleanup as much as possible
+                        # even if for some reason some stuff may fail to get cleaned up
+                        pass
+                else:
+                    completed[type_].append((todo, name, old, new))
+
+            if rollback:
+                break
+
+            if hasattr(AppResourceClassesByType[type_], "grouped_trigger_after_apply"):
+                completed_for_this_type = [(old if todo == "deprovision" else new) for todo, _, old, new in completed[type_]]
+                try:
+                    AppResourceClassesByType[type_].grouped_trigger_after_apply(completed_for_this_type)
+                except (KeyboardInterrupt, Exception) as e:
+                    logger.warning(f"Failed to propagate changes related to {type_} : {e}")
+                    if rollback_and_raise_exception_if_failure:
+                        rollback = True
+                        break
+
+        if rollback:
+            rollbacked: dict[str, list["AppResourceTodo"]] = {type_: [] for type_ in completed.keys()}
+            for type_, completed_for_this_type in completed.items():
+                for todo, name, old, new in completed_for_this_type:
+                    try:
+                        # (NB. here we want to undo the todo)
+                        if todo == "deprovision":
+                            # FIXME : i18n, better info strings
+                            logger.info(f"Reprovisioning {name}...")
+                            assert old
+                            old.provision_or_update()
+                        elif todo == "provision":
+                            logger.info(f"Deprovisioning {name}...")
+                            assert new
+                            new.deprovision()
+                        elif todo == "update":
+                            logger.info(f"Reverting {name}...")
+                            assert old
+                            old.provision_or_update()
+                    except (KeyboardInterrupt, Exception) as e:
+                        if isinstance(e, KeyboardInterrupt):
+                            logger.error(m18n.n("operation_interrupted"))
+                        else:
+                            logger.error(f"Failed to rollback {name} : {e}")
+                    else:
+                        rollbacked[type_].append((todo, name, old, new))
+
+                if hasattr(AppResourceClassesByType[type_], "grouped_trigger_after_apply"):
+                    rollbacked_for_this_type = [(new if todo == "provision" else old) for todo, _, old, new in rollbacked[type_]]
+                    try:
+                        AppResourceClassesByType[type_].grouped_trigger_after_apply(rollbacked_for_this_type)
+                    except (KeyboardInterrupt, Exception) as e:
+                        logger.warning(f"Failed to propagate changes related to {type_}'s rollback : {e}")
+                        if rollback_and_raise_exception_if_failure:
+                            rollback = True
+                            break
 
         if exception:
             if rollback_and_raise_exception_if_failure:
@@ -137,135 +216,160 @@ class AppResourceManager:
             else:
                 logger.error(exception)
 
-    def compute_todos(self):
-        for name, infos in reversed(self.current["resources"].items()):
-            if name not in self.wanted["resources"].keys():
-                resource = AppResourceClassesByType[name](infos, self.app, self)
-                yield ("deprovision", name, resource, None)
+    def load_resources(self, manifest: dict[str, dict[str, Any]], env: dict[str, Any]) -> Iterator["AppResource"]:
 
-        for name, infos in self.wanted["resources"].items():
-            wanted_resource = AppResourceClassesByType[name](infos, self.app, self)
-            if name not in self.current["resources"].keys():
-                yield ("provision", name, None, wanted_resource)
+        resources: dict[str, dict[str, Any]] = manifest["resources"]
+        # NB: the "manifest" may actually be basically empty for cases like install
+        # where the current state is empty
+        packaging_format = float(manifest.get("packaging_format", 0))  # type: ignore[arg-type]
+
+        for type_, res_properties in resources.items():
+
+            res_properties = res_properties.copy()
+            if type_ not in AppResourceClassesByType:
+                raise YunohostPackagingError(f"Unknown resource type {type_}")
+
+            ResourceClass = AppResourceClassesByType[type_]
+
+            # Handle compabitibility with packaging v2 because some properties names changes since then
+            if packaging_format < 3 and hasattr(ResourceClass, "convert_packaging_v2_props"):
+                ResourceClass.convert_packaging_v2_props(res_properties)
+
+            multi = ResourceClass.__fields__["multi"].default
+            if not multi:
+                res_properties = {"main": res_properties}
             else:
-                infos_ = self.current["resources"][name]
-                current_resource = AppResourceClassesByType[name](
-                    infos_, self.app, self
+                # Make sure we have a "main" property and that it's first in the list
+                res_properties = {"main": res_properties.pop("main", {}), **res_properties}
+
+            # Iterate on other confs than "main"
+            for key, values in res_properties.items():
+
+                if not isinstance(values, dict):
+                    raise YunohostPackagingError(
+                        f"Uhoh, in {type_} resource properties, {key} should be associated with a dict ... (did you meant <res_id>.{key} ?)"
+                    )
+
+                if_clause = values.pop("if") if "if" in values else None
+                if if_clause is not None and not evaluate_if_clause(if_clause, self.env):
+                    logger.debug(f"Skipping resource {type_}.{key} because 'if' clause is not met")
+                    continue
+                logger.debug(f"Loading resource {type_}.{key}")
+                ResourceClass.validate_properties_from_package(**values)
+                yield ResourceClass(
+                    **values,
+                    id=key,
+                    env=env,
+                    type=type_,
+                    app=self.app,
                 )
-                yield ("update", name, current_resource, wanted_resource)
 
 
-class AppResource:
-    type: str = ""
-    default_properties: Dict[str, Any] = {}
+class AppResource(BaseModel):
 
-    def __init__(self, properties: Dict[str, Any], app: str, manager=None):
-        self.app = app
-        self.workdir = manager.workdir if manager else None
-        properties = self.default_properties | properties
+    id: str
+    app: str
+    type: str
+    workdir: str | None = None
+    multi: bool = False
+    exposed_properties: list[str]
+    helpers_version: float = 0
 
-        # It's not guaranteed that this info will be defined, e.g. during unit tests, only small resource snippets are used, not proper manifests
-        app_upstream_version = ""
-        if manager and manager.wanted and "version" in manager.wanted:
-            app_upstream_version = manager.wanted["version"].split("~")[0]
-        elif manager and manager.current and "version" in manager.current:
-            app_upstream_version = manager.current["version"].split("~")[0]
+    @classmethod
+    def validate_properties_from_package(cls, **props) -> None:  # type: ignore[no-untyped-def]
 
-        # FIXME : should use packaging.version to properly parse / compare versions >_>
-        self.helpers_version: float = 0
-        if (
-            manager
-            and manager.wanted
-            and manager.wanted.get("integration", {}).get("helpers_version")
-        ):
-            self.helpers_version = float(
-                manager.wanted.get("integration", {}).get("helpers_version")
-            )
-        elif (
-            manager
-            and manager.current
-            and manager.current.get("integration", {}).get("helpers_version")
-        ):
-            self.helpers_version = float(
-                manager.current.get("integration", {}).get("helpers_version")
-            )
-        elif manager and manager.wanted and manager.wanted.get("packaging_format"):
-            self.helpers_version = float(manager.wanted.get("packaging_format"))
-        elif manager and manager.current and manager.current.get("packaging_format"):
-            self.helpers_version = float(manager.current.get("packaging_format"))
-        if not self.helpers_version:
-            self.helpers_version = 1.0
+        exposed_properties = cls.__fields__["exposed_properties"].default
+        incorrect_properties = [k for k in props.keys() if k not in exposed_properties]
+        if incorrect_properties:
+            cls_type = cls.__fields__["type"].default
+            raise YunohostPackagingError(f"Uhoh, the following properties are unknown / not exposed for {cls_type}-type resources: {', '.join(incorrect_properties)}")
 
-        replacements: dict[str, str] = {
-            "__APP__": self.app,
-            "__YNH_ARCH__": system_arch(),
-            "__YNH_DEBIAN_VERSION__": debian_version(),
-            "__YNH_DEBIAN_VERSION_ID__": debian_version_id(),
-            "__YNH_APP_UPSTREAM_VERSION__": app_upstream_version,
-        }
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
-        def recursive_apply(function: Callable, data: Any) -> Any:
-            if isinstance(data, dict):  # FIXME: hashable?
+        env = kwargs.pop("env")
+
+        super().__init__(**kwargs)
+
+        self.helpers_version = float(env["YNH_HELPERS_VERSION"])
+        self.workdir = env.get("YNH_APP_BASEDIR")
+        self.hydrate_properties(env=env)
+
+    def hydrate_properties(self, env: dict[str, Any]) -> None:
+
+        # FIXME : recheck support for YNH_DEBIAN_VERSION, YNH_APP_UPSTREAM_VERSION etc
+
+        def _recursive_apply(function: Callable, data: Any) -> Any:
+            if isinstance(data, dict):
                 return {
-                    key: recursive_apply(function, value) for key, value in data.items()
+                    key: _recursive_apply(function, value) for key, value in data.items()
                 }
 
-            if isinstance(data, list):  # FIXME: iterable?
-                return [recursive_apply(function, value) for value in data]
+            if isinstance(data, list):
+                return [_recursive_apply(function, value) for value in data]
 
             return function(data)
 
-        def replace_tokens_in_strings(data: Any):
-            if not isinstance(data, str):
-                return data
-            for token, replacement in replacements.items():
-                data = data.replace(token, replacement)
+        def _hydrate(value: str) -> str:
+            from ..app import _hydrate_app_template
+            if not isinstance(value, str):
+                return value
+            return _hydrate_app_template(
+                value,
+                env,
+                raise_exception_if_missing_var=True,
+            )
 
-            return data
+        for key, value in dict(self).items():
+            if isinstance(value, (str, list, dict)):
+                setattr(self, key, _recursive_apply(_hydrate, value))
 
-        properties = recursive_apply(replace_tokens_in_strings, properties)
-
-        for key, value in properties.items():
-            setattr(self, key, value)
-
-    def get_setting(self, key):
+    def get_setting(self, key: str) -> Any:
         from ..app import app_setting
-
         return app_setting(self.app, key)
 
-    def set_setting(self, key, value):
+    def set_setting(self, key: str, value: Any) -> None:
         from ..app import app_setting
-
         app_setting(self.app, key, value=value)
 
-    def delete_setting(self, key):
+    def delete_setting(self, key: str) -> None:
         from ..app import app_setting
-
         app_setting(self.app, key, delete=True)
 
-    def check_output_bash_snippet(self, snippet, env={}):
+    def check_output_bash_snippet(self, snippet: str) -> tuple[str, str]:
         from ..app import _make_environment_for_app_script
 
-        env_ = _make_environment_for_app_script(
+        env = _make_environment_for_app_script(
             self.app,
             force_include_app_settings=True,
         )
-        env_.update(env)
 
         with tempfile.NamedTemporaryFile(prefix="ynh_") as fp:
             fp.write(snippet.encode())
             fp.seek(0)
             with tempfile.TemporaryFile() as stderr:
-                out = check_output(f"bash {fp.name}", env=env_, stderr=stderr)
+                out = check_output(f"bash {fp.name}", env=env, stderr=stderr)
 
                 stderr.seek(0)
                 err = stderr.read().decode()
 
         return out, err
 
-    def _run_script(self, action, script, env={}):
-        from yunohost.app import _run_app_script_or_snippet
-        _run_app_script_or_snippet(self.app, f"{action}_{self.type}", script, workdir=self.workdir, raise_exception_if_failure=True)
+    def _run_script(self, action: str, script: str, env: dict = {}) -> None:
+        from ..app import _run_app_script_or_snippet
+        _run_app_script_or_snippet(
+            self.app,
+            f"{action}_{self.type}",
+            script,
+            env={"YNH_HELPERS_VERSION": str(self.helpers_version).replace(".0", "")},
+            workdir=self.workdir,
+            raise_exception_if_failure=True
+        )
+
+    def provision_or_update(self) -> None:
+        raise NotImplementedError
+
+    def deprovision(self) -> None:
+        raise NotImplementedError
 
 
 class SourcesResource(AppResource):
@@ -1975,5 +2079,4 @@ class ComposerAppResource(AppResource):
         if os.path.exists(f"{install_dir}/composer.phar"):
             os.remove(f"{install_dir}/composer.phar")
 
-
-AppResourceClassesByType = {c.type: c for c in AppResource.__subclasses__()}
+AppResourceClassesByType = {c.__fields__["type"].default: c for c in AppResource.__subclasses__()}

@@ -983,7 +983,6 @@ def app_upgrade(
                 wanted=new_manifest,
                 current=current_manifest,
                 env=env_dict,
-                workdir=workdir,
             ).apply(
                 rollback_and_raise_exception_if_failure=True,
                 operation_logger=operation_logger,

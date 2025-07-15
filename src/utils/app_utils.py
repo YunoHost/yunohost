@@ -1492,7 +1492,8 @@ def _run_app_script_or_snippet(app, action, script, env={}, workdir=None, as_app
     if not workdir:
         workdir = _make_tmp_workdir_for_app(app=app)
         chmod(workdir, 0o700, recursive=True)
-        chown(workdir, app, recursive=True)
+        if as_app:
+            chown(workdir, app, recursive=True)
         delete_workdir_at_the_end = True
     else:
         delete_workdir_at_the_end = False
