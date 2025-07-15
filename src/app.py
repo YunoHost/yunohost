@@ -39,6 +39,7 @@ from typing import (
     TypedDict,
     NotRequired,
     cast,
+    Union,
 )
 
 import yaml
@@ -198,7 +199,7 @@ def app_info(app: str, full: bool = False, with_upgrade_infos: bool = False, wit
                 _git_clone_light(d, url, branch=specific_channel, revision=new_revision)
                 _, tmp_notifications = _parse_app_doc_and_notifications(d)
         except Exception as e:
-            logger.warning(f"Failed to check pre-upgrade notifications for {app['id']} : {e}")
+            logger.warning(f"Failed to check pre-upgrade notifications for {app} : {e}")
             tmp_notifications = {}
 
         if tmp_notifications.get("PRE_UPGRADE"):
@@ -759,8 +760,9 @@ def app_upgrade(
         logger.info(m18n.n("app_upgrade_app_name", app=app_instance_name))
 
         app_base_id = app_instance_name.split("__")[0]
-        app_current_manifest = _get_manifest_of_app(app)
-        app_current_version_raw = app_current_manifest.get("version", "?"),
+        app_current_manifest = _get_manifest_of_app(app_instance_name)
+        app_current_version_raw = app_current_manifest.get("version", "?")
+        assert isinstance(app_current_version_raw, str)
 
         if file and isinstance(file, dict):
             # We use this dirty hack to test chained upgrades in unit/functional tests
@@ -791,7 +793,8 @@ def app_upgrade(
         # Manage upgrade type and avoid any upgrade if there is nothing to do
         upgrade_type = "UNKNOWN"
         # Get current_version and new version
-        app_new_version_raw = manifest.get("version", "?")
+        app_new_version_raw = app_new_manifest.get("version", "?")
+        assert isinstance(app_new_version_raw, str)
         app_new_version = _parse_app_version(app_new_version_raw)
         app_current_version = _parse_app_version(app_current_version_raw)
         if "~ynh" in str(app_current_version_raw) and "~ynh" in str(
@@ -2133,7 +2136,7 @@ def _get_AppConfigPanel():
             form: "FormModel",
             config: "ConfigPanelModel",
             previous_settings: dict[str, Any],
-            exclude: "AbstractSetIntStr" | "MappingIntStrAny" | None = None,
+            exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
         ) -> None:
             env = {key: str(value) for key, value in form.dict().items()}
             return_content = self._call_config_script("apply", env=env)
@@ -2398,7 +2401,7 @@ ynh_app_config_run $1
             form: "FormModel",
             config: "ConfigPanelModel",
             previous_settings: dict[str, Any],
-            exclude: "AbstractSetIntStr" | "MappingIntStrAny" | None = None,
+            exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
         ) -> None:
             from .user import (
                 user_permission_add,
