@@ -53,6 +53,7 @@ from .i18n import _value_for_locale
 from .system import (
     binary_to_human,
     debian_version,
+    debian_version_id,
     dpkg_is_broken,
     free_space_in_directory,
     get_ynh_package_version,
@@ -1194,6 +1195,7 @@ def _make_environment_for_app_script(
         "YNH_APP_INSTANCE_NAME": app,
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
         "YNH_APP_MANIFEST_VERSION": manifest.get("version", "?"),
+        "YNH_APP_UPSTREAM_VERSION": manifest.get("version", "?").split("~")[0],
         "YNH_APP_PACKAGING_FORMAT": str(manifest["packaging_format"]),
         "YNH_HELPERS_VERSION": str(
             manifest.get("integration", {}).get("helpers_version")
@@ -1201,6 +1203,7 @@ def _make_environment_for_app_script(
         ).replace(".0", ""),
         "YNH_ARCH": system_arch(),
         "YNH_DEBIAN_VERSION": debian_version(),
+        "YNH_DEBIAN_VERSION_ID": debian_version_id(),
     }
 
     if workdir:

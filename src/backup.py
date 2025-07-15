@@ -1413,10 +1413,9 @@ class RestoreManager:
         if manifest["packaging_format"] >= 2:
             from .utils.resources import AppResourceManager
 
-            AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
+            AppResourceManager(app_instance_name, wanted=manifest, current={}, env=env_dict).apply(
                 rollback_and_raise_exception_if_failure=True,
                 operation_logger=operation_logger,
-                action="restore",
             )
 
         # Execute the app install script

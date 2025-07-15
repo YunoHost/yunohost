@@ -982,11 +982,11 @@ def app_upgrade(
                 app_,
                 wanted=new_manifest,
                 current=current_manifest,
+                env=env_dict,
                 workdir=workdir,
             ).apply(
                 rollback_and_raise_exception_if_failure=True,
                 operation_logger=operation_logger,
-                action="upgrade",
             )
 
             # Boring stuff : the resource upgrade may have added/remove/updated setting
@@ -1473,11 +1473,17 @@ def app_install(
 
     if int(packaging_format) == 2:
         from .utils.resources import AppResourceManager
+        # Prepare env. var. to pass to resources
+        env_dict = _make_environment_for_app_script(
+            app_instance_name,
+            args=parsedargs,
+            workdir=extracted_app_folder,
+            action="install",
+        )
         try:
-            AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
+            AppResourceManager(app_instance_name, wanted=manifest, current={}, env=env_dict).apply(
                 rollback_and_raise_exception_if_failure=True,
                 operation_logger=operation_logger,
-                action="install",
             )
         except (KeyboardInterrupt, EOFError, Exception) as e:
             rmtree(app_setting_path)
@@ -1496,6 +1502,7 @@ def app_install(
         )
 
     # Prepare env. var. to pass to script
+    # (we re-create this env dict even if it was created for resource previously, because new settings may be there)
     env_dict = _make_environment_for_app_script(
         app_instance_name,
         args=parsedargs,
@@ -1528,6 +1535,7 @@ def app_install(
 
         app = app_instance_name
         workdir = extracted_app_folder
+
         app_scripts = check_output(f"bash -c \"source '{workdir}/scripts.sh'; declare -F | cut -d' ' -f3\"").strip().split("\n")
         call_remove_if_failure = False
 
@@ -1701,8 +1709,8 @@ def app_install(
                 from .utils.resources import AppResourceManager
 
                 AppResourceManager(
-                    app_instance_name, wanted={}, current=manifest
-                ).apply(rollback_and_raise_exception_if_failure=False, action="remove")
+                    app_instance_name, wanted={}, current=manifest, env=env_dict_remove,
+                ).apply(rollback_and_raise_exception_if_failure=False)
             else:
                 # Remove all permission in LDAP
                 for permission_name in user_permission_list()["permissions"].keys():
@@ -1887,10 +1895,8 @@ def app_remove(
     if packaging_format >= 2:
         from .utils.resources import AppResourceManager
 
-        AppResourceManager(app, wanted={}, current=manifest).apply(
+        AppResourceManager(app, wanted={}, current=manifest, env=env_dict).apply(
             rollback_and_raise_exception_if_failure=False,
-            purge_data_dir=purge,
-            action="remove",
         )
     else:
         # Remove all permission in LDAP
