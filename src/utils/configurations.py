@@ -1,3 +1,25 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2025 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+# mypy: disallow_untyped_defs
+
 import copy
 import os
 import base64
@@ -8,7 +30,7 @@ import datetime
 import pwd
 import re
 from logging import getLogger
-from typing import Any, Literal, Iterator, NotRequired, TypedDict
+from typing import Any, Literal, Iterator, NotRequired, TypedDict, Callable
 from pydantic import BaseModel
 
 from moulinette import m18n
@@ -20,22 +42,18 @@ from moulinette.utils.filesystem import (
     rm,
     mkdir,
 )
-from yunohost.app import (
+from ..app import (
     _hydrate_app_template,
     _get_app_settings,
     _set_app_settings,
     APPS_SETTING_PATH,
 )
-from yunohost.service import _run_service_command, service_reload_or_restart, service_add, service_remove, _get_services
-from yunohost.utils.error import YunohostError, YunohostPackagingError
-from yunohost.utils.eval import evaluate_simple_js_expression
+from ..service import _run_service_command, service_reload_or_restart, service_add, service_remove, _get_services
+from .error import YunohostError, YunohostPackagingError
 
 logger = getLogger("yunohost.utils.configurations")
 
 DIR_TO_BACKUP_CONF_MANUALLY_MODIFIED = "/var/cache/yunohost/appconfbackup"
-
-JSExpression = str
-IFClause = Literal[True] | JSExpression
 
 
 class ConfigurationAdd(TypedDict):
@@ -57,7 +75,8 @@ class ConfigurationRemove(TypedDict):
     path: str
 
 
-def evaluate_if_clause(if_clause, env):
+def evaluate_if_clause(if_clause: str, env: dict[str, Any]) -> bool:
+    from .eval import evaluate_simple_js_expression
     if_clause_hydrated = _hydrate_app_template(if_clause, env)
     try:
         return evaluate_simple_js_expression(if_clause_hydrated, env)
@@ -142,7 +161,6 @@ class BaseConfiguration(BaseModel):
     template: str
     path: str
 
-    # FIXME: These should be settable via the manifest ... except for type = "app" for owner/group/perms ?
     id: str
     app: str
     type: str
@@ -152,16 +170,34 @@ class BaseConfiguration(BaseModel):
     owner: str = "root"
     group: str = "root"
     perms: str = "rw-r--r--"
-    exposed: list[str] = ["template", "path"]
+    exposed_properties: list[str] = ["template", "path"]
+
+    @classmethod
+    def validate_properties_from_package(cls, **props) -> None:  # type: ignore[no-untyped-def]
+
+        exposed_properties = cls.__fields__["exposed_properties"].default
+        incorrect_properties = [k for k in props.keys() if k not in exposed_properties]
+        if incorrect_properties:
+            cls_type = cls.__fields__["type"].default
+            raise YunohostPackagingError(f"Uhoh, the following properties are unknown / not exposed for {cls_type}-type configurations: {', '.join(incorrect_properties)}")
+
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
+
+        app_template_dir = kwargs.pop("app_template_dir")
+        assert isinstance(app_template_dir, str)
+
+        super().__init__(**kwargs)
+
+        self.hydrate_properties(app_template_dir=app_template_dir)
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.type if self.id != "main" else f"{self.type}.{self.id}"
 
-    def exists(self):
+    def exists(self) -> bool:
         return os.path.exists(self.path)
 
-    def render(self, template_content) -> str:
+    def render(self, template_content: str) -> str:
         return _hydrate_app_template(
             template_content, self.env, raise_exception_if_missing_var=True
         )
@@ -170,14 +206,27 @@ class BaseConfiguration(BaseModel):
         assert self.content
         return hashlib.md5(self.content.encode()).hexdigest()
 
-    def write(self, content):
+    def write(self, content: str) -> None:
         write_to_file(self.path, content)
         chown(self.path, self.owner, self.group)
         chmod(self.path, sym_to_octal(self.perms))
 
-    def hydrate_properties(self, app_template_dir: str):
+    def hydrate_properties(self, app_template_dir: str) -> None:
 
-        def hydrate(value):
+        def _recursive_apply(function: Callable, data: Any) -> Any:
+            if isinstance(data, dict):
+                return {
+                    key: _recursive_apply(function, value) for key, value in data.items()
+                }
+
+            if isinstance(data, list):
+                return [_recursive_apply(function, value) for value in data]
+
+            return function(data)
+
+        def _hydrate(value: str) -> str:
+            if not isinstance(value, str):
+                return value
             return _hydrate_app_template(
                 value,
                 {"app": self.app, "conf_id": self.id, **self.env},
@@ -192,9 +241,9 @@ class BaseConfiguration(BaseModel):
                     and app_template_dir
                 ):
                     value = f"{app_template_dir}/{value}"
-                setattr(self, key, hydrate(value))
-            elif isinstance(value, list):
-                setattr(self, key, [hydrate(v) for v in value])
+
+            if isinstance(value, (str, list, dict)):
+                setattr(self, key, _recursive_apply(_hydrate, value))
 
     ###############################################################
     # The 'original' conf refers to the original configuration    #
@@ -203,7 +252,7 @@ class BaseConfiguration(BaseModel):
     # the 'current' on-disk conf.                                 #
     ###############################################################
 
-    def original_checksum(self):
+    def original_checksum(self) -> str:
         settings = _get_app_settings(self.app)
         checksum = (
             settings.get("_configurations", {})
@@ -294,7 +343,7 @@ class BaseConfiguration(BaseModel):
     def current_perms(self) -> tuple[str, str, str] | None:
         return file_permissions(self.current_path) if self.current_path else None
 
-    def backup_current_conf(self):
+    def backup_current_conf(self) -> None:
 
         current_path = self.current_path
         if not current_path:
@@ -467,6 +516,7 @@ class BaseConfiguration(BaseModel):
             )
             rm(current_path)
         self.save_new_original_content_and_checksum()
+        assert self.content_to_write
         self.write(self.content_to_write)
 
     @classmethod
@@ -500,60 +550,53 @@ class BaseConfiguration(BaseModel):
             _set_app_settings(app, app_settings)
 
 
+ConfigurationTodo = \
+    tuple[Literal["add"], str, str, BaseConfiguration, None, list[ConfigurationAdd | ConfigurationUpdate]] | \
+    tuple[Literal["update"], str, str, BaseConfiguration, None, list[ConfigurationAdd | ConfigurationUpdate]] | \
+    tuple[Literal["remove"], str, str, None, str, list[ConfigurationRemove]]
+
+
 class AppConfigurationsManager:
 
-    def __init__(self, app: str, wanted: dict, env: dict[str, str] = {}, workdir=None) -> None:
+    def __init__(self, app: str, wanted: dict, env: dict[str, str] = {}, workdir: str | None = None) -> None:
         self.app = app
         self.wanted = copy.deepcopy(wanted)
         self.workdir = workdir if workdir is not None else os.path.join(APPS_SETTING_PATH, app)
         self.env = env
         if not self.env:
-            from yunohost.app import _make_environment_for_app_script
+            from ..app import _make_environment_for_app_script
             self.env = _make_environment_for_app_script(app, workdir=workdir)
 
         if "configurations" not in self.wanted:
             self.wanted["configurations"] = {}
 
-    def compute_todos(
-        self,
-    ) -> Iterator[
-        tuple[
-            Literal["add", "update", "remove"],
-            str,
-            str,
-            BaseConfiguration | None,
-            str | None,
-            list[ConfigurationAdd | ConfigurationUpdate | ConfigurationRemove],
-        ]
-    ]:
+    def compute_todos(self) -> Iterator[ConfigurationTodo]:
 
         conf_settings = _get_app_settings(self.app).get("_configurations", {})
-        current_confs: dict[tuple, str] = {
+        current_confs: dict[tuple[str, str], str] = {
             tuple(k.split(".")): v["path"] for k, v in conf_settings.items()
         }
-        wanted_confs: dict[tuple, BaseConfiguration] = {
+        wanted_confs: dict[tuple[str, str], BaseConfiguration] = {
             (c.type, c.id): c for c in self.load_wanted_confs()
         }
 
         for key, path in current_confs.items():
             type_, id_ = key
             if key not in wanted_confs:
-                details = list(ConfigurationClassesByType[type_].prepare_rm(self.app, id_, path))
-                if details:
-                    yield ("remove", type_, id_, None, path, details)
+                details_rm = list(ConfigurationClassesByType[type_].prepare_rm(self.app, id_, path))
+                if details_rm:
+                    yield ("remove", type_, id_, None, path, details_rm)
 
         for key, conf in wanted_confs.items():
             type_, id_ = key
-            if key not in current_confs:
-                details = list(conf.prepare())
-                if details:
+            details = list(conf.prepare())
+            if details:
+                if key not in current_confs:
                     yield ("add", type_, id_, conf, None, details)
-            else:
-                details = list(conf.prepare())
-                if details:
+                else:
                     yield ("update", type_, id_, conf, None, details)
 
-    def format_todos_for_display(self, todos, with_diff=False) -> dict:
+    def format_todos_for_display(self, todos: list[ConfigurationTodo], with_diff: bool = False) -> dict:
 
         todos_to_display: dict[str, list[dict[str, Any]]] = {}
         for todo, type_, id_, new, path_to_remove, details in todos:
@@ -627,9 +670,9 @@ class AppConfigurationsManager:
 
         return self.format_todos_for_display(todos, with_diff=with_diff)
 
-    def load_wanted_confs(self) -> list[BaseConfiguration]:
+    def load_wanted_confs(self) -> Iterator[BaseConfiguration]:
 
-        confs = []
+        app_template_dir = (self.workdir.rstrip("/") + "/conf/") if self.workdir else None
 
         for type_, confs_properties in self.wanted["configurations"].items():
 
@@ -638,39 +681,9 @@ class AppConfigurationsManager:
                 raise YunohostPackagingError(f"Unknown configuration type {type_}")
 
             ConfigurationClass = ConfigurationClassesByType[type_]
-            exposed_properties = ConfigurationClass.__fields__["exposed"].default
 
-            main_properties = confs_properties.pop("main", {})
-            if_clause = main_properties.pop("if") if "if" in main_properties else None
-            incorrect_properties = [p for p in main_properties.keys() if p not in exposed_properties]
-            if incorrect_properties:
-                raise YunohostPackagingError(f"Uhoh, the following properties are unknown / not exposed for configuration {type}.main: {', '.join(incorrect_properties)}")
-
-            # Initialize the "main" conf
-            if if_clause is None or evaluate_if_clause(if_clause, self.env):
-                confs.append(
-                    ConfigurationClass(
-                        **main_properties,
-                        id="main",
-                        env=self.env,
-                        type=type_,
-                        app=self.app,
-                    )
-                )
-
-            # Boring trick for fail2ban which is actually 2 file conf (filter and jail)
-            # so we create one with the same inputs for main, but with id "jail" that will use a different template/path
-            if type_ == "fail2ban":
-                assert "jail" not in confs_properties.keys(), "Can't explicitly add properties for the 'jail' part of fail2ban, just set them via the main one"
-                confs.append(
-                    ConfigurationClass(
-                        **main_properties,
-                        id="jail",
-                        env=self.env,
-                        type=type_,
-                        app=self.app,
-                    )
-                )
+            # Make sure we have a "main" property and that it's first in the list
+            confs_properties = {"main": confs_properties.pop("main", {}), **confs_properties}
 
             # Iterate on other confs than "main"
             for key, values in confs_properties.items():
@@ -680,35 +693,43 @@ class AppConfigurationsManager:
                         f"Uhoh, in {type_} conf properties, {key} should be associated with a dict ... (did you meant <conf_id>.{key} ?)"
                     )
 
-                incorrect_properties = [p for p in values.keys() if p not in exposed_properties]
-                if incorrect_properties:
-                    raise YunohostPackagingError(f"Uhoh, the following properties are unknown / not exposed for configuration {type}.{key}: {', '.join(incorrect_properties)}")
                 if_clause = values.pop("if") if "if" in values else None
-                if if_clause is None or evaluate_if_clause(if_clause, self.env):
-                    confs.append(
-                        ConfigurationClass(
-                            **values,
-                            id=key,
-                            env=self.env,
-                            type=type_,
-                            app=self.app,
-                        )
+                if if_clause is not None and not evaluate_if_clause(if_clause, self.env):
+                    logger.debug(f"Skipping conf {type_}.{key} because 'if' clause is not met")
+                    continue
+
+                logger.debug(f"Loading conf {type_}.{key}")
+                ConfigurationClass.validate_properties_from_package(**values)
+                yield ConfigurationClass(
+                    **values,
+                    id=key,
+                    env=self.env,
+                    type=type_,
+                    app=self.app,
+                    app_template_dir=app_template_dir,
+                )
+
+                # Boring trick for fail2ban which is actually 2 file conf (filter and jail)
+                # so we create one with the same inputs for main, but with id "jail" that will use a different template/path
+                if type_ == "fail2ban" and key == "main":
+                    assert "jail" not in confs_properties.keys(), "Can't explicitly add properties for the 'jail' part of fail2ban, just set them via the main one"
+                    yield ConfigurationClass(
+                        **values,
+                        id="jail",
+                        env=self.env,
+                        type=type_,
+                        app=self.app,
+                        app_template_dir=app_template_dir,
                     )
-
-        app_template_dir = (self.workdir.rstrip("/") + "/conf/") if self.workdir else None
-        for conf in confs:
-            conf.hydrate_properties(app_template_dir=app_template_dir)
-
-        return confs
 
 
 class NginxConfiguration(BaseConfiguration):
 
     type = "nginx"
 
-    exposed: list[str] = []
+    exposed_properties: list[str] = []
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
         # Default values for main and extras
         if kwargs["id"] == "main":
@@ -718,9 +739,9 @@ class NginxConfiguration(BaseConfiguration):
             kwargs["template"] = "nginx-__CONF_ID__.conf"
             kwargs["path"] = "/etc/nginx/conf.d/__DOMAIN__.d/__APP__.d/__CONF_ID__.conf"
 
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
 
-    def render(self, template_content) -> str:
+    def render(self, template_content: str) -> str:
         if "path" in self.env:
             path = self.env["path"].strip()
             if path != "/":
@@ -782,15 +803,15 @@ class PHPConfiguration(BaseConfiguration):
     php_process_management: Literal["ondemand", "dynamic", "static"] = "ondemand"
     php_max_children: int  # defaults to `_default_php_max_children`
 
-    exposed: list[str] = ["php_group", "php_process_management", "php_memory_limit", "php_upload_max_filesize"]
+    exposed_properties: list[str] = ["php_group", "php_process_management", "php_memory_limit", "php_upload_max_filesize"]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
         assert kwargs["id"] == "main", "Extra php configurations are not supported"
         kwargs["php_max_children"] = PHPConfiguration._default_php_max_children()
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
 
-    def render(self, template_content) -> str:
+    def render(self, template_content: str) -> str:
 
         self.env = self.env.copy()
         for prop in ["php_group", "php_process_management", "php_memory_limit", "php_upload_max_filesize", "php_max_children"]:
@@ -803,7 +824,7 @@ class PHPConfiguration(BaseConfiguration):
         return super().render(template_content)
 
     @staticmethod
-    def _default_php_max_children():
+    def _default_php_max_children() -> int:
 
         from .system import ram_total
 
@@ -815,12 +836,14 @@ class PHPConfiguration(BaseConfiguration):
         # designed such that if PHP-FPM start the maximum of children, it won't
         # exceed half of the ram.
         php_max_children = total_ram_in_MB / 40
+        cpu_count = os.cpu_count()
+        assert cpu_count
         # Make sure we get at least max_children = 1
         if php_max_children <= 0:
             php_max_children = 1
         # To not overload the proc, limit the number of children to 4 times the number of cores.
-        elif php_max_children > 4 * os.cpu_count():
-            php_max_children = 4 * os.cpu_count()
+        elif php_max_children > 4 * cpu_count:
+            php_max_children = 4 * cpu_count
 
         return php_max_children
 
@@ -877,7 +900,7 @@ class SystemdConfiguration(BaseConfiguration):
     needs_exposed_ports: str | int | list[str | int] | None = None
     needs_lock: bool = False
 
-    exposed: list[str] = [
+    exposed_properties: list[str] = [
         "auto",
         "wait_until",
         "wait_until_stopped",
@@ -888,7 +911,7 @@ class SystemdConfiguration(BaseConfiguration):
         "needs_lock"
     ]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
         # Default values for main and extras
         if kwargs["id"] == "main":
@@ -900,7 +923,7 @@ class SystemdConfiguration(BaseConfiguration):
             kwargs["template"] = "systemd-__CONF_ID__.service"
             kwargs["path"] = "/etc/systemd/system/__APP__-__CONF_ID__.service"
 
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
 
     def apply(self) -> Iterator[str]:
 
@@ -954,7 +977,7 @@ class SystemdConfiguration(BaseConfiguration):
 
         os.system("systemctl daemon-reload")
 
-    def start(self):
+    def start(self) -> None:
 
         if self.wait_until:
             wait_until_args = {
@@ -964,7 +987,7 @@ class SystemdConfiguration(BaseConfiguration):
         else:
             wait_until_args = {}
 
-        success = _run_service_command("restart", self.service_name, **wait_until_args)
+        success = _run_service_command("restart", self.service_name, **wait_until_args)  # type: ignore[arg-type]
         if success:
             logger.info(f"Service {self.service_name} started")
         elif os.system(f"systemctl --quiet is-active {self.service_name}") == 0:
@@ -982,9 +1005,9 @@ class Fail2banConfiguration(BaseConfiguration):
     auth_route: str | None = None  # NB: relative to the app, NOT prefixed with __PATH__ (or should it be the other way around ?)
     fail_regex: str | None = None
 
-    exposed: list[str] = ["template", "log_to_watch", "auth_route", "fail_regex"]
+    exposed_properties: list[str] = ["template", "log_to_watch", "auth_route", "fail_regex"]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
         assert kwargs["id"] in ["main", "jail"], "Having several fail2ban configuration per app is not supported for now"
 
@@ -1006,9 +1029,9 @@ class Fail2banConfiguration(BaseConfiguration):
             kwargs["template"] = "/usr/share/yunohost/conf/fail2ban/app-jail.conf.j2"
             kwargs["path"] = "/etc/fail2ban/jail.d/__APP__.conf"
 
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
 
-    def render(self, template_content) -> str:
+    def render(self, template_content: str) -> str:
 
         settings = _get_app_settings(self.app)
         self.env = self.env.copy()
@@ -1050,9 +1073,9 @@ class CronConfiguration(BaseConfiguration):
     timing: str = ""
     workdir: str = "__INSTALL_DIR__"
 
-    exposed: list[str] = ["user", "command", "timing", "workdir"]
+    exposed_properties: list[str] = ["user", "command", "timing", "workdir"]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
         kwargs["path"] = "/etc/cron.d/__APP__" if kwargs["id"] == "main" else "/etc/cron.d/__APP__-__CONF_ID__"
 
@@ -1069,7 +1092,7 @@ class CronConfiguration(BaseConfiguration):
                 raise YunohostPackagingError("Packager: you can't specify any 'command' / 'timing' / 'user' / 'workdir' property when using template mode for cron configurations")
             kwargs["template"] = "cron" if kwargs["id"] == "main" else "cron-__CONF_ID__"
 
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
 
     def template_content(self) -> str:
 
@@ -1088,7 +1111,7 @@ class CronConfiguration(BaseConfiguration):
 
         return read_file(self.template)
 
-    def render(self, template_content) -> str:
+    def render(self, template_content: str) -> str:
         # Trick to be able to use __PHP__ to simplify the cron syntax
         if "php_version" in self.env:
             self.env = self.env.copy()
@@ -1105,9 +1128,9 @@ class SudoersConfiguration(BaseConfiguration):
     # FIXME : ideally we should validate that every command is owned by root and not writable by a non-root user ...
     commands: list[str] = []
 
-    exposed: list[str] = ["commands"]
+    exposed_properties: list[str] = ["commands"]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
         # Default values for main and extras
         if kwargs["id"] == "main":
@@ -1118,7 +1141,7 @@ class SudoersConfiguration(BaseConfiguration):
         if "commands" in kwargs:
             assert not any("," in command for command in kwargs["commands"]), "sudoers 'commands' arg is supposed to be a list of commands. The individual commands are not supposed to contain ','"
 
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
 
     def template_content(self) -> str:
         return """
@@ -1127,7 +1150,7 @@ __APP__ ALL = (root) NOPASSWD: {{command}}
 {%- endfor %}
         """
 
-    def render(self, template_content) -> str:
+    def render(self, template_content: str) -> str:
         self.env = self.env.copy()
         self.env["commands"] = self.commands
         return super().render(template_content)
@@ -1155,18 +1178,18 @@ class LogrotateConfiguration(BaseConfiguration):
     path: str = "/etc/logrotate.d/__APP__"
     logs: list[str] = ["__LOG_DIR__/*.log"]
 
-    exposed: list[str] = ["logs"]
+    exposed_properties: list[str] = ["logs"]
 
     # FIXME : the lograte helper did apply some chown / chmod ...
     # but i suppose it should rather be handled by the upcoming log_dir resource ?
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
         assert kwargs["id"] == "main", "Only having a 'main' logrotate conf is supported"
 
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
 
-    def render(self, template_content) -> str:
+    def render(self, template_content: str) -> str:
 
         self.env = self.env.copy()
         self.env["log_globs"] = ' '.join(self.logs)
@@ -1198,9 +1221,9 @@ class AppConfiguration(BaseConfiguration):
     # maybe we want to auto-restart the service (or php fpm) when
     # it's updated ? (There's some overlap with this and the config panel mechanism)
 
-    exposed: list[str] = ["path", "template", "owner", "group", "perms"]
+    exposed_properties: list[str] = ["path", "template", "owner", "group", "perms"]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
         app = kwargs["app"]
 
@@ -1229,7 +1252,7 @@ class AppConfiguration(BaseConfiguration):
         if "group" not in kwargs and probably_app_conf:
             kwargs["group"] = app
 
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
 
 
 ConfigurationClassesByType = {
