@@ -77,7 +77,7 @@ class ConfigurationRemove(TypedDict):
 
 def evaluate_if_clause(if_clause: str, env: dict[str, Any]) -> bool:
     from .eval import evaluate_simple_js_expression
-    if_clause_hydrated = _hydrate_app_template(if_clause, env)
+    if_clause_hydrated = _hydrate_app_template(if_clause, env, raise_exception_if_missing_var=True)
     try:
         return evaluate_simple_js_expression(if_clause_hydrated, env)
     except KeyError as e:
