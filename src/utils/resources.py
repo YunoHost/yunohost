@@ -980,7 +980,7 @@ class InstalldirAppResource(AppResource):
 
     ### Provision/Update
 
-    - during install, the folder will be deleted if it already exists (FIXME: is this what we want?)
+    - during install, the folder will be deleted if it already exists
     - if the dir path changed and a folder exists at the old location, the folder will be `mv`'ed to the new location
     - otherwise, creates the directory if it doesn't exists yet
     - (re-)apply permissions (only on the folder itself, not recursively)
@@ -1003,24 +1003,29 @@ class InstalldirAppResource(AppResource):
     # restore -> cp install dir
 
     type = "install_dir"
-    priority = 30
+    multi = False
 
-    default_properties: Dict[str, Any] = {
-        "dir": "/var/www/__APP__",
-        "owner": "__APP__:rwx",
-        "group": "__APP__:rx",
-    }
+    dir: str = "/var/www/__APP__"
+    # FIXME : cant we find a better name ?
+    paths_for_www_data: list[str] = []
+    # Should be useful for backup policies + computing space usage per nature
+    # FIXME : cant we find a better name ?
+    content: dict[Literal["cache", "conf", "data", "static", "source", "logs", "dependencies"], list[str]] = {}
 
-    dir: str = ""
-    owner: str = ""
-    group: str = ""
+    exposed_properties = ["dir", "paths_for_www_data", "content"]
 
-    # FIXME: change default dir to /opt/stuff if app ain't a webapp...
+    @staticmethod
+    def convert_packaging_v2_props(props: dict[str, Any]) -> None:
+        owner = props.pop("owner", None)
+        if owner and not owner.startswith("__APP__"):
+            owner_user = owner.split(":")
+            logger.warning(f"Packagers: 'owner' prop ain't supported anymore in the install_dir resource. Ownership will be granted to the app's system user instead of {owner_user}")
+        group = props.pop("group", None)
+        if group and group.startswith("www-data"):
+            props["paths_for_www_data"] = ["*"]
 
-    def provision_or_update(self, context: Dict = {}):
+    def provision_or_update(self) -> None:
         assert self.dir.strip()  # Be paranoid about self.dir being empty...
-        assert self.owner.strip()
-        assert self.group.strip()
 
         current_install_dir = self.get_setting("install_dir") or self.get_setting(
             "final_path"
@@ -1046,39 +1051,53 @@ class InstalldirAppResource(AppResource):
             else:
                 mkdir(self.dir, parents=True)
 
-        owner, owner_perm = self.owner.split(":")
-        group, group_perm = self.group.split(":")
-        owner_perm_octal = (
-            (4 if "r" in owner_perm else 0)
-            + (2 if "w" in owner_perm else 0)
-            + (1 if "x" in owner_perm else 0)
-        )
-        group_perm_octal = (
-            (4 if "r" in group_perm else 0)
-            + (2 if "w" in group_perm else 0)
-            + (1 if "x" in group_perm else 0)
-        )
-
-        perm_octal = 0o100 * owner_perm_octal + 0o010 * group_perm_octal
-
+        owner = self.app
+        group = "www-data" if self.paths_for_www_data else self.app
         # NB: we use realpath here to cover cases where self.dir could actually be a symlink
         # in which case we want to apply the perm to the pointed dir, not to the symlink
-        chmod(os.path.realpath(self.dir), perm_octal)
+        chmod(os.path.realpath(self.dir), 0o750)
         chown(os.path.realpath(self.dir), owner, group)
-        # FIXME: shall we apply permissions recursively ?
 
         self.set_setting("install_dir", self.dir)
         self.delete_setting("final_path")  # Legacy
 
-    def deprovision(self, context: Dict = {}):
+    def deprovision(self) -> None:
         assert self.dir.strip()  # Be paranoid about self.dir being empty...
-        assert self.owner.strip()
-        assert self.group.strip()
 
         # FIXME : check that self.dir has a sensible value to prevent catastrophes
         if os.path.isdir(self.dir):
             rm(self.dir, recursive=True)
         # FIXME : in fact we should delete settings to be consistent
+
+    def before_regen_conf(self) -> None:
+
+        # NB: we use realpath here to cover cases where self.dir could actually be a symlink
+        # in which case we want to apply the perm to the pointed dir, not to the symlink
+        chmod(os.path.realpath(self.dir), 0o750)
+
+        # This case is essentially for packaging v2
+        if self.paths_for_www_data == ["*"]:
+            chown(os.path.realpath(self.dir), self.app, "www-data", recursive=True)
+            return
+
+        # Remove r/x rights for recursively
+        # (such that only the owner/group may read a file or enter a dir ...
+        # for example to prevent www-data to enter subdirs when it has r-x on the parent dir, or read secret files)
+        os.system(f"chmod -R o-rwx '{self.dir}'")
+
+        chown(os.path.realpath(self.dir), self.app, self.app, recursive=True)
+        for path in self.paths_for_www_data:
+            assert not path.startswith("/")
+            if not path.startswith("./"):
+                path = "./" + path
+            chown(os.path.realpath(self.dir) + "/" + path, self.app, "www-data", recursive=True)
+            # Gotta make sure www-data is the group on all folder along the way such that it has +x rights
+            path_parts = path.split("/")
+            assert ".." not in path_parts and "" not in path_parts
+            current_path = os.path.realpath(self.dir)
+            for path_part in path_parts[:-1]:
+                current_path += "/" + path_part
+                chown(current_path, self.app, "www-data")  # NB: Not recursive
 
 
 class DatadirAppResource(AppResource):
