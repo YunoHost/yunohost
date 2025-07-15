@@ -46,6 +46,8 @@ logger = getLogger("yunohost.utils.resources")
 
 SOURCES_CACHE_DIR = "/var/tmp/yunohost/download/"
 
+IFClause = bool | str
+
 
 def evaluate_if_clause(if_clause: str, env: dict[str, Any]) -> bool:
     from .eval import evaluate_simple_js_expression
@@ -831,23 +833,26 @@ class SystemuserAppResource(AppResource):
     # restore -> provision
 
     type = "system_user"
-    priority = 20
+    multi = False
 
-    default_properties: Dict[str, Any] = {
-        "allow_ssh": False,
-        "allow_sftp": False,
-        "allow_email": False,
-        "home": "/var/www/__APP__",
-    }
-
-    # FIXME : wat do regarding ssl-cert, multimedia, and other groups
-
-    allow_ssh: bool = False
+    allow_ssh: bool = False  # FIXME : document the fact that it now supports conditional
     allow_sftp: bool = False
     allow_email: bool = False
-    home: str = ""
+    allow_certs: bool = False  # FIXME : to be implemented and documnted
+    # FIXME : support something like additional arbitrary groups ?
+    home: str = "/var/www/__APP__"
 
-    def provision_or_update(self, context: Dict = {}):
+    exposed_properties = ["allow_ssh", "allow_sftp", "allow_email", "allow_certs", "home"]
+
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
+
+        for key in ["allow_ssh", "allow_sftp", "allow_email", "allow_certs"]:
+            if isinstance(kwargs.get(key), str):
+                kwargs[key] = evaluate_if_clause(kwargs[key], kwargs["env"])
+
+        super().__init__(**kwargs)
+
+    def provision_or_update(self) -> None:
         from ..app import regen_mail_app_user_config_for_dovecot_and_postfix
 
         # FIXME : validate that no yunohost user exists with that name?
@@ -876,6 +881,11 @@ class SystemuserAppResource(AppResource):
             groups.add("sftp.app")
         elif "sftp.app" in groups:
             groups.remove("sftp.app")
+
+        if self.allow_certs:
+            groups.add("ssl-cert")
+        elif "ssl-cert" in groups:
+            groups.remove("ssl-cert")
 
         os.system(f"usermod -G {','.join(groups)} {self.app}")
 
@@ -920,7 +930,7 @@ class SystemuserAppResource(AppResource):
         if os.path.isdir(f"{SOURCES_CACHE_DIR}/{self.app}"):
             chown(f"{SOURCES_CACHE_DIR}/{self.app}", self.app, recursive=True)
 
-    def deprovision(self, context: Dict = {}):
+    def deprovision(self) -> None:
         from ..app import regen_mail_app_user_config_for_dovecot_and_postfix
 
         if os.system(f"getent passwd {self.app} >/dev/null 2>/dev/null") == 0:
