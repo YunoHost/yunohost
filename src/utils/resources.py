@@ -1144,24 +1144,34 @@ class DatadirAppResource(AppResource):
     # restore -> cp data dir ? (if in backup)
 
     type = "data_dir"
-    priority = 40
+    multi = False
 
-    default_properties: Dict[str, Any] = {
-        "dir": "/home/yunohost.app/__APP__",
-        "subdirs": [],
-        "owner": "__APP__:rwx",
-        "group": "__APP__:rx",
-    }
-
-    dir: str = ""
+    dir: str = "/home/yunohost.app/__APP__"
     subdirs: list = []
-    owner: str = ""
-    group: str = ""
+    paths_for_www_data: list[str] = []
+    purge = False
 
-    def provision_or_update(self, context: Dict = {}):
+    exposed_properties = ["dir", "subdirs", "paths_for_www_data"]
+
+    @staticmethod
+    def convert_packaging_v2_props(props: dict[str, Any]) -> None:
+        owner = props.pop("owner", None)
+        if owner and not owner.startswith("__APP__"):
+            owner_user = owner.split(":")
+            logger.warning(f"Packagers: 'owner' prop ain't supported anymore in the data_dir resource. Ownership will be granted to the app's system user instead of {owner_user}")
+        group = props.pop("group", None)
+        if group and group.startswith("www-data"):
+            props["paths_for_www_data"] = ["*"]
+
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
+
+        super().__init__(**kwargs)
+
+        if kwargs["env"].get("YNH_APP_PURGE") == "1":
+            self.purge = True
+
+    def provision_or_update(self) -> None:
         assert self.dir.strip()  # Be paranoid about self.dir being empty...
-        assert self.owner.strip()
-        assert self.group.strip()
 
         current_data_dir = self.get_setting("data_dir") or self.get_setting("datadir")
 
@@ -1183,38 +1193,23 @@ class DatadirAppResource(AppResource):
             if not os.path.isdir(full_path):
                 mkdir(full_path, parents=True)
 
-        owner, owner_perm = self.owner.split(":")
-        group, group_perm = self.group.split(":")
-        owner_perm_octal = (
-            (4 if "r" in owner_perm else 0)
-            + (2 if "w" in owner_perm else 0)
-            + (1 if "x" in owner_perm else 0)
-        )
-        group_perm_octal = (
-            (4 if "r" in group_perm else 0)
-            + (2 if "w" in group_perm else 0)
-            + (1 if "x" in group_perm else 0)
-        )
-        perm_octal = 0o100 * owner_perm_octal + 0o010 * group_perm_octal
-
+        group = "www-data" if self.paths_for_www_data else self.app
         # NB: we use realpath here to cover cases where self.dir could actually be a symlink
         # in which case we want to apply the perm to the pointed dir, not to the symlink
-        chmod(os.path.realpath(self.dir), perm_octal)
-        chown(os.path.realpath(self.dir), owner, group)
+        chmod(os.path.realpath(self.dir), 0o750)
+        chown(os.path.realpath(self.dir), self.app, group)
         for subdir in self.subdirs:
             full_path = os.path.join(self.dir, subdir)
-            chmod(os.path.realpath(full_path), perm_octal)
-            chown(os.path.realpath(full_path), owner, group)
+            chmod(os.path.realpath(full_path), 0o750)
+            chown(os.path.realpath(full_path), self.app, group)
 
         self.set_setting("data_dir", self.dir)
         self.delete_setting("datadir")  # Legacy
 
-    def deprovision(self, context: Dict = {}):
+    def deprovision(self) -> None:
         assert self.dir.strip()  # Be paranoid about self.dir being empty...
-        assert self.owner.strip()
-        assert self.group.strip()
 
-        if context.get("purge_data_dir", False) and os.path.isdir(self.dir):
+        if self.purge and os.path.isdir(self.dir):
             rm(self.dir, recursive=True)
 
         self.delete_setting("data_dir")
