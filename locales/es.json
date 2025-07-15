@@ -53,7 +53,7 @@
     "dyndns_no_domain_registered": "Ningún dominio registrado con DynDNS",
     "dyndns_unavailable": "El dominio «{domain}» no está disponible.",
     "extracting": "Extrayendo…",
-    "field_invalid": "Campo no válido '{}'",
+    "field_invalid": "Campo no válido '{field}'",
     "firewall_reload_failed": "No se pudo recargar el cortafuegos. Más información en el registro.",
     "firewall_reloaded": "Cortafuegos recargado",
     "hook_exec_failed": "No se pudo ejecutar el guión: {path}",

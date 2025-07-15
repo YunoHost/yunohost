@@ -31,7 +31,7 @@
     "dyndns_ip_updated": "Endereço IP atualizado com êxito para DynDNS",
     "dyndns_unavailable": "O domínio '{domain}' não está disponível.",
     "extracting": "Extração em curso…",
-    "field_invalid": "Campo inválido '{}'",
+    "field_invalid": "Campo inválido '{field}'",
     "firewall_reloaded": "Firewall recarregada com êxito",
     "installation_complete": "Instalação concluída",
     "nftables_unavailable": "Não pode alterar aqui a nftables. Ou o seu kernel não o suporta ou está num espaço reservado",

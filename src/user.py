@@ -111,7 +111,7 @@ def user_list(fields: list[str] | None = None) -> dict[str, dict[str, Any]]:
         if field in ldap_attrs:
             attrs.add(ldap_attrs[field])
         else:
-            raise YunohostError("field_invalid", field)
+            raise YunohostError("field_invalid", field=field)
 
     ldap = _get_ldap_interface()
     result = ldap.search(

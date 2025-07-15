@@ -294,7 +294,7 @@
     "firewall_reloaded": "فایروال بارگیری مجدد شد",
     "firewall_reload_failed": "بارگیری مجدد فایروال امکان پذیر نیست. اطلاعات بیشتر در گزارش.",
     "file_does_not_exist": "فایل {path} وجود ندارد.",
-    "field_invalid": "فیلد نامعتبر '{}'",
+    "field_invalid": "فیلد نامعتبر '{field}'",
     "extracting": "استخراج…",
     "dyndns_unavailable": "دامنه '{domain}' در دسترس نیست.",
     "dyndns_domain_not_provided": "ارائه دهنده DynDNS {provider} نمی تواند دامنه {domain} را ارائه دهد.",

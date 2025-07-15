@@ -55,7 +55,7 @@
     "dyndns_no_domain_registered": "Aucun domaine n'a été enregistré avec DynDNS",
     "dyndns_unavailable": "Le domaine {domain} est indisponible.",
     "extracting": "Extraction en cours…",
-    "field_invalid": "Champ incorrect : '{}'",
+    "field_invalid": "Champ incorrect : '{field}'",
     "firewall_reload_failed": "Impossible de recharger le pare-feu. Plus d'informations dans le journal.",
     "firewall_reloaded": "Pare-feu rechargé",
     "hook_exec_failed": "Échec de l'exécution du script : {path}",

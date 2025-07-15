@@ -290,7 +290,7 @@
     "firewall_reloaded": "重新加载防火墙",
     "firewall_reload_failed": "无法重新加载防火墙。日志中的更多信息。",
     "file_does_not_exist": "文件{path} 不存在。",
-    "field_invalid": "无效的字段'{}'",
+    "field_invalid": "无效的字段'{field}'",
     "extracting": "正在提取…",
     "dyndns_unavailable": "域'{domain}' 不可用。",
     "dyndns_domain_not_provided": "DynDNS 提供者 {provider} 无法提供域 {domain}。",
