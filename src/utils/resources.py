@@ -1592,43 +1592,29 @@ class DatabaseAppResource(AppResource):
     # restore -> setup + inject db dump
 
     type = "database"
-    priority = 90
-    dbtype: str = ""
+    multi = True
 
-    default_properties: Dict[str, Any] = {
-        "dbtype": None,
-    }
+    # NB : it's actually 'type' in the toml for convenience but autoconverted to 'dbtype' in the code
+    dbtype: Literal["mysql", "postgresql"]
 
-    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
-        if "type" not in properties or properties["type"] not in [
-            "mysql",
-            "postgresql",
-        ]:
-            raise YunohostPackagingError(
-                "Specifying the type of db ('mysql' or 'postgresql') is mandatory for db resources"
-            )
+    exposed_properties = ["dbtype"]
 
-        # Hack so that people can write type = "mysql/postgresql" in toml but it's loaded as dbtype
-        # to avoid conflicting with the generic self.type of the resource object...
-        # dunno if that's really a good idea :|
-        properties = {"dbtype": properties["type"]}
+    @staticmethod
+    def convert_packaging_v2_props(props: dict[str, Any]) -> None:
+        if "type" in props:
+            props["main"] = {"dbtype": props.pop("type")}
 
-        super().__init__(properties, *args, **kwargs)
+    def db_exists(self, db_name: str) -> bool:
 
-    def db_exists(self, db_name):
         if self.dbtype == "mysql":
-            return os.system(f"mysqlshow | grep -q -w '{db_name}' 2>/dev/null") == 0
+            cmd = f"mysqlshow | grep -q -w '{db_name}' 2>/dev/null"
         elif self.dbtype == "postgresql":
-            return (
-                os.system(
-                    f"sudo --login --user=postgres psql '{db_name}' -c ';' >/dev/null 2>/dev/null"
-                )
-                == 0
-            )
+            cmd = f"sudo --login --user=postgres psql '{db_name}' -c ';' >/dev/null 2>/dev/null"
         else:
-            return False
+            cmd = "false"
+        return os.system(cmd) == 0
 
-    def provision_or_update(self, context: Dict = {}):
+    def provision_or_update(self) -> None:
         # This is equivalent to ynh_sanitize_dbid
         db_user = self.app.replace("-", "_").replace(".", "_")
         db_name = self.get_setting("db_name") or db_user
@@ -1664,7 +1650,7 @@ class DatabaseAppResource(AppResource):
                     f"ynh_psql_create_user '{db_user}' '{db_pwd}'; ynh_psql_create_db '{db_name}' '{db_user}'",
                 )
 
-    def deprovision(self, context: Dict = {}):
+    def deprovision(self) -> None:
         db_user = self.app.replace("-", "_").replace(".", "_")
         db_name = self.get_setting("db_name") or db_user
 
