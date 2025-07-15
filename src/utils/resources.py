@@ -45,6 +45,9 @@ if TYPE_CHECKING:
 logger = getLogger("yunohost.utils.resources")
 
 SOURCES_CACHE_DIR = "/var/tmp/yunohost/download/"
+N_INSTALL_DIR = "/opt/node_n"
+RBENV_ROOT = "/opt/rbenv"
+GOENV_ROOT = "/opt/goenv"
 
 IFClause = bool | str
 
@@ -1710,32 +1713,30 @@ class NodejsAppResource(AppResource):
     # restore -> nothing/re-provision
 
     type = "nodejs"
-    priority = 100
-    version: str = ""
+    multi = False
 
-    default_properties: Dict[str, Any] = {
-        "version": None,
-    }
-
-    N_INSTALL_DIR = "/opt/node_n"
+    version: str
+    exposed_properties = ["version"]
 
     @property
-    def n(self):
+    def n(self) -> str:
         return f"/usr/share/yunohost/helpers.v{self.helpers_version}.d/vendor/n/n"
 
-    def installed_versions(self):
-        out = check_output(f"{self.n} ls", env={"N_PREFIX": self.N_INSTALL_DIR})
+    def installed_versions(self) -> list[str]:
+
+        out = check_output(f"{self.n} ls", env={"N_PREFIX": N_INSTALL_DIR})
         return [version.split("/")[-1] for version in out.strip().split("\n")]
 
-    def provision_or_update(self, context: Dict = {}):
-        os.makedirs(self.N_INSTALL_DIR, exist_ok=True)
+    def provision_or_update(self) -> None:
+
+        os.makedirs(N_INSTALL_DIR, exist_ok=True)
 
         cmd = f"{self.n} install {self.version}"
         if system_arch() == "arm64":
             cmd += " --arch=arm64"
 
         self._run_script(
-            "provision_or_update", cmd, env={"N_PREFIX": self.N_INSTALL_DIR}
+            "provision_or_update", cmd, env={"N_PREFIX": N_INSTALL_DIR}
         )
         matching_versions = [
             v
@@ -1753,16 +1754,18 @@ class NodejsAppResource(AppResource):
         self.set_setting("nodejs_version", actual_version)
         self.garbage_collect_unused_versions()
 
-    def deprovision(self, context: Dict = {}):
+    def deprovision(self) -> None:
+
         self.delete_setting("nodejs_version")
         self.garbage_collect_unused_versions()
 
-    def garbage_collect_unused_versions(self):
+    def garbage_collect_unused_versions(self) -> None:
+
         from ..app import _installed_apps, app_setting
 
-        used_versions = []
+        used_versions: list[str] = []
         for app in _installed_apps():
-            v = app_setting(app, "nodejs_version")
+            v: str | None = app_setting(app, "nodejs_version")  # type: ignore
             if v:
                 used_versions.append(v)
 
@@ -1770,7 +1773,7 @@ class NodejsAppResource(AppResource):
         if unused_versions:
             cmds = [f"{self.n} rm {version}" for version in unused_versions]
             self._run_script(
-                "cleanup", "\n".join(cmds), env={"N_PREFIX": self.N_INSTALL_DIR}
+                "cleanup", "\n".join(cmds), env={"N_PREFIX": N_INSTALL_DIR}
             )
 
 
@@ -1808,43 +1811,39 @@ class RubyAppResource(AppResource):
     """
 
     type = "ruby"
-    priority = 100
+    multi = False
+
     version: str = ""
-
-    default_properties: Dict[str, Any] = {
-        "version": None,
-    }
-
-    RBENV_ROOT = "/opt/rbenv"
+    exposed_properties = ["version"]
 
     @property
-    def rbenv(self):
-        return f"{self.RBENV_ROOT}/bin/rbenv"
+    def rbenv(self) -> str:
+        return f"{RBENV_ROOT}/bin/rbenv"
 
-    def installed_versions(self):
+    def installed_versions(self) -> list[str]:
         return (
             check_output(
                 f"{self.rbenv} versions --bare --skip-aliases | grep -Ev '/'",
-                env={"RBENV_ROOT": self.RBENV_ROOT},
+                env={"RBENV_ROOT": RBENV_ROOT},
             )
             .strip()
             .split("\n")
         )
 
-    def update_rbenv(self):
+    def update_rbenv(self) -> None:
         self._run_script(
             "provision_or_update",
             f"""
-            _ynh_git_clone "https://github.com/rbenv/rbenv" "{self.RBENV_ROOT}"
-            _ynh_git_clone "https://github.com/rbenv/ruby-build" "{self.RBENV_ROOT}/plugins/ruby-build"
-            _ynh_git_clone "https://github.com/tpope/rbenv-aliases" "{self.RBENV_ROOT}/plugins/rbenv-aliase"
-            _ynh_git_clone "https://github.com/momo-lab/xxenv-latest" "{self.RBENV_ROOT}/plugins/xxenv-latest"
-            mkdir -p "{self.RBENV_ROOT}/cache"
-            mkdir -p "{self.RBENV_ROOT}/shims"
+            _ynh_git_clone "https://github.com/rbenv/rbenv" "{RBENV_ROOT}"
+            _ynh_git_clone "https://github.com/rbenv/ruby-build" "{RBENV_ROOT}/plugins/ruby-build"
+            _ynh_git_clone "https://github.com/tpope/rbenv-aliases" "{RBENV_ROOT}/plugins/rbenv-aliase"
+            _ynh_git_clone "https://github.com/momo-lab/xxenv-latest" "{RBENV_ROOT}/plugins/xxenv-latest"
+            mkdir -p "{RBENV_ROOT}/cache"
+            mkdir -p "{RBENV_ROOT}/shims"
         """,
         )
 
-    def provision_or_update(self, context: Dict = {}):
+    def provision_or_update(self) -> None:
         for package in [
             "gcc",
             "make",
@@ -1860,19 +1859,19 @@ class RubyAppResource(AppResource):
 
         ruby_version = check_output(
             f"{self.rbenv} latest --print '{self.version}'",
-            env={"RBENV_ROOT": self.RBENV_ROOT},
+            env={"RBENV_ROOT": RBENV_ROOT},
         )
         self.set_setting("ruby_version", ruby_version)
         logger.info(f"Building Ruby {ruby_version}, this may take some time...")
         self._run_script(
             "provision_or_update",
             f"""
-            #export RBENV_ROOT='{self.RBENV_ROOT}'
+            #export RBENV_ROOT='{RBENV_ROOT}'
             export RUBY_CONFIGURE_OPTS='--disable-install-doc --with-jemalloc'
             # Use half of available CPUs for compiling
             # The trick with 1 + ...  -1 is to prevent having '0' when there's only one CPU available.
             NB_CPU_TO_USE="$(( 1 + ($(grep -c ^processor /proc/cpuinfo) - 1) / 2 ))"
-            export MAKE_OPTS="-j$(NB_CPU_TO_USE)"
+            export MAKE_OPTS="-j${{NB_CPU_TO_USE}}"
             {self.rbenv} install --skip-existing '{ruby_version}' 2>&1
             if {self.rbenv} alias --list | grep --quiet '{self.app} '; then
                 {self.rbenv} alias {self.app} --remove
@@ -1882,16 +1881,16 @@ class RubyAppResource(AppResource):
         )
         self.garbage_collect_unused_versions()
 
-    def deprovision(self, context: Dict = {}):
+    def deprovision(self) -> None:
         self.delete_setting("ruby_version")
         self.garbage_collect_unused_versions()
 
-    def garbage_collect_unused_versions(self):
+    def garbage_collect_unused_versions(self) -> None:
         from ..app import _installed_apps, app_setting
 
-        used_versions = []
+        used_versions: list[str] = []
         for app in _installed_apps():
-            v = app_setting(app, "ruby_version")
+            v: str | None = app_setting(app, "ruby_version")  # type: ignore[assignment]
             if v:
                 used_versions.append(v)
 
@@ -1935,59 +1934,56 @@ class GoAppResource(AppResource):
     """
 
     type = "go"
-    priority = 100
-    version: str = ""
+    multi = False
 
-    default_properties: Dict[str, Any] = {
-        "version": None,
-    }
-
-    GOENV_ROOT = "/opt/goenv"
+    version: str
+    exposed_properties = ["version"]
 
     @property
-    def goenv(self):
-        return f"{self.GOENV_ROOT}/bin/goenv"
+    def goenv(self) -> str:
+        return f"{GOENV_ROOT}/bin/goenv"
 
     @property
-    def goenv_latest(self):
-        return f"{self.GOENV_ROOT}/plugins/xxenv-latest/bin/goenv-latest"
+    def goenv_latest(self) -> str:
+        return f"{GOENV_ROOT}/plugins/xxenv-latest/bin/goenv-latest"
 
-    def update_goenv(self):
+    def update_goenv(self) -> None:
         self._run_script(
             "provision_or_update",
             f"""
-            _ynh_git_clone https://github.com/syndbg/goenv '{self.GOENV_ROOT}'
-            _ynh_git_clone https://github.com/momo-lab/xxenv-latest '{self.GOENV_ROOT}/plugins/xxenv-latest'
-            mkdir -p '{self.GOENV_ROOT}/cache'
-            mkdir -p '{self.GOENV_ROOT}/shims'
+            _ynh_git_clone https://github.com/syndbg/goenv '{GOENV_ROOT}'
+            _ynh_git_clone https://github.com/momo-lab/xxenv-latest '{GOENV_ROOT}/plugins/xxenv-latest'
+            mkdir -p '{GOENV_ROOT}/cache'
+            mkdir -p '{GOENV_ROOT}/shims'
         """,
         )
 
-    def provision_or_update(self, context: Dict = {}):
+    def provision_or_update(self) -> None:
+
         self.update_goenv()
         go_version = check_output(
             f"{self.goenv_latest} --print {self.version}",
             env={
-                "GOENV_ROOT": self.GOENV_ROOT,
-                "PATH": self.GOENV_ROOT + "/bin/:" + os.environ["PATH"],
+                "GOENV_ROOT": GOENV_ROOT,
+                "PATH": GOENV_ROOT + "/bin/:" + os.environ["PATH"],
             },
         )
         self.set_setting("go_version", go_version)
         self._run_script(
             "provision_or_update",
             f"{self.goenv} install --quiet --skip-existing '{go_version}' 2>&1",
-            env={"GOENV_ROOT": self.GOENV_ROOT},
+            env={"GOENV_ROOT": GOENV_ROOT},
         )
         self.garbage_collect_unused_versions()
 
-    def deprovision(self, context: Dict = {}):
+    def deprovision(self) -> None:
         self.delete_setting("go_version")
         self.garbage_collect_unused_versions()
 
-    def garbage_collect_unused_versions(self):
+    def garbage_collect_unused_versions(self) -> None:
         installed_versions = check_output(
             f"{self.goenv} versions --bare --skip-aliases",
-            env={"GOENV_ROOT": self.GOENV_ROOT},
+            env={"GOENV_ROOT": GOENV_ROOT},
         )
         installed_versions = [
             version
@@ -2010,7 +2006,7 @@ class GoAppResource(AppResource):
                 for version in unused_versions
             ]
             self._run_script(
-                "cleanup", "\n".join(cmds), env={"GOENV_ROOT": self.GOENV_ROOT}
+                "cleanup", "\n".join(cmds), env={"GOENV_ROOT": GOENV_ROOT}
             )
 
 
@@ -2042,18 +2038,16 @@ class ComposerAppResource(AppResource):
     """
 
     type = "composer"
-    priority = 100
-    version: str = ""
+    multi = False
 
-    default_properties: Dict[str, Any] = {
-        "version": None,
-    }
+    version: str
+    exposed_properties = ["version"]
 
     @property
-    def composer_url(self):
+    def composer_url(self) -> str:
         return f"https://getcomposer.org/download/{self.version}/composer.phar"
 
-    def provision_or_update(self, context: Dict = {}):
+    def provision_or_update(self) -> None:
         install_dir = self.get_setting("install_dir")
         if not install_dir:
             raise YunohostPackagingError(
@@ -2069,7 +2063,7 @@ class ComposerAppResource(AppResource):
 
         composer_r = requests.get(self.composer_url, timeout=30)
         assert composer_r.status_code == 200, (
-            "Uhoh, failed to download {self.composer_url} ? Return code: {composer_r.status_code}"
+            f"Uhoh, failed to download {self.composer_url} ? Return code: {composer_r.status_code}"
         )
 
         with open(f"{install_dir}/composer.phar", "wb") as f:
@@ -2078,11 +2072,12 @@ class ComposerAppResource(AppResource):
 
         self.set_setting("composer_version", self.version)
 
-    def deprovision(self, context: Dict = {}):
+    def deprovision(self) -> None:
         install_dir = self.get_setting("install_dir")
 
         self.delete_setting("composer_version")
         if os.path.exists(f"{install_dir}/composer.phar"):
             os.remove(f"{install_dir}/composer.phar")
+
 
 AppResourceClassesByType = {c.__fields__["type"].default: c for c in AppResource.__subclasses__()}
