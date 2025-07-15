@@ -70,5 +70,12 @@ class YunohostValidationError(YunohostError):
         return {"error": self.strerror, "error_key": self.key, **self.kwargs}
 
 
+class YunohostPackagingError(YunohostError):
+
+    def __init__(self, *args, **kwargs):
+        kwargs["raw_msg"] = True
+        super().__init__(*args, **kwargs)
+
+
 class YunohostAuthenticationError(MoulinetteAuthenticationError):
     pass

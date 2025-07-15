@@ -70,7 +70,6 @@
     "app_start_remove": "Removing {app}…",
     "app_start_restore": "Restoring {app}…",
     "app_unknown": "Unknown app",
-    "app_uninitialized_variables": "Some variables are not initialized: {vars}",
     "app_unsupported_remote_type": "Unsupported remote type used for the app",
     "app_upgrade_app_name": "Now upgrading {app}…",
     "app_upgrade_bad_quality": "This application is currently flagged as broken on YunoHost's application catalog. This may be a temporary issue while the maintainers attempt to fix the issue. In the meantime, upgrading this app is disabled.",
