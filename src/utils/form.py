@@ -1602,7 +1602,7 @@ class AppOption(BaseChoicesOption):
             apps = [
                 app
                 for app in apps
-                if evaluate_simple_js_expression(values["filter"], context=app)
+                if evaluate_simple_js_expression(values["filter"], context=app)  # type: ignore[arg-type]
             ]
 
         value = {"_none": "---"}
