@@ -687,85 +687,33 @@ class PermissionsResource(AppResource):
     # restore -> handled by the core, should be integrated in there (restore .ldif/yml?)
 
     type = "permissions"
-    priority = 80
+    multi = True
 
-    default_properties: Dict[str, Any] = {}
+    url: str | None = None
+    additional_urls: list[str] = []
+    auth_header: bool = True
+    allowed: str | list[str] | None = None
+    show_tile: bool | None = None  # Automagically set to True by default if an url is defined and show_tile not provided
+    protected: bool = False
 
-    default_perm_properties: Dict[str, Any] = {
-        "url": None,
-        "additional_urls": [],
-        "auth_header": True,
-        "allowed": None,
-        "show_tile": None,  # To be automagically set to True by default if an url is defined and show_tile not provided
-        "protected": False,
-    }
+    exposed_properties = ["url", "additional_urls", "auth_header", "allowed", "show_tile", "protected"]
 
-    permissions: Dict[str, Dict[str, Any]] = {}
-
-    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
         # FIXME : if url != None, we should check that there's indeed a domain/path defined ? ie that app is a webapp
 
-        # Validate packager-provided infos
-        for perm, infos in properties.items():
-            if "auth_header" in infos and not isinstance(
-                infos.get("auth_header"), bool
-            ):
-                raise YunohostPackagingError(
-                    f"In manifest, for permission '{perm}', 'auth_header' should be a boolean"
-                )
-            if "show_tile" in infos and not isinstance(infos.get("show_tile"), bool):
-                raise YunohostPackagingError(
-                    f"In manifest, for permission '{perm}', 'show_tile' should be a boolean"
-                )
-            if "protected" in infos and not isinstance(infos.get("protected"), bool):
-                raise YunohostPackagingError(
-                    f"In manifest, for permission '{perm}', 'protected' should be a boolean"
-                )
-            if "additional_urls" in infos and not isinstance(
-                infos.get("additional_urls"), list
-            ):
-                raise YunohostPackagingError(
-                    f"In manifest, for permission '{perm}', 'additional_urls' should be a list",
-                )
+        if "show_tile" not in kwargs and isinstance(kwargs.get("url"), str):
+            kwargs["show_tile"] = True
 
-        if "main" not in properties:
-            properties["main"] = copy.copy(self.default_perm_properties)
-
-        for perm, infos in properties.items():
-            properties[perm] = copy.copy(self.default_perm_properties)
-            properties[perm].update(infos)
-            if properties[perm]["show_tile"] is None:
-                properties[perm]["show_tile"] = bool(properties[perm]["url"])
-
-        if properties["main"]["url"] is not None and (
-            not isinstance(properties["main"].get("url"), str)
-            or properties["main"]["url"] != "/"
-        ):
+        if kwargs["id"] == "main" and kwargs.get("url") not in [None, "/"]:
             raise YunohostPackagingError(
                 "URL for the 'main' permission should be '/' for webapps (or left undefined for non-webapps). Note that / refers to the install url of the app, i.e $domain.tld/$path/"
             )
 
-        super().__init__({"permissions": properties}, *args, **kwargs)
+        super().__init__(**kwargs)
 
-        from ..app import _get_app_settings, _hydrate_app_template
-
-        settings = _get_app_settings(self.app)
-        for perm, infos in self.permissions.items():
-            if infos.get("url") and "__" in infos.get("url"):  # type: ignore
-                infos["url"] = _hydrate_app_template(infos["url"], settings)
-
-            if infos.get("additional_urls"):
-                infos["additional_urls"] = [
-                    _hydrate_app_template(url, settings)
-                    for url in infos["additional_urls"]
-                ]
-
-    def provision_or_update(self, context: Dict = {}):
-        from ..app import app_ssowatconf
+    def provision_or_update(self) -> None:
         from ..permission import (
-            _sync_permissions_with_ldap,
             permission_create,
-            permission_delete,
             permission_url,
             user_permission_update,
         )
@@ -776,72 +724,72 @@ class PermissionsResource(AppResource):
         # Detect that we're using a full-domain app,
         # in which case we probably need to automagically
         # define the "path" setting with "/"
-        if (
-            isinstance(self.permissions["main"]["url"], str)
-            and self.get_setting("domain")
-            and not self.get_setting("path")
-        ):
+        if self.id == "main" and isinstance(self.url, str) and self.get_setting("domain") and not self.get_setting("path"):
             self.set_setting("path", "/")
 
         existing_perms = list((self.get_setting("_permissions") or {}).keys())
-        for perm in existing_perms:
-            if perm not in self.permissions.keys():
-                permission_delete(f"{self.app}.{perm}", force=True, sync_perm=False)
-
-        for perm, infos in self.permissions.items():
-            perm_id = f"{self.app}.{perm}"
-            if perm not in existing_perms:
-                # Use the 'allowed' key from the manifest,
-                # or use the 'init_{perm}_permission' from the install questions
-                # which is temporarily saved as a setting as an ugly hack to pass the info to this piece of code...
-                init_allowed = (
-                    infos["allowed"]
-                    or self.get_setting(f"init_{perm}_permission")
-                    or []
-                )
-
-                # If we're choosing 'visitors' from the init_{perm}_permission question, add all_users too
-                if not infos["allowed"] and init_allowed == "visitors":
-                    init_allowed = ["visitors", "all_users"]
-
-                permission_create(
-                    perm_id,
-                    allowed=init_allowed,
-                    url=infos["url"],
-                    additional_urls=infos["additional_urls"],
-                    auth_header=infos["auth_header"],
-                    sync_perm=False,
-                )
-                self.delete_setting(f"init_{perm}_permission")
-
-            user_permission_update(
-                perm_id,
-                show_tile=infos["show_tile"],
-                protected=infos["protected"],
-                sync_perm=False,
-                log_success_as_debug=True,
-            )
-            permission_url(
-                perm_id,
-                url=infos["url"],
-                set_url=infos["additional_urls"],
-                auth_header=infos["auth_header"],
-                sync_perm=False,
+        perm_id = f"{self.app}.{self.id}"
+        if self.id not in existing_perms:
+            # Use the 'allowed' key from the manifest,
+            # or use the 'init_{perm}_permission' from the install questions
+            # which is temporarily saved as a setting as an ugly hack to pass the info to this piece of code...
+            init_allowed = (
+                self.allowed
+                or self.get_setting(f"init_{self.id}_permission")
+                or []
             )
 
-        _sync_permissions_with_ldap()
-        app_ssowatconf()
+            # If we're choosing 'visitors' from the init_{perm}_permission question, add all_users too
+            if not self.allowed and init_allowed == "visitors":
+                init_allowed = ["visitors", "all_users"]
 
-    def deprovision(self, context: Dict = {}):
-        from ..app import app_ssowatconf
-        from ..permission import (
-            _sync_permissions_with_ldap,
-            permission_delete,
+            permission_create(
+                perm_id,
+                allowed=init_allowed,
+                url=self.url,
+                additional_urls=self.additional_urls,
+                auth_header=self.auth_header,
+                sync_perm=False,
+            )
+            self.delete_setting(f"init_{self.id}_permission")
+
+        user_permission_update(
+            perm_id,
+            show_tile=self.show_tile,
+            protected=self.protected,
+            sync_perm=False,
+            log_success_as_debug=True,
+        )
+        permission_url(
+            perm_id,
+            url=self.url,
+            set_url=self.additional_urls,
+            auth_header=self.auth_header,
+            sync_perm=False,
         )
 
+    def deprovision(self) -> None:
+        from ..permission import permission_delete
+
         existing_perms = list((self.get_setting("_permissions") or {}).keys())
-        for perm in existing_perms:
-            permission_delete(f"{self.app}.{perm}", force=True, sync_perm=False)
+        if self.id in existing_perms:
+            permission_delete(f"{self.app}.{self.id}", force=True, sync_perm=False)
+
+    @staticmethod
+    def grouped_trigger_after_apply(resources: list[AppResource]) -> None:
+        from ..app import app_ssowatconf
+        from ..permission import _sync_permissions_with_ldap, permission_delete
+
+        # Garbage-collect any perm in setting that may still be there somehow
+        # but was not properly removed
+        if resources:
+            app = resources[0].app
+            existing_perms = list((resources[0].get_setting("_permissions") or {}).keys())
+            processed_perms = [r.id for r in resources]
+            garbage_perms = [p for p in existing_perms if p not in processed_perms and p != "main"]
+            for p in garbage_perms:
+                logger.debug(f"Deleting perm '{app}.{p}' that should not exists ?")
+                permission_delete(f"{app}.{p}", force=True, sync_perm=False)
 
         _sync_permissions_with_ldap()
         app_ssowatconf()
