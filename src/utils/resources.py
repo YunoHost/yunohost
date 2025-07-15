@@ -42,37 +42,46 @@ SOURCES_CACHE_DIR = "/var/tmp/yunohost/download/"
 
 
 class AppResourceManager:
-    def __init__(self, app: str, current: Dict, wanted: Dict, workdir=None):
+
+    def __init__(self, app: str, current: Dict, wanted: Dict, env: dict[str, Any], workdir: str | None = None):
         self.app = app
         self.current = current
         self.wanted = wanted
         self.workdir = workdir
+        self.env = env
 
         if "resources" not in self.current:
             self.current["resources"] = {}
         if "resources" not in self.wanted:
             self.wanted["resources"] = {}
 
+        self.todos = list(self.compute_todos(env))
+
     def apply(
-        self, rollback_and_raise_exception_if_failure, operation_logger=None, **context
-    ):
-        todos = list(self.compute_todos())
+        self,
+        rollback_and_raise_exception_if_failure: bool,
+        operation_logger: "OperationLogger" | None = None
+    ) -> None:
+
         completed = []
         rollback = False
         exception = None
 
-        for todo, name, old, new in todos:
+        for todo, name, old, new in self.todos:
             try:
                 if todo == "deprovision":
                     # FIXME : i18n, better info strings
                     logger.info(f"Deprovisioning {name}...")
-                    old.deprovision(context=context)
+                    assert old
+                    old.deprovision()
                 elif todo == "provision":
                     logger.info(f"Provisioning {name}...")
-                    new.provision_or_update(context=context)
+                    assert new
+                    new.provision_or_update()
                 elif todo == "update":
                     logger.info(f"Updating {name}...")
-                    new.provision_or_update(context=context)
+                    assert new
+                    new.provision_or_update()
             except (KeyboardInterrupt, Exception) as e:
                 exception = e
                 if isinstance(e, KeyboardInterrupt):
@@ -95,13 +104,16 @@ class AppResourceManager:
                     if todo == "deprovision":
                         # FIXME : i18n, better info strings
                         logger.info(f"Reprovisioning {name}...")
-                        old.provision_or_update(context=context)
+                        assert old
+                        old.provision_or_update()
                     elif todo == "provision":
                         logger.info(f"Deprovisioning {name}...")
-                        new.deprovision(context=context)
+                        assert new
+                        new.deprovision()
                     elif todo == "update":
                         logger.info(f"Reverting {name}...")
-                        old.provision_or_update(context=context)
+                        assert old
+                        old.provision_or_update()
                 except (KeyboardInterrupt, Exception) as e:
                     if isinstance(e, KeyboardInterrupt):
                         logger.error(m18n.n("operation_interrupted"))
