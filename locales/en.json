@@ -32,7 +32,6 @@
     "app_config_permission_location": "Corresponds to [{absolute_url}]({absolute_url})",
     "app_config_permission_logo": "Custom logo to use",
     "app_config_permission_logo_help": "Only PNG are supported",
-    "app_config_permission_main_section_name": "Main permission / tile",
     "app_config_permission_show_tile": "Display tile in portal",
     "app_config_unable_to_apply": "Failed to apply config panel values.",
     "app_config_unable_to_read": "Failed to read config panel values.",
