@@ -332,8 +332,8 @@ def test_manifestv2_app_info_preupgrade(monkeypatch):
     install_manifestv2_app(main_domain, "/manifestv2")
     i = app_info("manifestv2_app", full=True)
 
-    assert i["upgradable"] == "yes"
-    assert i["new_version"] == "99999~ynh1"
+    assert i["upgrade"]["status"] == "upgradable"
+    assert i["upgrade"]["new_version"] == "99999~ynh1"
     # FIXME : as I write this test, I realize that this implies the catalog API
     # does provide the notifications, which means the list builder script
     # should parse the files in the original app repo, possibly with proper i18n etc

@@ -758,7 +758,9 @@ def app_upgrade(
     for number, app_instance_name in enumerate(apps):
         logger.info(m18n.n("app_upgrade_app_name", app=app_instance_name))
 
-        app_dict = app_info(app_instance_name, full=True)
+        app_base_id = app_instance_name.split("__")[0]
+        app_current_manifest = _get_manifest_of_app(app)
+        app_current_version_raw = app_current_manifest.get("version", "?"),
 
         if file and isinstance(file, dict):
             # We use this dirty hack to test chained upgrades in unit/functional tests
@@ -767,28 +769,29 @@ def app_upgrade(
             new_app_src = file
         elif url:
             new_app_src = url
-        elif app_dict["upgrade"]["status"] == "url_required":
-            logger.warning(m18n.n("custom_app_url_required", app=app_instance_name))
-            continue
-        elif app_dict["upgrade"]["status"] in ["upgradable", "fail_requirements"] or force:
-            specific_channel = app_dict["upgrade"]["specific_channel"]
-            if specific_channel:
-                assert app_dict["upgrade"]["url"]
-                assert app_dict["upgrade"]["new_revision"]
-                new_app_src = app_dict["upgrade"]["url"] + "/tree/" + app_dict["upgrade"]["new_revision"]
-            else:
-                new_app_src = app_dict["manifest"]["id"]
         else:
-            logger.success(m18n.n("app_already_up_to_date", app=app_instance_name))
-            continue
+            upgrade_infos = _app_upgrade_infos(app_instance_name, current_version=app_current_version_raw)
+            if upgrade_infos["status"] == "url_required":
+                logger.warning(m18n.n("custom_app_url_required", app=app_instance_name))
+                continue
+            elif upgrade_infos["status"] in ["upgradable", "fail_requirements"] or force:
+                specific_channel = upgrade_infos["specific_channel"]
+                if specific_channel:
+                    assert upgrade_infos["url"]
+                    assert upgrade_infos["new_revision"]
+                    new_app_src = upgrade_infos["url"] + "/tree/" + upgrade_infos["new_revision"]
+                else:
+                    new_app_src = app_base_id
+            else:
+                logger.success(m18n.n("app_already_up_to_date", app=app_instance_name))
+                continue
 
-        manifest, extracted_app_folder = _extract_app(new_app_src)
+        app_new_manifest, extracted_app_folder = _extract_app(new_app_src)
 
         # Manage upgrade type and avoid any upgrade if there is nothing to do
         upgrade_type = "UNKNOWN"
         # Get current_version and new version
         app_new_version_raw = manifest.get("version", "?")
-        app_current_version_raw = app_dict.get("version", "?")
         app_new_version = _parse_app_version(app_new_version_raw)
         app_current_version = _parse_app_version(app_current_version_raw)
         if "~ynh" in str(app_current_version_raw) and "~ynh" in str(
@@ -817,7 +820,7 @@ def app_upgrade(
         # Check requirements
         failed_requirements = {
             r["id"]: r
-            for r in _check_manifest_requirements(manifest, action="upgrade", app=app_instance_name)
+            for r in _check_manifest_requirements(app_new_manifest, action="upgrade", app=app_instance_name)
             if not r["passed"]
         }
         for id_, check in failed_requirements.items():
@@ -832,18 +835,18 @@ def app_upgrade(
 
         # Display pre-upgrade notifications and ask for simple confirm
         if (
-            manifest["notifications"]["PRE_UPGRADE"]
+            app_new_manifest["notifications"]["PRE_UPGRADE"]
             and Moulinette.interface.type == "cli"
         ):
             settings = _get_app_settings(app_instance_name)
             notifications = _filter_and_hydrate_notifications(
-                manifest["notifications"]["PRE_UPGRADE"],
+                app_new_manifest["notifications"]["PRE_UPGRADE"],
                 current_version=app_current_version_raw,
                 data=settings,
             )
             _display_notifications(notifications, force=force)
 
-        if manifest["packaging_format"] >= 2:
+        if app_new_manifest["packaging_format"] >= 2:
             if no_safety_backup:
                 # FIXME: i18n
                 logger.warning(
@@ -883,7 +886,7 @@ def app_upgrade(
                         raw_msg=True,
                     )
 
-        _assert_system_is_sane_for_app(manifest, "pre")
+        _assert_system_is_sane_for_app(app_new_manifest, "pre")
 
         # We'll check that the app didn't brutally edit some system configuration
         manually_modified_files_before_install = manually_modified_files()
@@ -902,7 +905,7 @@ def app_upgrade(
             "YNH_APP_CURRENT_VERSION": str(app_current_version_raw),
         }
 
-        if manifest["packaging_format"] < 2:
+        if app_new_manifest["packaging_format"] < 2:
             env_dict_more["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
 
         env_dict.update(env_dict_more)
@@ -914,13 +917,13 @@ def app_upgrade(
 
         hook_callback("pre_app_upgrade", env=env_dict)
 
-        if manifest["packaging_format"] >= 2:
+        if app_new_manifest["packaging_format"] >= 2:
             from .utils.resources import AppResourceManager
 
             AppResourceManager(
                 app_instance_name,
-                wanted=manifest,
-                current=app_dict["manifest"],
+                wanted=app_new_manifest,
+                current=app_current_manifest,
                 workdir=extracted_app_folder,
             ).apply(
                 rollback_and_raise_exception_if_failure=True,
@@ -958,7 +961,7 @@ def app_upgrade(
             # If upgrade failed, try to restore the safety backup
             if (
                 upgrade_failed
-                and manifest["packaging_format"] >= 2
+                and app_new_manifest["packaging_format"] >= 2
                 and not no_safety_backup
             ):
                 logger.warning(
@@ -978,7 +981,7 @@ def app_upgrade(
             # and warn the user about it
             try:
                 broke_the_system = False
-                _assert_system_is_sane_for_app(manifest, "post")
+                _assert_system_is_sane_for_app(app_new_manifest, "post")
             except Exception as e:
                 broke_the_system = True
                 logger.error(
@@ -1004,7 +1007,7 @@ def app_upgrade(
                 app_setting(
                     app_instance_name,
                     "current_revision",
-                    manifest.get("remote", {}).get("revision", "?"),
+                    app_new_manifest.get("remote", {}).get("revision", "?"),
                 )
 
                 # Clean hooks and add new ones
@@ -1089,11 +1092,11 @@ def app_upgrade(
             logger.success(m18n.n("app_upgraded", app=app_instance_name))
 
             # Format post-upgrade notifications
-            if manifest["notifications"]["POST_UPGRADE"]:
+            if app_new_manifest["notifications"]["POST_UPGRADE"]:
                 # Get updated settings to hydrate notifications
                 settings = _get_app_settings(app_instance_name)
                 notifications = _filter_and_hydrate_notifications(
-                    manifest["notifications"]["POST_UPGRADE"],
+                    app_new_manifest["notifications"]["POST_UPGRADE"],
                     current_version=app_current_version_raw,
                     data=settings,
                 )
