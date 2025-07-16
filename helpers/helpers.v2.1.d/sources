@@ -241,7 +241,7 @@ ynh_setup_source() {
             ynh_die "ZSTD format does not support stripping components. (You should set in_subdir = false for this source)"
         fi
         if [[ -n "$src_rename" ]]; then
-            unzstd "$src_filename" -o "$dest_dir/$src_rename"
+            unzstd "$src_filename" -o "$dest_dir/$src_rename" -f
         else
             ynh_die "ZSTD format requires renaming. (You should set rename = \"your_name\" for this source)"
         fi
