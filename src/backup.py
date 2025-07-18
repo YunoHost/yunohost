@@ -45,7 +45,8 @@ from moulinette.utils.process import check_output
 from moulinette.utils.text import random_ascii
 from packaging import version
 
-import yunohost.domain
+from . import domain
+
 from .app import (
     _get_manifest_of_app,
     _is_installed,
@@ -64,7 +65,7 @@ from .hook import (
     hook_list,
     hook_remove,
 )
-from .log import OperationLogger, is_unit_operation, is_flash_unit_operation
+from .log import OperationLogger, is_flash_unit_operation, is_unit_operation
 from .regenconf import regen_conf
 from .tools import (
     _tools_migrations_run_after_system_restore,
@@ -1264,7 +1265,7 @@ class RestoreManager:
         else:
             operation_logger.success()
 
-        yunohost.domain.domain_list_cache = {}
+        domain.domain_list_cache = {}
 
         regen_conf()
 

@@ -26,12 +26,12 @@ import random
 import re
 import subprocess
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Callable, TextIO, BinaryIO, Union, cast, Literal
+from typing import TYPE_CHECKING, Any, BinaryIO, Callable, Literal, TextIO, Union, cast
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.process import check_output
 
-from .log import is_unit_operation, is_flash_unit_operation
+from .log import is_flash_unit_operation, is_unit_operation
 from .service import service_status
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.system import binary_to_human
@@ -111,7 +111,7 @@ def user_list(fields: list[str] | None = None) -> dict[str, dict[str, Any]]:
         if field in ldap_attrs:
             attrs.add(ldap_attrs[field])
         else:
-            raise YunohostError("field_invalid", field)
+            raise YunohostError("field_invalid", field=field)
 
     ldap = _get_ldap_interface()
     result = ldap.search(
@@ -1513,8 +1513,7 @@ def user_permission_update(
     hide_from_public: bool | None = None,
     order: int | None = None,
 ) -> dict[str, Any]:
-
-    from .app import _assert_is_installed, app_ssowatconf, app_setting
+    from .app import _assert_is_installed, app_setting, app_ssowatconf
     from .permission import _update_app_permission_setting
 
     # By default, manipulate main permission

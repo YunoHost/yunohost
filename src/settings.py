@@ -21,7 +21,7 @@
 import os
 import subprocess
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Union, Callable
+from typing import TYPE_CHECKING, Any, Callable, Union
 
 from moulinette import m18n
 
@@ -357,7 +357,6 @@ def reconfigure_postfix(setting_name, old_value, new_value):
 
 @post_change_hook("pop3_enabled")
 def reconfigure_dovecot(setting_name, old_value, new_value):
-
     environment = os.environ.copy()
     environment.update({"DEBIAN_FRONTEND": "noninteractive"})
 

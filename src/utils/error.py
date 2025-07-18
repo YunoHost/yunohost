@@ -18,6 +18,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+from typing import Any
+
 from moulinette import m18n
 from moulinette.core import MoulinetteAuthenticationError, MoulinetteError
 
@@ -33,8 +35,14 @@ class YunohostError(MoulinetteError):
     """
 
     def __init__(
-        self, key, raw_msg=False, log_ref=None, error_details=None, *args, **kwargs
-    ):
+        self,
+        key: str | dict[str, str],
+        raw_msg: bool = False,
+        log_ref: str | None = None,
+        error_details: str | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         self.key = key  # Saving the key is useful for unit testing
         self.kwargs = kwargs  # Saving the key is useful for unit testing
         self.log_ref = log_ref

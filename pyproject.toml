@@ -11,22 +11,24 @@ requires-python = ">=3.11"
 
 # These dependencies might not be up to date, please see debian/control instead
 dependencies = [
+    "bottle",
     "cryptography",
-    "dbus-python",
+    # "dbus-python",
     "dnspython",
     "email-validator",
     "jinja2",
-    "jwt",
+    "pyjwt>=1.7,<2.0",
     "lexicon",
     "miniupnpc",
     "packaging",
     "passlib",
     "psutil",
     "publicsuffix2",
-    "pydantic",
+    "pydantic>=1.0,<2.0",
     "pyopenssl",
-    "python-ldap",
+    # "python-ldap",
     "python-magic",
+    "pyyaml",
     "requests",
     "sdbus",
     "sortedcollections",
@@ -35,9 +37,17 @@ dependencies = [
     "zmq",
 ]
 
+[dependency-groups]
+tests = [
+    "mypy",
+    "types-passlib",
+    "types-psutil",
+    "types-pyOpenSSL",
+    "types-pyYAML",
+    "types-requests",
+]
 
 [tool.mypy]
-ignore_missing_imports = true
 follow_imports = "silent"
 exclude = [
     "acme_tiny",
@@ -45,6 +55,20 @@ exclude = [
     "tests"
 ]
 
+[[tool.mypy.overrides]]
+# We don't provide (yet) typing in moulinette
+module = "moulinette.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Those are the public, external modules that don't provide typing
+module = ["jwt", "sortedcollections", "IPython", "ldap.*", "dbus", "sdbus.*",
+    "psutil", "bottle", "miniupnpc", "lexicon.*", "publicsuffix2"]
+ignore_missing_imports = true
+
+
+[tool.isort]
+profile = "black"
 
 [tool.black]
 
@@ -77,43 +101,43 @@ source = ["src/"]
 
 [tool.coverage.report]
 omit = [
-    "src/tests/*",
     "src/vendor/*",
     "/usr/lib/moulinette/yunohost/*",
-    "/usr/lib/python3/dist-packages/yunohost/tests/*",
     "/usr/lib/python3/dist-packages/yunohost/vendor/*",
 ]
 
 
 [tool.tox]
-env_list = ["py312-lint", "py312-invalidcode", "py312-black-check", "py312-black-run"]
+env_list = ["py313-lint", "py313-invalidcode", "py313-black-check", "py313-black-run"]
 
 [tool.tox.env_run_base]
 skip_install = true
 allowlist_externals = ["black"]
 
-[tool.tox.env.py312-lint]
+[tool.tox.env.py313-lint]
 deps = ["flake8"]
 commands = [[
-    "flake8", "src", "doc", "maintenance", "tests",
-    "--exclude", "src/tests,src/vendor", "--ignore", "E402,E501,E203,W503,E741"
+    "flake8", "src", "doc", "maintenance",
+    "--ignore", "E402,E501,E203,W503,E741"
 ]]
 
-[tool.tox.env.py312-invalidcode]
+[tool.tox.env.py313-invalidcode]
 deps = ["flake8"]
 commands = [[
     "flake8", "src", "bin", "maintenance",
-    "--exclude", "src/tests,src/vendor", "--select", "F,E722,W605"
+    "--select", "F,E722,W605"
 ]]
 
-[tool.tox.env.py312-mypy]
+[tool.tox.env.py313-mypy]
+skip_install = false
 deps = ["mypy>=0.900"]
+dependency_groups = ["tests"]
 commands = [["mypy", "--install-types", "--non-interactive", "src/",]]
 
-[tool.tox.env.py312-black-check]
+[tool.tox.env.py313-black-check]
 deps = ["flake8"]
 commands = [["black", "bin", "src", "doc", "maintenance", "tests", "--check", "--diff"]]
 
-[tool.tox.env.py312-black-run]
+[tool.tox.env.py313-black-run]
 deps = ["black"]
 commands = [["black", "bin", "src", "doc", "maintenance", "tests"]]

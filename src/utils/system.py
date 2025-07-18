@@ -229,7 +229,6 @@ def _dump_sources_list():
 
 
 def aptitude_with_progress_bar(cmd):
-
     from moulinette.utils.process import call_async_output
 
     msg_to_verb = {
@@ -251,7 +250,6 @@ def aptitude_with_progress_bar(cmd):
         disable_progress_bar = True
 
     def log_apt_status_to_progress_bar(data):
-
         if disable_progress_bar:
             return
 

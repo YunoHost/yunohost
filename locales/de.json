@@ -46,7 +46,7 @@
     "dyndns_ip_updated": "Deine IP-Adresse wurde bei DynDNS aktualisiert",
     "dyndns_unavailable": "Die Domäne {domain} ist nicht verfügbar.",
     "extracting": "Wird entpackt…",
-    "field_invalid": "Feld '{}' ist unbekannt",
+    "field_invalid": "Feld '{field}' ist unbekannt",
     "firewall_reload_failed": "Firewall konnte nicht neu geladen werden. Mehr Informationen im Log.",
     "firewall_reloaded": "Firewall neu geladen",
     "hook_exec_failed": "Konnte Skript nicht ausführen: {path}",

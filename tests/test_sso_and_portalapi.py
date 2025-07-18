@@ -70,7 +70,6 @@ def teardown_function(function):
 
 
 def setup_module(module):
-
     assert os.system("systemctl is-active yunohost-portal-api >/dev/null") == 0
 
     if "alice" not in user_list()["users"]:
@@ -102,7 +101,6 @@ def teardown_module(module):
 
 
 def login(session, logged_as, logged_on=None):
-
     if not logged_on:
         logged_on = maindomain
 
@@ -164,7 +162,6 @@ def request(webpath, logged_as=None, session=None, inject_auth=None, logged_on=N
 
 
 def test_api_public_as_anonymous():
-
     # FIXME : should list apps only if the domain option is enabled
 
     r = request(f"https://{maindomain}/yunohost/portalapi/public")
@@ -172,13 +169,11 @@ def test_api_public_as_anonymous():
 
 
 def test_api_me_as_anonymous():
-
     r = request(f"https://{maindomain}/yunohost/portalapi/me")
     assert r.status_code == 401
 
 
 def test_api_login_and_logout():
-
     with requests.Session() as session:
         r = login(session, "alice")
 
@@ -193,7 +188,6 @@ def test_api_login_and_logout():
 
 
 def test_api_login_nonexistinguser():
-
     with requests.Session() as session:
         r = login(session, "nonexistent")
 
@@ -201,7 +195,6 @@ def test_api_login_nonexistinguser():
 
 
 def test_api_public_and_me_logged_in():
-
     r = request(f"https://{maindomain}/yunohost/portalapi/public", logged_as="alice")
     assert r.status_code == 200 and "apps" in r.json()
     r = request(f"https://{maindomain}/yunohost/portalapi/me", logged_as="alice")
@@ -211,7 +204,6 @@ def test_api_public_and_me_logged_in():
 
 
 def test_api_session_expired():
-
     with requests.Session() as session:
         r = login(session, "alice")
 
@@ -230,7 +222,6 @@ def test_api_session_expired():
 
 
 def test_public_routes_not_blocked_by_ssowat():
-
     r = request(f"https://{maindomain}/yunohost/api/whatever")
     # Getting code 405, Method not allowed, which means the API does answer,
     # meaning it's not blocked by ssowat
@@ -247,7 +238,6 @@ def test_public_routes_not_blocked_by_ssowat():
 
 
 def test_permission_propagation_on_ssowat():
-
     res = user_permission_list(full=True)["permissions"]
     assert "visitors" in res["hellopy.main"]["allowed"]
     assert "all_users" in res["hellopy.main"]["allowed"]
@@ -276,7 +266,6 @@ def test_permission_propagation_on_ssowat():
 
 
 def test_login_right_depending_on_app_access_and_mail():
-
     r = request(f"https://{maindomain}/", logged_as="bob")
     assert r.status_code == 200 and r.content.decode().strip() == "Hello world!"
 
@@ -307,7 +296,6 @@ def test_login_right_depending_on_app_access_and_mail():
 
 
 def test_sso_basic_auth_header():
-
     r = request(f"https://{maindomain}/show-auth")
     assert (
         r.status_code == 200 and r.content.decode().strip() == "User: None\nPwd: None"
@@ -327,7 +315,6 @@ def test_sso_basic_auth_header():
 
 
 def test_sso_basic_auth_header_spoofing():
-
     r = request(f"https://{maindomain}/show-auth")
     assert (
         r.status_code == 200 and r.content.decode().strip() == "User: None\nPwd: None"
@@ -346,7 +333,6 @@ def test_sso_basic_auth_header_spoofing():
 
 
 def test_sso_on_subdomain():
-
     if subdomain not in domain_list()["domains"]:
         domain_add(subdomain)
 
@@ -363,7 +349,6 @@ def test_sso_on_subdomain():
 
 
 def test_sso_on_secondary_domain():
-
     if secondarydomain not in domain_list()["domains"]:
         domain_add(secondarydomain)
 

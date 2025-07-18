@@ -288,7 +288,6 @@ def tools_postinstall(
 def tools_regen_conf(
     names=[], with_diff=False, force=False, dry_run=False, list_pending=False
 ):
-
     from .regenconf import regen_conf
 
     if (names == [] or "nftables" in names) and tools_migrations_state()[
@@ -857,9 +856,9 @@ def _get_migration_by_name(migration_name):
         if re.match(r"^\d+_%s\.py$" % migration_name, x)
     ]
 
-    assert (
-        len(migrations_found) == 1
-    ), f"Unable to find migration with name {migration_name}"
+    assert len(migrations_found) == 1, (
+        f"Unable to find migration with name {migration_name}"
+    )
 
     return _load_migration(migrations_found[0])
 
@@ -954,9 +953,9 @@ class Migration:
     # Those are to be implemented by daughter classes
 
     mode = "auto"
-    dependencies: list[str] = (
-        []
-    )  # List of migration ids required before running this migration
+    dependencies: list[
+        str
+    ] = []  # List of migration ids required before running this migration
 
     @property
     def disclaimer(self):

@@ -465,7 +465,7 @@
     "dyndns_unsubscribe_failed": "Could not unsubscribe DynDNS domain: {error}",
     "dyndns_unsubscribed": "DynDNS domain unsubscribed",
     "extracting": "Extracting…",
-    "field_invalid": "Invalid field '{}'",
+    "field_invalid": "Invalid field '{field}'",
     "file_does_not_exist": "The file {path} does not exist.",
     "firewall_reload_failed": "Could not reload the firewall. More info in log.",
     "firewall_reloaded": "Firewall reloaded",

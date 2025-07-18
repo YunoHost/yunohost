@@ -371,6 +371,7 @@ def dyndns_update(
     import dns.tsig
     import dns.tsigkeyring
     import dns.update
+
     from .dns import _build_dns_conf
 
     # If domain is not given, update all DynDNS domains

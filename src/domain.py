@@ -44,7 +44,7 @@ from .utils.error import YunohostError, YunohostValidationError
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
-    from .utils.configpanel import RawConfig, RawSettings, ConfigPanelModel
+    from .utils.configpanel import ConfigPanelModel, RawConfig, RawSettings
     from .utils.form import FormModel
 
 logger = getLogger("yunohost.domain")
@@ -109,12 +109,10 @@ def _get_domains(exclude_subdomains=False):
 
 
 def _get_domain_portal_dict():
-
     domains = _get_domains()
     out = OrderedDict()
 
     for domain in domains:
-
         parent = None
 
         # Use the topest parent domain if any
@@ -467,7 +465,7 @@ def domain_remove(
                 (
                     app,
                     (
-                        f"    - {app} \"{label}\" on https://{domain}{settings['path']}"
+                        f'    - {app} "{label}" on https://{domain}{settings["path"]}'
                         if "path" in settings
                         else app
                     ),

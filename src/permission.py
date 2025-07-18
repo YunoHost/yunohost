@@ -20,14 +20,15 @@
 
 import copy
 import grp
+import os
 import random
 import re
-import os
 from logging import getLogger
-from typing import TYPE_CHECKING, BinaryIO, Literal, TypedDict, NotRequired, cast
+from typing import TYPE_CHECKING, BinaryIO, Literal, NotRequired, TypedDict, cast
 
 from moulinette import m18n
 from moulinette.utils.filesystem import read_yaml, write_to_yaml
+
 from .utils.error import YunohostError, YunohostValidationError
 
 if TYPE_CHECKING:
@@ -83,7 +84,7 @@ def user_permission_list(
     """
 
     # Fetch relevant informations
-    from .app import _installed_apps, _get_app_settings
+    from .app import _get_app_settings, _installed_apps
     from .user import user_group_list
 
     # Parse / organize information to be outputed
@@ -210,8 +211,8 @@ def user_permission_update(
         protected      -- (optional) Define if the permission can be added/removed to the visitor group
         force          -- (optional) Give the possibility to add/remove access from the visitor group to a protected permission
     """
-    from .user import user_group_list
     from .app import app_ssowatconf
+    from .user import user_group_list
 
     # By default, manipulate main permission
     if "." not in permission:
@@ -421,9 +422,9 @@ def permission_create(
         if group not in all_existing_groups:
             raise YunohostValidationError("group_unknown", group=group)
 
-    assert _is_installed(
-        app
-    ), f"'{app}' is not a currently installed app, can not create perm {permission}"
+    assert _is_installed(app), (
+        f"'{app}' is not a currently installed app, can not create perm {permission}"
+    )
 
     permission_url(
         permission,
@@ -500,7 +501,6 @@ def permission_url(
     existing_permission = existing_permission[sub_permission]
 
     if url is not None:
-
         url = _validate_and_sanitize_permission_url(url, app_main_path, app)
         update_settings["url"] = url
         assert url
@@ -573,7 +573,7 @@ def permission_url(
 def permission_delete(
     permission: str, force: bool = False, sync_perm: bool = True
 ) -> None:
-    from .app import app_setting, _assert_is_installed, app_ssowatconf
+    from .app import _assert_is_installed, app_setting, app_ssowatconf
 
     # By default, manipulate main permission
     if "." not in permission:
@@ -632,7 +632,7 @@ def _sync_permissions_with_ldap() -> None:
 
     for perm in permissions_current.keys():
         if perm not in permissions_wanted:
-            todos_delete.append(perm)  # type: ignore
+            todos_delete.append(perm)
     for perm, members_wanted in permissions_wanted.items():
         if perm not in permissions_current:
             todos_create[perm] = members_wanted
@@ -748,9 +748,9 @@ def _update_app_permission_setting(
             del perm_settings[sub_permission]["logo_hash"]
 
     elif logo is not None:
-
-        from .app import APPS_CATALOG_LOGOS
         import hashlib
+
+        from .app_catalog import APPS_CATALOG_LOGOS
 
         logo_content = logo.read()
         if not logo_content.startswith(b"\x89PNG\r\n\x1a\n"):
@@ -850,9 +850,9 @@ def _update_app_permission_setting(
 def _get_system_perms() -> dict[str, SystemPermInfos]:
     try:
         system_perm_conf = read_yaml(SYSTEM_PERM_CONF) or {}
-        assert isinstance(
-            system_perm_conf, dict
-        ), "Uhoh, the system perm conf read is not a dict ?!"
+        assert isinstance(system_perm_conf, dict), (
+            "Uhoh, the system perm conf read is not a dict ?!"
+        )
     except Exception as e:
         logger.warning(f"Failed to read system perm configuration ? : {e}")
         system_perm_conf = {}
@@ -881,7 +881,6 @@ def _get_system_perms() -> dict[str, SystemPermInfos]:
 
 
 def _set_system_perms(system_perm_conf: dict[str, SystemPermInfos]) -> None:
-
     # We actually only write the 'allowed' groups info
     conf_to_write = {
         p: {"allowed": infos["allowed"]} for p, infos in system_perm_conf.items()

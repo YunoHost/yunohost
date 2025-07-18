@@ -261,7 +261,7 @@
     "diagnosis_http_bad_status_code": "Semella que outra máquina (podería ser o rúter de internet) respondeu no lugar do teu servidor.<br>1. A razón máis habitual para este problema é que o porto 80 (e 443) <a href='https://yunohost.org/isp_box_config'>non están correctamente redirixidos ao teu servidor</a>.<br>2. En configuracións avanzadas: revisa que nin o cortalumes nin o proxy-inverso están interferindo.",
     "diagnosis_http_connection_error": "Erro de conexión: non se puido conectar co dominio solicitado, moi probablemente non sexa accesible.",
     "diagnosis_http_timeout": "Caducou a conexión mentras se intentaba contactar o servidor desde o exterior. Non semella accesible.<br>1. A razón máis habitual é que o porto 80 (e 443) <a href='https://yunohost.org/isp_box_config'>non están correctamente redirixidos ao teu servidor</a>.<br>2. Deberías comprobar tamén que o servizo nginx está a funcionar<br>3. En configuracións máis avanzadas: revisa que nin o cortalumes nin o proxy-inverso están interferindo.",
-    "field_invalid": "Campo non válido '{}'",
+    "field_invalid": "Campo non válido '{field}'",
     "extracting": "A extraer…",
     "dyndns_unavailable": "O dominio '{domain}' non está dispoñible.",
     "dyndns_domain_not_provided": "O provedor DynDNS {provider} non pode proporcionar o dominio {domain}.",

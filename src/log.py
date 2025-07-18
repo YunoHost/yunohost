@@ -24,9 +24,9 @@ import os
 import re
 import time
 from datetime import datetime, timedelta
-from logging import FileHandler, getLogger, Formatter, INFO
 from io import IOBase
-from typing import List, Any
+from logging import INFO, FileHandler, Formatter, getLogger
+from typing import Any, List
 
 import psutil
 import yaml
@@ -83,7 +83,6 @@ BORING_LOG_LINES = [
 
 
 def _update_log_cache_symlinks():
-
     one_year_ago = time.time() - 365 * 24 * 3600
 
     logs = glob.iglob(OPERATIONS_PATH + "*.yml")
@@ -472,7 +471,6 @@ def is_unit_operation(
         func: Callable[Concatenate["OperationLogger", Param], RetType],
     ) -> Callable[Param, RetType]:
         def func_wrapper(*args, **kwargs):
-
             # If the function is called directly from an other part of the code
             # and not by the moulinette framework, we need to complete kwargs
             # dictionnary with the args list.

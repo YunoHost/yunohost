@@ -543,12 +543,12 @@ class ConfigPanel:
 
         for panel in self.config.panels:
             for section in panel.sections:
-                if section.is_action_section and mode != "full":
+                if section.is_action_section and mode != "full":  # type: ignore
                     continue
 
                 for option in section.options:
                     # FIXME not sure why option resolves as possibly `None`
-                    option = cast(AnyOption, option)
+                    option = cast(AnyOption, option)  # type: ignore
 
                     if mode == "export":
                         if isinstance(option, BaseInputOption):
@@ -564,9 +564,9 @@ class ConfigPanel:
                                 self.form[option.id], option
                             )
                             if option.type is OptionType.password:
-                                result[key][
-                                    "value"
-                                ] = "**************"  # Prevent displaying password in `config get`
+                                result[key]["value"] = (
+                                    "**************"  # Prevent displaying password in `config get`
+                                )
 
         return result
 
@@ -933,7 +933,7 @@ class ConfigPanel:
         # get settings keys filtered by filter_key
         partial_settings_keys = form.model_fields.keys()
         # get filtered settings
-        partial_settings = form.model_dump(exclude_defaults=exclude_defaults, exclude=exclude)  # type: ignore
+        partial_settings = form.model_dump(exclude_defaults=exclude_defaults, exclude=exclude)
         # get previous settings that we will updated with new settings
         current_settings = self.raw_settings.copy()
 

@@ -68,7 +68,7 @@
     "dyndns_no_domain_registered": "Nessuno dominio registrato con DynDNS",
     "dyndns_unavailable": "Il dominio {domain} non disponibile.",
     "extracting": "Estrazione…",
-    "field_invalid": "Campo '{}' non valido",
+    "field_invalid": "Campo '{field}' non valido",
     "firewall_reload_failed": "Impossibile ricaricare il firewall. Per ulteriori informazioni, vedi il registro.",
     "firewall_reloaded": "Firewall ricaricato",
     "hook_exec_failed": "Impossibile eseguire lo script: {path}",

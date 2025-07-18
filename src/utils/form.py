@@ -377,9 +377,7 @@ class BaseOption(BaseModel):
 
     type: OptionType
     id: str
-    mode: Mode = (
-        "bash"  # TODO use "python" as default mode with AppConfigPanel setuping it to "bash"
-    )
+    mode: Mode = "bash"  # TODO use "python" as default mode with AppConfigPanel setuping it to "bash"
     ask: Translation | None = None
     readonly: bool = False
     visible: JSExpression | bool = True
@@ -1046,7 +1044,7 @@ class BooleanOption(BaseInputOption):
     yes: Any = 1
     no: Any = 0
     default: bool | int | str | None = 0
-    _annotation = bool | int | str
+    _annotation = bool | int | str  # type: ignore
     _yes_answers: ClassVar[set[str]] = {"1", "yes", "y", "true", "t", "on"}
     _no_answers: ClassVar[set[str]] = {"0", "no", "n", "false", "f", "off"}
     _none_as_empty_str = False
@@ -1087,12 +1085,12 @@ class BooleanOption(BaseInputOption):
         no_answers = BooleanOption._no_answers
         yes_answers = BooleanOption._yes_answers
 
-        assert (
-            str(technical_yes).lower() not in no_answers
-        ), f"'yes' value can't be in {no_answers}"
-        assert (
-            str(technical_no).lower() not in yes_answers
-        ), f"'no' value can't be in {yes_answers}"
+        assert str(technical_yes).lower() not in no_answers, (
+            f"'yes' value can't be in {no_answers}"
+        )
+        assert str(technical_no).lower() not in yes_answers, (
+            f"'no' value can't be in {yes_answers}"
+        )
 
         no_answers.add(str(technical_no).lower())
         yes_answers.add(str(technical_yes).lower())
@@ -1520,9 +1518,10 @@ class BaseChoicesOption(BaseInputOption):
 
     @property
     def _dynamic_annotation(self) -> object | Type[str]:
-        if self.choices:
+        # The bunch of type: ignore is because self.choices is not defined...
+        if self.choices is not None:  # type: ignore
             choices = (
-                self.choices if isinstance(self.choices, list) else self.choices.keys()
+                self.choices if isinstance(self.choices, list) else self.choices.keys()  # type: ignore
             )
             return Literal[tuple(choices)]
 
@@ -1532,18 +1531,18 @@ class BaseChoicesOption(BaseInputOption):
         message = super()._get_prompt_message(value)
 
         if self.readonly:
-            if isinstance(self.choices, dict) and value is not None:
-                value = self.choices[value]
+            if isinstance(self.choices, dict) and value is not None:  # type: ignore
+                value = self.choices[value]  # type: ignore
 
             return f"{colorize(message, 'purple')} {value}"
 
-        if self.choices:
+        if self.choices:  # type: ignore
             # Prevent displaying a shitload of choices
             # (e.g. 100+ available users when choosing an app admin...)
             choices = (
-                list(self.choices.keys())
-                if isinstance(self.choices, dict)
-                else self.choices
+                list(self.choices.keys())  # type: ignore
+                if isinstance(self.choices, dict)  # type: ignore
+                else self.choices  # type: ignore
             )
             splitted_choices = choices[:20]
             remaining_choices = len(choices[20:])
@@ -2167,7 +2166,6 @@ def prompt_or_validate_form(
     hooks: Hooks = {},
 ) -> FormModel:
     for option in options:
-
         interactive = Moulinette.interface.type == "cli" and os.isatty(1)
 
         if isinstance(option, ButtonOption):
