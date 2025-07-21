@@ -585,6 +585,7 @@
     "log_app_makedefault": "Make '{}' the default app",
     "log_app_remove": "Remove the '{}' app",
     "log_app_upgrade": "Upgrade the '{}' app",
+    "log_app_script_or_snippet": "Run script of snippet for '{}' app",
     "log_available_on_yunopaste": "This log is now available via {url}",
     "log_backup_create": "Create a backup archive",
     "log_backup_restore_app": "Restore '{}' from a backup archive",
