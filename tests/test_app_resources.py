@@ -33,26 +33,30 @@ from yunohost.utils.resources import (
     AppResource,
     AppResourceClassesByType,
     AppResourceManager,
+    N_INSTALL_DIR,
+    RBENV_ROOT,
+    GOENV_ROOT,
 )
 
 dummyfile = "/tmp/dummyappresource-testapp"
+env = {"YNH_HELPERS_VERSION": 2.1, "app": "testapp"}
 
 
 class DummyAppResource(AppResource):
     type = "dummy"
 
-    default_properties = {
-        "file": "/tmp/dummyappresource-__APP__",
-        "content": "foo",
-    }
+    file: str = "/tmp/dummyappresource-__APP__"
+    content: str = "foo"
 
-    def provision_or_update(self, context):
+    exposed_properties: list[str] = ["file", "content"]
+
+    def provision_or_update(self):
         open(self.file, "w").write(self.content)
 
         if self.content == "forbiddenvalue":
             raise Exception("Emeged you used the forbidden value!1!£&")
 
-    def deprovision(self, context):
+    def deprovision(self):
         os.system(f"rm -f {self.file}")
 
 
@@ -94,7 +98,7 @@ def test_provision_dummy():
     wanted = {"resources": {"dummy": {}}}
 
     assert not os.path.exists(dummyfile)
-    AppResourceManager("testapp", current=current, wanted=wanted).apply(
+    AppResourceManager("testapp", current=current, wanted=wanted, env=env).apply(
         rollback_and_raise_exception_if_failure=False
     )
     assert open(dummyfile).read().strip() == "foo"
@@ -107,7 +111,7 @@ def test_deprovision_dummy():
     open(dummyfile, "w").write("foo")
 
     assert open(dummyfile).read().strip() == "foo"
-    AppResourceManager("testapp", current=current, wanted=wanted).apply(
+    AppResourceManager("testapp", current=current, wanted=wanted, env=env).apply(
         rollback_and_raise_exception_if_failure=False
     )
     assert not os.path.exists(dummyfile)
@@ -118,7 +122,7 @@ def test_provision_dummy_nondefaultvalue():
     wanted = {"resources": {"dummy": {"content": "bar"}}}
 
     assert not os.path.exists(dummyfile)
-    AppResourceManager("testapp", current=current, wanted=wanted).apply(
+    AppResourceManager("testapp", current=current, wanted=wanted, env=env).apply(
         rollback_and_raise_exception_if_failure=False
     )
     assert open(dummyfile).read().strip() == "bar"
@@ -131,7 +135,7 @@ def test_update_dummy():
     open(dummyfile, "w").write("foo")
 
     assert open(dummyfile).read().strip() == "foo"
-    AppResourceManager("testapp", current=current, wanted=wanted).apply(
+    AppResourceManager("testapp", current=current, wanted=wanted, env=env).apply(
         rollback_and_raise_exception_if_failure=False
     )
     assert open(dummyfile).read().strip() == "bar"
@@ -145,7 +149,7 @@ def test_update_dummy_failwithrollback():
 
     assert open(dummyfile).read().strip() == "foo"
     with pytest.raises(Exception):
-        AppResourceManager("testapp", current=current, wanted=wanted).apply(
+        AppResourceManager("testapp", current=current, wanted=wanted, env=env).apply(
             rollback_and_raise_exception_if_failure=True
         )
     assert open(dummyfile).read().strip() == "foo"
@@ -158,25 +162,28 @@ def test_resource_system_user():
 
     assert os.system("getent passwd testapp 2>/dev/null") != 0
 
-    r(conf, "testapp").provision_or_update()
+    r(**conf, id="main", app="testapp", env=env).provision_or_update()
 
     assert os.system("getent passwd testapp >/dev/null") == 0
     assert os.system("groups testapp | grep -q 'sftp.app'") != 0
 
     conf["allow_sftp"] = True
-    r(conf, "testapp").provision_or_update()
+    r(**conf, id="main", app="testapp", env=env).provision_or_update()
 
     assert os.system("getent passwd testapp >/dev/null") == 0
     assert os.system("groups testapp | grep -q 'sftp.app'") == 0
 
-    r(conf, "testapp").deprovision()
+    r(**conf, id="main", app="testapp", env=env).deprovision()
 
     assert os.system("getent passwd testapp 2>/dev/null") != 0
 
 
 def test_resource_install_dir():
+
+    AppResourceClassesByType["system_user"](id="main", app="testapp", env=env).provision_or_update()
+
     r = AppResourceClassesByType["install_dir"]
-    conf = {"owner": "nobody:rx", "group": "nogroup:rx"}
+    conf = {}
 
     # FIXME: should also check settings ?
     # FIXME: should also check automigrate from final_path
@@ -184,56 +191,68 @@ def test_resource_install_dir():
 
     assert not os.path.exists("/var/www/testapp")
 
-    r(conf, "testapp").provision_or_update()
+    r(**conf, id="main", app="testapp", env=env).provision_or_update()
 
     assert os.path.exists("/var/www/testapp")
     unixperms = check_output("ls -ld /var/www/testapp").split()
-    assert unixperms[0] == "dr-xr-x---"
-    assert unixperms[2] == "nobody"
-    assert unixperms[3] == "nogroup"
+    assert unixperms[0] == "drwxr-x---"
+    assert unixperms[2] == "testapp"
+    assert unixperms[3] == "testapp"
 
-    conf["owner"] = "nobody:rwx"
-    conf["group"] = "www-data:x"
+    # NB : following the rework of the resources during packaging v3,
+    # the "owner" prop is ignored
+    # and "group" prop is auto-translatd into paths_for_www_data if the group is www-data
+    # Also the r/w/x modes are ignored and 750 / rwxr-x--- is used instead
+    conf["group"] = "www-data:r-x"
 
-    r(conf, "testapp").provision_or_update()
+    r.convert_packaging_v2_props(conf)
+    r(**conf, id="main", app="testapp", env=env).provision_or_update()
 
     assert os.path.exists("/var/www/testapp")
     unixperms = check_output("ls -ld /var/www/testapp").split()
-    assert unixperms[0] == "drwx--x---"
-    assert unixperms[2] == "nobody"
+    assert unixperms[0] == "drwxr-x---"
+    assert unixperms[2] == "testapp"
     assert unixperms[3] == "www-data"
 
-    r(conf, "testapp").deprovision()
+    r(**conf, id="main", app="testapp", env=env).deprovision()
 
     assert not os.path.exists("/var/www/testapp")
 
 
 def test_resource_data_dir():
+
+    AppResourceClassesByType["system_user"](id="main", app="testapp", env=env).provision_or_update()
+
     r = AppResourceClassesByType["data_dir"]
-    conf = {"owner": "nobody:rx", "group": "nogroup:rx"}
+    conf = {}
+    r.convert_packaging_v2_props(conf)
 
     assert not os.path.exists("/home/yunohost.app/testapp")
 
-    r(conf, "testapp").provision_or_update()
+    r(**conf, id="main", app="testapp", env=env).provision_or_update()
 
     assert os.path.exists("/home/yunohost.app/testapp")
     unixperms = check_output("ls -ld /home/yunohost.app/testapp").split()
-    assert unixperms[0] == "dr-xr-x---"
-    assert unixperms[2] == "nobody"
-    assert unixperms[3] == "nogroup"
+    assert unixperms[0] == "drwxr-x---"
+    assert unixperms[2] == "testapp"
+    assert unixperms[3] == "testapp"
 
-    conf["owner"] = "nobody:rwx"
-    conf["group"] = "www-data:x"
+    # NB : following the rework of the resources during packaging v3,
+    # the "owner" prop is ignored
+    # and "group" prop is auto-translatd into paths_for_www_data if the group is www-data
+    # Also the r/w/x modes are ignored and 750 / rwxr-x--- is used instead
+    conf["group"] = "www-data:rx"
 
-    r(conf, "testapp").provision_or_update()
+    r.convert_packaging_v2_props(conf)
+    r(**conf, id="main", app="testapp", env=env).provision_or_update()
 
     assert os.path.exists("/home/yunohost.app/testapp")
     unixperms = check_output("ls -ld /home/yunohost.app/testapp").split()
-    assert unixperms[0] == "drwx--x---"
-    assert unixperms[2] == "nobody"
+    assert unixperms[0] == "drwxr-x---"
+    assert unixperms[2] == "testapp"
     assert unixperms[3] == "www-data"
 
-    r(conf, "testapp").deprovision()
+    r(**conf, id="main", app="testapp", env=env).deprovision()
 
     # FIXME : implement and check purge option
     # assert not os.path.exists("/home/yunohost.app/testapp")
@@ -245,11 +264,11 @@ def test_resource_ports():
 
     assert not app_setting("testapp", "port")
 
-    r(conf, "testapp").provision_or_update()
+    r(**conf, id="main", app="testapp", env=env).provision_or_update()
 
     assert app_setting("testapp", "port")
 
-    r(conf, "testapp").deprovision()
+    r(**conf, id="main", app="testapp", env=env).deprovision()
 
     assert not app_setting("testapp", "port")
 
@@ -261,12 +280,16 @@ def test_resource_ports_several():
     assert not app_setting("testapp", "port")
     assert not app_setting("testapp", "port_foobar")
 
-    r(conf, "testapp").provision_or_update()
+    r1 = r(**conf["main"], id="main", app="testapp", env=env)
+    r1.provision_or_update()
+    r2 = r(**conf["foobar"], id="foobar", app="testapp", env=env)
+    r2.provision_or_update()
 
     assert app_setting("testapp", "port")
     assert app_setting("testapp", "port_foobar")
 
-    r(conf, "testapp").deprovision()
+    r1.deprovision()
+    r2.deprovision()
 
     assert not app_setting("testapp", "port")
     assert not app_setting("testapp", "port_foobar")
@@ -276,38 +299,44 @@ def test_resource_ports_firewall():
     r = AppResourceClassesByType["ports"]
     conf = {"main": {"default": 12345}}
 
-    r(conf, "testapp").provision_or_update()
+    r1 = r(**conf["main"], id="main", app="testapp", env=env)
+    r1.provision_or_update()
+    r.grouped_trigger_after_apply([r1])
 
     assert 12345 not in firewall_list(protocol="tcp")["tcp"]
 
     conf = {"main": {"default": 12345, "exposed": "TCP"}}
 
-    r(conf, "testapp").provision_or_update()
+    r1 = r(**conf["main"], id="main", app="testapp", env=env)
+    r1.provision_or_update()
+    r.grouped_trigger_after_apply([r1])
 
     assert 12345 in firewall_list(protocol="tcp")["tcp"]
 
-    r(conf, "testapp").deprovision()
+    r1.deprovision()
+    r.grouped_trigger_after_apply([r1])
 
     assert 12345 not in firewall_list(protocol="tcp")["tcp"]
 
 
 def test_resource_database():
     r = AppResourceClassesByType["database"]
-    conf = {"type": "mysql"}
+    # NB: in real-life, packagers set 'type' which is autoconverted to 'dbtype' inside the resource manager
+    conf = {"dbtype": "mysql"}
 
     assert os.system("mysqlshow 'testapp' >/dev/null 2>/dev/null") != 0
     assert not app_setting("testapp", "db_name")
     assert not app_setting("testapp", "db_user")
     assert not app_setting("testapp", "db_pwd")
 
-    r(conf, "testapp").provision_or_update()
+    r(**conf, id="main", app="testapp", env=env).provision_or_update()
 
     assert os.system("mysqlshow 'testapp' >/dev/null 2>/dev/null") == 0
     assert app_setting("testapp", "db_name")
     assert app_setting("testapp", "db_user")
     assert app_setting("testapp", "db_pwd")
 
-    r(conf, "testapp").deprovision()
+    r(**conf, id="main", app="testapp", env=env).deprovision()
 
     assert os.system("mysqlshow 'testapp' >/dev/null 2>/dev/null") != 0
     assert not app_setting("testapp", "db_name")
@@ -334,7 +363,7 @@ def test_resource_apt():
     assert os.system("dpkg --list | grep -q 'ii *lolcat '") != 0
     assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps '") != 0
 
-    r(conf, "testapp").provision_or_update()
+    r(**conf, id="main", app="testapp", env=env).provision_or_update()
 
     assert os.system("dpkg --list | grep -q 'ii *nyancat '") == 0
     assert os.system("dpkg --list | grep -q 'ii *sl '") == 0
@@ -345,7 +374,7 @@ def test_resource_apt():
     assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps '") == 0
 
     conf["packages"] += ", lolcat"
-    r(conf, "testapp").provision_or_update()
+    r(**conf, id="main", app="testapp", env=env).provision_or_update()
 
     assert os.system("dpkg --list | grep -q 'ii *nyancat '") == 0
     assert os.system("dpkg --list | grep -q 'ii *sl '") == 0
@@ -353,7 +382,7 @@ def test_resource_apt():
     assert os.system("dpkg --list | grep -q 'ii *lolcat '") == 0
     assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps '") == 0
 
-    r(conf, "testapp").deprovision()
+    r(**conf, id="main", app="testapp", env=env).deprovision()
 
     assert os.system("dpkg --list | grep -q 'ii *nyancat '") != 0
     assert os.system("dpkg --list | grep -q 'ii *sl '") != 0
@@ -367,8 +396,6 @@ def test_resource_permissions():
     os.system(f"echo 'domain: {maindomain}' >> /etc/yunohost/apps/testapp/settings.yml")
     os.system("echo 'path: /testapp' >> /etc/yunohost/apps/testapp/settings.yml")
 
-    # A manager object is required to set the label of the app...
-    manager = AppResourceManager("testapp", current={}, wanted={"name": "Test App"})
     r = AppResourceClassesByType["permissions"]
     conf = {
         "main": {
@@ -382,7 +409,7 @@ def test_resource_permissions():
     assert res["testapp.main"]["url"] is None
     assert res["testapp.main"]["allowed"] == []
 
-    r(conf, "testapp", manager).provision_or_update()
+    r(**conf["main"], id="main", app="testapp", env=env).provision_or_update()
 
     res = user_permission_list(full=True)["permissions"]
     assert "testapp.main" in res
@@ -392,7 +419,7 @@ def test_resource_permissions():
 
     conf["admin"] = {"url": "/admin", "allowed": ""}
 
-    r(conf, "testapp", manager).provision_or_update()
+    r(**conf["admin"], id="admin", app="testapp", env=env).provision_or_update()
 
     res = user_permission_list(full=True)["permissions"]
 
@@ -406,13 +433,14 @@ def test_resource_permissions():
 
     conf["admin"]["url"] = "/adminpanel"
 
-    r(conf, "testapp", manager).provision_or_update()
+    radmin = r(**conf["admin"], id="admin", app="testapp", env=env)
+    radmin.provision_or_update()
 
     res = user_permission_list(full=True)["permissions"]
 
     assert res["testapp.admin"]["url"] == "/adminpanel"
 
-    r(conf, "testapp").deprovision()
+    radmin.deprovision()
 
     res = user_permission_list(full=True)["permissions"]
 
@@ -422,11 +450,8 @@ def test_resource_permissions():
 
 
 def test_resource_nodejs():
-    manager = AppResourceManager(
-        "testapp",
-        current={},
-        wanted={"name": "Test App", "integration": {"helpers_version": "2.1"}},
-    )
+
+    AppResourceClassesByType["system_user"](id="main", app="testapp", env=env).provision_or_update()
 
     r = AppResourceClassesByType["nodejs"]
     assert not app_setting("testapp", "nodejs_version")
@@ -434,28 +459,29 @@ def test_resource_nodejs():
         "version": "20",
     }
 
-    r(conf, "testapp", manager).provision_or_update()
+    rnode = r(**conf, id="main", app="testapp", env=env)
+    rnode.provision_or_update()
 
     nodejs_version = app_setting("testapp", "nodejs_version")
     assert nodejs_version
-    nodejs_dir = f"{r.N_INSTALL_DIR}/n/versions/node/{nodejs_version}/bin"
+    nodejs_dir = f"{N_INSTALL_DIR}/n/versions/node/{nodejs_version}/bin"
     assert os.path.exists(nodejs_dir)
 
-    env = {
-        "N_PREFIX": r.N_INSTALL_DIR,
+    env_cmd = {
+        "N_PREFIX": N_INSTALL_DIR,
         "PATH": f"{nodejs_dir}:{os.environ['PATH']}",
     }
 
-    assert check_output("which node", env=env).startswith(nodejs_dir)
-    installed_version = check_output("node --version", env=env)
+    assert check_output("which node", env=env_cmd).startswith(nodejs_dir)
+    installed_version = check_output("node --version", env=env_cmd)
     assert installed_version.startswith("v20.")
     with tempfile.TemporaryDirectory(prefix="ynh_") as d:
         # Install a random simple package to validate npm is in the path and working
-        check_call(["npm", "install", "ansi-styles"], cwd=d, env=env)
+        check_call(["npm", "install", "ansi-styles"], cwd=d, env=env_cmd)
         # FIXME: the resource should install stuff as non-root probably ?
         assert os.path.exists(f"{d}/node_modules/")
 
-    r({}, "testapp", manager).deprovision()
+    rnode.deprovision()
     assert not app_setting("testapp", "nodejs_version")
     assert not os.path.exists(nodejs_dir)
 
@@ -467,23 +493,17 @@ def test_resource_ruby():
     )
 
     r = AppResourceClassesByType["system_user"]
-    r({}, "testapp").provision_or_update()
+    r(id="main", app="testapp", env=env).provision_or_update()
 
     r = AppResourceClassesByType["install_dir"]
-    r({}, "testapp").provision_or_update()
-    install_dir = app_setting("testapp", "install_dir")
-
-    manager = AppResourceManager(
-        "testapp",
-        current={},
-        wanted={"name": "Test App", "integration": {"helpers_version": "2.1"}},
-    )
+    r(id="main", app="testapp", env=env).provision_or_update()
+    # install_dir = app_setting("testapp", "install_dir")
 
     r = AppResourceClassesByType["apt"]
     conf = {
         "packages": "make, gcc, libjemalloc-dev, libffi-dev, libyaml-dev, zlib1g-dev"
     }
-    r(conf, "testapp", manager).provision_or_update()
+    r(**conf, id="main", app="testapp", env=env).provision_or_update()
 
     r = AppResourceClassesByType["ruby"]
     assert not app_setting("testapp", "ruby_version")
@@ -492,38 +512,39 @@ def test_resource_ruby():
     }
 
     try:
-        r(conf, "testapp", manager).provision_or_update()
+        r(**conf, id="main", app="testapp", env=env).provision_or_update()
+        r(**conf, id="main", app="testapp", env=env).provision_or_update()
     except Exception:
         os.system("tail -n 40 /tmp/ruby-build*.log")
         raise
 
     ruby_version = app_setting("testapp", "ruby_version")
     assert ruby_version
-    ruby_dir = f"{r.RBENV_ROOT}/versions/testapp/bin"
-    ruby_dir2 = f"{r.RBENV_ROOT}/versions/{ruby_version}/bin"
+    ruby_dir = f"{RBENV_ROOT}/versions/testapp/bin"
+    ruby_dir2 = f"{RBENV_ROOT}/versions/{ruby_version}/bin"
     assert os.path.exists(ruby_dir)
     assert os.path.exists(ruby_dir2)
 
-    env = {
+    env_cmd = {
         "PATH": f"{ruby_dir}:{os.environ['PATH']}",
     }
 
-    assert check_output("which ruby", env=env).startswith(ruby_dir)
-    assert check_output("which gem", env=env).startswith(ruby_dir)
-    assert "3.3.5" in check_output("ruby --version", env=env)
+    assert check_output("which ruby", env=env_cmd).startswith(ruby_dir)
+    assert check_output("which gem", env=env_cmd).startswith(ruby_dir)
+    assert "3.3.5" in check_output("ruby --version", env=env_cmd)
     with tempfile.TemporaryDirectory(prefix="ynh_") as d:
         # Install a random simple package to validate the path etc
         check_call(
-            "gem install bundler passenger --no-document".split(), cwd=d, env=env
+            "gem install bundler passenger --no-document".split(), cwd=d, env=env_cmd
         )
         check_call(
             "bundle config set --local without 'development test'".split(),
             cwd=d,
-            env=env,
+            env=env_cmd,
         )
         # FIXME: the resource should install stuff as non-root probably ?
 
-    r({}, "testapp", manager).deprovision()
+    r(id="main", app="testapp", env=env).deprovision()
     assert not app_setting("testapp", "ruby_version")
     assert not os.path.exists(ruby_dir)
     assert not os.path.exists(ruby_dir2)
@@ -536,11 +557,11 @@ def test_resource_go():
     )
 
     r = AppResourceClassesByType["system_user"]
-    r({}, "testapp").provision_or_update()
+    r(id="main", app="testapp", env=env).provision_or_update()
 
     r = AppResourceClassesByType["install_dir"]
-    r({}, "testapp").provision_or_update()
-    install_dir = app_setting("testapp", "install_dir")
+    r(id="main", app="testapp", env=env).provision_or_update()
+    # install_dir = app_setting("testapp", "install_dir")
 
     r = AppResourceClassesByType["go"]
     assert not app_setting("testapp", "go_version")
@@ -548,18 +569,18 @@ def test_resource_go():
         "version": "1.22",
     }
 
-    r(conf, "testapp").provision_or_update()
+    r(**conf, id="main", app="testapp", env=env).provision_or_update()
 
     go_version = app_setting("testapp", "go_version")
     assert go_version and go_version.startswith("1.22.")
-    go_dir = f"{r.GOENV_ROOT}/versions/{go_version}/bin"
+    go_dir = f"{GOENV_ROOT}/versions/{go_version}/bin"
     assert os.path.exists(go_dir)
 
-    env = {
+    env_cmd = {
         "PATH": f"{go_dir}:{os.environ['PATH']}",
     }
 
-    assert check_output("go version", env=env).startswith(
+    assert check_output("go version", env=env_cmd).startswith(
         f"go version go{go_version} linux/"
     )
 
@@ -573,11 +594,11 @@ def test_resource_go():
             """
             )
         env["HOME"] = d
-        check_call("go build helloworld.go".split(), cwd=d, env=env)
+        check_call("go build helloworld.go".split(), cwd=d, env=env_cmd)
         assert os.path.exists(f"{d}/helloworld")
         assert "hello world" in check_output("./helloworld", cwd=d)
 
-    r({}, "testapp").deprovision()
+    r(id="main", app="testapp", env=env_cmd).deprovision()
     assert not app_setting("testapp", "go_version")
     assert not os.path.exists(go_dir)
 
@@ -589,20 +610,15 @@ def test_resource_composer():
     )
 
     r = AppResourceClassesByType["system_user"]
-    r({}, "testapp").provision_or_update()
+    r(id="main", app="testapp", env=env).provision_or_update()
 
     r = AppResourceClassesByType["install_dir"]
-    r({}, "testapp").provision_or_update()
+    r(id="main", app="testapp", env=env).provision_or_update()
     install_dir = app_setting("testapp", "install_dir")
 
     r = AppResourceClassesByType["apt"]
-    manager = AppResourceManager(
-        "testapp",
-        current={},
-        wanted={"name": "Test App", "integration": {"helpers_version": "2.1"}},
-    )
     conf = {"packages": "php8.2-fpm"}
-    r(conf, "testapp", manager).provision_or_update()
+    r(**conf, id="main", app="testapp", env=env).provision_or_update()
 
     r = AppResourceClassesByType["composer"]
     assert not app_setting("testapp", "composer_version")
@@ -610,11 +626,11 @@ def test_resource_composer():
         "version": "2.8.3",
     }
 
-    r(conf, "testapp").provision_or_update()
+    r(**conf, id="main", app="testapp", env=env).provision_or_update()
     assert app_setting("testapp", "composer_version")
     assert os.path.exists(install_dir + "/composer.phar")
 
-    r(conf, "testapp")._run_script(
+    r(**conf, id="main", app="testapp", env=env)._run_script(
         "test_composer_exec",
         f"cd {install_dir}; ynh_composer_exec require symfony/polyfill-mbstring 1.31.0",
     )
@@ -622,6 +638,6 @@ def test_resource_composer():
     assert os.path.exists(install_dir + "/.composer")
     assert os.path.exists(install_dir + "/vendor/symfony/polyfill-mbstring")
 
-    r(conf, "testapp").deprovision()
+    r(**conf, id="main", app="testapp", env=env).deprovision()
     assert not app_setting("testapp", "composer_version")
     assert not os.path.exists(install_dir + "/composer.phar")
