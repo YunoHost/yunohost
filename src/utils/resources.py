@@ -214,6 +214,11 @@ class AppResourceManager:
                     failure_message_with_debug_instructions = operation_logger.error(
                         str(exception)
                     )
+                    # FIXME : tmp, this shouldnt be needed, that's to debug an issue on the CI I dont reproduce ...
+                    if failure_message_with_debug_instructions is None:
+                        print(operation_logger.ended_at)
+                        print(operation_logger.started_at)
+                        failure_message_with_debug_instructions = exception
                     raise YunohostError(
                         failure_message_with_debug_instructions, raw_msg=True
                     )
