@@ -22,6 +22,7 @@ import hashlib
 import logging
 import os
 import time
+from functools import cache
 from pathlib import Path
 
 import jwt
@@ -36,18 +37,16 @@ from ..utils.ldap import _get_ldap_interface
 
 logger = logging.getLogger("yunohost.authenticators.ldap_admin")
 
+SESSION_SECRET_PATH = Path("/etc/yunohost/.admin_cookie_secret")
 
-def SESSION_SECRET():
+@cache
+def SESSION_SECRET() -> str:
     # Only load this once actually requested to avoid boring issues like
     # "secret doesnt exists yet" (before postinstall) and therefore service
     # miserably fail to start
-    if not SESSION_SECRET.value:
-        SESSION_SECRET.value = open("/etc/yunohost/.admin_cookie_secret").read().strip()
-    assert SESSION_SECRET.value
-    return SESSION_SECRET.value
+    return SESSION_SECRET_PATH.read_text().strip()
 
 
-SESSION_SECRET.value = None  # type: ignore
 SESSION_FOLDER = "/var/cache/yunohost/sessions"
 SESSION_VALIDITY = 3 * 24 * 3600  # 3 days
 
