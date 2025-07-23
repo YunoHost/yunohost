@@ -130,7 +130,7 @@ def logout(session):
 
 
 def number_of_active_session_for_user(user):
-    return len(list(Path(SESSION_FOLDER).glob(f"{short_hash(user)}*")))
+    return len(list(SESSION_FOLDER.glob(f"{short_hash(user)}*")))
 
 
 def request(webpath, logged_as=None, session=None, inject_auth=None, logged_on=None):
@@ -213,7 +213,7 @@ def test_api_session_expired():
         r = request(f"https://{maindomain}/yunohost/portalapi/me", session=session)
         assert r.status_code == 200 and r.json()["username"] == "alice"
 
-        for file in Path(SESSION_FOLDER).glob(f"{short_hash('alice')}*"):
+        for file in SESSION_FOLDER.glob(f"{short_hash('alice')}*"):
             os.utime(str(file), (0, 0))
 
         r = request(f"https://{maindomain}/yunohost/portalapi/me", session=session)
