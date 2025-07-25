@@ -36,39 +36,41 @@ def yunopaste(data: str) -> str:
 
     try:
         data = anonymize(data)
-    except Exception as e:
+    except Exception as err:
         logger.warning(
-            "For some reason, YunoHost was not able to anonymize the pasted data. Sorry about that. Be careful about sharing the link, as it may contain somewhat private infos like domain names or IP addresses. Error: %s"
-            % e
+            "For some reason, YunoHost was not able to anonymize the pasted data. "
+            "Sorry about that. Be careful about sharing the link, as it may contain "
+            f"somewhat private infos like domain names or IP addresses. Error: {err}"
         )
 
-    data = data.encode()
+    datab = data.encode()
 
     try:
-        r = requests.post("%s/documents" % paste_server, data=data, timeout=30)
-    except Exception as e:
+        response = requests.post(f"{paste_server}/documents", data=datab, timeout=30)
+    except Exception as err:
         raise YunohostError(
-            "Something wrong happened while trying to paste data on paste.yunohost.org : %s"
-            % str(e),
+            "Something wrong happened while trying to paste data on "
+            f"paste.yunohost.org: {err}",
             raw_msg=True,
         )
 
-    if r.status_code != 200:
+    if response.status_code != 200:
         raise YunohostError(
-            "Something wrong happened while trying to paste data on paste.yunohost.org : %s, %s"
-            % (r.status_code, r.text),
+            "Something wrong happened while trying to paste data on "
+            f"paste.yunohost.org: {response.status_code}, {response.text}",
             raw_msg=True,
         )
 
     try:
-        url = json.loads(r.text)["key"]
+        url = json.loads(response.text)["key"]
     except Exception:
         raise YunohostError(
-            "Uhoh, couldn't parse the answer from paste.yunohost.org : %s" % r.text,
+            "Uhoh, couldn't parse the answer from "
+            f"paste.yunohost.org: {response.text}",
             raw_msg=True,
         )
 
-    return "{}/raw/{}".format(paste_server, url)
+    return f"{paste_server}/raw/{url}"
 
 
 def anonymize(data: str) -> str:
@@ -95,12 +97,10 @@ def anonymize(data: str) -> str:
     domains: list[str] = domain_list()["domains"]
     domains = sorted(domains, key=lambda d: len(d))
 
-    count = 2
-    for domain in domains:
+    for count, domain in enumerate(domains, start=2):
         if domain not in data:
             continue
-        data = anonymize_domain(data, domain, "domain%s.tld" % count)
-        count += 1
+        data = anonymize_domain(data, domain, f"domain{count}.tld")
 
     # We also want to anonymize the ips
     ipv4 = get_public_ip()

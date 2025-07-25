@@ -81,10 +81,9 @@ def space_used_by_directory(dirpath: str | Path, follow_symlinks: bool = True) -
         du_output = check_output(["du", "-sb", dirpath], shell=False)
         return int(du_output.split()[0])
 
+    # FIXME : this doesnt do what the function name suggest this does ...
     stat = os.statvfs(dirpath)
-    return (
-        stat.f_frsize * stat.f_blocks
-    )  # FIXME : this doesnt do what the function name suggest this does ...
+    return stat.f_frsize * stat.f_blocks
 
 
 def human_to_binary(size: str) -> int:
@@ -143,10 +142,11 @@ def get_ynh_package_version(package: str) -> dict[str, str]:
     # Not tested for any arbitrary packages that
     # may handle changelog differently !
 
-    changelog = "/usr/share/doc/%s/changelog.gz" % package
-    cmd = "gzip -cd %s 2>/dev/null | grep -v 'BASH_XTRACEFD' | head -n1" % changelog
-    if not os.path.exists(changelog):
+    changelog = Path("/usr/share/doc") / package / "changelog.gz"
+    if not changelog.exists():
         return {"version": "?", "repo": "?"}
+
+    cmd = f"gzip -cd {str(changelog)} 2>/dev/null | grep -v 'BASH_XTRACEFD' | head -n1"
     out = check_output(cmd).split()
     # Output looks like : "yunohost (1.2.3) testing; urgency=medium"
     return {"version": out[1].strip("()"), "repo": out[2].strip(";")}
