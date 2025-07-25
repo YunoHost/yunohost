@@ -18,6 +18,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+from functools import cache
 from typing import List
 
 from moulinette.utils.filesystem import read_file
@@ -27,10 +28,6 @@ import dns.resolver
 SPECIAL_USE_TLDS = ["home.arpa", "internal", "local", "localhost", "onion", "test"]
 
 YNH_DYNDNS_DOMAINS = ["nohost.me", "noho.st", "ynh.fr"]
-
-# Lazy dev caching to avoid re-reading the file multiple time when calling
-# dig() often during same yunohost operation
-external_resolvers_: List[str] = []
 
 
 def is_yunohost_dyndns_domain(domain):
@@ -43,18 +40,21 @@ def is_special_use_tld(domain):
     return any(domain.endswith(f".{tld}") for tld in SPECIAL_USE_TLDS)
 
 
+# Lazy dev caching to avoid re-reading the file multiple time when calling
+# dig() often during same yunohost operation
+@cache
 def external_resolvers():
-    global external_resolvers_
+    resolv_dnsmasq_conf = read_file("/etc/resolv.dnsmasq.conf").split("\n")
+    external_resolvers_ = [
+        r.split(" ")[1]
+        for r in resolv_dnsmasq_conf
+        if r.startswith("nameserver")
+    ]
 
-    if not external_resolvers_:
-        resolv_dnsmasq_conf = read_file("/etc/resolv.dnsmasq.conf").split("\n")
-        external_resolvers_ = [
-            r.split(" ")[1] for r in resolv_dnsmasq_conf if r.startswith("nameserver")
-        ]
-        # We keep only ipv4 resolvers, otherwise on IPv4-only instances, IPv6
-        # will be tried anyway resulting in super-slow dig requests that'll wait
-        # until timeout...
-        external_resolvers_ = [r for r in external_resolvers_ if ":" not in r]
+    # We keep only ipv4 resolvers, otherwise on IPv4-only instances, IPv6
+    # will be tried anyway resulting in super-slow dig requests that'll wait
+    # until timeout...
+    external_resolvers_ = [r for r in external_resolvers_ if ":" not in r]
 
     return external_resolvers_
 
