@@ -19,6 +19,7 @@
 #
 
 import glob
+from typing import TypedDict, NotRequired
 import os
 from pathlib import Path
 import re
@@ -32,12 +33,21 @@ from ..utils.error import YunohostValidationError
 logger = getLogger("yunohost.utils.legacy")
 
 
+class ToReplace(TypedDict):
+    pattern: re.Pattern[str]
+    replace: str
+    important: bool
+    only_for: NotRequired[list[str]]
+
+
 def _patch_legacy_helpers(app_folder: str | Path) -> None:
     app_folder = Path(app_folder)
 
-    stuff_to_replace = {
+    stuff_to_replace: dict[str, ToReplace] = {
         "yunohost user create": {
-            "pattern": r"yunohost user create (\S+) (-f|--firstname) (\S+) (-l|--lastname) \S+ (.*)",
+            "pattern": re.compile(
+                r"yunohost user create (\S+) (-f|--firstname) (\S+) (-l|--lastname) \S+ (.*)"
+            ),
             "replace": r"yunohost user create \1 --fullname \3 \5",
             "important": False,
         },
@@ -46,17 +56,13 @@ def _patch_legacy_helpers(app_folder: str | Path) -> None:
         #    __PRE_TAG1__$(yunohost tools diagnosis | ...)__PRE_TAG2__"
         #
         "yunohost tools diagnosis": {
-            "pattern": r"(Automatic diagnosis data from YunoHost( *\n)*)? *(__\w+__)? *\$\(yunohost tools diagnosis.*\)(__\w+__)?",
+            "pattern": re.compile(
+                r"(Automatic diagnosis data from YunoHost( *\n)*)? *(__\w+__)? *\$\(yunohost tools diagnosis.*\)(__\w+__)?"
+            ),
             "replace": r"",
             "important": False,
         },
     }
-
-    for helper, infos in stuff_to_replace.items():
-        infos["pattern"] = (
-            re.compile(infos["pattern"]) if infos.get("pattern") else None
-        )
-        infos["replace"] = infos.get("replace")
 
     for file in (app_folder / "scripts").iterdir():
         # Ignore non-regular files
@@ -73,7 +79,8 @@ def _patch_legacy_helpers(app_folder: str | Path) -> None:
 
         for helper, infos in stuff_to_replace.items():
             # Ignore if not relevant for this file
-            if only_for := infos.get("only_for") and file.name not in only_for:
+            only_for = infos.get("only_for", [])
+            if file.name not in only_for:
                 continue
 
             # If helper is used, attempt to patch the file
