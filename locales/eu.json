@@ -401,7 +401,7 @@
     "diagnosis_mail_queue_ok": "Posta elektronikoaren ilaran zain dauden mezuak: {nb_pending}",
     "global_settings_setting_smtp_relay_user": "SMTP relay erabiltzailea",
     "domain_cert_gen_failed": "Ezinezkoa izan da ziurtagiria sortzea",
-    "field_invalid": "'{}' ez da baliogarria",
+    "field_invalid": "'{field}' ez da baliogarria",
     "diagnosis_mail_outgoing_port_25_blocked_relay_vpn": "Operadore batzuei bost axola zaie Interneten neutraltasuna (Net Neutrality) eta ez dute 25. ataka desblokeatzen uzten.<br>- Operadore batzuek <a href='https://yunohost.org/email_configure_relay'>relay posta zerbitzari bat</a> eskaini dezakete, baina kasu horretan zure posta elektronikoa zelatatu dezakete.<br>- Pribatutasuna bermatzeko *IP publikoa* duen VPN bat erabiltzea izan daiteke irtenbidea. Ikus <a href='https://yunohost.org/vpn_advantage'>https://yunohost.org/vpn_advantage</a><br>- Edo <a href='https://yunohost.org/isp'>operadore desberdin batera aldatu</a>",
     "ldap_server_down": "Ezin da LDAP zerbitzarira konektatu",
     "ldap_server_is_down_restart_it": "LDAP zerbitzaria ez dago martxan, saia zaitez berrabiarazten…",
@@ -867,5 +867,6 @@
     "automatic_task": "Ataza automatikoa",
     "noninteractive_task": "Interakziorik gabeko ataza",
     "yunohost_api": "YunoHosten APIa",
-    "diagnosis_apps_outdated_packaging_format": "Aplikazio honek zaharkitutako pakete-formatu bat darabil, eta aurki YunoHostekin bateragarri izateari utziko dio. Eguneratzen saiatu beharko zinateke."
+    "diagnosis_apps_outdated_packaging_format": "Aplikazio honek zaharkitutako pakete-formatu bat darabil, eta aurki YunoHostekin bateragarri izateari utziko dio. Eguneratzen saiatu beharko zinateke.",
+    "global_settings_setting_portal_name": "Ataria"
 }

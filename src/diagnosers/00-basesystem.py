@@ -27,8 +27,8 @@ from typing import List
 from moulinette.utils.filesystem import read_file, read_json, write_to_json
 from moulinette.utils.process import check_output
 
-from yunohost.diagnosis import Diagnoser
-from yunohost.utils.system import system_arch, system_virt, ynh_packages_version
+from ..diagnosis import Diagnoser
+from ..utils.system import system_arch, system_virt, ynh_packages_version
 
 logger = logging.getLogger("yunohost.diagnosis")
 

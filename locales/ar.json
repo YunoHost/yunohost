@@ -148,7 +148,7 @@
     "diagnosis_description_basesystem": "النظام الأساسي",
     "global_settings_setting_admin_strength": "قوة الكلمة السرية الإدارية",
     "global_settings_setting_user_strength": "قوة الكلمة السرية للمستخدم",
-    "field_invalid": "الحقل غير صحيح : '{}'",
+    "field_invalid": "الحقل غير صحيح : '{field}'",
     "diagnosis_ignored_issues": "(+ {nb_ignored} مشاكل تم تجاهلها)",
     "domain_config_mail_in": "البريد الوارد",
     "domain_config_mail_out": "البريد الخارج",

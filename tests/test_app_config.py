@@ -162,9 +162,11 @@ def test_app_config_regular_setting(config_app):
     assert app_config_get(config_app, "main.components.boolean") == 1
     assert app_setting(config_app, "boolean") == "1"
 
-    with pytest.raises(YunohostValidationError), patch.object(
-        os, "isatty", return_value=False
-    ), patch.object(Moulinette, "prompt", return_value="pwet"):
+    with (
+        pytest.raises(YunohostValidationError),
+        patch.object(os, "isatty", return_value=False),
+        patch.object(Moulinette, "prompt", return_value="pwet"),
+    ):
         app_config_set(config_app, "main.components.boolean", "pwet")
 
 

@@ -33,8 +33,8 @@ from moulinette.utils.filesystem import (
     write_to_yaml,
 )
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.log import is_unit_operation
+from .log import is_unit_operation
+from .utils.error import YunohostError, YunohostValidationError
 
 logger = getLogger("yunohost.diagnosis")
 
@@ -122,7 +122,7 @@ def diagnosis_show(
         all_reports.append(report)
 
     if share:
-        from yunohost.utils.yunopaste import yunopaste
+        from .utils.yunopaste import yunopaste
 
         content = _dump_human_readable_reports(all_reports)
         url = yunopaste(content)
@@ -685,7 +685,7 @@ def _load_diagnoser(diagnoser_name):
 
 
 def _email_diagnosis_issues():
-    from yunohost.domain import _get_maindomain
+    from .domain import _get_maindomain
 
     maindomain = _get_maindomain()
     from_ = f"diagnosis@{maindomain} (Automatic diagnosis on {maindomain})"

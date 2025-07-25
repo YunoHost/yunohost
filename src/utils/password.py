@@ -53,7 +53,7 @@ STRENGTH_LEVELS = [
 ]
 
 
-def assert_password_is_compatible(password):
+def assert_password_is_compatible(password: str) -> None:
     """
     UNIX seems to not like password longer than 127 chars ...
     e.g. SSH login gets broken (or even 'su admin' when entering the password)
@@ -64,16 +64,16 @@ def assert_password_is_compatible(password):
         # on top (at least not the moulinette ones)
         # because the moulinette needs to be correctly initialized
         # as well as modules available in python's path.
-        from yunohost.utils.error import YunohostValidationError
+        from ..utils.error import YunohostValidationError
 
         raise YunohostValidationError("password_too_long")
 
 
-def assert_password_is_strong_enough(profile, password):
+def assert_password_is_strong_enough(profile: str, password: str) -> None:
     PasswordValidator(profile).validate(password)
 
 
-def _hash_user_password(password):
+def _hash_user_password(password: str) -> str:
     import passlib.hash
 
     # passlib will returns something like:
@@ -83,7 +83,7 @@ def _hash_user_password(password):
 
 
 class PasswordValidator:
-    def __init__(self, profile):
+    def __init__(self, profile: str) -> None:
         """
         Initialize a password validator.
 
@@ -105,7 +105,7 @@ class PasswordValidator:
             # Fallback to default value if we can't fetch settings for some reason
             self.validation_strength = 1
 
-    def validate(self, password):
+    def validate(self, password: str) -> None:
         """
         Check the validation_summary and trigger an exception
         if the password does not pass tests.
@@ -121,13 +121,13 @@ class PasswordValidator:
         # on top (at least not the moulinette ones)
         # because the moulinette needs to be correctly initialized
         # as well as modules available in python's path.
-        from yunohost.utils.error import YunohostValidationError
+        from ..utils.error import YunohostValidationError
 
         status, msg = self.validation_summary(password)
         if status == "error":
             raise YunohostValidationError(msg)
 
-    def validation_summary(self, password):
+    def validation_summary(self, password: str) -> tuple[str, str]:
         """
         Check if a password is listed in the list of most used password
         and if the overall strength is good enough compared to the
@@ -153,7 +153,7 @@ class PasswordValidator:
 
         return ("success", "")
 
-    def strength(self, password):
+    def strength(self, password: str) -> tuple[int, int, int, int, int]:
         """
         Returns the strength of a password, defined as a tuple
         containing the length of the password, the number of digits,
@@ -180,7 +180,7 @@ class PasswordValidator:
 
         return (length, digits, lowers, uppers, others)
 
-    def strength_level(self, password):
+    def strength_level(self, password: str) -> int:
         """
         Computes the strength of a password and compares
         it to the STRENGTH_LEVELS.
@@ -205,7 +205,7 @@ class PasswordValidator:
 
         return strength_level
 
-    def is_in_most_used_list(self, password):
+    def is_in_most_used_list(self, password: str) -> bool:
         # Decompress file if compressed
         if os.path.exists("%s.gz" % MOST_USED_PASSWORDS):
             os.system("gzip -fd %s.gz" % MOST_USED_PASSWORDS)

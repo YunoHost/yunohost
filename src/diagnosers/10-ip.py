@@ -28,9 +28,9 @@ from moulinette.utils.filesystem import read_file
 from moulinette.utils.network import download_text
 from moulinette.utils.process import check_output
 
-from yunohost.diagnosis import Diagnoser
-from yunohost.settings import settings_get
-from yunohost.utils.network import get_network_interfaces
+from ..diagnosis import Diagnoser
+from ..settings import settings_get
+from ..utils.network import get_network_interfaces
 
 logger = logging.getLogger("yunohost.diagnosis")
 
@@ -206,9 +206,9 @@ class MyDiagnoser(Diagnoser):
         if protocol == 6:
             resolvers = [r for r in resolvers if ":" in r]
 
-        assert (
-            resolvers != []
-        ), f"Uhoh, need at least one IPv{protocol} DNS resolver in {resolver_file} ..."
+        assert resolvers != [], (
+            f"Uhoh, need at least one IPv{protocol} DNS resolver in {resolver_file} ..."
+        )
 
         # So let's try to ping the first 4~5 resolvers (shuffled)
         # If we succesfully ping any of them, we conclude that we are indeed connected
@@ -225,7 +225,7 @@ class MyDiagnoser(Diagnoser):
         return any(ping(protocol, resolver) for resolver in resolvers[:5])
 
     def can_resolve_dns(self):
-        return os.system("dig +short ip.yunohost.org >/dev/null 2>/dev/null") == 0
+        return os.system("dig +short ipv4.yunohost.org >/dev/null 2>/dev/null") == 0
 
     def good_resolvconf(self):
         content = read_file("/etc/resolv.conf").strip().split("\n")
@@ -241,7 +241,7 @@ class MyDiagnoser(Diagnoser):
         return len(content) == 1 and content[0].split() == ["nameserver", "127.0.0.1"]
 
     def get_public_ip(self, protocol=4):
-        # FIXME - TODO : here we assume that DNS resolution for ip.yunohost.org is working
+        # FIXME - TODO : here we assume that DNS resolution for ip4/6.yunohost.org is working
         # but if we want to be able to diagnose DNS resolution issues independently from
         # internet connectivity, we gotta rely on fixed IPs first....
 
@@ -252,7 +252,7 @@ class MyDiagnoser(Diagnoser):
             protocol
         )
 
-        url = "https://ip%s.yunohost.org" % ("6" if protocol == 6 else "")
+        url = f"https://ipv{protocol}.yunohost.org"
 
         try:
             return download_text(url, timeout=30).strip()

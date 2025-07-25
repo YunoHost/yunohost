@@ -21,6 +21,7 @@
 """
 Generate JSON specification files API
 """
+
 import json
 import os
 import sys

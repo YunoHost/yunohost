@@ -20,7 +20,7 @@
 
 from logging import getLogger
 
-from yunohost.tools import Migration
+from ..tools import Migration
 
 logger = getLogger("yunohost.migration")
 

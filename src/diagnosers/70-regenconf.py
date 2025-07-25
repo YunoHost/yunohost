@@ -24,9 +24,9 @@ from typing import List
 
 from moulinette.utils.filesystem import read_file
 
-from yunohost.diagnosis import Diagnoser
-from yunohost.regenconf import _calculate_hash, _get_regenconf_infos
-from yunohost.settings import settings_get
+from ..diagnosis import Diagnoser
+from ..regenconf import _calculate_hash, _get_regenconf_infos
+from ..settings import settings_get
 
 
 class MyDiagnoser(Diagnoser):

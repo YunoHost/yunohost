@@ -92,7 +92,7 @@
     "backup_deleted": "Rezerva forigita: {name}",
     "backup_csv_addition_failed": "Ne povis aldoni dosierojn al sekurkopio en la CSV-dosiero",
     "dpkg_lock_not_available": "Ĉi tiu komando ne povas funkcii nun ĉar alia programo uzas la seruron de dpkg (la administrilo de paka sistemo)",
-    "field_invalid": "Nevalida kampo '{}'",
+    "field_invalid": "Nevalida kampo '{field}'",
     "log_app_makedefault": "Faru '{}' la defaŭlta apliko",
     "backup_system_part_failed": "Ne eblis sekurkopi la sistemon de '{part}'",
     "group_unknown": "La grupo '{group}' estas nekonata",

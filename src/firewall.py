@@ -20,17 +20,16 @@
 
 import os
 import shutil
-from typing import Any
-from pathlib import Path
 from logging import getLogger
+from pathlib import Path
+from typing import Any
 
 import miniupnpc
 import yaml
 from moulinette import m18n
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.regenconf import regen_conf
-
+from .regenconf import regen_conf
+from .utils.error import YunohostError, YunohostValidationError
 
 logger: Any = getLogger("yunohost.firewall")
 

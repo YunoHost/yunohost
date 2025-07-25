@@ -26,19 +26,18 @@ if TYPE_CHECKING:
 
 from sdbus import (
     DbusInterfaceCommon,
+    DbusObjectManagerInterface,
     DbusPropertyEmitsChangeFlag,
     DbusUnprivilegedFlag,
+    SdBus,
     dbus_method,
     dbus_property,
-    DbusObjectManagerInterface,
-    SdBus,
 )
 from sdbus.utils import (
-    parse_get_managed_objects as sdbus_parse_get_managed_objects,
     parse,
 )
+from sdbus.utils import parse_get_managed_objects as sdbus_parse_get_managed_objects
 from sortedcollections import ValueSortedDict
-
 
 UDISKS2_SERVICE_NAME = "org.freedesktop.UDisks2"
 UDISKS2_BASE_PATH = "/org/freedesktop/UDisks2"
@@ -109,15 +108,14 @@ class DiskResult:
 The following interfaces were generated using the `python -m sdbus gen-from-file` command.
 See: https://python-sdbus.readthedocs.io/en/latest/code_generator.html
 Udisks2's dbus interface descriptors are available at:
-https://github.com/storaged-project/udisks/blob/2.10.x-branch/data/org.freedesktop.UDisks2.xml  
+https://github.com/storaged-project/udisks/blob/2.10.x-branch/data/org.freedesktop.UDisks2.xml
 """
 
 
-class Udisks2Manager(  # type: ignore[call-arg]
+class Udisks2Manager(
     GetDisksMixin,
     interface_name="org.freedesktop.UDisks2.Manager",
 ):
-
     def __init__(self, bus: SdBus):
         super().__init__(UDISKS2_SERVICE_NAME, f"{UDISKS2_BASE_PATH}/Manager", bus)
 
@@ -230,7 +228,7 @@ class Udisks2Manager(  # type: ignore[call-arg]
         raise NotImplementedError
 
 
-class Disk(  # type: ignore[call-arg]
+class Disk(
     DbusInterfaceCommon,
     interface_name="org.freedesktop.UDisks2.Drive",
 ):
@@ -461,7 +459,7 @@ class Disk(  # type: ignore[call-arg]
         raise NotImplementedError
 
 
-class AtaController(  # type: ignore[call-arg]
+class AtaController(
     DbusInterfaceCommon,
     interface_name="org.freedesktop.UDisks2.Drive.Ata",
 ):
@@ -714,7 +712,7 @@ class AtaController(  # type: ignore[call-arg]
         raise NotImplementedError
 
 
-class NVMeController(  # type: ignore[call-arg]
+class NVMeController(
     DbusInterfaceCommon,
     interface_name="org.freedesktop.UDisks2.NVMe.Controller",
 ):
@@ -857,7 +855,9 @@ class NVMeController(  # type: ignore[call-arg]
         raise NotImplementedError
 
 
-class AtaDisk(Disk, AtaController): ...
+class AtaDisk(Disk, AtaController):
+    pass
 
 
-class NvmeDisk(Disk, NVMeController): ...
+class NvmeDisk(Disk, NVMeController):
+    pass

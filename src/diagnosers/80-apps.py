@@ -21,8 +21,8 @@
 import os
 from typing import List
 
-from yunohost.app import app_list
-from yunohost.diagnosis import Diagnoser
+from ..app import app_list
+from ..diagnosis import Diagnoser
 
 
 class MyDiagnoser(Diagnoser):

@@ -32,11 +32,11 @@ from moulinette import Moulinette, m18n
 from moulinette.utils.filesystem import read_file, write_to_file
 from moulinette.utils.process import call_async_output, check_output
 
-from yunohost.app import unstable_apps
-from yunohost.regenconf import manually_modified_files, regen_conf
-from yunohost.tools import Migration, _write_migration_state, tools_update
-from yunohost.utils.error import YunohostError
-from yunohost.utils.system import (
+from ..app import unstable_apps
+from ..regenconf import manually_modified_files, regen_conf
+from ..tools import Migration, _write_migration_state, tools_update
+from ..utils.error import YunohostError
+from ..utils.system import (
     _list_upgradable_apt_packages,
     aptitude_with_progress_bar,
     free_space_in_directory,

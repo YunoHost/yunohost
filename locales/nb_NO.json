@@ -58,7 +58,7 @@
     "log_dyndns_subscribe": "Abonner på YunoHost-underdomenet '{}'",
     "log_dyndns_update": "Oppdater IP-adressen tilknyttet ditt YunoHost-underdomene '{}'",
     "backup_nothings_done": "Ingenting å lagre",
-    "field_invalid": "Ugyldig felt '{}'",
+    "field_invalid": "Ugyldig felt '{field}'",
     "firewall_reloaded": "Brannmur gjeninnlastet",
     "log_app_change_url": "Endre nettadresse for '{}'-programmet",
     "log_app_install": "Installer '{}'-programmet",

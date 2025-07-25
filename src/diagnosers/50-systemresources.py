@@ -26,7 +26,7 @@ from typing import List
 import psutil
 from moulinette.utils.process import check_output
 
-from yunohost.diagnosis import Diagnoser
+from ..diagnosis import Diagnoser
 
 
 class MyDiagnoser(Diagnoser):

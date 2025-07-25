@@ -27,14 +27,14 @@ from typing import List
 from moulinette.utils.process import check_output
 from publicsuffix2 import PublicSuffixList
 
-from yunohost.diagnosis import Diagnoser
-from yunohost.dns import (
+from ..diagnosis import Diagnoser
+from ..dns import (
     _build_dns_conf,
     _get_dns_zone_for_domain,
     _get_relative_name_for_dns_zone,
 )
-from yunohost.domain import _get_maindomain, domain_list
-from yunohost.utils.dns import (
+from ..domain import _get_maindomain, domain_list
+from ..utils.dns import (
     YNH_DYNDNS_DOMAINS,
     dig,
     is_special_use_tld,

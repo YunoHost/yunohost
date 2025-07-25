@@ -45,8 +45,9 @@ from moulinette.utils.process import check_output
 from moulinette.utils.text import random_ascii
 from packaging import version
 
-import yunohost.domain
-from yunohost.app import (
+from . import domain
+
+from .app import (
     _get_manifest_of_app,
     _is_installed,
     _make_environment_for_app_script,
@@ -54,7 +55,7 @@ from yunohost.app import (
     app_info,
     app_remove,
 )
-from yunohost.hook import (
+from .hook import (
     CUSTOM_HOOK_FOLDER,
     hook_add,
     hook_callback,
@@ -64,15 +65,15 @@ from yunohost.hook import (
     hook_list,
     hook_remove,
 )
-from yunohost.log import OperationLogger, is_unit_operation
-from yunohost.regenconf import regen_conf
-from yunohost.tools import (
+from .log import OperationLogger, is_flash_unit_operation, is_unit_operation
+from .regenconf import regen_conf
+from .tools import (
     _tools_migrations_run_after_system_restore,
     _tools_migrations_run_before_app_restore,
     tools_postinstall,
 )
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.system import (
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.system import (
     binary_to_human,
     free_space_in_directory,
     get_ynh_package_version,
@@ -959,8 +960,8 @@ class RestoreManager:
         End a restore operations by cleaning the working directory and
         regenerate ssowat conf (if some apps were restored)
         """
-        from yunohost.app import app_ssowatconf
-        from yunohost.permission import _sync_permissions_with_ldap
+        from .app import app_ssowatconf
+        from .permission import _sync_permissions_with_ldap
 
         _sync_permissions_with_ldap()
         app_ssowatconf()
@@ -1214,8 +1215,8 @@ class RestoreManager:
         if system_targets == []:
             return
 
-        from yunohost.app import app_ssowatconf
-        from yunohost.permission import _sync_permissions_with_ldap
+        from .app import app_ssowatconf
+        from .permission import _sync_permissions_with_ldap
 
         # Start register change on system
         operation_logger = OperationLogger("backup_restore_system")
@@ -1264,7 +1265,7 @@ class RestoreManager:
         else:
             operation_logger.success()
 
-        yunohost.domain.domain_list_cache = {}
+        domain.domain_list_cache = {}
 
         regen_conf()
 
@@ -1305,7 +1306,7 @@ class RestoreManager:
         app_instance_name -- (string) The app name to restore (no app with this
                              name should be already install)
         """
-        from yunohost.utils.legacy import _patch_legacy_helpers
+        from .utils.legacy import _patch_legacy_helpers
 
         def copytree(src, dst, symlinks=False, ignore=None):
             for item in os.listdir(src):
@@ -1408,7 +1409,7 @@ class RestoreManager:
 
         manifest = _get_manifest_of_app(app_settings_in_archive)
         if manifest["packaging_format"] >= 2:
-            from yunohost.utils.resources import AppResourceManager
+            from .utils.resources import AppResourceManager
 
             AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
                 rollback_and_raise_exception_if_failure=True,
@@ -1819,7 +1820,7 @@ class TarBackupMethod(BackupMethod):
 
     @property
     def _archive_file(self):
-        from yunohost.settings import settings_get
+        from .settings import settings_get
 
         if isinstance(self.manager, RestoreManager):
             return self.manager.archive_path
@@ -2471,7 +2472,7 @@ def backup_info(name, with_details=False, human_readable=False):
     return result
 
 
-@is_unit_operation(flash=True)
+@is_flash_unit_operation()
 def backup_delete(name):
     """
     Delete a backup
