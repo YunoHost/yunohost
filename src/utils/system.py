@@ -18,8 +18,10 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+from pathlib import Path
 import logging
 import os
+from functools import cache
 import re
 
 from moulinette import Moulinette
@@ -38,29 +40,26 @@ YUNOHOST_PACKAGES = [
 ]
 
 
-def debian_version():
-    if debian_version.cache is None:
-        debian_version.cache = check_output(
-            'grep "^VERSION_CODENAME=" /etc/os-release 2>/dev/null | cut -d= -f2'
-        )
-    return debian_version.cache
+@cache
+def debian_version() -> str:
+    command = 'grep "^VERSION_CODENAME=" /etc/os-release 2>/dev/null | cut -d= -f2'
+    return check_output(command)
 
 
-def debian_version_id():
-    if debian_version_id.cache is None:
-        debian_version_id.cache = check_output(
-            'grep "^VERSION_ID=" /etc/os-release 2>/dev/null | cut -d= -f2'
-        ).strip('"')
-    return debian_version_id.cache
+@cache
+def debian_version_id() -> str:
+    command = 'grep "^VERSION_ID=" /etc/os-release 2>/dev/null | cut -d= -f2'
+    return check_output(command).strip('"')
 
 
-def system_arch():
-    if system_arch.cache is None:
-        system_arch.cache = check_output("dpkg --print-architecture 2>/dev/null")
-    return system_arch.cache
+@cache
+def system_arch() -> str:
+    command = "dpkg --print-architecture 2>/dev/null"
+    return check_output(command)
 
 
-def system_virt():
+@cache
+def system_virt() -> str:
     """
     Returns the output of systemd-detect-virt (so e.g. 'none' or 'lxc' or ...)
     You can check the man of the command to have a list of possible outputs...
@@ -68,15 +67,8 @@ def system_virt():
     # Detect virt technology (if not bare metal) and arch
     # Gotta have this "|| true" because it systemd-detect-virt return 'none'
     # with an error code on bare metal ~.~
-    if system_virt.cache is None:
-        system_virt.cache = check_output("systemd-detect-virt 2>/dev/null || true")
-    return system_virt.cache
-
-
-debian_version.cache = None  # type: ignore[attr-defined]
-debian_version_id.cache = None  # type: ignore[attr-defined]
-system_arch.cache = None  # type: ignore[attr-defined]
-system_virt.cache = None  # type: ignore[attr-defined]
+    command = "systemd-detect-virt 2>/dev/null || true"
+    return check_output(command)
 
 
 def free_space_in_directory(dirpath: str | Path) -> int:
