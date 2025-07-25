@@ -258,10 +258,10 @@ EOF
 SHELL=/bin/bash
 # Every 10 minutes,
 #   - (sleep random 60 is here to spread requests over a 1-min window)
-#   - if ip.yunohost.org answers ping (basic check to validate that we're connected to the internet and yunohost infra aint down)
+#   - if ipv4/6.yunohost.org answers ping (basic check to validate that we're connected to the internet and yunohost infra aint down)
 #   - and if lock ain't already taken by another command
 #   - trigger yunohost dyndns update
-*/10 * * * * root : YunoHost DynDNS update; sleep \$((RANDOM\\%60)); ! ping -q -W5 -c1 ip.yunohost.org >/dev/null 2>&1 || test -e /var/run/moulinette_yunohost.lock || yunohost dyndns update >> /dev/null
+*/10 * * * * root : YunoHost DynDNS update; sleep \$((RANDOM\\%60)); ! ping -q -W5 -c1 ipv4.yunohost.org >/dev/null 2>&1 || test -e /var/run/moulinette_yunohost.lock || yunohost dyndns update >> /dev/null
 EOF
     else
         # (Delete cron if no dyndns domain found)

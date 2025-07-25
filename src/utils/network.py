@@ -58,7 +58,7 @@ def get_public_ip(protocol: IPProto = 4) -> str | None:
 
 
 def get_public_ip_from_remote_server(protocol: IPProto = 4) -> str | None:
-    """Retrieve the public IP address from ip.yunohost.org"""
+    """Retrieve the public IP address from ipv4/6.yunohost.org"""
 
     # We can know that ipv6 is not available directly if this file does not exists
     if protocol == 6 and not os.path.exists("/proc/net/if_inet6"):
@@ -87,7 +87,7 @@ def get_public_ip_from_remote_server(protocol: IPProto = 4) -> str | None:
         )
         return None
 
-    url = f"https://ip{protocol}.yunohost.org"
+    url = f"https://ipv{protocol}.yunohost.org"
     logger.debug("Fetching IP from %s " % url)
 
     try:
