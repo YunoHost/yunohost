@@ -65,8 +65,7 @@ def yunopaste(data: str) -> str:
         url = json.loads(response.text)["key"]
     except Exception:
         raise YunohostError(
-            "Uhoh, couldn't parse the answer from "
-            f"paste.yunohost.org: {response.text}",
+            f"Uhoh, couldn't parse the answer from paste.yunohost.org: {response.text}",
             raw_msg=True,
         )
 
