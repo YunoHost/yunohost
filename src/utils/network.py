@@ -30,7 +30,7 @@ from moulinette.utils.process import check_output
 logger = logging.getLogger("yunohost.utils.network")
 
 
-def get_public_ip(protocol=4):
+def get_public_ip(protocol: int = 4) -> str | None:
     assert protocol in [4, 6], (
         "Invalid protocol version for get_public_ip: %s, expected 4 or 6" % protocol
     )

@@ -61,7 +61,7 @@ main_domain_cache_timestamp = 0
 DOMAIN_CACHE_DURATION = 15
 
 
-def _get_maindomain():
+def _get_maindomain() -> str:
     global main_domain_cache
     global main_domain_cache_timestamp
     if (

@@ -79,12 +79,12 @@ system_arch.cache = None  # type: ignore[attr-defined]
 system_virt.cache = None  # type: ignore[attr-defined]
 
 
-def free_space_in_directory(dirpath):
+def free_space_in_directory(dirpath: str | Path) -> int:
     stat = os.statvfs(dirpath)
     return stat.f_frsize * stat.f_bavail
 
 
-def space_used_by_directory(dirpath, follow_symlinks=True):
+def space_used_by_directory(dirpath: str | Path, follow_symlinks: bool = True) -> int:
     if not follow_symlinks:
         du_output = check_output(["du", "-sb", dirpath], shell=False)
         return int(du_output.split()[0])
@@ -137,13 +137,13 @@ def binary_to_human(n: int) -> str:
     return "%s" % n
 
 
-def ram_available():
+def ram_available() -> tuple[int, int]:
     import psutil
 
     return (psutil.virtual_memory().available, psutil.swap_memory().free)
 
 
-def get_ynh_package_version(package):
+def get_ynh_package_version(package: str) -> dict[str, str]:
     # Returns the installed version and release version ('stable' or 'testing'
     # or 'unstable')
 

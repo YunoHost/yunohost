@@ -31,7 +31,7 @@ from ..utils.network import get_public_ip
 logger = logging.getLogger("yunohost.utils.yunopaste")
 
 
-def yunopaste(data):
+def yunopaste(data: str) -> str:
     paste_server = "https://paste.yunohost.org"
 
     try:
@@ -71,8 +71,8 @@ def yunopaste(data):
     return "{}/raw/{}".format(paste_server, url)
 
 
-def anonymize(data):
-    def anonymize_domain(data, domain, redact):
+def anonymize(data: str) -> str:
+    def anonymize_domain(data: str, domain: str, redact: str) -> str:
         data = data.replace(domain, redact)
         # This stuff appears sometimes because some folder in
         # /var/lib/metronome/ have some folders named this way
@@ -92,7 +92,7 @@ def anonymize(data):
     # So e.g. if there's jitsi.foobar.com as a subdomain of foobar.com, it may
     # be interesting to know that the log is about a supposedly dedicated domain
     # for jisti (hopefully this explanation make sense).
-    domains = domain_list()["domains"]
+    domains: list[str] = domain_list()["domains"]
     domains = sorted(domains, key=lambda d: len(d))
 
     count = 2
