@@ -22,55 +22,58 @@ import logging
 import os
 import re
 import time
+from pathlib import Path
+from typing import Literal
 
 from moulinette.utils.filesystem import read_file, write_to_file
 from moulinette.utils.network import download_text
 from moulinette.utils.process import check_output
 
 logger = logging.getLogger("yunohost.utils.network")
+CACHE_DIR = Path("/var/cache/yunohost")
 
+IPProto = Literal[4] | Literal[6]
 
-def get_public_ip(protocol: int = 4) -> str | None:
+def get_public_ip(protocol: IPProto = 4) -> str | None:
     assert protocol in [4, 6], (
-        "Invalid protocol version for get_public_ip: %s, expected 4 or 6" % protocol
+        f"Invalid protocol version for get_public_ip: {protocol}, expected 4 or 6"
     )
 
-    cache_file = "/var/cache/yunohost/ipv%s" % protocol
+    cache_file = CACHE_DIR / f"ipv{protocol}"
     cache_duration = 120  # 2 min
-    if (
-        os.path.exists(cache_file)
-        and abs(os.path.getctime(cache_file) - time.time()) < cache_duration
-    ):
-        ip = read_file(cache_file).strip()
-        ip = ip if ip else None  # Empty file (empty string) means there's no IP
+
+    if cache_file.exists() and (cache_file.stat().st_ctime - time.time()) < cache_duration:
+        # Empty file (empty string) means there's no IP
+        ip = read_file(str(cache_file)).strip() or None
         logger.debug(f"Reusing IPv{protocol} from cache: {ip}")
     else:
         ip = get_public_ip_from_remote_server(protocol)
-        logger.debug("IP fetched: %s" % ip)
-        write_to_file(cache_file, ip or "")
+        logger.debug(f"IP fetched: {ip}")
+        write_to_file(str(cache_file), ip or "")
     return ip
 
 
-def get_public_ip_from_remote_server(protocol=4):
+def get_public_ip_from_remote_server(protocol: IPProto = 4) -> str | None:
     """Retrieve the public IP address from ip.yunohost.org"""
 
     # We can know that ipv6 is not available directly if this file does not exists
     if protocol == 6 and not os.path.exists("/proc/net/if_inet6"):
         logger.debug(
-            "IPv6 appears not at all available on the system, so assuming there's no IP address for that version"
+            "IPv6 appears not at all available on the system, "
+            "so assuming there's no IP address for that version"
         )
         return None
 
     # If we are indeed connected in ipv4 or ipv6, we should find a default route
-    routes = check_output("ip -%s route show table all" % protocol).split("\n")
+    routes = check_output(f"ip -{protocol} route show table all").split("\n")
 
-    def is_default_route(r):
+    def is_default_route(route: str) -> bool:
         # Typically the default route starts with "default"
         # But of course IPv6 is more complex ... e.g. on internet cube there's
         # no default route but a /3 which acts as a default-like route...
         # e.g. 2000:/3 dev tun0 ...
-        return r.startswith("default") or (
-            ":" in r and re.match(r".*/[0-3]$", r.split()[0])
+        return route.startswith("default") or (
+            ":" in route and re.match(r".*/[0-3]$", route.split()[0]) is not None
         )
 
     if not any(is_default_route(r) for r in routes):
@@ -90,9 +93,9 @@ def get_public_ip_from_remote_server(protocol=4):
         return None
 
 
-def get_network_interfaces():
+def get_network_interfaces() -> dict[str, dict[str, str]]:
     # Get network devices and their addresses (raw infos from 'ip addr')
-    devices_raw = {}
+    devices_raw: dict[str, str] = {}
     output = check_output("ip addr show")
     for d in re.split(r"^(?:[0-9]+: )", output, flags=re.MULTILINE):
         # Extract device name (1) and its addresses (2)
@@ -110,7 +113,7 @@ def get_network_interfaces():
     return devices
 
 
-def get_gateway():
+def get_gateway() -> str | None:
     output = check_output("ip route show")
     m = re.search(r"default via (.*) dev ([a-z]+[0-9]?)", output)
     if not m:
@@ -120,7 +123,7 @@ def get_gateway():
     return addr.popitem()[1] if len(addr) == 1 else None
 
 
-def _extract_inet(string, skip_netmask=False, skip_loopback=True):
+def _extract_inet(string: str, skip_netmask: bool = False, skip_loopback: bool = True) -> dict[str, str]:
     """
     Extract IP addresses (v4 and/or v6) from a string limited to one
     address by protocol
@@ -141,7 +144,7 @@ def _extract_inet(string, skip_netmask=False, skip_loopback=True):
     ip6_pattern = r"(((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)::((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)"
     ip4_pattern += r"/[0-9]{1,2})" if not skip_netmask else ")"
     ip6_pattern += r"/[0-9]{1,3})" if not skip_netmask else ")"
-    result = {}
+    result: dict[str, str] = {}
 
     for m in re.finditer(ip4_pattern, string):
         addr = m.group(1)
