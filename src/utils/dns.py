@@ -64,7 +64,10 @@ def dig(
     resolvers: Literal["local"] | Literal["force_external"] | list[str] = "local",
     edns_size: int = 1500,
     full_answers: bool = False,
-) -> tuple[Literal["ok"], dns.resolver.Answer | list[str]] | tuple[Literal["nok"], tuple[str, dns.exception.DNSException]]:
+) -> (
+    tuple[Literal["ok"], dns.resolver.Answer | list[str]]
+    | tuple[Literal["nok"], tuple[str, dns.exception.DNSException]]
+):
     """
     Do a quick DNS request and avoid the "search" trap inside /etc/resolv.conf
     """
