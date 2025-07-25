@@ -83,7 +83,7 @@ def get_public_ip_from_remote_server(protocol: IPProto = 4) -> str | None:
         )
         return None
 
-    url = "https://ip%s.yunohost.org" % (protocol if protocol != 4 else "")
+    url = f"https://ip{protocol}.yunohost.org"
     logger.debug("Fetching IP from %s " % url)
 
     try:
