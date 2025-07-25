@@ -291,7 +291,9 @@ def aptitude_with_progress_bar(cmd):
         )
 
     callbacks = (
-        lambda line: logger.debug(strip_boring_dpkg_reading_database(line).rstrip() + "\r"),
+        lambda line: logger.debug(
+            strip_boring_dpkg_reading_database(line).rstrip() + "\r"
+        ),
         # ... aptitude has no stderr ? :|  if _apt_log_line_is_relevant(l.rstrip()) else logger.debug(l.rstrip() + "\r"),
         lambda line: logger.warning(line.rstrip() + "\r"),
         lambda line: log_apt_status_to_progress_bar(line.rstrip()),
