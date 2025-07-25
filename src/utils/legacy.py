@@ -18,9 +18,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import glob
 from typing import TypedDict, NotRequired
-import os
 from pathlib import Path
 import re
 from logging import getLogger
