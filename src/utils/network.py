@@ -34,6 +34,7 @@ CACHE_DIR = Path("/var/cache/yunohost")
 
 IPProto = Literal[4] | Literal[6]
 
+
 def get_public_ip(protocol: IPProto = 4) -> str | None:
     assert protocol in [4, 6], (
         f"Invalid protocol version for get_public_ip: {protocol}, expected 4 or 6"
@@ -42,7 +43,10 @@ def get_public_ip(protocol: IPProto = 4) -> str | None:
     cache_file = CACHE_DIR / f"ipv{protocol}"
     cache_duration = 120  # 2 min
 
-    if cache_file.exists() and (cache_file.stat().st_ctime - time.time()) < cache_duration:
+    if (
+        cache_file.exists()
+        and (cache_file.stat().st_ctime - time.time()) < cache_duration
+    ):
         # Empty file (empty string) means there's no IP
         ip = read_file(str(cache_file)).strip() or None
         logger.debug(f"Reusing IPv{protocol} from cache: {ip}")
@@ -123,7 +127,9 @@ def get_gateway() -> str | None:
     return addr.popitem()[1] if len(addr) == 1 else None
 
 
-def _extract_inet(string: str, skip_netmask: bool = False, skip_loopback: bool = True) -> dict[str, str]:
+def _extract_inet(
+    string: str, skip_netmask: bool = False, skip_loopback: bool = True
+) -> dict[str, str]:
     """
     Extract IP addresses (v4 and/or v6) from a string limited to one
     address by protocol
