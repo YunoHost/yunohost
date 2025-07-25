@@ -81,7 +81,7 @@ class Authenticator(BaseAuthenticator):
             # Force-reset existing LDAP interface
             from ..utils import ldap as ldaputils
 
-            ldaputils._ldap_interface = None
+            ldaputils._destroy_ldap_interface()
 
             try:
                 admins = (

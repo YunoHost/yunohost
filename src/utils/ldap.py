@@ -19,10 +19,10 @@
 #
 
 import atexit
+from functools import cache
 import logging
 import os
 import time
-from typing import Optional
 
 import ldap
 import ldap.modlist as modlist
@@ -34,18 +34,23 @@ from ..utils.error import YunohostError
 
 logger = logging.getLogger("yunohost.utils.ldap")
 
-# We use a global variable to do some caching
+
+# We cache the interface to do some caching
 # to avoid re-authenticating in case we call _get_ldap_authenticator multiple times
-_ldap_interface: Optional["LDAPInterface"] = None
+@cache
+def _get_ldap_interface() -> "LDAPInterface":
+    return LDAPInterface()
 
 
-def _get_ldap_interface():
-    global _ldap_interface
+# Add this to properly close / delete the ldap interface / authenticator
+# when Python exits ...
+# Otherwise there's a risk that some funky error appears at the very end
+# of the command due to Python stuff being unallocated in wrong order.
+def _destroy_ldap_interface() -> None:
+    _get_ldap_interface.cache_clear()
 
-    if _ldap_interface is None:
-        _ldap_interface = LDAPInterface()
 
-    return _ldap_interface
+atexit.register(_destroy_ldap_interface)
 
 
 # We regularly want to extract stuff like 'bar' in ldap path like
@@ -59,19 +64,6 @@ def _ldap_path_extract(path, info):
         if element.startswith(info + "="):
             return element[len(info + "=") :]
 
-
-# Add this to properly close / delete the ldap interface / authenticator
-# when Python exits ...
-# Otherwise there's a risk that some funky error appears at the very end
-# of the command due to Python stuff being unallocated in wrong order.
-def _destroy_ldap_interface():
-    global _ldap_interface
-    if _ldap_interface is not None:
-        del _ldap_interface
-        _ldap_interface = None
-
-
-atexit.register(_destroy_ldap_interface)
 
 URI = "ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi"
 BASEDN = "dc=yunohost,dc=org"
