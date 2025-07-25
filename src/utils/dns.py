@@ -18,49 +18,55 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from typing import List
+from functools import cache
+from typing import Literal
 
 from moulinette.utils.filesystem import read_file
 
-import dns.resolver
+import dns.resolver, dns.exception
 
 SPECIAL_USE_TLDS = ["home.arpa", "internal", "local", "localhost", "onion", "test"]
 
 YNH_DYNDNS_DOMAINS = ["nohost.me", "noho.st", "ynh.fr"]
 
-# Lazy dev caching to avoid re-reading the file multiple time when calling
-# dig() often during same yunohost operation
-external_resolvers_: List[str] = []
 
-
-def is_yunohost_dyndns_domain(domain):
+def is_yunohost_dyndns_domain(domain: str) -> bool:
     return any(
         domain.endswith(f".{dyndns_domain}") for dyndns_domain in YNH_DYNDNS_DOMAINS
     )
 
 
-def is_special_use_tld(domain):
+def is_special_use_tld(domain: str) -> bool:
     return any(domain.endswith(f".{tld}") for tld in SPECIAL_USE_TLDS)
 
 
-def external_resolvers():
-    global external_resolvers_
+# Lazy dev caching to avoid re-reading the file multiple time when calling
+# dig() often during same yunohost operation
+@cache
+def external_resolvers() -> list[str]:
+    resolv_dnsmasq_conf = read_file("/etc/resolv.dnsmasq.conf").split("\n")
+    external_resolvers_ = [
+        r.split(" ")[1] for r in resolv_dnsmasq_conf if r.startswith("nameserver")
+    ]
 
-    if not external_resolvers_:
-        resolv_dnsmasq_conf = read_file("/etc/resolv.dnsmasq.conf").split("\n")
-        external_resolvers_ = [
-            r.split(" ")[1] for r in resolv_dnsmasq_conf if r.startswith("nameserver")
-        ]
-        # We keep only ipv4 resolvers, otherwise on IPv4-only instances, IPv6
-        # will be tried anyway resulting in super-slow dig requests that'll wait
-        # until timeout...
-        external_resolvers_ = [r for r in external_resolvers_ if ":" not in r]
+    # We keep only ipv4 resolvers, otherwise on IPv4-only instances, IPv6
+    # will be tried anyway resulting in super-slow dig requests that'll wait
+    # until timeout...
+    external_resolvers_ = [r for r in external_resolvers_ if ":" not in r]
 
     return external_resolvers_
 
 
 def dig(
-    qname, rdtype="A", timeout=5, resolvers="local", edns_size=1500, full_answers=False
+    qname: str,
+    rdtype: str = "A",
+    timeout: int = 5,
+    resolvers: Literal["local"] | Literal["force_external"] | list[str] = "local",
+    edns_size: int = 1500,
+    full_answers: bool = False,
+) -> (
+    tuple[Literal["ok"], dns.resolver.Answer | list[str]]
+    | tuple[Literal["nok"], tuple[str, dns.exception.DNSException]]
 ):
     """
     Do a quick DNS request and avoid the "search" trap inside /etc/resolv.conf
@@ -91,6 +97,8 @@ def dig(
     # resolver.lifetime is the timeout for resolver.query()
     # By default set it to 5 seconds to allow 4 resolvers to be unreachable.
     resolver.lifetime = timeout
+
+    answers: dns.resolver.Answer | list[str]
     try:
         answers = resolver.query(qname, rdtype)
     except (
@@ -98,8 +106,8 @@ def dig(
         dns.resolver.NoNameservers,
         dns.resolver.NoAnswer,
         dns.exception.Timeout,
-    ) as e:
-        return ("nok", (e.__class__.__name__, e))
+    ) as err:
+        return ("nok", (err.__class__.__name__, err))
 
     if not full_answers:
         answers = [answer.to_text() for answer in answers]

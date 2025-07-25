@@ -226,7 +226,7 @@
     "firewall_reloaded": "Фаєрвол перезавантажено",
     "firewall_reload_failed": "Не вдалося перезавантажити фаєрвол. Подробиці в журналі.",
     "file_does_not_exist": "Файл {path} не існує.",
-    "field_invalid": "Неприпустиме поле '{}'",
+    "field_invalid": "Неприпустиме поле '{field}'",
     "extracting": "Витягнення…",
     "dyndns_unavailable": "Домен '{domain}' недоступний.",
     "dyndns_domain_not_provided": "DynDNS провайдер {provider} не може надати домен {domain}.",

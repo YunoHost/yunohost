@@ -109,7 +109,7 @@
     "dyndns_domain_not_provided": "Lo provesidor DynDNS {provider} pòt pas fornir lo domeni {domain}.",
     "dyndns_unavailable": "Lo domeni {domain} es pas disponible.",
     "extracting": "Extraccion…",
-    "field_invalid": "Camp incorrècte : « {} »",
+    "field_invalid": "Camp incorrècte : « {field} »",
     "main_domain_change_failed": "Modificacion impossibla del domeni màger",
     "main_domain_changed": "Lo domeni màger es estat modificat",
     "migrations_list_conflict_pending_done": "Podètz pas utilizar --previous e --done a l’encòp.",

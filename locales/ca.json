@@ -131,7 +131,7 @@
     "dyndns_domain_not_provided": "El proveïdor de DynDNS {provider} no pot oferir el domini {domain}.",
     "dyndns_unavailable": "El domini {domain} no està disponible.",
     "extracting": "Extracció en curs…",
-    "field_invalid": "Camp incorrecte « {} »",
+    "field_invalid": "Camp incorrecte « {field} »",
     "file_does_not_exist": "El camí {path} no existeix.",
     "firewall_reload_failed": "No s'ha pogut tornar a carregar el tallafocs. Més informació en el registre.",
     "firewall_reloaded": "S'ha tornat a carregar el tallafocs",

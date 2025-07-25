@@ -445,7 +445,7 @@
     "dyndns_unavailable": "ドメイン '{domain}' は使用できません。",
     "dyndns_domain_not_provided": "DynDNS プロバイダー{provider} はドメイン{domain}を提供できません。",
     "extracting": "抽出中…",
-    "field_invalid": "無効なフィールド '{}'",
+    "field_invalid": "無効なフィールド '{field}'",
     "file_does_not_exist": "ファイル {path}が存在しません。",
     "firewall_reloaded": "ファイアウォールがリロードされました",
     "global_settings_reset_success": "グローバル設定をリセットする",

@@ -225,7 +225,7 @@ class MyDiagnoser(Diagnoser):
         return any(ping(protocol, resolver) for resolver in resolvers[:5])
 
     def can_resolve_dns(self):
-        return os.system("dig +short ip.yunohost.org >/dev/null 2>/dev/null") == 0
+        return os.system("dig +short ipv4.yunohost.org >/dev/null 2>/dev/null") == 0
 
     def good_resolvconf(self):
         content = read_file("/etc/resolv.conf").strip().split("\n")
@@ -241,7 +241,7 @@ class MyDiagnoser(Diagnoser):
         return len(content) == 1 and content[0].split() == ["nameserver", "127.0.0.1"]
 
     def get_public_ip(self, protocol=4):
-        # FIXME - TODO : here we assume that DNS resolution for ip.yunohost.org is working
+        # FIXME - TODO : here we assume that DNS resolution for ip4/6.yunohost.org is working
         # but if we want to be able to diagnose DNS resolution issues independently from
         # internet connectivity, we gotta rely on fixed IPs first....
 
@@ -252,7 +252,7 @@ class MyDiagnoser(Diagnoser):
             protocol
         )
 
-        url = "https://ip%s.yunohost.org" % ("6" if protocol == 6 else "")
+        url = f"https://ipv{protocol}.yunohost.org"
 
         try:
             return download_text(url, timeout=30).strip()
