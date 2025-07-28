@@ -25,6 +25,7 @@ import shutil
 from datetime import datetime
 from difflib import unified_diff
 from logging import getLogger
+from typing import Any
 
 import yaml
 from moulinette import m18n
@@ -53,7 +54,7 @@ def regen_conf(
     force=False,
     dry_run=False,
     list_pending=False,
-):
+) -> dict[str, dict[str, Any]]:
     """
     Regenerate the configuration file(s)
 
@@ -611,7 +612,7 @@ def _update_conf_hashes(category, hashes):
     _save_regenconf_infos(categories)
 
 
-def _force_clear_hashes(paths):
+def _force_clear_hashes(paths: list[str]) -> None:
     categories = _get_regenconf_infos()
     for path in paths:
         for category in categories.keys():
@@ -624,7 +625,7 @@ def _force_clear_hashes(paths):
     _save_regenconf_infos(categories)
 
 
-def _process_regen_conf(system_conf, new_conf=None, save=True):
+def _process_regen_conf(system_conf: str, new_conf: str | None = None, save: bool = True) -> bool:
     """Regenerate a given system configuration file
 
     Replace a given system configuration file by a new one or delete it if

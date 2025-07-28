@@ -571,7 +571,7 @@ def service_log(name, number=50):
     return result
 
 
-def _run_service_command(action, service):
+def _run_service_command(action: str, service: str) -> bool:
     """
     Run services management command (start, stop, enable, disable, restart, reload)
 

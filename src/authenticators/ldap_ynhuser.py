@@ -183,7 +183,7 @@ def decrypt(data_enc_and_iv_b64):
     return data.decode()
 
 
-def short_hash(data):
+def short_hash(data: str) -> str:
     return hashlib.shake_256(data.encode()).hexdigest(20)
 
 
@@ -362,7 +362,7 @@ class Authenticator(BaseAuthenticator):
                     logger.debug(f"Failed to delete session file {session_file} ? {e}")
 
     @staticmethod
-    def invalidate_all_sessions_for_user(user):
+    def invalidate_all_sessions_for_user(user: str) -> None:
         for file in SESSION_FOLDER.glob(f"{short_hash(user)}*"):
             try:
                 file.unlink()

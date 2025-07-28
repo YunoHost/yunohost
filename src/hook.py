@@ -221,9 +221,9 @@ def hook_list(action, list_by="name", show_info=False):
 
 
 def hook_callback(
-    action,
-    hooks=[],
-    args=None,
+    action: str,
+    hooks: list[str] = [],
+    args: list[str | bool] | None = None,
     chdir=None,
     env=None,
     pre_callback=None,

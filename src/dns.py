@@ -19,6 +19,7 @@
 #
 
 import os
+from typing import Any
 import re
 import time
 from collections import OrderedDict
@@ -37,7 +38,7 @@ from .domain import (
     domain_config_get,
 )
 from .hook import hook_callback
-from .log import is_unit_operation
+from .log import OperationLogger, is_unit_operation
 from .utils.dns import dig, is_special_use_tld, is_yunohost_dyndns_domain
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.network import get_public_ip
@@ -47,7 +48,7 @@ logger = getLogger("yunohost.domain")
 DOMAIN_REGISTRAR_LIST_PATH = "/usr/share/yunohost/registrar_list.toml"
 
 
-def domain_dns_suggest(domain):
+def domain_dns_suggest(domain: str) -> str:
     """
     Generate DNS configuration for a domain
 
@@ -464,7 +465,7 @@ def _get_relative_name_for_dns_zone(domain, base_dns_zone):
     )
 
 
-def _get_registrar_config_section(domain):
+def _get_registrar_config_section(domain: str) -> OrderedDict[str, Any]:
     from lexicon.providers.auto import _relevant_provider_for_domain
 
     registrar_infos = OrderedDict(
@@ -574,7 +575,7 @@ def _get_registrar_config_section(domain):
     return registrar_infos
 
 
-def _get_registar_settings(domain):
+def _get_registar_settings(domain: str) -> tuple[str, Any]:
     _assert_domain_exists(domain)
 
     settings = domain_config_get(domain, key="dns.registrar", export=True)
@@ -588,7 +589,7 @@ def _get_registar_settings(domain):
 
 
 @is_unit_operation()
-def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=False):
+def domain_dns_push(operation_logger: "OperationLogger", domain: str, dry_run: bool = False, force: bool = False, purge: bool = False) -> dict[str, list[str]]:
     """
     Send DNS records to the previously-configured registrar of the domain.
     """

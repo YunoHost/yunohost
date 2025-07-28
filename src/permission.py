@@ -47,10 +47,10 @@ SYSTEM_PERM_CONF = "/etc/yunohost/permissions.yml"
 
 
 class SystemPermInfos(TypedDict):
-    label: str
+    label: NotRequired[str]
     allowed: list[str]
     corresponding_users: NotRequired[list[str] | set[str]]
-    protected: bool
+    protected: NotRequired[bool]
 
 
 class AppPermInfos(SystemPermInfos):
