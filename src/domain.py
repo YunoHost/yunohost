@@ -1025,7 +1025,9 @@ def domain_dns_suggest(domain: str) -> str:
     return domain_dns_suggest(domain)
 
 
-def domain_dns_push(domain: str, dry_run: bool, force: bool, purge: bool) -> dict[str, list[str]]:
+def domain_dns_push(
+    domain: str, dry_run: bool, force: bool, purge: bool
+) -> dict[str, list[str]]:
     from .dns import domain_dns_push
 
     return domain_dns_push(domain, dry_run, force, purge)

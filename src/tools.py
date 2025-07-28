@@ -292,7 +292,11 @@ def tools_postinstall(
 
 
 def tools_regen_conf(
-    names: list[str] = [], with_diff: bool = False, force: bool = False, dry_run: bool = False, list_pending: bool = False
+    names: list[str] = [],
+    with_diff: bool = False,
+    force: bool = False,
+    dry_run: bool = False,
+    list_pending: bool = False,
 ) -> dict[str, dict[str, Any]]:
     from .regenconf import regen_conf
 
@@ -317,7 +321,9 @@ class ToolsUpdate(TypedDict):
 
 
 @is_unit_operation(sse_only=True)
-def tools_update(operation_logger: OperationLogger, target: str | None = None) -> ToolsUpdate:
+def tools_update(
+    operation_logger: OperationLogger, target: str | None = None
+) -> ToolsUpdate:
     """
     Update apps & system package cache
     """
@@ -639,7 +645,9 @@ def tools_basic_space_cleanup() -> None:
 # ############################################ #
 
 
-def tools_migrations_list(pending: bool = False, done: bool = False) -> dict[str, list[dict[str, Any]]]:
+def tools_migrations_list(
+    pending: bool = False, done: bool = False
+) -> dict[str, list[dict[str, Any]]]:
     """
     List existing migrations
     """
@@ -676,7 +684,11 @@ def tools_migrations_list(pending: bool = False, done: bool = False) -> dict[str
 
 
 def tools_migrations_run(
-    targets: list["Migration"] = [], skip: bool = False, auto: bool = False, force_rerun: bool = False, accept_disclaimer: bool = False
+    targets: list["Migration"] = [],
+    skip: bool = False,
+    auto: bool = False,
+    force_rerun: bool = False,
+    accept_disclaimer: bool = False,
 ) -> None:
     """
     Perform migrations
