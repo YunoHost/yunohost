@@ -25,6 +25,8 @@ import subprocess
 import time
 from importlib import import_module
 from logging import getLogger
+from typing import Any, TYPE_CHECKING
+from typing_extensions import TypedDict
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.filesystem import chown, cp, mkdir, read_yaml, rm, write_to_yaml
@@ -42,16 +44,20 @@ from .utils.system import (
     ynh_packages_version,
 )
 
+if TYPE_CHECKING:
+    from .app import AppInfo
+
+
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
 logger = getLogger("yunohost.tools")
 
 
-def tools_versions():
+def tools_versions() -> dict[str, dict[str, str]]:
     return ynh_packages_version()
 
 
-def tools_rootpw(new_password, check_strength=True):
+def tools_rootpw(new_password: str, check_strength: bool = True) -> None:
     from .utils.password import (
         assert_password_is_compatible,
         assert_password_is_strong_enough,
@@ -75,7 +81,7 @@ def tools_rootpw(new_password, check_strength=True):
         logger.warning(m18n.n("root_password_desynchronized"))
 
 
-def tools_maindomain(new_main_domain=None):
+def tools_maindomain(new_main_domain: str | None = None) -> dict[str, str] | None:
     from .domain import domain_main_domain
 
     logger.warning(
@@ -89,7 +95,7 @@ def tools_maindomain(new_main_domain=None):
     return domain_main_domain(new_main_domain=new_main_domain)
 
 
-def _set_hostname(hostname, pretty_hostname=None):
+def _set_hostname(hostname: str, pretty_hostname: str | None = None) -> None:
     """
     Change the machine hostname using hostnamectl
     """
@@ -122,17 +128,17 @@ def _set_hostname(hostname, pretty_hostname=None):
 
 @is_unit_operation(exclude=["dyndns_recovery_password", "password"])
 def tools_postinstall(
-    operation_logger,
-    domain,
-    username,
-    fullname,
-    password,
-    dyndns_recovery_password=None,
-    ignore_dyndns=False,
-    force_diskspace=False,
-    overwrite_root_password=True,
-    i_have_read_terms_of_services=False,
-):
+    operation_logger: OperationLogger,
+    domain: str,
+    username: str,
+    fullname: str,
+    password: str,
+    dyndns_recovery_password: str | None = None,
+    ignore_dyndns: bool = False,
+    force_diskspace: bool = False,
+    overwrite_root_password: bool = True,
+    i_have_read_terms_of_services: bool = False,
+) -> None:
     import psutil
 
     from .app import _ask_confirmation
@@ -286,8 +292,8 @@ def tools_postinstall(
 
 
 def tools_regen_conf(
-    names=[], with_diff=False, force=False, dry_run=False, list_pending=False
-):
+    names: list[str] = [], with_diff: bool = False, force: bool = False, dry_run: bool = False, list_pending: bool = False
+) -> dict[str, dict[str, Any]]:
     from .regenconf import regen_conf
 
     if (names == [] or "nftables" in names) and tools_migrations_state()[
@@ -303,8 +309,15 @@ def tools_regen_conf(
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 
+class ToolsUpdate(TypedDict):
+    system: list[dict[str, str]]
+    apps: list["AppInfo"]
+    important_yunohost_upgrade: bool
+    pending_migrations: list[dict[str, Any]]
+
+
 @is_unit_operation(sse_only=True)
-def tools_update(operation_logger, target=None):
+def tools_update(operation_logger: OperationLogger, target: str | None = None) -> ToolsUpdate:
     """
     Update apps & system package cache
     """
@@ -334,9 +347,9 @@ def tools_update(operation_logger, target=None):
         # Also keep track of whether or not we encountered a warning...
         warnings = []
 
-        def is_legit_warning(m):
+        def is_legit_warning(m: str) -> bool:
             legit_warning = (
-                m.rstrip()
+                bool(m.rstrip())
                 and "apt does not have a stable CLI interface" not in m.rstrip()
             )
             if legit_warning:
@@ -411,7 +424,7 @@ def tools_update(operation_logger, target=None):
 
 
 @is_unit_operation()
-def tools_upgrade(operation_logger, target=None):
+def tools_upgrade(operation_logger: OperationLogger, target: str | None = None) -> None:
     """
     Update apps & package cache, then display changelog
 
@@ -529,7 +542,7 @@ def tools_upgrade(operation_logger, target=None):
 
 
 @is_unit_operation()
-def tools_shutdown(operation_logger, force=False):
+def tools_shutdown(operation_logger: OperationLogger, force: bool = False) -> None:
     shutdown = force
     if not shutdown:
         try:
@@ -548,7 +561,7 @@ def tools_shutdown(operation_logger, force=False):
 
 
 @is_unit_operation()
-def tools_reboot(operation_logger, force=False):
+def tools_reboot(operation_logger: OperationLogger, force: bool = False) -> None:
     reboot = force
     if not reboot:
         try:
@@ -565,7 +578,7 @@ def tools_reboot(operation_logger, force=False):
         subprocess.check_call(["systemctl", "reboot"])
 
 
-def tools_shell(command=None):
+def tools_shell(command: str | None = None) -> None:
     """
     Launch an (i)python shell in the YunoHost context.
 
@@ -602,7 +615,7 @@ def tools_shell(command=None):
         shell.interact()
 
 
-def tools_basic_space_cleanup():
+def tools_basic_space_cleanup() -> None:
     """
     Basic space cleanup.
 
@@ -626,7 +639,7 @@ def tools_basic_space_cleanup():
 # ############################################ #
 
 
-def tools_migrations_list(pending=False, done=False):
+def tools_migrations_list(pending: bool = False, done: bool = False) -> dict[str, list[dict[str, Any]]]:
     """
     List existing migrations
     """
@@ -663,8 +676,8 @@ def tools_migrations_list(pending=False, done=False):
 
 
 def tools_migrations_run(
-    targets=[], skip=False, auto=False, force_rerun=False, accept_disclaimer=False
-):
+    targets: list["Migration"] = [], skip: bool = False, auto: bool = False, force_rerun: bool = False, accept_disclaimer: bool = False
+) -> None:
     """
     Perform migrations
 
@@ -806,7 +819,7 @@ def tools_migrations_run(
                 operation_logger.success()
 
 
-def tools_migrations_state():
+def tools_migrations_state() -> dict[str, dict[Any, Any]]:
     """
     Show current migration state
     """
@@ -822,7 +835,7 @@ def _write_migration_state(migration_id, state):
     write_to_yaml(MIGRATIONS_STATE_PATH, current_states)
 
 
-def _get_migrations_list():
+def _get_migrations_list() -> list[Migration]:
     # states is a datastructure that represents the last run migration
     # it has this form:
     # {
@@ -872,7 +885,7 @@ def _get_migration_by_name(migration_name):
     return _load_migration(migrations_found[0])
 
 
-def _load_migration(migration_file):
+def _load_migration(migration_file: str) -> Migration:
     migration_id = migration_file[: -len(".py")]
 
     logger.debug(m18n.n("migrations_loading_migration", id=migration_id))
@@ -893,7 +906,7 @@ def _load_migration(migration_file):
         )
 
 
-def _skip_all_migrations():
+def _skip_all_migrations() -> None:
     """
     Skip all pending migrations.
     This is meant to be used during postinstall to
@@ -906,7 +919,7 @@ def _skip_all_migrations():
     write_to_yaml(MIGRATIONS_STATE_PATH, new_states)
 
 
-def _tools_migrations_run_after_system_restore(backup_version):
+def _tools_migrations_run_after_system_restore(backup_version: str) -> None:
     all_migrations = _get_migrations_list()
 
     current_version = version.parse(ynh_packages_version()["yunohost"]["version"])
@@ -975,17 +988,17 @@ class Migration:
 
     # The followings shouldn't be overridden
 
-    def __init__(self, id_):
+    def __init__(self, id_) -> None:
         self.id = id_
         self.number = int(self.id.split("_", 1)[0])
         self.name = self.id.split("_", 1)[1]
 
     @property
-    def description(self):
+    def description(self) -> str:
         return m18n.n(f"migration_description_{self.id}")
 
-    def ldap_migration(run):
-        def func(self):
+    def ldap_migration(run) -> None:
+        def func(self) -> None:
             # Backup LDAP before the migration
             logger.info(m18n.n("migration_ldap_backup_before_migration"))
             try:

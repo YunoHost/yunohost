@@ -175,7 +175,7 @@ class SectionModel(ContainerModel, OptionsModel):
         if isinstance(self.visible, bool):
             return self.visible
 
-        return evaluate_simple_js_expression(self.visible, context=context)
+        return evaluate_simple_js_expression(self.visible, context=context)  # type: ignore
 
     def translate(self, i18n_key: str | None = None) -> None:
         """
@@ -438,7 +438,7 @@ class ConfigPanel:
             entities = [
                 re.match(
                     "^" + cls.save_path_tpl.format(entity="(?p<entity>)") + "$", f
-                ).group("entity")
+                ).group("entity")  # type: ignore
                 for f in glob.glob(cls.save_path_tpl.format(entity="*"))
                 if os.path.isfile(f)
             ]
