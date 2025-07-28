@@ -78,7 +78,9 @@ logger = getLogger("yunohost.form")
 # Those js-like evaluate functions are used to eval safely visible attributes
 # The goal is to evaluate in the same way than js simple-evaluate
 # https://github.com/shepherdwind/simple-evaluate
-def evaluate_simple_ast(node: ast.Expression | ast.expr, context: dict[str, Any] | None = None) -> Any:
+def evaluate_simple_ast(
+    node: ast.Expression | ast.expr, context: dict[str, Any] | None = None
+) -> Any:
     if context is None:
         context = {}
 
@@ -171,7 +173,7 @@ def evaluate_simple_ast(node: ast.Expression | ast.expr, context: dict[str, Any]
     elif isinstance(node, ast.Call) and node.func.__dict__.get("id") == "match":
         return re.match(
             evaluate_simple_ast(node.args[1], context),
-            context[node.args[0].id]  # type: ignore
+            context[node.args[0].id],  # type: ignore
         )
 
     # Unauthorized opcode
@@ -212,7 +214,9 @@ def js_to_python(expr: str) -> str:
     return py_expr
 
 
-def evaluate_simple_js_expression(expr: str, context: Mapping[str, Any] = {}) -> int | float | str | bool | None | re.Match[str]:
+def evaluate_simple_js_expression(
+    expr: str, context: Mapping[str, Any] = {}
+) -> int | float | str | bool | None | re.Match[str]:
     if not expr.strip():
         return False
     node = ast.parse(js_to_python(expr), mode="eval").body
@@ -892,14 +896,18 @@ class ColorOption(BaseInputOption):
     _annotation = Color
 
     @staticmethod
-    def humanize(value: Color | str | None, option: "BaseOption" | dict[Any, Any] = {}) -> str:
+    def humanize(
+        value: Color | str | None, option: "BaseOption" | dict[Any, Any] = {}
+    ) -> str:
         if isinstance(value, Color):
             value.as_named(fallback=True)
 
         return super(ColorOption, ColorOption).humanize(value, option)
 
     @staticmethod
-    def normalize(value: Color | str | None, option: "BaseOption" | dict[Any, Any] = {}) -> str:
+    def normalize(
+        value: Color | str | None, option: "BaseOption" | dict[Any, Any] = {}
+    ) -> str:
         if isinstance(value, Color):
             return value.as_hex()
 
@@ -1456,7 +1464,9 @@ class BaseChoicesOption(BaseInputOption):
     # choices: dict[str, Any] | list[Any] | None
 
     @validator("choices", pre=True, check_fields=False)
-    def parse_comalist_choices(value: str | dict[str, Any] | list[Any] | None) -> dict[str, Any] | list[Any] | None:
+    def parse_comalist_choices(
+        value: str | dict[str, Any] | list[Any] | None,
+    ) -> dict[str, Any] | list[Any] | None:
         if isinstance(value, str):
             values = [value.strip() for value in value.split(",")]
             return [value for value in values if value]
@@ -1574,7 +1584,9 @@ class TagsOption(BaseChoicesOption):
     _annotation = str
 
     @staticmethod
-    def humanize(value: str | list[str] | None, option: "BaseOption" | dict[Any, Any] = {}) -> str:
+    def humanize(
+        value: str | list[str] | None, option: "BaseOption" | dict[Any, Any] = {}
+    ) -> str:
         if isinstance(value, list):
             return ",".join(str(v) for v in value)
         if not value:
@@ -1582,7 +1594,9 @@ class TagsOption(BaseChoicesOption):
         return value
 
     @staticmethod
-    def normalize(value: list[str] | str | None, option: "BaseOption" | dict[Any, Any] = {}) -> str:
+    def normalize(
+        value: list[str] | str | None, option: "BaseOption" | dict[Any, Any] = {}
+    ) -> str:
         if isinstance(value, list):
             return ",".join(str(v) for v in value)
         if isinstance(value, str):
