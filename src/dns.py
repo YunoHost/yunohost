@@ -589,7 +589,13 @@ def _get_registar_settings(domain: str) -> tuple[str, Any]:
 
 
 @is_unit_operation()
-def domain_dns_push(operation_logger: "OperationLogger", domain: str, dry_run: bool = False, force: bool = False, purge: bool = False) -> dict[str, list[str]]:
+def domain_dns_push(
+    operation_logger: "OperationLogger",
+    domain: str,
+    dry_run: bool = False,
+    force: bool = False,
+    purge: bool = False,
+) -> dict[str, list[str]]:
     """
     Send DNS records to the previously-configured registrar of the domain.
     """

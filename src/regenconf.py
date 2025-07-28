@@ -625,7 +625,9 @@ def _force_clear_hashes(paths: list[str]) -> None:
     _save_regenconf_infos(categories)
 
 
-def _process_regen_conf(system_conf: str, new_conf: str | None = None, save: bool = True) -> bool:
+def _process_regen_conf(
+    system_conf: str, new_conf: str | None = None, save: bool = True
+) -> bool:
     """Regenerate a given system configuration file
 
     Replace a given system configuration file by a new one or delete it if
