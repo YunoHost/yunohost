@@ -248,7 +248,7 @@ def _update_apps_catalog() -> None:
                 logger.debug(f"Failed to download logo {logo_hash} : {e}")
                 return False
 
-        results = ThreadPool(8).imap_unordered(fetch_logo, logos_to_download)
+        results = ThreadPool(2).imap_unordered(fetch_logo, logos_to_download)
         for result in results:
             # Is this even needed to iterate on the results ?
             pass
