@@ -847,7 +847,7 @@ def _write_migration_state(migration_id, state):
     write_to_yaml(MIGRATIONS_STATE_PATH, current_states)
 
 
-def _get_migrations_list() -> list[Migration]:
+def _get_migrations_list() -> list["Migration"]:
     # states is a datastructure that represents the last run migration
     # it has this form:
     # {
@@ -897,7 +897,7 @@ def _get_migration_by_name(migration_name):
     return _load_migration(migrations_found[0])
 
 
-def _load_migration(migration_file: str) -> Migration:
+def _load_migration(migration_file: str) -> "Migration":
     migration_id = migration_file[: -len(".py")]
 
     logger.debug(m18n.n("migrations_loading_migration", id=migration_id))
