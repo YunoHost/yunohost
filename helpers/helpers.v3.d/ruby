@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+readonly RBENV_ROOT="/opt/rbenv"
+export RBENV_ROOT
+
+_ynh_load_ruby_in_path_and_other_tweaks() {
+
+    # Get the absolute path of this version of Ruby
+    ruby_dir="$RBENV_ROOT/versions/$app/bin"
+
+    # Load the path of this version of ruby in $PATH
+    if [[ :$PATH: != *":$ruby_dir"* ]]; then
+        PATH="$ruby_dir:$PATH"
+    fi
+
+    # Export PATH such that it's available through sudo -E / ynh_exec_as $app
+    export PATH
+
+    # This is in full lowercase such that it gets replaced in templates
+    path_with_ruby="$PATH"
+    PATH_with_ruby="$PATH"
+
+    # Sets the local application-specific Ruby version
+    pushd "${install_dir}"
+        "$RBENV_ROOT/bin/rbenv" local "$ruby_version"
+    popd
+}
+
+# Auto-load Ruby path tweaks if this app uses the ruby resource in the manifest
+if [ -n "${ruby_version:-}" ] && (cat "$YNH_APP_BASEDIR/manifest.toml" | toml_to_json | jq -e ".resources.ruby" > /dev/null); then
+    _ynh_load_ruby_in_path_and_other_tweaks
+fi
+
+# Install a specific version of Ruby using rbenv
+#
+# The installed version is defined by `$ruby_version` which should be defined as global prior to calling this helper
+#
+# usage: ynh_ruby_install
+#
+# The helper adds the appropriate, specific version of ruby to the `$PATH` variable (which
+# is preserved when calling ynh_exec_as_app). Also defines:
+#
+# - `$path_with_ruby` to be used in the systemd config (`Environment="PATH=__PATH_WITH_RUBY__"`)
+# - `$ruby_dir`, the directory containing the specific version of ruby, which may be used in the systemd config too (e.g. `ExecStart=__RUBY_DIR__/ruby foo bar`)
+ynh_ruby_install() {
+
+    [[ -n "${ruby_version:-}" ]] || ynh_die "\$ruby_version should be defined prior to calling ynh_ruby_install"
+
+    # Install or update rbenv
+    _ynh_git_clone "https://github.com/rbenv/rbenv" "${RBENV_ROOT}"
+    _ynh_git_clone "https://github.com/rbenv/ruby-build" "${RBENV_ROOT}/plugins/ruby-build"
+    _ynh_git_clone "https://github.com/tpope/rbenv-aliases" "${RBENV_ROOT}/plugins/rbenv-aliase"
+    _ynh_git_clone "https://github.com/momo-lab/xxenv-latest" "${RBENV_ROOT}/plugins/xxenv-latest"
+
+    mkdir -p "${RBENV_ROOT}/cache"
+    mkdir -p "${RBENV_ROOT}/shims"
+
+    # Install the requested version of Ruby
+    local final_ruby_version=$(rbenv latest --print "$ruby_version")
+    ruby_version=${final_ruby_version:-$ruby_version}
+    ynh_app_setting_set --key=ruby_version --value="$ruby_version"
+
+    for PACKAGE in gcc make libjemalloc-dev libffi-dev libyaml-dev zlib1g-dev; do
+        _ynh_apt_package_is_installed "$PACKAGE" || ynh_die "$PACKAGE is required to install Ruby"
+    done
+
+    echo "Installing Ruby $final_ruby_version"
+    RUBY_CONFIGURE_OPTS="--disable-install-doc --with-jemalloc" MAKE_OPTS="-j2" "${RBENV_ROOT}/bin/rbenv" install --skip-existing "$ruby_version" 2>&1
+
+    # Recreate rbenv alias for this version
+    if "${RBENV_ROOT}/bin/rbenv" alias --list | grep --quiet "$app "; then
+        "${RBENV_ROOT}/bin/rbenv" alias "$app" --remove
+    fi
+    ${RBENV_ROOT}/bin/rbenv alias "$app" "$ruby_version"
+
+    # Cleanup Ruby versions
+    _ynh_ruby_cleanup
+
+    _ynh_load_ruby_in_path_and_other_tweaks
+}
+
+# Remove the version of Ruby used by the app.
+#
+# This helper will also cleanup unused Ruby versions
+#
+# usage: ynh_ruby_remove
+ynh_ruby_remove() {
+
+    [[ -n "${ruby_version:-}" ]] || ynh_die "\$ruby_version should be defined prior to calling ynh_ruby_remove"
+
+    "${RBENV_ROOT}/bin/rbenv" alias "$app" --remove
+
+    # Remove the line for this app
+    ynh_app_setting_delete --key="ruby_version"
+
+    # Cleanup Ruby versions
+    _ynh_ruby_cleanup
+}
+
+# Remove no more needed versions of Ruby used by the app.
+#
+# [internal]
+#
+# This helper will check what Ruby version are no more required,
+# and uninstall them
+# If no app uses Ruby, rbenv will be also removed.
+_ynh_ruby_cleanup() {
+
+    # Remove no more needed Ruby versions
+    local installed_ruby_versions=$(rbenv versions --bare --skip-aliases | grep -Ev '/')
+    for installed_ruby_version in $installed_ruby_versions; do
+        if ! grep -qE "^ruby_version: '?$installed_ruby_version'?" /etc/yunohost/apps/*/settings.yml; then
+            ynh_print_info "Removing Ruby-$installed_ruby_version"
+            $RBENV_ROOT/bin/rbenv uninstall --force "$installed_ruby_version"
+        fi
+    done
+
+    # If no app uses Ruby anymore
+    if ! grep -q "^ruby_version:" /etc/yunohost/apps/*/settings.yml; then
+        # Remove rbenv environment configuration
+        ynh_print_info "Removing rbenv"
+        ynh_safe_rm "$RBENV_ROOT"
+        ynh_safe_rm "/etc/profile.d/rbenv.sh"
+    fi
+}

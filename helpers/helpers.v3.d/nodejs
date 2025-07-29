@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+readonly N_PREFIX="/opt/node_n"
+export N_PREFIX
+
+# [internal]
+_ynh_load_nodejs_in_path_and_other_tweaks() {
+
+    # Get the absolute path of this version of node
+    nodejs_dir="$N_PREFIX/n/versions/node/$nodejs_version/bin"
+
+    # Load the path of this version of node in $PATH
+    if [[ :$PATH: != *":$nodejs_dir"* ]]; then
+        PATH="$nodejs_dir:$PATH"
+    fi
+
+    # Export PATH such that it's available through sudo -E / ynh_exec_as $app
+    export PATH
+
+    # This is in full lowercase such that it gets replaced in templates
+    # shellcheck disable=SC2034
+    path_with_nodejs="$PATH"
+    # shellcheck disable=SC2034
+    PATH_with_nodejs="$PATH"
+
+    # Prevent yet another Node and Corepack madness, with Corepack wanting the user to confirm download of Yarn
+    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+}
+
+# Auto-load Nodejs path tweaks if this app uses the nodejs resource in the manifest
+if [ -n "${nodejs_version:-}" ] && (cat "$YNH_APP_BASEDIR/manifest.toml" | toml_to_json | jq -e ".resources.nodejs" > /dev/null); then
+    _ynh_load_nodejs_in_path_and_other_tweaks
+fi
