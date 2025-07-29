@@ -32,7 +32,7 @@ from moulinette import Moulinette, m18n
 from moulinette.utils.filesystem import read_file, write_to_file
 from moulinette.utils.process import call_async_output, check_output
 
-from ..app import unstable_apps
+from ..app import app_list
 from ..regenconf import manually_modified_files, regen_conf
 from ..tools import Migration, _write_migration_state, tools_update
 from ..utils.error import YunohostError
@@ -60,6 +60,25 @@ N_CURRENT_DEBIAN = 11
 N_CURRENT_YUNOHOST = 11
 
 VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_bookworm_upgrade.txt"
+
+
+def unstable_apps() -> list[str]:
+    output = []
+    deprecated_apps = ["mailman", "ffsync"]
+
+    for infos in app_list(full=True)["apps"]:
+        if (
+            not infos.get("from_catalog")
+            or infos.get("from_catalog", {}).get("state")
+            in [
+                "inprogress",
+                "notworking",
+            ]
+            or infos["id"] in deprecated_apps
+        ):
+            output.append(infos["id"])
+
+    return output
 
 
 def _get_all_venvs(dir, level=0, maxlevel=3):
