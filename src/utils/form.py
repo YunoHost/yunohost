@@ -38,6 +38,7 @@ from typing import (
     Literal,
     Mapping,
     Type,
+    Union,
     cast,
     overload,
 )
@@ -631,13 +632,13 @@ class BaseInputOption(BaseOption):
         return value
 
     @staticmethod
-    def humanize(value: Any, option: "BaseOption" | dict[Any, Any] = {}) -> str:
+    def humanize(value: Any, option: Union["BaseOption", dict[Any, Any]] = {}) -> str:
         if value is None:
             return ""
         return str(value)
 
     @staticmethod
-    def normalize(value: Any, option: "BaseOption" | dict[Any, Any] = {}) -> Any:
+    def normalize(value: Any, option: Union["BaseOption", dict[Any, Any]] = {}) -> Any:
         if isinstance(value, str):
             value = value.strip()
         return value
