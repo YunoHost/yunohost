@@ -652,7 +652,7 @@ class BaseInputOption(BaseOption):
         return self._annotation
 
     @property
-    def _validators(self) -> dict[str, Callable[[Any, ModelField], Any]]:
+    def _validators(self) -> dict[str, Callable[[Any, "ModelField"], Any]]:
         return {
             "pre": self._value_pre_validator,
             "post": self._value_post_validator,
@@ -1342,7 +1342,7 @@ class FileOption(BaseInputOption):
     _upload_dirs: ClassVar[set[str]] = set()
 
     @property
-    def _validators(self) -> dict[str, Callable[[Any, ModelField], Any]]:
+    def _validators(self) -> dict[str, Callable[[Any, "ModelField"], Any]]:
         return {
             "pre": self._value_pre_validator,
             "post": (
