@@ -38,7 +38,6 @@
     "app_install_files_invalid": "Disse filene kan ikke installeres",
     "backup_abstract_method": "Denne sikkerhetskopimetoden er ikke implementert enda",
     "backup_actually_backuping": "Oppretter sikkerhetskopiarkiv fra innsamlede filer…",
-    "backup_app_failed": "Kunne ikke sikkerhetskopiere programmet '{app}'",
     "backup_applying_method_tar": "Lager TAR-sikkerhetskopiarkiv…",
     "backup_archive_app_not_found": "Fant ikke programmet '{app}' i sikkerhetskopiarkivet",
     "backup_archive_open_failed": "Kunne ikke åpne sikkerhetskopiarkivet",
