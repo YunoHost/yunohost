@@ -96,6 +96,7 @@
     "apps_catalog_obsolete_cache": "The app catalog cache is empty or obsolete.",
     "apps_catalog_update_success": "The application catalog has been updated!",
     "apps_catalog_updating": "Updating application catalog…",
+    "apps_confirm_partial_upgrade": "Some apps for which an upgrade was requested cannot be upgraded. Proceed with the others anyway?",
     "apps_no_target_can_be_upgraded": "No apps can be upgraded",
     "apps_upgrade_cancelled": "Upgrades were still pending for several other apps but their upgrade was cancelled (use `--continue-on-failure` to continue anyway): {apps}",
     "ask_admin_fullname": "Admin full name",

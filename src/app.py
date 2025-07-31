@@ -770,7 +770,7 @@ def app_upgrade(
             elif status == "url_required":
                 logger.warning(m18n.n("app_upgrade_cli_url_required", app=app_))
                 continue
-            elif upgrade_infos["specific_channel"]:
+            elif upgrade_infos.get("specific_channel"):
                 assert upgrade_infos["url"]
                 assert upgrade_infos["new_revision"]
                 new_app_src = upgrade_infos["url"] + "/tree/" + upgrade_infos["new_revision"]
@@ -1124,7 +1124,7 @@ def app_upgrade(
         else:
             # We'll proceed - or ask confirmation if some apps did not pass requirements
             pass
-    elif not actual_targets_with_manifests_and_workdir:
+    if not actual_targets_with_manifests_and_workdir:
         raise YunohostValidationError("apps_no_target_can_be_upgraded")
 
     # Before going in, display the list of what's actually gonna be upgraded
@@ -1136,6 +1136,7 @@ def app_upgrade(
     # If some apps did not pass requirements, ask confirmation
     some_target_didnt_pass_requirements = len(actual_targets_with_manifests_and_workdir) < len(actual_targets)
     if some_target_didnt_pass_requirements:
+        # i18n: apps_confirm_partial_upgrade
         _ask_confirmation("apps_confirm_partial_upgrade", kind="soft")
 
     # Display pre-upgrade notifications and ask for simple confirm
@@ -1161,6 +1162,10 @@ def app_upgrade(
         try:
             post_upgrade_notifications = _upgrade_single_app(app_, current_manifest, new_manifest, workdir, no_safety_backup)
         except YunohostError as e:
+
+            # If upgrading a single app from the webadmin : re-raise the Exception
+            if Moulinette.interface.type == "api" and raw_requested_targets and len(requested_targets) == 1:
+                raise e
 
             failed_to_upgrade_apps[app_] = str(e)
             logger.error(e)
