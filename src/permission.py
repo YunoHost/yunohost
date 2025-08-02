@@ -24,7 +24,7 @@ import os
 import random
 import re
 from logging import getLogger
-from typing import TYPE_CHECKING, BinaryIO, Literal, NotRequired, TypedDict, cast
+from typing import TYPE_CHECKING, BinaryIO, Literal, NotRequired, TypedDict, cast, Mapping
 
 from moulinette import m18n
 from moulinette.utils.filesystem import read_yaml, write_to_yaml
@@ -663,7 +663,7 @@ def _sync_permissions_with_ldap() -> None:
         # Save the gid to the list of existing gid, to avoid picking the same gid twice in the unlikely case where we would be creating several perm at the same time
         all_gids.add(gid)
 
-        attr_dict = {
+        attr_dict: Mapping[str, str | list[str]] = {
             "objectClass": ["top", "permissionYnh", "posixGroup"],
             "cn": perm,
             "gidNumber": gid,

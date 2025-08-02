@@ -114,7 +114,7 @@ https://github.com/storaged-project/udisks/blob/2.10.x-branch/data/org.freedeskt
 
 class Udisks2Manager(
     GetDisksMixin,
-    interface_name="org.freedesktop.UDisks2.Manager",
+    interface_name="org.freedesktop.UDisks2.Manager",  # type: ignore[call-arg]
 ):
     def __init__(self, bus: SdBus):
         super().__init__(UDISKS2_SERVICE_NAME, f"{UDISKS2_BASE_PATH}/Manager", bus)
@@ -230,7 +230,7 @@ class Udisks2Manager(
 
 class Disk(
     DbusInterfaceCommon,
-    interface_name="org.freedesktop.UDisks2.Drive",
+    interface_name="org.freedesktop.UDisks2.Drive",  # type: ignore[call-arg]
 ):
     @dbus_method(
         input_signature="a{sv}",
@@ -461,7 +461,7 @@ class Disk(
 
 class AtaController(
     DbusInterfaceCommon,
-    interface_name="org.freedesktop.UDisks2.Drive.Ata",
+    interface_name="org.freedesktop.UDisks2.Drive.Ata",  # type: ignore[call-arg]
 ):
     @dbus_method(
         input_signature="a{sv}",
@@ -714,7 +714,7 @@ class AtaController(
 
 class NVMeController(
     DbusInterfaceCommon,
-    interface_name="org.freedesktop.UDisks2.NVMe.Controller",
+    interface_name="org.freedesktop.UDisks2.NVMe.Controller",  # type: ignore[call-arg]
 ):
     @dbus_method(
         input_signature="a{sv}",

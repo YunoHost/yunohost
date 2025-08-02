@@ -25,7 +25,7 @@ import subprocess
 import time
 from importlib import import_module
 from logging import getLogger
-from typing import Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING, cast, Literal
 from typing_extensions import TypedDict
 
 from moulinette import Moulinette, m18n
@@ -50,7 +50,11 @@ if TYPE_CHECKING:
 
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
-logger = getLogger("yunohost.tools")
+if TYPE_CHECKING:
+    from moulinette.utils.log import MoulinetteLogger
+    logger = cast(MoulinetteLogger, getLogger("yunohost.tools"))
+else:
+    logger = getLogger("yunohost.tools")
 
 
 def tools_versions() -> dict[str, dict[str, str]]:
@@ -314,10 +318,12 @@ def tools_regen_conf(
 
 
 class AvailableUpdatesInfos(TypedDict):
-    system: list[dict[str, str]]
+    system: dict[str, list[dict[str, str]]]
     apps: list["AppInfo"]
     important_yunohost_upgrade: bool
     pending_migrations: list[dict[str, Any]]
+    last_apt_update: int
+    last_apps_catalog_update: int
 
 
 def tools_update_norefresh() -> AvailableUpdatesInfos:
@@ -705,7 +711,7 @@ def tools_migrations_list(
         raise YunohostValidationError("migrations_list_conflict_pending_done")
 
     # Get all migrations
-    migrations = _get_migrations_list()
+    _migrations = _get_migrations_list()
 
     # Reduce to dictionaries
     migrations = [
@@ -718,7 +724,7 @@ def tools_migrations_list(
             "description": migration.description,
             "disclaimer": migration.disclaimer,
         }
-        for migration in migrations
+        for migration in _migrations
     ]
 
     # If asked, filter pending or done migrations
@@ -732,7 +738,7 @@ def tools_migrations_list(
 
 
 def tools_migrations_run(
-    targets: list["Migration"] = [],
+    targets: list[str] = [],
     skip: bool = False,
     auto: bool = False,
     force_rerun: bool = False,
@@ -778,13 +784,13 @@ def tools_migrations_run(
             raise YunohostValidationError("migrations_must_provide_explicit_targets")
 
         # Otherwise, targets are all pending migrations
-        targets = [m for m in all_migrations if m.state == "pending"]
+        migrationtargets = [m for m in all_migrations if m.state == "pending"]
 
     # If explicit targets are provided, we shall validate them
     else:
-        targets = [get_matching_migration(t) for t in targets]
-        done = [t.id for t in targets if t.state != "pending"]
-        pending = [t.id for t in targets if t.state == "pending"]
+        migrationtargets = [get_matching_migration(t) for t in targets]
+        done = [t.id for t in migrationtargets if t.state != "pending"]
+        pending = [t.id for t in migrationtargets if t.state == "pending"]
 
         if skip and done:
             raise YunohostValidationError(
@@ -798,12 +804,12 @@ def tools_migrations_run(
             raise YunohostValidationError("migrations_already_ran", ids=", ".join(done))
 
     # So, is there actually something to do ?
-    if not targets:
+    if not migrationtargets:
         logger.info(m18n.n("migrations_no_migrations_to_run"))
         return
 
     # Actually run selected migrations
-    for migration in targets:
+    for migration in migrationtargets:
         # If we are migrating in "automatic mode" (i.e. from debian configure
         # during an upgrade of the package) but we are asked for running
         # migrations to be ran manually by the user, stop there and ask the
@@ -973,7 +979,7 @@ def _skip_all_migrations() -> None:
     initialize the migration system.
     """
     all_migrations = _get_migrations_list()
-    new_states = {"migrations": {}}
+    new_states: dict[Literal["migrations"], dict[str, str]] = {"migrations": {}}
     for migration in all_migrations:
         new_states["migrations"][migration.id] = "skipped"
     write_to_yaml(MIGRATIONS_STATE_PATH, new_states)

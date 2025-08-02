@@ -23,7 +23,7 @@ import time
 from collections import OrderedDict
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Optional, Union, TypedDict
+from typing import TYPE_CHECKING, Any, Optional, Union, TypedDict, Literal, Mapping
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
@@ -42,19 +42,22 @@ from .regenconf import _force_clear_hashes, _process_regen_conf, regen_conf
 from .utils.error import YunohostError, YunohostValidationError
 
 if TYPE_CHECKING:
-    from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
-
+    from pydantic.typing import AbstractSetIntStr, MappingIntStrAny, cast
+    from .dns import DNSRecord
     from .utils.configpanel import ConfigPanel, ConfigPanelModel, RawConfig, RawSettings
     from .utils.form import FormModel
+    from moulinette.utils.log import MoulinetteLogger
+    logger = cast(MoulinetteLogger, getLogger("yunohost.domain"))
+else:
+    logger = getLogger("yunohost.domain")
 
-logger = getLogger("yunohost.domain")
 
 DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
 
 # Lazy dev caching to avoid re-query ldap every time we need the domain list
 # The cache automatically expire every 15 seconds, to prevent desync between
 #  yunohost CLI and API which run in different processes
-domain_list_cache: List[str] = []
+domain_list_cache: list[str] = []
 domain_list_cache_timestamp = 0.0
 main_domain_cache: Optional[str] = None
 main_domain_cache_timestamp = 0.0
@@ -335,7 +338,7 @@ def domain_add(
     _certificate_install_selfsigned([domain], force=True)
 
     try:
-        attr_dict = {
+        attr_dict: Mapping[str, str | list[str]] = {
             "objectClass": ["mailDomain", "top"],
             "virtualdomain": domain,
         }
@@ -1027,7 +1030,7 @@ def domain_dns_suggest(domain: str) -> str:
 
 def domain_dns_push(
     domain: str, dry_run: bool, force: bool, purge: bool
-) -> dict[str, list[str]]:
+) -> dict[Literal["delete", "create", "update", "unchanged"], list["DNSRecord"] | list[str]] | dict[Literal["warnings", "errors"], list[str]]:
     from .dns import domain_dns_push
 
     return domain_dns_push(domain, dry_run, force, purge)

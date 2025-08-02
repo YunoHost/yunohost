@@ -434,6 +434,7 @@ class ConfigPanel:
         """
         List available config panel
         """
+        assert cls.save_path_tpl
         try:
             entities = [
                 re.match(

@@ -583,6 +583,9 @@ def app_change_url(
     old_domain = app_setting(app, "domain")
     old_path = app_setting(app, "path")
 
+    assert isinstance(old_domain, str)
+    assert isinstance(old_path, str)
+
     # Normalize path and domain format
 
     domain = DomainOption.normalize(domain)
@@ -1118,7 +1121,7 @@ def app_upgrade(
         if not actual_targets:
             logger.success(m18n.n("apps_already_up_to_date"))
             if Moulinette.interface.type == "api":
-                return {"notifications": {"POST_UPGRADE": {}}}
+                return {"notifications": {"POST_UPGRADE": {}}}  # type: ignore
             else:
                 return None
         else:
@@ -1151,7 +1154,7 @@ def app_upgrade(
                 )
                 _display_notifications(notifications, force=force)
 
-    post_upgrade_notifications = {}
+    post_upgrade_notifications: dict[str, str] = {}
     pending_apps = [target[0] for target in actual_targets_with_manifests_and_workdir]
     failed_to_upgrade_apps: dict[str, str] = {}
     successful_apps: list[str] = []
@@ -1188,7 +1191,7 @@ def app_upgrade(
     if Moulinette.interface.type == "api":
         # FIXME : in fact post_upgrade_notifications is only the notification from the last app x_x
         # I guess we didnt notice so far because the app only upgrades a single app at a time...
-        return {"notifications": {"POST_UPGRADE": post_upgrade_notifications}}
+        return {"notifications": {"POST_UPGRADE": post_upgrade_notifications}}  # type: ignore[return-value]
     else:
 
         if len(actual_targets_with_manifests_and_workdir) > 1:
@@ -1912,9 +1915,9 @@ def app_ssowatconf() -> None:
     # FIXME : this could be handled by nginx's regen conf to further simplify ssowat's code ...
     redirected_urls = {}
     for domain in domains:
-        default_app = _get_raw_domain_settings(domain).get("default_app")
+        default_app: str | None = _get_raw_domain_settings(domain).get("default_app")
 
-        if default_app not in ["_none", None] and _is_installed(default_app):
+        if default_app is not None and default_app != "_none" and _is_installed(default_app):
             app_settings = _get_app_settings(default_app)
             app_domain = app_settings["domain"]
             app_path = app_settings["path"]
