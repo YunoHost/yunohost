@@ -657,7 +657,7 @@ class TestMockedAppUpgrade:
         from os import listdir  # import the unmocked function
 
         def custom_os_listdir(path):
-            if isinstance(path, str) and path.endswith("MOCKED_BY_TEST"):
+            if "MOCKED_BY_TEST" in str(path):
                 return []
             return listdir(path)
 
