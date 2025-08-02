@@ -23,7 +23,7 @@ import time
 from collections import OrderedDict
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union, TypedDict
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
@@ -37,14 +37,14 @@ from moulinette.utils.filesystem import (
     write_to_yaml,
 )
 
-from .log import is_unit_operation
+from .log import OperationLogger, is_unit_operation
 from .regenconf import _force_clear_hashes, _process_regen_conf, regen_conf
 from .utils.error import YunohostError, YunohostValidationError
 
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
-    from .utils.configpanel import ConfigPanelModel, RawConfig, RawSettings
+    from .utils.configpanel import ConfigPanel, ConfigPanelModel, RawConfig, RawSettings
     from .utils.form import FormModel
 
 logger = getLogger("yunohost.domain")
@@ -55,13 +55,13 @@ DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
 # The cache automatically expire every 15 seconds, to prevent desync between
 #  yunohost CLI and API which run in different processes
 domain_list_cache: List[str] = []
-domain_list_cache_timestamp = 0
+domain_list_cache_timestamp = 0.0
 main_domain_cache: Optional[str] = None
-main_domain_cache_timestamp = 0
+main_domain_cache_timestamp = 0.0
 DOMAIN_CACHE_DURATION = 15
 
 
-def _get_maindomain():
+def _get_maindomain() -> str:
     global main_domain_cache
     global main_domain_cache_timestamp
     if (
@@ -75,7 +75,7 @@ def _get_maindomain():
     return main_domain_cache
 
 
-def _get_domains(exclude_subdomains=False):
+def _get_domains(exclude_subdomains: bool = False) -> list[str]:
     global domain_list_cache
     global domain_list_cache_timestamp
     if (
@@ -90,12 +90,12 @@ def _get_domains(exclude_subdomains=False):
             for entry in ldap.search("ou=domains", "virtualdomain=*", ["virtualdomain"])
         ]
 
-        def cmp_domain(domain):
+        def cmp_domain(domain: str) -> list[str]:
             # Keep the main part of the domain and the extension together
             # eg: this.is.an.example.com -> ['example.com', 'an', 'is', 'this']
-            domain = domain.split(".")
-            domain[-1] = domain[-2] + domain.pop()
-            return list(reversed(domain))
+            domainlist = domain.split(".")
+            domainlist[-1] = domainlist[-2] + domainlist.pop()
+            return list(reversed(domainlist))
 
         domain_list_cache = sorted(result, key=cmp_domain)
         domain_list_cache_timestamp = time.time()
@@ -108,9 +108,9 @@ def _get_domains(exclude_subdomains=False):
     return domain_list_cache
 
 
-def _get_domain_portal_dict():
+def _get_domain_portal_dict() -> dict[str, str]:
     domains = _get_domains()
-    out = OrderedDict()
+    out: OrderedDict[str, str] = OrderedDict()
 
     for domain in domains:
         parent = None
@@ -130,7 +130,17 @@ def _get_domain_portal_dict():
     return dict(out)
 
 
-def domain_list(exclude_subdomains=False, tree=False, features=[]):
+DomainDict = OrderedDict[str, "DomainDict"]
+
+
+class DomainList(TypedDict):
+    domains: list[str] | DomainDict
+    main: str
+
+
+def domain_list(
+    exclude_subdomains: bool = False, tree: bool = False, features: list[str] = []
+) -> DomainList:
     """
     List domains
 
@@ -160,14 +170,14 @@ def domain_list(exclude_subdomains=False, tree=False, features=[]):
             "main": main,
         }
 
-    def get_parent_dict(tree, child):
+    def get_parent_dict(tree: DomainDict, child: str) -> DomainDict:
         # If parent exists it should be the last added (see `_get_domains` ordering)
         possible_parent = next(reversed(tree)) if tree else None
         if possible_parent and child.endswith(f".{possible_parent}"):
             return get_parent_dict(tree[possible_parent], child)
         return tree
 
-    result = OrderedDict()
+    result: DomainDict = OrderedDict()
     for domain in domains:
         parent = get_parent_dict(result, domain)
         parent[domain] = OrderedDict()
@@ -175,7 +185,15 @@ def domain_list(exclude_subdomains=False, tree=False, features=[]):
     return {"domains": result, "main": main}
 
 
-def domain_info(domain):
+class DomainInfo(TypedDict):
+    certificate: dict[str, Any]
+    registrar: tuple[str, Any]
+    apps: list[dict[str, str]]
+    main: bool
+    topest_parent: str | None
+
+
+def domain_info(domain: str) -> DomainInfo:
     """
     Print aggregate data for a specific domain
 
@@ -214,23 +232,19 @@ def domain_info(domain):
     }
 
 
-def _assert_domain_exists(domain):
+def _assert_domain_exists(domain: str) -> None:
     if domain not in _get_domains():
         raise YunohostValidationError("domain_unknown", domain=domain)
 
 
-def _list_subdomains_of(parent_domain):
+def _list_subdomains_of(parent_domain: str) -> list[str]:
     _assert_domain_exists(parent_domain)
-
-    out = []
-    for domain in _get_domains():
-        if domain.endswith(f".{parent_domain}"):
-            out.append(domain)
-
-    return out
+    return [domain for domain in _get_domains() if domain.endswith(f".{parent_domain}")]
 
 
-def _get_parent_domain_of(domain, return_self=False, topest=False):
+def _get_parent_domain_of(
+    domain: str, return_self: bool = False, topest: bool = False
+) -> str | None:
     domains = _get_domains(exclude_subdomains=topest)
 
     domain_ = domain
@@ -244,8 +258,8 @@ def _get_parent_domain_of(domain, return_self=False, topest=False):
 
 @is_unit_operation(exclude=["dyndns_recovery_password"])
 def domain_add(
-    operation_logger,
-    domain,
+    operation_logger: "OperationLogger",
+    domain: str,
     dyndns_recovery_password=None,
     ignore_dyndns=False,
     install_letsencrypt_cert=False,
@@ -398,13 +412,13 @@ def domain_add(
 
 @is_unit_operation(exclude=["dyndns_recovery_password"])
 def domain_remove(
-    operation_logger,
-    domain,
-    remove_apps=False,
-    force=False,
-    dyndns_recovery_password=None,
-    ignore_dyndns=False,
-):
+    operation_logger: "OperationLogger",
+    domain: str,
+    remove_apps: bool = False,
+    force: bool = False,
+    dyndns_recovery_password: str | None = None,
+    ignore_dyndns: bool = False,
+) -> None:
     """
     Delete domains
 
@@ -556,7 +570,7 @@ def domain_remove(
     logger.success(m18n.n("domain_deleted"))
 
 
-def domain_dyndns_subscribe(*args, **kwargs):
+def domain_dyndns_subscribe(*args: Any, **kwargs: Any) -> None:
     """
     Subscribe to a DynDNS domain
     """
@@ -565,7 +579,7 @@ def domain_dyndns_subscribe(*args, **kwargs):
     dyndns_subscribe(*args, **kwargs)
 
 
-def domain_dyndns_unsubscribe(*args, **kwargs):
+def domain_dyndns_unsubscribe(*args: Any, **kwargs: Any) -> None:
     """
     Unsubscribe from a DynDNS domain
     """
@@ -574,7 +588,7 @@ def domain_dyndns_unsubscribe(*args, **kwargs):
     dyndns_unsubscribe(*args, **kwargs)
 
 
-def domain_dyndns_list():
+def domain_dyndns_list() -> dict[str, list[str]]:
     """
     Returns all currently subscribed DynDNS domains
     """
@@ -583,7 +597,7 @@ def domain_dyndns_list():
     return dyndns_list()
 
 
-def domain_dyndns_update(*args, **kwargs):
+def domain_dyndns_update(*args: Any, **kwargs: Any) -> None:
     """
     Update a DynDNS domain
     """
@@ -592,7 +606,7 @@ def domain_dyndns_update(*args, **kwargs):
     dyndns_update(*args, **kwargs)
 
 
-def domain_dyndns_set_recovery_password(*args, **kwargs):
+def domain_dyndns_set_recovery_password(*args: Any, **kwargs: Any) -> None:
     """
     Set a recovery password for an already registered dyndns domain
     """
@@ -602,7 +616,9 @@ def domain_dyndns_set_recovery_password(*args, **kwargs):
 
 
 @is_unit_operation()
-def domain_main_domain(operation_logger, new_main_domain=None):
+def domain_main_domain(
+    operation_logger: "OperationLogger", new_main_domain: str | None = None
+) -> dict[str, str] | None:
     """
     Check the current main domain, or change it
 
@@ -631,7 +647,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
         main_domain_cache = new_main_domain
         _set_hostname(new_main_domain)
     except Exception as e:
-        logger.warning(str(e), exc_info=1)
+        logger.warning(str(e), exc_info=1)  # type: ignore
         raise YunohostError("main_domain_change_failed")
 
     # Regen configurations
@@ -645,9 +661,10 @@ def domain_main_domain(operation_logger, new_main_domain=None):
         )
 
     logger.success(m18n.n("main_domain_changed"))
+    return None
 
 
-def domain_url_available(domain, path):
+def domain_url_available(domain: str, path: str) -> bool:
     """
     Check availability of a web path
 
@@ -661,7 +678,7 @@ def domain_url_available(domain, path):
     return len(_get_conflicting_apps(domain, path)) == 0
 
 
-def _get_raw_domain_settings(domain):
+def _get_raw_domain_settings(domain: str) -> dict:
     """Get domain settings directly from file.
     Be carefull, domain settings are saved in `"diff"` mode (i.e. default settings are not saved)
     so the file may be completely empty
@@ -675,7 +692,9 @@ def _get_raw_domain_settings(domain):
     return {}
 
 
-def domain_config_get(domain, key="", full=False, export=False):
+def domain_config_get(
+    domain: str, key: str = "", full: bool = False, export: bool = False
+) -> Any:
     """
     Display a domain configuration
     """
@@ -699,8 +718,13 @@ def domain_config_get(domain, key="", full=False, export=False):
 
 @is_unit_operation()
 def domain_config_set(
-    operation_logger, domain, key=None, value=None, args=None, args_file=None
-):
+    operation_logger: "OperationLogger",
+    domain: str,
+    key: str | None = None,
+    value: Any | None = None,
+    args: str | None = None,
+    args_file: str | None = None,
+) -> None:
     """
     Apply a new domain configuration
     """
@@ -712,7 +736,7 @@ def domain_config_set(
     return config.set(key, value, args, args_file, operation_logger=operation_logger)
 
 
-def _get_DomainConfigPanel():
+def _get_DomainConfigPanel() -> "ConfigPanel":
     from .dns import _set_managed_dns_records_hashes
     from .utils.configpanel import ConfigPanel
 
@@ -929,7 +953,7 @@ def _get_DomainConfigPanel():
     return DomainConfigPanel
 
 
-def domain_action_run(domain, action, args=None):
+def domain_action_run(domain: str, action: str, args=None) -> None:
     import urllib.parse
 
     if action == "cert.cert_.cert_install":
@@ -965,31 +989,45 @@ def _set_domain_settings(domain: str, settings: dict) -> None:
 #
 
 
-def domain_cert_status(domain_list, full=False):
+def domain_cert_status(
+    domain_list: list[str], full: bool = False
+) -> dict[str, dict[str, Any]]:
     from .certificate import certificate_status
 
     return certificate_status(domain_list, full)
 
 
-def domain_cert_install(domain_list, force=False, no_checks=False, self_signed=False):
+def domain_cert_install(
+    domain_list: list[str],
+    force: bool = False,
+    no_checks: bool = False,
+    self_signed: bool = False,
+) -> None:
     from .certificate import certificate_install
 
     return certificate_install(domain_list, force, no_checks, self_signed)
 
 
-def domain_cert_renew(domain_list, force=False, no_checks=False, email=False):
+def domain_cert_renew(
+    domain_list: list[str],
+    force: bool = False,
+    no_checks: bool = False,
+    email: bool = False,
+) -> None:
     from .certificate import certificate_renew
 
     return certificate_renew(domain_list, force, no_checks, email)
 
 
-def domain_dns_suggest(domain):
+def domain_dns_suggest(domain: str) -> str:
     from .dns import domain_dns_suggest
 
     return domain_dns_suggest(domain)
 
 
-def domain_dns_push(domain, dry_run, force, purge):
+def domain_dns_push(
+    domain: str, dry_run: bool, force: bool, purge: bool
+) -> dict[str, list[str]]:
     from .dns import domain_dns_push
 
     return domain_dns_push(domain, dry_run, force, purge)

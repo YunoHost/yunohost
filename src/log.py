@@ -699,7 +699,7 @@ class OperationLogger:
         # If nothing found, assume we're the root operation logger
         return None
 
-    def start(self):
+    def start(self) -> None:
         """
         Start to record logs that change the system
         Until this start method is run, no unit operation will be registered.

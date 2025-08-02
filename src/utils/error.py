@@ -54,7 +54,7 @@ class YunohostError(MoulinetteError):
 
         super(YunohostError, self).__init__(msg, raw_msg=True)
 
-    def content(self):
+    def content(self) -> dict[str, str] | str:
         if self.log_ref:
             return {"error": self.strerror, "log_ref": self.log_ref}
         elif self.error_details:
@@ -66,7 +66,7 @@ class YunohostError(MoulinetteError):
 class YunohostValidationError(YunohostError):
     http_code = 400
 
-    def content(self):
+    def content(self) -> dict[str, str]:
         return {"error": self.strerror, "error_key": self.key, **self.kwargs}
 
 

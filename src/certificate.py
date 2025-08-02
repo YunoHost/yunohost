@@ -21,6 +21,7 @@
 import os
 import shutil
 import subprocess
+from typing import Any
 import sys
 from datetime import datetime
 from glob import glob
@@ -61,7 +62,9 @@ PRODUCTION_CERTIFICATION_AUTHORITY = "https://acme-v02.api.letsencrypt.org"
 #
 
 
-def certificate_status(domains, full=False):
+def certificate_status(
+    domains: list[str], full: bool = False
+) -> dict[str, dict[str, Any]]:
     """
     Print the status of certificate for given domains (all by default)
 
@@ -119,7 +122,12 @@ def certificate_status(domains, full=False):
     return {"certificates": certificates}
 
 
-def certificate_install(domain_list, force=False, no_checks=False, self_signed=False):
+def certificate_install(
+    domain_list: list[str],
+    force: bool = False,
+    no_checks: bool = False,
+    self_signed: bool = False,
+) -> None:
     """
     Install a Let's Encrypt certificate for given domains (all by default)
 
@@ -309,7 +317,12 @@ def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
         )
 
 
-def certificate_renew(domains, force=False, no_checks=False, email=False):
+def certificate_renew(
+    domains: list[str],
+    force: bool = False,
+    no_checks: bool = False,
+    email: bool = False,
+) -> None:
     """
     Renew Let's Encrypt certificate for given domains (all by default)
 

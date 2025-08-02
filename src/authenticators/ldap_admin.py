@@ -22,6 +22,7 @@ import hashlib
 import logging
 import os
 import time
+from functools import cache
 from pathlib import Path
 
 import jwt
@@ -36,20 +37,18 @@ from ..utils.ldap import _get_ldap_interface
 
 logger = logging.getLogger("yunohost.authenticators.ldap_admin")
 
+SESSION_SECRET_PATH = Path("/etc/yunohost/.admin_cookie_secret")
+SESSION_FOLDER = Path("/var/cache/yunohost/sessions")
+SESSION_VALIDITY = 3 * 24 * 3600  # 3 days
 
-def SESSION_SECRET():
+
+@cache
+def SESSION_SECRET() -> str:
     # Only load this once actually requested to avoid boring issues like
     # "secret doesnt exists yet" (before postinstall) and therefore service
     # miserably fail to start
-    if not SESSION_SECRET.value:
-        SESSION_SECRET.value = open("/etc/yunohost/.admin_cookie_secret").read().strip()
-    assert SESSION_SECRET.value
-    return SESSION_SECRET.value
+    return SESSION_SECRET_PATH.read_text().strip()
 
-
-SESSION_SECRET.value = None  # type: ignore
-SESSION_FOLDER = "/var/cache/yunohost/sessions"
-SESSION_VALIDITY = 3 * 24 * 3600  # 3 days
 
 LDAP_URI = "ldap://localhost:389"
 ADMIN_GROUP = "cn=admins,ou=groups"
@@ -82,7 +81,7 @@ class Authenticator(BaseAuthenticator):
             # Force-reset existing LDAP interface
             from ..utils import ldap as ldaputils
 
-            ldaputils._ldap_interface = None
+            ldaputils._destroy_ldap_interface()
 
             try:
                 admins = (
@@ -169,8 +168,8 @@ class Authenticator(BaseAuthenticator):
         )
 
         # Create the session file (expiration mechanism)
-        session_file = f"{SESSION_FOLDER}/{infos['id']}"
-        os.system(f'touch "{session_file}"')
+        session_file = SESSION_FOLDER / infos["id"]
+        session_file.touch(exist_ok=True)
 
     def get_session_cookie(self, raise_if_no_session_exists=True):
         from bottle import request, response
@@ -194,13 +193,13 @@ class Authenticator(BaseAuthenticator):
             raise YunohostAuthenticationError("unable_authenticate")
 
         self.purge_expired_session_files()
-        session_file = f"{SESSION_FOLDER}/{infos['id']}"
-        if not os.path.exists(session_file):
+        session_file = SESSION_FOLDER / infos["id"]
+        if not session_file.exists():
             response.delete_cookie("yunohost.admin", path="/yunohost/api")
             raise YunohostAuthenticationError("session_expired")
 
         # Otherwise, we 'touch' the file to extend the validity
-        os.system(f'touch "{session_file}"')
+        session_file.touch(exist_ok=True)
 
         return infos
 
@@ -209,8 +208,8 @@ class Authenticator(BaseAuthenticator):
 
         try:
             infos = self.get_session_cookie()
-            session_file = f"{SESSION_FOLDER}/{infos['id']}"
-            os.remove(session_file)
+            session_file = SESSION_FOLDER / infos["id"]
+            session_file.unlink()
         except Exception as e:
             logger.debug(
                 f"User logged out, but failed to properly invalidate the session : {e}"
@@ -219,7 +218,7 @@ class Authenticator(BaseAuthenticator):
         response.delete_cookie("yunohost.admin", path="/yunohost/api")
 
     def purge_expired_session_files(self):
-        for session_file in Path(SESSION_FOLDER).iterdir():
+        for session_file in SESSION_FOLDER.iterdir():
             if abs(session_file.stat().st_mtime - time.time()) > SESSION_VALIDITY:
                 try:
                     session_file.unlink()
@@ -228,7 +227,7 @@ class Authenticator(BaseAuthenticator):
 
     @staticmethod
     def invalidate_all_sessions_for_user(user):
-        for file in Path(SESSION_FOLDER).glob(f"{short_hash(user)}*"):
+        for file in SESSION_FOLDER.glob(f"{short_hash(user)}*"):
             try:
                 file.unlink()
             except Exception as e:
