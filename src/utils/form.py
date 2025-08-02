@@ -898,7 +898,7 @@ class ColorOption(BaseInputOption):
 
     @staticmethod
     def humanize(
-        value: Color | str | None, option: "BaseOption" | dict[Any, Any] = {}
+        value: Color | str | None, option: Union["BaseOption", dict[Any, Any]] = {}
     ) -> str:
         if isinstance(value, Color):
             value.as_named(fallback=True)
@@ -907,7 +907,7 @@ class ColorOption(BaseInputOption):
 
     @staticmethod
     def normalize(
-        value: Color | str | None, option: "BaseOption" | dict[Any, Any] = {}
+        value: Color | str | None, option: Union["BaseOption", dict[Any, Any]] = {}
     ) -> str:
         if isinstance(value, Color):
             return value.as_hex()
@@ -961,7 +961,7 @@ class NumberOption(BaseInputOption):
     _none_as_empty_str = False
 
     @staticmethod
-    def normalize(value: Any, option: "BaseOption" | dict[Any, Any] = {}) -> int | None:
+    def normalize(value: Any, option: Union["BaseOption", dict[Any, Any]] = {}) -> int | None:
         if isinstance(value, int):
             return value
 
@@ -1037,7 +1037,7 @@ class BooleanOption(BaseInputOption):
     _none_as_empty_str = False
 
     @staticmethod
-    def humanize(value: Any, option: "BaseOption" | dict[Any, Any] = {}) -> str:
+    def humanize(value: Any, option: Union["BaseOption", dict[Any, Any]] = {}) -> str:
         option = option.dict() if isinstance(option, BaseOption) else option
 
         yes = option.get("yes", 1)
@@ -1060,7 +1060,7 @@ class BooleanOption(BaseInputOption):
         )
 
     @staticmethod
-    def normalize(value: Any, option: "BaseOption" | dict[Any, Any] = {}) -> Any:
+    def normalize(value: Any, option: Union["BaseOption", dict[Any, Any]] = {}) -> Any:
         option = option.dict() if isinstance(option, BaseOption) else option
 
         if isinstance(value, str):
@@ -1246,7 +1246,7 @@ class WebPathOption(BaseStringOption):
     type: Literal[OptionType.path] = OptionType.path
 
     @staticmethod
-    def normalize(value: Any, option: "BaseOption" | dict[Any, Any] = {}) -> str:
+    def normalize(value: Any, option: Union["BaseOption", dict[Any, Any]] = {}) -> str:
         option = option.dict() if isinstance(option, BaseOption) else option
 
         if value is None:
@@ -1586,7 +1586,7 @@ class TagsOption(BaseChoicesOption):
 
     @staticmethod
     def humanize(
-        value: str | list[str] | None, option: "BaseOption" | dict[Any, Any] = {}
+        value: str | list[str] | None, option: Union["BaseOption", dict[Any, Any]] = {}
     ) -> str:
         if isinstance(value, list):
             return ",".join(str(v) for v in value)
@@ -1596,7 +1596,7 @@ class TagsOption(BaseChoicesOption):
 
     @staticmethod
     def normalize(
-        value: list[str] | str | None, option: "BaseOption" | dict[Any, Any] = {}
+        value: list[str] | str | None, option: Union["BaseOption", dict[Any, Any]] = {}
     ) -> str:
         if isinstance(value, list):
             return ",".join(str(v) for v in value)
@@ -1705,7 +1705,7 @@ class DomainOption(BaseChoicesOption):
         return _get_maindomain()
 
     @staticmethod
-    def normalize(value: str, option: "BaseOption" | dict[Any, Any] = {}) -> str:
+    def normalize(value: str, option: Union["BaseOption", dict[Any, Any]] = {}) -> str:
         if value.startswith("https://"):
             value = value[len("https://") :]
         elif value.startswith("http://"):
