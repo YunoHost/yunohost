@@ -205,9 +205,9 @@ def domain_info(domain: str) -> DomainInfo:
         domain     -- Domain to be checked
     """
 
-    from .app import _get_app_settings, _installed_apps, app_info
     from .certificate import certificate_status
     from .dns import _get_registar_settings
+    from .utils.app_utils import _get_app_settings, _installed_apps, _get_app_label
 
     _assert_domain_exists(domain)
 
@@ -220,8 +220,8 @@ def domain_info(domain: str) -> DomainInfo:
         if settings.get("domain") == domain:
             apps.append(
                 {
-                    "name": app_info(app)["name"],
                     "id": app,
+                    "name": _get_app_label(app),
                     "path": settings.get("path", ""),
                 }
             )
@@ -314,7 +314,7 @@ def domain_add(
         and len(domain.split(".")) == 3
     )
     if dyndns:
-        from .app import _ask_confirmation
+        from .utils.app_utils import _ask_confirmation
         from .dyndns import is_subscribing_allowed
 
         # Do not allow to subscribe to multiple dyndns domains...
@@ -436,16 +436,11 @@ def domain_remove(
     """
     import glob
 
-    from .app import (
-        _get_app_settings,
-        _installed_apps,
-        app_info,
-        app_remove,
-        app_ssowatconf,
-    )
+    from .app import app_remove, app_ssowatconf
     from .hook import hook_callback
     from .utils.dns import is_yunohost_dyndns_domain
     from .utils.ldap import _get_ldap_interface
+    from .utils.app_utils import _get_app_settings, _installed_apps, _get_app_label
 
     if dyndns_recovery_password:
         operation_logger.data_to_redact.append(dyndns_recovery_password)
@@ -477,7 +472,7 @@ def domain_remove(
 
     for app in _installed_apps():
         settings = _get_app_settings(app)
-        label = app_info(app)["name"]
+        label = _get_app_label(app)
         if settings.get("domain") == domain:
             apps_on_that_domain.append(
                 (
@@ -677,7 +672,7 @@ def domain_url_available(domain: str, path: str) -> bool:
         path -- The path to check (e.g. /coffee)
     """
 
-    from .app import _get_conflicting_apps
+    from ..utils.app_utils import _get_conflicting_apps
 
     return len(_get_conflicting_apps(domain, path)) == 0
 

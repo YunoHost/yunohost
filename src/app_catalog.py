@@ -56,7 +56,7 @@ def app_catalog(
     Return a dict of apps available to installation from Yunohost's app catalog
     """
 
-    from .app import _installed_apps
+    from .utils.app_utils import _installed_apps
 
     # Get app list from catalog cache
     catalog = _load_apps_catalog()

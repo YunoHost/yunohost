@@ -92,7 +92,7 @@ def user_permission_list(
     """
 
     # Fetch relevant informations
-    from .app import _get_app_settings, _installed_apps
+    from .utils.app_utils import _get_app_settings, _installed_apps
     from .user import user_group_list
 
     # Parse / organize information to be outputed
@@ -946,7 +946,7 @@ def _validate_and_sanitize_permission_url(
         re:^/api/.*|/scripts/api.js$
     """
 
-    from .app import _assert_no_conflicting_apps
+    from .utils.app_utils import _assert_no_conflicting_apps
     from .domain import _assert_domain_exists
 
     #

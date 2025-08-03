@@ -43,17 +43,13 @@ from moulinette.utils.filesystem import (
 )
 from moulinette.utils.process import check_output
 from moulinette.utils.text import random_ascii
-from packaging import version
 
-from . import domain
-
-from .app import (
+from .utils.app_utils import (
     _get_manifest_of_app,
     _is_installed,
     _make_environment_for_app_script,
     _make_tmp_workdir_for_app,
-    app_info,
-    app_remove,
+    APPS_SETTING_PATH,
 )
 from .hook import (
     CUSTOM_HOOK_FOLDER,
@@ -704,7 +700,8 @@ class BackupManager:
         app -- (string) an app instance name (already installed) to backup
         """
 
-        app_setting_path = os.path.join("/etc/yunohost/apps/", app)
+        from .app import app_info
+        app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 
         # Prepare environment
         env_dict = self._get_env_var(app)
@@ -868,6 +865,8 @@ class RestoreManager:
         name -- (string) Archive name
         method -- (string) Method name to use to mount the archive
         """
+        from packaging import version
+
         # Retrieve and open the archive
         # FIXME this way to get the info is not compatible with copy or custom
         # backup methods
@@ -1215,6 +1214,7 @@ class RestoreManager:
         if system_targets == []:
             return
 
+        from . import domain
         from .app import app_ssowatconf
         from .permission import _sync_permissions_with_ldap
 
@@ -1307,6 +1307,7 @@ class RestoreManager:
                              name should be already install)
         """
         from .utils.legacy import _patch_legacy_helpers
+        from .app import app_remove
 
         def copytree(src, dst, symlinks=False, ignore=None):
             for item in os.listdir(src):

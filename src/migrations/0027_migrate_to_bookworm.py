@@ -32,7 +32,7 @@ from moulinette import Moulinette, m18n
 from moulinette.utils.filesystem import read_file, write_to_file
 from moulinette.utils.process import call_async_output, check_output
 
-from ..app import unstable_apps
+from ..app import app_list
 from ..regenconf import manually_modified_files, regen_conf
 from ..tools import Migration, _write_migration_state, tools_update
 from ..utils.error import YunohostError
@@ -102,6 +102,25 @@ def _backup_pip_freeze_for_python_app_venvs():
         os.system(
             f"{venv}/bin/pip freeze | grep -E -v 'pkg(-|_)resources==' > {venv}{VENV_REQUIREMENTS_SUFFIX} 2>/dev/null"
         )
+
+
+def unstable_apps() -> list[str]:
+    output = []
+    deprecated_apps = ["mailman", "ffsync"]
+
+    for infos in app_list(full=True)["apps"]:
+        if (
+            not infos.get("from_catalog")
+            or infos.get("from_catalog", {}).get("state")
+            in [
+                "inprogress",
+                "notworking",
+            ]
+            or infos["id"] in deprecated_apps
+        ):
+            output.append(infos["id"])
+
+    return output
 
 
 class MyMigration(Migration):

@@ -25,7 +25,7 @@ import subprocess
 import time
 from importlib import import_module
 from logging import getLogger
-from typing import Any, TYPE_CHECKING, cast, Literal
+from typing import Any, TYPE_CHECKING, cast, Literal, Callable
 from typing_extensions import TypedDict
 
 from moulinette import Moulinette, m18n
@@ -146,13 +146,13 @@ def tools_postinstall(
 ) -> None:
     import psutil
 
-    from .app import _ask_confirmation
     from .app_catalog import _update_apps_catalog
     from .domain import domain_add, domain_main_domain
     from .dyndns import _dyndns_available, dyndns_unsubscribe
     from .permission import _set_system_perms
     from .service import _run_service_command
     from .user import ADMIN_ALIASES, user_create
+    from .utils.app_utils import _ask_confirmation
     from .utils.dns import is_yunohost_dyndns_domain
     from .utils.password import (
         assert_password_is_compatible,
@@ -1086,7 +1086,7 @@ class Migration:
     def description(self) -> str:
         return m18n.n(f"migration_description_{self.id}")
 
-    def ldap_migration(run) -> None:
+    def ldap_migration(run) -> Callable:
         def func(self) -> None:
             # Backup LDAP before the migration
             logger.info(m18n.n("migration_ldap_backup_before_migration"))
