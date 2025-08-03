@@ -25,7 +25,6 @@ import shutil
 import pytest
 from mock import patch
 from moulinette import Moulinette
-from moulinette.utils.filesystem import read_file
 
 from yunohost.app import (
     _is_installed,
@@ -39,6 +38,7 @@ from yunohost.app import (
 from yunohost.domain import _get_maindomain
 from yunohost.user import user_create, user_delete
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.file_utils import read_file
 
 from .conftest import get_test_apps_dir
 

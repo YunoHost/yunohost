@@ -19,7 +19,6 @@
 #
 
 import pytest
-from moulinette.utils.filesystem import read_toml
 
 from yunohost.dns import (
     DOMAIN_REGISTRAR_LIST_PATH,
@@ -28,6 +27,7 @@ from yunohost.dns import (
     _get_registrar_config_section,
 )
 from yunohost.domain import domain_add, domain_remove
+from yunohost.utils.file_utils mport read_toml
 
 
 def setup_function(function):
