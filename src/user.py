@@ -42,7 +42,7 @@ from typing import (
 )
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.process import check_output
+from .utils.process import check_output
 
 from .log import is_flash_unit_operation, is_unit_operation
 from .service import service_status
@@ -51,12 +51,12 @@ from .utils.system import binary_to_human
 
 if TYPE_CHECKING:
     from bottle import HTTPResponse as HTTPResponseType
-    from moulinette.utils.log import MoulinetteLogger
+    from .utils.logging import YunohostLogger
 
     from .log import OperationLogger
     from .permission import PermInfos
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.user"))
+    logger = cast(YunohostLogger, getLogger("yunohost.user"))
 else:
     logger = getLogger("yunohost.user")
 
@@ -762,7 +762,7 @@ def user_import(
 
     import csv  # CSV are needed only in this function
 
-    from moulinette.utils.text import random_ascii
+    from utils.misc import random_ascii
 
     from .app import app_ssowatconf
     from .domain import domain_list

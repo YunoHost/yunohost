@@ -27,7 +27,7 @@ from difflib import SequenceMatcher
 from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import mkdir, read_file, read_toml, write_to_file
+from .utils.file_utils import mkdir, read_file, read_toml, write_to_file
 
 from .domain import (
     _assert_domain_exists,
@@ -44,9 +44,9 @@ from .utils.error import YunohostError, YunohostValidationError
 from .utils.network import get_public_ip
 
 if TYPE_CHECKING:
-    from moulinette.utils.log import MoulinetteLogger
+    from .utils.logging import YunohostLogger
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.dns"))
+    logger = cast(YunohostLogger, getLogger("yunohost.dns"))
 else:
     logger = getLogger("yunohost.dns")
 

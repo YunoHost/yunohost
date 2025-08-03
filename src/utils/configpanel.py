@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union,
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
-from moulinette.utils.filesystem import mkdir, read_toml, read_yaml, write_to_yaml
+from .file_utils import mkdir, read_toml, read_yaml, write_to_yaml
 from pydantic import BaseModel, Extra, ValidationError, validator
 
 from .error import YunohostError, YunohostValidationError
@@ -56,9 +56,9 @@ if TYPE_CHECKING:
     from .form import FormModel, Hooks
 
 if TYPE_CHECKING:
-    from moulinette.utils.log import MoulinetteLogger
+    from .logging import YunohostLogger
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.configpanel"))
+    logger = cast(YunohostLogger, getLogger("yunohost.configpanel"))
 else:
     logger = getLogger("yunohost.configpanel")
 

@@ -22,15 +22,12 @@ import logging
 import os
 import random
 import re
-from typing import List
-
-from moulinette.utils.filesystem import read_file
-from moulinette.utils.network import download_text
-from moulinette.utils.process import check_output
 
 from ..diagnosis import Diagnoser
 from ..settings import settings_get
+from ..utils.file_utils import read_file, download_text
 from ..utils.network import get_network_interfaces
+from ..utils.process import check_output
 
 logger = logging.getLogger("yunohost.diagnosis")
 
@@ -38,7 +35,7 @@ logger = logging.getLogger("yunohost.diagnosis")
 class MyDiagnoser(Diagnoser):
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
-    dependencies: List[str] = []
+    dependencies: list[str] = []
 
     def run(self):
         # ############################################################ #

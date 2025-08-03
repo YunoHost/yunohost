@@ -31,7 +31,7 @@ from pathlib import Path
 import moulinette
 from moulinette import m18n
 from moulinette.interfaces.cli import colorize, get_locale
-from moulinette.utils.log import configure_logging
+from .utils.logging import init_logging
 
 
 def is_installed() -> bool:
@@ -162,83 +162,3 @@ def init_i18n() -> None:
     """
     m18n.set_locales_dir("/usr/share/yunohost/locales/")
     m18n.set_locale(get_locale())
-
-
-def init_logging(
-    interface: str = "cli",
-    debug: bool = False,
-    quiet: bool = False,
-    logdir: str = "/var/log/yunohost",
-) -> None:
-    """Initialize logging and logger objects"""
-    logfile = os.path.join(logdir, "yunohost-%s.log" % interface)
-
-    if not os.path.isdir(logdir):
-        os.makedirs(logdir, 0o750)
-
-    base_handlers = ["file"]
-    root_handlers = ["file", "cli"] if debug else ["file"]
-
-    # Logging configuration for API
-    if interface in ["api", "portalapi"]:
-        # We use a WatchedFileHandler instead of regular FileHandler to possibly support log rotation etc
-        file_class = "logging.handlers.WatchedFileHandler"
-
-        # This is for when launching yunohost-api in debug mode, we want to display stuff in the console
-        if debug:
-            base_handlers.append("cli")
-
-    # Logging configuration for CLI (or any other interface than api...)
-    else:
-        file_class = "logging.FileHandler"
-
-        if not quiet:
-            base_handlers.append("cli")
-
-    logging_configuration = {
-        "version": 1,
-        "disable_existing_loggers": True,
-        "formatters": {
-            "tty-debug": {
-                "format": "%(relativeCreated)-4d %(level_with_color)s %(message)s"
-            },
-            "precise": {
-                "format": "%(asctime)-15s %(levelname)-8s %(name)s.%(funcName)s - %(message)s"
-            },
-        },
-        "handlers": {
-            "cli": {
-                "level": "DEBUG" if debug else "INFO",
-                "class": "moulinette.interfaces.cli.TTYHandler",
-                "formatter": "tty-debug" if debug else "",
-            },
-            "file": {
-                "class": file_class,
-                "formatter": "precise",
-                "filename": logfile,
-            },
-        },
-        "loggers": {
-            "yunohost": {
-                "level": "DEBUG",
-                "handlers": base_handlers,
-                "propagate": False,
-            },
-            "moulinette": {
-                "level": "DEBUG",
-                "handlers": base_handlers,
-                "propagate": False,
-            },
-        },
-        "root": {
-            "level": "DEBUG",
-            "handlers": root_handlers,
-        },
-    }
-
-    if interface == "api":
-        from .utils.sse import start_log_broker
-
-        start_log_broker()
-
-    configure_logging(logging_configuration)

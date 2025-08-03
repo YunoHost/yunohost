@@ -101,5 +101,8 @@
     "app_change_url_success": "{app} nettadressen er nå {domain}{path}",
     "app_install_failed": "Kunne ikke installere {app}: {error}",
     "global_settings_setting_admin_strength": "Admin-passordets styrke",
-    "global_settings_setting_user_strength": "Brukerpassordets styrke"
+    "global_settings_setting_user_strength": "Brukerpassordets styrke",
+    "websocket_request_expected": "Forventet en WebSocket-forespørsel",
+    "unknown_user": "Ukjent '{user}' bruker",
+    "unknown_group": "Ukjent '{group}' gruppe"
 }

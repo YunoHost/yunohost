@@ -38,5 +38,9 @@
     "global_settings_setting_network_name": "Aẓeṭṭa",
     "global_settings_setting_pop3_name": "POP3",
     "global_settings_setting_misc_name": "Ayen nniḍen",
-    "global_settings_setting_password_name": "Awalen n uɛeddi"
+    "global_settings_setting_password_name": "Awalen n uɛeddi",
+    "folder_exists": "Akaram-a yella ya: '{path}'",
+    "file_not_exist": "Afaylu '{path}' ulac-it",
+    "unknown_group": "Agraw '{group}' d arussin",
+    "unknown_user": "Aseqdac '{user}' d arussin"
 }

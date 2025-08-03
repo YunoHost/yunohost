@@ -37,7 +37,7 @@ from typing import (
 
 import yaml
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import (
+from .file_utils import (
     chmod,
     chown,
     cp,
@@ -45,7 +45,7 @@ from moulinette.utils.filesystem import (
     read_json,
     read_toml,
 )
-from moulinette.utils.process import check_output
+from .process import check_output
 from packaging import version
 
 from .error import YunohostError, YunohostValidationError
@@ -62,9 +62,9 @@ from .system import (
 )
 
 if TYPE_CHECKING:
-    from moulinette.utils.log import MoulinetteLogger
+    from .logging import YunohostLogger
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.app"))
+    logger = cast(YunohostLogger, getLogger("yunohost.app"))
 else:
     logger = getLogger("yunohost.app")
 

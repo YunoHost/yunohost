@@ -45,7 +45,7 @@ from typing import (
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
-from moulinette.utils.filesystem import read_yaml, write_to_file
+from .file_utils import read_yaml, write_to_file
 from pydantic import (
     BaseModel,
     Extra,

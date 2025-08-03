@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union, TypedDict, Literal, Mapp
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
-from moulinette.utils.filesystem import (
+from .utils.file_utils import (
     read_file,
     read_json,
     read_yaml,
@@ -46,9 +46,9 @@ if TYPE_CHECKING:
     from .dns import DNSRecord
     from .utils.configpanel import ConfigPanel, ConfigPanelModel, RawConfig, RawSettings
     from .utils.form import FormModel
-    from moulinette.utils.log import MoulinetteLogger
+    from .utils.logging import YunohostLogger
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.domain"))
+    logger = cast(YunohostLogger, getLogger("yunohost.domain"))
 else:
     logger = getLogger("yunohost.domain")
 

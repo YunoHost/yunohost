@@ -23,7 +23,7 @@ import pwd
 import re
 from typing import Literal
 
-from moulinette.utils.filesystem import chmod, chown, mkdir, read_file, write_to_file
+from .utils.file_utils import chmod, chown, mkdir, read_file, write_to_file
 
 from .utils.error import YunohostValidationError
 

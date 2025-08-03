@@ -16,15 +16,15 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-from datetime import datetime
 import json
 import os
-from pathlib import Path
 import time
-from typing import IO, TypedDict, NotRequired, Any, Generator
 import logging
-
 import psutil
+
+from datetime import datetime
+from pathlib import Path
+from typing import IO, TypedDict, NotRequired, Any, Generator
 
 RUNDIR = Path("/var/run/yunohost")
 MOULINETTE_LOCK = RUNDIR / "moulinette_yunohost.lock"

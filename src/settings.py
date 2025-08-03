@@ -35,7 +35,7 @@ from .utils.form import BaseOption
 if TYPE_CHECKING:
     from typing import cast
 
-    from moulinette.utils.log import MoulinetteLogger
+    from .utils.logging import YunohostLogger
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
     from .log import OperationLogger
@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     )
     from .utils.form import FormModel
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.settings"))
+    logger = cast(YunohostLogger, getLogger("yunohost.settings"))
 else:
     logger = getLogger("yunohost.settings")
 

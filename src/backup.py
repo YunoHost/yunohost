@@ -34,15 +34,15 @@ from glob import glob
 from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import (
+from .utils.file_utils import (
     chmod,
     chown,
     mkdir,
     read_file,
     rm,
 )
-from moulinette.utils.process import check_output
-from moulinette.utils.text import random_ascii
+from .utils.process import check_output
+from utils.misc import random_ascii
 
 from .utils.app_utils import (
     _get_manifest_of_app,

@@ -19,7 +19,6 @@
 #
 
 import os
-from typing import List
 
 from ..app import app_list, APPS_SETTING_PATH
 from ..diagnosis import Diagnoser
@@ -28,7 +27,7 @@ from ..diagnosis import Diagnoser
 class MyDiagnoser(Diagnoser):
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
-    dependencies: List[str] = []
+    dependencies: list[str] = []
 
     def run(self):
         apps = app_list(full=True)["apps"]

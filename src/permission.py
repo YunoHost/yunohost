@@ -35,14 +35,14 @@ from typing import (
 )
 
 from moulinette import m18n
-from moulinette.utils.filesystem import read_yaml, write_to_yaml
+from .utils.file_utils import read_yaml, write_to_yaml
 
 from .utils.error import YunohostError, YunohostValidationError
 
 if TYPE_CHECKING:
-    from moulinette.utils.log import MoulinetteLogger
+    from .utils.logging import YunohostLogger
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.permission"))
+    logger = cast(YunohostLogger, getLogger("yunohost.permission"))
 else:
     logger = getLogger("yunohost.permission")
 
