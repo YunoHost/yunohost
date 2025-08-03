@@ -4,7 +4,6 @@
     "admin_password": "Adminisztrátori jelszó",
     "app_already_installed": "{app} már telepítve van",
     "app_already_installed_cant_change_url": "Ez az app már telepítve van. Ezzel a funkcióval az url nem változtatható. Javaslat 'app url változtatás' ha lehetséges.",
-    "app_already_up_to_date": "{app} napra kész",
     "app_argument_choice_invalid": "{name} érvénytelen választás, csak egyike lehet {choices} közül",
     "app_argument_invalid": "'{name}' hibás paraméter érték :{error}",
     "password_too_simple_1": "A jelszónak legalább 8 karakter hosszúnak kell lennie"

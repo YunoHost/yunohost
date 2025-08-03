@@ -1,7 +1,6 @@
 {
     "admin_password": "Senhal d’administracion",
     "app_already_installed": "{app} es ja installat",
-    "app_already_up_to_date": "{app} es ja a jorn",
     "installation_complete": "Installacion acabada",
     "app_id_invalid": "ID d’aplicacion incorrècte",
     "app_install_files_invalid": "Installacion impossibla d’aquestes fichièrs",
@@ -58,7 +57,6 @@
     "backup_custom_backup_error": "Fracàs del metòde de salvagarda personalizat a l’etapa « backup »",
     "backup_custom_mount_error": "Fracàs del metòde de salvagarda personalizat a l’etapa « mount »",
     "backup_method_custom_finished": "Lo metòde de salvagarda personalizat « {method} » es acabat",
-    "backup_nothings_done": "I a pas res de salvagardar",
     "backup_unable_to_organize_files": "Impossible d’organizar los fichièrs dins l’archiu amb lo metòde rapid",
     "service_stopped": "Lo servici « {service} » es estat arrestat",
     "service_unknown": "Servici « {service} » desconegut",
@@ -152,7 +150,6 @@
     "system_upgraded": "Lo sistèma es estat actualizat",
     "system_username_exists": "Lo nom d’utilizaire existís ja dins los utilizaires sistèma",
     "unexpected_error": "Una error inesperada s’es producha: {error}",
-    "upgrade_complete": "Actualizacion acabada",
     "upgrading_packages": "Actualizacion dels paquets…",
     "user_created": "L’utilizaire es creat",
     "user_creation_failed": "Creacion de l’utilizaire {user} impossibla: {error}",
