@@ -19,7 +19,6 @@
 #
 
 import os
-from typing import List
 
 from ..diagnosis import Diagnoser
 from ..service import _get_services
@@ -29,7 +28,7 @@ from ..settings import settings_get
 class MyDiagnoser(Diagnoser):
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
-    dependencies: List[str] = ["ip"]
+    dependencies: list[str] = ["ip"]
 
     def run(self):
         # TODO: report a warning if port 53 or 5353 is exposed to the outside world...

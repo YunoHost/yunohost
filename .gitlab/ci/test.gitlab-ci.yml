@@ -127,6 +127,16 @@ test-sso-and-portalapi:
   script:
     - python3 -m pytest tests/test_sso_and_portalapi.py
 
+test-process:
+  extends: .test-stage
+  script:
+    - python3 -m pytest tests/test_process.py
+
+test-file-utils:
+  extends: .test-stage
+  script:
+    - python3 -m pytest tests/test_file_utils.py
+
 ########################################
 # COVERAGE REPORT
 ########################################

@@ -28,7 +28,7 @@ from logging import getLogger
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
-from moulinette.utils.filesystem import chmod, chown, rm, write_to_file
+from .utils.file_utils import chmod, chown, rm, write_to_file
 
 from .domain import _get_maindomain
 from .log import is_unit_operation

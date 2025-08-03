@@ -28,7 +28,7 @@ import re
 import subprocess
 
 from moulinette import Moulinette
-from moulinette.utils.process import check_output
+from .process import check_output
 
 from ..utils.error import YunohostError
 
@@ -303,7 +303,7 @@ def _dump_sources_list() -> Generator[str, None, None]:
 
 
 def aptitude_with_progress_bar(cmd: str) -> None:
-    from moulinette.utils.process import call_async_output
+    from .process import call_async_output
 
     msg_to_verb = {
         "Preparing for removal": "Removing",

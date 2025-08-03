@@ -1,7 +1,7 @@
 import os
 from logging import getLogger
 
-from moulinette.utils.filesystem import read_yaml
+from ..utils.file_utils import read_yaml
 
 from ..app import app_setting, app_ssowatconf
 from ..permission import (

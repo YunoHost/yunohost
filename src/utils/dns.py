@@ -21,7 +21,7 @@
 from functools import cache
 from typing import Literal
 
-from moulinette.utils.filesystem import read_file
+from .file_utils import read_file
 
 import dns.resolver, dns.exception
 

@@ -19,11 +19,14 @@
 #
 
 import os
+import json
+import yaml
+import toml
+import pytest
 from contextlib import contextmanager
 from unittest.mock import Mock
 
 import moulinette
-import pytest
 from moulinette import Moulinette, m18n
 
 from yunohost.utils.error import YunohostError
@@ -112,3 +115,39 @@ def pytest_cmdline_main(config):
             print(message)
 
     Moulinette._interface = DummyInterface()
+
+
+@pytest.fixture
+def test_file(tmp_path):
+    test_text = "foo\nbar\n"
+    test_file = tmp_path / "test.txt"
+    test_file.write_bytes(test_text.encode())
+    return test_file
+
+@pytest.fixture
+def test_json(tmp_path):
+    test_json = json.dumps({"foo": "bar"})
+    test_file = tmp_path / "test.json"
+    test_file.write_bytes(test_json.encode())
+    return test_file
+
+
+@pytest.fixture
+def test_yaml(tmp_path):
+    test_yaml = yaml.dump({"foo": "bar"})
+    test_file = tmp_path / "test.txt"
+    test_file.write_bytes(test_yaml.encode())
+    return test_file
+
+
+@pytest.fixture
+def test_toml(tmp_path):
+    test_toml = toml.dumps({"foo": "bar"})
+    test_file = tmp_path / "test.txt"
+    test_file.write_bytes(test_toml.encode())
+    return test_file
+
+
+@pytest.fixture
+def test_url():
+    return "https://some.test.url/yolo.txt"

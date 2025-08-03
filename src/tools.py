@@ -29,8 +29,8 @@ from typing import Any, TYPE_CHECKING, cast, Literal, Callable
 from typing_extensions import TypedDict
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import chown, cp, mkdir, read_yaml, rm, write_to_yaml
-from moulinette.utils.process import call_async_output
+from .utils.file_utils import chown, cp, mkdir, read_yaml, rm, write_to_yaml
+from .utils.process import call_async_output
 from packaging import version
 
 from .log import OperationLogger, is_unit_operation
@@ -51,9 +51,9 @@ if TYPE_CHECKING:
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
 if TYPE_CHECKING:
-    from moulinette.utils.log import MoulinetteLogger
+    from .utils.logging import YunohostLogger
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.tools"))
+    logger = cast(YunohostLogger, getLogger("yunohost.tools"))
 else:
     logger = getLogger("yunohost.tools")
 

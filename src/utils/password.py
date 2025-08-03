@@ -21,7 +21,6 @@
 import os
 import string
 import subprocess
-
 import yaml
 
 SMALL_PWD_LIST = [

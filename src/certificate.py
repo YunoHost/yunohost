@@ -28,8 +28,8 @@ from glob import glob
 from logging import getLogger
 
 from moulinette import m18n
-from moulinette.utils.filesystem import chmod, chown, read_file
-from moulinette.utils.process import check_output
+from .utils.file_utils import chmod, chown, read_file
+from .utils.process import check_output
 
 from .diagnosis import Diagnoser
 from .log import OperationLogger
@@ -40,9 +40,9 @@ from .utils.network import get_public_ip
 from .vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 
 if TYPE_CHECKING:
-    from moulinette.utils.log import MoulinetteLogger
+    from .utils.logging import YunohostLogger
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.certmanager"))
+    logger = cast(YunohostLogger, getLogger("yunohost.certmanager"))
 else:
     logger = getLogger("yunohost.certmanager")
 

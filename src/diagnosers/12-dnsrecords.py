@@ -22,9 +22,8 @@ import logging
 import os
 import re
 from datetime import datetime, timedelta
-from typing import List
 
-from moulinette.utils.process import check_output
+from ..utils.process import check_output
 from publicsuffix2 import PublicSuffixList
 
 from ..diagnosis import Diagnoser
@@ -47,7 +46,7 @@ logger = logging.getLogger("yunohost.diagnosis")
 class MyDiagnoser(Diagnoser):
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
-    dependencies: List[str] = ["ip"]
+    dependencies: list[str] = ["ip"]
 
     def run(self):
         main_domain = _get_maindomain()

@@ -25,9 +25,8 @@ import time
 from pathlib import Path
 from typing import Literal
 
-from moulinette.utils.filesystem import read_file, write_to_file
-from moulinette.utils.network import download_text
-from moulinette.utils.process import check_output
+from .file_utils import read_file, write_to_file, download_text
+from .process import check_output
 
 logger = logging.getLogger("yunohost.utils.network")
 CACHE_DIR = Path("/var/cache/yunohost")

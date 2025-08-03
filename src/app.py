@@ -36,7 +36,7 @@ from typing import (
 )
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import (
+from .utils.file_utils import (
     chmod,
     chown,
     cp,
@@ -79,13 +79,13 @@ from .utils.app_utils import (
 )
 
 if TYPE_CHECKING:
-    from moulinette.utils.log import MoulinetteLogger
+    from .utils.logging import YunohostLogger
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
     from .utils.configpanel import ConfigPanelModel, RawConfig, RawSettings
     from .utils.form import FormModel
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.app"))
+    logger = cast(YunohostLogger, getLogger("yunohost.app"))
 else:
     logger = getLogger("yunohost.app")
 
@@ -1937,7 +1937,7 @@ def app_ssowatconf() -> None:
     )
     from .permission import AppPermInfos, user_permission_list
     from .settings import settings_get
-    from moulinette.utils.filesystem import read_json, write_to_json
+    from .utils.file_utils import read_json, write_to_json
 
     domain_portal_dict = _get_domain_portal_dict()
 

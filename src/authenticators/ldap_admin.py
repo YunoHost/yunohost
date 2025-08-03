@@ -30,7 +30,7 @@ import ldap
 import ldap.sasl
 from moulinette import m18n
 from moulinette.authentication import BaseAuthenticator
-from moulinette.utils.text import random_ascii
+from ..utils.misc import random_ascii
 
 from ..utils.error import YunohostAuthenticationError, YunohostError
 from ..utils.ldap import _get_ldap_interface

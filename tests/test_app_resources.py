@@ -23,12 +23,12 @@ import tempfile
 from subprocess import check_call
 
 import pytest
-from moulinette.utils.process import check_output
 
 from yunohost.app import app_setting
 from yunohost.domain import _get_maindomain
 from yunohost.firewall import firewall_list
 from yunohost.permission import permission_delete, user_permission_list
+from yunohost.utils.process import check_output
 from yunohost.utils.resources import (
     AppResource,
     AppResourceClassesByType,

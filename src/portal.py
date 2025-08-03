@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any, Union
 
 import ldap
-from moulinette.utils.filesystem import read_json
+from .utils.file_utils import read_json
 
 from .authenticators.ldap_ynhuser import Authenticator as Auth
 from .authenticators.ldap_ynhuser import user_is_allowed_on_domain
