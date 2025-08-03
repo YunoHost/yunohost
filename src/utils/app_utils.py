@@ -179,7 +179,7 @@ def _set_app_settings(app: str, settings: dict[str, Any]) -> None:
         del app_settings_cache[app]
 
 
-def _get_app_label(app: str, manifest=AppManifest | None) -> str:
+def _get_app_label(app: str, manifest: AppManifest | None = None) -> str:
     _assert_is_installed(app)
     settings = _get_app_settings(app)
     main_perm = settings.get("_permissions", {}).get("main", {})

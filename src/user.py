@@ -762,7 +762,7 @@ def user_import(
 
     import csv  # CSV are needed only in this function
 
-    from utils.misc import random_ascii
+    from .utils.misc import random_ascii
 
     from .app import app_ssowatconf
     from .domain import domain_list

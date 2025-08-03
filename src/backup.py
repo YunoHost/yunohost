@@ -42,7 +42,7 @@ from .utils.file_utils import (
     rm,
 )
 from .utils.process import check_output
-from utils.misc import random_ascii
+from .utils.misc import random_ascii
 
 from .utils.app_utils import (
     _get_manifest_of_app,

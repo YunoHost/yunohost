@@ -672,7 +672,7 @@ def domain_url_available(domain: str, path: str) -> bool:
         path -- The path to check (e.g. /coffee)
     """
 
-    from ..utils.app_utils import _get_conflicting_apps
+    from .utils.app_utils import _get_conflicting_apps
 
     return len(_get_conflicting_apps(domain, path)) == 0
 

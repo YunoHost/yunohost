@@ -644,7 +644,7 @@ class TestMockedAppUpgrade:
 
         # manifest =
         mocker.patch(
-            "yunohost.app.read_toml", return_value={"arguments": {"install": []}}
+            "yunohost.utils.app_utils.read_toml", return_value={"arguments": {"install": []}}
         )
 
         # install_failed, failure_message_with_debug_instructions =
