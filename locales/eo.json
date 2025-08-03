@@ -1,6 +1,5 @@
 {
     "app_already_installed": "{app} estas jam instalita",
-    "app_already_up_to_date": "{app} estas jam ĝisdata",
     "app_change_url_identical_domains": "Malnovaj kaj novaj domajno/URL estas la sama ('{domain}{path}'), nenio fareblas.",
     "app_change_url_success": "{app} URL nun estas {domain} {path}",
     "app_extraction_failed": "Ne povis ĉerpi la instalajn dosierojn",
@@ -68,7 +67,6 @@
     "app_not_correctly_installed": "{app} ŝajnas esti malĝuste instalita",
     "app_removed": "{app} forigita",
     "backup_delete_error": "Ne povis forigi '{path}'",
-    "backup_nothings_done": "Nenio por ŝpari",
     "backup_applying_method_custom": "Voki la laŭmendan rezervan metodon '{method}'…",
     "app_upgrade_some_app_failed": "Iuj aplikoj ne povis esti altgradigitaj",
     "app_start_remove": "Forigado {app}…",
@@ -193,7 +191,6 @@
     "restore_failed": "Ne povis restarigi sistemon",
     "confirm_app_install_danger": "Danĝero! Ĉi tiu apliko estas konata ankoraŭ eksperimenta (se ne eksplicite ne funkcias)! Vi probable ne devas instali ĝin krom se vi scias kion vi faras. NENIU SUBTENO estos provizita se ĉi tiu app ne funkcias aŭ rompas vian sistemon… Se vi pretas riski ĉiuokaze, tajpu '{answers}'",
     "log_operation_unit_unclosed_properly": "Operaciumo ne estis fermita ĝuste",
-    "upgrade_complete": "Ĝisdatigo kompleta",
     "upnp_enabled": "UPnP ŝaltis",
     "mailbox_used_space_dovecot_down": "La poŝta servo de Dovecot devas funkcii, se vi volas akcepti uzitan poŝtan keston",
     "restore_system_part_failed": "Ne povis restarigi la sisteman parton '{part}'",
