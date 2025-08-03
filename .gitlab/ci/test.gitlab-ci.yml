@@ -131,45 +131,49 @@ test-sso-and-portalapi:
 # COVERAGE REPORT
 ########################################
 
-coverage:
-  stage: test
-  image: "core-tests"
-  needs:
-    # Yeah ... gotta list all of those individually ... https://gitlab.com/gitlab-org/gitlab/-/issues/332326
-    - job: test-domains
-      artifacts: true
-    - job: test-dns
-      artifacts: true
-    - job: test-apps
-      artifacts: true
-    - job: test-appscatalog
-      artifacts: true
-    - job: test-appurl
-      artifacts: true
-    - job: test-questions
-      artifacts: true
-    - job: test-app-config
-      artifacts: true
-    - job: test-app-resources
-      artifacts: true
-    - job: test-changeurl
-      artifacts: true
-    - job: test-backuprestore
-      artifacts: true
-    - job: test-permission
-      artifacts: true
-    - job: test-settings
-      artifacts: true
-    - job: test-user-group
-      artifacts: true
-    - job: test-regenconf
-      artifacts: true
-    - job: test-service
-      artifacts: true
-    - job: test-ldapauth
-      artifacts: true
-    - job: test-sso-and-portalapi
-      artifacts: true
-  script:
-    - coverage combine ./.coverage_*
-    - coverage report
+#coverage:
+#  stage: test
+#  image: "core-tests"
+#  needs:
+#    # Yeah ... gotta list all of those individually ... https://gitlab.com/gitlab-org/gitlab/-/issues/332326
+#    - job: test-domains
+#      artifacts: true
+#    - job: test-dns
+#      artifacts: true
+#    - job: test-apps
+#      artifacts: true
+#    - job: test-appscatalog
+#      artifacts: true
+#    - job: test-appurl
+#      artifacts: true
+#    - job: test-questions
+#      artifacts: true
+#    - job: test-app-config
+#      artifacts: true
+#    - job: test-app-resources
+#      artifacts: true
+#    - job: test-changeurl
+#      artifacts: true
+#    - job: test-backuprestore
+#      artifacts: true
+#    - job: test-permission
+#      artifacts: true
+#    - job: test-settings
+#      artifacts: true
+#    - job: test-user-group
+#      artifacts: true
+#    - job: test-regenconf
+#      artifacts: true
+#    - job: test-service
+#      artifacts: true
+#    - job: test-ldapauth
+#      artifacts: true
+#    - job: test-sso-and-portalapi
+#      artifacts: true
+#    - job: test-process
+#      artifacts: true
+#    - job: test-file-utils
+#      artifacts: true
+#  script:
+#    - coverage combine ./.coverage_*
+#    - coverage report
