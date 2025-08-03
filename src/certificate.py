@@ -105,7 +105,7 @@ def certificate_status(
             try:
                 _check_domain_is_ready_for_ACME(domain)
                 status["ACME_eligible"] = True
-            except Exception as e:
+            except YunohostError as e:
                 if e.key == "certmanager_domain_not_diagnosed_yet":
                     status["ACME_eligible"] = None  # = unknown status
                 else:

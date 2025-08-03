@@ -579,7 +579,7 @@ def _get_registrar_config_section(domain: str) -> OrderedDict[str, Any]:
             )
 
         # TODO : add a help tip with the link to the registar's API doc (c.f. Lexicon's README)
-        registrar_list = read_toml(DOMAIN_REGISTRAR_LIST_PATH)
+        registrar_list: dict[str, dict] = read_toml(DOMAIN_REGISTRAR_LIST_PATH)  # type: ignore[assignment]
         registrar_credentials = registrar_list.get(registrar)
         if registrar_credentials is None:
             logger.warning(
@@ -948,11 +948,11 @@ def domain_dns_push(
         progress.old = bar
         logger.info(bar)
 
-    progress.nb = 0
-    progress.old = ""
-    progress.total = len(changes["delete"] + changes["create"] + changes["update"])
+    progress.nb = 0  # type: ignore[attr-defined]
+    progress.old = ""  # type: ignore[attr-defined]
+    progress.total = len(changes["delete"] + changes["create"] + changes["update"])  # type: ignore[attr-defined]
 
-    if progress.total == 0:
+    if progress.total == 0:  # type: ignore[attr-defined]
         logger.success(m18n.n("domain_dns_push_already_up_to_date"))
         return {}
 
@@ -1034,12 +1034,14 @@ def domain_dns_push(
 
     _set_managed_dns_records_hashes(domain, new_managed_dns_records_hashes)
 
+    progress_total = progress.total  # type: ignore[attr-defined]
+
     # Everything succeeded
     if len(results["errors"]) + len(results["warnings"]) == 0:
         logger.success(m18n.n("domain_dns_push_success"))
         return {}
     # Everything failed
-    elif len(results["errors"]) + len(results["warnings"]) == progress.total:
+    elif len(results["errors"]) + len(results["warnings"]) == progress_total:
         logger.error(m18n.n("domain_dns_push_failed"))
     else:
         logger.warning(m18n.n("domain_dns_push_partial_failure"))

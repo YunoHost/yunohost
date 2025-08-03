@@ -46,7 +46,7 @@ if TYPE_CHECKING:
 else:
     logger = getLogger("yunohost.permission")
 
-SYSTEM_PERMS = {
+SYSTEM_PERMS: dict[str, dict] = {
     "mail": {"label": "Email", "gid": 5001},
     "sftp": {"label": "SFTP", "gid": 5004},
     "ssh": {"label": "SSH", "gid": 5003},
@@ -856,8 +856,9 @@ def _update_app_permission_setting(
 
 
 def _get_system_perms() -> dict[str, SystemPermInfos]:
+    system_perm_conf: dict[str, SystemPermInfos]
     try:
-        system_perm_conf = read_yaml(SYSTEM_PERM_CONF) or {}
+        system_perm_conf = read_yaml(SYSTEM_PERM_CONF) or {}  # type: ignore[assignment]
         assert isinstance(system_perm_conf, dict), (
             "Uhoh, the system perm conf read is not a dict ?!"
         )
@@ -895,7 +896,7 @@ def _set_system_perms(system_perm_conf: dict[str, SystemPermInfos]) -> None:
     }
 
     try:
-        write_to_yaml(SYSTEM_PERM_CONF, conf_to_write)
+        write_to_yaml(SYSTEM_PERM_CONF, conf_to_write)  # type: ignore[arg-type]
     except Exception as e:
         raise YunohostError(
             f"Failed to write system perm configuration ? : {e}", raw_msg=True

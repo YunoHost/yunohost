@@ -245,7 +245,7 @@ def hook_callback(
             (name, priority, path, succeed) as arguments
 
     """
-    result = {}
+    result: dict[str, dict] = {}
     hooks_dict = {}
 
     # Retrieve hooks
@@ -304,7 +304,7 @@ def hook_callback(
             except YunohostError as e:
                 state = "failed"
                 hook_return = {}
-                logger.error(e.strerror, exc_info=1)
+                logger.error(e.strerror, exc_info=True)
                 post_callback(name=name, priority=priority, path=path, succeed=False)
             else:
                 post_callback(name=name, priority=priority, path=path, succeed=True)

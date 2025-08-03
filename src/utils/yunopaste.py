@@ -93,7 +93,7 @@ def anonymize(data: str) -> str:
     # So e.g. if there's jitsi.foobar.com as a subdomain of foobar.com, it may
     # be interesting to know that the log is about a supposedly dedicated domain
     # for jisti (hopefully this explanation make sense).
-    domains: list[str] = domain_list()["domains"]
+    domains: list[str] = domain_list()["domains"]  # type: ignore[assignment]
     domains = sorted(domains, key=lambda d: len(d))
 
     for count, domain in enumerate(domains, start=2):

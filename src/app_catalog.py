@@ -46,6 +46,7 @@ class AppCatalog(TypedDict):
     apps: dict[str, dict[str, Any]]
     categories: NotRequired[list[dict[str, Any]]]
     antifeatures: NotRequired[list[dict[str, Any]]]
+    from_api_version: NotRequired[int]
 
 
 def app_catalog(
@@ -144,7 +145,7 @@ def _read_apps_catalog_list() -> list[dict[Literal["id", "url"], str]]:
                 pass
         # Support the case where file exists but is empty
         # by returning [] if list_ is None
-        return list_ if list_ else []
+        return list_ if list_ else []   # type: ignore[return-value]
     except Exception as e:
         raise YunohostError(
             f"Could not read the apps_catalog list ... : {e}", raw_msg=True
@@ -190,7 +191,7 @@ def _update_apps_catalog() -> None:
 
         # Fetch the json
         try:
-            apps_catalog_content = download_json(actual_api_url)
+            apps_catalog_content: AppCatalog = download_json(actual_api_url)  # type: ignore[assignment]
         except Exception as e:
             raise YunohostError(
                 "apps_catalog_failed_to_download",
@@ -204,7 +205,7 @@ def _update_apps_catalog() -> None:
         # Save the apps_catalog data in the cache
         cache_file = f"{APPS_CATALOG_CACHE}/{apps_catalog_id}.json"
         try:
-            write_to_json(cache_file, apps_catalog_content)
+            write_to_json(cache_file, apps_catalog_content)  # type: ignore[arg-type]
         except Exception as e:
             raise YunohostError(
                 f"Unable to write cache data for {apps_catalog_id} apps_catalog : {e}",
@@ -267,9 +268,10 @@ def _load_apps_catalog() -> AppCatalog:
         # Let's load the json from cache for this catalog
         cache_file = f"{APPS_CATALOG_CACHE}/{apps_catalog_id}.json"
 
+        apps_catalog_content: AppCatalog | None
         try:
             apps_catalog_content = (
-                read_json(cache_file) if os.path.exists(cache_file) else None
+                read_json(cache_file) if os.path.exists(cache_file) else None  # type: ignore[assignment]
             )
         except Exception as e:
             raise YunohostError(
@@ -286,7 +288,9 @@ def _load_apps_catalog() -> AppCatalog:
         ):
             logger.info(m18n.n("apps_catalog_obsolete_cache"))
             _update_apps_catalog()
-            apps_catalog_content = read_json(cache_file)
+            apps_catalog_content = read_json(cache_file)  # type: ignore[assignment]
+
+        assert apps_catalog_content is not None
 
         del apps_catalog_content["from_api_version"]
 

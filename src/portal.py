@@ -85,7 +85,7 @@ def _get_portal_settings(
     portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{domain}.json")
 
     if portal_settings_path.exists():
-        settings.update(read_json(str(portal_settings_path)))
+        settings.update(read_json(str(portal_settings_path)))  # type: ignore[arg-type]
         # Portal may be public (no login required)
         settings["public"] = bool(settings.pop("enable_public_apps_page", False))
 
@@ -99,7 +99,8 @@ def _get_portal_settings(
 
         for path in glob.glob(f"{PORTAL_SETTINGS_DIR}/*.json"):
             if path != str(portal_settings_path):
-                apps.update(read_json(path)["apps"])
+                path_dict: dict[str, dict] = read_json(path)  # type: ignore[assignment]
+                apps.update(path_dict["apps"])
 
     if username:
         # Add user allowed or public apps

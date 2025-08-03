@@ -2095,7 +2095,7 @@ def app_ssowatconf() -> None:
 
         portal_domains_apps[app_portal_domain][perm_name] = app_portal_info
 
-    conf_dict = {
+    conf_dict: dict[str, str | dict] = {
         "cookie_secret_file": "/etc/yunohost/.ssowat_cookie_secret",
         "session_folder": "/var/cache/yunohost-portal/sessions",
         "cookie_name": "yunohost.portal",
@@ -2104,7 +2104,7 @@ def app_ssowatconf() -> None:
         "permissions": permissions,
     }
 
-    write_to_json("/etc/ssowat/conf.json", conf_dict, sort_keys=True, indent=4)
+    write_to_json("/etc/ssowat/conf.json", conf_dict, sort_keys=True, indent=4)  # type: ignore[arg-type]
 
     # Generate a file per possible portal with available apps
     portal_email_settings = {
@@ -2118,7 +2118,8 @@ def app_ssowatconf() -> None:
 
         portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
         if portal_settings_path.exists():
-            portal_settings.update(read_json(str(portal_settings_path)))
+            this_domain_portal_settings: dict[str, Any] = read_json(str(portal_settings_path))  # type: ignore[assignment]
+            portal_settings.update(this_domain_portal_settings)
 
         # Do no override anything else than "apps" since the file is shared
         # with domain's config panel "portal" options
