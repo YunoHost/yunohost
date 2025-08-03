@@ -81,6 +81,7 @@ APP_REPO_URL = re.compile(
 )
 
 # TODO: lol
+# Ideally this should be a readonly / frozen dict ?
 AppManifest = dict[str, Any]
 
 
@@ -211,6 +212,10 @@ def _parse_app_version(v: str) -> tuple[version.Version, int]:
         raise YunohostError(f"Failed to parse app version '{v}' : {e}", raw_msg=True)
 
 
+app_manifests_cache: dict[str, AppManifest] = {}
+app_manifests_cache_timestamp: dict[str, float] = {}
+
+
 def _get_manifest_of_app(path_or_app_id: str) -> AppManifest:
     # sample data to get an idea of what is going on
     # this toml extract:
@@ -321,14 +326,26 @@ def _get_manifest_of_app(path_or_app_id: str) -> AppManifest:
         path = Path(APPS_SETTING_PATH) / path_or_app_id
 
     if (path / "manifest.toml").exists():
-        manifest = read_toml(str(path / "manifest.toml"))
+        manifest_path = path / "manifest.toml"
+        read_manifest = read_toml
     elif (path / "manifest.json").exists():
-        manifest = read_json(str(path / "manifest.json"))
+        manifest_path = path / "manifest.json"
+        read_manifest = read_json
     else:
         raise YunohostError(
             f"There doesn't seem to be any manifest file in {path} ... It looks like an app was not correctly installed/removed.",
             raw_msg=True,
         )
+
+    # Check cache
+    if path_or_app_id in app_manifests_cache:
+        cache_timestamp = app_manifests_cache_timestamp[path_or_app_id]
+        manifest_and_doc_timestamps = [manifest_path.stat().st_mtime]
+        manifest_and_doc_timestamps += [p.stat().st_mtime for p in (path / "doc").rglob("*")]
+        if cache_timestamp > max(manifest_and_doc_timestamps):
+            return copy.deepcopy(app_manifests_cache[path_or_app_id])
+
+    manifest = read_manifest(str(manifest_path))
 
     manifest["packaging_format"] = float(
         str(manifest.get("packaging_format", "")).strip() or "0"
@@ -340,7 +357,13 @@ def _get_manifest_of_app(path_or_app_id: str) -> AppManifest:
     manifest["install"] = _set_default_ask_questions(manifest.get("install", {}))
     manifest["doc"], manifest["notifications"] = _parse_app_doc_and_notifications(path)
 
-    return manifest
+    # Cache the result ... but only for "raw" app names, not paths,
+    # which are likely just temporary and would fill the cache with stuff that's not likely to be useful?
+    if "/" not in path_or_app_id:
+        app_manifests_cache[path_or_app_id] = manifest
+        app_manifests_cache_timestamp[path_or_app_id] = time.time()
+
+    return copy.deepcopy(manifest)
 
 
 AppDocDict = dict[str, dict[str, str]]
