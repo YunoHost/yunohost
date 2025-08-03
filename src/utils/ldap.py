@@ -70,7 +70,7 @@ def _ldap_path_extract(path: str, info: str) -> str:
 
 def modifyModlist_finegrained(
     old_entry: Mapping[str, str | list[str] | set[str]],
-    new_entry: Mapping[str, str | list[str] | set[str]]
+    new_entry: Mapping[str, str | list[str] | set[str]],
 ) -> list[tuple[int, str, list[str]]]:
     """
     Prepare an optimized modification list to give to ldap.modify_ext()
@@ -244,7 +244,9 @@ class LDAPInterface:
 
         return result_list
 
-    def add(self, rdn: str, attr_dict: Mapping[str, str | list[str] | set[str]]) -> bool:
+    def add(
+        self, rdn: str, attr_dict: Mapping[str, str | list[str] | set[str]]
+    ) -> bool:
         """
         Add LDAP entry
 

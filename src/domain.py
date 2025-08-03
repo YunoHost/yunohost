@@ -47,6 +47,7 @@ if TYPE_CHECKING:
     from .utils.configpanel import ConfigPanel, ConfigPanelModel, RawConfig, RawSettings
     from .utils.form import FormModel
     from moulinette.utils.log import MoulinetteLogger
+
     logger = cast(MoulinetteLogger, getLogger("yunohost.domain"))
 else:
     logger = getLogger("yunohost.domain")
@@ -1030,7 +1031,13 @@ def domain_dns_suggest(domain: str) -> str:
 
 def domain_dns_push(
     domain: str, dry_run: bool, force: bool, purge: bool
-) -> dict[Literal["delete", "create", "update", "unchanged"], list["DNSRecord"] | list[str]] | dict[Literal["warnings", "errors"], list[str]]:
+) -> (
+    dict[
+        Literal["delete", "create", "update", "unchanged"],
+        list["DNSRecord"] | list[str],
+    ]
+    | dict[Literal["warnings", "errors"], list[str]]
+):
     from .dns import domain_dns_push
 
     return domain_dns_push(domain, dry_run, force, purge)

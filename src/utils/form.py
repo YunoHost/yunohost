@@ -961,7 +961,9 @@ class NumberOption(BaseInputOption):
     _none_as_empty_str = False
 
     @staticmethod
-    def normalize(value: Any, option: Union["BaseOption", dict[Any, Any]] = {}) -> int | None:
+    def normalize(
+        value: Any, option: Union["BaseOption", dict[Any, Any]] = {}
+    ) -> int | None:
         if isinstance(value, int):
             return value
 

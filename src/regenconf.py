@@ -43,6 +43,7 @@ REGEN_CONF_FILE = "/etc/yunohost/regenconf.yml"
 
 if TYPE_CHECKING:
     from moulinette.utils.log import MoulinetteLogger
+
     logger = cast(MoulinetteLogger, getLogger("yunohost.regenconf"))
 else:
     logger = getLogger("yunohost.regenconf")

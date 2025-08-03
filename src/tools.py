@@ -52,6 +52,7 @@ MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
 if TYPE_CHECKING:
     from moulinette.utils.log import MoulinetteLogger
+
     logger = cast(MoulinetteLogger, getLogger("yunohost.tools"))
 else:
     logger = getLogger("yunohost.tools")
@@ -331,7 +332,9 @@ def tools_update_norefresh() -> AvailableUpdatesInfos:
 
 
 @is_unit_operation(sse_only=True)
-def tools_update(operation_logger, target=None, no_refresh=False) -> AvailableUpdatesInfos:
+def tools_update(
+    operation_logger, target=None, no_refresh=False
+) -> AvailableUpdatesInfos:
     """
     Update apps & system package cache
     """
@@ -390,7 +393,8 @@ def tools_update(operation_logger, target=None, no_refresh=False) -> AvailableUp
 
             if returncode != 0:
                 raise YunohostError(
-                    "update_apt_cache_failed", sourceslist="\n".join(_dump_sources_list())
+                    "update_apt_cache_failed",
+                    sourceslist="\n".join(_dump_sources_list()),
                 )
             elif warnings:
                 logger.error(
@@ -414,7 +418,11 @@ def tools_update(operation_logger, target=None, no_refresh=False) -> AvailableUp
                 logger.error(str(e))
 
         apps = _list_apps_with_upgrade_infos()
-        upgradable_apps = [app for app in apps if app["upgrade"]["status"] in ["upgradable", "fail_requirements"]]
+        upgradable_apps = [
+            app
+            for app in apps
+            if app["upgrade"]["status"] in ["upgradable", "fail_requirements"]
+        ]
 
     if len(upgradable_apps) == 0 and len(upgradable_system_packages) == 0:
         logger.info(m18n.n("already_up_to_date"))
@@ -428,7 +436,9 @@ def tools_update(operation_logger, target=None, no_refresh=False) -> AvailableUp
         new_version = yunohost["new_version"].split(".")[:2]
         important_yunohost_upgrade = current_version != new_version
 
-    upgradable_system_packages_per_categories = _group_packages_per_categories(upgradable_system_packages)
+    upgradable_system_packages_per_categories = _group_packages_per_categories(
+        upgradable_system_packages
+    )
 
     # Wrapping this in a try/except just in case for some reason we can't load
     # the migrations, which would result in the update/upgrade process being blocked...
@@ -439,13 +449,17 @@ def tools_update(operation_logger, target=None, no_refresh=False) -> AvailableUp
         pending_migrations = []
 
     try:
-        last_apt_update_in_seconds = int(time.time() - os.stat("/var/cache/apt/pkgcache.bin").st_mtime)
+        last_apt_update_in_seconds = int(
+            time.time() - os.stat("/var/cache/apt/pkgcache.bin").st_mtime
+        )
     except Exception as e:
         logger.warning(f"Failed to compute last apt update time ? {e}")
         last_apt_update_in_seconds = 99999 * 3600
 
     try:
-        last_apps_catalog_update_in_seconds = int(time.time() - os.stat("/var/cache/yunohost/repo/default.json").st_mtime)
+        last_apps_catalog_update_in_seconds = int(
+            time.time() - os.stat("/var/cache/yunohost/repo/default.json").st_mtime
+        )
     except Exception as e:
         logger.warning(f"Failed to compute last apps catalog update time ? {e}")
         last_apps_catalog_update_in_seconds = 99999 * 3600
@@ -460,14 +474,19 @@ def tools_update(operation_logger, target=None, no_refresh=False) -> AvailableUp
     }
 
 
-def _list_apps_with_upgrade_infos(with_pre_upgrade_notifications: bool = True) -> list["AppInfo"]:
-
+def _list_apps_with_upgrade_infos(
+    with_pre_upgrade_notifications: bool = True,
+) -> list["AppInfo"]:
     from .app import _installed_apps, app_info
 
     apps = []
     for app_id in sorted(_installed_apps()):
         try:
-            app_info_dict = app_info(app_id, with_upgrade_infos=True, with_pre_upgrade_notifications=with_pre_upgrade_notifications)
+            app_info_dict = app_info(
+                app_id,
+                with_upgrade_infos=True,
+                with_pre_upgrade_notifications=with_pre_upgrade_notifications,
+            )
         except Exception as e:
             logger.error(f"Failed to read info for {app_id} : {e}")
             continue
@@ -516,7 +535,11 @@ def tools_upgrade(operation_logger: OperationLogger, target: str | None = None) 
         # Make sure there's actually something to upgrade
 
         apps = _list_apps_with_upgrade_infos(with_pre_upgrade_notifications=False)
-        upgradable_apps = [app["id"] for app in apps if app["upgrade"]["status"] in ["upgradable", "fail_requirements"]]
+        upgradable_apps = [
+            app["id"]
+            for app in apps
+            if app["upgrade"]["status"] in ["upgradable", "fail_requirements"]
+        ]
 
         if not upgradable_apps:
             logger.info(m18n.n("apps_already_up_to_date"))

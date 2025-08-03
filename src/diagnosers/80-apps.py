@@ -87,7 +87,7 @@ class MyDiagnoser(Diagnoser):
         ):
             yield ("error", "diagnosis_apps_outdated_ynh_requirement")
 
-        app_setting_path = os.path.join(APPS_SETTING_PATH, app['id'])
+        app_setting_path = os.path.join(APPS_SETTING_PATH, app["id"])
         deprecated_helpers = [
             "yunohost app setting",
             "yunohost app checkurl",
@@ -106,9 +106,7 @@ class MyDiagnoser(Diagnoser):
 
         old_arg_regex = r"^domain=\${?[0-9]"
         if (
-            os.system(
-                f"grep -q '{old_arg_regex}' {app_setting_path}/scripts/install"
-            )
+            os.system(f"grep -q '{old_arg_regex}' {app_setting_path}/scripts/install")
             == 0
         ):
             yield ("error", "diagnosis_apps_deprecated_practices")

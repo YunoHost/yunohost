@@ -41,6 +41,7 @@ from .vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 
 if TYPE_CHECKING:
     from moulinette.utils.log import MoulinetteLogger
+
     logger = cast(MoulinetteLogger, getLogger("yunohost.certmanager"))
 else:
     logger = getLogger("yunohost.certmanager")

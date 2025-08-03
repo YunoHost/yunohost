@@ -45,6 +45,7 @@ from .utils.network import get_public_ip
 
 if TYPE_CHECKING:
     from moulinette.utils.log import MoulinetteLogger
+
     logger = cast(MoulinetteLogger, getLogger("yunohost.dns"))
 else:
     logger = getLogger("yunohost.dns")
@@ -114,7 +115,9 @@ class DNSRecord(TypedDict):
     action: NotRequired[Literal["delete", "create", "update", "unchanged"]]
 
 
-def _build_dns_conf(base_domain: str, include_empty_AAAA_if_no_ipv6=False) -> dict[Literal["basic", "mail", "extra"] | str, list[DNSRecord]]:
+def _build_dns_conf(
+    base_domain: str, include_empty_AAAA_if_no_ipv6=False
+) -> dict[Literal["basic", "mail", "extra"] | str, list[DNSRecord]]:
     """
     Internal function that will returns a data structure containing the needed
     information to generate/adapt the dns configuration
@@ -273,7 +276,6 @@ def _build_dns_conf(base_domain: str, include_empty_AAAA_if_no_ipv6=False) -> di
 
         records[hook_name] = []
         for record_list in custom_records:
-
             # Check that record_list is indeed a list of dict
             # with the required keys
             if (
@@ -618,7 +620,12 @@ def domain_dns_push(
     dry_run: bool = False,
     force: bool = False,
     purge: bool = False,
-) -> dict[Literal["delete", "create", "update", "unchanged"], list[DNSRecord] | list[str]] | dict[Literal["warnings", "errors"], list[str]]:
+) -> (
+    dict[
+        Literal["delete", "create", "update", "unchanged"], list[DNSRecord] | list[str]
+    ]
+    | dict[Literal["warnings", "errors"], list[str]]
+):
     """
     Send DNS records to the previously-configured registrar of the domain.
     """
@@ -793,7 +800,9 @@ def domain_dns_push(
     type_and_names = sorted(
         {(r["type"], r["name"]) for r in current_records + wanted_records}
     )
-    comparison: dict[tuple[str, str], dict[Literal["current", "wanted"], list[DNSRecord]]] = {
+    comparison: dict[
+        tuple[str, str], dict[Literal["current", "wanted"], list[DNSRecord]]
+    ] = {
         type_and_name: {"current": [], "wanted": []} for type_and_name in type_and_names
     }
 
@@ -812,8 +821,12 @@ def domain_dns_push(
         wanted_contents = [r["content"] for r in cwrecords["wanted"]]
         current_contents = [r["content"] for r in cwrecords["current"]]
 
-        current = [r for r in cwrecords["current"] if r["content"] not in wanted_contents]
-        wanted = [r for r in cwrecords["wanted"] if r["content"] not in current_contents]
+        current = [
+            r for r in cwrecords["current"] if r["content"] not in wanted_contents
+        ]
+        wanted = [
+            r for r in cwrecords["wanted"] if r["content"] not in current_contents
+        ]
 
         #
         # Step 2 : simple case: 0 record on one side, 0 on the other
@@ -910,7 +923,7 @@ def domain_dns_push(
                 "delete": [],
                 "create": [],
                 "update": [],
-                "unchanged": []
+                "unchanged": [],
             }
             for action in ["delete", "create", "update", "unchanged"]:  # type: ignore[assignment]
                 for record in changes[action]:
@@ -951,7 +964,10 @@ def domain_dns_push(
     logger.info(m18n.n("domain_dns_pushing"))
 
     new_managed_dns_records_hashes = [_hash_dns_record(r) for r in changes["unchanged"]]
-    results: dict[Literal["warnings", "errors"], list[str]] = {"warnings": [], "errors": []}
+    results: dict[Literal["warnings", "errors"], list[str]] = {
+        "warnings": [],
+        "errors": [],
+    }
 
     for action in ["delete", "create", "update"]:  # type: ignore[assignment]
         for record in changes[action]:

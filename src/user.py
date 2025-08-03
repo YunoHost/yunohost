@@ -27,7 +27,19 @@ import random
 import re
 import subprocess
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, BinaryIO, Callable, Literal, TextIO, Union, cast, Mapping, TypedDict, NotRequired
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    BinaryIO,
+    Callable,
+    Literal,
+    TextIO,
+    Union,
+    cast,
+    Mapping,
+    TypedDict,
+    NotRequired,
+)
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.process import check_output
@@ -601,19 +613,21 @@ def user_update(
 
 
 # Gotta use this syntax because some of the keys contain dashes (-) which are not valid varnames T_T
-UserInfos = TypedDict("UserInfos", {
-    "username": str,
-    "fullname": str,
-    "mail": str,
-    "loginShell": str,
-    "mail-aliases": list[str],
-    "mail-forward": list[str],
-    "mailbox-quota": NotRequired[dict[Literal["limit", "use"], Any]]
-})
+UserInfos = TypedDict(
+    "UserInfos",
+    {
+        "username": str,
+        "fullname": str,
+        "mail": str,
+        "loginShell": str,
+        "mail-aliases": list[str],
+        "mail-forward": list[str],
+        "mailbox-quota": NotRequired[dict[Literal["limit", "use"], Any]],
+    },
+)
 
 
 def user_info(username: str) -> UserInfos:
-
     from .utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()

@@ -24,7 +24,15 @@ import os
 import random
 import re
 from logging import getLogger
-from typing import TYPE_CHECKING, BinaryIO, Literal, NotRequired, TypedDict, cast, Mapping
+from typing import (
+    TYPE_CHECKING,
+    BinaryIO,
+    Literal,
+    NotRequired,
+    TypedDict,
+    cast,
+    Mapping,
+)
 
 from moulinette import m18n
 from moulinette.utils.filesystem import read_yaml, write_to_yaml

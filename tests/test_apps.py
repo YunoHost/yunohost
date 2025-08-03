@@ -593,7 +593,9 @@ class TestMockedAppUpgrade:
             "yunohost.app.app_info",
             side_effect=lambda app, full=False, with_upgrade_infos=False: {
                 "upgrade": {
-                    "status": "upgradable" if app in self.upgradable_apps_list else "up_to_date",
+                    "status": "upgradable"
+                    if app in self.upgradable_apps_list
+                    else "up_to_date",
                     "current_version": "1.2.3",
                 },
                 "manifest": {"id": app},
@@ -601,12 +603,13 @@ class TestMockedAppUpgrade:
         )
         mocker.patch(
             "yunohost.app._app_upgrade_infos",
-            side_effect=lambda app, current_version = None: {
-                "status": "upgradable" if app in self.upgradable_apps_list else "up_to_date",
+            side_effect=lambda app, current_version=None: {
+                "status": "upgradable"
+                if app in self.upgradable_apps_list
+                else "up_to_date",
                 "current_version": current_version or "1.2.3",
             },
         )
-
 
         def custom_extract_app(app):
             return (
