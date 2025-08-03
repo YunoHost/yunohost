@@ -55,7 +55,7 @@ ACCOUNT_KEY_FILE = "/etc/yunohost/letsencrypt_account.pem"
 
 SSL_DIR = "/usr/share/yunohost/ssl"
 
-KEY_SIZE = 3072
+KEY_SIZE = 4096
 
 VALIDITY_LIMIT = 15  # days
 
