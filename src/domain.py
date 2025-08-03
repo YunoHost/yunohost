@@ -191,7 +191,7 @@ def domain_list(
 
 class DomainInfo(TypedDict):
     certificate: dict[str, Any]
-    registrar: tuple[str, Any]
+    registrar: str
     apps: list[dict[str, str]]
     main: bool
     topest_parent: str | None
@@ -686,7 +686,7 @@ def _get_raw_domain_settings(domain: str) -> dict:
     # NB: this corresponds to save_path_tpl in DomainConfigPanel
     path = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
     if os.path.exists(path):
-        return read_yaml(path)
+        return read_yaml(path)  # type: ignore[return-value]
 
     return {}
 
@@ -915,12 +915,15 @@ def _get_DomainConfigPanel() -> "ConfigPanel":
                 portal_settings: dict[str, Any] = {"apps": {}}
 
                 if portal_settings_path.exists():
-                    portal_settings.update(read_json(str(portal_settings_path)))
+                    portal_settings.update(read_json(str(portal_settings_path)))  # type: ignore[arg-type]
 
                 # Merge settings since this config file is shared with `app_ssowatconf()` which populate the `apps` key.
                 portal_settings.update(portal_values)
                 write_to_json(
-                    str(portal_settings_path), portal_settings, sort_keys=True, indent=4
+                    str(portal_settings_path),
+                    portal_settings,  # type: ignore[arg-type]
+                    sort_keys=True,
+                    indent=4
                 )
 
             super()._apply(
@@ -970,7 +973,7 @@ def _get_domain_settings(domain: str) -> dict:
     _assert_domain_exists(domain)
 
     if os.path.exists(f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"):
-        return read_yaml(f"{DOMAIN_SETTINGS_DIR}/{domain}.yml") or {}
+        return read_yaml(f"{DOMAIN_SETTINGS_DIR}/{domain}.yml") or {}  # type: ignore[return-value]
     else:
         return {}
 

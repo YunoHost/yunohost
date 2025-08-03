@@ -669,11 +669,11 @@ def _process_regen_conf(
     except Exception as e:
         logger.warning(
             f"Exception while trying to regenerate conf '{system_conf}': {e}",
-            exc_info=1,
+            exc_info=True,
         )
         if not new_conf and os.path.exists(system_conf):
             logger.warning(
-                m18n.n("regenconf_file_remove_failed", conf=system_conf), exc_info=1
+                m18n.n("regenconf_file_remove_failed", conf=system_conf), exc_info=True
             )
             return False
 
@@ -691,7 +691,7 @@ def _process_regen_conf(
                         m18n.n(
                             "regenconf_file_copy_failed", conf=system_conf, new=new_conf
                         ),
-                        exc_info=1,
+                        exc_info=True,
                     )
                     return False
 

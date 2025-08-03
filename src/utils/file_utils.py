@@ -35,7 +35,7 @@ Jsonable = (
 )
 
 
-def read_file(file_path: str, file_mode: str = "r") -> str | bytes:
+def read_file(file_path: str) -> str:
     """
     Read a regular text file
 
@@ -55,7 +55,7 @@ def read_file(file_path: str, file_mode: str = "r") -> str | bytes:
 
     # Open file and read content
     try:
-        with open(file_path, file_mode) as f:
+        with open(file_path, "r") as f:
             file_content = f.read()
     except IOError as e:
         raise YunohostError("cannot_open_file", file=file_path, error=str(e))
@@ -101,7 +101,7 @@ def read_yaml(file_: str | Path | TextIO) -> Jsonable:
 
     # Try to load yaml to check if it's syntaxically correct
     try:
-        loaded_yaml = yaml.safe_load(file_content)
+        loaded_yaml = yaml.safe_load(file_content)  # type: ignore[arg-type]
     except Exception as e:
         raise YunohostError("corrupted_yaml", ressource=file_path, error=str(e))
 
@@ -128,7 +128,7 @@ def read_toml(file_path: str) -> Jsonable:
     return loaded_toml
 
 
-def write_to_file(file_path: str, data: Jsonable, file_mode: str = "w") -> None:
+def write_to_file(file_path: str, data: str | bytes | list, file_mode: str = "w") -> None:
     """
     Write a single string or a list of string to a text file.
     The text file will be overwritten by default.
@@ -141,10 +141,7 @@ def write_to_file(file_path: str, data: Jsonable, file_mode: str = "w") -> None:
     """
     assert (
         isinstance(data, str) or isinstance(data, bytes) or isinstance(data, list)
-    ), "Error: data '{}' should be either a string or a list but is of type '{}'".format(
-        data,
-        type(data),
-    )
+    ), f"Error: data '{str(data)}' should be either a string or a list but is of type '{type(data)}'"
     assert not os.path.isdir(file_path), (
         "Error: file_path '%s' point to a dir, it should be a file" % file_path
     )
@@ -175,7 +172,7 @@ def write_to_file(file_path: str, data: Jsonable, file_mode: str = "w") -> None:
         raise YunohostError("error_writing_file", file=file_path, error=str(e))
 
 
-def append_to_file(file_path: str, data: Jsonable) -> None:
+def append_to_file(file_path: str, data: str | bytes | list) -> None:
     """
     Append a single string or a list of string to a text file.
 
@@ -259,8 +256,8 @@ def mkdir(
     path: str,
     mode: int = 0o0777,
     parents: bool = False,
-    uid: int | None = None,
-    gid: int | None = None,
+    uid: str | int | None = None,
+    gid: str | int | None = None,
     force: bool = False,
 ) -> None:
     """Create a directory with optional features
@@ -310,7 +307,7 @@ def mkdir(
 
 
 def chown(
-    path: str, uid: int | None = None, gid: int | None = None, recursive: bool = False
+    path: str, uid: str | int | None = None, gid: str | int | None = None, recursive: bool = False
 ) -> None:
     """Change the owner and/or group of a path
 

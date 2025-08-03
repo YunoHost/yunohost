@@ -43,7 +43,7 @@ def check_output(args, stderr=subprocess.STDOUT, shell=True, **kwargs) -> str:
     )
 
 
-def call_async_output(args, callback, **kwargs) -> int:
+def call_async_output(args, callback, **kwargs) -> int | None:
     """Run command and provide its output asynchronously
 
     Run command with arguments and wait for it to complete to return the
@@ -64,13 +64,13 @@ def call_async_output(args, callback, **kwargs) -> int:
         Exit status of the command
 
     """
-    import queue
+    from queue import Queue, Empty
 
     for a in ["stdout", "stderr"]:
         if a in kwargs:
             raise ValueError("%s argument not allowed, " "it will be overridden." % a)
 
-    log_queue = queue.Queue()
+    log_queue: Queue = Queue()
 
     kwargs["stdout"] = LogPipe(callback[0], log_queue)
     kwargs["stderr"] = LogPipe(callback[1], log_queue)
@@ -93,14 +93,14 @@ def call_async_output(args, callback, **kwargs) -> int:
             while True:
                 try:
                     callback, message = log_queue.get(True, 0.1)
-                except queue.Empty:
+                except Empty:
                     break
 
                 callback(message)
         while True:
             try:
                 callback, message = log_queue.get_nowait()
-            except queue.Empty:
+            except Empty:
                 break
 
             callback(message)

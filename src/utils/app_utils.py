@@ -347,7 +347,7 @@ def _get_manifest_of_app(path_or_app_id: str) -> AppManifest:
         if cache_timestamp > max(manifest_and_doc_timestamps):
             return copy.deepcopy(app_manifests_cache[path_or_app_id])
 
-    manifest = read_manifest(str(manifest_path))
+    manifest: AppManifest = read_manifest(str(manifest_path))  # type: ignore[assignment]
 
     manifest["packaging_format"] = float(
         str(manifest.get("packaging_format", "")).strip() or "0"
@@ -416,7 +416,7 @@ def _parse_app_doc_and_notifications(
             if pagename not in notifications[step]:
                 notifications[step][pagename] = {}
             try:
-                notifications[step][pagename][lang] = read_file(filepath).strip()
+                notifications[step][pagename][lang] = read_file(str(filepath)).strip()
             except Exception as e:
                 logger.error(e)
                 continue
