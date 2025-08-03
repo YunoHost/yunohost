@@ -218,7 +218,6 @@
     "all_users": "كافة مستخدمي واي يونوهوست",
     "ask_user_domain": "اسم النطاق الذي سيُستخدَم لعنوان بريد المستخدِم وكذا لحساب XMPP",
     "app_change_url_success": "تم تعديل الرابط التشعبي لتطبيق {app} إلى {domain}{path}",
-    "backup_app_failed": "لا يُمكن حِفظ {app}",
     "pattern_password_app": "آسف، كلمات السر لا يمكن أن تحتوي على الحروف التالية: {forbidden_chars}",
     "diagnosis_http_could_not_diagnose_details": "خطأ: {error}",
     "mail_unavailable": "عنوان البريد الإلكتروني هذا مخصص لفريق المدراء",
@@ -245,6 +244,5 @@
     "diagnosis_mail_outgoing_port_25_ok": "خادم بريد SMTP قادر على إرسال رسائل البريد الإلكتروني (منفذ البريد الصادر 25 غير محظور).",
     "user_already_exists": "المستخدم '{user}' موجود مِن قَبل",
     "backup_archive_name_unknown": "أرشيف نسخ احتياطي محلي غير معروف باسم '{name}'",
-    "custom_app_url_required": "يجب عليك تقديم عنوان URL لتحديث تطبيقك المخصص {app}",
     "backup_copying_to_organize_the_archive": "نسخ {size} ميغا بايت لتنظيم الأرشيف"
 }

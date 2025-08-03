@@ -19,7 +19,7 @@
 #
 
 import os
-from typing import Any
+from typing import Any, Literal, TypedDict, cast, TYPE_CHECKING, NotRequired
 import re
 import time
 from collections import OrderedDict
@@ -43,7 +43,11 @@ from .utils.dns import dig, is_special_use_tld, is_yunohost_dyndns_domain
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.network import get_public_ip
 
-logger = getLogger("yunohost.domain")
+if TYPE_CHECKING:
+    from moulinette.utils.log import MoulinetteLogger
+    logger = cast(MoulinetteLogger, getLogger("yunohost.dns"))
+else:
+    logger = getLogger("yunohost.dns")
 
 DOMAIN_REGISTRAR_LIST_PATH = "/usr/share/yunohost/registrar_list.toml"
 
@@ -98,7 +102,19 @@ def domain_dns_suggest(domain: str) -> str:
     return result
 
 
-def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
+class DNSRecord(TypedDict):
+    name: str
+    type: Literal["A", "AAAA", "MX", "TXT", "SRV", "CAA"]
+    ttl: int
+    content: str | None
+    old_content: NotRequired[str | None]
+    managed_by_yunohost: NotRequired[bool]
+    id: NotRequired[Any]
+    identifier: NotRequired[Any]
+    action: NotRequired[Literal["delete", "create", "update", "unchanged"]]
+
+
+def _build_dns_conf(base_domain: str, include_empty_AAAA_if_no_ipv6=False) -> dict[Literal["basic", "mail", "extra"] | str, list[DNSRecord]]:
     """
     Internal function that will returns a data structure containing the needed
     information to generate/adapt the dns configuration
@@ -110,25 +126,25 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
     {
         "basic": [
             # if ipv4 available
-            {"type": "A", "name": "@", "value": "123.123.123.123", "ttl": 3600},
+            {"type": "A", "name": "@", "content": "123.123.123.123", "ttl": 3600},
             # if ipv6 available
-            {"type": "AAAA", "name": "@", "value": "valid-ipv6", "ttl": 3600},
+            {"type": "AAAA", "name": "@", "content": "valid-ipv6", "ttl": 3600},
         ],
         "mail": [
-            {"type": "MX", "name": "@", "value": "10 domain.tld.", "ttl": 3600},
-            {"type": "TXT", "name": "@", "value": "\"v=spf1 a mx ip4:123.123.123.123 ipv6:valid-ipv6 -all\"", "ttl": 3600 },
-            {"type": "TXT", "name": "mail._domainkey", "value": "\"v=DKIM1; k=rsa; p=some-super-long-key\"", "ttl": 3600},
-            {"type": "TXT", "name": "_dmarc", "value": "\"v=DMARC1; p=none\"", "ttl": 3600}
+            {"type": "MX", "name": "@", "content": "10 domain.tld.", "ttl": 3600},
+            {"type": "TXT", "name": "@", "content": "\"v=spf1 a mx ip4:123.123.123.123 ipv6:valid-ipv6 -all\"", "ttl": 3600 },
+            {"type": "TXT", "name": "mail._domainkey", "content": "\"v=DKIM1; k=rsa; p=some-super-long-key\"", "ttl": 3600},
+            {"type": "TXT", "name": "_dmarc", "content": "\"v=DMARC1; p=none\"", "ttl": 3600}
         ],
         "extra": [
             # if ipv4 available
-            {"type": "A", "name": "*", "value": "123.123.123.123", "ttl": 3600},
+            {"type": "A", "name": "*", "content": "123.123.123.123", "ttl": 3600},
             # if ipv6 available
-            {"type": "AAAA", "name": "*", "value": "valid-ipv6", "ttl": 3600},
-            {"type": "CAA", "name": "@", "value": "0 issue \"letsencrypt.org\"", "ttl": 3600},
+            {"type": "AAAA", "name": "*", "content": "valid-ipv6", "ttl": 3600},
+            {"type": "CAA", "name": "@", "content": "0 issue \"letsencrypt.org\"", "ttl": 3600},
         ],
         "example_of_a_custom_rule": [
-            {"type": "SRV", "name": "_matrix", "value": "domain.tld.", "ttl": 3600}
+            {"type": "SRV", "name": "_matrix", "content": "domain.tld.", "ttl": 3600}
         ],
     }
     """
@@ -174,29 +190,29 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
         # Basic ipv4/ipv6 records #
         ###########################
         if ipv4 and settings_get("misc.network.dns_exposure") in ["both", "ipv4"]:
-            basic.append([basename, ttl, "A", ipv4])
+            basic.append((basename, ttl, "A", ipv4))
 
         if ipv6:
-            basic.append([basename, ttl, "AAAA", ipv6])
+            basic.append((basename, ttl, "AAAA", ipv6))
         elif include_empty_AAAA_if_no_ipv6:
-            basic.append([basename, ttl, "AAAA", None])
+            basic.append((basename, ttl, "AAAA", None))  # type: ignore[arg-type]
 
         #########
         # Email #
         #########
         if settings["mail_in"]:
-            mail.append([basename, ttl, "MX", f"10 {domain}."])
+            mail.append((basename, ttl, "MX", f"10 {domain}."))
 
         if settings["mail_out"]:
-            mail.append([basename, ttl, "TXT", '"v=spf1 a mx -all"'])
+            mail.append((basename, ttl, "TXT", '"v=spf1 a mx -all"'))
 
             # DKIM/DMARC record
             dkim_host, dkim_publickey = _get_DKIM(domain)
 
             if dkim_host:
                 mail += [
-                    [f"{dkim_host}{suffix}", ttl, "TXT", dkim_publickey],
-                    [f"_dmarc{suffix}", ttl, "TXT", '"v=DMARC1; p=none"'],
+                    (f"{dkim_host}{suffix}", ttl, "TXT", dkim_publickey),
+                    (f"_dmarc{suffix}", ttl, "TXT", '"v=DMARC1; p=none"'),
                 ]
 
         #########
@@ -206,32 +222,26 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
         # Only recommend wildcard and CAA for the top level
         if domain == base_domain:
             if ipv4 and settings_get("misc.network.dns_exposure") in ["both", "ipv4"]:
-                extra.append([f"*{suffix}", ttl, "A", ipv4])
+                extra.append((f"*{suffix}", ttl, "A", ipv4))
 
             if ipv6:
-                extra.append([f"*{suffix}", ttl, "AAAA", ipv6])
+                extra.append((f"*{suffix}", ttl, "AAAA", ipv6))
             elif include_empty_AAAA_if_no_ipv6:
-                extra.append([f"*{suffix}", ttl, "AAAA", None])
+                extra.append((f"*{suffix}", ttl, "AAAA", None))  # type: ignore[arg-type]
 
-            extra.append([basename, ttl, "CAA", '0 issue "letsencrypt.org"'])
+            extra.append((basename, ttl, "CAA", '0 issue "letsencrypt.org"'))
 
         ####################
         # Standard records #
         ####################
 
-    records = {
-        "basic": [
-            {"name": name, "ttl": ttl_, "type": type_, "value": value}
-            for name, ttl_, type_, value in basic
-        ],
-        "mail": [
-            {"name": name, "ttl": ttl_, "type": type_, "value": value}
-            for name, ttl_, type_, value in mail
-        ],
-        "extra": [
-            {"name": name, "ttl": ttl_, "type": type_, "value": value}
-            for name, ttl_, type_, value in extra
-        ],
+    def tuple_to_DNSRecord(t: tuple) -> DNSRecord:
+        return {"name": t[0], "ttl": t[1], "type": t[2], "content": t[3]}
+
+    records: dict[Literal["basic", "mail", "extra"] | str, list[DNSRecord]] = {
+        "basic": [tuple_to_DNSRecord(t) for t in basic],
+        "mail": [tuple_to_DNSRecord(t) for t in mail],
+        "extra": [tuple_to_DNSRecord(t) for t in extra],
     }
 
     ##################
@@ -263,6 +273,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
 
         records[hook_name] = []
         for record_list in custom_records:
+
             # Check that record_list is indeed a list of dict
             # with the required keys
             if (
@@ -271,7 +282,13 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
                 or any(
                     key not in record
                     for record in record_list
-                    for key in ["name", "ttl", "type", "value"]
+                    for key in ["name", "ttl", "type"]
+                )
+                # Legacy : content was 'value' in the past merf ...
+                or all(
+                    key not in record
+                    for record in record_list
+                    for key in ["value", "content"]
                 )
             ):
                 # Display an error, mainly for app packagers trying to implement a hook
@@ -280,6 +297,12 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
                     % (hook_name, record_list)
                 )
                 continue
+
+            # Legacy : content was 'value' in the past merf ...
+            for record in record_list:
+                if "value" in record:
+                    record["content"] = record["value"]
+                    del record["value"]
 
             records[hook_name].extend(record_list)
 
@@ -595,7 +618,7 @@ def domain_dns_push(
     dry_run: bool = False,
     force: bool = False,
     purge: bool = False,
-) -> dict[str, list[str]]:
+) -> dict[Literal["delete", "create", "update", "unchanged"], list[DNSRecord] | list[str]] | dict[Literal["warnings", "errors"], list[str]]:
     """
     Send DNS records to the previously-configured registrar of the domain.
     """
@@ -622,6 +645,7 @@ def domain_dns_push(
 
     if registrar == "parent_domain":
         parent_domain = _get_parent_domain_of(domain, topest=True)
+        assert parent_domain is not None
         registrar, registrar_credentials = _get_registar_settings(parent_domain)
         if any(registrar_credentials.values()):
             raise YunohostValidationError(
@@ -652,7 +676,7 @@ def domain_dns_push(
 
     # Convert the generated conf into a format that matches what we'll fetch using the API
     # Makes it easier to compare "wanted records" with "current records on remote"
-    wanted_records = []
+    wanted_records: list[DNSRecord] = []
     for records in _build_dns_conf(domain).values():
         for record in records:
             # Make sure the name is a FQDN
@@ -662,7 +686,7 @@ def domain_dns_push(
                 else base_dns_zone
             )
             type_ = record["type"]
-            content = record["value"]
+            content = record["content"]
 
             # Make sure the content is also a FQDN (with trailing . ?)
             if content == "@" and record["type"] == "CNAME":
@@ -762,30 +786,34 @@ def domain_dns_push(
     # (MX, .domain.tld)      10 domain.tld     [10 mx1.ovh.net, 20 mx2.ovh.net]
     # (TXT, .domain.tld)     "v=spf1 ..."      ["v=spf1", "foobar"]
     # (SRV, .domain.tld)                       0 5 5269 domain.tld
+    action: Literal["delete", "create", "update", "unchanged"]
+    changes: dict[Literal["delete", "create", "update", "unchanged"], list[DNSRecord]]
     changes = {"delete": [], "update": [], "create": [], "unchanged": []}
 
     type_and_names = sorted(
         {(r["type"], r["name"]) for r in current_records + wanted_records}
     )
-    comparison = {
+    comparison: dict[tuple[str, str], dict[Literal["current", "wanted"], list[DNSRecord]]] = {
         type_and_name: {"current": [], "wanted": []} for type_and_name in type_and_names
     }
 
-    for record in current_records:
-        comparison[(record["type"], record["name"])]["current"].append(record)
+    for crecord in current_records:
+        comparison[(crecord["type"], crecord["name"])]["current"].append(crecord)
 
-    for record in wanted_records:
-        comparison[(record["type"], record["name"])]["wanted"].append(record)
+    for wrecord in wanted_records:
+        assert isinstance(wrecord["type"], str)
+        assert isinstance(wrecord["name"], str)
+        comparison[(wrecord["type"], wrecord["name"])]["wanted"].append(wrecord)
 
-    for type_and_name, records in comparison.items():
+    for type_and_name, cwrecords in comparison.items():
         #
         # Step 1 : compute a first "diff" where we remove records which are the same on both sides
         #
-        wanted_contents = [r["content"] for r in records["wanted"]]
-        current_contents = [r["content"] for r in records["current"]]
+        wanted_contents = [r["content"] for r in cwrecords["wanted"]]
+        current_contents = [r["content"] for r in cwrecords["current"]]
 
-        current = [r for r in records["current"] if r["content"] not in wanted_contents]
-        wanted = [r for r in records["wanted"] if r["content"] not in current_contents]
+        current = [r for r in cwrecords["current"] if r["content"] not in wanted_contents]
+        wanted = [r for r in cwrecords["wanted"] if r["content"] not in current_contents]
 
         #
         # Step 2 : simple case: 0 record on one side, 0 on the other
@@ -793,7 +821,7 @@ def domain_dns_push(
         #
         if len(current) == 0 and len(wanted) == 0:
             # No diff, nothing to do
-            changes["unchanged"].extend(records["current"])
+            changes["unchanged"].extend(cwrecords["current"])
             continue
 
         elif len(wanted) == 0:
@@ -838,7 +866,7 @@ def domain_dns_push(
         for record in current:
             changes["delete"].append(record)
 
-    def human_readable_record(action, record):
+    def human_readable_record(action, record) -> str:
         name = record["name"]
         name = _get_relative_name_for_dns_zone(record["name"], base_dns_zone)
         name = name[:20]
@@ -876,18 +904,23 @@ def domain_dns_push(
                     record["name"] = _get_relative_name_for_dns_zone(
                         record["name"], base_dns_zone
                     )
-            return changes
+            return changes  # type: ignore[return-value]
         else:
-            out = {"delete": [], "create": [], "update": [], "unchanged": []}
-            for action in ["delete", "create", "update", "unchanged"]:
+            out: dict[Literal["delete", "create", "update", "unchanged"], list[str]] = {
+                "delete": [],
+                "create": [],
+                "update": [],
+                "unchanged": []
+            }
+            for action in ["delete", "create", "update", "unchanged"]:  # type: ignore[assignment]
                 for record in changes[action]:
                     out[action].append(human_readable_record(action, record))
 
-            return out
+            return out  # type: ignore[return-value]
 
     # If --force ain't used, we won't delete/update records not managed by yunohost
     if not force:
-        for action in ["delete", "update"]:
+        for action in ["delete", "update"]:  # type: ignore[assignment]
             changes[action] = [r for r in changes[action] if r["managed_by_yunohost"]]
 
     def progress(info=""):
@@ -918,9 +951,9 @@ def domain_dns_push(
     logger.info(m18n.n("domain_dns_pushing"))
 
     new_managed_dns_records_hashes = [_hash_dns_record(r) for r in changes["unchanged"]]
-    results = {"warnings": [], "errors": []}
+    results: dict[Literal["warnings", "errors"], list[str]] = {"warnings": [], "errors": []}
 
-    for action in ["delete", "create", "update"]:
+    for action in ["delete", "create", "update"]:  # type: ignore[assignment]
         for record in changes[action]:
             relative_name = _get_relative_name_for_dns_zone(
                 record["name"], base_dns_zone
@@ -1008,7 +1041,7 @@ def _set_managed_dns_records_hashes(domain: str, hashes: list) -> None:
     _set_domain_settings(domain, settings)
 
 
-def _hash_dns_record(record: dict) -> int:
+def _hash_dns_record(record: DNSRecord) -> int:
     fields = ["name", "type", "content"]
     record_ = {f: record.get(f) for f in fields}
 

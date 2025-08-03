@@ -8,7 +8,8 @@
   stage: test
   image: "core-tests"
   variables:
-    PYTEST_ADDOPTS: "--color=yes --cov=src"
+    #PYTEST_ADDOPTS: "--color=yes --cov=src"
+    PYTEST_ADDOPTS: "--color=yes"
     COVERAGE_FILE: ".coverage_$CI_JOB_NAME"
   before_script:
     - *install_debs

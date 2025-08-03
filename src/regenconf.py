@@ -25,7 +25,7 @@ import shutil
 from datetime import datetime
 from difflib import unified_diff
 from logging import getLogger
-from typing import Any
+from typing import Any, cast, TYPE_CHECKING
 
 import yaml
 from moulinette import m18n
@@ -41,7 +41,11 @@ BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, "backup")
 PENDING_CONF_DIR = os.path.join(BASE_CONF_PATH, "pending")
 REGEN_CONF_FILE = "/etc/yunohost/regenconf.yml"
 
-logger = getLogger("yunohost.regenconf")
+if TYPE_CHECKING:
+    from moulinette.utils.log import MoulinetteLogger
+    logger = cast(MoulinetteLogger, getLogger("yunohost.regenconf"))
+else:
+    logger = getLogger("yunohost.regenconf")
 
 
 # FIXME : those ain't just services anymore ... what are we supposed to do with this ...
@@ -421,7 +425,7 @@ def regen_conf(
     # element 2 and 3 with empty string is because of legacy...
     post_args = ["post", "", ""]
 
-    def _pre_call(name, priority, path, args):
+    def _pre_call2(name, priority, path, args):
         # append coma-separated applied changes for the category
         if name in result and result[name]["applied"]:
             regen_conf_files = ",".join(result[name]["applied"].keys())
@@ -431,7 +435,7 @@ def regen_conf(
             regen_conf_files,
         ]
 
-    hook_callback("conf_regen", names, pre_callback=_pre_call, env=env)
+    hook_callback("conf_regen", names, pre_callback=_pre_call2, env=env)
 
     operation_logger.success()
 

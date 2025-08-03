@@ -541,7 +541,7 @@ class BackupManager:
 
         if not successfull_apps and not successfull_system:
             rm(self.work_dir, True, True)
-            raise YunohostError("backup_nothings_done")
+            raise YunohostError("backup_no_file_collected")
 
         # Add unlisted files from backup tmp dir
         self._add_to_list_to_backup("backup.csv")
@@ -736,7 +736,7 @@ class BackupManager:
             logger.debug(e)
             abs_tmp_app_dir = os.path.join(self.work_dir, "apps/", app)
             shutil.rmtree(abs_tmp_app_dir, ignore_errors=True)
-            logger.error(m18n.n("backup_app_failed", app=app))
+            logger.error(m18n.n("backup_app_script_failed", app=app))
             self.targets.set_result("apps", app, "Error")
         else:
             # Add app info

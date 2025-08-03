@@ -27,7 +27,7 @@ import random
 import re
 import subprocess
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, BinaryIO, Callable, Literal, TextIO, Union, cast
+from typing import TYPE_CHECKING, Any, BinaryIO, Callable, Literal, TextIO, Union, cast, Mapping, TypedDict, NotRequired
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.process import check_output
@@ -251,7 +251,7 @@ def user_create(
         if not shellexists(loginShell) or loginShell not in list_shells():
             raise YunohostValidationError("invalid_shell", shell=loginShell)
 
-    attr_dict = {
+    attr_dict: Mapping[str, str | list[str]] = {
         "objectClass": [
             "mailAccount",
             "inetOrgPerson",
@@ -265,7 +265,7 @@ def user_create(
         "uid": [username],
         "mail": mail,  # NOTE: this one seems to be already a list
         "maildrop": [username],
-        "mailuserquota": [mailbox_quota],
+        "mailuserquota": [mailbox_quota or "0"],
         "userPassword": [_hash_user_password(password)],
         "gidNumber": [uid],
         "uidNumber": [uid],
@@ -600,14 +600,20 @@ def user_update(
         return user_info(username)
 
 
-def user_info(username: str) -> dict[str, str]:
-    """
-    Get user informations
+# Gotta use this syntax because some of the keys contain dashes (-) which are not valid varnames T_T
+UserInfos = TypedDict("UserInfos", {
+    "username": str,
+    "fullname": str,
+    "mail": str,
+    "loginShell": str,
+    "mail-aliases": list[str],
+    "mail-forward": list[str],
+    "mailbox-quota": NotRequired[dict[Literal["limit", "use"], Any]]
+})
 
-    Keyword argument:
-        username -- Username or mail to get informations
 
-    """
+def user_info(username: str) -> UserInfos:
+
     from .utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
@@ -626,7 +632,7 @@ def user_info(username: str) -> dict[str, str]:
     else:
         raise YunohostValidationError("user_unknown", user=username)
 
-    result_dict = {
+    result_dict: UserInfos = {
         "username": user["uid"][0],
         "fullname": user["cn"][0],
         "mail": user["mail"][0],
@@ -1114,7 +1120,9 @@ def user_group_create(
             gid = str(random.randint(200, 99999))
             uid_guid_found = gid not in all_gid
 
-    attr_dict = {
+    assert gid
+
+    attr_dict: dict[str, str | list[str]] = {
         "objectClass": ["top", "groupOfNamesYnh", "posixGroup"],
         "cn": groupname,
         "gidNumber": [gid],
@@ -1604,7 +1612,7 @@ def user_permission_ldapsync() -> None:
 #
 
 
-def user_ssh_list_keys(username: str) -> dict[str, dict[str, str]]:
+def user_ssh_list_keys(username: str) -> dict[Literal["keys"], list[dict[str, str]]]:
     from .ssh import user_ssh_list_keys
 
     return user_ssh_list_keys(username)

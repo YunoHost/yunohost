@@ -21,7 +21,7 @@
 import os
 import shutil
 import subprocess
-from typing import Any
+from typing import cast, Any, TYPE_CHECKING
 import sys
 from datetime import datetime
 from glob import glob
@@ -39,7 +39,11 @@ from .utils.error import YunohostError, YunohostValidationError
 from .utils.network import get_public_ip
 from .vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 
-logger = getLogger("yunohost.certmanager")
+if TYPE_CHECKING:
+    from moulinette.utils.log import MoulinetteLogger
+    logger = cast(MoulinetteLogger, getLogger("yunohost.certmanager"))
+else:
+    logger = getLogger("yunohost.certmanager")
 
 CERT_FOLDER = "/etc/yunohost/certs/"
 TMP_FOLDER = "/var/www/.well-known/acme-challenge-private/"
@@ -81,7 +85,7 @@ def certificate_status(
 
     # If no domains given, consider all yunohost domains
     if domains == []:
-        domains = domain_list()["domains"]
+        domains = domain_list()["domains"]  # type: ignore[assignment]
     # Else, validate that yunohost knows the domains given
     else:
         for domain in domains:

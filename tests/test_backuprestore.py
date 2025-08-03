@@ -270,7 +270,7 @@ def test_backup_only_ldap():
 def test_backup_system_part_that_does_not_exists(mocker):
     # Create the backup
     with message("backup_hook_unknown", hook="doesnt_exist"):
-        with raiseYunohostError(mocker, "backup_nothings_done"):
+        with raiseYunohostError(mocker, "backup_no_file_collected"):
             backup_create(system=["doesnt_exist"], apps=None)
 
 
@@ -352,8 +352,8 @@ def test_backup_script_failure_handling(monkeypatch, mocker):
     # with the expected error message key
     monkeypatch.setattr("yunohost.backup.hook_exec", custom_hook_exec)
 
-    with message("backup_app_failed", app="backup_recommended_app"):
-        with raiseYunohostError(mocker, "backup_nothings_done"):
+    with message("backup_app_script_failed", app="backup_recommended_app"):
+        with raiseYunohostError(mocker, "backup_no_file_collected"):
             backup_create(system=None, apps=["backup_recommended_app"])
 
 
@@ -380,7 +380,7 @@ def test_backup_app_not_installed(mocker):
     assert not _is_installed("wordpress")
 
     with message("unbackup_app", app="wordpress"):
-        with raiseYunohostError(mocker, "backup_nothings_done"):
+        with raiseYunohostError(mocker, "backup_no_file_collected"):
             backup_create(system=None, apps=["wordpress"])
 
 
@@ -391,7 +391,7 @@ def test_backup_app_with_no_backup_script(mocker):
     assert not os.path.exists(backup_script)
 
     with message("backup_with_no_backup_script_for_app", app="backup_recommended_app"):
-        with raiseYunohostError(mocker, "backup_nothings_done"):
+        with raiseYunohostError(mocker, "backup_no_file_collected"):
             backup_create(system=None, apps=["backup_recommended_app"])
 
 

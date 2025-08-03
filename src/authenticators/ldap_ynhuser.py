@@ -121,14 +121,14 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
             )
             return False
 
-        user_mail = user_result[0]["mail"]
-        if len(user_mail) != 1:
+        user_mail_list = user_result[0]["mail"]
+        if len(user_mail_list) != 1:
             logger.error(
-                f"User {user} found, but has the wrong number of email addresses: {user_mail}"
+                f"User {user} found, but has the wrong number of email addresses: {user_mail_list}"
             )
             return False
 
-        user_mail = user_mail[0]
+        user_mail = user_mail_list[0]
         if "@" not in user_mail:
             logger.error(f"Invalid email address for {user}: {user_mail}")
             return False

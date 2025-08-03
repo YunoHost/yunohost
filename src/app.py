@@ -35,12 +35,11 @@ from typing import (
     Iterator,
     List,
     Literal,
-    Optional,
     Required,
-    Tuple,
     TypedDict,
-    Union,
+    NotRequired,
     cast,
+    Union,
 )
 
 import yaml
@@ -56,7 +55,7 @@ from moulinette.utils.filesystem import (
     write_to_file,
     write_to_json,
 )
-from moulinette.utils.process import check_output, run_commands
+from moulinette.utils.process import check_output
 from packaging import version
 
 from .app_catalog import (  # noqa
@@ -92,6 +91,7 @@ else:
 
 APPS_SETTING_PATH = "/etc/yunohost/apps/"
 APP_TMP_WORKDIRS = "/var/cache/yunohost/app_tmp_work_dirs"
+GIT_CLONE_CACHE = "/var/cache/yunohost/gitclones"
 PORTAL_SETTINGS_DIR = "/etc/yunohost/portal"
 
 re_app_instance_name = re.compile(
@@ -114,6 +114,7 @@ APP_FILES_TO_COPY = [
     "doc",
 ]
 
+# TODO: lol
 AppManifest = dict[str, Any]
 
 
@@ -124,9 +125,7 @@ class AppInfo(TypedDict, total=False):
     version: Required[str]
     domain_path: str
     logo: str | None
-    upgradable: Literal["yes", "no", "url_required", "bad_quality"]
-    current_version: str | None
-    new_version: str | None
+    upgrade: "AppUpgradeInfos"
     settings: dict[str, Any]
     setting_path: str
     manifest: AppManifest
@@ -143,9 +142,7 @@ class AppInfo(TypedDict, total=False):
     notifications: dict[str, dict[str, str]]
 
 
-def app_list(
-    full: bool = False, upgradable: bool = False
-) -> dict[Literal["apps"], list[AppInfo]]:
+def app_list(full: bool = False) -> dict[Literal["apps"], list[AppInfo]]:
     """
     List installed apps
     """
@@ -153,28 +150,23 @@ def app_list(
     out = []
     for app_id in sorted(_installed_apps()):
         try:
-            app_info_dict = app_info(app_id, full=full, upgradable=upgradable)
+            app_info_dict = app_info(app_id, full=full)
         except Exception as e:
             logger.error(f"Failed to read info for {app_id} : {e}")
-            continue
-        if upgradable and app_info_dict.get("upgradable") != "yes":
             continue
         out.append(app_info_dict)
 
     return {"apps": out}
 
 
-def app_info(app: str, full: bool = False, upgradable: bool = False) -> AppInfo:
-    """
-    Get info for a specific app
-    """
+def app_info(app: str, full: bool = False, with_upgrade_infos: bool = False, with_pre_upgrade_notifications: bool = False, with_settings: bool = False) -> AppInfo:
+
     from .domain import _get_raw_domain_settings
     from .permission import user_permission_list
 
     _assert_is_installed(app)
 
-    setting_path = os.path.join(APPS_SETTING_PATH, app)
-    local_manifest = _get_manifest_of_app(setting_path)
+    local_manifest = _get_manifest_of_app(app)
     settings = _get_app_settings(app)
     main_perm = settings.get("_permissions", {}).get("main", {})
 
@@ -191,39 +183,51 @@ def app_info(app: str, full: bool = False, upgradable: bool = False) -> AppInfo:
     if "domain" in settings and "path" in settings:
         ret["domain_path"] = settings["domain"] + settings["path"]
 
-    # FIXME: this 'upgradable' option only seems to be used here an is equivalent to full = True?
-    if not upgradable and not full:
-        return ret
+    if full or with_upgrade_infos:
+        ret["upgrade"] = _app_upgrade_infos(app, current_version=ret["version"])
 
-    absolute_app_name, _ = _parse_app_instance_name(app)
-    from_catalog = _load_apps_catalog()["apps"].get(absolute_app_name, {})
+    if "upgrade" in ret and with_pre_upgrade_notifications \
+        and ret["upgrade"]["status"] not in ["up_to_date", "url_required"]:
 
-    # Check if $app.png exists in the app logo folder, this is a trick to be able to easily customize the logo
-    # of an app just by creating $app.png (instead of the hash.png) in the corresponding folder
-    ret["logo"] = (
-        app
-        if os.path.exists(f"{APPS_CATALOG_LOGOS}/{app}.png")
-        else (main_perm.get("logo_hash") or from_catalog.get("logo_hash"))
-    )
-    ret["upgradable"], ret["current_version"], ret["new_version"] = _app_upgradable(
-        app, local_manifest=local_manifest
-    )
+        url = ret["upgrade"]["url"]
+        specific_channel = ret["upgrade"]["specific_channel"]
+        new_revision = ret["upgrade"]["new_revision"]
+        assert url and new_revision
+        from tempfile import TemporaryDirectory
+        try:
+            with TemporaryDirectory(prefix="app_", dir=APP_TMP_WORKDIRS) as d:
+                _git_clone_light(d, url, branch=specific_channel, revision=new_revision)
+                _, tmp_notifications = _parse_app_doc_and_notifications(d)
+        except Exception as e:
+            logger.warning(f"Failed to check pre-upgrade notifications for {app} : {e}")
+            tmp_notifications = {}
 
-    ret["settings"] = settings
+        if tmp_notifications.get("PRE_UPGRADE"):
+            ret["upgrade"]["notifications"] = _filter_and_hydrate_notifications(
+                tmp_notifications["PRE_UPGRADE"],
+                ret["version"],
+                ret["settings"],
+            )
+
+        ret["upgrade"]["notifications"] = {"main": "gni", "other": "other"}
+
+    if full or with_settings:
+        ret["settings"] = settings
 
     if not full:
         return ret
 
-    ret["setting_path"] = setting_path
     ret["manifest"] = local_manifest
 
-    # FIXME: maybe this is not needed ? default ask questions are
-    # already set during the _get_manifest_of_app earlier ?
-    ret["manifest"]["install"] = _set_default_ask_questions(
-        ret["manifest"].get("install", {})
-    )
+    absolute_app_name, _ = _parse_app_instance_name(app)
+    ret["from_catalog"] = _load_apps_catalog()["apps"].get(absolute_app_name, {})
 
-    ret["from_catalog"] = from_catalog
+    # Check if $app.png exists in the app logo folder, this is a trick to be able to easily customize the logo
+    # of an app just by creating $app.png (instead of the hash.png) in the corresponding folder
+    if (Path(APPS_CATALOG_LOGOS) / f"{app}.png").exists():
+        ret["logo"] = app
+    else:
+        ret["logo"] = main_perm.get("logo_hash") or ret["from_catalog"].get("logo_hash")  # type: ignore[typeddict-item]
 
     # Hydrate app notifications and doc
     rendered_doc: dict[str, dict[str, str]] = {}
@@ -267,18 +271,14 @@ def app_info(app: str, full: bool = False, upgradable: bool = False) -> AppInfo:
             _get_raw_domain_settings(settings["domain"]).get("default_app") == app
         )
 
-    ret["supports_change_url"] = os.path.exists(
-        os.path.join(setting_path, "scripts", "change_url")
-    )
-    ret["supports_backup_restore"] = os.path.exists(
-        os.path.join(setting_path, "scripts", "backup")
-    ) and os.path.exists(os.path.join(setting_path, "scripts", "restore"))
+    setting_path = Path(APPS_SETTING_PATH) / app
+    ret["supports_change_url"] = (setting_path / "scripts" / "change_url").exists()
+    ret["supports_backup_restore"] = (setting_path / "scripts" / "backup").exists() \
+        and (setting_path / "scripts" / "restore").exists()
     ret["supports_multi_instance"] = local_manifest.get("integration", {}).get(
         "multi_instance", False
     )
-    ret["supports_config_panel"] = os.path.exists(
-        os.path.join(setting_path, "config_panel.toml")
-    )
+    ret["supports_config_panel"] = (setting_path / "config_panel.toml").exists()
     ret["supports_purge"] = (
         local_manifest["packaging_format"] >= 2
         and local_manifest["resources"].get("data_dir") is not None
@@ -294,48 +294,146 @@ def app_info(app: str, full: bool = False, upgradable: bool = False) -> AppInfo:
     return ret
 
 
-def _app_upgradable(
-    app: str, local_manifest: dict | None = None
-) -> Tuple[Literal["yes", "no", "url_required", "bad_quality"], str | None, str | None]:
+class AppUpgradeInfos(TypedDict):
+
+    status: Literal["upgradable", "up_to_date", "url_required", "bad_quality", "fail_requirements"]
+    message: str
+    url: str | None
+    current_version: str
+    new_version: str | None
+    new_revision: str | None
+    requirements: dict[str, "AppRequirementCheckResult"] | None
+    specific_channel: str | None
+    specific_channel_message: str | None
+    notifications: NotRequired[dict[str, str]]
+
+
+def _app_upgrade_infos(
+    app: str, current_version: str | None = None
+) -> AppUpgradeInfos:
+
     base_app_id, _ = _parse_app_instance_name(app)
     app_in_catalog = _load_apps_catalog()["apps"].get(base_app_id, {})
 
-    # Local manifest can be provided to avoid re-reading the manifest from scratch (eg when in app_info)
+    # current_version can be provided to avoid re-reading the manifest from scratch (eg when in app_info)
     # Otherwise we read it here
-    if local_manifest is None:
-        setting_path = os.path.join(APPS_SETTING_PATH, app)
-        local_manifest = _get_manifest_of_app(setting_path)
+    if current_version is None:
+        current_version = _get_manifest_of_app(app).get("version", "0~ynh0")
 
-    current_version = local_manifest.get("version", "0~ynh0")
+    assert current_version
 
-    if not app_in_catalog:
-        return "url_required", current_version, None
+    if not app_in_catalog or "git" not in app_in_catalog:
+        return {
+            "status": "url_required",
+            "message": m18n.n("app_upgrade_url_required"),
+            "url": None,
+            "current_version": current_version,
+            "new_version": None,
+            "new_revision": None,
+            "requirements": None,
+            "specific_channel": None,
+            "specific_channel_message": None,
+        }
 
-    version_in_catalog = app_in_catalog.get("manifest", {}).get("version", "0~ynh0")
+    url = app_in_catalog["git"]["url"]
+    current_revision = _get_app_settings(app).get("current_revision", "?")[:7]
+    available_upgrade_channels = app_in_catalog.get("alternative_branches", {})
+    specific_channel: str | None = _get_app_settings(app).get("upgrade_channel")
+    specific_channel_pr_url: str | None = None
+    specific_channel_message: str | None = None
+    manifest_in_catalog = app_in_catalog.get("manifest", {})
+
+    if specific_channel and specific_channel in available_upgrade_channels:
+        channel = available_upgrade_channels[specific_channel]
+        ahead = channel["ahead"]
+        if ahead:
+            level = channel["level"]
+            new_revision = channel["revision"]
+            new_version = channel["version"]
+            specific_channel_pr_url = channel["pr_url"]
+            specific_channel_message = m18n.n("app_upgrade_specific_channel_msg", channel=specific_channel, pr_url=specific_channel_pr_url)
+        else:
+            logger.debug(f"Ignoring specific upgrade channel '{specific_channel}' for '{app}', because it's not currently ahead of the default branch. The default branch will be used instead.")
+            specific_channel = None
+    elif specific_channel:
+        logger.warning(f"Unknown specific upgrade channel '{specific_channel}' for '{app}'. Falling back to default.")
+        specific_channel = None
+
+    if specific_channel is None:
+        new_version = manifest_in_catalog.get("version", "0~ynh0")
+        new_revision = app_in_catalog.get("git", {}).get("revision", "?")
+        level = app_in_catalog.get("level", -1)
 
     # Do not advertise upgrades for bad-quality apps
-    level = app_in_catalog.get("level", -1)
     if (
         not (isinstance(level, int) and level >= 5)
         or app_in_catalog.get("state") != "working"
     ):
-        return "bad_quality", current_version, None
+        return {
+            "status": "bad_quality",
+            "message": m18n.n("app_upgrade_bad_quality"),
+            "url": url,
+            "current_version": current_version,
+            "new_version": None,
+            "new_revision": None,
+            "requirements": None,
+            "specific_channel": specific_channel,
+            "specific_channel_message": specific_channel_message,
+        }
 
-    if _parse_app_version(current_version) >= _parse_app_version(version_in_catalog):
-        return "no", current_version, version_in_catalog
+    if _parse_app_version(current_version) >= _parse_app_version(new_version) and (specific_channel is None or new_revision == current_revision):
+        return {
+            "status": "up_to_date",
+            "message": m18n.n("app_upgrade_up_to_date", current_version=current_version),
+            "url": None,
+            "current_version": current_version,
+            "new_version": new_version,
+            "new_revision": new_revision,
+            "requirements": None,
+            "specific_channel": specific_channel,
+            "specific_channel_message": specific_channel_message,
+        }
 
     # Not sure when this happens exactly considering we checked for ">=" before ...
     # maybe that's for "legacy versions" that do not respect the X.Y~ynhZ syntax
-    if current_version == version_in_catalog:
-        current_revision = _get_app_settings(app).get("current_revision", "?")[:7]
-        new_revision = app_in_catalog.get("git", {}).get("revision", "?")[:7]
-
-        current_version = f" ({current_revision})"
-        new_version = f" ({new_revision})"
+    #
+    # Update: well it does cover the alternative upgrade channel now (typically testing)
+    # where the version may not have been bumped but we want a way to advertise it anyway
+    # and distinguish the two versions, using the commit id
+    if current_version == new_version:
+        current_version += f"({current_revision})"
+        new_version = f"{new_version} ({new_revision})"
     else:
-        new_version = version_in_catalog
+        new_version = new_version
 
-    return "yes", current_version, new_version
+    # Check requirements
+
+    requirements = {
+        r["id"]: r
+        for r in _check_manifest_requirements(manifest_in_catalog, action="upgrade", app=app)
+    }
+    pass_requirements = all(r["passed"] for r in requirements.values())
+    failed_requirements = ' ; '.join([r["error"] for r in requirements.values() if not r["passed"]])
+
+    status: Literal["upgradable", "fail_requirements"] = "upgradable" if pass_requirements else "fail_requirements"
+    return {
+        "status": status,
+        # i18n: app_upgrade_upgradable
+        # i18n: app_upgrade_fail_requirements
+        "message": m18n.n(
+            f"app_upgrade_{status}",
+            current_version=current_version,
+            new_version=new_version,
+            failed_requirements=failed_requirements
+        ),
+        "url": url,
+        "current_version": current_version,
+        "new_version": new_version,
+        "new_revision": new_revision,
+        "requirements": requirements,
+        "specific_channel": specific_channel,
+        "specific_channel_message": specific_channel_message,
+    }
 
 
 def app_map(
@@ -485,6 +583,9 @@ def app_change_url(
     old_domain = app_setting(app, "domain")
     old_path = app_setting(app, "path")
 
+    assert isinstance(old_domain, str)
+    assert isinstance(old_path, str)
+
     # Normalize path and domain format
 
     domain = DomainOption.normalize(domain)
@@ -602,15 +703,15 @@ def app_upgrade(
     continue_on_failure: bool = False,
     ignore_yunohost_version: bool = False,
 ) -> (
-    None | dict[Literal["notifications"], dict[Literal["POST_UPGRADE"], dict[str, str]]]
+    None | dict[Literal["success", "failed", "cancelled"], Any] | dict[Literal["notifications"], dict[Literal["POST_UPGRADE"], dict[str, str]]]
 ):
     """
     Upgrade app
 
     Keyword argument:
-        file -- Folder or tarball for upgrade
         app -- App(s) to upgrade (default all)
         url -- Git url to fetch for upgrade
+        file -- Folder or tarball for upgrade
         no_safety_backup -- Disable the safety backup during upgrade
 
     """
@@ -630,80 +731,118 @@ def app_upgrade(
     from .regenconf import manually_modified_files
     from .utils.legacy import _patch_legacy_helpers
 
-    apps = app
+    # "app" is a bad name for this arg but meh that's legacy and possibly can't easily be changed
+    # (and actually a bit relevant in terms of what's shown in --help)
+    raw_requested_targets = app
+    if not raw_requested_targets:
+        requested_targets = _installed_apps()
+    elif isinstance(raw_requested_targets, str):
+        requested_targets = [raw_requested_targets]
+    else:
+        requested_targets = raw_requested_targets.copy()
+        # Remove possible duplicates
+        requested_targets = [app_ for i, app_ in enumerate(requested_targets) if app_ not in requested_targets[:i]]
+        # Abort if any of those app is in fact not installed..
+        for app_ in requested_targets:
+            _assert_is_installed(app_)
+
     # Check if disk space available
     if free_space_in_directory("/") <= 512 * 1000 * 1000:
         raise YunohostValidationError("disk_space_not_sufficient_update")
-    # If no app is specified, upgrade all apps
-    if not apps:
-        # FIXME : not sure what's supposed to happen if there is a url and a file but no apps...
-        if not url and not file:
-            apps = _installed_apps()
-    elif not isinstance(app, list):
-        apps = [app]
 
-    # Remove possible duplicates
-    apps = [app_ for i, app_ in enumerate(apps) if app_ not in apps[:i]]
+    def _check_upgrade_targets(requested_targets: list[str]) -> Iterator[tuple[str, str, str]]:
 
-    # Abort if any of those app is in fact not installed..
-    for app_ in apps:
-        _assert_is_installed(app_)
+        if (url or file) and len(requested_targets) > 1 and not isinstance(file, dict):
+            raise YunohostValidationError("You provided an url or file to 'yunohost app upgrade' with several targets to upgrade ... it's unclear what to do with this. Please provide a single target when specifying a file or url to 'yunohost app upgrade'!", raw_msg=True)
 
-    if len(apps) == 0:
-        raise YunohostValidationError("apps_already_up_to_date")
-    if len(apps) > 1:
-        logger.info(m18n.n("app_upgrade_several_apps", apps=", ".join(apps)))
+        for app_ in requested_targets:
+            logger.debug(f"Checking upgradability for {app_}")
+            upgrade_infos = _app_upgrade_infos(app_)
+            status = upgrade_infos["status"]
+            current_version = upgrade_infos.get("current_version")
+            new_version = upgrade_infos.get("new_version")
 
-    notifications = {}
-    failed_to_upgrade_apps = []
+            new_app_src: str
+            if file and isinstance(file, dict):
+                # We use this hack to test chained upgrades in unit/functional tests
+                new_app_src = file[app_]
+            elif file:
+                new_app_src = file
+            elif url:
+                new_app_src = url
+            elif status == "url_required":
+                logger.warning(m18n.n("app_upgrade_cli_url_required", app=app_))
+                continue
+            elif upgrade_infos.get("specific_channel"):
+                assert upgrade_infos["url"]
+                assert upgrade_infos["new_revision"]
+                new_app_src = upgrade_infos["url"] + "/tree/" + upgrade_infos["new_revision"]
+            else:
+                # Use the infos from the catalog
+                app_base_id = app_.split("__")[0]
+                new_app_src = app_base_id
 
-    for number, app_instance_name in enumerate(apps):
-        logger.info(m18n.n("app_upgrade_app_name", app=app_instance_name))
+            if file or url:
+                # It's a bit brutal because we'll do it again later ...
+                # ... but using -f or -u is supposed to remain occasional and not the nominal case
+                # so doesnt feel worth it to optimize (and there's also cache mechanism for _git_clone under the hood)
+                new_manifest, extracted_app_folder = _extract_app(new_app_src)
+                new_version = new_manifest.get("version", "?")
+                msg = m18n.n("app_upgrade_cli_will_upgrade", app=app_, current_version=current_version, new_version=new_version)
+                yield (app_, msg, new_app_src)
+            elif status in ["upgradable", "fail_requirements"]:
+                # We allow "fail_requirements" here because the requirements are re-checked later with a possibility to bypass them
+                # (so effectivly they're checked twice but meh)
+                msg = m18n.n("app_upgrade_cli_will_upgrade", app=app_, current_version=current_version, new_version=new_version)
+                yield (app_, msg, new_app_src)
+            elif status == "up_to_date":
+                if force:
+                    msg = m18n.n("app_upgrade_cli_will_force_upgrade", app=app_, current_version=current_version)
+                    yield (app_, msg, new_app_src)
+                else:
+                    logger.info(m18n.n("app_upgrade_cli_up_to_date", app=app_, current_version=current_version))
+            elif status == "bad_quality":
+                logger.warning(m18n.n("app_upgrade_cli_bad_quality", app=app_))
+            else:
+                logger.error(f"Unknown upgrade status '{status}' for {app_} !?")
 
-        app_dict = app_info(app_instance_name, full=True)
+    def _check_manifest_requirements_with_option_to_bypass(app_, new_manifest):
+        # Check requirements
+        failed_requirements = {
+            r["id"]: r
+            for r in _check_manifest_requirements(new_manifest, action="upgrade", app=app_)
+            if not r["passed"]
+        }
+        for id_, check in failed_requirements.items():
+            logger.warning(app_ + ": " + check["error"])
+            if id_ == "ram":
+                # i18n: confirm_app_insufficient_ram
+                _ask_confirmation("confirm_app_insufficient_ram", force=force)
+            elif id_ == "required_yunohost_version" and ignore_yunohost_version:
+                pass
+            else:
+                return False
+        return True
 
-        if file and isinstance(file, dict):
-            # We use this dirty hack to test chained upgrades in unit/functional tests
-            new_app_src = file[app_instance_name]
-        elif file:
-            new_app_src = file
-        elif url:
-            new_app_src = url
-        elif app_dict["upgradable"] == "url_required":
-            logger.warning(m18n.n("custom_app_url_required", app=app_instance_name))
-            continue
-        elif app_dict["upgradable"] == "yes" or force:
-            new_app_src = app_dict["manifest"]["id"]
-        else:
-            logger.success(m18n.n("app_already_up_to_date", app=app_instance_name))
-            continue
+    def _upgrade_single_app(app_, current_manifest, new_manifest, workdir, no_safety_backup) -> dict:
 
-        manifest, extracted_app_folder = _extract_app(new_app_src)
+        logger.info(m18n.n("app_upgrade_app_name", app=app_))
+
+        # Get current_version and new version
+        app_new_version_raw = new_manifest.get("version", "?")
+        assert isinstance(app_new_version_raw, str)
+        app_new_version = _parse_app_version(app_new_version_raw)
+
+        app_current_version_raw = current_manifest.get("version", "?")
+        assert isinstance(app_current_version_raw, str)
+        app_current_version = _parse_app_version(app_current_version_raw)
 
         # Manage upgrade type and avoid any upgrade if there is nothing to do
+        # (LEGACY hmpf, we should get rid of this somehow ...)
         upgrade_type = "UNKNOWN"
-        # Get current_version and new version
-        app_new_version_raw = manifest.get("version", "?")
-        app_current_version_raw = app_dict.get("version", "?")
-        app_new_version = _parse_app_version(app_new_version_raw)
-        app_current_version = _parse_app_version(app_current_version_raw)
         if "~ynh" in str(app_current_version_raw) and "~ynh" in str(
             app_new_version_raw
         ):
-            if app_current_version >= app_new_version and not force:
-                # In case of upgrade from file or custom repository
-                # No new version available
-                logger.success(m18n.n("app_already_up_to_date", app=app_instance_name))
-                # Save update time
-                now = int(time.time())
-                app_setting(app_instance_name, "update_time", now)
-                app_setting(
-                    app_instance_name,
-                    "current_revision",
-                    manifest.get("remote", {}).get("revision", "?"),
-                )
-                continue
-
             if app_current_version > app_new_version:
                 upgrade_type = "DOWNGRADE"
             elif app_current_version == app_new_version:
@@ -718,35 +857,7 @@ def app_upgrade(
                 else:
                     upgrade_type = "UPGRADE_APP"
 
-        # Check requirements
-        for name, passed, values, err in _check_manifest_requirements(
-            manifest, action="upgrade"
-        ):
-            if not passed:
-                if name == "ram":
-                    # i18n: confirm_app_insufficient_ram
-                    _ask_confirmation(
-                        "confirm_app_insufficient_ram", params=values, force=force
-                    )
-                elif name == "required_yunohost_version" and ignore_yunohost_version:
-                    logger.warning(m18n.n(err, **values))
-                else:
-                    raise YunohostValidationError(err, **values)
-
-        # Display pre-upgrade notifications and ask for simple confirm
-        if (
-            manifest["notifications"]["PRE_UPGRADE"]
-            and Moulinette.interface.type == "cli"
-        ):
-            settings = _get_app_settings(app_instance_name)
-            notifications = _filter_and_hydrate_notifications(
-                manifest["notifications"]["PRE_UPGRADE"],
-                current_version=app_current_version_raw,
-                data=settings,
-            )
-            _display_notifications(notifications, force=force)
-
-        if manifest["packaging_format"] >= 2:
+        if new_manifest["packaging_format"] >= 2:
             if no_safety_backup:
                 # FIXME: i18n
                 logger.warning(
@@ -757,11 +868,11 @@ def app_upgrade(
                 logger.info("Creating a safety backup prior to the upgrade")
 
                 # Switch between pre-upgrade1 or pre-upgrade2
-                safety_backup_name = f"{app_instance_name}-pre-upgrade1"
-                other_safety_backup_name = f"{app_instance_name}-pre-upgrade2"
+                safety_backup_name = f"{app_}-pre-upgrade1"
+                other_safety_backup_name = f"{app_}-pre-upgrade2"
                 if safety_backup_name in backup_list()["archives"]:
-                    safety_backup_name = f"{app_instance_name}-pre-upgrade2"
-                    other_safety_backup_name = f"{app_instance_name}-pre-upgrade1"
+                    safety_backup_name = f"{app_}-pre-upgrade2"
+                    other_safety_backup_name = f"{app_}-pre-upgrade1"
 
                 tweaked_backup_core_only = False
                 if "BACKUP_CORE_ONLY" not in os.environ:
@@ -769,7 +880,12 @@ def app_upgrade(
                     os.environ["BACKUP_CORE_ONLY"] = "1"
                 try:
                     backup_create(
-                        name=safety_backup_name, apps=[app_instance_name], system=None
+                        name=safety_backup_name, apps=[app_], system=None
+                    )
+                except Exception as e:
+                    raise YunohostError(
+                        f"Aborting the upgrade, because a safety backup could not be created ({e})",
+                        raw_msg=True,
                     )
                 finally:
                     if tweaked_backup_core_only:
@@ -786,19 +902,17 @@ def app_upgrade(
                         raw_msg=True,
                     )
 
-        _assert_system_is_sane_for_app(manifest, "pre")
+        _assert_system_is_sane_for_app(new_manifest, "pre")
 
         # We'll check that the app didn't brutally edit some system configuration
         manually_modified_files_before_install = manually_modified_files()
 
-        app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
-
         # Attempt to patch legacy helpers ...
-        _patch_legacy_helpers(extracted_app_folder)
+        _patch_legacy_helpers(workdir)
 
         # Prepare env. var. to pass to script
         env_dict = _make_environment_for_app_script(
-            app_instance_name, workdir=extracted_app_folder, action="upgrade"
+            app_, workdir=workdir, action="upgrade"
         )
 
         env_dict_more = {
@@ -807,26 +921,26 @@ def app_upgrade(
             "YNH_APP_CURRENT_VERSION": str(app_current_version_raw),
         }
 
-        if manifest["packaging_format"] < 2:
+        if new_manifest["packaging_format"] < 2:
             env_dict_more["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
 
         env_dict.update(env_dict_more)
 
         # Start register change on system
-        related_to = [("app", app_instance_name)]
+        related_to = [("app", app_)]
         operation_logger = OperationLogger("app_upgrade", related_to, env=env_dict)
         operation_logger.start()
 
         hook_callback("pre_app_upgrade", env=env_dict)
 
-        if manifest["packaging_format"] >= 2:
+        if new_manifest["packaging_format"] >= 2:
             from .utils.resources import AppResourceManager
 
             AppResourceManager(
-                app_instance_name,
-                wanted=manifest,
-                current=app_dict["manifest"],
-                workdir=extracted_app_folder,
+                app_,
+                wanted=new_manifest,
+                current=current_manifest,
+                workdir=workdir,
             ).apply(
                 rollback_and_raise_exception_if_failure=True,
                 operation_logger=operation_logger,
@@ -837,8 +951,8 @@ def app_upgrade(
             # so we need to reflect this in the env_dict used to call the actual upgrade script x_x
             # Or: the old manifest may be in v1 and the new in v2, so force to add the setting in env
             env_dict = _make_environment_for_app_script(
-                app_instance_name,
-                workdir=extracted_app_folder,
+                app_,
+                workdir=workdir,
                 action="upgrade",
                 force_include_app_settings=True,
             )
@@ -851,30 +965,30 @@ def app_upgrade(
                 upgrade_failed,
                 failure_message_with_debug_instructions,
             ) = hook_exec_with_script_debug_if_failure(
-                extracted_app_folder + "/scripts/upgrade",
+                workdir + "/scripts/upgrade",
                 env=env_dict,
                 operation_logger=operation_logger,
                 error_message_if_script_failed=m18n.n("app_upgrade_script_failed"),
                 error_message_if_failed=lambda e: m18n.n(
-                    "app_upgrade_failed", app=app_instance_name, error=e
+                    "app_upgrade_failed", app=app_, error=e
                 ),
             )
         finally:
             # If upgrade failed, try to restore the safety backup
             if (
                 upgrade_failed
-                and manifest["packaging_format"] >= 2
+                and new_manifest["packaging_format"] >= 2
                 and not no_safety_backup
             ):
                 logger.warning(
                     "Upgrade failed ... attempting to restore the safety backup (Yunohost first need to remove the app for this) ..."
                 )
 
-                app_remove(app_instance_name, force_workdir=extracted_app_folder)
+                app_remove(app_, force_workdir=workdir)
                 backup_restore(
-                    name=safety_backup_name, apps=[app_instance_name], force=True
+                    name=safety_backup_name, apps=[app_], force=True
                 )
-                if not _is_installed(app_instance_name):
+                if not _is_installed(app_):
                     logger.error(
                         "Uhoh ... Yunohost failed to restore the app to the way it was before the failed upgrade :|"
                     )
@@ -883,11 +997,11 @@ def app_upgrade(
             # and warn the user about it
             try:
                 broke_the_system = False
-                _assert_system_is_sane_for_app(manifest, "post")
+                _assert_system_is_sane_for_app(new_manifest, "post")
             except Exception as e:
                 broke_the_system = True
                 logger.error(
-                    m18n.n("app_upgrade_failed", app=app_instance_name, error=str(e))
+                    m18n.n("app_upgrade_failed", app=app_, error=str(e))
                 )
                 failure_message_with_debug_instructions = operation_logger.error(str(e))
 
@@ -899,138 +1013,198 @@ def app_upgrade(
             if manually_modified_files_by_app:
                 logger.error(
                     "Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper conf_regen hook. Those configuration were affected:\n    - "
-                    + "\n     -".join(manually_modified_files_by_app)
+                    + "\n     - ".join(manually_modified_files_by_app)
                 )
 
-            # If the upgrade didnt fail, update the revision and app files (even if it broke the system, otherwise we end up in a funky intermediate state where the app files don't match the installed version or settings, for example for v1->v2 upgrade marked as "broke the system" for some reason)
+            # If the upgrade didnt fail, update the revision and app files
+            # (even if it broke the system, otherwise we end up in a funky intermediate state
+            # where the app files don't match the installed version or settings,
+            # for example for v1->v2 upgrade marked as "broke the system" for some reason)
             if not upgrade_failed:
                 now = int(time.time())
-                app_setting(app_instance_name, "update_time", now)
+                app_setting(app_, "update_time", now)
                 app_setting(
-                    app_instance_name,
+                    app_,
                     "current_revision",
-                    manifest.get("remote", {}).get("revision", "?"),
+                    new_manifest.get("remote", {}).get("revision", "?"),
                 )
 
                 # Clean hooks and add new ones
-                hook_remove(app_instance_name)
-                if "hooks" in os.listdir(extracted_app_folder):
-                    for hook in os.listdir(extracted_app_folder + "/hooks"):
+                hook_remove(app_)
+                if "hooks" in os.listdir(workdir):
+                    for hook in os.listdir(workdir + "/hooks"):
                         hook_add(
-                            app_instance_name, extracted_app_folder + "/hooks/" + hook
+                            app_, workdir + "/hooks/" + hook
                         )
+
+                app_setting_path = os.path.join(APPS_SETTING_PATH, app_)
 
                 # Replace scripts and manifest and conf (if exists)
                 # Move scripts and manifest to the right place
                 for file_to_copy in APP_FILES_TO_COPY:
                     rm(f"{app_setting_path}/{file_to_copy}", recursive=True, force=True)
-                    if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
+                    if os.path.exists(os.path.join(workdir, file_to_copy)):
                         cp(
-                            f"{extracted_app_folder}/{file_to_copy}",
+                            f"{workdir}/{file_to_copy}",
                             f"{app_setting_path}/{file_to_copy}",
                             recursive=True,
                         )
 
                 # Clean and set permissions
-                shutil.rmtree(extracted_app_folder)
+                shutil.rmtree(workdir)
                 chmod(app_setting_path, 0o600)
                 chmod(f"{app_setting_path}/settings.yml", 0o400)
                 chown(app_setting_path, "root", recursive=True)
 
-            # If upgrade failed or broke the system,
-            # raise an error and interrupt all other pending upgrades
-            if upgrade_failed or broke_the_system:
-                if not continue_on_failure or broke_the_system:
-                    # display this if there are remaining apps
-                    if apps[number + 1 :]:
-                        not_upgraded_apps = apps[number:]
-                        if broke_the_system and not continue_on_failure:
-                            logger.error(
-                                m18n.n(
-                                    "app_not_upgraded_broken_system",
-                                    failed_app=app_instance_name,
-                                    apps=", ".join(not_upgraded_apps),
-                                )
-                            )
-                        elif broke_the_system and continue_on_failure:
-                            logger.error(
-                                m18n.n(
-                                    "app_not_upgraded_broken_system_continue",
-                                    failed_app=app_instance_name,
-                                    apps=", ".join(not_upgraded_apps),
-                                )
-                            )
-                        else:
-                            logger.error(
-                                m18n.n(
-                                    "app_not_upgraded",
-                                    failed_app=app_instance_name,
-                                    apps=", ".join(not_upgraded_apps),
-                                )
-                            )
-
-                    raise YunohostError(
-                        failure_message_with_debug_instructions, raw_msg=True
-                    )
-
-                else:
-                    operation_logger.close()
-                    logger.error(
-                        m18n.n(
-                            "app_failed_to_upgrade_but_continue",
-                            failed_app=app_instance_name,
-                            operation_logger_name=operation_logger.name,
-                        )
-                    )
-                    failed_to_upgrade_apps.append(
-                        (app_instance_name, operation_logger.name)
-                    )
-
-            # Otherwise we're good and keep going !
+            if upgrade_failed and broke_the_system:
+                raise YunohostError("app_upgrade_failed_and_broke_the_system", app=app_)
+            elif broke_the_system:
+                raise YunohostError("app_upgrade_broke_the_system", app=app_)
+            elif upgrade_failed:
+                raise YunohostError(failure_message_with_debug_instructions, raw_msg=True)
 
             # So much win
-            logger.success(m18n.n("app_upgraded", app=app_instance_name))
+            logger.success(m18n.n("app_upgraded", app=app_))
 
             # Format post-upgrade notifications
-            if manifest["notifications"]["POST_UPGRADE"]:
+            if new_manifest["notifications"]["POST_UPGRADE"]:
                 # Get updated settings to hydrate notifications
-                settings = _get_app_settings(app_instance_name)
-                notifications = _filter_and_hydrate_notifications(
-                    manifest["notifications"]["POST_UPGRADE"],
+                settings = _get_app_settings(app_)
+                post_upgrade_notifications = _filter_and_hydrate_notifications(
+                    new_manifest["notifications"]["POST_UPGRADE"],
                     current_version=app_current_version_raw,
                     data=settings,
                 )
                 if Moulinette.interface.type == "cli":
                     # ask for simple confirm
-                    _display_notifications(notifications, force=force)
+                    _display_notifications(post_upgrade_notifications, force=force)
+            else:
+                post_upgrade_notifications = {}
 
             # Reset the dismiss flag for post upgrade notification
             app_setting(
-                app_instance_name, "_dismiss_notification_post_upgrade", delete=True
+                app_, "_dismiss_notification_post_upgrade", delete=True
             )
 
             hook_callback("post_app_upgrade", env=env_dict)
             operation_logger.success()
 
-    _sync_permissions_with_ldap()
+            _sync_permissions_with_ldap()
 
-    logger.success(m18n.n("upgrade_complete"))
+            return post_upgrade_notifications
 
-    if failed_to_upgrade_apps:
-        apps_failed = ""
-        for app_id, operation_logger_name in failed_to_upgrade_apps:
-            apps_failed += m18n.n(
-                "apps_failed_to_upgrade_line",
-                app_id=app_id,
-                operation_logger_name=operation_logger_name,
-            )
+    #
+    #
+    # Start of the actual "multi" app upgrade flow...
+    #
+    #
 
-        logger.warning(m18n.n("apps_failed_to_upgrade", apps=apps_failed))
+    actual_targets = list(_check_upgrade_targets(requested_targets))
+    actual_targets_with_manifests_and_workdir = []
+
+    # Fetch app dirs and check requirements before actually launching upgrades
+    for app_, msg, new_app_src in actual_targets:
+        new_manifest, workdir = _extract_app(new_app_src)
+        ok = _check_manifest_requirements_with_option_to_bypass(app_, new_manifest)
+        if ok:
+            actual_targets_with_manifests_and_workdir.append((
+                app_,
+                msg,
+                _get_manifest_of_app(app_),
+                new_manifest,
+                workdir
+            ))
+
+    # If we were asked to upgrade everything
+    if not raw_requested_targets:
+        # Everything is already ok? Success !
+        if not actual_targets:
+            logger.success(m18n.n("apps_already_up_to_date"))
+            if Moulinette.interface.type == "api":
+                return {"notifications": {"POST_UPGRADE": {}}}  # type: ignore
+            else:
+                return None
+        else:
+            # We'll proceed - or ask confirmation if some apps did not pass requirements
+            pass
+    if not actual_targets_with_manifests_and_workdir:
+        raise YunohostValidationError("apps_no_target_can_be_upgraded")
+
+    # Before going in, display the list of what's actually gonna be upgraded
+    # (though no need to do this if the goal is to upgrade a single app, it's gonna be redundant with the info message in the loop)
+    if not raw_requested_targets or len(requested_targets) > 1:
+        todolist = [msg for _, msg, _, _, _ in actual_targets_with_manifests_and_workdir]
+        logger.info(m18n.n("app_upgrade_several_apps", apps='\n  - ' + ('\n  - '.join(todolist))))
+
+    # If some apps did not pass requirements, ask confirmation
+    some_target_didnt_pass_requirements = len(actual_targets_with_manifests_and_workdir) < len(actual_targets)
+    if some_target_didnt_pass_requirements:
+        # i18n: apps_confirm_partial_upgrade
+        _ask_confirmation("apps_confirm_partial_upgrade", kind="soft")
+
+    # Display pre-upgrade notifications and ask for simple confirm
+    # (On the webadmin, it's already handled by the front so we only do this in CLI)
+    if Moulinette.interface.type == "cli":
+        for app_, _, current_manifest, new_manifest, _ in actual_targets_with_manifests_and_workdir:
+            if new_manifest["notifications"]["PRE_UPGRADE"]:
+                notifications = _filter_and_hydrate_notifications(
+                    new_manifest["notifications"]["PRE_UPGRADE"],
+                    current_version=current_manifest.get("version"),
+                    data=_get_app_settings(app_),
+                )
+                _display_notifications(notifications, force=force)
+
+    post_upgrade_notifications: dict[str, str] = {}
+    pending_apps = [target[0] for target in actual_targets_with_manifests_and_workdir]
+    failed_to_upgrade_apps: dict[str, str] = {}
+    successful_apps: list[str] = []
+    for app_, _, current_manifest, new_manifest, workdir in actual_targets_with_manifests_and_workdir:
+
+        pending_apps.remove(app_)
+
+        try:
+            post_upgrade_notifications = _upgrade_single_app(app_, current_manifest, new_manifest, workdir, no_safety_backup)
+        except YunohostError as e:
+
+            # If upgrading a single app from the webadmin : re-raise the Exception
+            if Moulinette.interface.type == "api" and raw_requested_targets and len(requested_targets) == 1:
+                raise e
+
+            failed_to_upgrade_apps[app_] = str(e)
+            logger.error(e)
+
+            broke_the_system = "broke_the_system" in e.key
+            # FIXME if "pending_apps" etc
+            if broke_the_system and continue_on_failure and pending_apps:
+                logger.warning("Option --continue-on-failure was provided, but all remaining upgrades are cancelled anyway because it looks like the app broke the system")
+                continue_on_failure = False
+            if continue_on_failure and pending_apps:
+                logger.warning(m18n.n("app_upgrade_continuing_with_other_apps", app=app_))
+                continue
+            else:
+                if pending_apps:
+                    logger.warning(m18n.n("apps_upgrade_cancelled", apps=', '.join(pending_apps)))
+                break
+        else:
+            successful_apps.append(app_)
 
     if Moulinette.interface.type == "api":
-        return {"notifications": {"POST_UPGRADE": notifications}}
+        # FIXME : in fact post_upgrade_notifications is only the notification from the last app x_x
+        # I guess we didnt notice so far because the app only upgrades a single app at a time...
+        return {"notifications": {"POST_UPGRADE": post_upgrade_notifications}}  # type: ignore[return-value]
     else:
-        return None
+
+        if len(actual_targets_with_manifests_and_workdir) > 1:
+            result_dict: dict[Literal["success", "failed", "cancelled"], Any] = {}
+            if successful_apps:
+                result_dict["success"] = successful_apps
+            if failed_to_upgrade_apps:
+                result_dict["failed"] = failed_to_upgrade_apps
+            if pending_apps:
+                result_dict["cancelled"] = pending_apps
+            return result_dict
+        else:
+            return None
 
 
 def app_manifest(app: str, with_screenshot: bool = False) -> AppManifest:
@@ -1061,18 +1235,10 @@ def app_manifest(app: str, with_screenshot: bool = False) -> AppManifest:
 
     shutil.rmtree(extracted_app_folder)
 
-    manifest["requirements"] = {}
-    for name, passed, values, err in _check_manifest_requirements(
-        manifest, action="install"
-    ):
-        if Moulinette.interface.type == "api":
-            manifest["requirements"][name] = {
-                "pass": passed,
-                "values": values,
-            }
-        else:
-            manifest["requirements"][name] = "ok" if passed else m18n.n(err, **values)
-
+    manifest["requirements"] = {
+        r["id"]: r
+        for r in _check_manifest_requirements(manifest, action="install", app=manifest['id'])
+    }
     return manifest
 
 
@@ -1158,34 +1324,34 @@ def app_install(
 
     app_id = manifest["id"]
 
-    if app_id in user_list()["users"].keys():
-        raise YunohostValidationError(
-            f"There is already a YunoHost user called {app_id} ...", raw_msg=True
-        )
-
-    # Check requirements
-    for name, passed, values, err in _check_manifest_requirements(
-        manifest, action="install"
-    ):
-        if not passed:
-            if name == "ram":
-                _ask_confirmation(
-                    "confirm_app_insufficient_ram", params=values, force=force
-                )
-            elif name == "required_yunohost_version" and ignore_yunohost_version:
-                logger.warning(m18n.n(err, **values))
-            else:
-                raise YunohostValidationError(err, **values)
-
-    _assert_system_is_sane_for_app(manifest, "pre")
-
-    # Check if app can be forked
     instance_number = _next_instance_number_for_app(app_id)
     if instance_number > 1:
         # Change app_id to the forked app id
         app_instance_name = app_id + "__" + str(instance_number)
     else:
         app_instance_name = app_id
+
+    if app_instance_name in user_list()["users"].keys():
+        raise YunohostValidationError(
+            f"There is already a YunoHost user called {app_instance_name} ...", raw_msg=True
+        )
+
+    # Check requirements
+    failed_requirements = {
+        r["id"]: r
+        for r in _check_manifest_requirements(manifest, action="upgrade", app=app_instance_name)
+        if not r["passed"]
+    }
+    for id_, check in failed_requirements.items():
+        if id_ == "ram":
+            logger.warning(check["error"])
+            _ask_confirmation("confirm_app_insufficient_ram", force=force)
+        elif id_ == "required_yunohost_version" and ignore_yunohost_version:
+            logger.warning(check["error"])
+        else:
+            raise YunohostValidationError(check["error"])
+
+    _assert_system_is_sane_for_app(manifest, "pre")
 
     app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
 
@@ -1344,7 +1510,7 @@ def app_install(
         if manually_modified_files_by_app:
             logger.error(
                 "Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper conf_regen hook. Those configuration were affected:\n    - "
-                + "\n     -".join(manually_modified_files_by_app)
+                + "\n     - ".join(manually_modified_files_by_app)
             )
             # Actually forbid this for app packaging >= 2
             if packaging_format >= 2:
@@ -1749,9 +1915,9 @@ def app_ssowatconf() -> None:
     # FIXME : this could be handled by nginx's regen conf to further simplify ssowat's code ...
     redirected_urls = {}
     for domain in domains:
-        default_app = _get_raw_domain_settings(domain).get("default_app")
+        default_app: str | None = _get_raw_domain_settings(domain).get("default_app")
 
-        if default_app not in ["_none", None] and _is_installed(default_app):
+        if default_app is not None and default_app != "_none" and _is_installed(default_app):
             app_settings = _get_app_settings(default_app)
             app_domain = app_settings["domain"]
             app_path = app_settings["path"]
@@ -1840,8 +2006,7 @@ def app_ssowatconf() -> None:
         if not perm_info.get("show_tile", False):
             continue
 
-        setting_path = os.path.join(APPS_SETTING_PATH, app_id)
-        local_manifest = _get_manifest_of_app(setting_path)
+        local_manifest = _get_manifest_of_app(app_id)
 
         app_domain = uris[0].split("/")[0]
         # get "topest" domain
@@ -2235,56 +2400,13 @@ ynh_app_config_run $1
                     f"permission_{perm}_{k}": v for k, v in perm_config_template.items()
                 }
                 raw_config["_core"][f"permission_{perm}"] = this_perm_config
-                if perm == "main":
-                    # i18n: app_config_permission_main_section_name
-                    section_name = m18n.n(f"{i18n_prefix}_permission_main_section_name")
-                else:
+                if perm != "main":
                     # i18n: app_config_permission_extraperm_section_name
                     section_name = m18n.n(
                         f"{i18n_prefix}_permission_extraperm_section_name", perm=perm
                     )
                     raw_config["_core"][f"permission_{perm}"]["collapsed"] = True
-                raw_config["_core"][f"permission_{perm}"]["name"] = section_name
-
-            # Ugly trick to move 'operations' at the end
-            raw_config["_core"]["operations"] = raw_config["_core"].pop("operations")
-
-            upgradable, current_version, new_version = _app_upgradable(self.entity)
-            raw_config["_core"]["operations"]["upgradable"]["default"] = upgradable
-            # i18n: app_config_upgradable_yes
-            # i18n: app_config_upgradable_no
-            # i18n: app_config_upgradable_url_required
-            # i18n: app_config_upgradable_bad_quality
-            raw_config["_core"]["operations"]["upgradable_msg"]["ask"] = m18n.n(
-                f"app_config_upgradable_{upgradable}",
-                current_version=current_version,
-                new_version=new_version,
-            )
-            raw_config["_core"]["operations"]["upgradable_msg"]["style"] = {
-                "yes": "info",  # "App can be upgraded"
-                "no": "success",  # "It's up to date !" etc
-                "url_required": "warning",  # "App is unknown, gotta be upgraded manually by specifying the URL in CLI" etc
-                "bad_quality": "warning",  # "App is currently marked as bad quality" etc
-            }[upgradable]
-
-            domain = settings.get("domain")
-            path = settings.get("path")
-            if not domain and not path:
-                change_url_supported = "not_relevant"
-            elif (
-                Path(APPS_SETTING_PATH) / self.entity / "scripts" / "change_url"
-            ).exists():
-                change_url_supported = "yes"
-                raw_config["_core"]["operations"]["change_url_domain"]["default"] = (
-                    domain
-                )
-                raw_config["_core"]["operations"]["change_url_path"]["default"] = path
-            else:
-                change_url_supported = "no"
-
-            raw_config["_core"]["operations"]["change_url_supported"]["default"] = (
-                change_url_supported
-            )
+                    raw_config["_core"][f"permission_{perm}"]["name"] = section_name
 
             return raw_config
 
@@ -2489,8 +2611,7 @@ def _parse_app_version(v: str) -> tuple[version.Version, int]:
         raise YunohostError(f"Failed to parse app version '{v}' : {e}", raw_msg=True)
 
 
-def _get_manifest_of_app(path: str) -> AppManifest:
-    "Get app manifest stored in json or in toml"
+def _get_manifest_of_app(path_or_app_id: str) -> AppManifest:
 
     # sample data to get an idea of what is going on
     # this toml extract:
@@ -2594,6 +2715,11 @@ def _get_manifest_of_app(path: str) -> AppManifest:
     #     ¦   ¦   ¦   },
     #     ¦   ¦   ¦   "example": "example.com"
     #     ¦   ¦   },
+
+    if "/" in path_or_app_id:
+        path = path_or_app_id
+    else:
+        path = os.path.join(APPS_SETTING_PATH, path_or_app_id)
 
     if os.path.exists(os.path.join(path, "manifest.toml")):
         manifest = read_toml(os.path.join(path, "manifest.toml"))
@@ -2849,7 +2975,7 @@ def _is_app_repo_url(string: str) -> bool:
     return bool(APP_REPO_URL.match(string))
 
 
-def _app_quality(src: str) -> str:
+def _app_quality(src: str) -> Literal["success", "warning", "danger", "thirdparty"]:
     """
     app may in fact be an app name, an url, or a path
     """
@@ -2889,7 +3015,7 @@ def _app_quality(src: str) -> str:
         raise YunohostValidationError("app_unknown")
 
 
-def _extract_app(src: str) -> Tuple[Dict, str]:
+def _extract_app(src: str) -> tuple[AppManifest, str]:
     """
     src may be an app name, an url, or a path
     """
@@ -2931,7 +3057,7 @@ def _extract_app(src: str) -> Tuple[Dict, str]:
         raise YunohostValidationError("app_unknown")
 
 
-def _extract_app_from_folder(path: str) -> Tuple[Dict, str]:
+def _extract_app_from_folder(path: str) -> tuple[AppManifest, str]:
     """
     Unzip / untar / copy application tarball or directory to a tmp work directory
 
@@ -2979,20 +3105,42 @@ def _extract_app_from_folder(path: str) -> Tuple[Dict, str]:
     return manifest, extracted_app_folder
 
 
-def _extract_app_from_gitrepo(
-    url: str, branch: Optional[str] = None, revision: str = "HEAD", app_info: Dict = {}
-) -> Tuple[Dict, str]:
-    logger.debug("Checking default branch")
+def _git_clone_light(
+    dest_dir: str,
+    url: str,
+    branch: str | None = None,
+    revision: str = "HEAD"
+) -> str:
 
-    try:
-        git_ls_remote = check_output(
-            ["git", "ls-remote", "--symref", url, "HEAD"],
-            env={"GIT_TERMINAL_PROMPT": "0", "LC_ALL": "C"},
-            shell=False,
-        )
-    except Exception as e:
-        logger.error(str(e))
-        raise YunohostError("app_sources_fetch_failed")
+    # Cleanup stale caches (older than 24 hours)
+    if not Path(GIT_CLONE_CACHE).exists():
+        os.makedirs(GIT_CLONE_CACHE)
+        chmod(GIT_CLONE_CACHE, 0o700)
+        chown(GIT_CLONE_CACHE, "root", "root")
+
+    for cache in Path(GIT_CLONE_CACHE).iterdir():
+        if cache.is_dir() and (time.time() - cache.stat().st_ctime) > 24 * 3600:
+            try:
+                shutil.rmtree(cache)
+            except Exception as e:
+                logger.debug(f"Uhoh, failed to cleanup cache {cache} ? {e}")
+
+    # There's a cache mechanism to avoid re-git-cloning the same stuff over and over again
+    # which can be ~costly, for example when checking up the PRE-UPGRADE notifs for app upgrades
+    if revision != "HEAD":
+        git_clone_cache = Path(GIT_CLONE_CACHE) / revision
+        if git_clone_cache.exists():
+            logger.debug(f"Reusing cache for {url} (branch={branch}, revision={revision}")
+            shutil.copytree(git_clone_cache, dest_dir, dirs_exist_ok=True)
+            return revision
+
+    logger.debug(f"Fetching {url} (branch={branch}, revision={revision}")
+
+    git_ls_remote = check_output(
+        ["git", "ls-remote", "--symref", url, "HEAD"],
+        env={"GIT_TERMINAL_PROMPT": "0", "LC_ALL": "C"},
+        shell=False,
+    )
 
     if not branch:
         default_branch = None
@@ -3020,24 +3168,51 @@ def _extract_app_from_gitrepo(
 
     logger.debug(m18n.n("downloading"))
 
+    # Download only specified commit
+    # We don't use git clone because, git clone can't download
+    # a specific revision only
+    ref = branch if revision == "HEAD" else revision
+    assert ref
+    subprocess.check_call(["git", "init", dest_dir], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    cmds = [
+        ["git", "remote", "add", "origin", url],
+        ["git", "fetch", "--depth=1", "origin", ref],
+        ["git", "reset", "--hard", "FETCH_HEAD"]
+    ]
+    for cmd in cmds:
+        subprocess.check_call(cmd, cwd=dest_dir, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+    logger.debug(m18n.n("done"))
+
+    if revision == "HEAD":
+        try:
+            # Get git last commit hash
+            cmd2 = f"git ls-remote --exit-code {url} {branch} | awk '{{print $1}}'"
+            actual_revision = check_output(cmd2)
+        except Exception as e:
+            logger.warning(f"cannot get last commit hash because: {e}")
+            actual_revision = "HEAD"
+    else:
+        actual_revision = revision
+        # Save as cache
+        git_clone_cache = Path(GIT_CLONE_CACHE) / revision
+        if git_clone_cache.exists():
+            shutil.rmtree(git_clone_cache)
+        shutil.copytree(dest_dir, git_clone_cache)
+
+    return actual_revision
+
+
+def _extract_app_from_gitrepo(
+    url: str, branch: str | None = None, revision: str = "HEAD", app_info: Dict = {}
+) -> tuple[AppManifest, str]:
+
     extracted_app_folder = _make_tmp_workdir_for_app()
 
-    # Download only this commit
     try:
-        # We don't use git clone because, git clone can't download
-        # a specific revision only
-        ref = branch if revision == "HEAD" else revision
-        run_commands([["git", "init", extracted_app_folder]], shell=False)
-        run_commands(
-            [
-                ["git", "remote", "add", "origin", url],
-                ["git", "fetch", "--depth=1", "origin", ref],
-                ["git", "reset", "--hard", "FETCH_HEAD"],
-            ],
-            cwd=extracted_app_folder,
-            shell=False,
-        )
-    except subprocess.CalledProcessError:
+        actual_revision = _git_clone_light(extracted_app_folder, url, branch, revision)
+    except Exception as e:
+        logger.error(e)
         raise YunohostError("app_sources_fetch_failed")
     else:
         logger.debug(m18n.n("done"))
@@ -3045,16 +3220,8 @@ def _extract_app_from_gitrepo(
     manifest = _get_manifest_of_app(extracted_app_folder)
 
     # Store remote repository info into the returned manifest
-    manifest["remote"] = {"type": "git", "url": url, "branch": branch}
-    if revision == "HEAD":
-        try:
-            # Get git last commit hash
-            cmd = f"git ls-remote --exit-code {url} {branch} | awk '{{print $1}}'"
-            manifest["remote"]["revision"] = check_output(cmd)
-        except Exception as e:
-            logger.warning(f"cannot get last commit hash because: {e}")
-    else:
-        manifest["remote"]["revision"] = revision
+    manifest["remote"] = {"type": "git", "url": url, "branch": branch, "revision": actual_revision}
+    if revision != "HEAD":
         manifest["lastUpdate"] = app_info.get("lastUpdate")
 
     manifest["quality"] = {
@@ -3065,26 +3232,6 @@ def _extract_app_from_gitrepo(
     manifest["potential_alternative_to"] = app_info.get("potential_alternative_to", [])
 
     return manifest, extracted_app_folder
-
-
-def _list_upgradable_apps() -> list[AppInfo]:
-    upgradable_apps = list(app_list(upgradable=True)["apps"])
-
-    # Retrieve next manifest pre_upgrade notifications
-    for app in upgradable_apps:
-        absolute_app_name, _ = _parse_app_instance_name(app["id"])
-        manifest, extracted_app_folder = _extract_app(absolute_app_name)
-        app["notifications"] = {}
-        if manifest["notifications"]["PRE_UPGRADE"]:
-            app["notifications"]["PRE_UPGRADE"] = _filter_and_hydrate_notifications(
-                manifest["notifications"]["PRE_UPGRADE"],
-                app["current_version"],
-                app["settings"],
-            )
-        del app["settings"]
-        shutil.rmtree(extracted_app_folder)
-
-    return upgradable_apps
 
 
 #
@@ -3125,13 +3272,19 @@ def _get_all_installed_apps_id() -> str:
     return all_apps_ids_formatted
 
 
+class AppRequirementCheckResult(TypedDict):
+    id: str
+    passed: bool
+    error: str
+
+
 def _check_manifest_requirements(
-    manifest: Dict, action: str = ""
-) -> Iterator[Tuple[str, bool, dict[str, Any], str]]:
+    manifest: AppManifest, action: Literal["install", "upgrade"], app: str
+) -> Iterator[AppRequirementCheckResult]:
     """Check if required packages are met from the manifest"""
 
-    app_id = manifest["id"]
-    logger.debug(m18n.n("app_requirements_checking", app=app_id))
+    app_base_id = manifest["id"]
+    logger.debug(m18n.n("app_requirements_checking", app=app))
 
     # Packaging format
     if manifest["packaging_format"] not in [1, 2]:
@@ -3143,24 +3296,29 @@ def _check_manifest_requirements(
     )
     current_yunohost_version = get_ynh_package_version("yunohost")["version"]
 
-    yield (
-        "required_yunohost_version",
-        version.parse(required_yunohost_version)
-        <= version.parse(current_yunohost_version),
-        {"current": current_yunohost_version, "required": required_yunohost_version},
-        "app_yunohost_version_not_supported",  # i18n: app_yunohost_version_not_supported
-    )
+    yield {
+        "id": "required_yunohost_version",
+        "passed": version.parse(required_yunohost_version) <= version.parse(current_yunohost_version),
+        "error": m18n.n(
+            "app_yunohost_version_not_supported",
+            current=current_yunohost_version,
+            required=required_yunohost_version
+        )
+    }
 
     # Architectures
     arch_requirement = manifest["integration"]["architectures"]
     arch = system_arch()
 
-    yield (
-        "arch",
-        arch_requirement in ["all", "?"] or arch in arch_requirement,
-        {"current": arch, "required": ", ".join(arch_requirement)},
-        "app_arch_not_supported",  # i18n: app_arch_not_supported
-    )
+    yield {
+        "id": "arch",
+        "passed": arch_requirement in ["all", "?"] or arch in arch_requirement,
+        "error": m18n.n(
+            "app_arch_not_supported",
+            current=arch,
+            required=", ".join(arch_requirement) if arch_requirement != "all" else "all"
+        )
+    }
 
     # Multi-instance
     if action == "install":
@@ -3168,16 +3326,15 @@ def _check_manifest_requirements(
         if not multi_instance:
             apps = _installed_apps()
             sibling_apps = [
-                a for a in apps if a == app_id or a.startswith(f"{app_id}__")
+                a for a in apps if a == app_base_id or a.startswith(f"{app_base_id}__")
             ]
             multi_instance = len(sibling_apps) == 0
 
-        yield (
-            "install",
-            multi_instance,
-            {"app": app_id},
-            "app_already_installed",  # i18n: app_already_installed
-        )
+        yield {
+            "id": "install",
+            "passed": multi_instance,
+            "error": m18n.n("app_already_installed", app=app_base_id)
+        }
 
     # Disk
     if action == "install":
@@ -3192,12 +3349,11 @@ def _check_manifest_requirements(
             )
         free_space = binary_to_human(min(root_free_space, var_free_space))
 
-        yield (
-            "disk",
-            has_enough_disk,
-            {"current": free_space, "required": manifest["integration"]["disk"]},
-            "app_not_enough_disk",  # i18n: app_not_enough_disk
-        )
+        yield {
+            "id": "disk",
+            "passed": has_enough_disk,
+            "error": m18n.n("app_not_enough_disk", current=free_space, required=manifest["integration"]["disk"])
+        }
 
     # Ram
     ram_requirement = manifest["integration"]["ram"]
@@ -3243,12 +3399,11 @@ def _check_manifest_requirements(
     else:
         max_build_runtime = ram_requirement["runtime"]
 
-    yield (
-        "ram",
-        can_build and can_run,
-        {"current": binary_to_human(ram), "required": max_build_runtime},
-        "app_not_enough_ram",  # i18n: app_not_enough_ram
-    )
+    yield {
+        "id": "ram",
+        "passed": can_build and can_run,
+        "error": m18n.n("app_not_enough_ram", current=binary_to_human(ram), required=max_build_runtime)
+    }
 
 
 def _guess_webapp_path_requirement(app_folder: str) -> str:
@@ -3391,9 +3546,8 @@ def _make_environment_for_app_script(
     action=None,
     force_include_app_settings=False,
 ) -> dict[str, str]:
-    app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 
-    manifest = _get_manifest_of_app(workdir if workdir else app_setting_path)
+    manifest = _get_manifest_of_app(workdir if workdir else app)
 
     app_id, app_instance_nb = _parse_app_instance_name(app)
 
@@ -3465,7 +3619,7 @@ def _make_environment_for_app_script(
     return env_dict
 
 
-def _parse_app_instance_name(app_instance_name: str) -> Tuple[str, int]:
+def _parse_app_instance_name(app_instance_name: str) -> tuple[str, int]:
     """
     Parse a Yunohost app instance name and extracts the original appid
     and the application instance number
@@ -3671,7 +3825,6 @@ def _display_notifications(notifications: dict[str, str], force=False) -> None:
     _ask_confirmation("confirm_notifications_read", kind="simple", force=force)
 
 
-# FIXME: move this to Moulinette
 def _ask_confirmation(
     question: str,
     params: dict = {},
