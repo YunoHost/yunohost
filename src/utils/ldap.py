@@ -19,7 +19,7 @@
 #
 
 import atexit
-from typing import Callable, Literal
+from typing import Callable, Literal, Mapping
 from functools import cache
 import logging
 import os
@@ -61,25 +61,26 @@ atexit.register(_destroy_ldap_interface)
 #
 # e.g. using _ldap_path_extract(path, "foo") on the previous example will
 # return bar
-def _ldap_path_extract(path: str, info: str) -> str | None:
+def _ldap_path_extract(path: str, info: str) -> str:
     for element in path.split(","):
         if element.startswith(f"{info}="):
             return element[len(f"{info}=") :]
-    return None
+    raise YunohostError(f"Didnt find info {info} in {path} !?")
 
 
 def modifyModlist_finegrained(
-    old_entry: dict[str, list[str]], new_entry: dict[str, list[str]]
+    old_entry: Mapping[str, str | list[str] | set[str]],
+    new_entry: Mapping[str, str | list[str] | set[str]],
 ) -> list[tuple[int, str, list[str]]]:
     """
     Prepare an optimized modification list to give to ldap.modify_ext()
     """
     ldif = []
     for attribute, value in new_entry.items():
-        if not isinstance(value, (set, list)):
+        if not isinstance(value, (list, set)):
             value = {value}
-        old_value: list[str] | set[str] = old_entry.get(attribute, set())
-        if not isinstance(old_value, (set, list)):
+        old_value: str | list[str] | set[str] = old_entry.get(attribute, set())
+        if not isinstance(old_value, (list, set)):
             old_value = {old_value}
         if isinstance(value, set) and value == set(old_value):
             continue
@@ -189,7 +190,7 @@ class LDAPInterface:
         self,
         base: str | None = None,
         filter: str = "(objectClass=*)",
-        attrs: list[str] | None = ["dn"],
+        attrs: set[str] | list[str] | None = ["dn"],
     ) -> list[dict[str, list[str]]]:
         """Search in LDAP base
 
@@ -243,7 +244,9 @@ class LDAPInterface:
 
         return result_list
 
-    def add(self, rdn: str, attr_dict: dict[str, list[str]]) -> bool:
+    def add(
+        self, rdn: str, attr_dict: Mapping[str, str | list[str] | set[str]]
+    ) -> bool:
         """
         Add LDAP entry
 
@@ -301,7 +304,7 @@ class LDAPInterface:
     def update(
         self,
         rdn: str,
-        attr_dict: dict[str, list[str]],
+        attr_dict: Mapping[str, str | list[str] | set[str]],
         new_rdn: str | Literal[False] = False,
     ) -> bool:
         """

@@ -21,6 +21,7 @@
 import os
 import shutil
 import subprocess
+from typing import cast, Any, TYPE_CHECKING
 import sys
 from datetime import datetime
 from glob import glob
@@ -38,7 +39,12 @@ from .utils.error import YunohostError, YunohostValidationError
 from .utils.network import get_public_ip
 from .vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 
-logger = getLogger("yunohost.certmanager")
+if TYPE_CHECKING:
+    from moulinette.utils.log import MoulinetteLogger
+
+    logger = cast(MoulinetteLogger, getLogger("yunohost.certmanager"))
+else:
+    logger = getLogger("yunohost.certmanager")
 
 CERT_FOLDER = "/etc/yunohost/certs/"
 TMP_FOLDER = "/var/www/.well-known/acme-challenge-private/"
@@ -61,7 +67,9 @@ PRODUCTION_CERTIFICATION_AUTHORITY = "https://acme-v02.api.letsencrypt.org"
 #
 
 
-def certificate_status(domains, full=False):
+def certificate_status(
+    domains: list[str], full: bool = False
+) -> dict[str, dict[str, Any]]:
     """
     Print the status of certificate for given domains (all by default)
 
@@ -78,7 +86,7 @@ def certificate_status(domains, full=False):
 
     # If no domains given, consider all yunohost domains
     if domains == []:
-        domains = domain_list()["domains"]
+        domains = domain_list()["domains"]  # type: ignore[assignment]
     # Else, validate that yunohost knows the domains given
     else:
         for domain in domains:
@@ -119,7 +127,12 @@ def certificate_status(domains, full=False):
     return {"certificates": certificates}
 
 
-def certificate_install(domain_list, force=False, no_checks=False, self_signed=False):
+def certificate_install(
+    domain_list: list[str],
+    force: bool = False,
+    no_checks: bool = False,
+    self_signed: bool = False,
+) -> None:
     """
     Install a Let's Encrypt certificate for given domains (all by default)
 
@@ -309,7 +322,12 @@ def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
         )
 
 
-def certificate_renew(domains, force=False, no_checks=False, email=False):
+def certificate_renew(
+    domains: list[str],
+    force: bool = False,
+    no_checks: bool = False,
+    email: bool = False,
+) -> None:
     """
     Renew Let's Encrypt certificate for given domains (all by default)
 

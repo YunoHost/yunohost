@@ -48,7 +48,7 @@ tests = [
 ]
 
 [tool.mypy]
-follow_imports = "silent"
+follow_imports = "skip"
 exclude = [
     "acme_tiny",
     "migrations",

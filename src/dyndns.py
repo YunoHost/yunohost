@@ -54,7 +54,7 @@ def is_subscribing_allowed():
     return len(dyndns_list()["domains"]) < MAX_DYNDNS_DOMAINS
 
 
-def _dyndns_available(domain):
+def _dyndns_available(domain: str) -> bool:
     """
     Checks if a domain is available on dyndns.yunohost.org
 
@@ -335,7 +335,7 @@ def dyndns_set_recovery_password(domain, recovery_password):
         )
 
 
-def dyndns_list():
+def dyndns_list() -> dict[str, list[str]]:
     """
     Returns all currently subscribed DynDNS domains ( deduced from the key files )
     """

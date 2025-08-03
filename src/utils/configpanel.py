@@ -20,6 +20,7 @@
 
 import glob
 import os
+from collections.abc import Generator
 import re
 from collections import OrderedDict
 from logging import getLogger
@@ -35,6 +36,7 @@ from .form import (
     AnyOption,
     BaseInputOption,
     BaseReadonlyOption,
+    BaseOption,
     FileOption,
     OptionsModel,
     OptionType,
@@ -150,7 +152,7 @@ class SectionModel(ContainerModel, OptionsModel):
         optional: bool = True,
         collapsed: bool = False,
         bind: str | None = None,
-        **kwargs,
+        **kwargs: dict[str, Any],
     ) -> None:
         options = self.options_dict_to_list(kwargs, optional=optional)
         is_action_section = any(
@@ -173,7 +175,7 @@ class SectionModel(ContainerModel, OptionsModel):
         if isinstance(self.visible, bool):
             return self.visible
 
-        return evaluate_simple_js_expression(self.visible, context=context)
+        return evaluate_simple_js_expression(self.visible, context=context)  # type: ignore
 
     def translate(self, i18n_key: str | None = None) -> None:
         """
@@ -233,7 +235,7 @@ class PanelModel(ContainerModel):
         services: list[str] = [],
         help: Translation | None = None,
         bind: str | None = None,
-        **kwargs,
+        **kwargs: dict[str, Any],
     ) -> None:
         sections = [data | {"id": name} for name, data in kwargs.items()]
         super().__init__(  # type: ignore
@@ -304,7 +306,7 @@ class ConfigPanelModel(BaseModel):
         self,
         version: float,
         i18n: str | None = None,
-        **kwargs,
+        **kwargs: dict[str, Any],
     ) -> None:
         panels = [data | {"id": name} for name, data in kwargs.items()]
         super().__init__(version=version, i18n=i18n, panels=panels)
@@ -357,7 +359,7 @@ class ConfigPanelModel(BaseModel):
     def iter_children(
         self,
         trigger: list[Literal["panel", "section", "option", "action"]] = ["option"],
-    ):
+    ) -> Generator[tuple[PanelModel, SectionModel | None, BaseOption | None]]:
         for panel in self.panels:
             if "panel" in trigger:
                 yield (panel, None, None)
@@ -428,15 +430,16 @@ class ConfigPanel:
     hooks: "Hooks" = {}
 
     @classmethod
-    def list(cls):
+    def list(cls) -> list[str]:
         """
         List available config panel
         """
+        assert cls.save_path_tpl
         try:
             entities = [
                 re.match(
                     "^" + cls.save_path_tpl.format(entity="(?p<entity>)") + "$", f
-                ).group("entity")
+                ).group("entity")  # type: ignore
                 for f in glob.glob(cls.save_path_tpl.format(entity="*"))
                 if os.path.isfile(f)
             ]
@@ -445,7 +448,11 @@ class ConfigPanel:
         return entities
 
     def __init__(
-        self, entity, config_path=None, save_path=None, creation=False
+        self,
+        entity: str,
+        config_path: str | None = None,
+        save_path: str | None = None,
+        creation: bool = False,
     ) -> None:
         self.entity = entity
         self.config_path = config_path

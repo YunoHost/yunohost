@@ -25,6 +25,8 @@ import subprocess
 import time
 from importlib import import_module
 from logging import getLogger
+from typing import Any, TYPE_CHECKING, cast, Literal
+from typing_extensions import TypedDict
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.filesystem import chown, cp, mkdir, read_yaml, rm, write_to_yaml
@@ -37,21 +39,30 @@ from .utils.system import (
     _apt_log_line_is_relevant,
     _dump_sources_list,
     _list_upgradable_apt_packages,
+    _group_packages_per_categories,
     dpkg_is_broken,
     dpkg_lock_available,
     ynh_packages_version,
 )
 
+if TYPE_CHECKING:
+    from .app import AppInfo
+
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
-logger = getLogger("yunohost.tools")
+if TYPE_CHECKING:
+    from moulinette.utils.log import MoulinetteLogger
+
+    logger = cast(MoulinetteLogger, getLogger("yunohost.tools"))
+else:
+    logger = getLogger("yunohost.tools")
 
 
-def tools_versions():
+def tools_versions() -> dict[str, dict[str, str]]:
     return ynh_packages_version()
 
 
-def tools_rootpw(new_password, check_strength=True):
+def tools_rootpw(new_password: str, check_strength: bool = True) -> None:
     from .utils.password import (
         assert_password_is_compatible,
         assert_password_is_strong_enough,
@@ -75,7 +86,7 @@ def tools_rootpw(new_password, check_strength=True):
         logger.warning(m18n.n("root_password_desynchronized"))
 
 
-def tools_maindomain(new_main_domain=None):
+def tools_maindomain(new_main_domain: str | None = None) -> dict[str, str] | None:
     from .domain import domain_main_domain
 
     logger.warning(
@@ -89,7 +100,7 @@ def tools_maindomain(new_main_domain=None):
     return domain_main_domain(new_main_domain=new_main_domain)
 
 
-def _set_hostname(hostname, pretty_hostname=None):
+def _set_hostname(hostname: str, pretty_hostname: str | None = None) -> None:
     """
     Change the machine hostname using hostnamectl
     """
@@ -122,17 +133,17 @@ def _set_hostname(hostname, pretty_hostname=None):
 
 @is_unit_operation(exclude=["dyndns_recovery_password", "password"])
 def tools_postinstall(
-    operation_logger,
-    domain,
-    username,
-    fullname,
-    password,
-    dyndns_recovery_password=None,
-    ignore_dyndns=False,
-    force_diskspace=False,
-    overwrite_root_password=True,
-    i_have_read_terms_of_services=False,
-):
+    operation_logger: OperationLogger,
+    domain: str,
+    username: str,
+    fullname: str,
+    password: str,
+    dyndns_recovery_password: str | None = None,
+    ignore_dyndns: bool = False,
+    force_diskspace: bool = False,
+    overwrite_root_password: bool = True,
+    i_have_read_terms_of_services: bool = False,
+) -> None:
     import psutil
 
     from .app import _ask_confirmation
@@ -286,8 +297,12 @@ def tools_postinstall(
 
 
 def tools_regen_conf(
-    names=[], with_diff=False, force=False, dry_run=False, list_pending=False
-):
+    names: list[str] = [],
+    with_diff: bool = False,
+    force: bool = False,
+    dry_run: bool = False,
+    list_pending: bool = False,
+) -> dict[str, dict[str, Any]]:
     from .regenconf import regen_conf
 
     if (names == [] or "nftables" in names) and tools_migrations_state()[
@@ -303,13 +318,29 @@ def tools_regen_conf(
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 
+class AvailableUpdatesInfos(TypedDict):
+    system: dict[str, list[dict[str, str]]]
+    apps: list["AppInfo"]
+    important_yunohost_upgrade: bool
+    pending_migrations: list[dict[str, Any]]
+    last_apt_update: int
+    last_apps_catalog_update: int
+
+
+def tools_update_norefresh() -> AvailableUpdatesInfos:
+    return tools_update(no_refresh=True)
+
+
 @is_unit_operation(sse_only=True)
-def tools_update(operation_logger, target=None):
+def tools_update(
+    operation_logger, target=None, no_refresh=False
+) -> AvailableUpdatesInfos:
     """
     Update apps & system package cache
     """
-    from .app import _list_upgradable_apps
     from .app_catalog import _update_apps_catalog
+
+    refresh = not no_refresh
 
     if not target:
         target = "all"
@@ -320,7 +351,8 @@ def tools_update(operation_logger, target=None):
             raw_msg=True,
         )
 
-    operation_logger.start()
+    if refresh:
+        operation_logger.start()
 
     upgradable_system_packages = []
     if target in ["system", "all"]:
@@ -334,9 +366,9 @@ def tools_update(operation_logger, target=None):
         # Also keep track of whether or not we encountered a warning...
         warnings = []
 
-        def is_legit_warning(m):
+        def is_legit_warning(m: str) -> bool:
             legit_warning = (
-                m.rstrip()
+                bool(m.rstrip())
                 and "apt does not have a stable CLI interface" not in m.rstrip()
             )
             if legit_warning:
@@ -354,33 +386,43 @@ def tools_update(operation_logger, target=None):
             ),
         )
 
-        logger.info(m18n.n("updating_apt_cache"))
+        if refresh:
+            logger.info(m18n.n("updating_apt_cache"))
 
-        returncode = call_async_output(command, callbacks, shell=True)
+            returncode = call_async_output(command, callbacks, shell=True)
 
-        if returncode != 0:
-            raise YunohostError(
-                "update_apt_cache_failed", sourceslist="\n".join(_dump_sources_list())
-            )
-        elif warnings:
-            logger.error(
-                m18n.n(
-                    "update_apt_cache_warning",
+            if returncode != 0:
+                raise YunohostError(
+                    "update_apt_cache_failed",
                     sourceslist="\n".join(_dump_sources_list()),
                 )
-            )
+            elif warnings:
+                logger.error(
+                    m18n.n(
+                        "update_apt_cache_warning",
+                        sourceslist="\n".join(_dump_sources_list()),
+                    )
+                )
+
+            logger.debug(m18n.n("done"))
 
         upgradable_system_packages = list(_list_upgradable_apt_packages())
-        logger.debug(m18n.n("done"))
 
+    apps = []
     upgradable_apps = []
     if target in ["apps", "all"]:
-        try:
-            _update_apps_catalog()
-        except YunohostError as e:
-            logger.error(str(e))
+        if refresh:
+            try:
+                _update_apps_catalog()
+            except YunohostError as e:
+                logger.error(str(e))
 
-        upgradable_apps = _list_upgradable_apps()
+        apps = _list_apps_with_upgrade_infos()
+        upgradable_apps = [
+            app
+            for app in apps
+            if app["upgrade"]["status"] in ["upgradable", "fail_requirements"]
+        ]
 
     if len(upgradable_apps) == 0 and len(upgradable_system_packages) == 0:
         logger.info(m18n.n("already_up_to_date"))
@@ -394,6 +436,10 @@ def tools_update(operation_logger, target=None):
         new_version = yunohost["new_version"].split(".")[:2]
         important_yunohost_upgrade = current_version != new_version
 
+    upgradable_system_packages_per_categories = _group_packages_per_categories(
+        upgradable_system_packages
+    )
+
     # Wrapping this in a try/except just in case for some reason we can't load
     # the migrations, which would result in the update/upgrade process being blocked...
     try:
@@ -402,16 +448,61 @@ def tools_update(operation_logger, target=None):
         logger.error(e)
         pending_migrations = []
 
+    try:
+        last_apt_update_in_seconds = int(
+            time.time() - os.stat("/var/cache/apt/pkgcache.bin").st_mtime
+        )
+    except Exception as e:
+        logger.warning(f"Failed to compute last apt update time ? {e}")
+        last_apt_update_in_seconds = 99999 * 3600
+
+    try:
+        last_apps_catalog_update_in_seconds = int(
+            time.time() - os.stat("/var/cache/yunohost/repo/default.json").st_mtime
+        )
+    except Exception as e:
+        logger.warning(f"Failed to compute last apps catalog update time ? {e}")
+        last_apps_catalog_update_in_seconds = 99999 * 3600
+
     return {
-        "system": upgradable_system_packages,
-        "apps": upgradable_apps,
+        "system": upgradable_system_packages_per_categories,
+        "apps": apps,
         "important_yunohost_upgrade": important_yunohost_upgrade,
         "pending_migrations": pending_migrations,
+        "last_apt_update": last_apt_update_in_seconds,
+        "last_apps_catalog_update": last_apps_catalog_update_in_seconds,
     }
 
 
+def _list_apps_with_upgrade_infos(
+    with_pre_upgrade_notifications: bool = True,
+) -> list["AppInfo"]:
+    from .app import _installed_apps, app_info
+
+    apps = []
+    for app_id in sorted(_installed_apps()):
+        try:
+            app_info_dict = app_info(
+                app_id,
+                with_upgrade_infos=True,
+                with_pre_upgrade_notifications=with_pre_upgrade_notifications,
+            )
+        except Exception as e:
+            logger.error(f"Failed to read info for {app_id} : {e}")
+            continue
+        if "settings" in app_info_dict:
+            del app_info_dict["settings"]
+
+        apps.append(app_info_dict)
+
+    if not with_pre_upgrade_notifications:
+        return apps
+
+    return apps
+
+
 @is_unit_operation()
-def tools_upgrade(operation_logger, target=None):
+def tools_upgrade(operation_logger: OperationLogger, target: str | None = None) -> None:
     """
     Update apps & package cache, then display changelog
 
@@ -420,7 +511,7 @@ def tools_upgrade(operation_logger, target=None):
        system -- True to upgrade system
     """
 
-    from .app import app_list, app_upgrade
+    from .app import app_upgrade
 
     if dpkg_is_broken():
         raise YunohostValidationError("dpkg_is_broken")
@@ -443,7 +534,12 @@ def tools_upgrade(operation_logger, target=None):
     if target == "apps":
         # Make sure there's actually something to upgrade
 
-        upgradable_apps = [app["id"] for app in app_list(upgradable=True)["apps"]]
+        apps = _list_apps_with_upgrade_infos(with_pre_upgrade_notifications=False)
+        upgradable_apps = [
+            app["id"]
+            for app in apps
+            if app["upgrade"]["status"] in ["upgradable", "fail_requirements"]
+        ]
 
         if not upgradable_apps:
             logger.info(m18n.n("apps_already_up_to_date"))
@@ -529,7 +625,7 @@ def tools_upgrade(operation_logger, target=None):
 
 
 @is_unit_operation()
-def tools_shutdown(operation_logger, force=False):
+def tools_shutdown(operation_logger: OperationLogger, force: bool = False) -> None:
     shutdown = force
     if not shutdown:
         try:
@@ -548,7 +644,7 @@ def tools_shutdown(operation_logger, force=False):
 
 
 @is_unit_operation()
-def tools_reboot(operation_logger, force=False):
+def tools_reboot(operation_logger: OperationLogger, force: bool = False) -> None:
     reboot = force
     if not reboot:
         try:
@@ -565,7 +661,7 @@ def tools_reboot(operation_logger, force=False):
         subprocess.check_call(["systemctl", "reboot"])
 
 
-def tools_shell(command=None):
+def tools_shell(command: str | None = None) -> None:
     """
     Launch an (i)python shell in the YunoHost context.
 
@@ -602,7 +698,7 @@ def tools_shell(command=None):
         shell.interact()
 
 
-def tools_basic_space_cleanup():
+def tools_basic_space_cleanup() -> None:
     """
     Basic space cleanup.
 
@@ -626,7 +722,9 @@ def tools_basic_space_cleanup():
 # ############################################ #
 
 
-def tools_migrations_list(pending=False, done=False):
+def tools_migrations_list(
+    pending: bool = False, done: bool = False
+) -> dict[str, list[dict[str, Any]]]:
     """
     List existing migrations
     """
@@ -636,7 +734,7 @@ def tools_migrations_list(pending=False, done=False):
         raise YunohostValidationError("migrations_list_conflict_pending_done")
 
     # Get all migrations
-    migrations = _get_migrations_list()
+    _migrations = _get_migrations_list()
 
     # Reduce to dictionaries
     migrations = [
@@ -649,7 +747,7 @@ def tools_migrations_list(pending=False, done=False):
             "description": migration.description,
             "disclaimer": migration.disclaimer,
         }
-        for migration in migrations
+        for migration in _migrations
     ]
 
     # If asked, filter pending or done migrations
@@ -663,8 +761,12 @@ def tools_migrations_list(pending=False, done=False):
 
 
 def tools_migrations_run(
-    targets=[], skip=False, auto=False, force_rerun=False, accept_disclaimer=False
-):
+    targets: list[str] = [],
+    skip: bool = False,
+    auto: bool = False,
+    force_rerun: bool = False,
+    accept_disclaimer: bool = False,
+) -> None:
     """
     Perform migrations
 
@@ -705,13 +807,13 @@ def tools_migrations_run(
             raise YunohostValidationError("migrations_must_provide_explicit_targets")
 
         # Otherwise, targets are all pending migrations
-        targets = [m for m in all_migrations if m.state == "pending"]
+        migrationtargets = [m for m in all_migrations if m.state == "pending"]
 
     # If explicit targets are provided, we shall validate them
     else:
-        targets = [get_matching_migration(t) for t in targets]
-        done = [t.id for t in targets if t.state != "pending"]
-        pending = [t.id for t in targets if t.state == "pending"]
+        migrationtargets = [get_matching_migration(t) for t in targets]
+        done = [t.id for t in migrationtargets if t.state != "pending"]
+        pending = [t.id for t in migrationtargets if t.state == "pending"]
 
         if skip and done:
             raise YunohostValidationError(
@@ -725,12 +827,12 @@ def tools_migrations_run(
             raise YunohostValidationError("migrations_already_ran", ids=", ".join(done))
 
     # So, is there actually something to do ?
-    if not targets:
+    if not migrationtargets:
         logger.info(m18n.n("migrations_no_migrations_to_run"))
         return
 
     # Actually run selected migrations
-    for migration in targets:
+    for migration in migrationtargets:
         # If we are migrating in "automatic mode" (i.e. from debian configure
         # during an upgrade of the package) but we are asked for running
         # migrations to be ran manually by the user, stop there and ask the
@@ -806,7 +908,7 @@ def tools_migrations_run(
                 operation_logger.success()
 
 
-def tools_migrations_state():
+def tools_migrations_state() -> dict[str, dict[Any, Any]]:
     """
     Show current migration state
     """
@@ -822,7 +924,7 @@ def _write_migration_state(migration_id, state):
     write_to_yaml(MIGRATIONS_STATE_PATH, current_states)
 
 
-def _get_migrations_list():
+def _get_migrations_list() -> list["Migration"]:
     # states is a datastructure that represents the last run migration
     # it has this form:
     # {
@@ -872,7 +974,7 @@ def _get_migration_by_name(migration_name):
     return _load_migration(migrations_found[0])
 
 
-def _load_migration(migration_file):
+def _load_migration(migration_file: str) -> "Migration":
     migration_id = migration_file[: -len(".py")]
 
     logger.debug(m18n.n("migrations_loading_migration", id=migration_id))
@@ -893,20 +995,20 @@ def _load_migration(migration_file):
         )
 
 
-def _skip_all_migrations():
+def _skip_all_migrations() -> None:
     """
     Skip all pending migrations.
     This is meant to be used during postinstall to
     initialize the migration system.
     """
     all_migrations = _get_migrations_list()
-    new_states = {"migrations": {}}
+    new_states: dict[Literal["migrations"], dict[str, str]] = {"migrations": {}}
     for migration in all_migrations:
         new_states["migrations"][migration.id] = "skipped"
     write_to_yaml(MIGRATIONS_STATE_PATH, new_states)
 
 
-def _tools_migrations_run_after_system_restore(backup_version):
+def _tools_migrations_run_after_system_restore(backup_version: str) -> None:
     all_migrations = _get_migrations_list()
 
     current_version = version.parse(ynh_packages_version()["yunohost"]["version"])
@@ -975,17 +1077,17 @@ class Migration:
 
     # The followings shouldn't be overridden
 
-    def __init__(self, id_):
+    def __init__(self, id_) -> None:
         self.id = id_
         self.number = int(self.id.split("_", 1)[0])
         self.name = self.id.split("_", 1)[1]
 
     @property
-    def description(self):
+    def description(self) -> str:
         return m18n.n(f"migration_description_{self.id}")
 
-    def ldap_migration(run):
-        def func(self):
+    def ldap_migration(run) -> None:
+        def func(self) -> None:
             # Backup LDAP before the migration
             logger.info(m18n.n("migration_ldap_backup_before_migration"))
             try:

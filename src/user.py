@@ -21,12 +21,25 @@
 import copy
 import grp
 import os
+from pathlib import Path
 import pwd
 import random
 import re
 import subprocess
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, BinaryIO, Callable, Literal, TextIO, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    BinaryIO,
+    Callable,
+    Literal,
+    TextIO,
+    Union,
+    cast,
+    Mapping,
+    TypedDict,
+    NotRequired,
+)
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.process import check_output
@@ -81,10 +94,10 @@ def user_list(fields: list[str] | None = None) -> dict[str, dict[str, Any]]:
         "home-path": "homeDirectory",
     }
 
-    def display_default(values, _):
+    def display_default(values: list[str], _: dict[str, list[str]]) -> str | list[str]:
         return values[0] if len(values) == 1 else values
 
-    display: dict[str, Callable[[list[str], dict], Any]] = {
+    display: dict[str, Callable[[list[str], dict[str, list[str]]], Any]] = {
         "password": lambda values, user: "",
         "mail": lambda values, user: display_default(values[:1], user),
         "mail-alias": lambda values, _: values[1:],
@@ -136,14 +149,15 @@ def user_list(fields: list[str] | None = None) -> dict[str, dict[str, Any]]:
     return {"users": users}
 
 
-def list_shells():
-    with open("/etc/shells", "r") as f:
-        content = f.readlines()
+def list_shells() -> list[str]:
+    return [
+        line.strip()
+        for line in Path("/etc/shells").open("r").readlines()
+        if line.startswith("/")
+    ]
 
-    return [line.strip() for line in content if line.startswith("/")]
 
-
-def shellexists(shell):
+def shellexists(shell: str) -> bool:
     """Check if the provided shell exists and is executable."""
     return os.path.isfile(shell) and os.access(shell, os.X_OK)
 
@@ -155,10 +169,10 @@ def user_create(
     domain: str,
     password: str,
     fullname: str,
-    mailbox_quota="0",
+    mailbox_quota: str | None = "0",
     admin: bool = False,
     from_import: bool = False,
-    loginShell=None,
+    loginShell: str | None = None,
 ) -> dict[str, str]:
     if not fullname.strip():
         raise YunohostValidationError(
@@ -205,7 +219,7 @@ def user_create(
     # Check that the domain exists
     _assert_domain_exists(domain)
 
-    mail = username + "@" + domain
+    mail = f"{username}@{domain}"
     ldap = _get_ldap_interface()
 
     if username in user_list()["users"]:
@@ -249,7 +263,7 @@ def user_create(
         if not shellexists(loginShell) or loginShell not in list_shells():
             raise YunohostValidationError("invalid_shell", shell=loginShell)
 
-    attr_dict = {
+    attr_dict: Mapping[str, str | list[str]] = {
         "objectClass": [
             "mailAccount",
             "inetOrgPerson",
@@ -263,7 +277,7 @@ def user_create(
         "uid": [username],
         "mail": mail,  # NOTE: this one seems to be already a list
         "maildrop": [username],
-        "mailuserquota": [mailbox_quota],
+        "mailuserquota": [mailbox_quota or "0"],
         "userPassword": [_hash_user_password(password)],
         "gidNumber": [uid],
         "uidNumber": [uid],
@@ -326,7 +340,7 @@ def user_delete(
     purge: bool = False,
     from_import: bool = False,
     force: bool = False,
-):
+) -> None:
     from .authenticators.ldap_admin import Authenticator as AdminAuth
     from .authenticators.ldap_ynhuser import Authenticator as PortalAuth
     from .hook import hook_callback
@@ -598,14 +612,22 @@ def user_update(
         return user_info(username)
 
 
-def user_info(username: str) -> dict[str, str]:
-    """
-    Get user informations
+# Gotta use this syntax because some of the keys contain dashes (-) which are not valid varnames T_T
+UserInfos = TypedDict(
+    "UserInfos",
+    {
+        "username": str,
+        "fullname": str,
+        "mail": str,
+        "loginShell": str,
+        "mail-aliases": list[str],
+        "mail-forward": list[str],
+        "mailbox-quota": NotRequired[dict[Literal["limit", "use"], Any]],
+    },
+)
 
-    Keyword argument:
-        username -- Username or mail to get informations
 
-    """
+def user_info(username: str) -> UserInfos:
     from .utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
@@ -624,7 +646,7 @@ def user_info(username: str) -> dict[str, str]:
     else:
         raise YunohostValidationError("user_unknown", user=username)
 
-    result_dict = {
+    result_dict: UserInfos = {
         "username": user["uid"][0],
         "fullname": user["cn"][0],
         "mail": user["mail"][0],
@@ -1112,7 +1134,9 @@ def user_group_create(
             gid = str(random.randint(200, 99999))
             uid_guid_found = gid not in all_gid
 
-    attr_dict = {
+    assert gid
+
+    attr_dict: dict[str, str | list[str]] = {
         "objectClass": ["top", "groupOfNamesYnh", "posixGroup"],
         "cn": groupname,
         "gidNumber": [gid],
@@ -1602,7 +1626,7 @@ def user_permission_ldapsync() -> None:
 #
 
 
-def user_ssh_list_keys(username: str) -> dict[str, dict[str, str]]:
+def user_ssh_list_keys(username: str) -> dict[Literal["keys"], list[dict[str, str]]]:
     from .ssh import user_ssh_list_keys
 
     return user_ssh_list_keys(username)
