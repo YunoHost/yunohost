@@ -195,7 +195,7 @@ def app_info(
         try:
             with TemporaryDirectory(prefix="app_", dir=APPS_TMP_WORKDIRS) as d:
                 _git_clone_light(d, url, branch=specific_channel, revision=new_revision)
-                _, tmp_notifications = _parse_app_doc_and_notifications(d)
+                _, tmp_notifications = _parse_app_doc_and_notifications(Path(d))
         except Exception as e:
             logger.warning(f"Failed to check pre-upgrade notifications for {app} : {e}")
             tmp_notifications = {}

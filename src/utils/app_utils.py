@@ -19,7 +19,6 @@
 #
 
 import copy
-import glob
 import os
 import re
 import shutil
@@ -317,14 +316,14 @@ def _get_manifest_of_app(path_or_app_id: str) -> AppManifest:
     #     ¦   ¦   },
 
     if "/" in path_or_app_id:
-        path = path_or_app_id
+        path = Path(path_or_app_id)
     else:
-        path = os.path.join(APPS_SETTING_PATH, path_or_app_id)
+        path = Path(APPS_SETTING_PATH) / path_or_app_id
 
-    if os.path.exists(os.path.join(path, "manifest.toml")):
-        manifest = read_toml(os.path.join(path, "manifest.toml"))
-    elif os.path.exists(os.path.join(path, "manifest.json")):
-        manifest = read_json(os.path.join(path, "manifest.json"))
+    if (path / "manifest.toml").exists():
+        manifest = read_toml(str(path / "manifest.toml"))
+    elif (path / "manifest.json").exists():
+        manifest = read_json(str(path / "manifest.json"))
     else:
         raise YunohostError(
             f"There doesn't seem to be any manifest file in {path} ... It looks like an app was not correctly installed/removed.",
@@ -344,14 +343,18 @@ def _get_manifest_of_app(path_or_app_id: str) -> AppManifest:
     return manifest
 
 
-def _parse_app_doc_and_notifications(path: str):
-    doc: dict[str, dict[str, str]] = {}
+AppDocDict = dict[str, dict[str, str]]
+AppNotificationsDict = dict[str, dict[str, dict[str, str]]]
+
+
+def _parse_app_doc_and_notifications(path: Path) -> tuple[AppDocDict, AppNotificationsDict]:
+    doc: AppDocDict = {}
     notification_names = ["PRE_INSTALL", "POST_INSTALL", "PRE_UPGRADE", "POST_UPGRADE"]
 
-    for filepath in glob.glob(os.path.join(path, "doc") + "/*.md"):
+    for filepath in (path / "doc").glob("*.md"):
         # to be improved : [a-z]{2,3} is a clumsy way of parsing the
         # lang code ... some lang code are more complex that this é_è
-        m = re.match("([A-Z]*)(_[a-z]{2,3})?.md", filepath.split("/")[-1])
+        m = re.match("([A-Z]*)(_[a-z]{2,3})?.md", str(filepath).split("/")[-1])
 
         if not m:
             # FIXME: shall we display a warning ? idk
@@ -368,17 +371,17 @@ def _parse_app_doc_and_notifications(path: str):
             doc[pagename] = {}
 
         try:
-            doc[pagename][lang] = read_file(filepath).strip()
+            doc[pagename][lang] = read_file(str(filepath)).strip()
         except Exception as e:
             logger.error(e)
             continue
 
-    notifications: dict[str, dict[str, dict[str, str]]] = {}
+    notifications: AppNotificationsDict = {}
 
     for step in notification_names:
         notifications[step] = {}
-        for filepath in glob.glob(os.path.join(path, "doc", f"{step}*.md")):
-            m = re.match(step + "(_[a-z]{2,3})?.md", filepath.split("/")[-1])
+        for filepath in (path / "doc").glob(f"{step}*.md"):
+            m = re.match(step + "(_[a-z]{2,3})?.md", str(filepath).split("/")[-1])
             if not m:
                 continue
             pagename = "main"
@@ -391,9 +394,9 @@ def _parse_app_doc_and_notifications(path: str):
                 logger.error(e)
                 continue
 
-        for filepath in glob.glob(os.path.join(path, "doc", f"{step}.d") + "/*.md"):
+        for filepath in (path / "doc" / f"{step}.d").glob("*.md"):
             m = re.match(
-                r"([A-Za-z0-9\.\~]*)(_[a-z]{2,3})?.md", filepath.split("/")[-1]
+                r"([A-Za-z0-9\.\~]*)(_[a-z]{2,3})?.md", str(filepath).split("/")[-1]
             )
             if not m:
                 continue
@@ -403,7 +406,7 @@ def _parse_app_doc_and_notifications(path: str):
                 notifications[step][pagename] = {}
 
             try:
-                notifications[step][pagename][lang] = read_file(filepath).strip()
+                notifications[step][pagename][lang] = read_file(str(filepath)).strip()
             except Exception as e:
                 logger.error(e)
                 continue
