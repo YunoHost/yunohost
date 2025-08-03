@@ -701,6 +701,7 @@ class BackupManager:
         """
 
         from .app import app_info
+
         app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 
         # Prepare environment

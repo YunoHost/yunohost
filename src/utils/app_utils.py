@@ -64,6 +64,7 @@ from .system import (
 
 if TYPE_CHECKING:
     from moulinette.utils.log import MoulinetteLogger
+
     logger = cast(MoulinetteLogger, getLogger("yunohost.app"))
 else:
     logger = getLogger("yunohost.app")
@@ -179,7 +180,6 @@ def _set_app_settings(app: str, settings: dict[str, Any]) -> None:
 
 
 def _get_app_label(app: str, manifest=AppManifest | None) -> str:
-
     _assert_is_installed(app)
     settings = _get_app_settings(app)
     main_perm = settings.get("_permissions", {}).get("main", {})
@@ -581,6 +581,7 @@ def _app_quality(src: str) -> Literal["success", "warning", "danger", "thirdpart
     """
 
     from ..app_catalog import _load_apps_catalog
+
     raw_app_catalog = _load_apps_catalog()["apps"]
     if src in raw_app_catalog or _is_app_repo_url(src):
         # If we got an app name directly (e.g. just "wordpress"), we gonna test this name
@@ -622,6 +623,7 @@ def _extract_app(src: str) -> tuple[AppManifest, str]:
     """
 
     from ..app_catalog import _load_apps_catalog
+
     raw_app_catalog = _load_apps_catalog()["apps"]
 
     # App is an appname in the catalog
@@ -1144,7 +1146,6 @@ def _make_environment_for_app_script(
     action=None,
     force_include_app_settings=False,
 ) -> dict[str, str]:
-
     from ..log import OperationLogger
 
     manifest = _get_manifest_of_app(workdir if workdir else app)

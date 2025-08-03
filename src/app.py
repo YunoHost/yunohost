@@ -49,7 +49,7 @@ from .app_catalog import (  # noqa
     APPS_CATALOG_LOGOS,
     _load_apps_catalog,
     app_catalog,  # Unused but imported because it's exposed via Moulinette
-    app_search,   # Unused but imported because it's exposed via Moulinette
+    app_search,  # Unused but imported because it's exposed via Moulinette
 )
 from .log import OperationLogger, is_flash_unit_operation, is_unit_operation
 from .utils.error import YunohostError, YunohostValidationError
@@ -75,7 +75,7 @@ from .utils.app_utils import (
     _display_notifications,
     _ask_confirmation,
     AppRequirementCheckResult,
-    AppManifest
+    AppManifest,
 )
 
 if TYPE_CHECKING:
@@ -154,7 +154,13 @@ def app_info(
     from .domain import _get_raw_domain_settings
     from .permission import user_permission_list
     from .utils.i18n import _value_for_locale
-    from .utils.app_utils import _git_clone_light, _parse_app_doc_and_notifications, _notification_is_dismissed, APPS_TMP_WORKDIRS, _get_app_label
+    from .utils.app_utils import (
+        _git_clone_light,
+        _parse_app_doc_and_notifications,
+        _notification_is_dismissed,
+        APPS_TMP_WORKDIRS,
+        _get_app_label,
+    )
 
     _assert_is_installed(app)
 
@@ -1862,6 +1868,7 @@ def app_shell(app: str) -> None:
 
     """
     import subprocess
+
     env = _make_environment_for_app_script(app)
     env["PATH"] = os.environ["PATH"]
     subprocess.run(
