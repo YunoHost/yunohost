@@ -846,5 +846,15 @@
     "noninteractive_task": "Interakziorik gabeko ataza",
     "yunohost_api": "YunoHosten APIa",
     "diagnosis_apps_outdated_packaging_format": "Aplikazio honek zaharkitutako pakete-formatu bat darabil, eta aurki YunoHostekin bateragarri izateari utziko dio. Eguneratzen saiatu beharko zinateke.",
-    "global_settings_setting_portal_name": "Ataria"
+    "global_settings_setting_portal_name": "Ataria",
+    "global_settings_setting_portal_allow_edit_email_forward_help": "Baimendu ezean, administrariei eskatu behar dizkiete aldaketak.",
+    "mail_edit_operation_unauthorized": "Ez duzu baimenik kontuaren aldaketa hau egiteko.",
+    "global_settings_setting_portal_allow_edit_email_alias_help": "Baimendu ezean, administrariei eskatu behar dizkiete aldaketak.",
+    "global_settings_setting_portal_allow_edit_email_help": "Baimendu ezean, administrariei eskatu behar dizkiete aldaketak.",
+    "global_settings_setting_portal_allow_edit_email": "Baimendu erabiltzaileek euren ePosta helbide nagusia editatzea",
+    "global_settings_setting_portal_allow_edit_email_alias": "Baimendu erabiltzaileek ePosta ezizenak gehitzea, kentzea eta editatzea",
+    "global_settings_setting_enable_blocklists": "Gaitu blokeo-zerrendak sarrera-trafikorako",
+    "global_settings_setting_enable_blocklists_help": "Mezu baztergarriak galarazi aldera, spamcop.net, spamhaus.org eta abuseat.org ekimenek zerrendatutako zerbitzariak blokeatzen ditu. Honek arazoak eragin ditzake hirugarren horiek zerrendatutakoak kaltegarriak ez diren posta zerbitzari batzuentzat; kasu horietan, ez da jasoko zerbitzari horietatik bidalitako postarik.",
+    "global_settings_setting_portal_allow_edit_email_forward": "Baimendu erabiltzaileek ePosta birbidalketak gehitzea, kentzea eta editatzea",
+    "global_settings_setting_antispam_name": "SPAMaren aurkakoa"
 }
