@@ -18,11 +18,8 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Any
 from unittest.mock import patch
-
-if TYPE_CHECKING:
-    from typing import Any, Dict, List, Tuple, Optional
 
 from sdbus import (
     DbusInterfaceCommon,
@@ -70,7 +67,7 @@ def parse_get_managed_objects(
 
 class GetDisksMixin(DbusInterfaceCommon):
     def __init__(
-        self, service_name: str, object_path: str, bus: Optional[SdBus] = None
+        self, service_name: str, object_path: str, bus: SdBus | None = None
     ):
         super().__init__(service_name, object_path, bus)
         self._object_manager = DbusObjectManagerInterface(
@@ -124,7 +121,7 @@ class Udisks2Manager(
         result_signature="(bs)",
         flags=DbusUnprivilegedFlag,
     )
-    def can_format(self, type: str) -> Tuple[bool, str]:
+    def can_format(self, type: str) -> tuple[bool, str]:
         raise NotImplementedError
 
     @dbus_method(
@@ -132,7 +129,7 @@ class Udisks2Manager(
         result_signature="(bts)",
         flags=DbusUnprivilegedFlag,
     )
-    def can_resize(self, type: str) -> Tuple[bool, int, str]:
+    def can_resize(self, type: str) -> tuple[bool, int, str]:
         raise NotImplementedError
 
     @dbus_method(
@@ -140,7 +137,7 @@ class Udisks2Manager(
         result_signature="(bs)",
         flags=DbusUnprivilegedFlag,
     )
-    def can_check(self, type: str) -> Tuple[bool, str]:
+    def can_check(self, type: str) -> tuple[bool, str]:
         raise NotImplementedError
 
     @dbus_method(
@@ -148,7 +145,7 @@ class Udisks2Manager(
         result_signature="(bs)",
         flags=DbusUnprivilegedFlag,
     )
-    def can_repair(self, type: str) -> Tuple[bool, str]:
+    def can_repair(self, type: str) -> tuple[bool, str]:
         raise NotImplementedError
 
     @dbus_method(
@@ -156,7 +153,7 @@ class Udisks2Manager(
         result_signature="o",
         flags=DbusUnprivilegedFlag,
     )
-    def loop_setup(self, fd: int, options: Dict[str, Tuple[str, Any]]) -> str:
+    def loop_setup(self, fd: int, options: dict[str, tuple[str, Any]]) -> str:
         raise NotImplementedError
 
     @dbus_method(
@@ -166,11 +163,11 @@ class Udisks2Manager(
     )
     def mdraid_create(
         self,
-        blocks: List[str],
+        blocks: list[str],
         level: str,
         name: str,
         chunk: int,
-        options: Dict[str, Tuple[str, Any]],
+        options: dict[str, tuple[str, Any]],
     ) -> str:
         raise NotImplementedError
 
@@ -186,7 +183,7 @@ class Udisks2Manager(
         result_signature="ao",
         flags=DbusUnprivilegedFlag,
     )
-    def get_block_devices(self, options: Dict[str, Tuple[str, Any]]) -> List[str]:
+    def get_block_devices(self, options: dict[str, tuple[str, Any]]) -> list[str]:
         raise NotImplementedError
 
     @dbus_method(
@@ -195,8 +192,8 @@ class Udisks2Manager(
         flags=DbusUnprivilegedFlag,
     )
     def resolve_device(
-        self, devspec: Dict[str, Tuple[str, Any]], options: Dict[str, Tuple[str, Any]]
-    ) -> List[str]:
+        self, devspec: dict[str, tuple[str, Any]], options: dict[str, tuple[str, Any]]
+    ) -> list[str]:
         raise NotImplementedError
 
     @dbus_property(
@@ -210,14 +207,14 @@ class Udisks2Manager(
         property_signature="as",
         flags=DbusPropertyEmitsChangeFlag,
     )
-    def supported_filesystems(self) -> List[str]:
+    def supported_filesystems(self) -> list[str]:
         raise NotImplementedError
 
     @dbus_property(
         property_signature="as",
         flags=DbusPropertyEmitsChangeFlag,
     )
-    def supported_encryption_types(self) -> List[str]:
+    def supported_encryption_types(self) -> list[str]:
         raise NotImplementedError
 
     @dbus_property(
@@ -236,7 +233,7 @@ class Disk(
         input_signature="a{sv}",
         flags=DbusUnprivilegedFlag,
     )
-    def eject(self, options: Dict[str, Tuple[str, Any]]) -> None:
+    def eject(self, options: dict[str, tuple[str, Any]]) -> None:
         raise NotImplementedError
 
     @dbus_method(
@@ -244,7 +241,7 @@ class Disk(
         flags=DbusUnprivilegedFlag,
     )
     def set_configuration(
-        self, value: Dict[str, Tuple[str, Any]], options: Dict[str, Tuple[str, Any]]
+        self, value: dict[str, tuple[str, Any]], options: dict[str, tuple[str, Any]]
     ) -> None:
         raise NotImplementedError
 
@@ -252,7 +249,7 @@ class Disk(
         input_signature="a{sv}",
         flags=DbusUnprivilegedFlag,
     )
-    def power_off(self, options: Dict[str, Tuple[str, Any]]) -> None:
+    def power_off(self, options: dict[str, tuple[str, Any]]) -> None:
         raise NotImplementedError
 
     @dbus_property(
@@ -301,7 +298,7 @@ class Disk(
         property_signature="a{sv}",
         flags=DbusPropertyEmitsChangeFlag,
     )
-    def configuration(self) -> Dict[str, Tuple[str, Any]]:
+    def configuration(self) -> dict[str, tuple[str, Any]]:
         raise NotImplementedError
 
     @dbus_property(
@@ -315,7 +312,7 @@ class Disk(
         property_signature="as",
         flags=DbusPropertyEmitsChangeFlag,
     )
-    def media_compatibility(self) -> List[str]:
+    def media_compatibility(self) -> list[str]:
         raise NotImplementedError
 
     @dbus_property(
@@ -467,7 +464,7 @@ class AtaController(
         input_signature="a{sv}",
         flags=DbusUnprivilegedFlag,
     )
-    def smart_update(self, options: Dict[str, Tuple[str, Any]]) -> None:
+    def smart_update(self, options: dict[str, tuple[str, Any]]) -> None:
         raise NotImplementedError
 
     @dbus_method(
@@ -476,9 +473,9 @@ class AtaController(
         flags=DbusUnprivilegedFlag,
     )
     def smart_get_attributes(
-        self, options: Dict[str, Tuple[str, Any]]
-    ) -> List[
-        Tuple[int, str, int, int, int, int, int, int, Dict[str, Tuple[str, Any]]]
+        self, options: dict[str, tuple[str, Any]]
+    ) -> list[
+        tuple[int, str, int, int, int, int, int, int, dict[str, tuple[str, Any]]]
     ]:
         raise NotImplementedError
 
@@ -487,7 +484,7 @@ class AtaController(
         flags=DbusUnprivilegedFlag,
     )
     def smart_selftest_start(
-        self, type: str, options: Dict[str, Tuple[str, Any]]
+        self, type: str, options: dict[str, tuple[str, Any]]
     ) -> None:
         raise NotImplementedError
 
@@ -495,7 +492,7 @@ class AtaController(
         input_signature="a{sv}",
         flags=DbusUnprivilegedFlag,
     )
-    def smart_selftest_abort(self, options: Dict[str, Tuple[str, Any]]) -> None:
+    def smart_selftest_abort(self, options: dict[str, tuple[str, Any]]) -> None:
         raise NotImplementedError
 
     @dbus_method(
@@ -503,7 +500,7 @@ class AtaController(
         flags=DbusUnprivilegedFlag,
     )
     def smart_set_enabled(
-        self, value: bool, options: Dict[str, Tuple[str, Any]]
+        self, value: bool, options: dict[str, tuple[str, Any]]
     ) -> None:
         raise NotImplementedError
 
@@ -512,28 +509,28 @@ class AtaController(
         result_signature="y",
         flags=DbusUnprivilegedFlag,
     )
-    def pm_get_state(self, options: Dict[str, Tuple[str, Any]]) -> int:
+    def pm_get_state(self, options: dict[str, tuple[str, Any]]) -> int:
         raise NotImplementedError
 
     @dbus_method(
         input_signature="a{sv}",
         flags=DbusUnprivilegedFlag,
     )
-    def pm_standby(self, options: Dict[str, Tuple[str, Any]]) -> None:
+    def pm_standby(self, options: dict[str, tuple[str, Any]]) -> None:
         raise NotImplementedError
 
     @dbus_method(
         input_signature="a{sv}",
         flags=DbusUnprivilegedFlag,
     )
-    def pm_wakeup(self, options: Dict[str, Tuple[str, Any]]) -> None:
+    def pm_wakeup(self, options: dict[str, tuple[str, Any]]) -> None:
         raise NotImplementedError
 
     @dbus_method(
         input_signature="a{sv}",
         flags=DbusUnprivilegedFlag,
     )
-    def security_erase_unit(self, options: Dict[str, Tuple[str, Any]]) -> None:
+    def security_erase_unit(self, options: dict[str, tuple[str, Any]]) -> None:
         raise NotImplementedError
 
     @dbus_property(
@@ -720,7 +717,7 @@ class NVMeController(
         input_signature="a{sv}",
         flags=DbusUnprivilegedFlag,
     )
-    def smart_update(self, options: Dict[str, Tuple[str, Any]]) -> None:
+    def smart_update(self, options: dict[str, tuple[str, Any]]) -> None:
         raise NotImplementedError
 
     @dbus_method(
@@ -729,8 +726,8 @@ class NVMeController(
         flags=DbusUnprivilegedFlag,
     )
     def smart_get_attributes(
-        self, options: Dict[str, Tuple[str, Any]]
-    ) -> Dict[str, Tuple[str, Any]]:
+        self, options: dict[str, tuple[str, Any]]
+    ) -> dict[str, tuple[str, Any]]:
         raise NotImplementedError
 
     @dbus_method(
@@ -738,7 +735,7 @@ class NVMeController(
         flags=DbusUnprivilegedFlag,
     )
     def smart_selftest_start(
-        self, type: str, options: Dict[str, Tuple[str, Any]]
+        self, type: str, options: dict[str, tuple[str, Any]]
     ) -> None:
         raise NotImplementedError
 
@@ -746,14 +743,14 @@ class NVMeController(
         input_signature="a{sv}",
         flags=DbusUnprivilegedFlag,
     )
-    def smart_selftest_abort(self, options: Dict[str, Tuple[str, Any]]) -> None:
+    def smart_selftest_abort(self, options: dict[str, tuple[str, Any]]) -> None:
         raise NotImplementedError
 
     @dbus_method(
         input_signature="sa{sv}",
         flags=DbusUnprivilegedFlag,
     )
-    def sanitize_start(self, action: str, options: Dict[str, Tuple[str, Any]]) -> None:
+    def sanitize_start(self, action: str, options: dict[str, tuple[str, Any]]) -> None:
         raise NotImplementedError
 
     @dbus_property(
@@ -809,7 +806,7 @@ class NVMeController(
         property_signature="as",
         flags=DbusPropertyEmitsChangeFlag,
     )
-    def smart_critical_warning(self) -> List[str]:
+    def smart_critical_warning(self) -> list[str]:
         raise NotImplementedError
 
     @dbus_property(
