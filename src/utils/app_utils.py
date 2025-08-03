@@ -341,7 +341,9 @@ def _get_manifest_of_app(path_or_app_id: str) -> AppManifest:
     if path_or_app_id in app_manifests_cache:
         cache_timestamp = app_manifests_cache_timestamp[path_or_app_id]
         manifest_and_doc_timestamps = [manifest_path.stat().st_mtime]
-        manifest_and_doc_timestamps += [p.stat().st_mtime for p in (path / "doc").rglob("*")]
+        manifest_and_doc_timestamps += [
+            p.stat().st_mtime for p in (path / "doc").rglob("*")
+        ]
         if cache_timestamp > max(manifest_and_doc_timestamps):
             return copy.deepcopy(app_manifests_cache[path_or_app_id])
 
@@ -370,7 +372,9 @@ AppDocDict = dict[str, dict[str, str]]
 AppNotificationsDict = dict[str, dict[str, dict[str, str]]]
 
 
-def _parse_app_doc_and_notifications(path: Path) -> tuple[AppDocDict, AppNotificationsDict]:
+def _parse_app_doc_and_notifications(
+    path: Path,
+) -> tuple[AppDocDict, AppNotificationsDict]:
     doc: AppDocDict = {}
     notification_names = ["PRE_INSTALL", "POST_INSTALL", "PRE_UPGRADE", "POST_UPGRADE"]
 
