@@ -42,6 +42,7 @@ DEFAULT_LOGGING = {
     "loggers": {"moulinette": {"level": "DEBUG", "handlers": ["console"]}},
 }
 
+
 def init_logging(
     interface: str = "cli",
     debug: bool = False,

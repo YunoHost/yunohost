@@ -41,7 +41,7 @@ from yunohost.utils.file_utils import (
     chown,
     chmod,
     download_json,
-    download_text
+    download_text,
 )
 
 

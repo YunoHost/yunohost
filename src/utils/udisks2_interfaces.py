@@ -66,9 +66,7 @@ def parse_get_managed_objects(
 
 
 class GetDisksMixin(DbusInterfaceCommon):
-    def __init__(
-        self, service_name: str, object_path: str, bus: SdBus | None = None
-    ):
+    def __init__(self, service_name: str, object_path: str, bus: SdBus | None = None):
         super().__init__(service_name, object_path, bus)
         self._object_manager = DbusObjectManagerInterface(
             UDISKS2_SERVICE_NAME, UDISKS2_BASE_PATH, bus

@@ -189,9 +189,7 @@ def _list_upgradable_apt_packages() -> Generator[dict[str, str], None, None]:
     upgradable_raw = check_output("LC_ALL=C apt list --upgradable")
 
     # Dirty parsing of the output
-    upgradable = [
-        line.strip() for line in upgradable_raw.split("\n") if line.strip()
-    ]
+    upgradable = [line.strip() for line in upgradable_raw.split("\n") if line.strip()]
     for line in upgradable:
         # Remove stupid warning and verbose messages >.>
         if "apt does not have a stable CLI interface" in line or "Listing..." in line:

@@ -580,11 +580,10 @@ class TestMockedAppUpgrade:
 
     def _mock_app_upgrade(self, mocker):
         # app list
+        mocker.patch("yunohost.app._installed_apps", side_effect=lambda: self.apps_list)
         mocker.patch(
-            "yunohost.app._installed_apps", side_effect=lambda: self.apps_list
-        )
-        mocker.patch(
-            "yunohost.utils.app_utils._installed_apps", side_effect=lambda: self.apps_list
+            "yunohost.utils.app_utils._installed_apps",
+            side_effect=lambda: self.apps_list,
         )
 
         # just check if an app is really installed
@@ -592,7 +591,8 @@ class TestMockedAppUpgrade:
             "yunohost.app._is_installed", side_effect=lambda app: app in self.apps_list
         )
         mocker.patch(
-            "yunohost.utils.app_utils._is_installed", side_effect=lambda app: app in self.apps_list
+            "yunohost.utils.app_utils._is_installed",
+            side_effect=lambda app: app in self.apps_list,
         )
 
         mocker.patch(
@@ -646,11 +646,16 @@ class TestMockedAppUpgrade:
                 "id": app,
                 "packaging_format": 1,
                 "version": "1.2.3~ynh1",
-                "arguments": {"install": []}
+                "arguments": {"install": []},
             }
 
-        mocker.patch("yunohost.utils.app_utils._get_manifest_of_app", side_effect=custom_get_manifest_of_app)
-        mocker.patch("yunohost.app._get_manifest_of_app", side_effect=custom_get_manifest_of_app)
+        mocker.patch(
+            "yunohost.utils.app_utils._get_manifest_of_app",
+            side_effect=custom_get_manifest_of_app,
+        )
+        mocker.patch(
+            "yunohost.app._get_manifest_of_app", side_effect=custom_get_manifest_of_app
+        )
 
         # install_failed, failure_message_with_debug_instructions =
         self.hook_exec_with_script_debug_if_failure = mocker.patch(

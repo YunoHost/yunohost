@@ -68,7 +68,7 @@ def call_async_output(args, callback, **kwargs) -> int | None:
 
     for a in ["stdout", "stderr"]:
         if a in kwargs:
-            raise ValueError("%s argument not allowed, " "it will be overridden." % a)
+            raise ValueError("%s argument not allowed, it will be overridden." % a)
 
     log_queue: Queue = Queue()
 

@@ -923,7 +923,7 @@ def _get_DomainConfigPanel() -> "ConfigPanel":
                     str(portal_settings_path),
                     portal_settings,  # type: ignore[arg-type]
                     sort_keys=True,
-                    indent=4
+                    indent=4,
                 )
 
             super()._apply(

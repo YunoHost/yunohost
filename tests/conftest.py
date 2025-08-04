@@ -124,6 +124,7 @@ def test_file(tmp_path):
     test_file.write_bytes(test_text.encode())
     return test_file
 
+
 @pytest.fixture
 def test_json(tmp_path):
     test_json = json.dumps({"foo": "bar"})

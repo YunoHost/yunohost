@@ -2118,7 +2118,9 @@ def app_ssowatconf() -> None:
 
         portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
         if portal_settings_path.exists():
-            this_domain_portal_settings: dict[str, Any] = read_json(str(portal_settings_path))  # type: ignore[assignment]
+            this_domain_portal_settings: dict[str, Any] = read_json(
+                str(portal_settings_path)
+            )  # type: ignore[assignment]
             portal_settings.update(this_domain_portal_settings)
 
         # Do no override anything else than "apps" since the file is shared

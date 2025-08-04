@@ -42,11 +42,11 @@ def read_file(file_path: str) -> str:
     Keyword argument:
         file_path -- Path to the text file
     """
-    assert isinstance(
-        file_path, str
-    ), "Error: file_path '{}' should be a string but is of type '{}' instead".format(
-        file_path,
-        type(file_path),
+    assert isinstance(file_path, str), (
+        "Error: file_path '{}' should be a string but is of type '{}' instead".format(
+            file_path,
+            type(file_path),
+        )
     )
 
     # Check file exists
@@ -60,9 +60,7 @@ def read_file(file_path: str) -> str:
     except IOError as e:
         raise YunohostError("cannot_open_file", file=file_path, error=str(e))
     except Exception as e:
-        raise YunohostError(
-            "unknown_error_reading_file", file=file_path, error=str(e)
-        )
+        raise YunohostError("unknown_error_reading_file", file=file_path, error=str(e))
 
     return file_content
 
@@ -128,7 +126,9 @@ def read_toml(file_path: str) -> Jsonable:
     return loaded_toml
 
 
-def write_to_file(file_path: str, data: str | bytes | list, file_mode: str = "w") -> None:
+def write_to_file(
+    file_path: str, data: str | bytes | list, file_mode: str = "w"
+) -> None:
     """
     Write a single string or a list of string to a text file.
     The text file will be overwritten by default.
@@ -139,27 +139,27 @@ def write_to_file(file_path: str, data: str | bytes | list, file_mode: str = "w"
         file_mode -- Mode used when writing the file. Option meant to be used
         by append_to_file to avoid duplicating the code of this function.
     """
-    assert (
-        isinstance(data, str) or isinstance(data, bytes) or isinstance(data, list)
-    ), f"Error: data '{str(data)}' should be either a string or a list but is of type '{type(data)}'"
+    assert isinstance(data, str) or isinstance(data, bytes) or isinstance(data, list), (
+        f"Error: data '{str(data)}' should be either a string or a list but is of type '{type(data)}'"
+    )
     assert not os.path.isdir(file_path), (
         "Error: file_path '%s' point to a dir, it should be a file" % file_path
     )
-    assert os.path.isdir(
-        os.path.dirname(file_path)
-    ), "Error: the path ('{}') base dir ('{}') is not a dir".format(
-        file_path,
-        os.path.dirname(file_path),
+    assert os.path.isdir(os.path.dirname(file_path)), (
+        "Error: the path ('{}') base dir ('{}') is not a dir".format(
+            file_path,
+            os.path.dirname(file_path),
+        )
     )
 
     # If data is a list, check elements are strings and build a single string
     if isinstance(data, list):
         for element in data:
-            assert isinstance(
-                element, str
-            ), "Error: element '{}' should be a string but is of type '{}' instead".format(
-                element,
-                type(element),
+            assert isinstance(element, str), (
+                "Error: element '{}' should be a string but is of type '{}' instead".format(
+                    element,
+                    type(element),
+                )
             )
         data = "\n".join(data)
 
@@ -196,26 +196,26 @@ def write_to_json(
     """
 
     # Assumptions
-    assert isinstance(
-        file_path, str
-    ), "Error: file_path '{}' should be a string but is of type '{}' instead".format(
-        file_path,
-        type(file_path),
+    assert isinstance(file_path, str), (
+        "Error: file_path '{}' should be a string but is of type '{}' instead".format(
+            file_path,
+            type(file_path),
+        )
     )
-    assert isinstance(data, dict) or isinstance(
-        data, list
-    ), "Error: data '{}' should be a dict or a list but is of type '{}' instead".format(
-        data,
-        type(data),
+    assert isinstance(data, dict) or isinstance(data, list), (
+        "Error: data '{}' should be a dict or a list but is of type '{}' instead".format(
+            data,
+            type(data),
+        )
     )
     assert not os.path.isdir(file_path), (
         "Error: file_path '%s' point to a dir, it should be a file" % file_path
     )
-    assert os.path.isdir(
-        os.path.dirname(file_path)
-    ), "Error: the path ('{}') base dir ('{}') is not a dir".format(
-        file_path,
-        os.path.dirname(file_path),
+    assert os.path.isdir(os.path.dirname(file_path)), (
+        "Error: the path ('{}') base dir ('{}') is not a dir".format(
+            file_path,
+            os.path.dirname(file_path),
+        )
     )
 
     # Write dict to file
@@ -307,7 +307,10 @@ def mkdir(
 
 
 def chown(
-    path: str, uid: str | int | None = None, gid: str | int | None = None, recursive: bool = False
+    path: str,
+    uid: str | int | None = None,
+    gid: str | int | None = None,
+    recursive: bool = False,
 ) -> None:
     """Change the owner and/or group of a path
 
@@ -349,9 +352,7 @@ def chown(
                 for f in files:
                     os.chown(os.path.join(root, f), uid, gid)
     except Exception as e:
-        raise YunohostError(
-            "error_changing_file_permissions", path=path, error=str(e)
-        )
+        raise YunohostError("error_changing_file_permissions", path=path, error=str(e))
 
 
 def chmod(
@@ -377,9 +378,7 @@ def chmod(
                 for f in files:
                     os.chmod(os.path.join(root, f), fmode)
     except Exception as e:
-        raise YunohostError(
-            "error_changing_file_permissions", path=path, error=str(e)
-        )
+        raise YunohostError("error_changing_file_permissions", path=path, error=str(e))
 
 
 def rm(path: str, recursive: bool = False, force: bool = False) -> None:

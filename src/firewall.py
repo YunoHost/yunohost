@@ -604,5 +604,7 @@ def _get_ssh_port(default: int = 22) -> int:
             raise Exception("No match found for the Port statement in sshd_config ?")
         return int(matches[0])
     except Exception as e:
-        logger.debug(f"Uhoh, failed to parse the current SSH port ? (returning {default} as default) Error: {e}")
+        logger.debug(
+            f"Uhoh, failed to parse the current SSH port ? (returning {default} as default) Error: {e}"
+        )
     return default

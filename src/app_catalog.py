@@ -145,7 +145,7 @@ def _read_apps_catalog_list() -> list[dict[Literal["id", "url"], str]]:
                 pass
         # Support the case where file exists but is empty
         # by returning [] if list_ is None
-        return list_ if list_ else []   # type: ignore[return-value]
+        return list_ if list_ else []  # type: ignore[return-value]
     except Exception as e:
         raise YunohostError(
             f"Could not read the apps_catalog list ... : {e}", raw_msg=True
