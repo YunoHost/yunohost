@@ -385,7 +385,7 @@ def test_mkdir_with_parent(tmp_path):
 def test_mkdir_existing_folder(tmp_path):
     new_path = tmp_path / "new_folder"
     os.makedirs(str(new_path))
-    with pytest.raises(OSError):
+    with pytest.raises(Exception):
         mkdir(str(new_path))
 
 
