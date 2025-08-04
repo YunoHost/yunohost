@@ -18,6 +18,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import re
 import os
 import shutil
 from logging import getLogger
@@ -596,12 +597,14 @@ def _get_ssh_port(default: int = 22) -> int:
     Retrieve the SSH port from the sshd_config file or used the default
     one if it's not defined.
     """
-    from moulinette.utils.text import searchf
-
     try:
-        m = searchf(r"^Port[ \t]+([0-9]+)$", "/etc/ssh/sshd_config", count=-1)
-        if m:
-            return int(m)
-    except Exception:
-        pass
+        with open("/etc/ssh/sshd_config") as f:
+            matches = re.findall(r"^Port[ \t]+([0-9]+)$", f.read(), re.MULTILINE)
+        if not matches:
+            raise Exception("No match found for the Port statement in sshd_config ?")
+        return int(matches[0])
+    except Exception as e:
+        logger.debug(
+            f"Uhoh, failed to parse the current SSH port ? (returning {default} as default) Error: {e}"
+        )
     return default

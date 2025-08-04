@@ -37,7 +37,7 @@ from typing import (
 
 import yaml
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import (
+from .file_utils import (
     chmod,
     chown,
     cp,
@@ -45,7 +45,7 @@ from moulinette.utils.filesystem import (
     read_json,
     read_toml,
 )
-from moulinette.utils.process import check_output
+from .process import check_output
 from packaging import version
 
 from .error import YunohostError, YunohostValidationError
@@ -62,9 +62,9 @@ from .system import (
 )
 
 if TYPE_CHECKING:
-    from moulinette.utils.log import MoulinetteLogger
+    from .logging import YunohostLogger
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.app"))
+    logger = cast(YunohostLogger, getLogger("yunohost.app"))
 else:
     logger = getLogger("yunohost.app")
 
@@ -179,7 +179,7 @@ def _set_app_settings(app: str, settings: dict[str, Any]) -> None:
         del app_settings_cache[app]
 
 
-def _get_app_label(app: str, manifest=AppManifest | None) -> str:
+def _get_app_label(app: str, manifest: AppManifest | None = None) -> str:
     _assert_is_installed(app)
     settings = _get_app_settings(app)
     main_perm = settings.get("_permissions", {}).get("main", {})
@@ -347,7 +347,7 @@ def _get_manifest_of_app(path_or_app_id: str) -> AppManifest:
         if cache_timestamp > max(manifest_and_doc_timestamps):
             return copy.deepcopy(app_manifests_cache[path_or_app_id])
 
-    manifest = read_manifest(str(manifest_path))
+    manifest: AppManifest = read_manifest(str(manifest_path))  # type: ignore[assignment]
 
     manifest["packaging_format"] = float(
         str(manifest.get("packaging_format", "")).strip() or "0"
@@ -416,7 +416,7 @@ def _parse_app_doc_and_notifications(
             if pagename not in notifications[step]:
                 notifications[step][pagename] = {}
             try:
-                notifications[step][pagename][lang] = read_file(filepath).strip()
+                notifications[step][pagename][lang] = read_file(str(filepath)).strip()
             except Exception as e:
                 logger.error(e)
                 continue

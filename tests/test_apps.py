@@ -24,7 +24,6 @@ import shutil
 
 import pytest
 import requests
-from moulinette.utils.filesystem import mkdir
 
 from yunohost.app import (
     _is_installed,
@@ -39,6 +38,7 @@ from yunohost.app import (
 from yunohost.domain import _get_maindomain, domain_add, domain_list, domain_remove
 from yunohost.permission import permission_delete, user_permission_list
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.file_utils import mkdir
 
 from .conftest import get_test_apps_dir, message, raiseYunohostError
 from .test_permission import check_LDAP_db_integrity, check_permission_for_apps
@@ -580,13 +580,19 @@ class TestMockedAppUpgrade:
 
     def _mock_app_upgrade(self, mocker):
         # app list
-        self._installed_apps = mocker.patch(
-            "yunohost.app._installed_apps", side_effect=lambda: self.apps_list
+        mocker.patch("yunohost.app._installed_apps", side_effect=lambda: self.apps_list)
+        mocker.patch(
+            "yunohost.utils.app_utils._installed_apps",
+            side_effect=lambda: self.apps_list,
         )
 
         # just check if an app is really installed
         mocker.patch(
             "yunohost.app._is_installed", side_effect=lambda app: app in self.apps_list
+        )
+        mocker.patch(
+            "yunohost.utils.app_utils._is_installed",
+            side_effect=lambda app: app in self.apps_list,
         )
 
         mocker.patch(
@@ -635,16 +641,20 @@ class TestMockedAppUpgrade:
 
         from os.path import exists  # import the unmocked function
 
-        def custom_os_path_exists(path):
-            if path.endswith("manifest.toml"):
-                return True
-            return exists(path)
+        def custom_get_manifest_of_app(app):
+            return {
+                "id": app,
+                "packaging_format": 1,
+                "version": "1.2.3~ynh1",
+                "arguments": {"install": []},
+            }
 
-        mocker.patch("os.path.exists", side_effect=custom_os_path_exists)
-
-        # manifest =
         mocker.patch(
-            "yunohost.app.read_toml", return_value={"arguments": {"install": []}}
+            "yunohost.utils.app_utils._get_manifest_of_app",
+            side_effect=custom_get_manifest_of_app,
+        )
+        mocker.patch(
+            "yunohost.app._get_manifest_of_app", side_effect=custom_get_manifest_of_app
         )
 
         # install_failed, failure_message_with_debug_instructions =
@@ -654,8 +664,10 @@ class TestMockedAppUpgrade:
         )
         # settings =
         mocker.patch("yunohost.app._get_app_settings", return_value={})
+        mocker.patch("yunohost.utils.app_utils._get_app_settings", return_value={})
         # return nothing
         mocker.patch("yunohost.app._set_app_settings")
+        mocker.patch("yunohost.utils.app_utils._set_app_settings")
 
         from os import listdir  # import the unmocked function
 
@@ -667,7 +679,7 @@ class TestMockedAppUpgrade:
         mocker.patch("os.listdir", side_effect=custom_os_listdir)
         mocker.patch("yunohost.app.rm")
         mocker.patch("yunohost.app.cp")
-        mocker.patch("shutil.rmtree")
+        mocker.patch("yunohost.app.rmtree")
         mocker.patch("yunohost.app.chmod")
         mocker.patch("yunohost.app.chown")
         mocker.patch("yunohost.app.app_ssowatconf")

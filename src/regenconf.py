@@ -29,8 +29,8 @@ from typing import Any, cast, TYPE_CHECKING
 
 import yaml
 from moulinette import m18n
-from moulinette.utils.filesystem import mkdir
-from moulinette.utils.process import check_output
+from .utils.file_utils import mkdir
+from .utils.process import check_output
 
 from .hook import hook_callback, hook_list
 from .log import is_unit_operation
@@ -42,9 +42,9 @@ PENDING_CONF_DIR = os.path.join(BASE_CONF_PATH, "pending")
 REGEN_CONF_FILE = "/etc/yunohost/regenconf.yml"
 
 if TYPE_CHECKING:
-    from moulinette.utils.log import MoulinetteLogger
+    from .utils.logging import YunohostLogger
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.regenconf"))
+    logger = cast(YunohostLogger, getLogger("yunohost.regenconf"))
 else:
     logger = getLogger("yunohost.regenconf")
 
@@ -669,11 +669,11 @@ def _process_regen_conf(
     except Exception as e:
         logger.warning(
             f"Exception while trying to regenerate conf '{system_conf}': {e}",
-            exc_info=1,
+            exc_info=True,
         )
         if not new_conf and os.path.exists(system_conf):
             logger.warning(
-                m18n.n("regenconf_file_remove_failed", conf=system_conf), exc_info=1
+                m18n.n("regenconf_file_remove_failed", conf=system_conf), exc_info=True
             )
             return False
 
@@ -691,7 +691,7 @@ def _process_regen_conf(
                         m18n.n(
                             "regenconf_file_copy_failed", conf=system_conf, new=new_conf
                         ),
-                        exc_info=1,
+                        exc_info=True,
                     )
                     return False
 

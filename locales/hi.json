@@ -40,5 +40,10 @@
     "domain_deleted": "डोमेन डिलीट कर दिया गया है",
     "domain_deletion_failed": "डोमेन डिलीट करने में असमर्थ",
     "domain_dyndns_already_subscribed": "DynDNS डोमेन पहले ही सब्स्क्राइड है",
-    "password_too_simple_1": "पासवर्ड को कम से कम 8 वर्ण लंबा होना चाहिए"
+    "password_too_simple_1": "पासवर्ड को कम से कम 8 वर्ण लंबा होना चाहिए",
+    "file_not_exist": "फ़ाइल मौजूद नहीं है: '{path}'",
+    "folder_exists": "फ़ोल्डर में पहले से ही मौजूद है: '{path}'",
+    "unknown_group": "अज्ञात ग्रुप: '{group}'",
+    "unknown_user": "अज्ञात उपयोगकर्ता: '{user}'",
+    "websocket_request_expected": "एक WebSocket अनुरोध की उम्मीद।"
 }

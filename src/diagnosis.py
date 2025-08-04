@@ -26,7 +26,7 @@ from importlib import import_module
 from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import (
+from .utils.file_utils import (
     read_json,
     read_yaml,
     write_to_json,

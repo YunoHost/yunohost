@@ -21,18 +21,16 @@
 import datetime
 import os
 import re
-from typing import List
-
 import psutil
-from moulinette.utils.process import check_output
 
 from ..diagnosis import Diagnoser
+from ..utils.process import check_output
 
 
 class MyDiagnoser(Diagnoser):
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
-    dependencies: List[str] = []
+    dependencies: list[str] = []
 
     def run(self):
         MB = 1024**2

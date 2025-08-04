@@ -35,8 +35,8 @@ from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from moulinette import m18n
 from moulinette.authentication import BaseAuthenticator
-from moulinette.utils.filesystem import read_json
-from moulinette.utils.text import random_ascii
+from ..utils.file_utils import read_json
+from ..utils.misc import random_ascii
 
 from ..utils.error import YunohostAuthenticationError, YunohostError
 from ..utils.ldap import _get_ldap_interface
@@ -89,7 +89,8 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
         or DOMAIN_USER_ACL_DICT[domain]["mtime"] != mtime
     ):
         users: set[str] = set()
-        for infos in read_json(str(portal_settings_path))["apps"].values():
+        portal_settings: dict = read_json(str(portal_settings_path))  # type: ignore[assignment]
+        for infos in portal_settings["apps"].values():
             users = users.union(infos["users"])
         DOMAIN_USER_ACL_DICT[domain] = {}
         DOMAIN_USER_ACL_DICT[domain]["mtime"] = mtime

@@ -22,10 +22,9 @@ import json
 import logging
 import os
 import subprocess
-from typing import List
 
-from moulinette.utils.filesystem import read_file, read_json, write_to_json
-from moulinette.utils.process import check_output
+from ..utils.file_utils import read_file, read_json, write_to_json
+from ..utils.process import check_output
 
 from ..diagnosis import Diagnoser
 from ..utils.system import system_arch, system_virt, ynh_packages_version
@@ -36,7 +35,7 @@ logger = logging.getLogger("yunohost.diagnosis")
 class MyDiagnoser(Diagnoser):
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
-    dependencies: List[str] = []
+    dependencies: list[str] = []
 
     def run(self):
         virt = system_virt()

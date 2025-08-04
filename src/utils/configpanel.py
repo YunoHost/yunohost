@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union,
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
-from moulinette.utils.filesystem import mkdir, read_toml, read_yaml, write_to_yaml
+from .file_utils import mkdir, read_toml, read_yaml, write_to_yaml
 from pydantic import BaseModel, Extra, ValidationError, validator
 
 from .error import YunohostError, YunohostValidationError
@@ -56,9 +56,9 @@ if TYPE_CHECKING:
     from .form import FormModel, Hooks
 
 if TYPE_CHECKING:
-    from moulinette.utils.log import MoulinetteLogger
+    from .logging import YunohostLogger
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.configpanel"))
+    logger = cast(YunohostLogger, getLogger("yunohost.configpanel"))
 else:
     logger = getLogger("yunohost.configpanel")
 
@@ -640,8 +640,10 @@ class ConfigPanel:
         self.config, self.form = self._get_config_panel()
 
         for panel, section, option in self.config.iter_children():
+            assert panel and section and option
             if option.type == OptionType.button:
                 key = f"{panel.id}.{section.id}.{option.id}"
+                assert option.ask
                 actions[key] = _value_for_locale(option.ask)
 
         return actions
@@ -719,16 +721,17 @@ class ConfigPanel:
             operation_logger.success()
 
     def _get_raw_config(self) -> "RawConfig":
+        assert self.config_path
         if not os.path.exists(self.config_path):
             raise YunohostValidationError("config_no_panel")
 
-        return read_toml(self.config_path)
+        return read_toml(self.config_path)  # type: ignore[return-value]
 
     def _get_raw_settings(self) -> "RawSettings":
         if not self.save_path or not os.path.exists(self.save_path):
             return {}
 
-        return read_yaml(self.save_path) or {}
+        return read_yaml(self.save_path) or {}  # type: ignore[return-value]
 
     def _get_partial_raw_config(self) -> "RawConfig":
         def filter_keys(
@@ -775,6 +778,7 @@ class ConfigPanel:
         values = {}
 
         for _, section, option in config.iter_children():
+            assert option
             value = data = raw_settings.get(option.id, getattr(option, "default", None))
 
             if isinstance(option, BaseInputOption) and option.id not in raw_settings:
@@ -912,6 +916,7 @@ class ConfigPanel:
         """
         logger.info("Saving the new configuration...")
 
+        assert self.save_path
         dir_path = os.path.dirname(os.path.realpath(self.save_path))
         if not os.path.exists(dir_path):
             mkdir(dir_path, mode=0o700)
@@ -942,7 +947,8 @@ class ConfigPanel:
                 current_settings[key] = partial_settings[key]
 
         # Save the settings to the .yaml file
-        write_to_yaml(self.save_path, current_settings)
+        assert self.save_path
+        write_to_yaml(self.save_path, current_settings)  # type: ignore[arg-type]
 
     def _run_action(self, form: "FormModel", action_id: str) -> None:
         raise NotImplementedError()

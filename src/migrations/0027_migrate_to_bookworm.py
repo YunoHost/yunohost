@@ -29,8 +29,8 @@ import _ldap  # noqa: F401
 # Explicitly import packages to prevent an issue that may arise later because of python3.9 being replaced by 3.11 in the middle of the upgrade etc
 import _strptime  # noqa: F401
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import read_file, write_to_file
-from moulinette.utils.process import call_async_output, check_output
+from ..utils.file_utils import read_file, write_to_file
+from ..utils.process import call_async_output, check_output
 
 from ..app import app_list
 from ..regenconf import manually_modified_files, regen_conf

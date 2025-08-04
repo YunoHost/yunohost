@@ -28,14 +28,14 @@ from logging import getLogger
 
 import yaml
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import (
+from .utils.file_utils import (
     append_to_file,
     read_file,
     read_yaml,
     write_to_file,
     write_to_yaml,
 )
-from moulinette.utils.process import check_output
+from .utils.process import check_output
 
 from .diagnosis import diagnosis_ignore, diagnosis_unignore
 from .log import is_unit_operation

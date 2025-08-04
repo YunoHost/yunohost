@@ -36,7 +36,7 @@ from typing import (
 )
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import (
+from .utils.file_utils import (
     chmod,
     chown,
     cp,
@@ -79,13 +79,13 @@ from .utils.app_utils import (
 )
 
 if TYPE_CHECKING:
-    from moulinette.utils.log import MoulinetteLogger
+    from .utils.logging import YunohostLogger
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
     from .utils.configpanel import ConfigPanelModel, RawConfig, RawSettings
     from .utils.form import FormModel
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.app"))
+    logger = cast(YunohostLogger, getLogger("yunohost.app"))
 else:
     logger = getLogger("yunohost.app")
 
@@ -1937,7 +1937,7 @@ def app_ssowatconf() -> None:
     )
     from .permission import AppPermInfos, user_permission_list
     from .settings import settings_get
-    from moulinette.utils.filesystem import read_json, write_to_json
+    from .utils.file_utils import read_json, write_to_json
 
     domain_portal_dict = _get_domain_portal_dict()
 
@@ -2095,7 +2095,7 @@ def app_ssowatconf() -> None:
 
         portal_domains_apps[app_portal_domain][perm_name] = app_portal_info
 
-    conf_dict = {
+    conf_dict: dict[str, str | dict] = {
         "cookie_secret_file": "/etc/yunohost/.ssowat_cookie_secret",
         "session_folder": "/var/cache/yunohost-portal/sessions",
         "cookie_name": "yunohost.portal",
@@ -2104,7 +2104,7 @@ def app_ssowatconf() -> None:
         "permissions": permissions,
     }
 
-    write_to_json("/etc/ssowat/conf.json", conf_dict, sort_keys=True, indent=4)
+    write_to_json("/etc/ssowat/conf.json", conf_dict, sort_keys=True, indent=4)  # type: ignore[arg-type]
 
     # Generate a file per possible portal with available apps
     portal_email_settings = {
@@ -2118,7 +2118,10 @@ def app_ssowatconf() -> None:
 
         portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
         if portal_settings_path.exists():
-            portal_settings.update(read_json(str(portal_settings_path)))
+            this_domain_portal_settings: dict[str, Any] = read_json(
+                str(portal_settings_path)
+            )  # type: ignore[assignment]
+            portal_settings.update(this_domain_portal_settings)
 
         # Do no override anything else than "apps" since the file is shared
         # with domain's config panel "portal" options

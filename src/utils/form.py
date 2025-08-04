@@ -45,7 +45,7 @@ from typing import (
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
-from moulinette.utils.filesystem import read_yaml, write_to_file
+from .file_utils import read_yaml, write_to_file
 from pydantic import (
     BaseModel,
     Extra,
@@ -2078,7 +2078,7 @@ def parse_prefilled_values(
     values: Values = {}
     if args_file:
         # Import YAML / JSON file
-        values |= read_yaml(args_file)
+        values |= read_yaml(args_file)  # type: ignore[arg-type]
     if args:
         # FIXME See `ask_questions_and_parse_answers`
         parsed = getattr(urllib.parse, method)(args, keep_blank_values=True)

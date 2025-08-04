@@ -6,5 +6,11 @@
     "app_already_installed_cant_change_url": "Ez az app már telepítve van. Ezzel a funkcióval az url nem változtatható. Javaslat 'app url változtatás' ha lehetséges.",
     "app_argument_choice_invalid": "{name} érvénytelen választás, csak egyike lehet {choices} közül",
     "app_argument_invalid": "'{name}' hibás paraméter érték :{error}",
-    "password_too_simple_1": "A jelszónak legalább 8 karakter hosszúnak kell lennie"
+    "password_too_simple_1": "A jelszónak legalább 8 karakter hosszúnak kell lennie",
+    "download_timeout": "{url} régóta nem válaszol, folyamat megszakítva.",
+    "invalid_url": "Helytelen URL: {url} (biztos létezik az oldal?)",
+    "cannot_open_file": "{file} megnyitása sikertelen (Oka: {error})",
+    "unknown_user": "Ismeretlen felhasználó: '{user}'",
+    "unknown_group": "Ismeretlen csoport: '{group}'",
+    "file_not_exist": "A fájl nem létezik: '{path}'"
 }

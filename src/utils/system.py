@@ -28,7 +28,7 @@ import re
 import subprocess
 
 from moulinette import Moulinette
-from moulinette.utils.process import check_output
+from .process import check_output
 
 from ..utils.error import YunohostError
 
@@ -189,25 +189,23 @@ def _list_upgradable_apt_packages() -> Generator[dict[str, str], None, None]:
     upgradable_raw = check_output("LC_ALL=C apt list --upgradable")
 
     # Dirty parsing of the output
-    upgradable_raw = [
-        line.strip() for line in upgradable_raw.split("\n") if line.strip()
-    ]
-    for line in upgradable_raw:
+    upgradable = [line.strip() for line in upgradable_raw.split("\n") if line.strip()]
+    for line in upgradable:
         # Remove stupid warning and verbose messages >.>
         if "apt does not have a stable CLI interface" in line or "Listing..." in line:
             continue
 
         # line should look like :
         # yunohost/stable 3.5.0.2+201903211853 all [upgradable from: 3.4.2.4+201903080053]
-        line = line.split()
-        if len(line) != 6:
-            logger.warning("Failed to parse this line : %s" % " ".join(line))
+        lines = line.split()
+        if len(lines) != 6:
+            logger.warning("Failed to parse this line : %s" % " ".join(lines))
             continue
 
         yield {
-            "name": line[0].split("/")[0],
-            "new_version": line[1],
-            "current_version": line[5].strip("]"),
+            "name": lines[0].split("/")[0],
+            "new_version": lines[1],
+            "current_version": lines[5].strip("]"),
         }
 
 
@@ -303,7 +301,7 @@ def _dump_sources_list() -> Generator[str, None, None]:
 
 
 def aptitude_with_progress_bar(cmd: str) -> None:
-    from moulinette.utils.process import call_async_output
+    from .process import call_async_output
 
     msg_to_verb = {
         "Preparing for removal": "Removing",

@@ -29,8 +29,8 @@ from typing import Any, TYPE_CHECKING, cast, Literal, Callable
 from typing_extensions import TypedDict
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import chown, cp, mkdir, read_yaml, rm, write_to_yaml
-from moulinette.utils.process import call_async_output
+from .utils.file_utils import chown, cp, mkdir, read_yaml, rm, write_to_yaml
+from .utils.process import call_async_output
 from packaging import version
 
 from .log import OperationLogger, is_unit_operation
@@ -51,9 +51,9 @@ if TYPE_CHECKING:
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
 if TYPE_CHECKING:
-    from moulinette.utils.log import MoulinetteLogger
+    from .utils.logging import YunohostLogger
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.tools"))
+    logger = cast(YunohostLogger, getLogger("yunohost.tools"))
 else:
     logger = getLogger("yunohost.tools")
 
@@ -898,7 +898,7 @@ def tools_migrations_run(
                 msg = m18n.n(
                     "migrations_migration_has_failed", exception=e, id=migration.id
                 )
-                logger.error(msg, exc_info=1)
+                logger.error(msg, exc_info=True)
                 operation_logger.error(msg)
             else:
                 logger.success(m18n.n("migrations_success_forward", id=migration.id))
@@ -915,7 +915,7 @@ def tools_migrations_state() -> dict[str, dict[Any, Any]]:
     if not os.path.exists(MIGRATIONS_STATE_PATH):
         return {"migrations": {}}
 
-    return read_yaml(MIGRATIONS_STATE_PATH)
+    return read_yaml(MIGRATIONS_STATE_PATH)  # type: ignore[return-value]
 
 
 def _write_migration_state(migration_id, state):
@@ -1005,7 +1005,7 @@ def _skip_all_migrations() -> None:
     new_states: dict[Literal["migrations"], dict[str, str]] = {"migrations": {}}
     for migration in all_migrations:
         new_states["migrations"][migration.id] = "skipped"
-    write_to_yaml(MIGRATIONS_STATE_PATH, new_states)
+    write_to_yaml(MIGRATIONS_STATE_PATH, new_states)  # type: ignore[arg-type]
 
 
 def _tools_migrations_run_after_system_restore(backup_version: str) -> None:
@@ -1030,7 +1030,7 @@ def _tools_migrations_run_after_system_restore(backup_version: str) -> None:
                 msg = m18n.n(
                     "migrations_migration_has_failed", exception=e, id=migration.id
                 )
-                logger.error(msg, exc_info=1)
+                logger.error(msg, exc_info=True)
                 raise
 
 

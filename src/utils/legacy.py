@@ -24,7 +24,7 @@ import re
 from logging import getLogger
 
 from moulinette.core import MoulinetteError
-from moulinette.utils.filesystem import read_file, write_to_file
+from .file_utils import read_file, write_to_file
 
 from ..utils.error import YunohostValidationError
 
