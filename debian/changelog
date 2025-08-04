@@ -1,3 +1,25 @@
+yunohost (12.1.7) testing; urgency=low
+
+  - upgrades: refactor the upgrade flows, check requirements beforehand, allow to have a different upgrade source (eg testing branch), group system package by categories to improve UI/UX (#2115)
+  - settings: fix comma-seperated list of TLS-passthrough configurations (#2119)
+  - misc: IP servers are now ipv4.yunohost.org, ipv6.yunohost.org (dd8dc914f)
+  - helpers: fix POST arg syntax in ynh_local_curl (f629078d1)
+  - helpers/doc: fix documentation for ynh_redis_remove_db (#2135)
+  - helpers/doc: document supported CPU archs (#2127)
+  - refactor: replace absolute yunohost.xx imports with relative .xx imports (972da6d38, a903a52f9)
+  - refactor: use standard functools.cache for some data (d1448d51d, a65bf0bfc, 5348fe2e0, e4d7463a7)
+  - refactor: split low-level app utils from app.py to a new utils/app_utils.py (4fb81ad11)
+  - refactor: integrate utils/ from Moulinette directly in yunohost core (#2142)
+  - codequality: plenty of typing improvements (...too many commits to be listed ;))
+  - codequality: replace tox.ini, pytest.ini, .coveragerc with pyproject.toml (...too many commits to be listed ;))
+  - codequality: update .shellcheckrc with disabled checks (36967edd6)
+  - codequality: replace deprecated logger.warn -> logger.warning (#2114)
+  - i18n: Translations updated for Basque, Dutch, French, Galician, German, Kabyle, Spanish
+
+  Thanks to all contributors <3 ! (ButterflyOfFire, Emmanuel Ferdman, Félix Piédallu, Florent, Johannes Ebeling, José M, Lex Leenders, ljf, oleole39, ppr, rosbeef andino, Thomas Weiss, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 04 Aug 2025 17:00:00 +0200
+
 yunohost (12.1.6.1) testing; urgency=low
 
   - Typo T.T
