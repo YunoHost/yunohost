@@ -466,7 +466,7 @@ def tools_update(
 
     return {
         "system": upgradable_system_packages_per_categories,
-        "apps": apps,
+        "apps": upgradable_apps,
         "important_yunohost_upgrade": important_yunohost_upgrade,
         "pending_migrations": pending_migrations,
         "last_apt_update": last_apt_update_in_seconds,
