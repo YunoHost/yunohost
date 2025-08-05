@@ -23,6 +23,8 @@ import hashlib
 import logging
 import os
 import time
+from collections.abc import Mapping
+from typing import Any, reveal_type
 from functools import cache
 from pathlib import Path
 
@@ -60,7 +62,7 @@ URI = "ldap://localhost:389"
 USERDN = "uid={username},ou=users,dc=yunohost,dc=org"
 
 # Cache on-disk settings to RAM for faster access
-DOMAIN_USER_ACL_DICT: dict[str, dict] = {}
+DOMAIN_USER_ACL_DICT: dict[str, dict[str, Any]] = {}
 PORTAL_SETTINGS_DIR = "/etc/yunohost/portal"
 
 
@@ -89,7 +91,7 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
         or DOMAIN_USER_ACL_DICT[domain]["mtime"] != mtime
     ):
         users: set[str] = set()
-        portal_settings: dict = read_json(str(portal_settings_path))  # type: ignore[assignment]
+        portal_settings: dict[str, Any] = read_json(str(portal_settings_path))
         for infos in portal_settings["apps"].values():
             users = users.union(infos["users"])
         DOMAIN_USER_ACL_DICT[domain] = {}
@@ -158,7 +160,7 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
 #
 # The result is a string formatted as <password_enc_b64>|<iv_b64>
 # For example: ctl8kk5GevYdaA5VZ2S88Q==|yTAzCx0Gd1+MCit4EQl9lA==
-def encrypt(data):
+def encrypt(data: str) -> str:
     alg = algorithms.AES(SESSION_SECRET().encode())
     iv = os.urandom(int(alg.block_size / 8))
 
@@ -171,7 +173,7 @@ def encrypt(data):
     return data_enc_b64 + "|" + iv_b64
 
 
-def decrypt(data_enc_and_iv_b64):
+def decrypt(data_enc_and_iv_b64: str) -> str:
     data_enc_b64, iv_b64 = data_enc_and_iv_b64.split("|")
     data_enc = base64.b64decode(data_enc_b64)
     iv = base64.b64decode(iv_b64)
@@ -180,7 +182,7 @@ def decrypt(data_enc_and_iv_b64):
     D = Cipher(alg, modes.CBC(iv), default_backend()).decryptor()
     p = padding.PKCS7(alg.block_size).unpadder()
     data_padded = D.update(data_enc)
-    data = p.update(data_padded) + p.finalize()
+    data: bytes = p.update(data_padded) + p.finalize()
     return data.decode()
 
 
@@ -188,11 +190,16 @@ def short_hash(data: str) -> str:
     return hashlib.shake_256(data.encode()).hexdigest(20)
 
 
-class Authenticator(BaseAuthenticator):
+class Authenticator(BaseAuthenticator):  # type: ignore
     name = "ldap_ynhuser"
 
-    def _authenticate_credentials(self, credentials=None):
+    def _authenticate_credentials(
+        self, credentials: str | None = None
+    ) -> dict[str, str]:
         from bottle import request
+
+        if credentials is None:
+            raise YunohostError("invalid_credentials")
 
         try:
             username, password = credentials.split(":", 1)
@@ -206,7 +213,7 @@ class Authenticator(BaseAuthenticator):
             if len(user) != 0:
                 username = user[0]["uid"][0]
 
-        def _reconnect():
+        def _reconnect() -> ldap.ldapobject.SimpleLDAPObject:
             con = ldap.ldapobject.ReconnectLDAPObject(URI, retry_max=2, retry_delay=0.5)
             con.simple_bind_s(USERDN.format(username=username), password)
             return con
@@ -251,7 +258,7 @@ class Authenticator(BaseAuthenticator):
             "fullname": ldap_user_infos["cn"][0],
         }
 
-    def set_session_cookie(self, infos):
+    def set_session_cookie(self, infos: dict[str, Any]) -> None:
         from bottle import request, response
 
         assert isinstance(infos, dict)
@@ -285,7 +292,7 @@ class Authenticator(BaseAuthenticator):
         session_file = SESSION_FOLDER / infos["id"]
         session_file.touch(exist_ok=True)
 
-    def get_session_cookie(self, decrypt_pwd=False):
+    def get_session_cookie(self, decrypt_pwd: bool = False) -> Mapping[str, Any]:
         from bottle import request, response
 
         try:
@@ -337,9 +344,9 @@ class Authenticator(BaseAuthenticator):
         if decrypt_pwd:
             infos["pwd"] = decrypt(infos["pwd"])
 
-        return infos
+        return infos  # type: ignore
 
-    def delete_session_cookie(self):
+    def delete_session_cookie(self) -> None:
         from bottle import response
 
         try:
@@ -353,7 +360,7 @@ class Authenticator(BaseAuthenticator):
 
         response.delete_cookie("yunohost.portal", path="/")
 
-    def purge_expired_session_files(self):
+    def purge_expired_session_files(self) -> None:
         for session_file in SESSION_FOLDER.iterdir():
             print(session_file.stat().st_mtime - time.time())
             if abs(session_file.stat().st_mtime - time.time()) > SESSION_VALIDITY:

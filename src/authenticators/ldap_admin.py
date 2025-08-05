@@ -22,6 +22,8 @@ import hashlib
 import logging
 import os
 import time
+from collections.abc import Mapping
+from typing import Any, Literal
 from functools import cache
 from pathlib import Path
 
@@ -55,17 +57,19 @@ ADMIN_GROUP = "cn=admins,ou=groups"
 AUTH_DN = "uid={uid},ou=users,dc=yunohost,dc=org"
 
 
-def short_hash(data):
+def short_hash(data: str) -> str:
     return hashlib.shake_256(data.encode()).hexdigest(20)
 
 
-class Authenticator(BaseAuthenticator):
+class Authenticator(BaseAuthenticator):  # type: ignore
     name = "ldap_admin"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         pass
 
-    def _authenticate_credentials(self, credentials=None):
+    def _authenticate_credentials(
+        self, credentials: str | None = None
+    ) -> dict[Literal["user"], str]:
         try:
             admins = (
                 _get_ldap_interface()
@@ -92,6 +96,9 @@ class Authenticator(BaseAuthenticator):
             except ldap.SERVER_DOWN:
                 raise YunohostError("ldap_server_down")
 
+        if credentials is None:
+            raise YunohostError("invalid_credentials")
+
         try:
             uid, password = credentials.split(":", 1)
         except ValueError:
@@ -104,7 +111,7 @@ class Authenticator(BaseAuthenticator):
 
         dn = AUTH_DN.format(uid=uid)
 
-        def _reconnect():
+        def _reconnect() -> ldap.ldapobject.SimpleLDAPObject:
             con = ldap.ldapobject.ReconnectLDAPObject(
                 LDAP_URI, retry_max=10, retry_delay=0.5
             )
@@ -146,7 +153,7 @@ class Authenticator(BaseAuthenticator):
 
         return {"user": uid}
 
-    def set_session_cookie(self, infos):
+    def set_session_cookie(self, infos: dict[str, str]) -> None:
         from bottle import response
 
         assert isinstance(infos, dict)
@@ -171,7 +178,9 @@ class Authenticator(BaseAuthenticator):
         session_file = SESSION_FOLDER / infos["id"]
         session_file.touch(exist_ok=True)
 
-    def get_session_cookie(self, raise_if_no_session_exists=True):
+    def get_session_cookie(
+        self, raise_if_no_session_exists: bool = True
+    ) -> Mapping[str, Any]:
         from bottle import request, response
 
         try:
@@ -201,9 +210,9 @@ class Authenticator(BaseAuthenticator):
         # Otherwise, we 'touch' the file to extend the validity
         session_file.touch(exist_ok=True)
 
-        return infos
+        return infos  # type: ignore
 
-    def delete_session_cookie(self):
+    def delete_session_cookie(self) -> None:
         from bottle import response
 
         try:
@@ -217,7 +226,7 @@ class Authenticator(BaseAuthenticator):
 
         response.delete_cookie("yunohost.admin", path="/yunohost/api")
 
-    def purge_expired_session_files(self):
+    def purge_expired_session_files(self) -> None:
         for session_file in SESSION_FOLDER.iterdir():
             if abs(session_file.stat().st_mtime - time.time()) > SESSION_VALIDITY:
                 try:
@@ -226,7 +235,7 @@ class Authenticator(BaseAuthenticator):
                     logger.debug(f"Failed to delete session file {session_file} ? {e}")
 
     @staticmethod
-    def invalidate_all_sessions_for_user(user):
+    def invalidate_all_sessions_for_user(user: str) -> None:
         for file in SESSION_FOLDER.glob(f"{short_hash(user)}*"):
             try:
                 file.unlink()
