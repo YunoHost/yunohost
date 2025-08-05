@@ -211,6 +211,7 @@ class MyDiagnoser(Diagnoser):  # type: ignore
             # Additionally, for DKIM, because the key is pretty long,
             # some DNS registrar sometime split it into several pieces like this:
             # "p=foo" "bar" (with a space and quotes in the middle)...
+            assert r["value"] is not None and r["content"] is not None
             expected = set(r["value"].strip(';" ').replace(";", " ").split())
             current = set(
                 r["current"].replace('" "', "").strip(';" ').replace(";", " ").split()
@@ -233,11 +234,13 @@ class MyDiagnoser(Diagnoser):  # type: ignore
             return expected == current
         elif r["type"] == "MX":
             # For MX, we want to ignore the priority
+            assert r["value"] is not None and r["content"] is not None
             expected_str = r["value"].split()[-1]
             current_str = r["current"].split()[-1]
             return expected_str == current_str
         elif r["type"] == "CAA":
             # For CAA, check only the last item, ignore the 0 / 128 nightmare
+            assert r["value"] is not None and r["content"] is not None
             expected_str = r["value"].split()[-1]
             current_str = r["current"].split()[-1]
             return expected_str == current_str
