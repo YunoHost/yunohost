@@ -108,7 +108,7 @@ class DNSRecord(TypedDict):
     type: Literal["A", "AAAA", "MX", "TXT", "SRV", "CAA"]
     ttl: int
     content: str | None
-    current: NotRequired[str | None]
+    current: NotRequired[str | list[str] | None]
     old_content: NotRequired[str | None]
     managed_by_yunohost: NotRequired[bool]
     id: NotRequired[Any]

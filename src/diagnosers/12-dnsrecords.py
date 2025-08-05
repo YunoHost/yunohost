@@ -121,10 +121,10 @@ class MyDiagnoser(Diagnoser):  # type: ignore
                     continue
 
                 r["current"] = self.get_current_record(fqdn, r["type"])
-                if r["value"] == "@":
-                    r["value"] = domain + "."
+                if r["content"] == "@":
+                    r["content"] = domain + "."
                 elif r["type"] == "CNAME":
-                    r["value"] = r["value"]  # + f".{base_dns_zone}."
+                    r["content"] = r["content"]  # + f".{base_dns_zone}."
 
                 if self.current_record_match_expected(r):
                     results[id_] = "OK"
@@ -197,9 +197,9 @@ class MyDiagnoser(Diagnoser):  # type: ignore
             return answers[0] if len(answers) == 1 else answers  # type: ignore
 
     def current_record_match_expected(self, r: DNSRecord) -> bool:
-        if r["value"] is not None and r["current"] is None:
+        if r["content"] is not None and r["current"] is None:
             return False
-        if r["value"] is None and r["current"] is not None:
+        if r["content"] is None and r["current"] is not None:
             return False
         elif isinstance(r["current"], list):
             return False
@@ -211,20 +211,20 @@ class MyDiagnoser(Diagnoser):  # type: ignore
             # Additionally, for DKIM, because the key is pretty long,
             # some DNS registrar sometime split it into several pieces like this:
             # "p=foo" "bar" (with a space and quotes in the middle)...
-            assert r["value"] is not None and r["content"] is not None
-            expected = set(r["value"].strip(';" ').replace(";", " ").split())
+            assert r["content"] is not None and r["current"] is not None
+            expected = set(r["content"].strip(';" ').replace(";", " ").split())
             current = set(
                 r["current"].replace('" "', "").strip(';" ').replace(";", " ").split()
             )
 
             # For SPF, ignore parts starting by ip4: or ip6:
-            if "v=spf1" in r["value"]:
+            if "v=spf1" in r["content"]:
                 current = {
                     part
                     for part in current
                     if not part.startswith("ip4:") and not part.startswith("ip6:")
                 }
-            if "v=DMARC1" in r["value"]:
+            if "v=DMARC1" in r["content"]:
                 for param in current:
                     if "=" not in param:
                         return False
@@ -234,18 +234,18 @@ class MyDiagnoser(Diagnoser):  # type: ignore
             return expected == current
         elif r["type"] == "MX":
             # For MX, we want to ignore the priority
-            assert r["value"] is not None and r["content"] is not None
-            expected_str = r["value"].split()[-1]
+            assert r["content"] is not None and r["current"] is not None
+            expected_str = r["content"].split()[-1]
             current_str = r["current"].split()[-1]
             return expected_str == current_str
         elif r["type"] == "CAA":
             # For CAA, check only the last item, ignore the 0 / 128 nightmare
-            assert r["value"] is not None and r["content"] is not None
-            expected_str = r["value"].split()[-1]
+            assert r["content"] is not None and r["current"] is not None
+            expected_str = r["content"].split()[-1]
             current_str = r["current"].split()[-1]
             return expected_str == current_str
         else:
-            return r["current"] == r["value"]
+            return r["current"] == r["content"]
 
     def check_expiration_date(
         self, domains: Collection[str]

@@ -481,7 +481,7 @@ def dyndns_update(
     # Delete the old records for all domain/subdomains
 
     # every dns_conf.values() is a list of :
-    # [{"name": "...", "ttl": "...", "type": "...", "value": "..."}]
+    # [{"name": "...", "ttl": "...", "type": "...", "content": "..."}]
     for records in dns_conf.values():
         for record in records:
             name = (
@@ -496,14 +496,14 @@ def dyndns_update(
             # (For some reason) here we want the format with everytime the
             # entire, full domain shown explicitly, not just "muc" or "@", it
             # should be muc.the.domain.tld. or the.domain.tld
-            if record["value"] == "@":
-                record["value"] = domain
-            record["value"] = record["value"].replace(";", r"\;")
+            if record["content"] == "@":
+                record["content"] = domain
+            record["content"] = record["content"].replace(";", r"\;")
             name = (
                 f"{record['name']}.{domain}." if record["name"] != "@" else f"{domain}."
             )
 
-            update.add(name, record["ttl"], record["type"], record["value"])
+            update.add(name, record["ttl"], record["type"], record["content"])
 
     logger.debug("Now pushing new conf to DynDNS host...")
     logger.debug(update)
