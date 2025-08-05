@@ -179,7 +179,7 @@ def domain_list(
 
     if tree and exclude_subdomains:
         return {
-            "domains": OrderedDict({domain: {} for domain in domains}),  # type: ignore[arg-type]
+            "domains": OrderedDict({domain: {} for domain in domains}),  # type: ignore[arg-type,misc]
             "main": main,
         }
 
