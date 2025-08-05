@@ -91,7 +91,7 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
         or DOMAIN_USER_ACL_DICT[domain]["mtime"] != mtime
     ):
         users: set[str] = set()
-        portal_settings: dict[str, Any] = read_json(str(portal_settings_path))
+        portal_settings: dict[str, Any] = read_json(str(portal_settings_path))  # type: ignore
         for infos in portal_settings["apps"].values():
             users = users.union(infos["users"])
         DOMAIN_USER_ACL_DICT[domain] = {}
