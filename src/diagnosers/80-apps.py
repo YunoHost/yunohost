@@ -20,7 +20,7 @@
 
 import os
 
-from ..app import app_list, APPS_SETTING_PATH
+from ..app import APPS_SETTING_PATH, app_list
 from ..diagnosis import Diagnoser
 
 

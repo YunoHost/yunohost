@@ -18,15 +18,16 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
-import yaml
-import toml
 import errno
-import shutil
 import json
+import os
+import shutil
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any, TextIO
-from collections import OrderedDict
+
+import toml
+import yaml
 
 from .error import YunohostError
 
@@ -321,8 +322,8 @@ def chown(
 
     """
 
-    from pwd import getpwnam
     import grp
+    from pwd import getpwnam
 
     if uid is None and gid is None:
         raise ValueError("either uid or gid argument is required")

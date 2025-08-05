@@ -19,9 +19,9 @@
 #
 
 import os
+
 import mock
 import pytest
-
 from yunohost.utils.process import call_async_output, check_output
 
 

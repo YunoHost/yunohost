@@ -22,10 +22,10 @@ import os
 from logging import getLogger
 
 from moulinette import m18n
-from ..utils.file_utils import rm
-from ..utils.process import call_async_output
 
 from ..tools import Migration, tools_migrations_state
+from ..utils.file_utils import rm
+from ..utils.process import call_async_output
 
 logger = getLogger("yunohost.migration")
 

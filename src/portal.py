@@ -23,11 +23,11 @@ from pathlib import Path
 from typing import Any, Union
 
 import ldap
-from .utils.file_utils import read_json
 
 from .authenticators.ldap_ynhuser import Authenticator as Auth
 from .authenticators.ldap_ynhuser import user_is_allowed_on_domain
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import read_json
 from .utils.ldap import LDAPInterface, _get_ldap_interface, _ldap_path_extract
 from .utils.password import (
     _hash_user_password,

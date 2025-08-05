@@ -28,9 +28,9 @@ from importlib import import_module
 from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from .utils.file_utils import cp, read_yaml
 
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import cp, read_yaml
 
 HOOK_FOLDER = "/usr/share/yunohost/hooks/"
 CUSTOM_HOOK_FOLDER = "/etc/yunohost/hooks.d/"

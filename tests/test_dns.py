@@ -19,7 +19,6 @@
 #
 
 import pytest
-
 from yunohost.dns import (
     DOMAIN_REGISTRAR_LIST_PATH,
     _build_dns_conf,

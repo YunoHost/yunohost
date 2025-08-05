@@ -30,10 +30,10 @@ import ldap
 import ldap.sasl
 from moulinette import m18n
 from moulinette.authentication import BaseAuthenticator
-from ..utils.misc import random_ascii
 
 from ..utils.error import YunohostAuthenticationError, YunohostError
 from ..utils.ldap import _get_ldap_interface
+from ..utils.misc import random_ascii
 
 logger = logging.getLogger("yunohost.authenticators.ldap_admin")
 

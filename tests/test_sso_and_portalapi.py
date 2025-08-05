@@ -24,7 +24,6 @@ import time
 from pathlib import Path
 
 import requests
-
 from yunohost.app import (
     app_change_url,
     app_install,

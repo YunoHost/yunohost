@@ -28,13 +28,13 @@ from logging import getLogger
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
-from .utils.file_utils import chmod, chown, rm, write_to_file
 
 from .domain import _get_maindomain
 from .log import is_unit_operation
 from .regenconf import regen_conf
 from .utils.dns import dig, is_yunohost_dyndns_domain
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import chmod, chown, rm, write_to_file
 from .utils.network import get_public_ip
 
 logger = getLogger("yunohost.dyndns")

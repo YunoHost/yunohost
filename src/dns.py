@@ -19,15 +19,14 @@
 #
 
 import os
-from typing import Any, Literal, TypedDict, cast, TYPE_CHECKING, NotRequired
 import re
 import time
 from collections import OrderedDict
 from difflib import SequenceMatcher
 from logging import getLogger
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict, cast
 
 from moulinette import Moulinette, m18n
-from .utils.file_utils import mkdir, read_file, read_toml, write_to_file
 
 from .domain import (
     _assert_domain_exists,
@@ -41,6 +40,7 @@ from .hook import hook_callback
 from .log import OperationLogger, is_unit_operation
 from .utils.dns import dig, is_special_use_tld, is_yunohost_dyndns_domain
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import mkdir, read_file, read_toml, write_to_file
 from .utils.network import get_public_ip
 
 if TYPE_CHECKING:

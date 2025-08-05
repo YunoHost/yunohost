@@ -19,7 +19,6 @@
 #
 
 import pytest
-
 from yunohost.domain import _get_maindomain
 from yunohost.user import (
     FIELDS_FOR_IMPORT,

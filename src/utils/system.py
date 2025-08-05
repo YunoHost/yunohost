@@ -18,19 +18,19 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from pathlib import Path
-from typing import Any
-from collections.abc import Generator
 import logging
 import os
-from functools import cache
 import re
 import subprocess
+from collections.abc import Generator
+from functools import cache
+from pathlib import Path
+from typing import Any
 
 from moulinette import Moulinette
-from .process import check_output
 
 from ..utils.error import YunohostError
+from .process import check_output
 
 logger = logging.getLogger("yunohost.utils.packages")
 

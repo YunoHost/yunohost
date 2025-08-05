@@ -25,16 +25,16 @@ import shutil
 from datetime import datetime
 from difflib import unified_diff
 from logging import getLogger
-from typing import Any, cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import yaml
 from moulinette import m18n
-from .utils.file_utils import mkdir
-from .utils.process import check_output
 
 from .hook import hook_callback, hook_list
 from .log import is_unit_operation
 from .utils.error import YunohostError
+from .utils.file_utils import mkdir
+from .utils.process import check_output
 
 BASE_CONF_PATH = "/var/cache/yunohost/regenconf"
 BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, "backup")

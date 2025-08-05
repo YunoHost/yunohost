@@ -23,10 +23,9 @@ import logging
 import os
 import subprocess
 
+from ..diagnosis import Diagnoser
 from ..utils.file_utils import read_file, read_json, write_to_json
 from ..utils.process import check_output
-
-from ..diagnosis import Diagnoser
 from ..utils.system import system_arch, system_virt, ynh_packages_version
 
 logger = logging.getLogger("yunohost.diagnosis")

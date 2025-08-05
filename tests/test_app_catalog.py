@@ -26,7 +26,6 @@ import pytest
 import requests
 import requests_mock
 from moulinette import m18n
-
 from yunohost.app_catalog import (
     APPS_CATALOG_API_VERSION,
     APPS_CATALOG_CACHE,

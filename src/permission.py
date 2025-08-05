@@ -28,16 +28,16 @@ from typing import (
     TYPE_CHECKING,
     BinaryIO,
     Literal,
+    Mapping,
     NotRequired,
     TypedDict,
     cast,
-    Mapping,
 )
 
 from moulinette import m18n
-from .utils.file_utils import read_yaml, write_to_yaml
 
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import read_yaml, write_to_yaml
 
 if TYPE_CHECKING:
     from .utils.logging import YunohostLogger
@@ -92,8 +92,8 @@ def user_permission_list(
     """
 
     # Fetch relevant informations
-    from .utils.app_utils import _get_app_settings, _installed_apps
     from .user import user_group_list
+    from .utils.app_utils import _get_app_settings, _installed_apps
 
     # Parse / organize information to be outputed
     filter_ = apps
@@ -947,8 +947,8 @@ def _validate_and_sanitize_permission_url(
         re:^/api/.*|/scripts/api.js$
     """
 
-    from .utils.app_utils import _assert_no_conflicting_apps
     from .domain import _assert_domain_exists
+    from .utils.app_utils import _assert_no_conflicting_apps
 
     #
     # Regexes

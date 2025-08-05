@@ -37,6 +37,9 @@ from typing import (
 
 import yaml
 from moulinette import Moulinette, m18n
+from packaging import version
+
+from .error import YunohostError, YunohostValidationError
 from .file_utils import (
     chmod,
     chown,
@@ -45,11 +48,8 @@ from .file_utils import (
     read_json,
     read_toml,
 )
-from .process import check_output
-from packaging import version
-
-from .error import YunohostError, YunohostValidationError
 from .i18n import _value_for_locale
+from .process import check_output
 from .system import (
     binary_to_human,
     debian_version,

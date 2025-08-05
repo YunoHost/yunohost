@@ -25,7 +25,6 @@ import pytest
 from mock import patch
 from moulinette import Moulinette
 from moulinette.core import MoulinetteError
-
 from yunohost.domain import (
     DOMAIN_SETTINGS_DIR,
     _get_maindomain,

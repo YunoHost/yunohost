@@ -19,11 +19,11 @@
 #
 
 import atexit
-from typing import Callable, Literal, Mapping
-from functools import cache
 import logging
 import os
 import time
+from functools import cache
+from typing import Callable, Literal, Mapping
 
 import ldap
 import ldap.modlist as modlist

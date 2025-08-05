@@ -18,17 +18,16 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
 import json
-import yaml
-import toml
-import pytest
+import os
 from contextlib import contextmanager
 from unittest.mock import Mock
 
 import moulinette
+import pytest
+import toml
+import yaml
 from moulinette import Moulinette, m18n
-
 from yunohost.utils.error import YunohostError
 
 

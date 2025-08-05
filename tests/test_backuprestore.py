@@ -24,7 +24,6 @@ import subprocess
 
 import pytest
 from mock import patch
-
 from yunohost.app import _is_installed, app_install, app_remove, app_ssowatconf
 from yunohost.backup import (
     _recursive_umount,

@@ -18,9 +18,9 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import subprocess
-import os
 import logging
+import os
+import subprocess
 
 # FIXME: wtf ? what was that x_x
 # Prevent to import subprocess only for common classes
@@ -64,7 +64,7 @@ def call_async_output(args, callback, **kwargs) -> int | None:
         Exit status of the command
 
     """
-    from queue import Queue, Empty
+    from queue import Empty, Queue
 
     for a in ["stdout", "stderr"]:
         if a in kwargs:

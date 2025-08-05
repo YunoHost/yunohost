@@ -23,7 +23,6 @@ import tempfile
 from subprocess import check_call
 
 import pytest
-
 from yunohost.app import app_setting
 from yunohost.domain import _get_maindomain
 from yunohost.firewall import firewall_list

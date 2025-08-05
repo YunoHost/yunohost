@@ -1,8 +1,6 @@
 import os
 from logging import getLogger
 
-from ..utils.file_utils import read_yaml
-
 from ..app import app_setting, app_ssowatconf
 from ..permission import (
     _set_system_perms,
@@ -12,6 +10,7 @@ from ..permission import (
 from ..regenconf import regen_conf
 from ..tools import Migration
 from ..user import user_group_list
+from ..utils.file_utils import read_yaml
 from ..utils.ldap import _get_ldap_interface, _ldap_path_extract
 
 logger = getLogger("yunohost.migration")

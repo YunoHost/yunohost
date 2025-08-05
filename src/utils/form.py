@@ -45,7 +45,6 @@ from typing import (
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
-from .file_utils import read_yaml, write_to_file
 from pydantic import (
     BaseModel,
     Extra,
@@ -62,6 +61,7 @@ from pydantic.types import constr
 from ..log import OperationLogger
 from ..utils.error import YunohostError, YunohostValidationError
 from ..utils.i18n import _value_for_locale
+from .file_utils import read_yaml, write_to_file
 
 if TYPE_CHECKING:
     from pydantic.fields import FieldInfo, ModelField

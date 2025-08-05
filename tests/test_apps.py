@@ -24,7 +24,6 @@ import shutil
 
 import pytest
 import requests
-
 from yunohost.app import (
     _is_installed,
     app_info,

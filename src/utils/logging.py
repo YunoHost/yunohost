@@ -19,7 +19,7 @@
 #
 
 import os
-from logging import addLevelName, setLoggerClass, Logger
+from logging import Logger, addLevelName, setLoggerClass
 from logging.config import dictConfig
 
 SUCCESS = 25
@@ -144,7 +144,7 @@ class YunohostLogger(Logger):
         """Override findCaller method to consider this source file."""
 
         import os
-        from logging import currentframe, _srcfile
+        from logging import _srcfile, currentframe
 
         f = currentframe()
         if f is not None:

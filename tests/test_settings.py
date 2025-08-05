@@ -24,7 +24,6 @@ import moulinette
 import pytest
 import yaml
 from mock import patch
-
 from yunohost.settings import (
     SETTINGS_PATH,
     settings_get,

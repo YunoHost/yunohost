@@ -18,15 +18,15 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from typing import TypedDict, NotRequired
-from pathlib import Path
 import re
 from logging import getLogger
+from pathlib import Path
+from typing import NotRequired, TypedDict
 
 from moulinette.core import MoulinetteError
-from .file_utils import read_file, write_to_file
 
 from ..utils.error import YunohostValidationError
+from .file_utils import read_file, write_to_file
 
 logger = getLogger("yunohost.utils.legacy")
 

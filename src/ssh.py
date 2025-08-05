@@ -23,9 +23,8 @@ import pwd
 import re
 from typing import Literal
 
-from .utils.file_utils import chmod, chown, mkdir, read_file, write_to_file
-
 from .utils.error import YunohostValidationError
+from .utils.file_utils import chmod, chown, mkdir, read_file, write_to_file
 
 SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
 

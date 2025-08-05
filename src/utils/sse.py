@@ -17,14 +17,14 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 import json
+import logging
 import os
 import time
-import logging
-import psutil
-
 from datetime import datetime
 from pathlib import Path
-from typing import IO, TypedDict, NotRequired, Any, Generator
+from typing import IO, Any, Generator, NotRequired, TypedDict
+
+import psutil
 
 RUNDIR = Path("/var/run/yunohost")
 MOULINETTE_LOCK = RUNDIR / "moulinette_yunohost.lock"
@@ -45,6 +45,7 @@ ensure_rundir()
 
 def start_log_broker() -> None:
     from multiprocessing import Process
+
     import zmq
 
     def server() -> None:
@@ -127,8 +128,9 @@ class SSELogStreamingHandler(logging.Handler):
         self.ref_id: str | None
         self.log_stream_cache: IO[str] | None
 
-        from moulinette import Moulinette
         import zmq
+        from moulinette import Moulinette
+
         from ..log import OPERATIONS_PATH
 
         if Moulinette.interface.type == "api":

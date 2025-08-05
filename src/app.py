@@ -20,30 +20,22 @@
 
 import os
 import time
-from shutil import rmtree
 from logging import getLogger
 from pathlib import Path
+from shutil import rmtree
 from typing import (
     TYPE_CHECKING,
     Any,
     Iterator,
     Literal,
+    NotRequired,
     Required,
     TypedDict,
-    NotRequired,
-    cast,
     Union,
+    cast,
 )
 
 from moulinette import Moulinette, m18n
-from .utils.file_utils import (
-    chmod,
-    chown,
-    cp,
-    rm,
-    read_file,
-    write_to_file,
-)
 
 from .app_catalog import (  # noqa
     APPS_CATALOG_LOGOS,
@@ -52,38 +44,46 @@ from .app_catalog import (  # noqa
     app_search,  # Unused but imported because it's exposed via Moulinette
 )
 from .log import OperationLogger, is_flash_unit_operation, is_unit_operation
-from .utils.error import YunohostError, YunohostValidationError
 from .utils.app_utils import (
     APPS_SETTING_PATH,
-    _get_app_settings,
-    _set_app_settings,
-    _parse_app_version,
-    _get_manifest_of_app,
-    _extract_app,
-    _is_installed,
+    AppManifest,
+    AppRequirementCheckResult,
+    _ask_confirmation,
     _assert_is_installed,
-    _installed_apps,
-    _check_manifest_requirements,
-    _guess_webapp_path_requirement,
-    _validate_webpath_requirement,
     _assert_no_conflicting_apps,
+    _assert_system_is_sane_for_app,
+    _check_manifest_requirements,
+    _display_notifications,
+    _extract_app,
+    _filter_and_hydrate_notifications,
+    _get_app_settings,
+    _get_manifest_of_app,
+    _guess_webapp_path_requirement,
+    _hydrate_app_template,
+    _installed_apps,
+    _is_installed,
     _make_environment_for_app_script,
     _make_tmp_workdir_for_app,
-    _assert_system_is_sane_for_app,
-    _hydrate_app_template,
-    _filter_and_hydrate_notifications,
-    _display_notifications,
-    _ask_confirmation,
-    AppRequirementCheckResult,
-    AppManifest,
+    _parse_app_version,
+    _set_app_settings,
+    _validate_webpath_requirement,
+)
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import (
+    chmod,
+    chown,
+    cp,
+    read_file,
+    rm,
+    write_to_file,
 )
 
 if TYPE_CHECKING:
-    from .utils.logging import YunohostLogger
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
     from .utils.configpanel import ConfigPanelModel, RawConfig, RawSettings
     from .utils.form import FormModel
+    from .utils.logging import YunohostLogger
 
     logger = cast(YunohostLogger, getLogger("yunohost.app"))
 else:
@@ -151,16 +151,17 @@ def app_info(
     with_settings: bool = False,
 ) -> AppInfo:
     from tempfile import TemporaryDirectory
+
     from .domain import _get_raw_domain_settings
     from .permission import user_permission_list
-    from .utils.i18n import _value_for_locale
     from .utils.app_utils import (
-        _git_clone_light,
-        _parse_app_doc_and_notifications,
-        _notification_is_dismissed,
         APPS_TMP_WORKDIRS,
         _get_app_label,
+        _git_clone_light,
+        _notification_is_dismissed,
+        _parse_app_doc_and_notifications,
     )
+    from .utils.i18n import _value_for_locale
 
     _assert_is_installed(app)
 
@@ -1343,10 +1344,10 @@ def app_install(
     )
     from .regenconf import manually_modified_files
     from .user import user_list
+    from .utils.app_utils import _confirm_app_install, _next_instance_number_for_app
     from .utils.form import ask_questions_and_parse_answers
     from .utils.legacy import _patch_legacy_helpers
     from .utils.system import free_space_in_directory
-    from .utils.app_utils import _next_instance_number_for_app, _confirm_app_install
 
     # Check if disk space available
     if free_space_in_directory("/") <= 512 * 1000 * 1000:

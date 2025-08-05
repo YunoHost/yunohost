@@ -21,40 +21,40 @@
 import copy
 import grp
 import os
-from pathlib import Path
 import pwd
 import random
 import re
 import subprocess
 from logging import getLogger
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
     BinaryIO,
     Callable,
     Literal,
+    Mapping,
+    NotRequired,
     TextIO,
+    TypedDict,
     Union,
     cast,
-    Mapping,
-    TypedDict,
-    NotRequired,
 )
 
 from moulinette import Moulinette, m18n
-from .utils.process import check_output
 
 from .log import is_flash_unit_operation, is_unit_operation
 from .service import service_status
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.process import check_output
 from .utils.system import binary_to_human
 
 if TYPE_CHECKING:
     from bottle import HTTPResponse as HTTPResponseType
-    from .utils.logging import YunohostLogger
 
     from .log import OperationLogger
     from .permission import PermInfos
+    from .utils.logging import YunohostLogger
 
     logger = cast(YunohostLogger, getLogger("yunohost.user"))
 else:
@@ -762,11 +762,10 @@ def user_import(
 
     import csv  # CSV are needed only in this function
 
-    from .utils.misc import random_ascii
-
     from .app import app_ssowatconf
     from .domain import domain_list
     from .permission import _sync_permissions_with_ldap
+    from .utils.misc import random_ascii
 
     # Pre-validate data and prepare what should be done
     actions: dict[str, list[dict[str, Any]]] = {

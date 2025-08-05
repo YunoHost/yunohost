@@ -23,7 +23,6 @@ import os
 import re
 from datetime import datetime, timedelta
 
-from ..utils.process import check_output
 from publicsuffix2 import PublicSuffixList
 
 from ..diagnosis import Diagnoser
@@ -39,6 +38,7 @@ from ..utils.dns import (
     is_special_use_tld,
     is_yunohost_dyndns_domain,
 )
+from ..utils.process import check_output
 
 logger = logging.getLogger("yunohost.diagnosis")
 

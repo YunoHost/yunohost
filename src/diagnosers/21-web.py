@@ -20,13 +20,14 @@
 
 import os
 import random
+
 import requests
 
 from ..diagnosis import Diagnoser
 from ..domain import domain_list
 from ..settings import settings_get
-from ..utils.file_utils import mkdir, read_file, rm
 from ..utils.dns import is_special_use_tld
+from ..utils.file_utils import mkdir, read_file, rm
 
 DIAGNOSIS_SERVER = "diagnosis.yunohost.org"
 

@@ -25,9 +25,9 @@ from logging import getLogger
 from typing import Any, Literal, NotRequired, TypedDict
 
 from moulinette import m18n
-from .utils.file_utils import mkdir, read_json, read_yaml, write_to_json, download_json
 
 from .utils.error import YunohostError
+from .utils.file_utils import download_json, mkdir, read_json, read_yaml, write_to_json
 from .utils.i18n import _value_for_locale
 
 logger = getLogger("yunohost.app_catalog")

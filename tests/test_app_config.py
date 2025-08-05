@@ -25,7 +25,6 @@ import shutil
 import pytest
 from mock import patch
 from moulinette import Moulinette
-
 from yunohost.app import (
     _is_installed,
     app_config_get,

@@ -20,10 +20,11 @@
 
 import os
 import sys
-from typing import TYPE_CHECKING, NoReturn, Literal
+from typing import TYPE_CHECKING, Literal, NoReturn
 
 if TYPE_CHECKING:
     import argparse
+
     from moulinette.core import MoulinetteLock
 
 from pathlib import Path
@@ -31,6 +32,7 @@ from pathlib import Path
 import moulinette
 from moulinette import m18n
 from moulinette.interfaces.cli import colorize, get_locale
+
 from .utils.logging import init_logging
 
 

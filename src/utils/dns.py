@@ -21,10 +21,10 @@
 from functools import cache
 from typing import Literal
 
-from .file_utils import read_file
-
-import dns.resolver
 import dns.exception
+import dns.resolver
+
+from .file_utils import read_file
 
 SPECIAL_USE_TLDS = ["home.arpa", "internal", "local", "localhost", "onion", "test"]
 

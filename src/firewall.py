@@ -18,8 +18,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import re
 import os
+import re
 import shutil
 from logging import getLogger
 from pathlib import Path

@@ -34,23 +34,7 @@ from glob import glob
 from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from .utils.file_utils import (
-    chmod,
-    chown,
-    mkdir,
-    read_file,
-    rm,
-)
-from .utils.process import check_output
-from .utils.misc import random_ascii
 
-from .utils.app_utils import (
-    _get_manifest_of_app,
-    _is_installed,
-    _make_environment_for_app_script,
-    _make_tmp_workdir_for_app,
-    APPS_SETTING_PATH,
-)
 from .hook import (
     CUSTOM_HOOK_FOLDER,
     hook_add,
@@ -68,7 +52,23 @@ from .tools import (
     _tools_migrations_run_before_app_restore,
     tools_postinstall,
 )
+from .utils.app_utils import (
+    APPS_SETTING_PATH,
+    _get_manifest_of_app,
+    _is_installed,
+    _make_environment_for_app_script,
+    _make_tmp_workdir_for_app,
+)
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import (
+    chmod,
+    chown,
+    mkdir,
+    read_file,
+    rm,
+)
+from .utils.misc import random_ascii
+from .utils.process import check_output
 from .utils.system import (
     binary_to_human,
     free_space_in_directory,
@@ -1307,8 +1307,8 @@ class RestoreManager:
         app_instance_name -- (string) The app name to restore (no app with this
                              name should be already install)
         """
-        from .utils.legacy import _patch_legacy_helpers
         from .app import app_remove
+        from .utils.legacy import _patch_legacy_helpers
 
         def copytree(src, dst, symlinks=False, ignore=None):
             for item in os.listdir(src):

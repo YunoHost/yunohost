@@ -25,7 +25,7 @@ import re
 
 from ..diagnosis import Diagnoser
 from ..settings import settings_get
-from ..utils.file_utils import read_file, download_text
+from ..utils.file_utils import download_text, read_file
 from ..utils.network import get_network_interfaces
 from ..utils.process import check_output
 

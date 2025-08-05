@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-import os
 import binascii
+import os
 
 
 def random_ascii(length: int = 40) -> str:

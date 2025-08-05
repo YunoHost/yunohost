@@ -20,23 +20,23 @@
 
 import glob
 import os
-from collections.abc import Generator
 import re
 from collections import OrderedDict
+from collections.abc import Generator
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union, cast
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
-from .file_utils import mkdir, read_toml, read_yaml, write_to_yaml
 from pydantic import BaseModel, Extra, ValidationError, validator
 
 from .error import YunohostError, YunohostValidationError
+from .file_utils import mkdir, read_toml, read_yaml, write_to_yaml
 from .form import (
     AnyOption,
     BaseInputOption,
-    BaseReadonlyOption,
     BaseOption,
+    BaseReadonlyOption,
     FileOption,
     OptionsModel,
     OptionType,

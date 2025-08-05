@@ -26,16 +26,20 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Optional,
-    Union,
-    TypedDict,
+    Callable,
     Literal,
     Mapping,
-    Callable,
+    Optional,
+    TypedDict,
+    Union,
 )
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
+
+from .log import OperationLogger, is_unit_operation
+from .regenconf import _force_clear_hashes, _process_regen_conf, regen_conf
+from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import (
     read_file,
     read_json,
@@ -46,12 +50,9 @@ from .utils.file_utils import (
     write_to_yaml,
 )
 
-from .log import OperationLogger, is_unit_operation
-from .regenconf import _force_clear_hashes, _process_regen_conf, regen_conf
-from .utils.error import YunohostError, YunohostValidationError
-
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny, cast
+
     from .dns import DNSRecord
     from .utils.configpanel import ConfigPanel, ConfigPanelModel, RawConfig, RawSettings
     from .utils.form import FormModel
@@ -216,7 +217,7 @@ def domain_info(domain: str) -> DomainInfo:
 
     from .certificate import certificate_status
     from .dns import _get_registar_settings
-    from .utils.app_utils import _get_app_settings, _installed_apps, _get_app_label
+    from .utils.app_utils import _get_app_label, _get_app_settings, _installed_apps
 
     _assert_domain_exists(domain)
 
@@ -323,8 +324,8 @@ def domain_add(
         and len(domain.split(".")) == 3
     )
     if dyndns:
-        from .utils.app_utils import _ask_confirmation
         from .dyndns import is_subscribing_allowed
+        from .utils.app_utils import _ask_confirmation
 
         # Do not allow to subscribe to multiple dyndns domains...
         if not is_subscribing_allowed():
@@ -447,9 +448,9 @@ def domain_remove(
 
     from .app import app_remove, app_ssowatconf
     from .hook import hook_callback
+    from .utils.app_utils import _get_app_label, _get_app_settings, _installed_apps
     from .utils.dns import is_yunohost_dyndns_domain
     from .utils.ldap import _get_ldap_interface
-    from .utils.app_utils import _get_app_settings, _installed_apps, _get_app_label
 
     if dyndns_recovery_password:
         operation_logger.data_to_redact.append(dyndns_recovery_password)

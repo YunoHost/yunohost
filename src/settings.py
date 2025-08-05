@@ -35,7 +35,6 @@ from .utils.form import BaseOption
 if TYPE_CHECKING:
     from typing import cast
 
-    from .utils.logging import YunohostLogger
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
     from .log import OperationLogger
@@ -45,6 +44,7 @@ if TYPE_CHECKING:
         RawSettings,
     )
     from .utils.form import FormModel
+    from .utils.logging import YunohostLogger
 
     logger = cast(YunohostLogger, getLogger("yunohost.settings"))
 else:

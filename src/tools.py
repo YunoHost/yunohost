@@ -25,21 +25,21 @@ import subprocess
 import time
 from importlib import import_module
 from logging import getLogger
-from typing import Any, TYPE_CHECKING, cast, Literal, Callable
-from typing_extensions import TypedDict
+from typing import TYPE_CHECKING, Any, Callable, Literal, cast
 
 from moulinette import Moulinette, m18n
-from .utils.file_utils import chown, cp, mkdir, read_yaml, rm, write_to_yaml
-from .utils.process import call_async_output
 from packaging import version
+from typing_extensions import TypedDict
 
 from .log import OperationLogger, is_unit_operation
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import chown, cp, mkdir, read_yaml, rm, write_to_yaml
+from .utils.process import call_async_output
 from .utils.system import (
     _apt_log_line_is_relevant,
     _dump_sources_list,
-    _list_upgradable_apt_packages,
     _group_packages_per_categories,
+    _list_upgradable_apt_packages,
     dpkg_is_broken,
     dpkg_lock_available,
     ynh_packages_version,

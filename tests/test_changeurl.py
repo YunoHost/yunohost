@@ -23,7 +23,6 @@ import time
 
 import pytest
 import requests
-
 from yunohost.app import app_change_url, app_install, app_map, app_remove
 from yunohost.domain import _get_maindomain
 from yunohost.utils.error import YunohostError

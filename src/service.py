@@ -28,6 +28,10 @@ from logging import getLogger
 
 import yaml
 from moulinette import Moulinette, m18n
+
+from .diagnosis import diagnosis_ignore, diagnosis_unignore
+from .log import is_unit_operation
+from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import (
     append_to_file,
     read_file,
@@ -36,10 +40,6 @@ from .utils.file_utils import (
     write_to_yaml,
 )
 from .utils.process import check_output
-
-from .diagnosis import diagnosis_ignore, diagnosis_unignore
-from .log import is_unit_operation
-from .utils.error import YunohostError, YunohostValidationError
 
 MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 
