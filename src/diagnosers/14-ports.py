@@ -19,18 +19,20 @@
 #
 
 import os
+from collections.abc import Generator
+from typing import Any
 
 from ..diagnosis import Diagnoser
 from ..service import _get_services
 from ..settings import settings_get
 
 
-class MyDiagnoser(Diagnoser):
+class MyDiagnoser(Diagnoser):  # type: ignore
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
     dependencies: list[str] = ["ip"]
 
-    def run(self):
+    def run(self) -> Generator[dict[str, Any], None, None]:
         # TODO: report a warning if port 53 or 5353 is exposed to the outside world...
 
         # This dict is something like :
@@ -76,7 +78,7 @@ class MyDiagnoser(Diagnoser):
                 )
                 continue
 
-        ipversions = results.keys()
+        ipversions = list(results.keys())
         if not ipversions:
             return
 
@@ -116,7 +118,7 @@ class MyDiagnoser(Diagnoser):
                 # It's an acceptable situation and we shall not report an
                 # error
                 # If any AAAA record is set, IPv6 is important...
-                def ipv6_is_important():
+                def ipv6_is_important() -> bool:
                     dnsrecords = Diagnoser.get_cached_report("dnsrecords") or {}
                     return any(
                         record["data"].get("AAAA:@") in ["OK", "WRONG"]

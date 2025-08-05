@@ -20,8 +20,9 @@
 
 import logging
 import os
+from typing import Any
 import re
-from collections.abc import Generator
+from collections.abc import Collection, Generator
 from datetime import datetime, timedelta
 
 from publicsuffix2 import PublicSuffixList
@@ -68,15 +69,15 @@ class MyDiagnoser(Diagnoser):  # type: ignore
             psl.get_public_suffix(domain) for domain in major_domains
         ]
         domains_from_registrar = [
-            domain for domain in domains_from_registrar if "." in domain
+            domain for domain in domains_from_registrar if domain is not None and "." in domain
         ]
-        domains_from_registrar = set(domains_from_registrar) - set(
+        domains_from_registrar_set = set(domains_from_registrar) - set(
             YNH_DYNDNS_DOMAINS + ["netlib.re"]
         )
-        for report in self.check_expiration_date(domains_from_registrar):
+        for report in self.check_expiration_date(domains_from_registrar_set):
             yield report
 
-    def check_domain(self, domain, is_main_domain):
+    def check_domain(self, domain: str, is_main_domain: bool) -> Generator[dict[str, Any], None, None]:
         if is_special_use_tld(domain):
             yield dict(
                 meta={"domain": domain},
@@ -130,7 +131,7 @@ class MyDiagnoser(Diagnoser):  # type: ignore
                         results[id_] = "WRONG"
                         discrepancies.append(("diagnosis_dns_discrepancy", r))
 
-            def its_important():
+            def its_important() -> bool:
                 # Every mail DNS records are important for main domain
                 # For other domain, we only report it as a warning for now...
                 if is_main_domain and category == "mail":
@@ -174,11 +175,11 @@ class MyDiagnoser(Diagnoser):  # type: ignore
                 # Otherwise point to the documentation
                 else:
                     output["details"] = ["diagnosis_dns_point_to_doc"]
-                output["details"] += discrepancies
+                output["details"] += discrepancies  # type: ignore
 
             yield output
 
-    def get_current_record(self, fqdn, type_):
+    def get_current_record(self, fqdn: str, type_: str) -> str | list[str] | None:
         success, answers = dig(fqdn, type_, resolvers="force_external")
 
         if success != "ok":
@@ -187,10 +188,10 @@ class MyDiagnoser(Diagnoser):  # type: ignore
             if type_ == "TXT" and isinstance(answers, list):
                 for part in answers:
                     if part.startswith('"v=spf1'):
-                        return part
-            return answers[0] if len(answers) == 1 else answers
+                        return part  # type: ignore
+            return answers[0] if len(answers) == 1 else answers  # type: ignore
 
-    def current_record_match_expected(self, r):
+    def current_record_match_expected(self, r: dict[str, str]) -> bool:
         if r["value"] is not None and r["current"] is None:
             return False
         if r["value"] is None and r["current"] is not None:
@@ -227,22 +228,22 @@ class MyDiagnoser(Diagnoser):  # type: ignore
             return expected == current
         elif r["type"] == "MX":
             # For MX, we want to ignore the priority
-            expected = r["value"].split()[-1]
-            current = r["current"].split()[-1]
-            return expected == current
+            expected_str = r["value"].split()[-1]
+            current_str = r["current"].split()[-1]
+            return expected_str == current_str
         elif r["type"] == "CAA":
             # For CAA, check only the last item, ignore the 0 / 128 nightmare
-            expected = r["value"].split()[-1]
-            current = r["current"].split()[-1]
-            return expected == current
+            expected_str = r["value"].split()[-1]
+            current_str = r["current"].split()[-1]
+            return expected_str == current_str
         else:
             return r["current"] == r["value"]
 
-    def check_expiration_date(self, domains):
+    def check_expiration_date(self, domains: Collection[str]) -> Generator[dict[str, Any], None, None]:
         """
         Alert if expiration date of a domain is soon
         """
-        details = {"not_found": [], "error": [], "warning": [], "success": []}
+        details: dict[str, Any] = {"not_found": [], "error": [], "warning": [], "success": []}
 
         for domain in domains:
             expire_date = self.get_domain_expiration(domain)
@@ -302,7 +303,7 @@ class MyDiagnoser(Diagnoser):  # type: ignore
                     details=details[alert_type],
                 )
 
-    def get_domain_expiration(self, domain):
+    def get_domain_expiration(self, domain: str) -> datetime | str:
         """
         Return the expiration datetime of a domain or None
         """
