@@ -1,0 +1,6 @@
+[{{ app }}]
+enabled = {{ enabled }} {# Defaults to true, can be changed by admins by setting 'f2b_enabled' to false on the app #}
+port = http,https
+filter = {{ app }}
+logpath = {{ log_to_watch }}
+maxretry = {{ max_retry }} {# Defaults to 5, can be changed by admins by setting a 'f2b_max_retry' on the app #}

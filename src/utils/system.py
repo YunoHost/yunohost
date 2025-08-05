@@ -26,6 +26,7 @@ import os
 from functools import cache
 import re
 import subprocess
+from typing import Literal
 
 from moulinette import Moulinette
 from .process import check_output
@@ -56,7 +57,7 @@ def debian_version_id() -> str:
 
 
 @cache
-def system_arch() -> str:
+def system_arch() -> Literal["amd64", "i386", "arm64", "armhf"]:
     command = "dpkg --print-architecture 2>/dev/null"
     return check_output(command)
 
@@ -135,6 +136,12 @@ def ram_available() -> tuple[int, int]:
     import psutil
 
     return (psutil.virtual_memory().available, psutil.swap_memory().free)
+
+
+def ram_total() -> tuple[int, int]:
+    import psutil
+
+    return (psutil.virtual_memory().total, psutil.swap_memory().total)
 
 
 def get_ynh_package_version(package: str) -> dict[str, str]:

@@ -1,0 +1,29 @@
+[{{ app }}]
+
+user = {{ app }}
+group = {{ php_group }} {# Defaults to app #}
+
+chdir = {{ install_dir }}
+
+listen = /var/run/php/php{{ php_version }}-fpm-{{ app }}.sock
+listen.owner = www-data
+listen.group = www-data
+
+pm = {{ php_process_management }} {# Defaults to ondemand #}
+pm.max_children = {{ php_max_children }} {# Defaults to totalRAM / 40 ... cf _default_php_max_children #}
+pm.max_requests = 500
+request_terminate_timeout = 1d
+
+{% if php_process_management == "dynamic" %}
+{# The followings values must be explicitly defined as settings by packagers or admins #}
+pm.start_servers = {{ php_start_servers }}
+pm.min_spare_servers = {{ php_min_spare_servers }}
+pm.max_spare_servers = {{ php_max_spare_servers }}
+{% elif php_process_management == "ondemand" %}
+pm.process_idle_timeout = 10s
+{% endif %}
+
+php_admin_value[upload_max_filesize] = {{ php_upload_max_filesize }} {# Defaults to 50M #}
+php_admin_value[post_max_size] = {{ php_upload_max_filesize }} {# Defaults to 50M #}
+php_admin_value[memory_limit] = {{ php_memory_limit }} {# Defaults to 120M #}
+

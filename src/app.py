@@ -89,7 +89,6 @@ if TYPE_CHECKING:
 else:
     logger = getLogger("yunohost.app")
 
-
 PORTAL_SETTINGS_DIR = "/etc/yunohost/portal"
 APP_FILES_TO_COPY = [
     "manifest.json",
@@ -983,11 +982,10 @@ def app_upgrade(
                 app_,
                 wanted=new_manifest,
                 current=current_manifest,
-                workdir=workdir,
+                env=env_dict,
             ).apply(
                 rollback_and_raise_exception_if_failure=True,
                 operation_logger=operation_logger,
-                action="upgrade",
             )
 
             # Boring stuff : the resource upgrade may have added/remove/updated setting
@@ -1472,19 +1470,24 @@ def app_install(
                 recursive=True,
             )
 
-    if packaging_format >= 2:
+    if int(packaging_format) == 2:
         from .utils.resources import AppResourceManager
-
+        # Prepare env. var. to pass to resources
+        env_dict = _make_environment_for_app_script(
+            app_instance_name,
+            args=parsedargs,
+            workdir=extracted_app_folder,
+            action="install",
+        )
         try:
-            AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
+            AppResourceManager(app_instance_name, wanted=manifest, current={}, env=env_dict).apply(
                 rollback_and_raise_exception_if_failure=True,
                 operation_logger=operation_logger,
-                action="install",
             )
         except (KeyboardInterrupt, EOFError, Exception) as e:
             rmtree(app_setting_path)
             raise e
-    else:
+    elif packaging_format <= 1:
         # Initialize the main permission for the app
         # The permission is initialized with no url associated, and with tile disabled
         # For web app, the root path of the app will be added as url and the tile
@@ -1498,6 +1501,7 @@ def app_install(
         )
 
     # Prepare env. var. to pass to script
+    # (we re-create this env dict even if it was created for resource previously, because new settings may be there)
     env_dict = _make_environment_for_app_script(
         app_instance_name,
         args=parsedargs,
@@ -1505,13 +1509,14 @@ def app_install(
         action="install",
     )
 
-    # If packaging_format v2+, save all install options as settings
+    # Reinject user-provider passwords which are not in the app settings
+    ephemeral_vars_for_install = {}
     if packaging_format >= 2:
         for option in options:
-            # Reinject user-provider passwords which are not in the app settings
             # (cf a few line before)
             if option.type == "password":
                 env_dict[option.id] = form[option.id]
+                ephemeral_vars_for_install[option.id] = form[option.id]
 
     # We want to hav the env_dict in the log ... but not password values
     env_dict_for_logging = env_dict.copy()
@@ -1525,21 +1530,111 @@ def app_install(
 
     operation_logger.extra.update({"env": env_dict_for_logging})
 
+    if packaging_format >= 3:
+
+        app = app_instance_name
+        workdir = extracted_app_folder
+
+        app_scripts = check_output(f"bash -c \"source '{workdir}/scripts.sh'; declare -F | cut -d' ' -f3\"").strip().split("\n")
+        call_remove_if_failure = False
+
+        def _run_step(step):
+            if step not in app_scripts:
+                return
+            snippet = ["source $YNH_APP_BASEDIR/scripts.sh"]
+            # FIXME : revisit this ? idk
+            if "common" in app_scripts:
+                snippet.append("common")
+            logger.debug(f"Running step: {step}")
+            snippet.append(step)
+            _run_app_script_or_snippet(
+                app,
+                step,
+                '\n'.join(snippet),
+                env=ephemeral_vars_for_install.copy(),
+                workdir=workdir,
+                as_app=(not step.endswith("_as_root") and step != "validate_install"),
+                raise_exception_if_failure=True
+            )
+
+        def packaging_v3_install_sequence():
+
+            from .utils.resources import AppResourceManager
+            from .utils.configurations import AppConfigurationsManager
+
+            # validate_install is actually ran as root because the user doesnt exists yet
+            _run_step("validate_install")
+
+            # Provision resources
+            resource_manager = AppResourceManager(app, wanted=manifest, current={}, env=env_dict)
+            resource_manager.apply(
+                rollback_and_raise_exception_if_failure=True,
+                operation_logger=operation_logger,
+            )
+
+            # We don't have "smart" rollback beyond that point
+            nonlocal call_remove_if_failure
+            call_remove_if_failure = True
+
+            # FIXME: i18n / ux
+            logger.info(f"Building {app} ...")
+            _run_step("before_build_as_root")
+            _run_step("build")
+            _run_step("after_build_as_root")
+
+            # FIXME : fix install_dir permissions somehow?
+
+            # FIXME: error handling ?
+            # FIXME : possibly replace all this block with a call to app_regenconf()?
+            logger.info(f"Adding configurations for {app} ...")
+            _run_step("before_regenconf_as_root")
+            _run_step("before_regenconf")
+            AppConfigurationsManager(app, wanted=manifest, workdir=workdir).apply()
+            _run_step("after_regenconf")
+            _run_step("after_regenconf_as_root")
+
+            # FIXME: i18n / ux
+            logger.info(f"Initializing {app} ...")
+            _run_step("before_init_as_root")
+            _run_step("init")
+            _run_step("after_init_as_root")
+
+            # FIXME: i18n / ux
+            logger.info("Finalizing ...")
+            _run_step("before_finalize_as_root")
+            _run_step("finalize")
+            _run_step("after_finalize_as_root")
+
+    if packaging_format >= 3:
+        try:
+            packaging_v3_install_sequence()
+        except (KeyboardInterrupt, EOFError, Exception) as e:
+            if call_remove_if_failure:
+                app_remove(app)
+            else:
+                shutil.rmtree(app_setting_path)
+            shutil.rmtree(extracted_app_folder)
+            failure_message_with_debug_instructions = operation_logger.error(str(e))
+            raise YunohostError(failure_message_with_debug_instructions, raw_msg=True)
+
     # Execute the app install script
     install_failed = True
     try:
-        (
-            install_failed,
-            failure_message_with_debug_instructions,
-        ) = hook_exec_with_script_debug_if_failure(
-            os.path.join(extracted_app_folder, "scripts/install"),
-            env=env_dict,
-            operation_logger=operation_logger,
-            error_message_if_script_failed=m18n.n("app_install_script_failed"),
-            error_message_if_failed=lambda e: m18n.n(
-                "app_install_failed", app=app_id, error=e
-            ),
-        )
+        if packaging_format < 3:
+            (
+                install_failed,
+                failure_message_with_debug_instructions,
+            ) = hook_exec_with_script_debug_if_failure(
+                os.path.join(extracted_app_folder, "scripts/install"),
+                env=env_dict,
+                operation_logger=operation_logger,
+                error_message_if_script_failed=m18n.n("app_install_script_failed"),
+                error_message_if_failed=lambda e: m18n.n(
+                    "app_install_failed", app=app_id, error=e
+                ),
+            )
+        else:
+            install_failed = False
     finally:
         # If success so far, validate that app didn't break important stuff
         if not install_failed:
@@ -1613,8 +1708,8 @@ def app_install(
                 from .utils.resources import AppResourceManager
 
                 AppResourceManager(
-                    app_instance_name, wanted={}, current=manifest
-                ).apply(rollback_and_raise_exception_if_failure=False, action="remove")
+                    app_instance_name, wanted={}, current=manifest, env=env_dict_remove,
+                ).apply(rollback_and_raise_exception_if_failure=False)
             else:
                 # Remove all permission in LDAP
                 for permission_name in user_permission_list()["permissions"].keys():
@@ -1682,6 +1777,7 @@ def app_remove(
     app: str,
     purge: bool = False,
     force_workdir: str | None = None,
+    remove_on_failed_install: bool = False,
 ) -> None:
     """
     Remove app
@@ -1702,6 +1798,9 @@ def app_remove(
 
     _assert_is_installed(app)
 
+    if remove_on_failed_install:
+        operation_logger.operation = "remove_on_failed_install"
+
     operation_logger.start()
 
     logger.info(m18n.n("app_start_remove", app=app))
@@ -1717,51 +1816,101 @@ def app_remove(
         # It's especially important during v1->v2 app format transition where the
         # setting names change (e.g. install_dir instead of final_path) and
         # running the old remove script doesnt make sense anymore ...
-        tmp_workdir_for_app = _make_tmp_workdir_for_app()
-        os.system(f"cp -a {force_workdir}/* {tmp_workdir_for_app}/")
+        workdir = _make_tmp_workdir_for_app()
+        os.system(f"cp -a {force_workdir}/* {workdir}/")
     else:
-        tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
+        workdir = _make_tmp_workdir_for_app(app=app)
 
-    manifest = _get_manifest_of_app(tmp_workdir_for_app)
+    manifest = _get_manifest_of_app(workdir)
 
-    remove_script = f"{tmp_workdir_for_app}/scripts/remove"
-
-    env_dict = {}
     env_dict = _make_environment_for_app_script(
-        app, workdir=tmp_workdir_for_app, action="remove"
+        app, workdir=workdir, action="remove"
     )
     env_dict["YNH_APP_PURGE"] = str(1 if purge else 0)
 
     operation_logger.extra.update({"env": env_dict})
     operation_logger.flush()
 
-    try:
-        ret = hook_exec(remove_script, env=env_dict)[0]
-    # Here again, calling hook_exec could fail miserably, or get
-    # manually interrupted (by mistake or because script was stuck)
-    # In that case we still want to proceed with the rest of the
-    # removal (permissions, /etc/yunohost/apps/{app} ...)
-    except (KeyboardInterrupt, EOFError, Exception):
-        ret = -1
-        import traceback
-
-        logger.error(m18n.n("unexpected_error", error="\n" + traceback.format_exc()))
-    finally:
-        rmtree(tmp_workdir_for_app)
-
     packaging_format = manifest["packaging_format"]
+    ret = 0
+
+    app_scripts = []
+    if packaging_format >= 3:
+        try:
+            # FIXME : turn this into a helper function somehow
+            app_scripts = check_output(f"bash -c \"source '{workdir}/scripts.sh'; declare -F | cut -d' ' -f3\"").strip().split("\n")
+        except Exception as e:
+            logger.warning(f"Uhoh !? Failed to parse available functions for {app} ? {e}")
+
+    def _run_step(step):
+        if step not in app_scripts:
+            return
+        snippet = ["source $YNH_APP_BASEDIR/scripts.sh"]
+        # FIXME : revisit this ? idk
+        if "common" in app_scripts:
+            snippet.append("common")
+        logger.debug(f"Running step: {step}")
+        snippet.append(step)
+        _run_app_script_or_snippet(
+            app,
+            step,
+            '\n'.join(snippet),
+            workdir=workdir,
+            as_app=(not step.endswith("_as_root")),
+            raise_exception_if_failure=False
+        )
+
+    if packaging_format >= 3:
+        try:
+            _run_step("before_remove_as_root")
+            _run_step("before_remove")
+        except Exception as e:
+            ret = -1
+            logger.error(e)
+
+    if packaging_format < 3:
+        remove_script = f"{workdir}/scripts/remove"
+        try:
+            ret = hook_exec(remove_script, env=env_dict)[0]
+        # Here again, calling hook_exec could fail miserably, or get
+        # manually interrupted (by mistake or because script was stuck)
+        # In that case we still want to proceed with the rest of the
+        # removal (permissions, /etc/yunohost/apps/{app} ...)
+        except (KeyboardInterrupt, EOFError, Exception):
+            ret = -1
+            import traceback
+
+            logger.error(m18n.n("unexpected_error", error="\n" + traceback.format_exc()))
+    else:
+        from .utils.configurations import AppConfigurationsManager
+        manifest_for_remove = copy.deepcopy(manifest)
+        manifest_for_remove["configurations"] = {}
+        try:
+            AppConfigurationsManager(app, wanted=manifest_for_remove, workdir=workdir).apply()
+        except Exception as e:
+            logger.warning(f"Failed to properly cleanup configurations related to {app} ? {e}")
+            ret = -1
+
     if packaging_format >= 2:
         from .utils.resources import AppResourceManager
 
-        AppResourceManager(app, wanted={}, current=manifest).apply(
+        AppResourceManager(app, wanted={}, current=manifest, env=env_dict).apply(
             rollback_and_raise_exception_if_failure=False,
-            purge_data_dir=purge,
-            action="remove",
         )
     else:
         # Remove all permission in LDAP
         for permission_name in user_permission_list(apps=[app])["permissions"].keys():
             permission_delete(permission_name, force=True, sync_perm=False)
+
+    if packaging_format >= 3:
+        try:
+            _run_step("after_remove_as_root")
+            _run_step("after_remove")
+        except Exception as e:
+            ret = -1
+            logger.error(e)
+
+    rmtree(workdir)
 
     if purge and os.path.exists(f"/var/log/{app}"):
         rmtree(f"/var/log/{app}")
@@ -1776,13 +1925,38 @@ def app_remove(
             domain_config_set(domain, "feature.app.default_app", "_none")
 
     if ret == 0:
-        logger.success(m18n.n("app_removed", app=app))
+        if remove_on_failed_install:
+            logger.info(m18n.n("app_removed", app=app))
+        else:
+            logger.success(m18n.n("app_removed", app=app))
         hook_callback("post_app_remove", env=env_dict)
     else:
         logger.warning(m18n.n("app_not_properly_removed", app=app))
 
     _sync_permissions_with_ldap()
     _assert_system_is_sane_for_app(manifest, "post")
+
+
+# FIXME : should we have an operation logger ?
+def app_regen_conf(app: str, dry_run: bool, with_diff: bool = False) -> dict:
+
+    from .utils.configurations import AppConfigurationsManager
+
+    # FIXME : in fact we probably also want to regen ressources ?
+    # Which should be useful to properly reinstall apt dependencies etc...?
+    # Or semantically it should be a different function such as `regen_resources` ?
+
+    _assert_is_installed(app)
+
+    manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
+    assert manifest["packaging_format"] >= 3
+
+    manager = AppConfigurationsManager(app, wanted=manifest)
+    if dry_run:
+        return manager.dry_run(with_diff=with_diff)
+    else:
+        # FIXME : to be consistent, we should also call the pre / post regenconf hook of the app if there are any
+        return manager.apply()
 
 
 @is_unit_operation()
