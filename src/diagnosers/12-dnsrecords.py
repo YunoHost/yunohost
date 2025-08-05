@@ -29,6 +29,7 @@ from publicsuffix2 import PublicSuffixList
 
 from ..diagnosis import Diagnoser
 from ..dns import (
+    DNSRecord,
     _build_dns_conf,
     _get_dns_zone_for_domain,
     _get_relative_name_for_dns_zone,
@@ -195,7 +196,7 @@ class MyDiagnoser(Diagnoser):  # type: ignore
                         return part  # type: ignore
             return answers[0] if len(answers) == 1 else answers  # type: ignore
 
-    def current_record_match_expected(self, r: dict[str, str]) -> bool:
+    def current_record_match_expected(self, r: DNSRecord) -> bool:
         if r["value"] is not None and r["current"] is None:
             return False
         if r["value"] is None and r["current"] is not None:
