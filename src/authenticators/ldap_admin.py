@@ -23,9 +23,9 @@ import logging
 import os
 import time
 from collections.abc import Mapping
-from typing import Any, Literal
 from functools import cache
 from pathlib import Path
+from typing import Any, Literal
 
 import jwt
 import ldap

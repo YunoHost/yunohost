@@ -20,10 +20,10 @@
 
 import logging
 import os
-from typing import Any
 import re
 from collections.abc import Collection, Generator
 from datetime import datetime, timedelta
+from typing import Any
 
 from publicsuffix2 import PublicSuffixList
 
@@ -69,7 +69,9 @@ class MyDiagnoser(Diagnoser):  # type: ignore
             psl.get_public_suffix(domain) for domain in major_domains
         ]
         domains_from_registrar = [
-            domain for domain in domains_from_registrar if domain is not None and "." in domain
+            domain
+            for domain in domains_from_registrar
+            if domain is not None and "." in domain
         ]
         domains_from_registrar_set = set(domains_from_registrar) - set(
             YNH_DYNDNS_DOMAINS + ["netlib.re"]
@@ -77,7 +79,9 @@ class MyDiagnoser(Diagnoser):  # type: ignore
         for report in self.check_expiration_date(domains_from_registrar_set):
             yield report
 
-    def check_domain(self, domain: str, is_main_domain: bool) -> Generator[dict[str, Any], None, None]:
+    def check_domain(
+        self, domain: str, is_main_domain: bool
+    ) -> Generator[dict[str, Any], None, None]:
         if is_special_use_tld(domain):
             yield dict(
                 meta={"domain": domain},
@@ -239,11 +243,18 @@ class MyDiagnoser(Diagnoser):  # type: ignore
         else:
             return r["current"] == r["value"]
 
-    def check_expiration_date(self, domains: Collection[str]) -> Generator[dict[str, Any], None, None]:
+    def check_expiration_date(
+        self, domains: Collection[str]
+    ) -> Generator[dict[str, Any], None, None]:
         """
         Alert if expiration date of a domain is soon
         """
-        details: dict[str, Any] = {"not_found": [], "error": [], "warning": [], "success": []}
+        details: dict[str, Any] = {
+            "not_found": [],
+            "error": [],
+            "warning": [],
+            "success": [],
+        }
 
         for domain in domains:
             expire_date = self.get_domain_expiration(domain)
