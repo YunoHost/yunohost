@@ -23,7 +23,16 @@ import time
 from collections import OrderedDict
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Union, TypedDict, Literal, Mapping, Callable
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Optional,
+    Union,
+    TypedDict,
+    Literal,
+    Mapping,
+    Callable,
+)
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError

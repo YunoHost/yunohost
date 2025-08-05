@@ -2211,7 +2211,11 @@ def prompt_or_validate_form(
                         and option.pattern is not None
                     ):
                         _error = option.pattern.error
-                        err_text = _error if isinstance(_error, str) else _value_for_locale(_error)
+                        err_text = (
+                            _error
+                            if isinstance(_error, str)
+                            else _value_for_locale(_error)
+                        )
                     else:
                         err_text = m18n.n(
                             f"pydantic.{err['type']}".replace(".", "_"), **ctx

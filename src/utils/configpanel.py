@@ -471,11 +471,13 @@ class ConfigPanel:
             and not os.path.exists(self.save_path)
         ):
             raise YunohostValidationError(
-                f"{self.entity_type}_unknown", **{self.entity_type: entity}  # type: ignore[arg-type]
+                f"{self.entity_type}_unknown",
+                **{self.entity_type: entity},  # type: ignore[arg-type]
             )
         if self.save_path and creation and os.path.exists(self.save_path):
             raise YunohostValidationError(
-                f"{self.entity_type}_exists", **{self.entity_type: entity}  # type: ignore[arg-type]
+                f"{self.entity_type}_exists",
+                **{self.entity_type: entity},  # type: ignore[arg-type]
             )
 
         # Search for hooks in the config panel
