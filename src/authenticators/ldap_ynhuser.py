@@ -26,7 +26,7 @@ import time
 from collections.abc import Mapping
 from functools import cache
 from pathlib import Path
-from typing import Any, reveal_type
+from typing import Any
 
 import jwt
 import ldap
