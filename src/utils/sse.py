@@ -48,10 +48,10 @@ def start_log_broker() -> None:
     import zmq
 
     def server() -> None:
-        ctx = zmq.Context()
-        backend = ctx.socket(zmq.XSUB)
+        ctx = zmq.Context()  # type: ignore[attr-defined]  # Mypy derping about zmq, might be fixed once on trixie ?
+        backend = ctx.socket(zmq.XSUB)  # type: ignore[attr-defined]  # Mypy derping about zmq, might be fixed once on trixie ?
         backend.bind(LOG_BROKER_BACKEND_ENDPOINT)
-        frontend = ctx.socket(zmq.XPUB)
+        frontend = ctx.socket(zmq.XPUB)  # type: ignore[attr-defined]  # Mypy derping about zmq, might be fixed once on trixie ?
         frontend.bind(LOG_BROKER_FRONTEND_ENDPOINT)
 
         try:
@@ -140,8 +140,8 @@ class SSELogStreamingHandler(logging.Handler):
 
             self.ref_id = str(uuid4())
 
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.PUB)
+        self.context = zmq.Context()  # type: ignore[attr-defined]  # Mypy derping about zmq, might be fixed once on trixie ?
+        self.socket = self.context.socket(zmq.PUB)  # type: ignore[attr-defined]  # Mypy derping about zmq, might be fixed once on trixie ?
         self.socket.connect(LOG_BROKER_BACKEND_ENDPOINT)
 
         if not flash:

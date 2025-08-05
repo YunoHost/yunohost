@@ -125,9 +125,9 @@ if monkey.is_module_patched("threading"):
 
     Thread = Greenlet
 else:
-    from threading import Thread
+    from threading import Thread  # type: ignore[assignment]
 
-    FileObjectThread = os.fdopen
+    FileObjectThread = os.fdopen  # type: ignore[assignment,misc]
 
 
 class LogPipe(Thread):  # type: ignore[valid-type,misc] # Don't know why mypy doesnt like this
