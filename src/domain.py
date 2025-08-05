@@ -23,7 +23,7 @@ import time
 from collections import OrderedDict
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Union, TypedDict, Literal, Mapping
+from typing import TYPE_CHECKING, Any, Optional, Union, TypedDict, Literal, Mapping, Callable
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
@@ -170,7 +170,7 @@ def domain_list(
 
     if tree and exclude_subdomains:
         return {
-            "domains": OrderedDict({domain: {} for domain in domains}),
+            "domains": OrderedDict({domain: {} for domain in domains}),  # type: ignore[arg-type]
             "main": main,
         }
 
@@ -703,6 +703,7 @@ def domain_config_get(
             "You can't use --full and --export together.", raw_msg=True
         )
 
+    mode: Literal["full", "export", "classic"]
     if full:
         mode = "full"
     elif export:
@@ -735,7 +736,7 @@ def domain_config_set(
     return config.set(key, value, args, args_file, operation_logger=operation_logger)
 
 
-def _get_DomainConfigPanel() -> "ConfigPanel":
+def _get_DomainConfigPanel() -> type["ConfigPanel"]:
     from .dns import _set_managed_dns_records_hashes
     from .utils.configpanel import ConfigPanel
 
@@ -958,6 +959,7 @@ def _get_DomainConfigPanel() -> "ConfigPanel":
 def domain_action_run(domain: str, action: str, args=None) -> None:
     import urllib.parse
 
+    action_func: Callable
     if action == "cert.cert_.cert_install":
         from .certificate import certificate_install as action_func
     elif action == "cert.cert_.cert_renew":

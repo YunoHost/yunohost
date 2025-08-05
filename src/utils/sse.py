@@ -246,7 +246,7 @@ def get_current_operation() -> (
     active_logs = [
         p.path.split("/")[-1]
         for p in process_open_files
-        if p.mode == "w"
+        if p.mode == "w"  # type: ignore[attr-defined] # dunno why mypy doesnt recognize it ...
         and p.path.startswith("/var/log/yunohost/operations/")
         and p.path.endswith(".logstreamcache")
     ]

@@ -1058,8 +1058,8 @@ def user_group_list(
 
     users = user_list()["users"]
     groups: dict[str, dict[str, Any]] = {}
-    for infos in groups_infos:
-        name = infos["cn"][0]
+    for ginfos in groups_infos:
+        name = ginfos["cn"][0]
 
         if not include_primary_groups and name in users:
             continue
@@ -1067,7 +1067,7 @@ def user_group_list(
         groups[name] = {}
 
         groups[name]["members"] = [
-            _ldap_path_extract(p, "uid") for p in infos.get("member", [])
+            _ldap_path_extract(p, "uid") for p in ginfos.get("member", [])
         ]
 
     if full:
@@ -1077,8 +1077,8 @@ def user_group_list(
         from .permission import user_permission_list
 
         perms = user_permission_list(full=False)["permissions"]
-        for perm, infos in perms.items():
-            for group in infos["allowed"]:
+        for perm, pinfos in perms.items():
+            for group in pinfos["allowed"]:
                 if group in groups:
                     groups[group]["permissions"].append(perm)
 

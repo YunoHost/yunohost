@@ -36,7 +36,7 @@ class YunohostError(MoulinetteError):
 
     def __init__(
         self,
-        key: str | dict[str, str],
+        key: str,
         raw_msg: bool = False,
         log_ref: str | None = None,
         error_details: str | None = None,

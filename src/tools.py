@@ -889,7 +889,6 @@ def tools_migrations_run(
             operation_logger.success()
         else:
             try:
-                migration.operation_logger = operation_logger
                 logger.info(m18n.n("migrations_running_forward", id=migration.id))
                 migration.run()
             except Exception as e:
@@ -1063,7 +1062,8 @@ def _tools_migrations_run_before_app_restore(backup_version, app_id):
 class Migration:
     # Those are to be implemented by daughter classes
 
-    mode = "auto"
+    state: Literal["pending", "done", "skipped"] | None = None
+    mode: Literal["auto", "manual"] = "auto"
     dependencies: list[
         str
     ] = []  # List of migration ids required before running this migration
@@ -1086,6 +1086,7 @@ class Migration:
     def description(self) -> str:
         return m18n.n(f"migration_description_{self.id}")
 
+    @staticmethod
     def ldap_migration(run) -> Callable:
         def func(self) -> None:
             # Backup LDAP before the migration

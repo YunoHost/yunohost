@@ -130,7 +130,7 @@ else:
     FileObjectThread = os.fdopen
 
 
-class LogPipe(Thread):
+class LogPipe(Thread):  # type: ignore[valid-type,misc] # Don't know why mypy doesnt like this
     # Adapted from https://codereview.stackexchange.com/a/17959
     def __init__(self, log_callback, queue):
         """Setup the object with a logger and a loglevel
