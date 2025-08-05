@@ -245,7 +245,10 @@ def _group_packages_per_categories(
 
     all_packages_and_categories = {}
     for line in out.split("\n"):
-        package, category = line.split(" ")
+        if " " in line:
+            package, category = line.split(" ")
+        else:
+            package, category = line, "?"
         if "yunohost" in package or package in ["moulinette", "ssowat"]:
             category = "yunohost"
         elif package.startswith("perl-") or "libperl" in package:
