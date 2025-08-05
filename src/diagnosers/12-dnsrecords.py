@@ -21,6 +21,7 @@
 import logging
 import os
 import re
+from collections.abc import Generator
 from datetime import datetime, timedelta
 
 from publicsuffix2 import PublicSuffixList
@@ -43,12 +44,12 @@ from ..utils.process import check_output
 logger = logging.getLogger("yunohost.diagnosis")
 
 
-class MyDiagnoser(Diagnoser):
+class MyDiagnoser(Diagnoser):  # type: ignore
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
     dependencies: list[str] = ["ip"]
 
-    def run(self):
+    def run(self) -> Generator[dict[str, Any], None, None]:
         main_domain = _get_maindomain()
 
         major_domains = domain_list(exclude_subdomains=True)["domains"]

@@ -22,6 +22,8 @@ import json
 import logging
 import os
 import subprocess
+from collections.abc import Generator
+from typing import Any
 
 from ..diagnosis import Diagnoser
 from ..utils.file_utils import read_file, read_json, write_to_json
@@ -31,12 +33,12 @@ from ..utils.system import system_arch, system_virt, ynh_packages_version
 logger = logging.getLogger("yunohost.diagnosis")
 
 
-class MyDiagnoser(Diagnoser):
+class MyDiagnoser(Diagnoser):  # type: ignore
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
     dependencies: list[str] = []
 
-    def run(self):
+    def run(self) -> Generator[dict[str, Any], None, None]:
         virt = system_virt()
         if virt.lower() == "none":
             virt = "bare-metal"
@@ -53,7 +55,7 @@ class MyDiagnoser(Diagnoser):
         # Also possibly the board / hardware name
         if os.path.exists("/proc/device-tree/model"):
             model = read_file("/proc/device-tree/model").strip().replace("\x00", "")
-            hardware["data"]["model"] = model
+            hardware["data"]["model"] = model  # type: ignore
             hardware["details"] = ["diagnosis_basesystem_hardware_model"]
         elif os.path.exists("/sys/devices/virtual/dmi/id/sys_vendor"):
             model = read_file("/sys/devices/virtual/dmi/id/sys_vendor").strip()
@@ -62,7 +64,7 @@ class MyDiagnoser(Diagnoser):
                     "/sys/devices/virtual/dmi/id/product_name"
                 ).strip()
                 model = f"{model} {product_name}"
-            hardware["data"]["model"] = model
+            hardware["data"]["model"] = model  # type: ignore
             hardware["details"] = ["diagnosis_basesystem_hardware_model"]
 
         yield hardware
@@ -199,7 +201,7 @@ class MyDiagnoser(Diagnoser):
                 data={"rfkill_wifi_error": rfkill_wifi},
             )
 
-    def bad_sury_packages(self):
+    def bad_sury_packages(self) -> Generator[tuple[str, str], None, None]:
         packages_to_check = ["openssl", "libssl1.1", "libssl-dev"]
         for package in packages_to_check:
             cmd = "dpkg --list | grep '^ii' | grep gbp | grep -q -w %s" % package
@@ -214,11 +216,11 @@ class MyDiagnoser(Diagnoser):
             version_to_downgrade_to = check_output(cmd)
             yield (package, version_to_downgrade_to)
 
-    def backports_in_sources_list(self):
+    def backports_in_sources_list(self) -> bool:
         cmd = "grep -q -nr '^ *deb .*-backports' /etc/apt/sources.list*"
         return os.system(cmd) == 0
 
-    def number_of_recent_auth_failure(self):
+    def number_of_recent_auth_failure(self) -> int:
         # Those syslog facilities correspond to auth and authpriv
         # c.f. https://unix.stackexchange.com/a/401398
         # and https://wiki.archlinux.org/title/Systemd/Journal#Facility
@@ -234,7 +236,7 @@ class MyDiagnoser(Diagnoser):
             )
             return -1
 
-    def is_vulnerable_to_meltdown(self):
+    def is_vulnerable_to_meltdown(self) -> bool:
         # meltdown CVE: https://security-tracker.debian.org/tracker/CVE-2017-5754
 
         # We use a cache file to avoid re-running the script so many times,
@@ -255,7 +257,7 @@ class MyDiagnoser(Diagnoser):
                 logger.debug(
                     "Using cached results for meltdown checker, from %s" % cache_file
                 )
-                return read_json(cache_file)[0]["VULNERABLE"]
+                return read_json(cache_file)[0]["VULNERABLE"]  # type: ignore
 
         # script taken from https://github.com/speed47/spectre-meltdown-checker
         # script commit id is store directly in the script
@@ -278,8 +280,8 @@ class MyDiagnoser(Diagnoser):
             # "missing some kernel info (see -v), accuracy might be reduced"
             # Dunno what to do about that but we probably don't want to harass
             # users with this warning ...
-            output, _ = call.communicate()
-            output = output.decode()
+            output_bytes, _ = call.communicate()
+            output = output_bytes.decode()
             assert call.returncode in (0, 2, 3), "Return code: %s" % call.returncode
 
             # If there are multiple lines, sounds like there was some messages
@@ -301,17 +303,17 @@ class MyDiagnoser(Diagnoser):
                 "Something wrong happened when trying to diagnose Meltdown vunerability, exception: %s"
                 % e
             )
-            raise Exception("Command output for failed meltdown check: '%s'" % output)
+            raise Exception(f"Command output for failed meltdown check: '{output}'")
 
         logger.debug(
             "Writing results from meltdown checker to cache file, %s" % cache_file
         )
         write_to_json(cache_file, CVEs)
-        return CVEs[0]["VULNERABLE"]
+        return CVEs[0]["VULNERABLE"]  # type: ignore
 
-    def rfkill_wifi(self):
+    def rfkill_wifi(self) -> str:
         if os.path.isfile("/etc/profile.d/wifi-check.sh"):
             cmd = "bash /etc/profile.d/wifi-check.sh"
-            return check_output(cmd)
+            return check_output(cmd)  # type: ignore
         else:
             return ""

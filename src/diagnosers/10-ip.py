@@ -22,6 +22,8 @@ import logging
 import os
 import random
 import re
+from collections.abc import Generator
+from typing import Any
 
 from ..diagnosis import Diagnoser
 from ..settings import settings_get
@@ -32,12 +34,12 @@ from ..utils.process import check_output
 logger = logging.getLogger("yunohost.diagnosis")
 
 
-class MyDiagnoser(Diagnoser):
+class MyDiagnoser(Diagnoser):  # type: ignore
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
     dependencies: list[str] = []
 
-    def run(self):
+    def run(self) -> Generator[dict[str, Any], None, None]:
         # ############################################################ #
         # PING : Check that we can ping outside at least in ipv4 or v6 #
         # ############################################################ #
@@ -105,8 +107,8 @@ class MyDiagnoser(Diagnoser):
 
         network_interfaces = get_network_interfaces()
 
-        def get_local_ip(version):
-            local_ip = {
+        def get_local_ip(version: str) -> dict[str, str] | str | None:
+            local_ip: dict[str, str] = {
                 iface: addr[version].split("/")[0]
                 for iface, addr in network_interfaces.items()
                 if version in addr
@@ -118,8 +120,8 @@ class MyDiagnoser(Diagnoser):
             else:
                 return local_ip
 
-        def is_ipvx_important(x):
-            return settings_get("misc.network.dns_exposure") in ["both", "ipv" + str(x)]
+        def is_ipvx_important(x: int) -> bool:
+            return settings_get("misc.network.dns_exposure") in ["both", f"ipv{x}"]
 
         yield dict(
             meta={"test": "ipv4"},
@@ -159,7 +161,7 @@ class MyDiagnoser(Diagnoser):
 
         # TODO / FIXME : add some attempt to detect ISP (using whois ?) ?
 
-    def can_ping_outside(self, protocol=4):
+    def can_ping_outside(self, protocol: int = 4) -> bool | None:
         assert protocol in [
             4,
             6,
@@ -174,13 +176,13 @@ class MyDiagnoser(Diagnoser):
         # If we are indeed connected in ipv4 or ipv6, we should find a default route
         routes = check_output("ip -%s route show table all" % protocol).split("\n")
 
-        def is_default_route(r):
+        def is_default_route(r: str) -> bool:
             # Typically the default route starts with "default"
             # But of course IPv6 is more complex ... e.g. on internet cube there's
             # no default route but a /3 which acts as a default-like route...
             # e.g. 2000:/3 dev tun0 ...
             return r.startswith("default") or (
-                ":" in r and re.match(r".*/[0-3]$", r.split()[0])
+                ":" in r and re.match(r".*/[0-3]$", r.split()[0]) is not None
             )
 
         if not any(is_default_route(r) for r in routes):
@@ -209,22 +211,18 @@ class MyDiagnoser(Diagnoser):
 
         # So let's try to ping the first 4~5 resolvers (shuffled)
         # If we succesfully ping any of them, we conclude that we are indeed connected
-        def ping(protocol, target):
-            return (
-                os.system(
-                    "ping%s -c1 -W 3 %s >/dev/null 2>/dev/null"
-                    % ("" if protocol == 4 else "6", target)
-                )
-                == 0
-            )
+        def ping(protocol: int, target: str) -> bool:
+            prot = "" if protocol == 4 else "6"
+            command = f"ping{prot} -c1 -W 3 {target} >/dev/null 2>/dev/null"
+            return os.system(command) == 0
 
         random.shuffle(resolvers)
         return any(ping(protocol, resolver) for resolver in resolvers[:5])
 
-    def can_resolve_dns(self):
+    def can_resolve_dns(self) -> bool:
         return os.system("dig +short ipv4.yunohost.org >/dev/null 2>/dev/null") == 0
 
-    def good_resolvconf(self):
+    def good_resolvconf(self) -> bool:
         content = read_file("/etc/resolv.conf").strip().split("\n")
         # Ignore comments and empty lines
         content = [
@@ -237,7 +235,7 @@ class MyDiagnoser(Diagnoser):
         # We should only find a "nameserver 127.0.0.1"
         return len(content) == 1 and content[0].split() == ["nameserver", "127.0.0.1"]
 
-    def get_public_ip(self, protocol=4):
+    def get_public_ip(self, protocol: int = 4) -> str | None:
         # FIXME - TODO : here we assume that DNS resolution for ip4/6.yunohost.org is working
         # but if we want to be able to diagnose DNS resolution issues independently from
         # internet connectivity, we gotta rely on fixed IPs first....
@@ -252,9 +250,7 @@ class MyDiagnoser(Diagnoser):
         url = f"https://ipv{protocol}.yunohost.org"
 
         try:
-            return download_text(url, timeout=30).strip()
+            return download_text(url, timeout=30).strip()  # type: ignore
         except Exception as e:
-            protocol = str(protocol)
-            e = str(e)
             logger.debug(f"Could not get public IPv{protocol} : {e}")
             return None
