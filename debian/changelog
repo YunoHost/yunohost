@@ -1,3 +1,10 @@
+yunohost (12.1.7.1) testing; urgency=low
+
+  - Fix edge case in _group_packages_per_categories for system packages with no category (95a92b665)
+  - Fix remaining typing issues
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 05 Aug 2025 19:28:57 +0200
+
 yunohost (12.1.7) testing; urgency=low
 
   - upgrades: refactor the upgrade flows, check requirements beforehand, allow to have a different upgrade source (eg testing branch), group system package by categories to improve UI/UX (#2115)
