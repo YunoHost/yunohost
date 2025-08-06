@@ -347,6 +347,24 @@ _ynh_apt_package_version() {
 
 # APT wrapper for non-interactive operation
 _ynh_apt() {
+
+    # Optimization when just calling apt update : check if the cache was
+    # already refreshed in the last 30 min, which should be enough and prevent
+    # unecessary traffic and annoying wait time during app dependency installs etc
+    if [[ "$@" == "update" ]]
+    then
+        # trick from https://stackoverflow.com/a/205710
+        local aptcache="/var/cache/apt/pkgcache.bin"
+        touch -d '-30 minutes' /tmp/.30_minutes_ago
+        sleep 1
+        if [[ -e $aptcache ]] && [[ $aptcache -nt /tmp/.30_minutes_ago ]] && [[ -z "$(find /etc/apt/sources.list* -type f -newer $aptcache)" ]]; then
+            rm -f /tmp/.30_minutes_ago
+            echo "apt cache was already updated in the last 30 minutes, skipping 'apt update'"
+            return
+        fi
+        rm -f /tmp/.30_minutes_ago
+    fi
+
     _ynh_wait_dpkg_free
     LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --assume-yes --quiet -o=Acquire::Retries=3 -o=Dpkg::Use-Pty=0 "$@"
 }
