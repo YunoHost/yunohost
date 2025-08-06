@@ -111,6 +111,14 @@ class AppResourceManager:
 
         return todos_by_type
 
+    # FIXME: hmgnnnnn this is a bit hackish
+    def before_regen_conf(self):
+
+        for type_, todos in self.todos.items():
+            for todo, name, old, new in todos:
+                if todo in ["provision", "update"] and hasattr(new, "before_regen_conf"):
+                    new.before_regen_conf()
+
     def apply(
         self,
         rollback_and_raise_exception_if_failure: bool,
@@ -1082,9 +1090,11 @@ class InstalldirAppResource(AppResource):
 
     def before_regen_conf(self) -> None:
 
+        logger.debug("Applying install dir chown/chmod")
+
         # NB: we use realpath here to cover cases where self.dir could actually be a symlink
         # in which case we want to apply the perm to the pointed dir, not to the symlink
-        chmod(os.path.realpath(self.dir), 0o750)
+        chmod(os.path.realpath(self.dir), 0o710)
 
         # This case is essentially for packaging v2
         if self.paths_for_www_data == ["*"]:
@@ -1097,18 +1107,26 @@ class InstalldirAppResource(AppResource):
         os.system(f"chmod -R o-rwx '{self.dir}'")
 
         chown(os.path.realpath(self.dir), self.app, self.app, recursive=True)
-        for path in self.paths_for_www_data:
-            assert not path.startswith("/")
-            if not path.startswith("./"):
-                path = "./" + path
-            chown(os.path.realpath(self.dir) + "/" + path, self.app, "www-data", recursive=True)
-            # Gotta make sure www-data is the group on all folder along the way such that it has +x rights
-            path_parts = path.split("/")
-            assert ".." not in path_parts and "" not in path_parts
-            current_path = os.path.realpath(self.dir)
-            for path_part in path_parts[:-1]:
-                current_path += "/" + path_part
-                chown(current_path, self.app, "www-data")  # NB: Not recursive
+        for path_pattern in self.paths_for_www_data:
+            assert path_pattern.strip()
+            assert not path_pattern.startswith("/")
+            # FIXME : cant remember why i was so insistent to had this bit
+            #if not path_pattern.startswith("./"):
+            #    path_pattern = "./" + path_pattern
+            assert ".." not in path_pattern
+            paths = list(Path(self.dir).resolve().glob(path_pattern))
+            if not paths:
+                logger.warning(f"Packagers: in install_dir's paths_for_www_data, no path seems to match {path_pattern} ?")
+                continue
+            for path in paths:
+                chown(str(path), self.app, "www-data", recursive=True)
+                # Gotta make sure www-data is the group on all folder along the way such that it has +x rights
+                path_parts = str(path.relative_to(self.dir)).split("/")
+                current_path = Path(self.dir)
+                chown(str(current_path), self.app, "www-data")  # NB: Not recursive
+                for path_part in path_parts[:-1]:
+                    current_path = current_path / path_part
+                    chown(str(current_path), self.app, "www-data")  # NB: Not recursive
 
 
 class DatadirAppResource(AppResource):
