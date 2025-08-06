@@ -652,8 +652,10 @@ class AppConfigurationsManager:
                     logger.info(f"Updating {name} configuration...")
                     g = new.apply()
                 services_to_reload = list(g)
+                # UI/UX tweak to not display unecessary success for nginx, php ... might need to iterate on this later
+                display_success = True if type_ in ["systemd", "app"] else False
                 # NB: service_reload_or_restart also checks the conf (if there's a test_conf for that service)
-                service_reload_or_restart(services_to_reload, raise_exception_if_conf_broken=True)
+                service_reload_or_restart(services_to_reload, raise_exception_if_conf_broken=True, display_success=display_success)
             except (KeyboardInterrupt, Exception) as e:
                 if isinstance(e, KeyboardInterrupt):
                     logger.error(m18n.n("operation_interrupted"))

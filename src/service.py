@@ -261,7 +261,7 @@ def service_restart(names: str | list[str]) -> None:
                 )
 
 
-def service_reload_or_restart(names: str | list[str], test_conf: bool = True, raise_exception_if_conf_broken: bool = False) -> None:
+def service_reload_or_restart(names: str | list[str], test_conf: bool = True, raise_exception_if_conf_broken: bool = False, display_success: bool = True) -> None:
     """
     Reload one or more services if they support it. If not, restart them instead. If the services are not running yet, they will be started.
 
@@ -316,7 +316,8 @@ def service_reload_or_restart(names: str | list[str], test_conf: bool = True, ra
             log_to_watch = None
 
         if _run_service_command("reload-or-restart", name, wait_until_pattern=wait_until_pattern, log_to_watch=log_to_watch):
-            logger.success(m18n.n("service_reloaded_or_restarted", service=name))
+            if display_success:
+                logger.success(m18n.n("service_reloaded_or_restarted", service=name))
         else:
             if service_status(name)["status"] != "running":
                 logs = _get_journalctl_logs(name, number=25)
