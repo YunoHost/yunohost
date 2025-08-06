@@ -34,7 +34,7 @@ from typing import Any, Literal, Iterator, NotRequired, TypedDict, Callable
 from pydantic import BaseModel
 
 from moulinette import m18n
-from moulinette.utils.filesystem import (
+from .file_utils import (
     read_file,
     write_to_file,
     chmod,
@@ -42,7 +42,7 @@ from moulinette.utils.filesystem import (
     rm,
     mkdir,
 )
-from ..app import (
+from .app_utils import (
     _hydrate_app_template,
     _get_app_settings,
     _set_app_settings,
