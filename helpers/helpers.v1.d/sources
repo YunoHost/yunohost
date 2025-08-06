@@ -159,11 +159,11 @@ ynh_setup_source() {
     fi
 
     # (Unused?) mecanism where one can have the file in a special local cache to not have to download it...
-    local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${source_id}"
+    local local_src="/opt/yunohost-apps-src/${app:-YNH_APP_ID}/${source_id}"
 
     # Gotta use this trick with 'dirname' because source_id may contain slashes x_x
-    mkdir -p "$(dirname "$YNH_SOURCES_CACHE_DIR/${YNH_APP_ID}/${source_id}")"
-    src_filename="$YNH_SOURCES_CACHE_DIR/${YNH_APP_ID}/${source_id}"
+    mkdir -p "$(dirname "$YNH_SOURCES_CACHE_DIR/${app:-YNH_APP_ID}/${source_id}")"
+    src_filename="$YNH_SOURCES_CACHE_DIR/${app:-YNH_APP_ID}/${source_id}"
 
     if [ "$src_format" = "docker" ]; then
         src_platform="${src_platform:-"linux/$YNH_ARCH"}"
