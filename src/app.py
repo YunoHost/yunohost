@@ -1589,6 +1589,8 @@ def app_install(
             # FIXME: error handling ?
             # FIXME : possibly replace all this block with a call to app_regenconf()?
             logger.info(f"Adding configurations for {app} ...")
+
+            resource_manager.before_regen_conf()
             _run_step("before_regenconf_as_root")
             _run_step("before_regenconf")
             AppConfigurationsManager(app, wanted=manifest, workdir=workdir).apply()
