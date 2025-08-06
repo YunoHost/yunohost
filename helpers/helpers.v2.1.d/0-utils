@@ -102,6 +102,7 @@ ynh_local_curl() {
     local full_page_url=https://localhost$full_path
 
     # Concatenate all other arguments with '&' to prepare POST data
+    set +o xtrace # set +x
     local POST_data=""
     local arg=""
     for arg in "${@:2}"; do
@@ -113,6 +114,7 @@ ynh_local_curl() {
     else
         POST_data_arg=()
     fi
+    set -o xtrace # set -x
 
     # Wait untils nginx has fully reloaded (avoid curl fail with http2)
     sleep 2
