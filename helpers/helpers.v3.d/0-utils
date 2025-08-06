@@ -19,6 +19,7 @@
 #
 
 YNH_APP_BASEDIR=${YNH_APP_BASEDIR:-$(realpath ..)}
+YNH_COOKIE_FILE=""
 
 # Handle script crashes / failures
 #
@@ -117,10 +118,12 @@ ynh_local_curl() {
     # Wait untils nginx has fully reloaded (avoid curl fail with http2)
     sleep 2
 
-    local cookiefile=/tmp/ynh-$app-cookie.txt
-    touch "$cookiefile"
-    chown root "$cookiefile"
-    chmod 700 "$cookiefile"
+    if [[ -z "$YNH_COOKIE_FILE" ]]; then
+        YNH_COOKIE_FILE=$(mktemp /tmp/ynh-$app-cookie-XXXXXX.txt)
+    fi
+    touch "$YNH_COOKIE_FILE"
+    # chown root "$cookiefile"
+    chmod 700 "$YNH_COOKIE_FILE"
 
     # Temporarily enable visitors if needed...
     local visitors_enabled=$(ynh_permission_has_user --permission="main" --user="visitors" && echo yes || echo no)
