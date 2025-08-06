@@ -40,11 +40,13 @@ dependencies = [
 [dependency-groups]
 tests = [
     "mypy",
+    "types-gevent",
     "types-passlib",
     "types-psutil",
     "types-pyOpenSSL",
     "types-pyYAML",
-    "types-requests"
+    "types-requests",
+    "types-toml",
 ]
 
 [tool.mypy]
