@@ -186,7 +186,10 @@ class BaseConfiguration(BaseModel):
         app_template_dir = kwargs.pop("app_template_dir")
         assert isinstance(app_template_dir, str)
 
-        super().__init__(**kwargs)
+        try:
+            super().__init__(**kwargs)
+        except Exception as e:
+            raise YunohostPackagingError(f"Failed to load configuration {kwargs.get('type')}.{kwargs.get('id')}: " + str(e))
 
         self.hydrate_properties(app_template_dir=app_template_dir)
 

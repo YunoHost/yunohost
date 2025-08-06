@@ -299,7 +299,10 @@ class AppResource(BaseModel):
 
         env = kwargs.pop("env")
 
-        super().__init__(**kwargs)
+        try:
+            super().__init__(**kwargs)
+        except Exception as e:
+            raise YunohostPackagingError(f"Failed to load resource {kwargs.get('type')}.{kwargs.get('id')}: " + str(e))
 
         self.helpers_version = float(env["YNH_HELPERS_VERSION"])
         self.workdir = env.get("YNH_APP_BASEDIR")
