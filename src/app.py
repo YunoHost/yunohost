@@ -69,6 +69,8 @@ from .utils.app_utils import (
     _assert_no_conflicting_apps,
     _make_environment_for_app_script,
     _make_tmp_workdir_for_app,
+    _run_app_script_or_snippet,
+    _list_packagingv3_app_scripts,
     _assert_system_is_sane_for_app,
     _hydrate_app_template,
     _filter_and_hydrate_notifications,
@@ -1412,7 +1414,7 @@ def app_install(
     path_requirement = _guess_webapp_path_requirement(extracted_app_folder)
     _validate_webpath_requirement(parsedargs, path_requirement)
 
-    if packaging_format < 2:
+    if packaging_format <= 2:
         # Attempt to patch legacy helpers ...
         _patch_legacy_helpers(extracted_app_folder)
 
@@ -1535,7 +1537,7 @@ def app_install(
         app = app_instance_name
         workdir = extracted_app_folder
 
-        app_scripts = check_output(f"bash -c \"source '{workdir}/scripts.sh'; declare -F | cut -d' ' -f3\"").strip().split("\n")
+        app_scripts = _list_packagingv3_app_scripts(app, workdir)
         call_remove_if_failure = False
 
         def _run_step(step):
@@ -1612,10 +1614,13 @@ def app_install(
             if call_remove_if_failure:
                 app_remove(app)
             else:
-                shutil.rmtree(app_setting_path)
-            shutil.rmtree(extracted_app_folder)
-            failure_message_with_debug_instructions = operation_logger.error(str(e))
-            raise YunohostError(failure_message_with_debug_instructions, raw_msg=True)
+                rmtree(app_setting_path)
+            rmtree(extracted_app_folder)
+            if isinstance(e, YunohostError):
+                raise e
+            else:
+                failure_message_with_debug_instructions = operation_logger.error(str(e))
+                raise YunohostError(failure_message_with_debug_instructions, raw_msg=True)
 
     # Execute the app install script
     install_failed = True
@@ -1806,9 +1811,6 @@ def app_remove(
     logger.info(m18n.n("app_start_remove", app=app))
     app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 
-    # Attempt to patch legacy helpers ...
-    _patch_legacy_helpers(app_setting_path)
-
     if force_workdir:
         # This is when e.g. calling app_remove() from the upgrade-failed case
         # where we want to remove using the *new* remove script and not the old one
@@ -1823,6 +1825,11 @@ def app_remove(
 
     manifest = _get_manifest_of_app(workdir)
 
+    # Attempt to patch legacy helpers ...
+    packaging_format = manifest["packaging_format"]
+    if packaging_format <= 2:
+        _patch_legacy_helpers(app_setting_path)
+
     env_dict = _make_environment_for_app_script(
         app, workdir=workdir, action="remove"
     )
@@ -1834,13 +1841,7 @@ def app_remove(
     packaging_format = manifest["packaging_format"]
     ret = 0
 
-    app_scripts = []
-    if packaging_format >= 3:
-        try:
-            # FIXME : turn this into a helper function somehow
-            app_scripts = check_output(f"bash -c \"source '{workdir}/scripts.sh'; declare -F | cut -d' ' -f3\"").strip().split("\n")
-        except Exception as e:
-            logger.warning(f"Uhoh !? Failed to parse available functions for {app} ? {e}")
+    app_scripts = _list_packagingv3_app_scripts(app, workdir) if packaging_format >= 3 else []
 
     def _run_step(step):
         if step not in app_scripts:
@@ -1882,6 +1883,7 @@ def app_remove(
 
             logger.error(m18n.n("unexpected_error", error="\n" + traceback.format_exc()))
     else:
+        import copy
         from .utils.configurations import AppConfigurationsManager
         manifest_for_remove = copy.deepcopy(manifest)
         manifest_for_remove["configurations"] = {}

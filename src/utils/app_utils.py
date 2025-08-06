@@ -44,6 +44,7 @@ from .file_utils import (
     read_file,
     read_json,
     read_toml,
+    write_to_file,
 )
 from .process import check_output
 from packaging import version
@@ -1538,6 +1539,7 @@ ynh_abort_if_errors
             script_path,
             user=app if as_app else "root",
             env=env_,
+            chdir=workdir,
             operation_logger=operation_logger,
             error_message_if_script_failed="An error occured inside the script",
             error_message_if_failed=lambda e: f"{action} failed for {app} : {e}",
@@ -1558,3 +1560,12 @@ ynh_abort_if_errors
             pass
 
         return call_failed, failure_message_with_debug_instructions
+
+
+def _list_packagingv3_app_scripts(app: str, workdir: str) -> list[str]:
+    try:
+        # FIXME : turn this into a helper function somehow
+        return check_output(f"bash -c \"source '{workdir}/scripts.sh'; declare -F | cut -d' ' -f3\"").split("\n")
+    except Exception as e:
+        raise YunohostPackagingError(f"Uhoh !? Failed to parse available functions for {app} ? {e}", raw_msg=True)
+
