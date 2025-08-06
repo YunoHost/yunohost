@@ -585,7 +585,7 @@ class SourcesResource(AppResource):
         cache_file = cache_dir / self.id
         if cache_file.exists():
             cache_file.unlink()
-        if not list(cache_dir.iterdir()):
+        if cache_dir.exists() and not list(cache_dir.iterdir()):
             cache_dir.rmdir()
 
     def provision_or_update(self) -> None:
