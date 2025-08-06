@@ -1611,6 +1611,16 @@ def app_install(
         try:
             packaging_v3_install_sequence()
         except (KeyboardInterrupt, EOFError, Exception) as e:
+
+            if no_remove_on_failure:
+                rmtree(extracted_app_folder)
+                logger.error(str(e))
+                raise YunohostError(
+                    f"The installation of {app_id} failed, but was not cleaned up as requested by --no-remove-on-failure.",
+                    raw_msg=True,
+                )
+            logger.warning(m18n.n("app_remove_after_failed_install"))
+
             if call_remove_if_failure:
                 app_remove(app)
             else:
@@ -1619,6 +1629,7 @@ def app_install(
             if isinstance(e, YunohostError):
                 raise e
             else:
+                logger.error(str(e))
                 failure_message_with_debug_instructions = operation_logger.error(str(e))
                 raise YunohostError(failure_message_with_debug_instructions, raw_msg=True)
 
