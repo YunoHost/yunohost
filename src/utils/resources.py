@@ -131,18 +131,18 @@ class AppResourceManager:
 
         for type_, todos in self.todos.items():
             for todo, name, old, new in todos:
+                _, id_ = name
                 try:
                     if todo == "deprovision":
-                        # FIXME : i18n, better info strings
-                        logger.info(f"Deprovisioning {name}...")
+                        logger.info(m18n.n("app_resource_deprovision", resource=old.description_with_id()))
                         assert old
                         old.deprovision()
                     elif todo == "provision":
-                        logger.info(f"Provisioning {name}...")
+                        logger.info(m18n.n("app_resource_provision", resource=new.description_with_id()))
                         assert new
                         new.provision_or_update()
                     elif todo == "update":
-                        logger.info(f"Updating {name}...")
+                        logger.info(m18n.n("app_resource_update", resource=new.description_with_id()))
                         assert new
                         new.provision_or_update()
                 except (KeyboardInterrupt, Exception) as e:
@@ -183,16 +183,16 @@ class AppResourceManager:
                     try:
                         # (NB. here we want to undo the todo)
                         if todo == "deprovision":
-                            # FIXME : i18n, better info strings
-                            logger.info(f"Reprovisioning {name}...")
+                            logger.info(m18n.n("app_resource_reprovision", resource=old.description_with_id()))
                             assert old
                             old.provision_or_update()
                         elif todo == "provision":
-                            logger.info(f"Deprovisioning {name}...")
+                            logger.info(m18n.n("app_resource_deprovision", resource=new.description_with_id()))
                             assert new
                             new.deprovision()
                         elif todo == "update":
                             logger.info(f"Reverting {name}...")
+                            logger.info(m18n.n("app_resource_revert", resource=old.description_with_id()))
                             assert old
                             old.provision_or_update()
                     except (KeyboardInterrupt, Exception) as e:
@@ -293,6 +293,12 @@ class AppResource(BaseModel):
     multi: bool = False
     exposed_properties: list[str]
     helpers_version: float = 0
+
+    def description(self):
+        return self.type
+
+    def description_with_id(self):
+        return self.description() + ("" if self.id == "main" else f" ({self.id})")
 
     @classmethod
     def validate_properties_from_package(cls, **props) -> None:  # type: ignore[no-untyped-def]
@@ -546,6 +552,9 @@ class SourcesResource(AppResource):
 
     action_is_restore: str | None
 
+    def description(self):
+        return m18n.n("app_resource_sources")
+
     def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
         # Writing 'amd64.url = ...' in the manifest is practical and neat,
@@ -719,6 +728,9 @@ class PermissionsResource(AppResource):
 
     exposed_properties: list[str] = ["url", "additional_urls", "auth_header", "allowed", "show_tile", "protected"]
 
+    def description(self):
+        return m18n.n("app_resource_permission")
+
     def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
         # FIXME : if url != None, we should check that there's indeed a domain/path defined ? ie that app is a webapp
 
@@ -862,6 +874,9 @@ class SystemuserAppResource(AppResource):
     home: str = "/var/www/__APP__"
 
     exposed_properties: list[str] = ["allow_ssh", "allow_sftp", "allow_email", "allow_certs", "home"]
+
+    def description(self):
+        return m18n.n("app_resource_system_user")
 
     def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
@@ -1033,6 +1048,9 @@ class InstalldirAppResource(AppResource):
 
     exposed_properties: list[str] = ["dir", "paths_for_www_data", "content"]
 
+    def description(self):
+        return m18n.n("app_resource_install_dir")
+
     @staticmethod
     def convert_packaging_v2_props(props: dict[str, Any]) -> None:
         owner = props.pop("owner", None)
@@ -1182,6 +1200,9 @@ class DatadirAppResource(AppResource):
 
     exposed_properties: list[str] = ["dir", "subdirs", "paths_for_www_data"]
 
+    def description(self):
+        return m18n.n("app_resource_data_dir")
+
     @staticmethod
     def convert_packaging_v2_props(props: dict[str, Any]) -> None:
         owner = props.pop("owner", None)
@@ -1292,6 +1313,9 @@ class AptDependenciesAppResource(AppResource):
     extras: Dict[str, Dict[str, str | List]] = {}
 
     exposed_properties: list[str] = ["packages", "packages_for_build_only", "if_bookworm", "if_trixie", "packages_from_raw_bash", "extras"]
+
+    def description(self):
+        return m18n.n("app_resource_apt")
 
     def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
@@ -1453,6 +1477,9 @@ class PortsResource(AppResource):
 
     # Internal
     need_firewall_reload: bool = False
+
+    def description(self):
+        return m18n.n("app_resource_ports")
 
     def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
@@ -1628,6 +1655,9 @@ class DatabaseAppResource(AppResource):
 
     exposed_properties: list[str] = ["dbtype"]
 
+    def description(self):
+        return m18n.n("app_resource_database", dbtype=self.dbtype)
+
     @staticmethod
     def convert_packaging_v2_props(props: dict[str, Any]) -> None:
         if "type" in props:
@@ -1744,6 +1774,9 @@ class NodejsAppResource(AppResource):
     version: str
     exposed_properties: list[str] = ["version"]
 
+    def description(self):
+        return f"nodejs {self.version}"
+
     @property
     def n(self) -> str:
         return f"/usr/share/yunohost/helpers.v{self.helpers_version}.d/vendor/n/n"
@@ -1841,6 +1874,9 @@ class RubyAppResource(AppResource):
 
     version: str = ""
     exposed_properties: list[str] = ["version"]
+
+    def description(self):
+        return f"ruby {self.version}"
 
     @property
     def rbenv(self) -> str:
@@ -1965,6 +2001,9 @@ class GoAppResource(AppResource):
     version: str
     exposed_properties: list[str] = ["version"]
 
+    def description(self):
+        return f"go {self.version}"
+
     @property
     def goenv(self) -> str:
         return f"{GOENV_ROOT}/bin/goenv"
@@ -2068,6 +2107,9 @@ class ComposerAppResource(AppResource):
 
     version: str
     exposed_properties: list[str] = ["version"]
+
+    def description(self):
+        return f"composer {self.version}"
 
     @property
     def composer_url(self) -> str:
