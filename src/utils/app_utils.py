@@ -41,6 +41,7 @@ from .file_utils import (
     chmod,
     chown,
     cp,
+    rm,
     read_file,
     read_json,
     read_toml,
