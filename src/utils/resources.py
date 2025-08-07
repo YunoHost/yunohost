@@ -26,13 +26,14 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 from pydantic import BaseModel
 from logging import getLogger
 from typing import Any, Callable, Dict, List, Union, Literal, Iterator, TYPE_CHECKING
 
 from moulinette import m18n
-from .file_utils import chmod, chown, mkdir, rm
+from .file_utils import chmod, chown, mkdir, rm, cp
 from .process import check_output
 from .misc import random_ascii
 
@@ -44,7 +45,13 @@ if TYPE_CHECKING:
 
 logger = getLogger("yunohost.utils.resources")
 
-SOURCES_CACHE_DIR = "/var/tmp/yunohost/download/"
+# We have two dirs, the "tmp" is for ephemeral source storage
+# during app install/upgrade/... + making them available to the $app user
+SOURCES_TMP_DIR = "/var/tmp/yunohost/download/"
+# The 'cache' one caches the assets for 24 hours (just to not have to
+# re-download them everytime we do something we the same app, which is
+# especially a waste during tests)
+SOURCES_CACHE_DIR = "/var/cache/yunohost/appsources/"
 N_INSTALL_DIR = "/opt/node_n"
 RBENV_ROOT = "/opt/rbenv"
 GOENV_ROOT = "/opt/goenv"
@@ -581,22 +588,29 @@ class SourcesResource(AppResource):
         self.action_is_restore = kwargs["env"].get("YNH_APP_ACTION") == "restore"
 
     def deprovision(self) -> None:
-        cache_dir = Path(SOURCES_CACHE_DIR) / self.app
-        cache_file = cache_dir / self.id
-        if cache_file.exists():
-            cache_file.unlink()
-        if cache_dir.exists() and not list(cache_dir.iterdir()):
-            cache_dir.rmdir()
+        tmp_dir = Path(SOURCES_TMP_DIR) / self.app
+        tmp_file = tmp_dir / self.id
+        if tmp_file.exists():
+            tmp_file.unlink()
+        if tmp_dir.exists() and not list(tmp_dir.iterdir()):
+            tmp_dir.rmdir()
 
     def provision_or_update(self) -> None:
         # Don't prefetch stuff during restore
         if self.action_is_restore == "restore":
             return
 
-        cache_dir = Path(SOURCES_CACHE_DIR) / self.app
+        cache_dir = Path(SOURCES_CACHE_DIR)
         cache_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+        # Cleanup files older than 24h, just so that this cache doesn't grow over time...
+        for file in cache_dir.iterdir():
+            if file.is_file() and (time.time() - file.stat().st_ctime) > 24 * 3600:
+                file.unlink()
+
+        tmp_dir = Path(SOURCES_TMP_DIR) / self.app
+        tmp_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
         # We later give ownership to $app in the system_user
-        chown(str(cache_dir), "root", recursive=True)
+        chown(str(tmp_dir), "root", recursive=True)
 
         if not self.prefetch:
             return
@@ -612,14 +626,26 @@ class SourcesResource(AppResource):
             sha256 = self.sha256[arch]
         else:
             url = self.url
-            assert isinstance(self.sha256, str)
+            assert isinstance(self.sha256, str) and self.sha256.isalnum(), f"sha256 sums are expected to be purely alphanumeric (culprit: {self.sha256})"
             sha256 = self.sha256
+
+        # Check if we already have a cache for this
+        if (cache_dir / sha256).exists():
+            existing_cache = cache_dir / sha256
+            computed_sha256 = check_output(f"sha256sum {existing_cache}").split()[0]
+            if computed_sha256 != sha256:
+                logger.warning(f"Uhoh, asset {existing_cache} doesnt match the checksum ?")
+            else:
+                logger.debug(f"Reusing cache from {existing_cache}")
+                cp(str(existing_cache), tmp_dir / self.id)
+                return
+
         self.prefetch_asset(url, sha256)
 
     def prefetch_asset(self, url: str, expected_sha256: str) -> None:
         logger.debug(f"Prefetching asset {self.id}: {url} ...")
 
-        cache_file = Path(SOURCES_CACHE_DIR) / self.app / self.id
+        tmp_file = Path(SOURCES_TMP_DIR) / self.app / self.id
 
         # NB: we use wget and not requests.get() because we want to output to a file (ie avoid ending up with the full archive in RAM)
         # AND the nice --tries, --no-dns-cache, --timeout options ...
@@ -630,7 +656,7 @@ class SourcesResource(AppResource):
                 "--no-dns-cache",
                 "--timeout=900",
                 "--no-verbose",
-                "--output-document=" + str(cache_file),
+                "--output-document=" + str(tmp_file),
                 url,
             ],
             stdout=subprocess.PIPE,
@@ -639,8 +665,8 @@ class SourcesResource(AppResource):
         out, _ = p.communicate()
         returncode = p.returncode
         if returncode != 0:
-            if cache_file.exists():
-                cache_file.unlink()
+            if tmp_file.exists():
+                tmp_file.unlink()
             raise YunohostError(
                 "app_failed_to_download_asset",
                 source_id=self.id,
@@ -649,14 +675,14 @@ class SourcesResource(AppResource):
                 out=out.decode(),
             )
 
-        assert cache_file.exists(), (
-            f"For some reason, wget worked but {cache_file} doesnt exists?"
+        assert tmp_file.exists(), (
+            f"For some reason, wget worked but {tmp_file} doesnt exists?"
         )
 
-        computed_sha256 = check_output(f"sha256sum {cache_file}").split()[0]
+        computed_sha256 = check_output(f"sha256sum {tmp_file}").split()[0]
         if computed_sha256 != expected_sha256:
-            size = check_output(f"du -hs {cache_file}").split()[0]
-            cache_file.unlink()
+            size = check_output(f"du -hs {tmp_file}").split()[0]
+            tmp_file.unlink()
             raise YunohostError(
                 "app_corrupt_source",
                 source_id=self.id,
@@ -666,6 +692,10 @@ class SourcesResource(AppResource):
                 computed_sha256=computed_sha256,
                 size=size,
             )
+
+        # Save as "real cache" (urhg) as well,
+        # to avoid re-downloading this multiple time in the near future
+        cp(tmp_file, str(Path(SOURCES_CACHE_DIR) / expected_sha256))
 
 
 class PermissionsResource(AppResource):
@@ -961,8 +991,8 @@ class SystemuserAppResource(AppResource):
                 regen_mail_app_user_config_for_dovecot_and_postfix()
 
         # Allow user to access pre-fetch source (or create files in there during scripts)
-        if os.path.isdir(f"{SOURCES_CACHE_DIR}/{self.app}"):
-            chown(f"{SOURCES_CACHE_DIR}/{self.app}", self.app, recursive=True)
+        if os.path.isdir(f"{SOURCES_TMP_DIR}/{self.app}"):
+            chown(f"{SOURCES_TMP_DIR}/{self.app}", self.app, recursive=True)
 
     def deprovision(self) -> None:
         from ..app import regen_mail_app_user_config_for_dovecot_and_postfix
