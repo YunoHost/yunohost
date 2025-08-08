@@ -44,13 +44,14 @@ ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 def _get_user_infos(
     user_attrs: list[str],
 ) -> tuple[str, str, dict[str, Any]]:
-    auth = Auth().get_session_cookie()
-    username = auth["user"]
+    from bottle import request
+    domain = request.get_header("host")
+    username = request.get_header("Ynh-User")
     result = _get_ldap_interface().search("ou=users", f"uid={username}", user_attrs)
     if not result:
         raise YunohostValidationError("user_unknown", user=username)
 
-    return username, auth["host"], result[0]
+    return username, domain, result[0]
 
 
 def _get_portal_settings(
@@ -136,7 +137,9 @@ def portal_public():
     portal_settings = _get_portal_settings()
 
     try:
-        Auth().get_session_cookie()
+        # TODO handle this case...
+        #Auth().get_session_cookie()
+        pass
     except Exception:
         if "portal_user_intro" in portal_settings:
             del portal_settings["portal_user_intro"]
@@ -313,6 +316,8 @@ def portal_update(
             raise YunohostValidationError("invalid_password", path="currentpassword")
     else:
         # Otherwise we use the encrypted password stored in the cookie
+        # TODO we need a to fix this case without having the password because authelia don't provide any password
+        raise NotImplemented()
         ldap_interface = LDAPInterface(
             username, Auth().get_session_cookie(decrypt_pwd=True)["pwd"]
         )
