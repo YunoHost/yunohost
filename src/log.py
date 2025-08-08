@@ -868,6 +868,7 @@ class OperationLogger:
             and isinstance(error, Exception)
             and not isinstance(error, YunohostValidationError)
             and not self.flash
+            and not self.sse_only
         ):
             error.log_ref = self.name
 
