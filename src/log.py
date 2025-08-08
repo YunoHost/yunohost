@@ -289,7 +289,7 @@ def log_show(
         logs = list(log_list()["operation"])
 
         if position > len(logs):
-            raise YunohostValidationError("There isn't that many logs", raw_msg=True)
+            raise YunohostError("There isn't that many logs", raw_msg=True)
 
         path = logs[-position]["path"]
 
@@ -330,7 +330,7 @@ def log_show(
         log_path = base_path + ".log"
 
     if not os.path.exists(md_path) and not os.path.exists(log_path):
-        raise YunohostValidationError("log_does_exists", log=path)
+        raise YunohostError("log_does_exists", log=path)
 
     infos = {}
 
