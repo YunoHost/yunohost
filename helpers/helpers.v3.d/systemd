@@ -18,46 +18,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-# Create a dedicated systemd config
-#
-# usage: ynh_config_add_systemd [--service=service] [--template=template]
-# | arg: --service=     - Service name (optionnal, `$app` by default)
-# | arg: --template=    - Name of template file (optionnal, this is 'systemd' by default, meaning `../conf/systemd.service` will be used as template)
-#
-# This will use the template `../conf/<templatename>.service`.
-#
-# See the documentation of `ynh_config_add` for a description of the template
-# format and how placeholders are replaced with actual variables.
-ynh_config_add_systemd() {
-    # ============ Argument parsing =============
-    local -A args_array=([s]=service= [t]=template=)
-    local service
-    local template
-    ynh_handle_getopts_args "$@"
-    service="${service:-$app}"
-    template="${template:-systemd.service}"
-    # ===========================================
-
-    ynh_config_add --template="$template" --destination="/etc/systemd/system/$service.service"
-
-    systemctl enable "$service" --quiet
-    systemctl daemon-reload
-}
-
-# Remove the dedicated systemd config
-#
-# usage: ynh_config_remove_systemd service
-# | arg: service   - Service name (optionnal, $app by default)
-ynh_config_remove_systemd() {
-    local service="${1:-$app}"
-    if [ -e "/etc/systemd/system/$service.service" ]; then
-        ynh_systemctl --service="$service" --action=stop
-        systemctl disable "$service" --quiet
-        ynh_safe_rm "/etc/systemd/system/$service.service"
-        systemctl daemon-reload
-    fi
-}
-
 # Start (or other actions) a service,  print a log in case of failure and optionnaly wait until the service is completely started
 #
 # usage: ynh_systemctl [--service=service] [--action=action] [ [--wait_until="line to match"] [--log_path=log_path] [--timeout=300] [--length=20] ]
