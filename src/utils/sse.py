@@ -26,9 +26,9 @@ from typing import IO, Any, Generator, NotRequired, TypedDict
 
 import psutil
 
-RUNDIR = Path("/var/run/yunohost")
-MOULINETTE_LOCK = RUNDIR / "moulinette_yunohost.lock"
+MOULINETTE_LOCK = Path("/var/run/moulinette_yunohost.lock")
 
+RUNDIR = Path("/var/run/yunohost")
 LOG_BROKER_BACKEND_ENDPOINT = f"ipc://{RUNDIR}/log_broker_backend"
 LOG_BROKER_FRONTEND_ENDPOINT = f"ipc://{RUNDIR}/log_broker_frontend"
 SSE_HEARTBEAT_PERIOD = 10  # seconds
