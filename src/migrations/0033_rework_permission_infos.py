@@ -10,9 +10,9 @@ from ..permission import (
 from ..regenconf import regen_conf
 from ..tools import Migration
 from ..user import user_group_list
+from ..utils.app_utils import _is_installed
 from ..utils.file_utils import read_yaml
 from ..utils.ldap import _get_ldap_interface, _ldap_path_extract
-from ..utils.app_utils import _is_installed
 
 logger = getLogger("yunohost.migration")
 
@@ -34,7 +34,9 @@ class MyMigration(Migration):
         permissions_per_app, permission_system = self.read_legacy_permissions()
         for app, permissions in permissions_per_app.items():
             if not _is_installed(app):
-                logger.warning(f"Found permissions for app {app}, but this app is not installed. It may just be a permission that was not properly cleaned up in the past. Details: {permissions}")
+                logger.warning(
+                    f"Found permissions for app {app}, but this app is not installed. It may just be a permission that was not properly cleaned up in the past. Details: {permissions}"
+                )
 
             app_setting(app, "_permissions", permissions)
 
