@@ -1648,16 +1648,19 @@ def user_ssh_remove_key(username: str, key: str) -> None:
 #
 
 
-def _update_admins_group_aliases(old_main_domain: str, new_main_domain: str) -> None:
+def _update_admins_group_aliases(old_main_domain: str | None, new_main_domain: str) -> None:
     current_admin_aliases = user_group_info("admins")["mail-aliases"]
 
-    aliases_to_remove = [
-        a
-        for a in current_admin_aliases
-        if "@" in a
-        and a.split("@")[1] == old_main_domain
-        and a.split("@")[0] in ADMIN_ALIASES
-    ]
+    if old_main_domain is None:
+        aliases_to_remove = []
+    else:
+        aliases_to_remove = [
+            a
+            for a in current_admin_aliases
+            if "@" in a
+            and a.split("@")[1] == old_main_domain
+            and a.split("@")[0] in ADMIN_ALIASES
+        ]
     aliases_to_add = [f"{a}@{new_main_domain}" for a in ADMIN_ALIASES]
 
     user_group_update(
