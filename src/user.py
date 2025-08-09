@@ -1648,7 +1648,9 @@ def user_ssh_remove_key(username: str, key: str) -> None:
 #
 
 
-def _update_admins_group_aliases(old_main_domain: str | None, new_main_domain: str) -> None:
+def _update_admins_group_aliases(
+    old_main_domain: str | None, new_main_domain: str
+) -> None:
     current_admin_aliases = user_group_info("admins")["mail-aliases"]
 
     if old_main_domain is None:
