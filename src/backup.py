@@ -2476,7 +2476,6 @@ def backup_info(name, with_details=False, human_readable=False):
 
 @is_flash_unit_operation()
 def backup_delete(name, display_success: bool = True):
-
     if name not in backup_list()["archives"]:
         raise YunohostValidationError("backup_archive_name_unknown", name=name)
 

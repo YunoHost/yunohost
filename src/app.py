@@ -939,7 +939,13 @@ def app_upgrade(
                     # if the backup suceeded, delete old safety backup to save space
                     if other_safety_backup_name in backup_list()["archives"]:
                         backup_delete(other_safety_backup_name, display_success=False)
-                        logger.info(m18n.n("backup_before_upgrade_deleted_because_replaced_by_newer_backup", name=name, newname=safety_backup_name))
+                        logger.info(
+                            m18n.n(
+                                "backup_before_upgrade_deleted_because_replaced_by_newer_backup",
+                                name=name,
+                                newname=safety_backup_name,
+                            )
+                        )
                 else:
                     # Is this needed ? Shouldn't backup_create report an expcetion if backup failed ?
                     raise YunohostError(
