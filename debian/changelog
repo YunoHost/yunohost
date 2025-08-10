@@ -1,3 +1,22 @@
+yunohost (12.1.8) testing; urgency=low
+
+  - dnsrecords: fix, values might be None according to types (b23568ec7)
+  - dns/diagnosis: dns record content is in 'content', not 'value' (c7dc0f021)
+  - error handling: Use YunohostErrors in log to properly display error modal in webadmin (42c1477b0)
+  - sse: do not set log ref on error when 'sse_only' since there is no log (60ed72b70)
+  - sse: fix moulinette lock path leading to current_operation being always None (1faf53f47)
+  - sse: when asking CLI confirmation, emit a special info message such as people looking at the webadmin will know that the CLI is hanging and waiting for confirmation (68e623e76)
+  - permission migration: display a warning + skip permissions for apps that are not on the system, cf report from ljf (6a4acad78)
+  - email: yoloimplement migration to fix missing admin mail aliases (348bd2ea5)
+  - helpers/nodejs: Fix nodejs version handling in helpers 2.0, major vs minor (f397eb16f)
+  - firewall: Prevent disaster when we can't find any TCP port to open in nftables regenconf (324da4969)
+  - Misc typing (386216b73, a687098a7, 7c4d89eea, eafdb3a3d, a46faa210, cd1222fd6)
+  - i18n: Translations updated for French, Galician
+
+  Thanks to all contributors <3 ! (axolotle, Félix Piédallu, José M, ppr, Salamandar)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 10 Aug 2025 22:01:57 +0200
+
 yunohost (12.1.7.1) testing; urgency=low
 
   - Fix edge case in _group_packages_per_categories for system packages with no category (95a92b665)
