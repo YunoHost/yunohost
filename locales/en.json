@@ -142,6 +142,7 @@
     "backup_custom_mount_error": "Custom backup method could not get past the 'mount' step",
     "backup_delete_error": "Could not delete '{path}'",
     "backup_deleted": "Backup deleted: {name}",
+    "backup_before_upgrade_deleted_because_replaced_by_newer_backup": "Backup {name} was deleted because it is replaced by a newer backup {newname}",
     "backup_hook_unknown": "The backup hook '{hook}' is unknown",
     "backup_method_copy_finished": "Backup copy finalized",
     "backup_method_custom_finished": "Custom backup method '{method}' finished",

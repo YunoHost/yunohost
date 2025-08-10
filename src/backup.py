@@ -2475,14 +2475,8 @@ def backup_info(name, with_details=False, human_readable=False):
 
 
 @is_flash_unit_operation()
-def backup_delete(name):
-    """
-    Delete a backup
+def backup_delete(name, display_success: bool = True):
 
-    Keyword arguments:
-        name -- Name of the local backup archive
-
-    """
     if name not in backup_list()["archives"]:
         raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
@@ -2511,7 +2505,12 @@ def backup_delete(name):
 
     hook_callback("post_backup_delete", args=[name])
 
-    logger.success(m18n.n("backup_deleted", name=name))
+    # "display success" is here because when running the
+    # safety-backup-before-upgrade, yunohost will delete the previous safety
+    # upgrade and we don't really want it to trigger a success or toast saying
+    # that some backup was deleted and is counter intuitive...
+    if display_success:
+        logger.success(m18n.n("backup_deleted", name=name))
 
 
 #
