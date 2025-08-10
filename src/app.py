@@ -942,7 +942,7 @@ def app_upgrade(
                         logger.info(
                             m18n.n(
                                 "backup_before_upgrade_deleted_because_replaced_by_newer_backup",
-                                name=name,
+                                name=other_safety_backup_name,
                                 newname=safety_backup_name,
                             )
                         )
