@@ -1473,10 +1473,10 @@ def _ask_confirmation(
                     "?",
                     logging.INFO,
                     "",
-                    "",
+                    0,
                     "The CLI is currently waiting for confirmation before continuing.",
                     {},
-                    False,
+                    None,
                 )
             )
 

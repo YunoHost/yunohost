@@ -27,6 +27,7 @@ import subprocess
 import tarfile
 import tempfile
 import time
+from typing import TYPE_CHECKING, cast
 from collections import OrderedDict
 from datetime import datetime
 from functools import reduce
@@ -82,7 +83,12 @@ APP_MARGIN_SPACE_SIZE = 100  # In MB
 CONF_MARGIN_SPACE_SIZE = 10  # IN MB
 POSTINSTALL_ESTIMATE_SPACE_SIZE = 5  # In MB
 MB_ALLOWED_TO_ORGANIZE = 10
-logger = getLogger("yunohost.backup")
+
+if TYPE_CHECKING:
+    from .utils.logging import YunohostLogger
+    logger = cast(YunohostLogger, getLogger("yunohost.backup"))
+else:
+    logger = getLogger("yunohost.baclup")
 
 
 class BackupRestoreTargetsManager:
@@ -2499,7 +2505,7 @@ def backup_delete(name, display_success: bool = True):
         try:
             os.remove(backup_file)
         except Exception:
-            logger.debug("unable to delete '%s'", backup_file, exc_info=1)
+            logger.debug("unable to delete '%s'", backup_file, exc_info=True)
             logger.warning(m18n.n("backup_delete_error", path=backup_file))
 
     hook_callback("post_backup_delete", args=[name])
