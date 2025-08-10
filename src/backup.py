@@ -27,12 +27,12 @@ import subprocess
 import tarfile
 import tempfile
 import time
-from typing import TYPE_CHECKING, cast
 from collections import OrderedDict
 from datetime import datetime
 from functools import reduce
 from glob import glob
 from logging import getLogger
+from typing import TYPE_CHECKING, cast
 
 from moulinette import Moulinette, m18n
 
@@ -86,6 +86,7 @@ MB_ALLOWED_TO_ORGANIZE = 10
 
 if TYPE_CHECKING:
     from .utils.logging import YunohostLogger
+
     logger = cast(YunohostLogger, getLogger("yunohost.backup"))
 else:
     logger = getLogger("yunohost.baclup")
