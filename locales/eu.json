@@ -890,5 +890,7 @@
     "error_removing": "Errorea {path} ezabatzerakoan: {error}",
     "download_bad_status_code": "{url} helbideak {code} egoera kodea agertu du",
     "invalid_url": "{url}-(e)ra konektatzeak huts egin du... agian zerbitzua ez dago martxan, edo ez zaude IPv4/IPv6 bidez ondo konektatuta Internetera.",
-    "download_timeout": "{url}(e)k denbora gehiegi behar izan du erantzuteko, bertan behera utzi du zerbitzariak."
+    "download_timeout": "{url}(e)k denbora gehiegi behar izan du erantzuteko, bertan behera utzi du zerbitzariak.",
+    "backup_before_upgrade_deleted_because_replaced_by_newer_backup": "{name} babeskopia ezabatu da {newname} izeneko babeskopia berriago batek ordeztu duelako",
+    "migration_description_0034_fix_missing_admins_aliases": "Konpondu administrazio talderako falta diren ePosta ezizenak"
 }
