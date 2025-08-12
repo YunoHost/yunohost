@@ -196,10 +196,15 @@ def app_info(
         if url and new_revision:
             try:
                 with TemporaryDirectory(prefix="app_", dir=APPS_TMP_WORKDIRS) as d:
-                    _git_clone_light(d, url, branch=specific_channel, revision=new_revision)
+                    _git_clone_light(
+                        d, url, branch=specific_channel, revision=new_revision
+                    )
                     _, tmp_notifications = _parse_app_doc_and_notifications(Path(d))
             except Exception as e:
-                logger.warning(f"Failed to check pre-upgrade notifications for {app} : {e}", exc_info=True)
+                logger.warning(
+                    f"Failed to check pre-upgrade notifications for {app} : {e}",
+                    exc_info=True,
+                )
 
         if tmp_notifications.get("PRE_UPGRADE"):
             ret["upgrade"]["notifications"] = _filter_and_hydrate_notifications(
