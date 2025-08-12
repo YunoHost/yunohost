@@ -1,4 +1,5 @@
-local banFor = import '_ban.jsonnet';
+local ban = import '_ban.jsonnet';
+local recidive = import '_recidive.jsonnet';
 {
   streams: {
     ssh: {
@@ -10,7 +11,7 @@ local banFor = import '_ban.jsonnet';
           ],
           retry: 3,
           retryperiod: '1h',
-          actions: banFor('3h'),
+          actions: ban('3h') + recidive,
         },
       },
     },
