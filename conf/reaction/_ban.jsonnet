@@ -1,5 +1,5 @@
 // ports can be 'all' or any port (list) understood by nftables
-local banFor(time='10m', service='http,https') = {
+local ban(time='10m', service='http,https') = {
 
   // function that generates an nft command
   // example output:
@@ -31,4 +31,4 @@ local banFor(time='10m', service='http,https') = {
   },
 };
 
-banFor
+ban
