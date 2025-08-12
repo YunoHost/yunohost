@@ -118,7 +118,7 @@ def user_list(fields: list[str] | None = None) -> dict[str, dict[str, Any]]:
     users = {}
 
     if not fields:
-        fields = ["username", "fullname", "mail", "mailbox-quota"]
+        fields = ["username", "fullname", "mail", "mailbox-quota", "groups"]
 
     for field in fields:
         if field in ldap_attrs:
@@ -144,9 +144,15 @@ def user_list(fields: list[str] | None = None) -> dict[str, dict[str, Any]]:
         username: str = user["uid"][0]
         users[username] = entry
 
+    if "groups" in fields:
+        sorted_users = sorted(list((username, infos) for username, infos in users.items() if "admins" in infos["groups"]))
+        sorted_users += sorted(list((username, infos) for username, infos in users.items() if "admins" not in infos["groups"]))
+    else:
+        sorted_users = sorted(list((username, infos) for username, infos in users.items()))
+
     # Dict entry 0 has incompatible type "str": "dict[Any, dict[str, Any]]";
     #                           expected "str": "dict[str, str]"  [dict-item]
-    return {"users": users}
+    return {"users": dict(sorted_users)}
 
 
 def list_shells() -> list[str]:
