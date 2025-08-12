@@ -14,16 +14,22 @@ portal:
         me:
             action_help: Allow user to fetch their own infos
             api: GET /me
+            authentication:
+                api: null
 
         ### portal_apps()
         apps:
             action_help: Allow users to fetch lit of apps they have access to
             api: GET /me/apps
+            authentication:
+                api: null
 
         ### portal_update()
         update:
             action_help: Allow user to update their infos (display name, mail aliases/forward, password, ...)
             api: PUT /update
+            authentication:
+                api: null
             arguments:
                 --fullname:
                     help: The full name of the user. For example 'Camille Dupont'
