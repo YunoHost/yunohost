@@ -1,4 +1,5 @@
 local ban = import '_ban.jsonnet';
+local recidive = import '_recidive.jsonnet';
 {
   streams: {
     nginx: {
@@ -9,7 +10,7 @@ local ban = import '_ban.jsonnet';
           ],
           retry: 10,
           retryperiod: '10m',
-          actions: ban(time='10m', service='http,https'),
+          actions: ban(time='10m', service='http,https') + recidive,
         },
         yunohostportalapi: {
           regex: [
@@ -17,7 +18,7 @@ local ban = import '_ban.jsonnet';
           ],
           retry: 20,
           retryperiod: '10m',
-          actions: ban(time='10m', service='http,https'),
+          actions: ban(time='10m', service='http,https') + recidive,
         },
       },
     },
