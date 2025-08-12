@@ -23,6 +23,7 @@ set -e
 
 # Source YNH helpers
 # shellcheck source=../../helpers/helpers
+YNH_HELPERS_VERSION=2.1
 source /usr/share/yunohost/helpers
 
 PY_LIST_PORTS_OF="
@@ -45,12 +46,11 @@ do_pre_regen() {
 
     tcp_ports=$(FILE=$firewall_file PROTO=tcp python3 -c "$PY_LIST_PORTS_OF")
     udp_ports=$(FILE=$firewall_file PROTO=udp python3 -c "$PY_LIST_PORTS_OF")
-    export tcp_ports udp_ports
 
     cd /usr/share/yunohost/conf/nftables
     mkdir -p "${pending_dir}/etc/nftables.d"
     cp nftables.conf "${pending_dir}/etc/nftables.conf"
-    ynh_render_template nftables.d/yunohost-firewall.tpl.conf "${pending_dir}/etc/nftables.d/yunohost-firewall.conf"
+    ynh_config_add --jinja --template=nftables.d/yunohost-firewall.tpl.conf --destination="${pending_dir}/etc/nftables.d/yunohost-firewall.conf"
 }
 
 do_post_regen() {

@@ -23,8 +23,9 @@ set -Eeuo pipefail
 
 # Source YNH helpers
 # shellcheck source=../../helpers/helpers
+YNH_HELPERS_VERSION=2.1
 source /usr/share/yunohost/helpers
 
 backup_dir="data/multimedia"
 
-ynh_restore_file --origin_path="${backup_dir}" --dest_path="/home/yunohost.multimedia" --not_mandatory
+ynh_restore "${backup_dir}" --dest_path="/home/yunohost.multimedia" || true

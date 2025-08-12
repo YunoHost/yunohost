@@ -23,6 +23,7 @@ set -Eeuo pipefail
 
 # Source YNH helpers
 # shellcheck source=../../helpers/helpers
+YNH_HELPERS_VERSION=2.1
 source /usr/share/yunohost/helpers
 
 do_pre_regen() {
@@ -37,11 +38,11 @@ do_pre_regen() {
     cp dovecot-ldap.conf "${dovecot_dir}/dovecot-ldap.conf"
     cp dovecot.sieve "${dovecot_dir}/global_script/dovecot.sieve"
 
-    export pop3_enabled="$(jq -r '.pop3_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
-    export main_domain=$(cat /etc/yunohost/current_host)
-    export domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]" | tr '\n' ' ')"
+    pop3_enabled="$(jq -r '.pop3_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
+    main_domain=$(cat /etc/yunohost/current_host)
+    domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]" | tr '\n' ' ')"
 
-    ynh_render_template "dovecot.conf" "${dovecot_dir}/dovecot.conf"
+    ynh_config_add --jinja --template="dovecot.conf" --destination="${dovecot_dir}/dovecot.conf"
 
     # adapt it for IPv4-only hosts
     if [ ! -f /proc/net/if_inet6 ]; then

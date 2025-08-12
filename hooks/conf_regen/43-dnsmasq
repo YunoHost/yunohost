@@ -23,6 +23,7 @@ set -e
 
 # Source YNH helpers
 # shellcheck source=../../helpers/helpers
+YNH_HELPERS_VERSION=2.1
 source /usr/share/yunohost/helpers
 
 do_init_regen() {
@@ -35,8 +36,8 @@ do_init_regen() {
 
     cp plain/etcdefault /etc/default/dnsmasq
 
-    export wireless_interfaces=""
-    ynh_render_template "dnsmasq.conf.tpl" "${pending_dir}/etc/dnsmasq.conf"
+    wireless_interfaces=""
+    ynh_config_add --jinja --template="dnsmasq.conf.tpl" --destination="${pending_dir}/etc/dnsmasq.conf"
 
     # Remove / disable services likely to conflict with dnsmasq
     for SERVICE in systemd-resolved bind9; do
@@ -66,9 +67,9 @@ do_pre_regen() {
 
     # retrieve variables
     ipv4=$(curl --max-time 10 -s -4 https://ipv4.yunohost.org 2> /dev/null || true)
-    ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
+    ynh_validate_ip --family=4 --ip_address="$ipv4" || ipv4='127.0.0.1'
     ipv6=$(curl --max-time 10 -s -6 https://ipv6.yunohost.org 2> /dev/null || true)
-    ynh_validate_ip6 "$ipv6" || ipv6=''
+    ynh_validate_ip --family=6 --ip_address="$ipv6" || ipv6=''
     interfaces="$(ip -j addr show | jq -r '[.[].ifname]|join(" ")')"
     wireless_interfaces="lo"
     for dev in /sys/class/net/*; do
@@ -78,24 +79,19 @@ do_pre_regen() {
     done
 
     # General configuration
-    export wireless_interfaces
-    ynh_render_template "dnsmasq.conf.tpl" "${pending_dir}/etc/dnsmasq.conf"
+    ynh_config_add --jinja --template="dnsmasq.conf.tpl" --destination="${pending_dir}/etc/dnsmasq.conf"
 
     # add domain conf files
-    export interfaces
-    export ipv4
-    export ipv6
     domains_with_inbound_email_enabled=$(yunohost domain list --features mail_in --output-as json | jq -r ".domains[]")
     for domain in $YNH_DOMAINS; do
         [[ ! $domain =~ \.local$ ]] || continue
-        export domain
 
         if grep -q "^$domain$" <<< "$domains_with_mail_in"; then
-            export mail_in="True"
+            mail_in="True"
         else
-            export mail_in="False"
+            mail_in="False"
         fi
-        ynh_render_template "domain.tpl" "${dnsmasq_dir}/${domain}"
+        ynh_config_add --jinja --template="domain.tpl" --destination="${dnsmasq_dir}/${domain}"
     done
 
     # remove old domain conf files
