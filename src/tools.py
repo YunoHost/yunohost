@@ -488,7 +488,7 @@ def _list_apps_with_upgrade_infos(
                 with_pre_upgrade_notifications=with_pre_upgrade_notifications,
             )
         except Exception as e:
-            logger.error(f"Failed to read info for {app_id} : {e}")
+            logger.error(f"Failed to read info for {app_id} : {e}", exc_info=True)
             continue
         if "settings" in app_info_dict:
             del app_info_dict["settings"]
