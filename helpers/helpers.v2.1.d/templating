@@ -103,7 +103,7 @@ ynh_config_add() {
         _ynh_replace_vars "$destination"
     fi
 
-    if [ ${YNH_CONTEXT:-} != "regenconf" ]; then
+    if [ "${YNH_CONTEXT:-}" != "regenconf" ]; then
         ynh_store_file_checksum "$destination"
     fi
 }
