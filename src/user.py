@@ -629,16 +629,18 @@ UserInfos = TypedDict(
         "mail-aliases": list[str],
         "mail-forward": list[str],
         "mailbox-quota": NotRequired[dict[Literal["limit", "use"], Any]],
+        "groups": NotRequired[list[str]],
+        "permissions": NotRequired[list[str]],
     },
 )
 
 
-def user_info(username: str) -> UserInfos:
+def user_info(username: str, with_groups_and_perms: str = False) -> UserInfos:
     from .utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
 
-    user_attrs = ["cn", "mail", "uid", "maildrop", "mailuserquota", "loginShell"]
+    user_attrs = ["cn", "mail", "uid", "maildrop", "mailuserquota", "loginShell", "memberOf", "permission"]
 
     if len(username.split("@")) == 2:
         filter = "mail=" + username
@@ -660,6 +662,20 @@ def user_info(username: str) -> UserInfos:
         "mail-aliases": [],
         "mail-forward": [],
     }
+
+    if with_groups_and_perms:
+        result_dict["groups"] = [
+            group[3:].split(",")[0]
+            for group in user["memberOf"]
+            if not group.startswith("cn=all_users,")
+            and not group.startswith("cn=" + user["uid"][0] + ",")
+        ]
+
+        all_permissions = user_permission_list()["permissions"]
+        result_dict["permissions"] = [
+            all_permissions[perm[3:].split(",")[0]]["label"]
+            for perm in user["permission"]
+        ]
 
     if len(user["mail"]) > 1:
         result_dict["mail-aliases"] = user["mail"][1:]

@@ -189,6 +189,9 @@ user:
             arguments:
                 username:
                     help: Username or email to get information
+                --with_groups_and_perms:
+                    help: Also include the list of groups the user is in, and the allowed permissions
+                    action: store_true
 
         ### user_export()
         export:
