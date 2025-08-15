@@ -1661,6 +1661,10 @@ tools:
     category_help: Specific tools
     actions:
 
+        dash:
+            action_help: Aggregate various info such as available upgrades, to be displayed on the webadmin homepage
+            api: GET /dash
+
         ### tools_rootpw()
         rootpw:
             action_help: Change root password
