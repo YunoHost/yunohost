@@ -890,5 +890,7 @@
     "apps_no_target_can_be_upgraded": "Aucune application ne peut être mise à jour",
     "apps_upgrade_cancelled": "Les mises à jour étaient encore en attente pour plusieurs autres applications, mais leur mise à jour a été annulée (utilisez `--continue-on-failure` pour continuer quand même) : {apps}",
     "backup_app_script_failed": "Échec de la collecte des fichiers à sauvegarder pour {app}.",
-    "backup_no_file_collected": "Échec de la collecte des fichiers à sauvegarder"
+    "backup_no_file_collected": "Échec de la collecte des fichiers à sauvegarder",
+    "backup_before_upgrade_deleted_because_replaced_by_newer_backup": "La sauvegarde {name} a été supprimée car elle a été remplacée par une sauvegarde plus récente {newname}",
+    "migration_description_0034_fix_missing_admins_aliases": "Correction des alias de messagerie manquants pour le groupe des administrateurs"
 }
