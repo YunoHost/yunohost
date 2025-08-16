@@ -25,22 +25,28 @@ import shutil
 from datetime import datetime
 from difflib import unified_diff
 from logging import getLogger
+from typing import TYPE_CHECKING, Any, cast
 
 import yaml
 from moulinette import m18n
-from moulinette.utils.filesystem import mkdir
-from moulinette.utils.process import check_output
 
 from .hook import hook_callback, hook_list
 from .log import is_unit_operation
 from .utils.error import YunohostError
+from .utils.file_utils import mkdir
+from .utils.process import check_output
 
 BASE_CONF_PATH = "/var/cache/yunohost/regenconf"
 BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, "backup")
 PENDING_CONF_DIR = os.path.join(BASE_CONF_PATH, "pending")
 REGEN_CONF_FILE = "/etc/yunohost/regenconf.yml"
 
-logger = getLogger("yunohost.regenconf")
+if TYPE_CHECKING:
+    from .utils.logging import YunohostLogger
+
+    logger = cast(YunohostLogger, getLogger("yunohost.regenconf"))
+else:
+    logger = getLogger("yunohost.regenconf")
 
 
 # FIXME : those ain't just services anymore ... what are we supposed to do with this ...
@@ -53,7 +59,7 @@ def regen_conf(
     force=False,
     dry_run=False,
     list_pending=False,
-):
+) -> dict[str, dict[str, Any]]:
     """
     Regenerate the configuration file(s)
 
@@ -420,7 +426,7 @@ def regen_conf(
     # element 2 and 3 with empty string is because of legacy...
     post_args = ["post", "", ""]
 
-    def _pre_call(name, priority, path, args):
+    def _pre_call2(name, priority, path, args):
         # append coma-separated applied changes for the category
         if name in result and result[name]["applied"]:
             regen_conf_files = ",".join(result[name]["applied"].keys())
@@ -430,7 +436,7 @@ def regen_conf(
             regen_conf_files,
         ]
 
-    hook_callback("conf_regen", names, pre_callback=_pre_call, env=env)
+    hook_callback("conf_regen", names, pre_callback=_pre_call2, env=env)
 
     operation_logger.success()
 
@@ -611,7 +617,7 @@ def _update_conf_hashes(category, hashes):
     _save_regenconf_infos(categories)
 
 
-def _force_clear_hashes(paths):
+def _force_clear_hashes(paths: list[str]) -> None:
     categories = _get_regenconf_infos()
     for path in paths:
         for category in categories.keys():
@@ -624,7 +630,9 @@ def _force_clear_hashes(paths):
     _save_regenconf_infos(categories)
 
 
-def _process_regen_conf(system_conf, new_conf=None, save=True):
+def _process_regen_conf(
+    system_conf: str, new_conf: str | None = None, save: bool = True
+) -> bool:
     """Regenerate a given system configuration file
 
     Replace a given system configuration file by a new one or delete it if
@@ -661,11 +669,11 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
     except Exception as e:
         logger.warning(
             f"Exception while trying to regenerate conf '{system_conf}': {e}",
-            exc_info=1,
+            exc_info=True,
         )
         if not new_conf and os.path.exists(system_conf):
             logger.warning(
-                m18n.n("regenconf_file_remove_failed", conf=system_conf), exc_info=1
+                m18n.n("regenconf_file_remove_failed", conf=system_conf), exc_info=True
             )
             return False
 
@@ -683,7 +691,7 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
                         m18n.n(
                             "regenconf_file_copy_failed", conf=system_conf, new=new_conf
                         ),
-                        exc_info=1,
+                        exc_info=True,
                     )
                     return False
 

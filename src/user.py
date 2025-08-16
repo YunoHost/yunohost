@@ -26,24 +26,37 @@ import random
 import re
 import subprocess
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, BinaryIO, Callable, Literal, TextIO, Union, cast
+from pathlib import Path
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    BinaryIO,
+    Callable,
+    Literal,
+    Mapping,
+    NotRequired,
+    TextIO,
+    TypedDict,
+    Union,
+    cast,
+)
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.process import check_output
 
 from .log import is_flash_unit_operation, is_unit_operation
 from .service import service_status
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.process import check_output
 from .utils.system import binary_to_human
 
 if TYPE_CHECKING:
     from bottle import HTTPResponse as HTTPResponseType
-    from moulinette.utils.log import MoulinetteLogger
 
     from .log import OperationLogger
     from .permission import PermInfos
+    from .utils.logging import YunohostLogger
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.user"))
+    logger = cast(YunohostLogger, getLogger("yunohost.user"))
 else:
     logger = getLogger("yunohost.user")
 
@@ -81,10 +94,10 @@ def user_list(fields: list[str] | None = None) -> dict[str, dict[str, Any]]:
         "home-path": "homeDirectory",
     }
 
-    def display_default(values, _):
+    def display_default(values: list[str], _: dict[str, list[str]]) -> str | list[str]:
         return values[0] if len(values) == 1 else values
 
-    display: dict[str, Callable[[list[str], dict], Any]] = {
+    display: dict[str, Callable[[list[str], dict[str, list[str]]], Any]] = {
         "password": lambda values, user: "",
         "mail": lambda values, user: display_default(values[:1], user),
         "mail-alias": lambda values, _: values[1:],
@@ -136,14 +149,15 @@ def user_list(fields: list[str] | None = None) -> dict[str, dict[str, Any]]:
     return {"users": users}
 
 
-def list_shells():
-    with open("/etc/shells", "r") as f:
-        content = f.readlines()
+def list_shells() -> list[str]:
+    return [
+        line.strip()
+        for line in Path("/etc/shells").open("r").readlines()
+        if line.startswith("/")
+    ]
 
-    return [line.strip() for line in content if line.startswith("/")]
 
-
-def shellexists(shell):
+def shellexists(shell: str) -> bool:
     """Check if the provided shell exists and is executable."""
     return os.path.isfile(shell) and os.access(shell, os.X_OK)
 
@@ -155,10 +169,10 @@ def user_create(
     domain: str,
     password: str,
     fullname: str,
-    mailbox_quota="0",
+    mailbox_quota: str | None = "0",
     admin: bool = False,
     from_import: bool = False,
-    loginShell=None,
+    loginShell: str | None = None,
 ) -> dict[str, str]:
     if not fullname.strip():
         raise YunohostValidationError(
@@ -205,7 +219,7 @@ def user_create(
     # Check that the domain exists
     _assert_domain_exists(domain)
 
-    mail = username + "@" + domain
+    mail = f"{username}@{domain}"
     ldap = _get_ldap_interface()
 
     if username in user_list()["users"]:
@@ -249,7 +263,7 @@ def user_create(
         if not shellexists(loginShell) or loginShell not in list_shells():
             raise YunohostValidationError("invalid_shell", shell=loginShell)
 
-    attr_dict = {
+    attr_dict: Mapping[str, str | list[str]] = {
         "objectClass": [
             "mailAccount",
             "inetOrgPerson",
@@ -263,7 +277,7 @@ def user_create(
         "uid": [username],
         "mail": mail,  # NOTE: this one seems to be already a list
         "maildrop": [username],
-        "mailuserquota": [mailbox_quota],
+        "mailuserquota": [mailbox_quota or "0"],
         "userPassword": [_hash_user_password(password)],
         "gidNumber": [uid],
         "uidNumber": [uid],
@@ -326,7 +340,7 @@ def user_delete(
     purge: bool = False,
     from_import: bool = False,
     force: bool = False,
-):
+) -> None:
     from .authenticators.ldap_admin import Authenticator as AdminAuth
     from .authenticators.ldap_ynhuser import Authenticator as PortalAuth
     from .hook import hook_callback
@@ -598,14 +612,22 @@ def user_update(
         return user_info(username)
 
 
-def user_info(username: str) -> dict[str, str]:
-    """
-    Get user informations
+# Gotta use this syntax because some of the keys contain dashes (-) which are not valid varnames T_T
+UserInfos = TypedDict(
+    "UserInfos",
+    {
+        "username": str,
+        "fullname": str,
+        "mail": str,
+        "loginShell": str,
+        "mail-aliases": list[str],
+        "mail-forward": list[str],
+        "mailbox-quota": NotRequired[dict[Literal["limit", "use"], Any]],
+    },
+)
 
-    Keyword argument:
-        username -- Username or mail to get informations
 
-    """
+def user_info(username: str) -> UserInfos:
     from .utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
@@ -624,7 +646,7 @@ def user_info(username: str) -> dict[str, str]:
     else:
         raise YunohostValidationError("user_unknown", user=username)
 
-    result_dict = {
+    result_dict: UserInfos = {
         "username": user["uid"][0],
         "fullname": user["cn"][0],
         "mail": user["mail"][0],
@@ -740,11 +762,10 @@ def user_import(
 
     import csv  # CSV are needed only in this function
 
-    from moulinette.utils.text import random_ascii
-
     from .app import app_ssowatconf
     from .domain import domain_list
     from .permission import _sync_permissions_with_ldap
+    from .utils.misc import random_ascii
 
     # Pre-validate data and prepare what should be done
     actions: dict[str, list[dict[str, Any]]] = {
@@ -1036,8 +1057,8 @@ def user_group_list(
 
     users = user_list()["users"]
     groups: dict[str, dict[str, Any]] = {}
-    for infos in groups_infos:
-        name = infos["cn"][0]
+    for ginfos in groups_infos:
+        name = ginfos["cn"][0]
 
         if not include_primary_groups and name in users:
             continue
@@ -1045,7 +1066,7 @@ def user_group_list(
         groups[name] = {}
 
         groups[name]["members"] = [
-            _ldap_path_extract(p, "uid") for p in infos.get("member", [])
+            _ldap_path_extract(p, "uid") for p in ginfos.get("member", [])
         ]
 
     if full:
@@ -1055,8 +1076,8 @@ def user_group_list(
         from .permission import user_permission_list
 
         perms = user_permission_list(full=False)["permissions"]
-        for perm, infos in perms.items():
-            for group in infos["allowed"]:
+        for perm, pinfos in perms.items():
+            for group in pinfos["allowed"]:
                 if group in groups:
                     groups[group]["permissions"].append(perm)
 
@@ -1112,7 +1133,9 @@ def user_group_create(
             gid = str(random.randint(200, 99999))
             uid_guid_found = gid not in all_gid
 
-    attr_dict = {
+    assert gid
+
+    attr_dict: dict[str, str | list[str]] = {
         "objectClass": ["top", "groupOfNamesYnh", "posixGroup"],
         "cn": groupname,
         "gidNumber": [gid],
@@ -1602,7 +1625,7 @@ def user_permission_ldapsync() -> None:
 #
 
 
-def user_ssh_list_keys(username: str) -> dict[str, dict[str, str]]:
+def user_ssh_list_keys(username: str) -> dict[Literal["keys"], list[dict[str, str]]]:
     from .ssh import user_ssh_list_keys
 
     return user_ssh_list_keys(username)
@@ -1625,16 +1648,21 @@ def user_ssh_remove_key(username: str, key: str) -> None:
 #
 
 
-def _update_admins_group_aliases(old_main_domain: str, new_main_domain: str) -> None:
+def _update_admins_group_aliases(
+    old_main_domain: str | None, new_main_domain: str
+) -> None:
     current_admin_aliases = user_group_info("admins")["mail-aliases"]
 
-    aliases_to_remove = [
-        a
-        for a in current_admin_aliases
-        if "@" in a
-        and a.split("@")[1] == old_main_domain
-        and a.split("@")[0] in ADMIN_ALIASES
-    ]
+    if old_main_domain is None:
+        aliases_to_remove = []
+    else:
+        aliases_to_remove = [
+            a
+            for a in current_admin_aliases
+            if "@" in a
+            and a.split("@")[1] == old_main_domain
+            and a.split("@")[0] in ADMIN_ALIASES
+        ]
     aliases_to_add = [f"{a}@{new_main_domain}" for a in ADMIN_ALIASES]
 
     user_group_update(

@@ -2,7 +2,6 @@
     "aborting": "Avbryter.",
     "admin_password": "Administrasjonspassord",
     "app_already_installed": "{app} er allerede installert",
-    "app_already_up_to_date": "{app} er allerede oppdatert",
     "app_argument_invalid": "Velg en gydlig verdi for argumentet '{name}': {error}",
     "app_id_invalid": "Ugyldig program-ID",
     "dyndns_key_not_found": "Fant ikke DNS-nøkkel for domenet",
@@ -38,7 +37,6 @@
     "app_install_files_invalid": "Disse filene kan ikke installeres",
     "backup_abstract_method": "Denne sikkerhetskopimetoden er ikke implementert enda",
     "backup_actually_backuping": "Oppretter sikkerhetskopiarkiv fra innsamlede filer…",
-    "backup_app_failed": "Kunne ikke sikkerhetskopiere programmet '{app}'",
     "backup_applying_method_tar": "Lager TAR-sikkerhetskopiarkiv…",
     "backup_archive_app_not_found": "Fant ikke programmet '{app}' i sikkerhetskopiarkivet",
     "backup_archive_open_failed": "Kunne ikke åpne sikkerhetskopiarkivet",
@@ -57,7 +55,6 @@
     "log_domain_remove": "Fjern '{}'-domenet fra systemoppsett",
     "log_dyndns_subscribe": "Abonner på YunoHost-underdomenet '{}'",
     "log_dyndns_update": "Oppdater IP-adressen tilknyttet ditt YunoHost-underdomene '{}'",
-    "backup_nothings_done": "Ingenting å lagre",
     "field_invalid": "Ugyldig felt '{field}'",
     "firewall_reloaded": "Brannmur gjeninnlastet",
     "log_app_change_url": "Endre nettadresse for '{}'-programmet",
@@ -104,5 +101,8 @@
     "app_change_url_success": "{app} nettadressen er nå {domain}{path}",
     "app_install_failed": "Kunne ikke installere {app}: {error}",
     "global_settings_setting_admin_strength": "Admin-passordets styrke",
-    "global_settings_setting_user_strength": "Brukerpassordets styrke"
+    "global_settings_setting_user_strength": "Brukerpassordets styrke",
+    "websocket_request_expected": "Forventet en WebSocket-forespørsel",
+    "unknown_user": "Ukjent '{user}' bruker",
+    "unknown_group": "Ukjent '{group}' gruppe"
 }

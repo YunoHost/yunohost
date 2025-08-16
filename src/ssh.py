@@ -21,15 +21,15 @@
 import os
 import pwd
 import re
-
-from moulinette.utils.filesystem import chmod, chown, mkdir, read_file, write_to_file
+from typing import Literal
 
 from .utils.error import YunohostValidationError
+from .utils.file_utils import chmod, chown, mkdir, read_file, write_to_file
 
 SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
 
 
-def user_ssh_list_keys(username):
+def user_ssh_list_keys(username: str) -> dict[Literal["keys"], list[dict[str, str]]]:
     user = _get_user_for_ssh(username, ["homeDirectory"])
     if not user:
         raise YunohostValidationError("user_unknown", user=username)
@@ -66,7 +66,7 @@ def user_ssh_list_keys(username):
     return {"keys": keys}
 
 
-def user_ssh_add_key(username, key, comment):
+def user_ssh_add_key(username: str, key: str, comment: str | None) -> None:
     user = _get_user_for_ssh(username, ["homeDirectory", "uid"])
     if not user:
         raise YunohostValidationError("user_unknown", user=username)
@@ -107,7 +107,7 @@ def user_ssh_add_key(username, key, comment):
     write_to_file(authorized_keys_file, authorized_keys_content)
 
 
-def user_ssh_remove_key(username, key):
+def user_ssh_remove_key(username: str, key: str) -> None:
     user = _get_user_for_ssh(username, ["homeDirectory", "uid"])
     if not user:
         raise YunohostValidationError("user_unknown", user=username)

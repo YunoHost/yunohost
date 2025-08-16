@@ -28,13 +28,13 @@ from logging import getLogger
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
-from moulinette.utils.filesystem import chmod, chown, rm, write_to_file
 
 from .domain import _get_maindomain
 from .log import is_unit_operation
 from .regenconf import regen_conf
 from .utils.dns import dig, is_yunohost_dyndns_domain
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import chmod, chown, rm, write_to_file
 from .utils.network import get_public_ip
 
 logger = getLogger("yunohost.dyndns")
@@ -54,7 +54,7 @@ def is_subscribing_allowed():
     return len(dyndns_list()["domains"]) < MAX_DYNDNS_DOMAINS
 
 
-def _dyndns_available(domain):
+def _dyndns_available(domain: str) -> bool:
     """
     Checks if a domain is available on dyndns.yunohost.org
 
@@ -335,7 +335,7 @@ def dyndns_set_recovery_password(domain, recovery_password):
         )
 
 
-def dyndns_list():
+def dyndns_list() -> dict[str, list[str]]:
     """
     Returns all currently subscribed DynDNS domains ( deduced from the key files )
     """
@@ -400,7 +400,7 @@ def dyndns_update(
 
     if ipv4 is None and ipv6 is None:
         logger.debug(
-            "No ipv4 nor ipv6 ?! Sounds like the server is not connected to the internet, or the ip.yunohost.org infrastructure is down somehow"
+            "No ipv4 nor ipv6 ?! Sounds like the server is not connected to the internet, or the ipv4/6.yunohost.org infrastructure is down somehow"
         )
         return
 
@@ -481,7 +481,7 @@ def dyndns_update(
     # Delete the old records for all domain/subdomains
 
     # every dns_conf.values() is a list of :
-    # [{"name": "...", "ttl": "...", "type": "...", "value": "..."}]
+    # [{"name": "...", "ttl": "...", "type": "...", "content": "..."}]
     for records in dns_conf.values():
         for record in records:
             name = (
@@ -496,14 +496,14 @@ def dyndns_update(
             # (For some reason) here we want the format with everytime the
             # entire, full domain shown explicitly, not just "muc" or "@", it
             # should be muc.the.domain.tld. or the.domain.tld
-            if record["value"] == "@":
-                record["value"] = domain
-            record["value"] = record["value"].replace(";", r"\;")
+            if record["content"] == "@":
+                record["content"] = domain
+            record["content"] = record["content"].replace(";", r"\;")
             name = (
                 f"{record['name']}.{domain}." if record["name"] != "@" else f"{domain}."
             )
 
-            update.add(name, record["ttl"], record["type"], record["value"])
+            update.add(name, record["ttl"], record["type"], record["content"])
 
     logger.debug("Now pushing new conf to DynDNS host...")
     logger.debug(update)

@@ -22,18 +22,20 @@ import glob
 import os
 import re
 from collections import OrderedDict
+from collections.abc import Generator
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union, cast
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
-from moulinette.utils.filesystem import mkdir, read_toml, read_yaml, write_to_yaml
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 
 from .error import YunohostError, YunohostValidationError
+from .file_utils import mkdir, read_toml, read_yaml, write_to_yaml
 from .form import (
     AnyOption,
     BaseInputOption,
+    BaseOption,
     BaseReadonlyOption,
     FileOption,
     OptionsModel,
@@ -57,9 +59,9 @@ if TYPE_CHECKING:
     from .form import FormModel, Hooks
 
 if TYPE_CHECKING:
-    from moulinette.utils.log import MoulinetteLogger
+    from .logging import YunohostLogger
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.configpanel"))
+    logger = cast(YunohostLogger, getLogger("yunohost.configpanel"))
 else:
     logger = getLogger("yunohost.configpanel")
 
@@ -145,7 +147,7 @@ class SectionModel(ContainerModel, OptionsModel):
         optional: bool = True,
         collapsed: bool = False,
         bind: str | None = None,
-        **kwargs,
+        **kwargs: dict[str, Any],
     ) -> None:
         options = self.options_dict_to_list(kwargs, optional=optional)
         is_action_section = any(
@@ -180,7 +182,7 @@ class SectionModel(ContainerModel, OptionsModel):
         if isinstance(self.visible, bool):
             return self.visible
 
-        return evaluate_simple_js_expression(self.visible, context=context)
+        return evaluate_simple_js_expression(self.visible, context=context)  # type: ignore
 
     def translate(self, i18n_key: str | None = None) -> None:
         """
@@ -234,7 +236,7 @@ class PanelModel(ContainerModel):
         services: list[str] = [],
         help: Translation | None = None,
         bind: str | None = None,
-        **kwargs,
+        **kwargs: dict[str, Any],
     ) -> None:
         sections = [data | {"id": name} for name, data in kwargs.items()]
         super().__init__(  # type: ignore
@@ -298,7 +300,7 @@ class ConfigPanelModel(BaseModel):
         self,
         version: float,
         i18n: str | None = None,
-        **kwargs,
+        **kwargs: dict[str, Any],
     ) -> None:
         panels = [data | {"id": name} for name, data in kwargs.items()]
         super().__init__(version=version, i18n=i18n, panels=panels)
@@ -376,7 +378,7 @@ class ConfigPanelModel(BaseModel):
     def iter_children(
         self,
         trigger: list[Literal["panel", "section", "option", "action"]] = ["option"],
-    ):
+    ) -> Generator[tuple[PanelModel, SectionModel | None, BaseOption | None]]:
         for panel in self.panels:
             if "panel" in trigger:
                 yield (panel, None, None)
@@ -448,15 +450,16 @@ class ConfigPanel:
     hooks: "Hooks" = {}
 
     @classmethod
-    def list(cls):
+    def list(cls) -> list[str]:
         """
         List available config panel
         """
+        assert cls.save_path_tpl
         try:
             entities = [
                 re.match(
                     "^" + cls.save_path_tpl.format(entity="(?p<entity>)") + "$", f
-                ).group("entity")
+                ).group("entity")  # type: ignore
                 for f in glob.glob(cls.save_path_tpl.format(entity="*"))
                 if os.path.isfile(f)
             ]
@@ -465,7 +468,11 @@ class ConfigPanel:
         return entities
 
     def __init__(
-        self, entity, config_path=None, save_path=None, creation=False
+        self,
+        entity: str,
+        config_path: str | None = None,
+        save_path: str | None = None,
+        creation: bool = False,
     ) -> None:
         self.entity = entity
         self.config_path = config_path
@@ -484,11 +491,13 @@ class ConfigPanel:
             and not os.path.exists(self.save_path)
         ):
             raise YunohostValidationError(
-                f"{self.entity_type}_unknown", **{self.entity_type: entity}
+                f"{self.entity_type}_unknown",
+                **{self.entity_type: entity},  # type: ignore[arg-type]
             )
         if self.save_path and creation and os.path.exists(self.save_path):
             raise YunohostValidationError(
-                f"{self.entity_type}_exists", **{self.entity_type: entity}
+                f"{self.entity_type}_exists",
+                **{self.entity_type: entity},  # type: ignore[arg-type]
             )
 
         # Search for hooks in the config panel
@@ -653,8 +662,10 @@ class ConfigPanel:
         self.config, self.form = self._get_config_panel()
 
         for panel, section, option in self.config.iter_children():
+            assert panel and section and option
             if option.type == OptionType.button:
                 key = f"{panel.id}.{section.id}.{option.id}"
+                assert option.ask
                 actions[key] = _value_for_locale(option.ask)
 
         return actions
@@ -732,16 +743,17 @@ class ConfigPanel:
             operation_logger.success()
 
     def _get_raw_config(self) -> "RawConfig":
+        assert self.config_path
         if not os.path.exists(self.config_path):
             raise YunohostValidationError("config_no_panel")
 
-        return read_toml(self.config_path)
+        return read_toml(self.config_path)  # type: ignore[return-value]
 
     def _get_raw_settings(self) -> "RawSettings":
         if not self.save_path or not os.path.exists(self.save_path):
             return {}
 
-        return read_yaml(self.save_path) or {}
+        return read_yaml(self.save_path) or {}  # type: ignore[return-value]
 
     def _get_partial_raw_config(self) -> "RawConfig":
         def filter_keys(
@@ -788,6 +800,7 @@ class ConfigPanel:
         values = {}
 
         for _, section, option in config.iter_children():
+            assert option
             value = data = raw_settings.get(option.id, getattr(option, "default", None))
 
             if isinstance(option, BaseInputOption) and option.id not in raw_settings:
@@ -925,6 +938,7 @@ class ConfigPanel:
         """
         logger.info("Saving the new configuration...")
 
+        assert self.save_path
         dir_path = os.path.dirname(os.path.realpath(self.save_path))
         if not os.path.exists(dir_path):
             mkdir(dir_path, mode=0o700)
@@ -955,7 +969,8 @@ class ConfigPanel:
                 current_settings[key] = partial_settings[key]
 
         # Save the settings to the .yaml file
-        write_to_yaml(self.save_path, current_settings)
+        assert self.save_path
+        write_to_yaml(self.save_path, current_settings)  # type: ignore[arg-type]
 
     def _run_action(self, form: "FormModel", action_id: str) -> None:
         raise NotImplementedError()

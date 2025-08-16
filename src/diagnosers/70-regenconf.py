@@ -20,19 +20,17 @@
 
 import os
 import re
-from typing import List
-
-from moulinette.utils.filesystem import read_file
 
 from ..diagnosis import Diagnoser
 from ..regenconf import _calculate_hash, _get_regenconf_infos
 from ..settings import settings_get
+from ..utils.file_utils import read_file
 
 
 class MyDiagnoser(Diagnoser):
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
-    dependencies: List[str] = []
+    dependencies: list[str] = []
 
     def run(self):
         regenconf_modified_files = list(self.manually_modified_files())

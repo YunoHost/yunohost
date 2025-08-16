@@ -19,7 +19,6 @@
 #
 
 import os
-from typing import List
 
 from ..diagnosis import Diagnoser
 from ..service import service_status
@@ -28,7 +27,7 @@ from ..service import service_status
 class MyDiagnoser(Diagnoser):
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
-    dependencies: List[str] = []
+    dependencies: list[str] = []
 
     def run(self):
         all_result = service_status()

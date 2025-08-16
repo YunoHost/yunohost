@@ -35,7 +35,6 @@ from .utils.form import BaseOption
 if TYPE_CHECKING:
     from typing import cast
 
-    from moulinette.utils.log import MoulinetteLogger
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
     from .log import OperationLogger
@@ -45,8 +44,9 @@ if TYPE_CHECKING:
         RawSettings,
     )
     from .utils.form import FormModel
+    from .utils.logging import YunohostLogger
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.settings"))
+    logger = cast(YunohostLogger, getLogger("yunohost.settings"))
 else:
     logger = getLogger("yunohost.settings")
 
@@ -246,7 +246,7 @@ class SettingsConfigPanel(ConfigPanel):
             ldap = _get_ldap_interface()
             ldap.update(
                 "cn=admins,ou=sudo",
-                {"sudoOption": "!authenticate" if passwordless_sudo else set()},
+                {"sudoOption": "!authenticate" if passwordless_sudo else []},
             )
 
         # First save settings except virtual + default ones

@@ -26,7 +26,6 @@ import string
 
 import pytest
 import requests
-
 from yunohost.app import (
     APPS_SETTING_PATH,
     _get_app_settings,

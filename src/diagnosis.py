@@ -26,15 +26,15 @@ from importlib import import_module
 from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import (
+
+from .log import is_unit_operation
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import (
     read_json,
     read_yaml,
     write_to_json,
     write_to_yaml,
 )
-
-from .log import is_unit_operation
-from .utils.error import YunohostError, YunohostValidationError
 
 logger = getLogger("yunohost.diagnosis")
 

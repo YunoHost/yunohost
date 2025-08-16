@@ -25,6 +25,12 @@ jobs:
           args: -i=4 -kp -sr -bn -ci -w hooks/ helpers/helpers helpers/helpers.v1.d/ helpers/helpers.v2.1.d/
         continue-on-error: true
 
+      - name: Run Ruff on Python files for import sorting
+        # See https://docs.astral.sh/ruff/formatter/#sorting-imports
+        uses: astral-sh/ruff-action@v3
+        with:
+          args: "check --select I --fix"
+
       - name: Run Ruff on Python files
         uses: astral-sh/ruff-action@v3
         with:

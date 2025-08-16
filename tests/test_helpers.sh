@@ -24,7 +24,7 @@ function log_failed()
     echo "${BOLD}${RED}✘ Failed${NORMAL}"
 }
 
-# shellcheck disable=SC2317
+# shellcheck disable=SC2317,SC2329
 function cleanup()
 {
     if [ -n "$HTTPSERVER" ]; then

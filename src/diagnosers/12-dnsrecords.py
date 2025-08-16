@@ -21,14 +21,15 @@
 import logging
 import os
 import re
+from collections.abc import Collection, Generator
 from datetime import datetime, timedelta
-from typing import List
+from typing import Any
 
-from moulinette.utils.process import check_output
 from publicsuffix2 import PublicSuffixList
 
 from ..diagnosis import Diagnoser
 from ..dns import (
+    DNSRecord,
     _build_dns_conf,
     _get_dns_zone_for_domain,
     _get_relative_name_for_dns_zone,
@@ -40,16 +41,17 @@ from ..utils.dns import (
     is_special_use_tld,
     is_yunohost_dyndns_domain,
 )
+from ..utils.process import check_output
 
 logger = logging.getLogger("yunohost.diagnosis")
 
 
-class MyDiagnoser(Diagnoser):
+class MyDiagnoser(Diagnoser):  # type: ignore
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
-    dependencies: List[str] = ["ip"]
+    dependencies: list[str] = ["ip"]
 
-    def run(self):
+    def run(self) -> Generator[dict[str, Any], None, None]:
         main_domain = _get_maindomain()
 
         major_domains = domain_list(exclude_subdomains=True)["domains"]
@@ -68,15 +70,19 @@ class MyDiagnoser(Diagnoser):
             psl.get_public_suffix(domain) for domain in major_domains
         ]
         domains_from_registrar = [
-            domain for domain in domains_from_registrar if "." in domain
+            domain
+            for domain in domains_from_registrar
+            if domain is not None and "." in domain
         ]
-        domains_from_registrar = set(domains_from_registrar) - set(
+        domains_from_registrar_set = set(domains_from_registrar) - set(
             YNH_DYNDNS_DOMAINS + ["netlib.re"]
         )
-        for report in self.check_expiration_date(domains_from_registrar):
+        for report in self.check_expiration_date(domains_from_registrar_set):
             yield report
 
-    def check_domain(self, domain, is_main_domain):
+    def check_domain(
+        self, domain: str, is_main_domain: bool
+    ) -> Generator[dict[str, Any], None, None]:
         if is_special_use_tld(domain):
             yield dict(
                 meta={"domain": domain},
@@ -115,10 +121,10 @@ class MyDiagnoser(Diagnoser):
                     continue
 
                 r["current"] = self.get_current_record(fqdn, r["type"])
-                if r["value"] == "@":
-                    r["value"] = domain + "."
+                if r["content"] == "@":
+                    r["content"] = domain + "."
                 elif r["type"] == "CNAME":
-                    r["value"] = r["value"]  # + f".{base_dns_zone}."
+                    r["content"] = r["content"]  # + f".{base_dns_zone}."
 
                 if self.current_record_match_expected(r):
                     results[id_] = "OK"
@@ -130,7 +136,7 @@ class MyDiagnoser(Diagnoser):
                         results[id_] = "WRONG"
                         discrepancies.append(("diagnosis_dns_discrepancy", r))
 
-            def its_important():
+            def its_important() -> bool:
                 # Every mail DNS records are important for main domain
                 # For other domain, we only report it as a warning for now...
                 if is_main_domain and category == "mail":
@@ -174,11 +180,11 @@ class MyDiagnoser(Diagnoser):
                 # Otherwise point to the documentation
                 else:
                     output["details"] = ["diagnosis_dns_point_to_doc"]
-                output["details"] += discrepancies
+                output["details"] += discrepancies  # type: ignore
 
             yield output
 
-    def get_current_record(self, fqdn, type_):
+    def get_current_record(self, fqdn: str, type_: str) -> str | list[str] | None:
         success, answers = dig(fqdn, type_, resolvers="force_external")
 
         if success != "ok":
@@ -187,13 +193,13 @@ class MyDiagnoser(Diagnoser):
             if type_ == "TXT" and isinstance(answers, list):
                 for part in answers:
                     if part.startswith('"v=spf1'):
-                        return part
-            return answers[0] if len(answers) == 1 else answers
+                        return part  # type: ignore
+            return answers[0] if len(answers) == 1 else answers  # type: ignore
 
-    def current_record_match_expected(self, r):
-        if r["value"] is not None and r["current"] is None:
+    def current_record_match_expected(self, r: DNSRecord) -> bool:
+        if r["content"] is not None and r["current"] is None:
             return False
-        if r["value"] is None and r["current"] is not None:
+        if r["content"] is None and r["current"] is not None:
             return False
         elif isinstance(r["current"], list):
             return False
@@ -205,19 +211,20 @@ class MyDiagnoser(Diagnoser):
             # Additionally, for DKIM, because the key is pretty long,
             # some DNS registrar sometime split it into several pieces like this:
             # "p=foo" "bar" (with a space and quotes in the middle)...
-            expected = set(r["value"].strip(';" ').replace(";", " ").split())
+            assert r["content"] is not None and r["current"] is not None
+            expected = set(r["content"].strip(';" ').replace(";", " ").split())
             current = set(
                 r["current"].replace('" "', "").strip(';" ').replace(";", " ").split()
             )
 
             # For SPF, ignore parts starting by ip4: or ip6:
-            if "v=spf1" in r["value"]:
+            if "v=spf1" in r["content"]:
                 current = {
                     part
                     for part in current
                     if not part.startswith("ip4:") and not part.startswith("ip6:")
                 }
-            if "v=DMARC1" in r["value"]:
+            if "v=DMARC1" in r["content"]:
                 for param in current:
                     if "=" not in param:
                         return False
@@ -227,22 +234,31 @@ class MyDiagnoser(Diagnoser):
             return expected == current
         elif r["type"] == "MX":
             # For MX, we want to ignore the priority
-            expected = r["value"].split()[-1]
-            current = r["current"].split()[-1]
-            return expected == current
+            assert r["content"] is not None and r["current"] is not None
+            expected_str = r["content"].split()[-1]
+            current_str = r["current"].split()[-1]
+            return expected_str == current_str
         elif r["type"] == "CAA":
             # For CAA, check only the last item, ignore the 0 / 128 nightmare
-            expected = r["value"].split()[-1]
-            current = r["current"].split()[-1]
-            return expected == current
+            assert r["content"] is not None and r["current"] is not None
+            expected_str = r["content"].split()[-1]
+            current_str = r["current"].split()[-1]
+            return expected_str == current_str
         else:
-            return r["current"] == r["value"]
+            return r["current"] == r["content"]
 
-    def check_expiration_date(self, domains):
+    def check_expiration_date(
+        self, domains: Collection[str]
+    ) -> Generator[dict[str, Any], None, None]:
         """
         Alert if expiration date of a domain is soon
         """
-        details = {"not_found": [], "error": [], "warning": [], "success": []}
+        details: dict[str, Any] = {
+            "not_found": [],
+            "error": [],
+            "warning": [],
+            "success": [],
+        }
 
         for domain in domains:
             expire_date = self.get_domain_expiration(domain)
@@ -302,7 +318,7 @@ class MyDiagnoser(Diagnoser):
                     details=details[alert_type],
                 )
 
-    def get_domain_expiration(self, domain):
+    def get_domain_expiration(self, domain: str) -> datetime | str:
         """
         Return the expiration datetime of a domain or None
         """

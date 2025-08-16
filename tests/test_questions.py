@@ -30,7 +30,6 @@ import pytest
 from _pytest.mark.structures import ParameterSet
 from mock import patch
 from moulinette import Moulinette
-
 from yunohost import app, domain, user
 from yunohost.utils import form
 from yunohost.utils.error import YunohostError, YunohostValidationError

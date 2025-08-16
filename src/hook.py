@@ -28,9 +28,9 @@ from importlib import import_module
 from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import cp, read_yaml
 
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import cp, read_yaml
 
 HOOK_FOLDER = "/usr/share/yunohost/hooks/"
 CUSTOM_HOOK_FOLDER = "/etc/yunohost/hooks.d/"
@@ -221,9 +221,9 @@ def hook_list(action, list_by="name", show_info=False):
 
 
 def hook_callback(
-    action,
-    hooks=[],
-    args=None,
+    action: str,
+    hooks: list[str] = [],
+    args: list[str | bool] | None = None,
     chdir=None,
     env=None,
     pre_callback=None,
@@ -245,7 +245,7 @@ def hook_callback(
             (name, priority, path, succeed) as arguments
 
     """
-    result = {}
+    result: dict[str, dict] = {}
     hooks_dict = {}
 
     # Retrieve hooks
@@ -304,7 +304,7 @@ def hook_callback(
             except YunohostError as e:
                 state = "failed"
                 hook_return = {}
-                logger.error(e.strerror, exc_info=1)
+                logger.error(e.strerror, exc_info=True)
                 post_callback(name=name, priority=priority, path=path, succeed=False)
             else:
                 post_callback(name=name, priority=priority, path=path, succeed=True)
@@ -425,7 +425,7 @@ def hook_exec(
 
 
 def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
-    from moulinette.utils.process import call_async_output
+    from .utils.process import call_async_output
 
     # Construct command variables
     cmd_args = ""

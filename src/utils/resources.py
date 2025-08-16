@@ -28,12 +28,12 @@ from logging import getLogger
 from typing import Any, Callable, Dict, List, Union
 
 from moulinette import m18n
-from moulinette.utils.filesystem import chmod, chown, mkdir, rm, write_to_file
-from moulinette.utils.process import check_output
-from moulinette.utils.text import random_ascii
 
 from ..utils.error import YunohostError, YunohostValidationError
 from ..utils.system import debian_version, debian_version_id, system_arch
+from .file_utils import chmod, chown, mkdir, rm, write_to_file
+from .misc import random_ascii
+from .process import check_output
 
 logger = getLogger("yunohost.utils.resources")
 

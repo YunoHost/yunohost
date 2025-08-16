@@ -24,8 +24,6 @@ import shutil
 
 import pytest
 import requests
-from moulinette.utils.filesystem import mkdir
-
 from yunohost.app import (
     _is_installed,
     app_info,
@@ -39,6 +37,7 @@ from yunohost.app import (
 from yunohost.domain import _get_maindomain, domain_add, domain_list, domain_remove
 from yunohost.permission import permission_delete, user_permission_list
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.file_utils import mkdir
 
 from .conftest import get_test_apps_dir, message, raiseYunohostError
 from .test_permission import check_LDAP_db_integrity, check_permission_for_apps
@@ -321,6 +320,7 @@ def test_manifestv2_app_info_preupgrade(monkeypatch):
             "maintained": True,
             "manifest": manifest,
             "state": "working",
+            "git": {"url": "whatever", "revision": "12345acbdef"},
         }
         res["apps"]["manifestv2_app"]["manifest"]["version"] = "99999~ynh1"
 
@@ -330,17 +330,17 @@ def test_manifestv2_app_info_preupgrade(monkeypatch):
 
     main_domain = _get_maindomain()
     install_manifestv2_app(main_domain, "/manifestv2")
-    i = app_info("manifestv2_app", full=True)
+    i = app_info("manifestv2_app", with_upgrade_infos=True)
 
-    assert i["upgradable"] == "yes"
-    assert i["new_version"] == "99999~ynh1"
-    # FIXME : as I write this test, I realize that this implies the catalog API
-    # does provide the notifications, which means the list builder script
-    # should parse the files in the original app repo, possibly with proper i18n etc
-    assert (
-        "This is a dummy disclaimer to display prior to any upgrade"
-        in i["from_catalog"]["manifest"]["notifications"]["PRE_UPGRADE"]["main"]["en"]
-    )
+    assert i["upgrade"]["status"] == "upgradable"
+    assert i["upgrade"]["new_version"] == "99999~ynh1"
+
+    # FIXME : meh, the code evolved and now implies a git_clone
+    # to fetch the PRE_UPGRADE notifications ... but it's hard to test/mock T_T
+    # assert (
+    #     "This is a dummy disclaimer to display prior to any upgrade"
+    #     in i["from_catalog"]["manifest"]["notifications"]["PRE_UPGRADE"]["main"]["en"]
+    # )
 
 
 def test_app_from_catalog():
@@ -362,9 +362,13 @@ def test_app_from_catalog():
     )
 
     # Try upgrade, should do nothing
-    app_upgrade("my_webapp")
+    with pytest.raises(YunohostError):
+        with message("apps_no_target_can_be_upgraded"):
+            app_upgrade("my_webapp")
+
     # Force upgrade, should upgrade to the same version
-    app_upgrade("my_webapp", force=True)
+    with message("app_upgraded", app="my_webapp"):
+        app_upgrade("my_webapp", force=True)
 
     app_remove("my_webapp")
 
@@ -538,29 +542,29 @@ def test_systemfuckedup_during_app_install_and_remove(secondary_domain):
 def test_systemfuckedup_during_app_upgrade(secondary_domain):
     install_break_yo_system(secondary_domain, breakwhat="upgrade")
 
-    with pytest.raises(YunohostError):
-        with message("app_action_broke_system"):
-            app_upgrade(
-                "break_yo_system",
-                file=os.path.join(get_test_apps_dir(), "break_yo_system_ynh"),
-            )
+    with message("app_upgrade_broke_the_system", app="break_yo_system"):
+        app_upgrade(
+            "break_yo_system",
+            file=os.path.join(get_test_apps_dir(), "break_yo_system_ynh"),
+        )
 
 
 def test_failed_multiple_app_upgrade(secondary_domain):
     install_legacy_app(secondary_domain, "/legacy")
     install_break_yo_system(secondary_domain, breakwhat="upgrade")
 
-    with pytest.raises(YunohostError):
-        with message("app_not_upgraded"):
-            app_upgrade(
-                ["break_yo_system", "legacy_app"],
-                file={
-                    "break_yo_system": os.path.join(
-                        get_test_apps_dir(), "break_yo_system_ynh"
-                    ),
-                    "legacy": os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
-                },
-            )
+    with message("apps_upgrade_cancelled", apps="legacy_app"):
+        res = app_upgrade(
+            ["break_yo_system", "legacy_app"],
+            file={
+                "break_yo_system": os.path.join(
+                    get_test_apps_dir(), "break_yo_system_ynh"
+                ),
+                "legacy_app": os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
+            },
+        )
+    assert "break_yo_system" in res["failed"]
+    assert "legacy_app" in res["cancelled"]
 
 
 class TestMockedAppUpgrade:
@@ -575,22 +579,40 @@ class TestMockedAppUpgrade:
 
     def _mock_app_upgrade(self, mocker):
         # app list
-        self._installed_apps = mocker.patch(
-            "yunohost.app._installed_apps", side_effect=lambda: self.apps_list
+        mocker.patch("yunohost.app._installed_apps", side_effect=lambda: self.apps_list)
+        mocker.patch(
+            "yunohost.utils.app_utils._installed_apps",
+            side_effect=lambda: self.apps_list,
         )
 
         # just check if an app is really installed
         mocker.patch(
             "yunohost.app._is_installed", side_effect=lambda app: app in self.apps_list
         )
+        mocker.patch(
+            "yunohost.utils.app_utils._is_installed",
+            side_effect=lambda app: app in self.apps_list,
+        )
 
-        # app_dict =
         mocker.patch(
             "yunohost.app.app_info",
-            side_effect=lambda app, full: {
-                "upgradable": "yes" if app in self.upgradable_apps_list else "no",
+            side_effect=lambda app, full=False, with_upgrade_infos=False: {
+                "upgrade": {
+                    "status": "upgradable"
+                    if app in self.upgradable_apps_list
+                    else "up_to_date",
+                    "current_version": "1.2.3",
+                },
                 "manifest": {"id": app},
-                "version": "?",
+            },
+        )
+        mocker.patch(
+            "yunohost.app._app_upgrade_infos",
+            side_effect=lambda app, current_version=None: {
+                "status": "upgradable"
+                if app in self.upgradable_apps_list
+                else "up_to_date",
+                "current_version": current_version or "1.2.3",
             },
         )
 
@@ -608,10 +630,9 @@ class TestMockedAppUpgrade:
         # return (manifest, extracted_app_folder)
         mocker.patch("yunohost.app._extract_app", side_effect=custom_extract_app)
 
-        # for [(name, passed, values, err), ...] in
         mocker.patch(
             "yunohost.app._check_manifest_requirements",
-            return_value=[(None, True, None, None)],
+            return_value=[{"id": "dummytest", "passed": True, "error": None}],
         )
 
         # raise on failure
@@ -619,16 +640,20 @@ class TestMockedAppUpgrade:
 
         from os.path import exists  # import the unmocked function
 
-        def custom_os_path_exists(path):
-            if path.endswith("manifest.toml"):
-                return True
-            return exists(path)
+        def custom_get_manifest_of_app(app):
+            return {
+                "id": app,
+                "packaging_format": 1,
+                "version": "1.2.3~ynh1",
+                "arguments": {"install": []},
+            }
 
-        mocker.patch("os.path.exists", side_effect=custom_os_path_exists)
-
-        # manifest =
         mocker.patch(
-            "yunohost.app.read_toml", return_value={"arguments": {"install": []}}
+            "yunohost.utils.app_utils._get_manifest_of_app",
+            side_effect=custom_get_manifest_of_app,
+        )
+        mocker.patch(
+            "yunohost.app._get_manifest_of_app", side_effect=custom_get_manifest_of_app
         )
 
         # install_failed, failure_message_with_debug_instructions =
@@ -638,20 +663,22 @@ class TestMockedAppUpgrade:
         )
         # settings =
         mocker.patch("yunohost.app._get_app_settings", return_value={})
+        mocker.patch("yunohost.utils.app_utils._get_app_settings", return_value={})
         # return nothing
         mocker.patch("yunohost.app._set_app_settings")
+        mocker.patch("yunohost.utils.app_utils._set_app_settings")
 
         from os import listdir  # import the unmocked function
 
         def custom_os_listdir(path):
-            if path.endswith("MOCKED_BY_TEST"):
+            if "MOCKED_BY_TEST" in str(path):
                 return []
             return listdir(path)
 
         mocker.patch("os.listdir", side_effect=custom_os_listdir)
         mocker.patch("yunohost.app.rm")
         mocker.patch("yunohost.app.cp")
-        mocker.patch("shutil.rmtree")
+        mocker.patch("yunohost.app.rmtree")
         mocker.patch("yunohost.app.chmod")
         mocker.patch("yunohost.app.chown")
         mocker.patch("yunohost.app.app_ssowatconf")
@@ -659,7 +686,7 @@ class TestMockedAppUpgrade:
     def test_app_upgrade_no_apps(self, mocker):
         self._mock_app_upgrade(mocker)
 
-        with pytest.raises(YunohostValidationError):
+        with message("apps_already_up_to_date"):
             app_upgrade()
 
     def test_app_upgrade_app_not_install(self, mocker):
@@ -673,11 +700,13 @@ class TestMockedAppUpgrade:
         self.apps_list = ["some_app"]
 
         # yunohost is happy, not apps to upgrade
-        app_upgrade()
+        with message("apps_already_up_to_date"):
+            app_upgrade()
 
         self.hook_exec_with_script_debug_if_failure.assert_not_called()
 
         self.upgradable_apps_list.append("some_app")
+
         app_upgrade()
 
         self.hook_exec_with_script_debug_if_failure.assert_called_once()
@@ -695,15 +724,22 @@ class TestMockedAppUpgrade:
 
         def fails_on_b(self, *args, env, **kwargs):
             if env["YNH_APP_ID"] == "b":
-                return True, "failed"
+                return True, "Dummy failure"
             return False, "ok"
 
         self.hook_exec_with_script_debug_if_failure.side_effect = fails_on_b
 
-        with pytest.raises(YunohostError):
-            app_upgrade()
+        with message("apps_upgrade_cancelled", apps="c"):
+            res = app_upgrade()
+        assert "a" in res["success"]
+        assert "b" in res["failed"]
+        assert "c" in res["cancelled"]
 
-        app_upgrade(continue_on_failure=True)
+        with message("app_upgrade_continuing_with_other_apps", app="b"):
+            res = app_upgrade(continue_on_failure=True)
+        assert "a" in res["success"]
+        assert "b" in res["failed"]
+        assert "c" in res["success"]
 
     def test_app_upgrade_continue_on_failure_broken_system(self, mocker):
         """--continue-on-failure should stop on a broken system"""
@@ -729,8 +765,15 @@ class TestMockedAppUpgrade:
             side_effect=_assert_system_is_sane_for_app,
         )
 
-        with pytest.raises(YunohostError):
-            app_upgrade()
+        with message("apps_upgrade_cancelled", apps="c"):
+            res = app_upgrade()
+        assert "a" in res["success"]
+        assert "broke_the_system" in res["failed"]
+        assert "c" in res["cancelled"]
 
-        with pytest.raises(YunohostError):
-            app_upgrade(continue_on_failure=True)
+        with message("apps_upgrade_cancelled", apps="c"):
+            res = app_upgrade(continue_on_failure=True)
+        assert "a" in res["success"]
+        assert "broke_the_system" in res["failed"]
+        # Difference with the previous test (without breaking the system) : breaking the system bypasses continue_on_failure
+        assert "c" in res["cancelled"]

@@ -31,7 +31,10 @@ import yaml
 file = os.environ['FILE']
 proto = os.environ['PROTO']
 data = yaml.safe_load(open(file, 'r'))
-ports = [str(port) for port, info in data[proto].items() if info['open']]
+ports = [str(port) for port, info in data.get(proto, {}).items() if info['open']]
+# Sane fallback in case for reason we cant find any TCP port opened which probably indicates there's an issue with the file, we don't want the server to just drop all the traffic
+if not ports and proto == 'TCP':
+    ports = [22, 80, 443]
 print(' '.join(ports))
 "
 

@@ -24,21 +24,29 @@ import os
 import random
 import re
 from logging import getLogger
-from typing import TYPE_CHECKING, BinaryIO, Literal, NotRequired, TypedDict, cast
+from typing import (
+    TYPE_CHECKING,
+    BinaryIO,
+    Literal,
+    Mapping,
+    NotRequired,
+    TypedDict,
+    cast,
+)
 
 from moulinette import m18n
-from moulinette.utils.filesystem import read_yaml, write_to_yaml
 
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import read_yaml, write_to_yaml
 
 if TYPE_CHECKING:
-    from moulinette.utils.log import MoulinetteLogger
+    from .utils.logging import YunohostLogger
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.permission"))
+    logger = cast(YunohostLogger, getLogger("yunohost.permission"))
 else:
     logger = getLogger("yunohost.permission")
 
-SYSTEM_PERMS = {
+SYSTEM_PERMS: dict[str, dict] = {
     "mail": {"label": "Email", "gid": 5001},
     "sftp": {"label": "SFTP", "gid": 5004},
     "ssh": {"label": "SSH", "gid": 5003},
@@ -47,10 +55,10 @@ SYSTEM_PERM_CONF = "/etc/yunohost/permissions.yml"
 
 
 class SystemPermInfos(TypedDict):
-    label: str
+    label: NotRequired[str]
     allowed: list[str]
     corresponding_users: NotRequired[list[str] | set[str]]
-    protected: bool
+    protected: NotRequired[bool]
 
 
 class AppPermInfos(SystemPermInfos):
@@ -84,8 +92,8 @@ def user_permission_list(
     """
 
     # Fetch relevant informations
-    from .app import _get_app_settings, _installed_apps
     from .user import user_group_list
+    from .utils.app_utils import _get_app_settings, _installed_apps
 
     # Parse / organize information to be outputed
     filter_ = apps
@@ -663,7 +671,7 @@ def _sync_permissions_with_ldap() -> None:
         # Save the gid to the list of existing gid, to avoid picking the same gid twice in the unlikely case where we would be creating several perm at the same time
         all_gids.add(gid)
 
-        attr_dict = {
+        attr_dict: Mapping[str, str | list[str]] = {
             "objectClass": ["top", "permissionYnh", "posixGroup"],
             "cn": perm,
             "gidNumber": gid,
@@ -848,8 +856,9 @@ def _update_app_permission_setting(
 
 
 def _get_system_perms() -> dict[str, SystemPermInfos]:
+    system_perm_conf: dict[str, SystemPermInfos]
     try:
-        system_perm_conf = read_yaml(SYSTEM_PERM_CONF) or {}
+        system_perm_conf = read_yaml(SYSTEM_PERM_CONF) or {}  # type: ignore[assignment]
         assert isinstance(system_perm_conf, dict), (
             "Uhoh, the system perm conf read is not a dict ?!"
         )
@@ -887,7 +896,7 @@ def _set_system_perms(system_perm_conf: dict[str, SystemPermInfos]) -> None:
     }
 
     try:
-        write_to_yaml(SYSTEM_PERM_CONF, conf_to_write)
+        write_to_yaml(SYSTEM_PERM_CONF, conf_to_write)  # type: ignore[arg-type]
     except Exception as e:
         raise YunohostError(
             f"Failed to write system perm configuration ? : {e}", raw_msg=True
@@ -938,8 +947,8 @@ def _validate_and_sanitize_permission_url(
         re:^/api/.*|/scripts/api.js$
     """
 
-    from .app import _assert_no_conflicting_apps
     from .domain import _assert_domain_exists
+    from .utils.app_utils import _assert_no_conflicting_apps
 
     #
     # Regexes

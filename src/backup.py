@@ -32,29 +32,10 @@ from datetime import datetime
 from functools import reduce
 from glob import glob
 from logging import getLogger
+from typing import TYPE_CHECKING, cast
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import (
-    chmod,
-    chown,
-    mkdir,
-    read_file,
-    rm,
-)
-from moulinette.utils.process import check_output
-from moulinette.utils.text import random_ascii
-from packaging import version
 
-from . import domain
-
-from .app import (
-    _get_manifest_of_app,
-    _is_installed,
-    _make_environment_for_app_script,
-    _make_tmp_workdir_for_app,
-    app_info,
-    app_remove,
-)
 from .hook import (
     CUSTOM_HOOK_FOLDER,
     hook_add,
@@ -72,7 +53,23 @@ from .tools import (
     _tools_migrations_run_before_app_restore,
     tools_postinstall,
 )
+from .utils.app_utils import (
+    APPS_SETTING_PATH,
+    _get_manifest_of_app,
+    _is_installed,
+    _make_environment_for_app_script,
+    _make_tmp_workdir_for_app,
+)
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import (
+    chmod,
+    chown,
+    mkdir,
+    read_file,
+    rm,
+)
+from .utils.misc import random_ascii
+from .utils.process import check_output
 from .utils.system import (
     binary_to_human,
     free_space_in_directory,
@@ -86,7 +83,13 @@ APP_MARGIN_SPACE_SIZE = 100  # In MB
 CONF_MARGIN_SPACE_SIZE = 10  # IN MB
 POSTINSTALL_ESTIMATE_SPACE_SIZE = 5  # In MB
 MB_ALLOWED_TO_ORGANIZE = 10
-logger = getLogger("yunohost.backup")
+
+if TYPE_CHECKING:
+    from .utils.logging import YunohostLogger
+
+    logger = cast(YunohostLogger, getLogger("yunohost.backup"))
+else:
+    logger = getLogger("yunohost.baclup")
 
 
 class BackupRestoreTargetsManager:
@@ -541,7 +544,7 @@ class BackupManager:
 
         if not successfull_apps and not successfull_system:
             rm(self.work_dir, True, True)
-            raise YunohostError("backup_nothings_done")
+            raise YunohostError("backup_no_file_collected")
 
         # Add unlisted files from backup tmp dir
         self._add_to_list_to_backup("backup.csv")
@@ -704,7 +707,9 @@ class BackupManager:
         app -- (string) an app instance name (already installed) to backup
         """
 
-        app_setting_path = os.path.join("/etc/yunohost/apps/", app)
+        from .app import app_info
+
+        app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 
         # Prepare environment
         env_dict = self._get_env_var(app)
@@ -736,7 +741,7 @@ class BackupManager:
             logger.debug(e)
             abs_tmp_app_dir = os.path.join(self.work_dir, "apps/", app)
             shutil.rmtree(abs_tmp_app_dir, ignore_errors=True)
-            logger.error(m18n.n("backup_app_failed", app=app))
+            logger.error(m18n.n("backup_app_script_failed", app=app))
             self.targets.set_result("apps", app, "Error")
         else:
             # Add app info
@@ -868,6 +873,8 @@ class RestoreManager:
         name -- (string) Archive name
         method -- (string) Method name to use to mount the archive
         """
+        from packaging import version
+
         # Retrieve and open the archive
         # FIXME this way to get the info is not compatible with copy or custom
         # backup methods
@@ -1215,6 +1222,7 @@ class RestoreManager:
         if system_targets == []:
             return
 
+        from . import domain
         from .app import app_ssowatconf
         from .permission import _sync_permissions_with_ldap
 
@@ -1306,6 +1314,7 @@ class RestoreManager:
         app_instance_name -- (string) The app name to restore (no app with this
                              name should be already install)
         """
+        from .app import app_remove
         from .utils.legacy import _patch_legacy_helpers
 
         def copytree(src, dst, symlinks=False, ignore=None):
@@ -2473,14 +2482,7 @@ def backup_info(name, with_details=False, human_readable=False):
 
 
 @is_flash_unit_operation()
-def backup_delete(name):
-    """
-    Delete a backup
-
-    Keyword arguments:
-        name -- Name of the local backup archive
-
-    """
+def backup_delete(name, display_success: bool = True):
     if name not in backup_list()["archives"]:
         raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
@@ -2504,12 +2506,17 @@ def backup_delete(name):
         try:
             os.remove(backup_file)
         except Exception:
-            logger.debug("unable to delete '%s'", backup_file, exc_info=1)
+            logger.debug("unable to delete '%s'", backup_file, exc_info=True)
             logger.warning(m18n.n("backup_delete_error", path=backup_file))
 
     hook_callback("post_backup_delete", args=[name])
 
-    logger.success(m18n.n("backup_deleted", name=name))
+    # "display success" is here because when running the
+    # safety-backup-before-upgrade, yunohost will delete the previous safety
+    # upgrade and we don't really want it to trigger a success or toast saying
+    # that some backup was deleted and is counter intuitive...
+    if display_success:
+        logger.success(m18n.n("backup_deleted", name=name))
 
 
 #

@@ -21,11 +21,16 @@
 import logging
 import os
 import re
+import subprocess
+from collections.abc import Generator
+from functools import cache
+from pathlib import Path
+from typing import Any
 
 from moulinette import Moulinette
-from moulinette.utils.process import check_output
 
 from ..utils.error import YunohostError
+from .process import check_output
 
 logger = logging.getLogger("yunohost.utils.packages")
 
@@ -38,29 +43,26 @@ YUNOHOST_PACKAGES = [
 ]
 
 
-def debian_version():
-    if debian_version.cache is None:
-        debian_version.cache = check_output(
-            'grep "^VERSION_CODENAME=" /etc/os-release 2>/dev/null | cut -d= -f2'
-        )
-    return debian_version.cache
+@cache
+def debian_version() -> str:
+    command = 'grep "^VERSION_CODENAME=" /etc/os-release 2>/dev/null | cut -d= -f2'
+    return check_output(command)
 
 
-def debian_version_id():
-    if debian_version_id.cache is None:
-        debian_version_id.cache = check_output(
-            'grep "^VERSION_ID=" /etc/os-release 2>/dev/null | cut -d= -f2'
-        ).strip('"')
-    return debian_version_id.cache
+@cache
+def debian_version_id() -> str:
+    command = 'grep "^VERSION_ID=" /etc/os-release 2>/dev/null | cut -d= -f2'
+    return check_output(command).strip('"')
 
 
-def system_arch():
-    if system_arch.cache is None:
-        system_arch.cache = check_output("dpkg --print-architecture 2>/dev/null")
-    return system_arch.cache
+@cache
+def system_arch() -> str:
+    command = "dpkg --print-architecture 2>/dev/null"
+    return check_output(command)
 
 
-def system_virt():
+@cache
+def system_virt() -> str:
     """
     Returns the output of systemd-detect-virt (so e.g. 'none' or 'lxc' or ...)
     You can check the man of the command to have a list of possible outputs...
@@ -68,31 +70,23 @@ def system_virt():
     # Detect virt technology (if not bare metal) and arch
     # Gotta have this "|| true" because it systemd-detect-virt return 'none'
     # with an error code on bare metal ~.~
-    if system_virt.cache is None:
-        system_virt.cache = check_output("systemd-detect-virt 2>/dev/null || true")
-    return system_virt.cache
+    command = "systemd-detect-virt 2>/dev/null || true"
+    return check_output(command)
 
 
-debian_version.cache = None  # type: ignore[attr-defined]
-debian_version_id.cache = None  # type: ignore[attr-defined]
-system_arch.cache = None  # type: ignore[attr-defined]
-system_virt.cache = None  # type: ignore[attr-defined]
-
-
-def free_space_in_directory(dirpath):
+def free_space_in_directory(dirpath: str | Path) -> int:
     stat = os.statvfs(dirpath)
     return stat.f_frsize * stat.f_bavail
 
 
-def space_used_by_directory(dirpath, follow_symlinks=True):
+def space_used_by_directory(dirpath: str | Path, follow_symlinks: bool = True) -> int:
     if not follow_symlinks:
         du_output = check_output(["du", "-sb", dirpath], shell=False)
         return int(du_output.split()[0])
 
+    # FIXME : this doesnt do what the function name suggest this does ...
     stat = os.statvfs(dirpath)
-    return (
-        stat.f_frsize * stat.f_blocks
-    )  # FIXME : this doesnt do what the function name suggest this does ...
+    return stat.f_frsize * stat.f_blocks
 
 
 def human_to_binary(size: str) -> int:
@@ -137,13 +131,13 @@ def binary_to_human(n: int) -> str:
     return "%s" % n
 
 
-def ram_available():
+def ram_available() -> tuple[int, int]:
     import psutil
 
     return (psutil.virtual_memory().available, psutil.swap_memory().free)
 
 
-def get_ynh_package_version(package):
+def get_ynh_package_version(package: str) -> dict[str, str]:
     # Returns the installed version and release version ('stable' or 'testing'
     # or 'unstable')
 
@@ -151,16 +145,17 @@ def get_ynh_package_version(package):
     # Not tested for any arbitrary packages that
     # may handle changelog differently !
 
-    changelog = "/usr/share/doc/%s/changelog.gz" % package
-    cmd = "gzip -cd %s 2>/dev/null | grep -v 'BASH_XTRACEFD' | head -n1" % changelog
-    if not os.path.exists(changelog):
+    changelog = Path("/usr/share/doc") / package / "changelog.gz"
+    if not changelog.exists():
         return {"version": "?", "repo": "?"}
+
+    cmd = f"gzip -cd {str(changelog)} 2>/dev/null | grep -v 'BASH_XTRACEFD' | head -n1"
     out = check_output(cmd).split()
     # Output looks like : "yunohost (1.2.3) testing; urgency=medium"
     return {"version": out[1].strip("()"), "repo": out[2].strip(";")}
 
 
-def ynh_packages_version(*args, **kwargs):
+def ynh_packages_version(*args: Any, **kwargs: Any) -> dict[str, dict[str, str]]:
     # from cli the received arguments are:
     # (Namespace(_callbacks=deque([]), _tid='_global', _to_return={}), []) {}
     # they don't seem to serve any purpose
@@ -173,7 +168,7 @@ def ynh_packages_version(*args, **kwargs):
     return packages
 
 
-def dpkg_is_broken():
+def dpkg_is_broken() -> bool:
     if check_output("dpkg --audit", cwd="/tmp/") != "":
         return True
     # If dpkg is broken, /var/lib/dpkg/updates
@@ -184,52 +179,132 @@ def dpkg_is_broken():
     return any(re.match("^[0-9]+$", f) for f in os.listdir("/var/lib/dpkg/updates/"))
 
 
-def dpkg_lock_available():
+def dpkg_lock_available() -> bool:
     return os.system("lsof /var/lib/dpkg/lock >/dev/null") != 0
 
 
-def _list_upgradable_apt_packages():
+def _list_upgradable_apt_packages() -> Generator[dict[str, str], None, None]:
     # List upgradable packages
     # LC_ALL=C is here to make sure the results are in english
     upgradable_raw = check_output("LC_ALL=C apt list --upgradable")
 
     # Dirty parsing of the output
-    upgradable_raw = [
-        line.strip() for line in upgradable_raw.split("\n") if line.strip()
-    ]
-    for line in upgradable_raw:
+    upgradable = [line.strip() for line in upgradable_raw.split("\n") if line.strip()]
+    for line in upgradable:
         # Remove stupid warning and verbose messages >.>
         if "apt does not have a stable CLI interface" in line or "Listing..." in line:
             continue
 
         # line should look like :
         # yunohost/stable 3.5.0.2+201903211853 all [upgradable from: 3.4.2.4+201903080053]
-        line = line.split()
-        if len(line) != 6:
-            logger.warning("Failed to parse this line : %s" % " ".join(line))
+        lines = line.split()
+        if len(lines) != 6:
+            logger.warning("Failed to parse this line : %s" % " ".join(lines))
             continue
 
         yield {
-            "name": line[0].split("/")[0],
-            "new_version": line[1],
-            "current_version": line[5].strip("]"),
+            "name": lines[0].split("/")[0],
+            "new_version": lines[1],
+            "current_version": lines[5].strip("]"),
         }
 
 
-def _dump_sources_list():
-    from glob import glob
+# Corresponds to the 'Section' in apt/dpkg infos
+PACKAGE_CATEGORIES_REMAP = {
+    "admin": "misc utils and libs",
+    "shells": "misc utils and libs",
+    "interpreters": "misc utils and libs",
+    "net": "misc utils and libs",
+    # Libs
+    "oldlibs": "misc utils and libs",
+    "libs": "misc utils and libs",
+    "libdevel": "misc utils and libs",
+    # Languages
+    "python": "python",
+    "perl": "perl",
+    "javascript": "javascript",
+    "php": "php",
+    "lua": "lua",
+    # Other technologies
+    "database": "database",
+    "mail": "mail",
+    "httpd": "webserver",
+}
 
-    filenames = glob("/etc/apt/sources.list") + glob("/etc/apt/sources.list.d/*")
-    for filename in filenames:
-        with open(filename, "r") as f:
-            for line in f.readlines():
-                if line.startswith("#") or not line.strip():
-                    continue
-                yield filename.replace("/etc/apt/", "") + ":" + line.strip()
+
+def _group_packages_per_categories(
+    packages: list[dict[str, str]],
+) -> dict[str, list[dict[str, str]]]:
+    cmd = (
+        r'grep "^Package:\|^Section:" /var/lib/dpkg/status '
+        r'| tr "\n" "\r" '
+        '| sed -e "s/Package: //g" -e "s/\rSection://g" '
+        r'| tr "\r" "\n"'
+    )
+    out = subprocess.check_output(cmd, shell=True).decode().strip()
+
+    all_packages_and_categories = {}
+    for line in out.split("\n"):
+        if " " in line:
+            package, category = line.split(" ")
+        else:
+            package, category = line, "?"
+        if "yunohost" in package or package in ["moulinette", "ssowat"]:
+            category = "yunohost"
+        elif package.startswith("perl-") or "libperl" in package:
+            category = "perl"
+        elif "libpython" in package:
+            category = "python"
+        elif "libmariadb" in package:
+            category = "database"
+        elif (
+            category == "kernel"
+            or any(
+                keyword in package
+                for keyword in [
+                    "initramfs",
+                    "systemd",
+                    "udev",
+                    "libc6",
+                    "base-files",
+                    "sudo",
+                    "passwd",
+                    "openssh",
+                ]
+            )
+            or package in ["netbase", "apt", "dpkg", "aptitude"]
+        ):
+            category = "kernel, systemd, and other critical packages"
+        elif category in PACKAGE_CATEGORIES_REMAP:
+            category = PACKAGE_CATEGORIES_REMAP[category]
+        else:
+            category = "misc utils and libs"
+        all_packages_and_categories[package] = category
+
+    packages_grouped_by_categories: dict[str, list[dict[str, str]]] = {}
+    for package_infos in packages:
+        category = all_packages_and_categories.get(package_infos["name"], "misc")
+        if category not in packages_grouped_by_categories:
+            packages_grouped_by_categories[category] = []
+        packages_grouped_by_categories[category].append(package_infos)
+
+    return dict(sorted(packages_grouped_by_categories.items()))
 
 
-def aptitude_with_progress_bar(cmd):
-    from moulinette.utils.process import call_async_output
+def _dump_sources_list() -> Generator[str, None, None]:
+    apt_dir = Path("/etc/apt")
+    files = [apt_dir / "sources.list", *(apt_dir / "sources.list.d").iterdir()]
+    for file in files:
+        if not file.is_file():
+            continue
+        for line in file.open("r").readlines():
+            if line.startswith("#") or not line.strip():
+                continue
+            yield f"{file.relative_to(apt_dir)}:{line.strip()}"
+
+
+def aptitude_with_progress_bar(cmd: str) -> None:
+    from .process import call_async_output
 
     msg_to_verb = {
         "Preparing for removal": "Removing",
@@ -249,61 +324,62 @@ def aptitude_with_progress_bar(cmd):
         # the status-fd does stupid stuff for 'aptitude update', percentage is always zero except last iteration
         disable_progress_bar = True
 
-    def log_apt_status_to_progress_bar(data):
-        if disable_progress_bar:
-            return
+    class LogAptStatusToProgressBar:
+        def __init__(self) -> None:
+            self.previous_package: str | None = None
+            self.download_message_displayed = False
 
-        t, package, percent, msg = data.split(":", 3)
+        def __call__(self, data: str) -> None:
+            if disable_progress_bar:
+                return
 
-        # We only display the stuff related to download once
-        if t == "dlstatus":
-            if log_apt_status_to_progress_bar.download_message_displayed is False:
-                logger.info("Downloading...")
-                log_apt_status_to_progress_bar.download_message_displayed = True
-            return
+            t, package, percent, msg = data.split(":", 3)
 
-        if package == "dpkg-exec":
-            return
-        if (
-            package
-            and log_apt_status_to_progress_bar.previous_package
-            and package == log_apt_status_to_progress_bar.previous_package
-        ):
-            return
+            # We only display the stuff related to download once
+            if t == "dlstatus":
+                if self.download_message_displayed is False:
+                    logger.info("Downloading...")
+                    self.download_message_displayed = True
+                return
 
-        try:
-            percent = round(float(percent), 1)
-        except Exception:
-            return
+            if package == "dpkg-exec":
+                return
+            if package and self.previous_package and package == self.previous_package:
+                return
 
-        verb = "Processing"
-        for m, v in msg_to_verb.items():
-            if msg.startswith(m):
-                verb = v
+            try:
+                percentfloat = round(float(percent), 1)
+            except Exception:
+                return
 
-        log_apt_status_to_progress_bar.previous_package = package
+            verb = "Processing"
+            for m, v in msg_to_verb.items():
+                if msg.startswith(m):
+                    verb = v
 
-        width = 20
-        done = "#" * int(width * percent / 100)
-        remain = "." * (width - len(done))
-        logger.info(f"[{done}{remain}] > {percent}% {verb} {package}\r")
+            self.previous_package = package
 
-    log_apt_status_to_progress_bar.previous_package = None
-    log_apt_status_to_progress_bar.download_message_displayed = False
+            width = 20
+            done = "#" * int(width * percentfloat / 100)
+            remain = "." * (width - len(done))
+            logger.info(f"[{done}{remain}] > {percentfloat}% {verb} {package}\r")
 
-    def strip_boring_dpkg_reading_database(s):
+    log_apt_status_to_progress_bar = LogAptStatusToProgressBar()
+
+    def strip_boring_dpkg_reading_database(line: str) -> str:
         return re.sub(
             r"(\(Reading database ... \d*%?|files and directories currently installed.\))",
             "",
-            s,
+            line,
         )
 
     callbacks = (
-        lambda l: logger.debug(strip_boring_dpkg_reading_database(l).rstrip() + "\r"),
-        lambda l: logger.warning(
-            l.rstrip() + "\r"
-        ),  # ... aptitude has no stderr ? :|  if _apt_log_line_is_relevant(l.rstrip()) else logger.debug(l.rstrip() + "\r"),
-        lambda l: log_apt_status_to_progress_bar(l.rstrip()),
+        lambda line: logger.debug(
+            strip_boring_dpkg_reading_database(line).rstrip() + "\r"
+        ),
+        # ... aptitude has no stderr ? :|  if _apt_log_line_is_relevant(l.rstrip()) else logger.debug(l.rstrip() + "\r"),
+        lambda line: logger.warning(line.rstrip() + "\r"),
+        lambda line: log_apt_status_to_progress_bar(line.rstrip()),
     )
 
     original_cmd = cmd
@@ -329,7 +405,7 @@ def aptitude_with_progress_bar(cmd):
         )
 
 
-def _apt_log_line_is_relevant(line):
+def _apt_log_line_is_relevant(line: str) -> bool:
     irrelevants = [
         "service sudo-ldap already provided",
         "Reading database ...",
@@ -352,4 +428,4 @@ def _apt_log_line_is_relevant(line):
         "insserv: warning: current stop runlevel",
         "insserv: warning: current start runlevel",
     ]
-    return line.rstrip() and all(i not in line.rstrip() for i in irrelevants)
+    return bool(line.rstrip()) and all(i not in line.rstrip() for i in irrelevants)

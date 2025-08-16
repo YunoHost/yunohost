@@ -23,7 +23,10 @@ import hashlib
 import logging
 import os
 import time
+from collections.abc import Mapping
+from functools import cache
 from pathlib import Path
+from typing import Any
 
 import jwt
 import ldap
@@ -34,36 +37,32 @@ from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from moulinette import m18n
 from moulinette.authentication import BaseAuthenticator
-from moulinette.utils.filesystem import read_json
-from moulinette.utils.text import random_ascii
 
 from ..utils.error import YunohostAuthenticationError, YunohostError
+from ..utils.file_utils import read_json
 from ..utils.ldap import _get_ldap_interface
+from ..utils.misc import random_ascii
 
 logger = logging.getLogger("yunohostportal.authenticators.ldap_ynhuser")
 
+SESSION_SECRET_PATH = Path("/etc/yunohost/.ssowat_cookie_secret")
+SESSION_FOLDER = Path("/var/cache/yunohost-portal/sessions")
+SESSION_VALIDITY = 3 * 24 * 3600  # 3 days
 
-def SESSION_SECRET():
+
+@cache
+def SESSION_SECRET() -> str:
     # Only load this once actually requested to avoid boring issues like
     # "secret doesnt exists yet" (before postinstall) and therefore service
     # miserably fail to start
-    if not SESSION_SECRET.value:
-        SESSION_SECRET.value = (
-            open("/etc/yunohost/.ssowat_cookie_secret").read().strip()
-        )
-    assert SESSION_SECRET.value
-    return SESSION_SECRET.value
+    return SESSION_SECRET_PATH.read_text().strip()
 
-
-SESSION_SECRET.value = None  # type: ignore
-SESSION_FOLDER = "/var/cache/yunohost-portal/sessions"
-SESSION_VALIDITY = 3 * 24 * 3600  # 3 days
 
 URI = "ldap://localhost:389"
 USERDN = "uid={username},ou=users,dc=yunohost,dc=org"
 
 # Cache on-disk settings to RAM for faster access
-DOMAIN_USER_ACL_DICT: dict[str, dict] = {}
+DOMAIN_USER_ACL_DICT: dict[str, dict[str, Any]] = {}
 PORTAL_SETTINGS_DIR = "/etc/yunohost/portal"
 
 
@@ -92,7 +91,8 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
         or DOMAIN_USER_ACL_DICT[domain]["mtime"] != mtime
     ):
         users: set[str] = set()
-        for infos in read_json(str(portal_settings_path))["apps"].values():
+        portal_settings: dict[str, Any] = read_json(str(portal_settings_path))  # type: ignore
+        for infos in portal_settings["apps"].values():
             users = users.union(infos["users"])
         DOMAIN_USER_ACL_DICT[domain] = {}
         DOMAIN_USER_ACL_DICT[domain]["mtime"] = mtime
@@ -124,14 +124,14 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
             )
             return False
 
-        user_mail = user_result[0]["mail"]
-        if len(user_mail) != 1:
+        user_mail_list = user_result[0]["mail"]
+        if len(user_mail_list) != 1:
             logger.error(
-                f"User {user} found, but has the wrong number of email addresses: {user_mail}"
+                f"User {user} found, but has the wrong number of email addresses: {user_mail_list}"
             )
             return False
 
-        user_mail = user_mail[0]
+        user_mail = user_mail_list[0]
         if "@" not in user_mail:
             logger.error(f"Invalid email address for {user}: {user_mail}")
             return False
@@ -160,7 +160,7 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
 #
 # The result is a string formatted as <password_enc_b64>|<iv_b64>
 # For example: ctl8kk5GevYdaA5VZ2S88Q==|yTAzCx0Gd1+MCit4EQl9lA==
-def encrypt(data):
+def encrypt(data: str) -> str:
     alg = algorithms.AES(SESSION_SECRET().encode())
     iv = os.urandom(int(alg.block_size / 8))
 
@@ -173,7 +173,7 @@ def encrypt(data):
     return data_enc_b64 + "|" + iv_b64
 
 
-def decrypt(data_enc_and_iv_b64):
+def decrypt(data_enc_and_iv_b64: str) -> str:
     data_enc_b64, iv_b64 = data_enc_and_iv_b64.split("|")
     data_enc = base64.b64decode(data_enc_b64)
     iv = base64.b64decode(iv_b64)
@@ -182,19 +182,24 @@ def decrypt(data_enc_and_iv_b64):
     D = Cipher(alg, modes.CBC(iv), default_backend()).decryptor()
     p = padding.PKCS7(alg.block_size).unpadder()
     data_padded = D.update(data_enc)
-    data = p.update(data_padded) + p.finalize()
+    data: bytes = p.update(data_padded) + p.finalize()
     return data.decode()
 
 
-def short_hash(data):
+def short_hash(data: str) -> str:
     return hashlib.shake_256(data.encode()).hexdigest(20)
 
 
-class Authenticator(BaseAuthenticator):
+class Authenticator(BaseAuthenticator):  # type: ignore
     name = "ldap_ynhuser"
 
-    def _authenticate_credentials(self, credentials=None):
+    def _authenticate_credentials(
+        self, credentials: str | None = None
+    ) -> dict[str, str]:
         from bottle import request
+
+        if credentials is None:
+            raise YunohostError("invalid_credentials")
 
         try:
             username, password = credentials.split(":", 1)
@@ -208,7 +213,7 @@ class Authenticator(BaseAuthenticator):
             if len(user) != 0:
                 username = user[0]["uid"][0]
 
-        def _reconnect():
+        def _reconnect() -> ldap.ldapobject.SimpleLDAPObject:
             con = ldap.ldapobject.ReconnectLDAPObject(URI, retry_max=2, retry_delay=0.5)
             con.simple_bind_s(USERDN.format(username=username), password)
             return con
@@ -253,7 +258,7 @@ class Authenticator(BaseAuthenticator):
             "fullname": ldap_user_infos["cn"][0],
         }
 
-    def set_session_cookie(self, infos):
+    def set_session_cookie(self, infos: dict[str, Any]) -> None:
         from bottle import request, response
 
         assert isinstance(infos, dict)
@@ -284,10 +289,10 @@ class Authenticator(BaseAuthenticator):
         )
 
         # Create the session file (expiration mechanism)
-        session_file = f"{SESSION_FOLDER}/{infos['id']}"
-        os.system(f'touch "{session_file}"')
+        session_file = SESSION_FOLDER / infos["id"]
+        session_file.touch(exist_ok=True)
 
-    def get_session_cookie(self, decrypt_pwd=False):
+    def get_session_cookie(self, decrypt_pwd: bool = False) -> Mapping[str, Any]:
         from bottle import request, response
 
         try:
@@ -311,13 +316,13 @@ class Authenticator(BaseAuthenticator):
             raise YunohostAuthenticationError("unable_authenticate")
 
         self.purge_expired_session_files()
-        session_file = Path(SESSION_FOLDER) / infos["id"]
+        session_file = SESSION_FOLDER / infos["id"]
         if not session_file.exists():
             response.delete_cookie("yunohost.portal", path="/")
             raise YunohostAuthenticationError("session_expired")
 
         # Otherwise, we 'touch' the file to extend the validity
-        session_file.touch()
+        session_file.touch(exist_ok=True)
 
         is_dev = Path("/etc/yunohost/.portal-api-allowed-cors-origins").exists()
 
@@ -339,14 +344,14 @@ class Authenticator(BaseAuthenticator):
         if decrypt_pwd:
             infos["pwd"] = decrypt(infos["pwd"])
 
-        return infos
+        return infos  # type: ignore
 
-    def delete_session_cookie(self):
+    def delete_session_cookie(self) -> None:
         from bottle import response
 
         try:
             infos = self.get_session_cookie()
-            session_file = Path(SESSION_FOLDER) / infos["id"]
+            session_file = SESSION_FOLDER / infos["id"]
             session_file.unlink()
         except Exception as e:
             logger.debug(
@@ -355,8 +360,8 @@ class Authenticator(BaseAuthenticator):
 
         response.delete_cookie("yunohost.portal", path="/")
 
-    def purge_expired_session_files(self):
-        for session_file in Path(SESSION_FOLDER).iterdir():
+    def purge_expired_session_files(self) -> None:
+        for session_file in SESSION_FOLDER.iterdir():
             print(session_file.stat().st_mtime - time.time())
             if abs(session_file.stat().st_mtime - time.time()) > SESSION_VALIDITY:
                 try:
@@ -365,8 +370,8 @@ class Authenticator(BaseAuthenticator):
                     logger.debug(f"Failed to delete session file {session_file} ? {e}")
 
     @staticmethod
-    def invalidate_all_sessions_for_user(user):
-        for file in Path(SESSION_FOLDER).glob(f"{short_hash(user)}*"):
+    def invalidate_all_sessions_for_user(user: str) -> None:
+        for file in SESSION_FOLDER.glob(f"{short_hash(user)}*"):
             try:
                 file.unlink()
             except Exception as e:

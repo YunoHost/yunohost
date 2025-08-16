@@ -20,15 +20,14 @@
 
 import os
 import random
-from typing import List
 
 import requests
-from moulinette.utils.filesystem import mkdir, read_file, rm
 
 from ..diagnosis import Diagnoser
 from ..domain import domain_list
 from ..settings import settings_get
 from ..utils.dns import is_special_use_tld
+from ..utils.file_utils import mkdir, read_file, rm
 
 DIAGNOSIS_SERVER = "diagnosis.yunohost.org"
 
@@ -36,7 +35,7 @@ DIAGNOSIS_SERVER = "diagnosis.yunohost.org"
 class MyDiagnoser(Diagnoser):
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
-    dependencies: List[str] = ["ip"]
+    dependencies: list[str] = ["ip"]
 
     def run(self):
         all_domains = domain_list()["domains"]

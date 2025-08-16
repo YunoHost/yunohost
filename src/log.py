@@ -26,16 +26,16 @@ import time
 from datetime import datetime, timedelta
 from io import IOBase
 from logging import INFO, FileHandler, Formatter, getLogger
-from typing import Any, List
+from typing import Any
 
 import psutil
 import yaml
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
-from moulinette.utils.filesystem import read_file, read_yaml
-from moulinette.utils.log import SUCCESS
 
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import read_file, read_yaml
+from .utils.logging import SUCCESS
 from .utils.system import get_ynh_package_version
 
 logger = getLogger("yunohost.log")
@@ -289,7 +289,7 @@ def log_show(
         logs = list(log_list()["operation"])
 
         if position > len(logs):
-            raise YunohostValidationError("There isn't that many logs", raw_msg=True)
+            raise YunohostError("There isn't that many logs", raw_msg=True)
 
         path = logs[-position]["path"]
 
@@ -330,7 +330,7 @@ def log_show(
         log_path = base_path + ".log"
 
     if not os.path.exists(md_path) and not os.path.exists(log_path):
-        raise YunohostValidationError("log_does_exists", log=path)
+        raise YunohostError("log_does_exists", log=path)
 
     infos = {}
 
@@ -600,7 +600,7 @@ class OperationLogger:
     This class record logs and metadata like context or  time/end time.
     """
 
-    _instances: List["OperationLogger"] = []
+    _instances: list["OperationLogger"] = []
 
     def __init__(
         self, operation, related_to=None, sse_only=False, flash=False, **kwargs
@@ -699,7 +699,7 @@ class OperationLogger:
         # If nothing found, assume we're the root operation logger
         return None
 
-    def start(self):
+    def start(self) -> None:
         """
         Start to record logs that change the system
         Until this start method is run, no unit operation will be registered.
@@ -868,6 +868,7 @@ class OperationLogger:
             and isinstance(error, Exception)
             and not isinstance(error, YunohostValidationError)
             and not self.flash
+            and not self.sse_only
         ):
             error.log_ref = self.name
 

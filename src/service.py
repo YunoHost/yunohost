@@ -28,18 +28,18 @@ from logging import getLogger
 
 import yaml
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import (
+
+from .diagnosis import diagnosis_ignore, diagnosis_unignore
+from .log import is_unit_operation
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import (
     append_to_file,
     read_file,
     read_yaml,
     write_to_file,
     write_to_yaml,
 )
-from moulinette.utils.process import check_output
-
-from .diagnosis import diagnosis_ignore, diagnosis_unignore
-from .log import is_unit_operation
-from .utils.error import YunohostError, YunohostValidationError
+from .utils.process import check_output
 
 MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 
@@ -571,7 +571,7 @@ def service_log(name, number=50):
     return result
 
 
-def _run_service_command(action, service):
+def _run_service_command(action: str, service: str) -> bool:
     """
     Run services management command (start, stop, enable, disable, restart, reload)
 

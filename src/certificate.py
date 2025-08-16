@@ -25,20 +25,26 @@ import sys
 from datetime import datetime
 from glob import glob
 from logging import getLogger
+from typing import TYPE_CHECKING, Any, cast
 
 from moulinette import m18n
-from moulinette.utils.filesystem import chmod, chown, read_file
-from moulinette.utils.process import check_output
 
 from .diagnosis import Diagnoser
 from .log import OperationLogger
 from .regenconf import regen_conf
 from .service import _run_service_command
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import chmod, chown, read_file
 from .utils.network import get_public_ip
+from .utils.process import check_output
 from .vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 
-logger = getLogger("yunohost.certmanager")
+if TYPE_CHECKING:
+    from .utils.logging import YunohostLogger
+
+    logger = cast(YunohostLogger, getLogger("yunohost.certmanager"))
+else:
+    logger = getLogger("yunohost.certmanager")
 
 CERT_FOLDER = "/etc/yunohost/certs/"
 TMP_FOLDER = "/var/www/.well-known/acme-challenge-private/"
@@ -49,7 +55,7 @@ ACCOUNT_KEY_FILE = "/etc/yunohost/letsencrypt_account.pem"
 
 SSL_DIR = "/usr/share/yunohost/ssl"
 
-KEY_SIZE = 3072
+KEY_SIZE = 4096
 
 VALIDITY_LIMIT = 15  # days
 
@@ -61,7 +67,9 @@ PRODUCTION_CERTIFICATION_AUTHORITY = "https://acme-v02.api.letsencrypt.org"
 #
 
 
-def certificate_status(domains, full=False):
+def certificate_status(
+    domains: list[str], full: bool = False
+) -> dict[str, dict[str, Any]]:
     """
     Print the status of certificate for given domains (all by default)
 
@@ -78,7 +86,7 @@ def certificate_status(domains, full=False):
 
     # If no domains given, consider all yunohost domains
     if domains == []:
-        domains = domain_list()["domains"]
+        domains = domain_list()["domains"]  # type: ignore[assignment]
     # Else, validate that yunohost knows the domains given
     else:
         for domain in domains:
@@ -97,7 +105,7 @@ def certificate_status(domains, full=False):
             try:
                 _check_domain_is_ready_for_ACME(domain)
                 status["ACME_eligible"] = True
-            except Exception as e:
+            except YunohostError as e:
                 if e.key == "certmanager_domain_not_diagnosed_yet":
                     status["ACME_eligible"] = None  # = unknown status
                 else:
@@ -119,7 +127,12 @@ def certificate_status(domains, full=False):
     return {"certificates": certificates}
 
 
-def certificate_install(domain_list, force=False, no_checks=False, self_signed=False):
+def certificate_install(
+    domain_list: list[str],
+    force: bool = False,
+    no_checks: bool = False,
+    self_signed: bool = False,
+) -> None:
     """
     Install a Let's Encrypt certificate for given domains (all by default)
 
@@ -309,7 +322,12 @@ def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
         )
 
 
-def certificate_renew(domains, force=False, no_checks=False, email=False):
+def certificate_renew(
+    domains: list[str],
+    force: bool = False,
+    no_checks: bool = False,
+    email: bool = False,
+) -> None:
     """
     Renew Let's Encrypt certificate for given domains (all by default)
 
