@@ -23,7 +23,7 @@ import re
 import shutil
 from logging import getLogger
 from pathlib import Path
-from typing import Any
+from typing import TypedDict, Literal, Any
 
 import miniupnpc
 import yaml
@@ -35,11 +35,24 @@ from .utils.error import YunohostError, YunohostValidationError
 logger: Any = getLogger("yunohost.firewall")
 
 
+class _YunoFirewallPortSettings(TypedDict):
+    comment: str
+    open: bool
+    upnp: bool
+
+
+class YunoFirewallSettings(TypedDict):
+    tcp: dict[int | str, _YunoFirewallPortSettings]  # TCP firewall settings
+    udp: dict[int | str, _YunoFirewallPortSettings]  # UDP firewall settings
+    router_forwarding_upnp: bool  # Whether to enable uPNP port forwarding configuration
+
+
 class YunoFirewall:
     FIREWALL_FILE = Path("/etc/yunohost/firewall.yml")
 
     def __init__(self) -> None:
         self.need_reload = False
+        self.config: YunoFirewallSettings
 
         # This is a workaround for when we need to actively close UPnP ports
         self.upnp_to_close: list[tuple[str, int | str]] = []
@@ -69,7 +82,7 @@ class YunoFirewall:
         router_forwarding_upnp: false
         """
 
-        self.config = yaml.safe_load(self.FIREWALL_FILE.read_text()) or {}
+        self.config = yaml.safe_load(self.FIREWALL_FILE.read_text()) or {}  # type: ignore
 
         if "tcp" not in self.config or "udp" not in self.config:
             raise Exception(
@@ -81,7 +94,7 @@ class YunoFirewall:
         shutil.copyfile(self.FIREWALL_FILE, old_file)
         self.FIREWALL_FILE.write_text(yaml.dump(self.config))
 
-    def list(self, protocol: str, forwarded: bool = False) -> list[int]:
+    def list(self, protocol: str, forwarded: bool = False) -> list[int | str]:
         protocol, _ = self._validate_port(protocol, 0)
         return [
             port
@@ -90,7 +103,7 @@ class YunoFirewall:
         ]
 
     @staticmethod
-    def _validate_port(protocol: str, port: int | str) -> tuple[str, int | str]:
+    def _validate_port(protocol: str, port: int | str) -> tuple[Literal["tcp"] | Literal["udp"], int | str]:
         if isinstance(port, str):
             # iptables used ":" and app packages might still do
             port = port.replace(":", "-")
@@ -99,7 +112,7 @@ class YunoFirewall:
                 port = int(port)
         if protocol not in ["tcp", "udp"]:
             raise ValueError(f"protocol should be tcp or udp, not {protocol}")
-        return protocol, port
+        return protocol, port  # type: ignore
 
     def open_port(
         self, protocol: str, port: int | str, comment: str, upnp: bool = False
