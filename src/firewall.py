@@ -23,7 +23,7 @@ import re
 import shutil
 from logging import getLogger
 from pathlib import Path
-from typing import TypedDict, Literal, Any
+from typing import Any, Literal, TypedDict
 
 import miniupnpc
 import yaml
@@ -103,7 +103,9 @@ class YunoFirewall:
         ]
 
     @staticmethod
-    def _validate_port(protocol: str, port: int | str) -> tuple[Literal["tcp"] | Literal["udp"], int | str]:
+    def _validate_port(
+        protocol: str, port: int | str
+    ) -> tuple[Literal["tcp"] | Literal["udp"], int | str]:
         if isinstance(port, str):
             # iptables used ":" and app packages might still do
             port = port.replace(":", "-")
