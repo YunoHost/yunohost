@@ -695,6 +695,7 @@
     "migrations_skip_migration": "Skipping migration {id}…",
     "migrations_success_forward": "Migration {id} completed",
     "migrations_to_be_ran_manually": "Migration {id} has to be run manually. Please go to Tools → Migrations on the webadmin page, or run `yunohost tools migrations run`.",
+    "must_provide_password_to_edit_user_profile": "You need to provide the user password to edit user informations.",
     "nftables_unavailable": "You cannot play with nftables here. You are either in a container or your kernel does not support it",
     "noninteractive_task": "Non-interactive task",
     "not_enough_disk_space": "Not enough free space on '{path}'",

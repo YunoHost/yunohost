@@ -133,14 +133,11 @@ def portal_public():
     Get public settings
     If the portal is set as public, it will include the list of public apps
     """
+    from bottle import request
 
     portal_settings = _get_portal_settings()
 
-    try:
-        # TODO handle this case...
-        #Auth().get_session_cookie()
-        pass
-    except Exception:
+    if not request.get_header("Ynh-User"):
         if "portal_user_intro" in portal_settings:
             del portal_settings["portal_user_intro"]
 
@@ -308,7 +305,7 @@ def portal_update(
 
     # Check that current password is valid
     # To be able to edit the user info, an authenticated ldap session is needed
-    if newpassword:
+    if newpassword or currentpassword:
         # When setting the password, check the user provided the valid current password
         try:
             ldap_interface = LDAPInterface(username, currentpassword)
@@ -316,11 +313,9 @@ def portal_update(
             raise YunohostValidationError("invalid_password", path="currentpassword")
     else:
         # Otherwise we use the encrypted password stored in the cookie
-        # TODO we need a to fix this case without having the password because authelia don't provide any password
-        raise NotImplemented()
-        ldap_interface = LDAPInterface(
-            username, Auth().get_session_cookie(decrypt_pwd=True)["pwd"]
-        )
+        # As now with Authelia we don't store any more the user password at any place, so we need request the user
+        # password to edit the user informations
+        raise YunohostValidationError("must_provide_password_to_edit_user_profile")
 
     try:
         ldap_interface.update(f"uid={username},ou=users", new_attr_dict)

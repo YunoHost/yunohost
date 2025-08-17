@@ -144,45 +144,6 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
         return False
 
 
-# We want to save the password in the cookie, but we should do so in an encrypted fashion
-# This is needed because the SSO later needs to possibly inject the Basic Auth header
-# which includes the user's password
-# It's also needed because we need to be able to open LDAP sessions, authenticated as the user,
-# which requires the user's password
-#
-# To do so, we use AES-256-CBC. As it's a block encryption algorithm, it requires an IV,
-# which we need to keep around for decryption on SSOwat'side.
-#
-# SESSION_SECRET is used as the encryption key, which implies it must be exactly 32-char long (256/8)
-#
-# The result is a string formatted as <password_enc_b64>|<iv_b64>
-# For example: ctl8kk5GevYdaA5VZ2S88Q==|yTAzCx0Gd1+MCit4EQl9lA==
-def encrypt(data):
-    alg = algorithms.AES(SESSION_SECRET().encode())
-    iv = os.urandom(int(alg.block_size / 8))
-
-    E = Cipher(alg, modes.CBC(iv), default_backend()).encryptor()
-    p = padding.PKCS7(alg.block_size).padder()
-    data_padded = p.update(data.encode()) + p.finalize()
-    data_enc = E.update(data_padded) + E.finalize()
-    data_enc_b64 = base64.b64encode(data_enc).decode()
-    iv_b64 = base64.b64encode(iv).decode()
-    return data_enc_b64 + "|" + iv_b64
-
-
-def decrypt(data_enc_and_iv_b64):
-    data_enc_b64, iv_b64 = data_enc_and_iv_b64.split("|")
-    data_enc = base64.b64decode(data_enc_b64)
-    iv = base64.b64decode(iv_b64)
-
-    alg = algorithms.AES(SESSION_SECRET().encode())
-    D = Cipher(alg, modes.CBC(iv), default_backend()).decryptor()
-    p = padding.PKCS7(alg.block_size).unpadder()
-    data_padded = D.update(data_enc)
-    data = p.update(data_padded) + p.finalize()
-    return data.decode()
-
-
 def short_hash(data: str) -> str:
     return hashlib.shake_256(data.encode()).hexdigest(20)
 
@@ -191,6 +152,8 @@ class Authenticator(BaseAuthenticator):
     name = "ldap_ynhuser"
 
     def _authenticate_credentials(self, credentials=None):
+        # FIXME we probably don't need this any more because now the authentication is handled by Authelia but
+        # we might still need to provide an implementation for moulinette soo...
         from bottle import request
 
         try:
@@ -251,50 +214,18 @@ class Authenticator(BaseAuthenticator):
         }
 
     def set_session_cookie(self, infos):
-        from bottle import request, response
+        # Session cookie are now handled by Authelia
+        pass
 
-        assert isinstance(infos, dict)
-        assert "user" in infos
-        assert "pwd" in infos
-        assert "email" in infos
-        assert "fullname" in infos
-
-        # Create a session id, built as <user_hash> + some random ascii
-        # Prefixing with the user hash is meant to provide the ability to invalidate all this user's session
-        # (eg because the user gets deleted, or password gets changed)
-        # User hashing not really meant for security, just to sort of anonymize/pseudonymize the session file name
-        infos["id"] = short_hash(infos["user"]) + random_ascii(20)
-        infos["host"] = request.get_header("host")
-
-        is_dev = Path("/etc/yunohost/.portal-api-allowed-cors-origins").exists()
-
-        response.set_cookie(
-            "yunohost.portal",
-            jwt.encode(infos, SESSION_SECRET(), algorithm="HS256"),
-            secure=True,
-            httponly=True,
-            path="/",
-            samesite="lax" if not is_dev else None,
-            domain=f".{request.get_header('host')}",
-            max_age=SESSION_VALIDITY
-            - 600,  # remove 1 minute such that cookie expires on the browser slightly sooner on browser side, just to help desimbuigate edge case near the expiration limit
-        )
-
-        # Create the session file (expiration mechanism)
-        session_file = SESSION_FOLDER / infos["id"]
-        session_file.touch(exist_ok=True)
-
-    def get_session_cookie(self, decrypt_pwd=False):
+    def get_session_cookie(self):
         from bottle import request, response
 
         try:
-            token = request.get_cookie("yunohost.portal", default="").encode()
-            infos = jwt.decode(
-                token,
-                SESSION_SECRET(),
-                algorithms="HS256",
-                options={"require": ["id", "host", "user", "pwd"]},
-            )
+            infos = {
+                'username': request.get_header("Ynh-User"),
+                'host': request.get_header("host")
+            } if request.get_header("Ynh-User") else None
+
         except Exception:
             raise YunohostAuthenticationError("unable_authenticate")
 
@@ -307,59 +238,15 @@ class Authenticator(BaseAuthenticator):
         if not user_is_allowed_on_domain(infos["user"], infos["host"]):
             raise YunohostAuthenticationError("unable_authenticate")
 
-        self.purge_expired_session_files()
-        session_file = SESSION_FOLDER / infos["id"]
-        if not session_file.exists():
-            response.delete_cookie("yunohost.portal", path="/")
-            raise YunohostAuthenticationError("session_expired")
-
-        # Otherwise, we 'touch' the file to extend the validity
-        session_file.touch(exist_ok=True)
-
-        is_dev = Path("/etc/yunohost/.portal-api-allowed-cors-origins").exists()
-
-        # We also re-set the cookie such that validity is also extended on browser side
-        response.set_cookie(
-            "yunohost.portal",
-            request.get_cookie(
-                "yunohost.portal"
-            ),  # Reuse the same token to avoid recomputing stuff (saves a bit of CPU / delay I suppose?)
-            secure=True,
-            httponly=True,
-            path="/",
-            samesite="lax" if not is_dev else None,
-            domain=f".{request.get_header('host')}",
-            max_age=SESSION_VALIDITY
-            - 600,  # remove 1 minute such that cookie expires on the browser slightly sooner on browser side, just to help desimbuigate edge case near the expiration limit
-        )
-
-        if decrypt_pwd:
-            infos["pwd"] = decrypt(infos["pwd"])
-
         return infos
 
     def delete_session_cookie(self):
-        from bottle import response
-
-        try:
-            infos = self.get_session_cookie()
-            session_file = SESSION_FOLDER / infos["id"]
-            session_file.unlink()
-        except Exception as e:
-            logger.debug(
-                f"User logged out, but failed to properly invalidate the session : {e}"
-            )
-
-        response.delete_cookie("yunohost.portal", path="/")
+        # Session cookie are now handled by Authelia
+        pass
 
     def purge_expired_session_files(self):
-        for session_file in SESSION_FOLDER.iterdir():
-            print(session_file.stat().st_mtime - time.time())
-            if abs(session_file.stat().st_mtime - time.time()) > SESSION_VALIDITY:
-                try:
-                    session_file.unlink()
-                except Exception as e:
-                    logger.debug(f"Failed to delete session file {session_file} ? {e}")
+        # Session cookie are now handled by Authelia
+        pass
 
     @staticmethod
     def invalidate_all_sessions_for_user(user: str) -> None:
