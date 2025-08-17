@@ -86,7 +86,7 @@ class YunoFirewall:
         return [
             port
             for port, status in self.config[protocol].items()
-            if (status["forwarded"] if forwarded else status["open"])
+            if (status["upnp"] if forwarded else status["open"])
         ]
 
     @staticmethod
