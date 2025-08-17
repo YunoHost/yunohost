@@ -43,9 +43,13 @@ class _YunoFirewallPortSettings(TypedDict):
 
 class YunoFirewallSettings(TypedDict):
     """This is the description of the content of /etc/yunohost/firewall.yml"""
+
     tcp: dict[int | str, _YunoFirewallPortSettings]  # TCP firewall settings
     udp: dict[int | str, _YunoFirewallPortSettings]  # UDP firewall settings
     router_forwarding_upnp: bool  # Whether to enable uPNP port forwarding configuration
+
+
+IPProto = Literal["tcp"] | Literal["udp"]
 
 
 class YunoFirewall:
@@ -104,9 +108,7 @@ class YunoFirewall:
         ]
 
     @staticmethod
-    def _validate_port(
-        protocol: str, port: int | str
-    ) -> tuple[Literal["tcp"] | Literal["udp"], int | str]:
+    def _validate_port(protocol: str, port: int | str) -> tuple[IPProto, int | str]:
         if isinstance(port, str):
             # iptables used ":" and app packages might still do
             port = port.replace(":", "-")
@@ -311,12 +313,13 @@ class YunoUPnP:
         for protocol, port in firewall.upnp_to_close:
             status = status and self.close_port(protocol, port)
 
-        for protocol in ["tcp", "udp"]:
-            for port, info in firewall.config[protocol].items():
+        protos: list[IPProto] = ["tcp", "udp"]
+        for proto in protos:
+            for port, info in firewall.config[proto].items():
                 if self.enabled() and info["open"] and info["upnp"]:
-                    status = status and self.open_port(protocol, port, info["comment"])
+                    status = status and self.open_port(proto, port, info["comment"])
                 else:
-                    status = status and self.close_port(protocol, port)
+                    status = status and self.close_port(proto, port)
 
         return status
 
@@ -532,7 +535,7 @@ def firewall_delete(
 
 def firewall_list(
     raw: bool = False, protocol: str = "tcp", forwarded: bool = False
-) -> dict[str, Any]:
+) -> YunoFirewallSettings | dict[str, list[int | str]]:
     """
     List all firewall rules
 
@@ -543,7 +546,11 @@ def firewall_list(
         forwarded -- If not raw, list UPnP forwarded ports instead of open ports
     """
     firewall = YunoFirewall()
-    return firewall.config if raw else {protocol: firewall.list(protocol, forwarded)}
+    if raw:
+        return firewall.config
+    else:
+        data = {protocol: firewall.list(protocol, forwarded)}  # indirection is for mypy
+        return data
 
 
 def firewall_reload(skip_upnp: bool = False) -> None:
