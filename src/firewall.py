@@ -42,6 +42,7 @@ class _YunoFirewallPortSettings(TypedDict):
 
 
 class YunoFirewallSettings(TypedDict):
+    """This is the description of the content of /etc/yunohost/firewall.yml"""
     tcp: dict[int | str, _YunoFirewallPortSettings]  # TCP firewall settings
     udp: dict[int | str, _YunoFirewallPortSettings]  # UDP firewall settings
     router_forwarding_upnp: bool  # Whether to enable uPNP port forwarding configuration
