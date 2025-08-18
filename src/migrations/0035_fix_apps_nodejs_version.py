@@ -2,10 +2,9 @@ import os
 from logging import getLogger
 
 from ..app import app_setting
-
 from ..tools import Migration
+from ..utils.app_utils import _get_app_settings, _installed_apps
 from ..utils.process import check_output
-from ..utils.app_utils import _installed_apps, _get_app_settings
 
 logger = getLogger("yunohost.migration")
 
@@ -14,12 +13,13 @@ def get_installed_nodejs_versions():
     n = "/usr/share/yunohost/helpers.v2.1.d/vendor/n/n"
     N_INSTALL_DIR = "/opt/node_n"
     installed_versions_raw = check_output(f"{n} ls", env={"N_PREFIX": N_INSTALL_DIR})
-    installed_versions = [version.split("/")[-1] for version in installed_versions_raw.strip().split("\n")]
+    installed_versions = [
+        version.split("/")[-1] for version in installed_versions_raw.strip().split("\n")
+    ]
     return installed_versions
 
 
 def patch_app(app, base_dir=""):
-
     settings = _get_app_settings(app)
     nodejs_version = settings.get("nodejs_version")
     if nodejs_version is None or "." in str(nodejs_version):
@@ -34,15 +34,25 @@ def patch_app(app, base_dir=""):
         if v == nodejs_version or v.startswith(nodejs_version + ".")
     ]
     if not matching_versions:
-        logger.warning(f"Uhoh, no matching version found among {installed_versions} for nodejs {nodejs_version} for app {app} ?")
+        logger.warning(
+            f"Uhoh, no matching version found among {installed_versions} for nodejs {nodejs_version} for app {app} ?"
+        )
 
-    sorted_versions = sorted(matching_versions, key=lambda s: list(map(int, s.split("."))))
+    sorted_versions = sorted(
+        matching_versions, key=lambda s: list(map(int, s.split(".")))
+    )
     actual_version = sorted_versions[-1]
 
-    logger.debug(f"Updating nodejs version setting for {app} from {nodejs_version} to {actual_version}")
+    logger.debug(
+        f"Updating nodejs version setting for {app} from {nodejs_version} to {actual_version}"
+    )
     app_setting(app, "nodejs_version", actual_version)
 
-    service_files_for_this_app = check_output(f'grep -lr "^User={app}$" "{base_dir}/etc/systemd/system"').strip().split("\n")
+    service_files_for_this_app = (
+        check_output(f'grep -lr "^User={app}$" "{base_dir}/etc/systemd/system"')
+        .strip()
+        .split("\n")
+    )
     service_files_manually_modified = []
     for file in service_files_for_this_app:
         cleaned_file = file.replace(base_dir, "") if base_dir else file
@@ -51,10 +61,14 @@ def patch_app(app, base_dir=""):
         if md5 != settings.get(setting_name):
             service_files_manually_modified.append(cleaned_file)
 
-    logger.debug(f"Patching nodejs version for app {app} in {', '.join(service_files_for_this_app)} ...")
+    logger.debug(
+        f"Patching nodejs version for app {app} in {', '.join(service_files_for_this_app)} ..."
+    )
     old_node_path = f"/opt/node_n/n/versions/node/{nodejs_version}/bin"
     new_node_path = f"/opt/node_n/n/versions/node/{actual_version}/bin"
-    os.system(f"sed -i 's@{old_node_path}@{new_node_path}@g' {' '.join(service_files_for_this_app)}")
+    os.system(
+        f"sed -i 's@{old_node_path}@{new_node_path}@g' {' '.join(service_files_for_this_app)}"
+    )
     for file in service_files_for_this_app:
         cleaned_file = file.replace(base_dir, "") if base_dir else file
         if cleaned_file in service_files_manually_modified:
