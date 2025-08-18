@@ -1,3 +1,13 @@
+yunohost (12.1.10.1) testing; urgency=low
+
+  - dns: value -> content in dns-diagnosis-related strings (308202836)
+  - nodejs: fix version migration: some nodejs app have legit no service file (a4a658fcf)
+  - i18n: Translations updated for Basque, French, Galician
+
+  Thanks to all contributors <3 ! (José M, ppr, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 18 Aug 2025 23:57:54 +0200
+
 yunohost (12.1.10) testing; urgency=low
 
   - firewall: only open UPnP when open and upnp are enabled in conf (#2112)
