@@ -1,3 +1,16 @@
+yunohost (12.1.10) testing; urgency=low
+
+  - firewall: only open UPnP when open and upnp are enabled in conf (#2112)
+  - firewall: Fix typo, doc and typing (16d33404c, a5e2bec2f, f080cbd4e, 08edd38ab)
+  - dns: fix another value -> content renaming (0acc047a0)
+  - certificate: bump key size from 3072 to 4096 (9f5f38883)
+  - apps: fix bug when computing app upgrade infos (0f3b19a2c)
+  - nodejs: Add a migration to patch app using nodejs such that the nodejs_version setting and the systemd file point to the full X.Y.Z version instead of the major version (023678b14)
+
+  Thanks to all contributors <3 ! (eric_G, Félix Piédallu, Kayou)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 18 Aug 2025 21:42:39 +0200
+
 yunohost (12.1.9) testing; urgency=low
 
   - Add support for (plain) XZ and ZST source archives (#2118)
@@ -21,7 +34,7 @@ yunohost (12.1.8) testing; urgency=low
   - Misc typing (386216b73, a687098a7, 7c4d89eea, eafdb3a3d, a46faa210, cd1222fd6)
   - i18n: Translations updated for French, Galician
 
-  Thanks to all contributors <3 ! (axolotle, Félix Piédallu, José M, ppr, Salamandar)
+  Thanks to all contributors <3 ! (axolotle, Félix Piédallu, José M, ppr)
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 10 Aug 2025 22:01:57 +0200
 
@@ -113,7 +126,7 @@ yunohost (12.1.4) testing; urgency=low
   - regenconf/dnsmasq: optimize the number of time we call 'yunohost domain' for perf + use True/False instead of 1/0 (f53f805c4)
   - i18n: Translations updated for Basque, French, German, Italian, Persian, Polish, Portuguese, Russian, Slovak
 
-  Thanks to all contributors <3 ! (Anonymous, harc, ljf, OniriCorpe, ppr, tituspijean, xabirequejo)
+  Thanks to all contributors <3 ! (harc, ljf, OniriCorpe, ppr, tituspijean, xabirequejo)
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 28 Mar 2025 10:40:45 +0100
 
@@ -135,7 +148,7 @@ yunohost (12.1.3) testing; urgency=low
   - documentation: Prepare migration to Docusaurus (([dc2b22541](http://github.com/YunoHost/yunohost/commit/dc2b22541)), ([77f7135f4](http://github.com/YunoHost/yunohost/commit/77f7135f4)))
   - i18n: Translations updated for Basque, Catalan, Chinese (Simplified), Esperanto, French, Galician, German, Indonesian, Italian, Japanese, Occitan, Persian, Spanish, Ukrainian
 
-  Thanks to all contributors <3 ! (Alexandre Aubin, Anonymous, Christophe Henry, Félix Piédallu, Josué Tille, Kay0u, Kayou, OniriCorpe, Quiwy, Salamandar, alexAubin, ljf (zamentur), ppr, sachaz, Éric Gaspar)
+  Thanks to all contributors <3 ! (Alexandre Aubin, Christophe Henry, Félix Piédallu, Josué Tille, Kayou, OniriCorpe, Quiwy, ljf (zamentur), ppr, sachaz, Éric Gaspar)
 
  -- tituspijean <tituspijean@yunohost.org>  Sun, 23 Mar 2025 09:32:14 +0100
  
