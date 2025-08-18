@@ -56,7 +56,7 @@ class MyMigration(Migration):
         _sync_permissions_with_ldap()
         app_ssowatconf()
 
-    def run_before_app_restore(self, app_id):
+    def run_before_app_restore(self, app_id, app_backup_in_archive):
         # Prior to 12.1, the truth source for app permission was the LDAP db rather than app settings.
         # The LDAP db corresponding to the app was dump into a separate yaml
         permfile = f"/etc/yunohost/apps/{app_id}/permissions.yml"

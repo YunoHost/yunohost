@@ -1033,7 +1033,7 @@ def _tools_migrations_run_after_system_restore(backup_version: str) -> None:
                 raise
 
 
-def _tools_migrations_run_before_app_restore(backup_version, app_id):
+def _tools_migrations_run_before_app_restore(backup_version, app_id, app_backup_in_archive):
     all_migrations = _get_migrations_list()
 
     current_version = version.parse(ynh_packages_version()["yunohost"]["version"])
@@ -1050,7 +1050,7 @@ def _tools_migrations_run_before_app_restore(backup_version, app_id):
         ):
             try:
                 logger.info(m18n.n("migrations_running_forward", id=migration.id))
-                migration.run_before_app_restore(app_id)
+                migration.run_before_app_restore(app_id, app_backup_in_archive)
             except Exception as e:
                 msg = m18n.n(
                     "migrations_migration_has_failed", exception=e, id=migration.id
