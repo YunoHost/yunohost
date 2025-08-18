@@ -890,5 +890,7 @@
     "apps_upgrade_cancelled": "Aínda quedan actualizacións que realizar para algunhas aplicacións pero detívose o proceso (usa `--continue-on-failure`para continuar igualmente): {apps}",
     "backup_no_file_collected": "Fallou a recollida de ficheiros para a copia de apoio",
     "global_settings_setting_portal_allow_edit_email_forward_help": "Se está desactivado, precisas pedirlle a Admin que o faga.",
-    "global_settings_setting_portal_allow_edit_email_help": "Se está desactivado, precisas pedirlle a Admin que o faga."
+    "global_settings_setting_portal_allow_edit_email_help": "Se está desactivado, precisas pedirlle a Admin que o faga.",
+    "backup_before_upgrade_deleted_because_replaced_by_newer_backup": "Eliminouse a copia {name} porque foi substituída pola nova copia {newname}",
+    "migration_description_0034_fix_missing_admins_aliases": "Arranxar os alias de correo que faltan para o grupo de admins"
 }

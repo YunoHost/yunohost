@@ -877,7 +877,7 @@
     "app_upgrade_cli_bad_quality": "La mise à jour pour {app} est ignorée car elle est actuellement signalée comme cassée dans le catalogue d'applications de YunoHost.",
     "app_upgrade_cli_up_to_date": "{app} est déjà à jour ({current_version})",
     "app_upgrade_cli_url_required": "{app} ne figure pas (plus ?) dans le catalogue et ne peut donc pas être mis à jour automatiquement. Vous devez utiliser `yunohost app upgrade {app}` pour fournir l'URL du dépôt à l'aide de l'option `-u`.",
-    "app_upgrade_cli_will_force_upgrade": "{app} sera mis à jour de manière forcée ({current_version})",
+    "app_upgrade_cli_will_force_upgrade": "{app} sera mise à jour de force ({current_version})",
     "app_upgrade_cli_will_upgrade": "{app} sera mis à jour de la version {current_version} à la version {new_version}",
     "app_upgrade_continuing_with_other_apps": "La mise à jour de {app} a échoué, mais poursuite de la mise à niveau des autres applications malgré tout (car l'option `--continue-on-failure` a été utilisée)",
     "app_upgrade_fail_requirements": "Une nouvelle version est disponible pour cette application ({new_version}), mais certaines conditions ne sont pas remplies :\n{failed_requirements}",
@@ -887,8 +887,10 @@
     "app_upgrade_upgradable": "L'application peut être mise à jour de la version {current_version} à la version {new_version}",
     "apps_confirm_partial_upgrade": "Certaines applications pour lesquelles une mise à jour a été demandée ne peuvent pas être mises à jour. Voulez-vous quand même continuer avec les autres ?",
     "app_upgrade_url_required": "Cette application n'existe pas (plus ?) dans le catalogue, vous devez donc vous occuper manuellement des mises à jour. <br/><small>Depuis la ligne de commande, vous pouvez utiliser `yunohost app upgrade <app>` et fournir l'URL du dépôt à l'aide de l'option `-u`.</small>",
-    "apps_no_target_can_be_upgraded": "Aucune application ne peut être mise à jour.",
+    "apps_no_target_can_be_upgraded": "Aucune application ne peut être mise à jour",
     "apps_upgrade_cancelled": "Les mises à jour étaient encore en attente pour plusieurs autres applications, mais leur mise à jour a été annulée (utilisez `--continue-on-failure` pour continuer quand même) : {apps}",
     "backup_app_script_failed": "Échec de la collecte des fichiers à sauvegarder pour {app}.",
-    "backup_no_file_collected": "Échec de la collecte des fichiers à sauvegarder"
+    "backup_no_file_collected": "Échec de la collecte des fichiers à sauvegarder",
+    "backup_before_upgrade_deleted_because_replaced_by_newer_backup": "La sauvegarde {name} a été supprimée car elle a été remplacée par une sauvegarde plus récente {newname}",
+    "migration_description_0034_fix_missing_admins_aliases": "Correction des alias de messagerie manquants pour le groupe admins"
 }
