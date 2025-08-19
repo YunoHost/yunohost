@@ -37,6 +37,7 @@ def patch_app(app, base_dir=""):
         logger.warning(
             f"Uhoh, no matching version found among {installed_versions} for nodejs {nodejs_version} for app {app} ?"
         )
+        return
 
     sorted_versions = sorted(
         matching_versions, key=lambda s: list(map(int, s.split(".")))
