@@ -143,8 +143,8 @@
     "diagnosis_basesystem_hardware": "A arquitectura do hardware do servidor é {virt} {arch}",
     "confirm_app_install_thirdparty": "PERIGO! Esta app non forma parte do catálogo de YunoHost. Ao instalar apps de terceiras partes poderías comprometer a integridade e seguridade do sistema. Probablemente NON deberías instalala a menos que saibas o que fas. NON SE PROPORCIONARÁ SOPORTE se esta app non funciona ou estraga o sistema… Se aínda así asumes o risco, escribe '{answers}'",
     "diagnosis_dns_point_to_doc": "Revisa a documentación en <a href='https://yunohost.org/dns_config'>https://yunohost.org/dns_config</a> se precisas axuda para configurar os rexistros DNS.",
-    "diagnosis_dns_discrepancy": "O seguinte rexistro DNS non segue a configuración recomendada:<br>Tipo: <code>{type}</code><br>Nome: <code>{name}</code><br>Valor actual: <code>{current}</code><br>Valor agardado: <code>{value}</code>",
-    "diagnosis_dns_missing_record": "Facendo caso á configuración DNS recomendada, deberías engadir un rexistro DNS coa seguinte info.<br>Tipo: <code>{type}</code><br>Nome: <code>{name}</code><br>Valor: <code>{value}</code>",
+    "diagnosis_dns_discrepancy": "O seguinte rexistro DNS non segue a configuración recomendada:<br>Tipo: <code>{type}</code><br>Nome: <code>{name}</code><br>Valor actual: <code>{current}</code><br>Valor agardado: <code>{content}</code>",
+    "diagnosis_dns_missing_record": "Facendo caso á configuración DNS recomendada, deberías engadir un rexistro DNS coa seguinte info.<br>Tipo: <code>{type}</code><br>Nome: <code>{name}</code><br>Valor: <code>{content}</code>",
     "diagnosis_dns_bad_conf": "Faltan algúns rexistros DNS ou están mal configurados para o dominio {domain} (categoría {category})",
     "diagnosis_dns_good_conf": "Os rexistros DNS están correctamente configurados para o dominio {domain} (categoría {category})",
     "diagnosis_ip_weird_resolvconf_details": "O ficheiro <code>/etc/resolv.conf</code> debería ser unha ligazón simbólica a <code>/etc/resolvconf/run/resolv.conf</code> apuntando el mesmo a <code>127.0.0.1</code> (dnsmasq). Se queres configurar manualmente a resolución DNS, por favor edita <code>/etc/resolv.dnsmasq.conf</code>.",
@@ -892,5 +892,6 @@
     "global_settings_setting_portal_allow_edit_email_forward_help": "Se está desactivado, precisas pedirlle a Admin que o faga.",
     "global_settings_setting_portal_allow_edit_email_help": "Se está desactivado, precisas pedirlle a Admin que o faga.",
     "backup_before_upgrade_deleted_because_replaced_by_newer_backup": "Eliminouse a copia {name} porque foi substituída pola nova copia {newname}",
-    "migration_description_0034_fix_missing_admins_aliases": "Arranxar os alias de correo que faltan para o grupo de admins"
+    "migration_description_0034_fix_missing_admins_aliases": "Arranxar os alias de correo que faltan para o grupo de admins",
+    "migration_description_0035_fix_apps_nodejs_version": "Arranxar as versións de nodejs na configuración de systemd da app"
 }
