@@ -720,8 +720,6 @@ def tools_basic_space_cleanup() -> None:
     for kernel in kernels:
         subprocess.run("apt remove -y --purge " + kernel, shell=True)
 
-    subprocess.run("update-grub2", shell=True)
-
 
 # ############################################ #
 #                                              #
