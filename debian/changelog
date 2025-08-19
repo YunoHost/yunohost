@@ -1,3 +1,10 @@
+yunohost (12.1.12) stable; urgency=low
+
+  - apps: add tmp debug info/exception to hunt bug with workdir disappearing ? (bd3730ad7)
+  - Release as stable!
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 Aug 2025 01:34:59 +0200
+
 yunohost (12.1.11) testing; urgency=low
 
   - app: in the app permission config panel, absolute url containing '//' in some cases (73624d4c0)
