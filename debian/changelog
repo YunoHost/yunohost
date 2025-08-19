@@ -1,3 +1,10 @@
+yunohost (12.1.10.2) testing; urgency=low
+
+  - nodejs: in version migration, skip app for which no matching version is found (c899ed858)
+  - tools_update: don't list apps that are up to date (e2b3bdcae)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 19 Aug 2025 02:15:18 +0200
+
 yunohost (12.1.10.1) testing; urgency=low
 
   - dns: value -> content in dns-diagnosis-related strings (308202836)
