@@ -1,3 +1,12 @@
+yunohost (12.1.11) testing; urgency=low
+
+  - app: in the app permission config panel, absolute url containing '//' in some cases (73624d4c0)
+  - user: user create/delete should regen the ssowat conf (4823d5a80)
+  - permissions: automatically remove user/group that dont exist from app perms (b8ae908c5)
+  - i18n: fix all value -> content in dns-related diagnosis strings (e90c8212a)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 19 Aug 2025 15:48:45 +0200
+
 yunohost (12.1.10.2) testing; urgency=low
 
   - nodejs: in version migration, skip app for which no matching version is found (c899ed858)
