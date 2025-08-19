@@ -727,6 +727,8 @@ def tools_basic_space_cleanup() -> None:
             for kernel in kernels:
                 if running_kernel[0] not in kernel:
                     subprocess.run("apt remove -y --purge " + kernel, shell=True)
+                else:
+                    print("This is the running kernel, it won't be removed")
 
 
 # ############################################ #
