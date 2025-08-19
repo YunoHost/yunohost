@@ -490,6 +490,8 @@ def _list_apps_with_upgrade_infos(
         except Exception as e:
             logger.error(f"Failed to read info for {app_id} : {e}", exc_info=True)
             continue
+        if app_info_dict["upgrade"]["status"] == "up_to_date":
+            continue
         if "settings" in app_info_dict:
             del app_info_dict["settings"]
 
