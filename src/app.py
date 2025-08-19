@@ -2508,7 +2508,7 @@ ynh_app_config_run $1
                 )
                 raw_settings[f"permission_{perm}_show_tile"] = infos["show_tile"]
                 if infos.get("url") and domain and path:
-                    absolute_url = f"https://{domain}{path}{infos.get('url')}"
+                    absolute_url = f"https://{domain}{path.rstrip('/')}{infos.get('url')}"
                     raw_settings[f"permission_{perm}_location"] = {
                         "ask": m18n.n(
                             "app_config_permission_location", absolute_url=absolute_url
