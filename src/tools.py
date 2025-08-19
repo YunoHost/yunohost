@@ -715,10 +715,16 @@ def tools_basic_space_cleanup() -> None:
     subprocess.run("rm /var/log/*/*.?", shell=True)
     # Removing kernel except last 2
     output = subprocess.run("dpkg -l | grep linux-image | awk '{print$2}'", capture_output=True, text=True, shell=True)
-    kernels = output.stdout.split("\n")
-    kernels = kernels[:-4]
-    for kernel in kernels:
-        subprocess.run("apt remove -y --purge " + kernel, shell=True)
+    if output.stdout == '':
+        print("Couldn't find installed kernels. Are you running Yunohost in LXC/LXD ?")
+    else:
+        kernels = output.stdout.split("\n")
+        kernels = kernels[:-4]
+        if kernels == []:
+            print("No kernel to remove")
+        else:    
+            for kernel in kernels:
+                subprocess.run("apt remove -y --purge " + kernel, shell=True)
 
 
 # ############################################ #
