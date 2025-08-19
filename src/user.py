@@ -343,7 +343,6 @@ def user_delete(
     from_import: bool = False,
     force: bool = False,
 ) -> None:
-
     from .app import app_ssowatconf
     from .authenticators.ldap_admin import Authenticator as AdminAuth
     from .authenticators.ldap_ynhuser import Authenticator as PortalAuth

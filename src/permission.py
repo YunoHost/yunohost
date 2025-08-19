@@ -622,6 +622,7 @@ def _sync_permissions_with_ldap() -> None:
     _garbarge_collect_permissions_for_nonexistent_users()
 
     from .utils.ldap import _get_ldap_interface
+
     ldap = _get_ldap_interface()
 
     permissions_wanted = {
@@ -1029,8 +1030,8 @@ def _garbarge_collect_permissions_for_nonexistent_users() -> None:
     # somehow disappeared from the system (for example this may happen when
     # restoring an app on which not all the user/group exist)
 
-    from .user import user_group_list
     from .app import app_setting, app_ssowatconf
+    from .user import user_group_list
     from .utils.app_utils import _get_app_settings, _installed_apps
 
     all_existing_groups = user_group_list()["groups"].keys()
@@ -1040,6 +1041,8 @@ def _garbarge_collect_permissions_for_nonexistent_users() -> None:
         for subperm, infos in perm_settings.items():
             for group in infos.get("allowed") or []:
                 if group not in all_existing_groups:
-                    logger.debug(f"Removing {group} from {app}.{subperm} permission because this user or group doesn't exist (anymore?)")
+                    logger.debug(
+                        f"Removing {group} from {app}.{subperm} permission because this user or group doesn't exist (anymore?)"
+                    )
                     infos["allowed"].remove(group)
         app_setting(app, "_permissions", perm_settings)
