@@ -880,6 +880,12 @@ def app_upgrade(
     ) -> dict:
         logger.info(m18n.n("app_upgrade_app_name", app=app_))
 
+        # FIXME : Tmp debug
+        if not os.path.exists(workdir):
+            raise Exception(f"Uhoh, workdir {workdir} doesn't exists anymore ?!")
+        elif not os.path.exists(workdir + "/scripts"):
+            raise Exception(f"Uhoh, no 'scripts' folder inside {workdir} ?!")
+
         # Get current_version and new version
         app_new_version_raw = new_manifest.get("version", "?")
         assert isinstance(app_new_version_raw, str)
@@ -963,6 +969,12 @@ def app_upgrade(
 
         # We'll check that the app didn't brutally edit some system configuration
         manually_modified_files_before_install = manually_modified_files()
+
+        # FIXME : Tmp debug
+        if not os.path.exists(workdir):
+            raise Exception(f"Uhoh2, workdir {workdir} doesn't exists anymore ?!")
+        elif not os.path.exists(workdir + "/scripts"):
+            raise Exception(f"Uhoh2, no 'scripts' folder inside {workdir} ?!")
 
         # Attempt to patch legacy helpers ...
         _patch_legacy_helpers(workdir)
