@@ -184,6 +184,7 @@ def user_create(
         " ".join(fullname.split()[1:]) or " "
     )  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
 
+    from .app import app_ssowatconf
     from .domain import _assert_domain_exists, _get_maindomain, domain_list
     from .hook import hook_callback
     from .utils.ldap import _get_ldap_interface
@@ -314,6 +315,7 @@ def user_create(
     if admin:
         user_group_update(groupname="admins", add=username, sync_perm=False)
     user_group_update(groupname="all_users", add=username, force=True, sync_perm=True)
+    app_ssowatconf()
 
     # Trigger post_user_create hooks
     env_dict = {
@@ -341,9 +343,12 @@ def user_delete(
     from_import: bool = False,
     force: bool = False,
 ) -> None:
+
+    from .app import app_ssowatconf
     from .authenticators.ldap_admin import Authenticator as AdminAuth
     from .authenticators.ldap_ynhuser import Authenticator as PortalAuth
     from .hook import hook_callback
+    from .permission import _sync_permissions_with_ldap
     from .utils.ldap import _get_ldap_interface
 
     groups = user_group_list()["groups"]
@@ -388,6 +393,9 @@ def user_delete(
         ldap.remove(f"uid={username},ou=users")
     except Exception as e:
         raise YunohostError("user_deletion_failed", user=username, error=e)
+
+    _sync_permissions_with_ldap()
+    app_ssowatconf()
 
     PortalAuth.invalidate_all_sessions_for_user(username)
     AdminAuth.invalidate_all_sessions_for_user(username)
