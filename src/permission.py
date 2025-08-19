@@ -1030,9 +1030,9 @@ def _garbarge_collect_permissions_for_nonexistent_users() -> None:
     # somehow disappeared from the system (for example this may happen when
     # restoring an app on which not all the user/group exist)
 
-    from .app import app_setting, app_ssowatconf
+    from .app import app_setting
     from .user import user_group_list
-    from .utils.app_utils import _get_app_settings, _installed_apps
+    from .utils.app_utils import _installed_apps
 
     all_existing_groups = user_group_list()["groups"].keys()
     for app in _installed_apps():
