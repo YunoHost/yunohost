@@ -1321,8 +1321,6 @@ def _make_tmp_workdir_for_app(app: str | None = None) -> str:
         # It could be that there are other edge cases
         # such as app-install-during-app-install
         if os.stat(path).st_mtime < now - 12 * 3600:
-            # FIXME ; tmp debug
-            logger.debug(f"Cleaning up old workdir {path}")
             shutil.rmtree(path)
 
     tmpdir = mkdtemp(prefix="app_", dir=APPS_TMP_WORKDIRS)
