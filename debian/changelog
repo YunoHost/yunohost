@@ -1,3 +1,9 @@
+yunohost (12.1.14) stable; urgency=low
+
+  - apps: fix tmp workdir for upgrade being rm'ed during the safety backup, because mtime / ctime confusion, inheriting metadata from the original source or whatev (95f148d2d)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 Aug 2025 22:51:49 +0200
+
 yunohost (12.1.13.1) stable; urgency=low
 
   - Typo T_T (c3e8084b2)
