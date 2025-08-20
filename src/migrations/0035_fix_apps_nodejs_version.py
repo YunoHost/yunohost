@@ -49,14 +49,15 @@ def patch_app(app, base_dir=""):
     )
     app_setting(app, "nodejs_version", actual_version)
 
-    service_files_for_this_app = (
+    service_files_for_this_app_raw = (
         check_output(f'grep -lr "^User={app}$" "{base_dir}/etc/systemd/system" || true')
         .strip()
-        .split("\n")
     )
     if not service_files_for_this_app:
         logger.debug(f"No service file to be patched for {app}")
         return
+
+    service_files_for_this_app = service_files_for_this_app_raw.split("\n")
 
     service_files_manually_modified = []
     for file in service_files_for_this_app:
