@@ -81,7 +81,7 @@ def modifyModlist_finegrained(
             value = {value}
         old_value: str | list[str] | set[str] = old_entry.get(attribute, set())
         if not isinstance(old_value, (list, set)):
-            old_value = {old_value}
+            old_value = {old_value.strip()}
         if isinstance(value, set) and value == set(old_value):
             continue
         if isinstance(value, list) and value == list(old_value):
