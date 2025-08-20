@@ -1,3 +1,9 @@
+yunohost (12.1.13.1) stable; urgency=low
+
+  - Typo T_T (c3e8084b2)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 Aug 2025 19:50:37 +0200
+
 yunohost (12.1.13) stable; urgency=low
 
   - nodejs migration: fix list of file just containing empty string [''] (ce93b8674)
