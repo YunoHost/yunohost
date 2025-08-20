@@ -52,7 +52,7 @@ def patch_app(app, base_dir=""):
     service_files_for_this_app_raw = check_output(
         f'grep -lr "^User={app}$" "{base_dir}/etc/systemd/system" || true'
     ).strip()
-    if not service_files_for_this_app:
+    if not service_files_for_this_app_raw:
         logger.debug(f"No service file to be patched for {app}")
         return
 
