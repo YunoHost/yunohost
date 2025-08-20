@@ -1,3 +1,11 @@
+yunohost (12.1.13) stable; urgency=low
+
+  - nodejs migration: fix list of file just containing empty string [''] (ce93b8674)
+  - ldap: prevent stupid issue where trailing space make LDAP explode because ???? (8f9c24d93)
+  - firewall: fix case where no udp port is open, nftable doesnt like empty list/sets (cb2a7f976)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 Aug 2025 17:24:16 +0200
+
 yunohost (12.1.12.1) stable; urgency=low
 
   - apps: fix manifest cache not properly invalidating (2dd0e3d24)
