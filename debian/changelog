@@ -1,3 +1,9 @@
+yunohost (12.1.12.1) stable; urgency=low
+
+  - apps: fix manifest cache not properly invalidating (2dd0e3d24)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 Aug 2025 02:49:27 +0200
+
 yunohost (12.1.12) stable; urgency=low
 
   - apps: add tmp debug info/exception to hunt bug with workdir disappearing ? (bd3730ad7)
