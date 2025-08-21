@@ -84,7 +84,7 @@ ynh_abort_if_errors() {
 }
 
 # When running an app script with packaging format >= 2, auto-enable ynh_abort_if_errors except for remove script
-if [[ "${YNH_CONTEXT:-}" != "regenconf" ]] && dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} ge 2 && [[ ${YNH_APP_ACTION} != "remove" ]]; then
+if [[ "${YNH_CONTEXT:-}" != "regenconf" ]] && [[ ${YNH_APP_ACTION} != "remove" ]]; then
     ynh_abort_if_errors
 fi
 
@@ -230,9 +230,7 @@ ynh_read_manifest() {
 
     if [ ! -e "${manifest:-}" ]; then
         # If the manifest isn't found, try the common place for backup and restore script.
-        if [ -e "$YNH_APP_BASEDIR/manifest.json" ]; then
-            manifest="$YNH_APP_BASEDIR/manifest.json"
-        elif [ -e "$YNH_APP_BASEDIR/manifest.toml" ]; then
+        if [ -e "$YNH_APP_BASEDIR/manifest.toml" ]; then
             manifest="$YNH_APP_BASEDIR/manifest.toml"
         else
             ynh_die --message "No manifest found !?"
@@ -275,31 +273,6 @@ ynh_app_upstream_version() {
     fi
 
     echo "${version_key_/~ynh*/}"
-}
-
-# Read package version from the manifest
-#
-# [internal]
-#
-# usage: ynh_app_package_version [--manifest="manifest.json"]
-# | arg: -m, --manifest=    - Path of the manifest to read
-# | ret: the version number of the package
-#
-# The version number in the manifest is defined by `<upstreamversion>~ynh<packageversion>`.
-#
-# For example, if the manifest contains `4.3-2~ynh3` the function will return `3`
-#
-# Requires YunoHost version 3.5.0 or higher.
-ynh_app_package_version() {
-    # Declare an array to define the options of this helper.
-    local legacy_args=m
-    local -A args_array=([m]=manifest=)
-    local manifest
-    # Manage arguments with getopts
-    ynh_handle_getopts_args "$@"
-
-    version_key_=$YNH_APP_MANIFEST_VERSION
-    echo "${version_key_/*~ynh/}"
 }
 
 # Checks the app version to upgrade with the existing app version and returns:

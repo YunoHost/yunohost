@@ -282,10 +282,7 @@ def app_info(
         "multi_instance", False
     )
     ret["supports_config_panel"] = (setting_path / "config_panel.toml").exists()
-    ret["supports_purge"] = (
-        local_manifest["packaging_format"] >= 2
-        and local_manifest["resources"].get("data_dir") is not None
-    )
+    ret["supports_purge"] = local_manifest["resources"].get("data_dir") is not None
 
     ret["permissions"] = user_permission_list(
         full=True, absolute_urls=True, apps=[app]
@@ -746,8 +743,8 @@ def app_upgrade(
     )
     from .permission import _sync_permissions_with_ldap
     from .regenconf import manually_modified_files
-    from .utils.legacy import _patch_legacy_helpers
     from .utils.system import free_space_in_directory
+    from .utils.resources import AppResourceManager
 
     # "app" is a bad name for this arg but meh that's legacy and possibly can't easily be changed
     # (and actually a bit relevant in terms of what's shown in --help)
@@ -908,63 +905,59 @@ def app_upgrade(
                 else:
                     upgrade_type = "UPGRADE_APP"
 
-        if new_manifest["packaging_format"] >= 2:
-            if no_safety_backup:
-                # FIXME: i18n
-                logger.warning(
-                    "Skipping the creation of a backup prior to the upgrade."
+        if no_safety_backup:
+            # FIXME: i18n
+            logger.warning(
+                "Skipping the creation of a backup prior to the upgrade."
+            )
+        else:
+            # FIXME: i18n
+            logger.info("Creating a safety backup prior to the upgrade")
+
+            # Switch between pre-upgrade1 or pre-upgrade2
+            safety_backup_name = f"{app_}-pre-upgrade1"
+            other_safety_backup_name = f"{app_}-pre-upgrade2"
+            if safety_backup_name in backup_list()["archives"]:
+                safety_backup_name = f"{app_}-pre-upgrade2"
+                other_safety_backup_name = f"{app_}-pre-upgrade1"
+
+            tweaked_backup_core_only = False
+            if "BACKUP_CORE_ONLY" not in os.environ:
+                tweaked_backup_core_only = True
+                os.environ["BACKUP_CORE_ONLY"] = "1"
+            try:
+                backup_create(name=safety_backup_name, apps=[app_], system=None)
+            except Exception as e:
+                raise YunohostError(
+                    f"Aborting the upgrade, because a safety backup could not be created ({e})",
+                    raw_msg=True,
                 )
-            else:
-                # FIXME: i18n
-                logger.info("Creating a safety backup prior to the upgrade")
+            finally:
+                if tweaked_backup_core_only:
+                    del os.environ["BACKUP_CORE_ONLY"]
 
-                # Switch between pre-upgrade1 or pre-upgrade2
-                safety_backup_name = f"{app_}-pre-upgrade1"
-                other_safety_backup_name = f"{app_}-pre-upgrade2"
-                if safety_backup_name in backup_list()["archives"]:
-                    safety_backup_name = f"{app_}-pre-upgrade2"
-                    other_safety_backup_name = f"{app_}-pre-upgrade1"
-
-                tweaked_backup_core_only = False
-                if "BACKUP_CORE_ONLY" not in os.environ:
-                    tweaked_backup_core_only = True
-                    os.environ["BACKUP_CORE_ONLY"] = "1"
-                try:
-                    backup_create(name=safety_backup_name, apps=[app_], system=None)
-                except Exception as e:
-                    raise YunohostError(
-                        f"Aborting the upgrade, because a safety backup could not be created ({e})",
-                        raw_msg=True,
-                    )
-                finally:
-                    if tweaked_backup_core_only:
-                        del os.environ["BACKUP_CORE_ONLY"]
-
-                if safety_backup_name in backup_list()["archives"]:
-                    # if the backup suceeded, delete old safety backup to save space
-                    if other_safety_backup_name in backup_list()["archives"]:
-                        backup_delete(other_safety_backup_name, display_success=False)
-                        logger.info(
-                            m18n.n(
-                                "backup_before_upgrade_deleted_because_replaced_by_newer_backup",
-                                name=other_safety_backup_name,
-                                newname=safety_backup_name,
-                            )
+            if safety_backup_name in backup_list()["archives"]:
+                # if the backup suceeded, delete old safety backup to save space
+                if other_safety_backup_name in backup_list()["archives"]:
+                    backup_delete(other_safety_backup_name, display_success=False)
+                    logger.info(
+                        m18n.n(
+                            "backup_before_upgrade_deleted_because_replaced_by_newer_backup",
+                            name=other_safety_backup_name,
+                            newname=safety_backup_name,
                         )
-                else:
-                    # Is this needed ? Shouldn't backup_create report an expcetion if backup failed ?
-                    raise YunohostError(
-                        "Uhoh the safety backup failed ?! Aborting the upgrade process.",
-                        raw_msg=True,
                     )
+            else:
+                # Is this needed ? Shouldn't backup_create report an expcetion if backup failed ?
+                raise YunohostError(
+                    "Uhoh the safety backup failed ?! Aborting the upgrade process.",
+                    raw_msg=True,
+                )
 
         _assert_system_is_sane_for_app(new_manifest, "pre")
 
         # We'll check that the app didn't brutally edit some system configuration
         manually_modified_files_before_install = manually_modified_files()
-
-        # Attempt to patch legacy helpers ...
-        _patch_legacy_helpers(workdir)
 
         # Prepare env. var. to pass to script
         env_dict = _make_environment_for_app_script(
@@ -977,9 +970,6 @@ def app_upgrade(
             "YNH_APP_CURRENT_VERSION": str(app_current_version_raw),
         }
 
-        if new_manifest["packaging_format"] < 2:
-            env_dict_more["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
-
         env_dict.update(env_dict_more)
 
         # Start register change on system
@@ -989,30 +979,26 @@ def app_upgrade(
 
         hook_callback("pre_app_upgrade", env=env_dict)
 
-        if new_manifest["packaging_format"] >= 2:
-            from .utils.resources import AppResourceManager
+        AppResourceManager(
+            app_,
+            wanted=new_manifest,
+            current=current_manifest,
+            workdir=workdir,
+        ).apply(
+            rollback_and_raise_exception_if_failure=True,
+            operation_logger=operation_logger,
+            action="upgrade",
+        )
 
-            AppResourceManager(
-                app_,
-                wanted=new_manifest,
-                current=current_manifest,
-                workdir=workdir,
-            ).apply(
-                rollback_and_raise_exception_if_failure=True,
-                operation_logger=operation_logger,
-                action="upgrade",
-            )
-
-            # Boring stuff : the resource upgrade may have added/remove/updated setting
-            # so we need to reflect this in the env_dict used to call the actual upgrade script x_x
-            # Or: the old manifest may be in v1 and the new in v2, so force to add the setting in env
-            env_dict = _make_environment_for_app_script(
-                app_,
-                workdir=workdir,
-                action="upgrade",
-                force_include_app_settings=True,
-            )
-            env_dict.update(env_dict_more)
+        # Boring stuff : the resource upgrade may have added/remove/updated setting
+        # so we need to reflect this in the env_dict used to call the actual upgrade script x_x
+        # Or: the old manifest may be in v1 and the new in v2, so force to add the setting in env
+        env_dict = _make_environment_for_app_script(
+            app_,
+            workdir=workdir,
+            action="upgrade",
+        )
+        env_dict.update(env_dict_more)
 
         # Execute the app upgrade script
         upgrade_failed = True
@@ -1031,11 +1017,7 @@ def app_upgrade(
             )
         finally:
             # If upgrade failed, try to restore the safety backup
-            if (
-                upgrade_failed
-                and new_manifest["packaging_format"] >= 2
-                and not no_safety_backup
-            ):
+            if upgrade_failed and not no_safety_backup:
                 logger.warning(
                     "Upgrade failed ... attempting to restore the safety backup (Yunohost first need to remove the app for this) ..."
                 )
@@ -1348,18 +1330,13 @@ def app_install(
         hook_remove,
     )
     from .log import OperationLogger
-    from .permission import (
-        _sync_permissions_with_ldap,
-        permission_create,
-        permission_delete,
-        user_permission_list,
-    )
+    from .permission import _sync_permissions_with_ldap
     from .regenconf import manually_modified_files
     from .user import user_list
     from .utils.app_utils import _confirm_app_install, _next_instance_number_for_app
     from .utils.form import ask_questions_and_parse_answers
-    from .utils.legacy import _patch_legacy_helpers
     from .utils.system import free_space_in_directory
+    from .utils.resources import AppResourceManager
 
     # Check if disk space available
     if free_space_in_directory("/") <= 512 * 1000 * 1000:
@@ -1374,8 +1351,6 @@ def app_install(
             manifest["notifications"]["PRE_INSTALL"]
         )
         _display_notifications(notifications, force=force)
-
-    packaging_format = manifest["packaging_format"]
 
     # Check ID
     if "id" not in manifest or "__" in manifest["id"] or "." in manifest["id"]:
@@ -1427,10 +1402,6 @@ def app_install(
     path_requirement = _guess_webapp_path_requirement(extracted_app_folder)
     _validate_webpath_requirement(parsedargs, path_requirement)
 
-    if packaging_format < 2:
-        # Attempt to patch legacy helpers ...
-        _patch_legacy_helpers(extracted_app_folder)
-
     # We'll check that the app didn't brutally edit some system configuration
     manually_modified_files_before_install = manually_modified_files()
 
@@ -1461,18 +1432,17 @@ def app_install(
     if label:
         app_settings["label"] = label
 
-    # If packaging_format v2+, save all install options as settings
-    if packaging_format >= 2:
-        for option in options:
-            # Except readonly "questions" that don't even have a value
-            if option.readonly:
-                continue
-            # Except user-provider passwords
-            # ... which we need to reinject later in the env_dict
-            if option.type == "password":
-                continue
+    # Save all install options as settings
+    for option in options:
+        # Except readonly "questions" that don't even have a value
+        if option.readonly:
+            continue
+        # Except user-provider passwords
+        # ... which we need to reinject later in the env_dict
+        if option.type == "password":
+            continue
 
-            app_settings[option.id] = form[option.id]
+        app_settings[option.id] = form[option.id]
 
     _set_app_settings(app_instance_name, app_settings)
 
@@ -1485,30 +1455,15 @@ def app_install(
                 recursive=True,
             )
 
-    if packaging_format >= 2:
-        from .utils.resources import AppResourceManager
-
-        try:
-            AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
-                rollback_and_raise_exception_if_failure=True,
-                operation_logger=operation_logger,
-                action="install",
-            )
-        except (KeyboardInterrupt, EOFError, Exception) as e:
-            rmtree(app_setting_path)
-            raise e
-    else:
-        # Initialize the main permission for the app
-        # The permission is initialized with no url associated, and with tile disabled
-        # For web app, the root path of the app will be added as url and the tile
-        # will be enabled during the app install. C.f. 'app_register_url()' below
-        # or the webpath resource
-        permission_create(
-            app_instance_name + ".main",
-            allowed=["all_users"],
-            show_tile=False,
-            protected=False,
+    try:
+        AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
+            rollback_and_raise_exception_if_failure=True,
+            operation_logger=operation_logger,
+            action="install",
         )
+    except (KeyboardInterrupt, EOFError, Exception) as e:
+        rmtree(app_setting_path)
+        raise e
 
     # Prepare env. var. to pass to script
     env_dict = _make_environment_for_app_script(
@@ -1518,13 +1473,11 @@ def app_install(
         action="install",
     )
 
-    # If packaging_format v2+, save all install options as settings
-    if packaging_format >= 2:
-        for option in options:
-            # Reinject user-provider passwords which are not in the app settings
-            # (cf a few line before)
-            if option.type == "password":
-                env_dict[option.id] = form[option.id]
+    # Make sure the env contains user-provided password which are not saved as settings
+    # (cf a few lines before)
+    for option in options:
+        if option.type == "password":
+            env_dict[option.id] = form[option.id]
 
     # We want to hav the env_dict in the log ... but not password values
     env_dict_for_logging = env_dict.copy()
@@ -1574,9 +1527,7 @@ def app_install(
                 "Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper conf_regen hook. Those configuration were affected:\n    - "
                 + "\n     - ".join(manually_modified_files_by_app)
             )
-            # Actually forbid this for app packaging >= 2
-            if packaging_format >= 2:
-                broke_the_system = True
+            broke_the_system = True
 
         # If the install failed or broke the system, we remove it
         if install_failed or broke_the_system:
@@ -1622,17 +1573,9 @@ def app_install(
                     m18n.n("unexpected_error", error="\n" + traceback.format_exc())
                 )
 
-            if packaging_format >= 2:
-                from .utils.resources import AppResourceManager
-
-                AppResourceManager(
-                    app_instance_name, wanted={}, current=manifest
-                ).apply(rollback_and_raise_exception_if_failure=False, action="remove")
-            else:
-                # Remove all permission in LDAP
-                for permission_name in user_permission_list()["permissions"].keys():
-                    if permission_name.startswith(app_instance_name + "."):
-                        permission_delete(permission_name, force=True, sync_perm=False)
+            AppResourceManager(
+                app_instance_name, wanted={}, current=manifest
+            ).apply(rollback_and_raise_exception_if_failure=False, action="remove")
 
             if remove_retcode != 0:
                 msg = m18n.n("app_not_properly_removed", app=app_instance_name)
@@ -1706,12 +1649,8 @@ def app_remove(
     """
     from .domain import _get_raw_domain_settings, domain_config_set, domain_list
     from .hook import hook_callback, hook_exec, hook_remove
-    from .permission import (
-        _sync_permissions_with_ldap,
-        permission_delete,
-        user_permission_list,
-    )
-    from .utils.legacy import _patch_legacy_helpers
+    from .permission import _sync_permissions_with_ldap
+    from .utils.resources import AppResourceManager
 
     _assert_is_installed(app)
 
@@ -1719,9 +1658,6 @@ def app_remove(
 
     logger.info(m18n.n("app_start_remove", app=app))
     app_setting_path = os.path.join(APPS_SETTING_PATH, app)
-
-    # Attempt to patch legacy helpers ...
-    _patch_legacy_helpers(app_setting_path)
 
     if force_workdir:
         # This is when e.g. calling app_remove() from the upgrade-failed case
@@ -1762,19 +1698,11 @@ def app_remove(
     finally:
         rmtree(tmp_workdir_for_app)
 
-    packaging_format = manifest["packaging_format"]
-    if packaging_format >= 2:
-        from .utils.resources import AppResourceManager
-
-        AppResourceManager(app, wanted={}, current=manifest).apply(
-            rollback_and_raise_exception_if_failure=False,
-            purge_data_dir=purge,
-            action="remove",
-        )
-    else:
-        # Remove all permission in LDAP
-        for permission_name in user_permission_list(apps=[app])["permissions"].keys():
-            permission_delete(permission_name, force=True, sync_perm=False)
+    AppResourceManager(app, wanted={}, current=manifest).apply(
+        rollback_and_raise_exception_if_failure=False,
+        purge_data_dir=purge,
+        action="remove",
+    )
 
     if purge and os.path.exists(f"/var/log/{app}"):
         rmtree(f"/var/log/{app}")

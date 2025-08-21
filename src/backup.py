@@ -1315,7 +1315,7 @@ class RestoreManager:
                              name should be already install)
         """
         from .app import app_remove
-        from .utils.legacy import _patch_legacy_helpers
+        from .utils.resources import AppResourceManager
 
         def copytree(src, dst, symlinks=False, ignore=None):
             for item in os.listdir(src):
@@ -1343,9 +1343,6 @@ class RestoreManager:
         app_backup_in_archive = os.path.join(app_dir_in_archive, "backup")
         app_settings_in_archive = os.path.join(app_dir_in_archive, "settings")
         app_scripts_in_archive = os.path.join(app_settings_in_archive, "scripts")
-
-        # Attempt to patch legacy helpers...
-        _patch_legacy_helpers(app_settings_in_archive)
 
         # Delete _common.sh file in backup
         common_file = os.path.join(app_backup_in_archive, "_common.sh")
@@ -1417,14 +1414,12 @@ class RestoreManager:
         operation_logger.flush()
 
         manifest = _get_manifest_of_app(app_settings_in_archive)
-        if manifest["packaging_format"] >= 2:
-            from .utils.resources import AppResourceManager
 
-            AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
-                rollback_and_raise_exception_if_failure=True,
-                operation_logger=operation_logger,
-                action="restore",
-            )
+        AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
+            rollback_and_raise_exception_if_failure=True,
+            operation_logger=operation_logger,
+            action="restore",
+        )
 
         # Execute the app install script
         restore_failed = True

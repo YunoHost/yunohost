@@ -45,7 +45,6 @@ from .file_utils import (
     chown,
     cp,
     read_file,
-    read_json,
     read_toml,
 )
 from .i18n import _value_for_locale
@@ -325,13 +324,8 @@ def _get_manifest_of_app(path_or_app_id: str) -> AppManifest:
     else:
         path = Path(APPS_SETTING_PATH) / path_or_app_id
 
-    if (path / "manifest.toml").exists():
-        manifest_path = path / "manifest.toml"
-        read_manifest = read_toml
-    elif (path / "manifest.json").exists():
-        manifest_path = path / "manifest.json"
-        read_manifest = read_json
-    else:
+    manifest_path = path / "manifest.toml"
+    if not manifest_path.exists():
         raise YunohostError(
             f"There doesn't seem to be any manifest file in {path} ... It looks like an app was not correctly installed/removed.",
             raw_msg=True,
@@ -347,14 +341,14 @@ def _get_manifest_of_app(path_or_app_id: str) -> AppManifest:
         if cache_timestamp > max(manifest_and_doc_timestamps):
             return copy.deepcopy(app_manifests_cache[path_or_app_id])
 
-    manifest: AppManifest = read_manifest(str(manifest_path))  # type: ignore[assignment]
+    manifest: AppManifest = read_toml(str(manifest_path))  # type: ignore[assignment]
 
     manifest["packaging_format"] = float(
         str(manifest.get("packaging_format", "")).strip() or "0"
     )
 
     if manifest["packaging_format"] < 2:
-        manifest = _convert_v1_manifest_to_v2(manifest)
+        raise YunohostError(f"Packaging format {manifest['packaging_format']} is not supported anymore")
 
     manifest["install"] = _set_default_ask_questions(manifest.get("install", {}))
     manifest["doc"], manifest["notifications"] = _parse_app_doc_and_notifications(path)
@@ -458,86 +452,6 @@ def _hydrate_app_template(template: str, data: dict[str, Any]):
             template = template.replace(stuff, str(data[varname]))
 
     return template.strip()
-
-
-def _convert_v1_manifest_to_v2(manifest: dict[str, Any]) -> AppManifest:
-    manifest = copy.deepcopy(manifest)
-
-    if "upstream" not in manifest:
-        manifest["upstream"] = {}
-
-    if "license" in manifest and "license" not in manifest["upstream"]:
-        manifest["upstream"]["license"] = manifest["license"]
-
-    if "url" in manifest and "website" not in manifest["upstream"]:
-        manifest["upstream"]["website"] = manifest["url"]
-
-    manifest["integration"] = {
-        "yunohost": manifest.get("requirements", {})
-        .get("yunohost", "")
-        .replace(">", "")
-        .replace("=", "")
-        .replace(" ", ""),
-        "architectures": "?",
-        "multi_instance": manifest.get("multi_instance", False),
-        "ldap": "?",
-        "sso": "?",
-        "disk": "?",
-        "ram": {"build": "?", "runtime": "?"},
-    }
-
-    maintainers = manifest.get("maintainer", {})
-    if isinstance(maintainers, list):
-        maintainers = [m["name"] for m in maintainers]
-    else:
-        maintainers = [maintainers["name"]] if maintainers.get("name") else []
-
-    manifest["maintainers"] = maintainers
-
-    install_questions = manifest["arguments"]["install"]
-
-    manifest["install"] = {}
-    for question in install_questions:
-        name = question.pop("name")
-        if "ask" in question and name in [
-            "domain",
-            "path",
-            "admin",
-            "is_public",
-            "password",
-        ]:
-            question.pop("ask")
-        if question.get("example") and question.get("type") in [
-            "domain",
-            "path",
-            "user",
-            "boolean",
-            "password",
-        ]:
-            question.pop("example")
-
-        manifest["install"][name] = question
-
-    manifest["resources"] = {"system_user": {}, "install_dir": {"alias": "final_path"}}
-
-    keys_to_keep = [
-        "packaging_format",
-        "id",
-        "name",
-        "description",
-        "version",
-        "maintainers",
-        "upstream",
-        "integration",
-        "install",
-        "resources",
-    ]
-
-    keys_to_del = [key for key in manifest.keys() if key not in keys_to_keep]
-    for key in keys_to_del:
-        del manifest[key]
-
-    return manifest
 
 
 def _set_default_ask_questions(questions: dict[str, Any], script_name: str = "install"):
@@ -905,7 +819,7 @@ def _check_manifest_requirements(
     logger.debug(m18n.n("app_requirements_checking", app=app))
 
     # Packaging format
-    if manifest["packaging_format"] not in [1, 2]:
+    if manifest["packaging_format"] not in [2]:
         raise YunohostValidationError("app_packaging_format_not_supported")
 
     # Yunohost version
@@ -1058,33 +972,12 @@ def _guess_webapp_path_requirement(app_folder: str) -> str:
     if len(domain_questions) == 1 and len(path_questions) == 1:
         return "domain_and_path"
     if len(domain_questions) == 1 and len(path_questions) == 0:
-        if manifest.get("packaging_format", 0) < 2:
-            # This is likely to be a full-domain app...
-
-            # Confirm that this is a full-domain app This should cover most cases
-            # ...  though anyway the proper solution is to implement some mechanism
-            # in the manifest for app to declare that they require a full domain
-            # (among other thing) so that we can dynamically check/display this
-            # requirement on the webadmin form and not miserably fail at submit time
-
-            # Full-domain apps typically declare something like path_url="/" or path=/
-            # and use ynh_webpath_register or yunohost_app_checkurl inside the install script
-            install_script_content = read_file(
-                os.path.join(app_folder, "scripts/install")
-            )
-
-            if re.search(
-                r"\npath(_url)?=[\"']?/[\"']?", install_script_content
-            ) and re.search(r"ynh_webpath_register", install_script_content):
-                return "full_domain"
-
-        else:
-            # For packaging v2 apps, check if there's a permission with url being a string
-            perm_resource = manifest.get("resources", {}).get("permissions")
-            if perm_resource is not None and isinstance(
-                perm_resource.get("main", {}).get("url"), str
-            ):
-                return "full_domain"
+        # Check if there's a permission with url being a string
+        perm_resource = manifest.get("resources", {}).get("permissions")
+        if perm_resource is not None and isinstance(
+            perm_resource.get("main", {}).get("url"), str
+        ):
+            return "full_domain"
 
     return "?"
 
@@ -1173,8 +1066,7 @@ def _make_environment_for_app_script(
     args={},
     args_prefix="APP_ARG_",
     workdir=None,
-    action=None,
-    force_include_app_settings=False,
+    action=None
 ) -> dict[str, str]:
     from ..log import OperationLogger
 
@@ -1207,45 +1099,44 @@ def _make_environment_for_app_script(
         arg_name_upper = arg_name.upper()
         env_dict[f"YNH_{args_prefix}{arg_name_upper}"] = str(arg_value)
 
-    # If packaging format v2, load all settings
-    if manifest["packaging_format"] >= 2 or force_include_app_settings:
-        env_dict["app"] = app
-        data_to_redact = []
-        prefixes_or_suffixes_to_redact = [
-            "pwd",
-            "pass",
-            "passwd",
-            "password",
-            "passphrase",
-            "secret",
-            "key",
-            "token",
-        ]
+    # Load all settings
+    env_dict["app"] = app
+    data_to_redact = []
+    prefixes_or_suffixes_to_redact = [
+        "pwd",
+        "pass",
+        "passwd",
+        "password",
+        "passphrase",
+        "secret",
+        "key",
+        "token",
+    ]
 
-        for setting_name, setting_value in _get_app_settings(app).items():
-            # Ignore special internal settings like checksum__
-            # (not a huge deal to load them but idk...)
-            if setting_name.startswith("checksum__"):
-                continue
+    for setting_name, setting_value in _get_app_settings(app).items():
+        # Ignore special internal settings like checksum__
+        # (not a huge deal to load them but idk...)
+        if setting_name.startswith("checksum__"):
+            continue
 
-            setting_value = str(setting_value)
-            env_dict[setting_name] = setting_value
+        setting_value = str(setting_value)
+        env_dict[setting_name] = setting_value
 
-            # Check if we should redact this setting value
-            # (the check on the setting length exists to prevent stupid stuff like redacting empty string or something which is actually just 0/1, true/false, ...
-            if len(setting_value) > 6 and any(
-                setting_name.startswith(p) or setting_name.endswith(p)
-                for p in prefixes_or_suffixes_to_redact
-            ):
-                data_to_redact.append(setting_value)
+        # Check if we should redact this setting value
+        # (the check on the setting length exists to prevent stupid stuff like redacting empty string or something which is actually just 0/1, true/false, ...
+        if len(setting_value) > 6 and any(
+            setting_name.startswith(p) or setting_name.endswith(p)
+            for p in prefixes_or_suffixes_to_redact
+        ):
+            data_to_redact.append(setting_value)
 
-        # Special weird case for backward compatibility...
-        # 'path' was loaded into 'path_url' .....
-        if "path" in env_dict:
-            env_dict["path_url"] = env_dict["path"]
+    # Special weird case for backward compatibility...
+    # 'path' was loaded into 'path_url' .....
+    if "path" in env_dict:
+        env_dict["path_url"] = env_dict["path"]
 
-        for operation_logger in OperationLogger._instances:
-            operation_logger.data_to_redact.extend(data_to_redact)
+    for operation_logger in OperationLogger._instances:
+        operation_logger.data_to_redact.extend(data_to_redact)
 
     return env_dict
 
