@@ -23,10 +23,8 @@ class MyMigration(Migration):
     introduced_in_version = "12.1"
     dependencies = []
 
-    ldap_migration_started = False
-
     @Migration.ldap_migration
-    def run(self, *args):
+    def run(self, backup_folder: str) -> None:
         regen_conf(["slapd"], force=True)
 
         self.ldap_migration_started = True
