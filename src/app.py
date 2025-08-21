@@ -47,6 +47,7 @@ from .log import OperationLogger, is_flash_unit_operation, is_unit_operation
 from .utils.app_utils import (
     APPS_SETTING_PATH,
     AppManifest,
+    AppNotificationsDict,
     AppRequirementCheckResult,
     _ask_confirmation,
     _assert_is_installed,
@@ -192,7 +193,7 @@ def app_info(
         specific_channel = ret["upgrade"]["specific_channel"]
         new_revision = ret["upgrade"]["new_revision"]
 
-        tmp_notifications = {}
+        tmp_notifications: AppNotificationsDict = {}
         if url and new_revision:
             try:
                 with TemporaryDirectory(prefix="app_", dir=APPS_TMP_WORKDIRS) as d:
@@ -2435,7 +2436,9 @@ ynh_app_config_run $1
                 )
                 raw_settings[f"permission_{perm}_show_tile"] = infos["show_tile"]
                 if infos.get("url") and domain and path:
-                    absolute_url = f"https://{domain}{path}{infos.get('url')}"
+                    absolute_url = (
+                        f"https://{domain}{path.rstrip('/')}{infos.get('url')}"
+                    )
                     raw_settings[f"permission_{perm}_location"] = {
                         "ask": m18n.n(
                             "app_config_permission_location", absolute_url=absolute_url

@@ -1,3 +1,75 @@
+yunohost (12.1.14) stable; urgency=low
+
+  - apps: fix tmp workdir for upgrade being rm'ed during the safety backup, because mtime / ctime confusion, inheriting metadata from the original source or whatev (95f148d2d)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 Aug 2025 22:51:49 +0200
+
+yunohost (12.1.13.1) stable; urgency=low
+
+  - Typo T_T (c3e8084b2)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 Aug 2025 19:50:37 +0200
+
+yunohost (12.1.13) stable; urgency=low
+
+  - nodejs migration: fix list of file just containing empty string [''] (ce93b8674)
+  - ldap: prevent stupid issue where trailing space make LDAP explode because ???? (8f9c24d93)
+  - firewall: fix case where no udp port is open, nftable doesnt like empty list/sets (cb2a7f976)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 Aug 2025 17:24:16 +0200
+
+yunohost (12.1.12.1) stable; urgency=low
+
+  - apps: fix manifest cache not properly invalidating (2dd0e3d24)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 Aug 2025 02:49:27 +0200
+
+yunohost (12.1.12) stable; urgency=low
+
+  - apps: add tmp debug info/exception to hunt bug with workdir disappearing ? (bd3730ad7)
+  - Release as stable!
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 Aug 2025 01:34:59 +0200
+
+yunohost (12.1.11) testing; urgency=low
+
+  - app: in the app permission config panel, absolute url containing '//' in some cases (73624d4c0)
+  - user: user create/delete should regen the ssowat conf (4823d5a80)
+  - permissions: automatically remove user/group that dont exist from app perms (b8ae908c5)
+  - i18n: fix all value -> content in dns-related diagnosis strings (e90c8212a)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 19 Aug 2025 15:48:45 +0200
+
+yunohost (12.1.10.2) testing; urgency=low
+
+  - nodejs: in version migration, skip app for which no matching version is found (c899ed858)
+  - tools_update: don't list apps that are up to date (e2b3bdcae)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 19 Aug 2025 02:15:18 +0200
+
+yunohost (12.1.10.1) testing; urgency=low
+
+  - dns: value -> content in dns-diagnosis-related strings (308202836)
+  - nodejs: fix version migration: some nodejs app have legit no service file (a4a658fcf)
+  - i18n: Translations updated for Basque, French, Galician
+
+  Thanks to all contributors <3 ! (José M, ppr, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 18 Aug 2025 23:57:54 +0200
+
+yunohost (12.1.10) testing; urgency=low
+
+  - firewall: only open UPnP when open and upnp are enabled in conf (#2112)
+  - firewall: Fix typo, doc and typing (16d33404c, a5e2bec2f, f080cbd4e, 08edd38ab)
+  - dns: fix another value -> content renaming (0acc047a0)
+  - certificate: bump key size from 3072 to 4096 (9f5f38883)
+  - apps: fix bug when computing app upgrade infos (0f3b19a2c)
+  - nodejs: Add a migration to patch app using nodejs such that the nodejs_version setting and the systemd file point to the full X.Y.Z version instead of the major version (023678b14)
+
+  Thanks to all contributors <3 ! (eric_G, Félix Piédallu, Kayou)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 18 Aug 2025 21:42:39 +0200
+
 yunohost (12.1.9) testing; urgency=low
 
   - Add support for (plain) XZ and ZST source archives (#2118)
@@ -21,7 +93,7 @@ yunohost (12.1.8) testing; urgency=low
   - Misc typing (386216b73, a687098a7, 7c4d89eea, eafdb3a3d, a46faa210, cd1222fd6)
   - i18n: Translations updated for French, Galician
 
-  Thanks to all contributors <3 ! (axolotle, Félix Piédallu, José M, ppr, Salamandar)
+  Thanks to all contributors <3 ! (axolotle, Félix Piédallu, José M, ppr)
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 10 Aug 2025 22:01:57 +0200
 
@@ -113,7 +185,7 @@ yunohost (12.1.4) testing; urgency=low
   - regenconf/dnsmasq: optimize the number of time we call 'yunohost domain' for perf + use True/False instead of 1/0 (f53f805c4)
   - i18n: Translations updated for Basque, French, German, Italian, Persian, Polish, Portuguese, Russian, Slovak
 
-  Thanks to all contributors <3 ! (Anonymous, harc, ljf, OniriCorpe, ppr, tituspijean, xabirequejo)
+  Thanks to all contributors <3 ! (harc, ljf, OniriCorpe, ppr, tituspijean, xabirequejo)
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 28 Mar 2025 10:40:45 +0100
 
@@ -135,7 +207,7 @@ yunohost (12.1.3) testing; urgency=low
   - documentation: Prepare migration to Docusaurus (([dc2b22541](http://github.com/YunoHost/yunohost/commit/dc2b22541)), ([77f7135f4](http://github.com/YunoHost/yunohost/commit/77f7135f4)))
   - i18n: Translations updated for Basque, Catalan, Chinese (Simplified), Esperanto, French, Galician, German, Indonesian, Italian, Japanese, Occitan, Persian, Spanish, Ukrainian
 
-  Thanks to all contributors <3 ! (Alexandre Aubin, Anonymous, Christophe Henry, Félix Piédallu, Josué Tille, Kay0u, Kayou, OniriCorpe, Quiwy, Salamandar, alexAubin, ljf (zamentur), ppr, sachaz, Éric Gaspar)
+  Thanks to all contributors <3 ! (Alexandre Aubin, Christophe Henry, Félix Piédallu, Josué Tille, Kayou, OniriCorpe, Quiwy, ljf (zamentur), ppr, sachaz, Éric Gaspar)
 
  -- tituspijean <tituspijean@yunohost.org>  Sun, 23 Mar 2025 09:32:14 +0100
  

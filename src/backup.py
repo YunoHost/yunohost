@@ -1375,6 +1375,7 @@ class RestoreManager:
             _tools_migrations_run_before_app_restore(
                 backup_version=self.info["from_yunohost_version"],
                 app_id=app_instance_name,
+                app_backup_in_archive=app_backup_in_archive,
             )
         except Exception:
             import traceback

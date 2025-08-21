@@ -334,9 +334,14 @@ def _get_manifest_of_app(path_or_app_id: str) -> AppManifest:
     # Check cache
     if path_or_app_id in app_manifests_cache:
         cache_timestamp = app_manifests_cache_timestamp[path_or_app_id]
+        # Hmpf I'm confused between mtime and ctime so let's use both ...
         manifest_and_doc_timestamps = [manifest_path.stat().st_mtime]
+        manifest_and_doc_timestamps += [manifest_path.stat().st_ctime]
         manifest_and_doc_timestamps += [
             p.stat().st_mtime for p in (path / "doc").rglob("*")
+        ]
+        manifest_and_doc_timestamps += [
+            p.stat().st_ctime for p in (path / "doc").rglob("*")
         ]
         if cache_timestamp > max(manifest_and_doc_timestamps):
             return copy.deepcopy(app_manifests_cache[path_or_app_id])
@@ -1206,7 +1211,10 @@ def _make_tmp_workdir_for_app(app: str | None = None) -> str:
         # script itself is running in one of those dir...
         # It could be that there are other edge cases
         # such as app-install-during-app-install
-        if os.stat(path).st_mtime < now - 12 * 3600:
+        if (
+            os.stat(path).st_mtime < now - 12 * 3600
+            and os.stat(path).st_ctime < now - 12 * 3600
+        ):
             shutil.rmtree(path)
 
     tmpdir = mkdtemp(prefix="app_", dir=APPS_TMP_WORKDIRS)
