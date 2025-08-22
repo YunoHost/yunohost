@@ -37,6 +37,7 @@ class MyMigration(Migration):
                 logger.warning(
                     f"Found permissions for app {app}, but this app is not installed. It may just be a permission that was not properly cleaned up in the past. Details: {permissions}"
                 )
+                continue
 
             app_setting(app, "_permissions", permissions)
 
