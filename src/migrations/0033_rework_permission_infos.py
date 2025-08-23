@@ -191,6 +191,8 @@ class MyMigration(Migration):
                             },
                         )
                     except Exception as e:
-                        logger.warning("Failed to delete the legacy permission ? " + str(e))
+                        logger.warning(
+                            "Failed to delete the legacy permission ? " + str(e)
+                        )
         finally:
             regen_conf(["slapd"], force=True)
