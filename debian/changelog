@@ -1,3 +1,12 @@
+yunohost (12.1.15.1) stable; urgency=low
+
+  - network: fixes IP reuse in cache in all cases (30ae06809)
+  - i18n: Translations updated for French, Spanish
+
+  Thanks to all contributors <3 ! (ako, OniriCorpe)
+
+ -- OniriCorpe <oniricorpe@yunohost.org>  Sat, 23 Aug 2025 22:00:00 +0200
+
 yunohost (12.1.15) stable; urgency=low
 
   - 0033_rework_permission_infos: actually skip apps that do not exist (e0b6d5496)
