@@ -162,17 +162,35 @@ class MyMigration(Migration):
             )
             os.system("systemctl restart slapd")
             for infos in permissions_infos:
-                ldap.update(
-                    f"cn={infos['cn'][0]},ou=permission",
-                    {
-                        "label": [],
-                        "authHeader": [],
-                        "showTile": [],
-                        "isProtected": [],
-                        "URL": [],
-                        "additionalUrls": [],
-                        "groupPermission": [],
-                    },
-                )
+                try:
+                    ldap.update(
+                        f"cn={infos['cn'][0]},ou=permission",
+                        {
+                            "label": [],
+                            "authHeader": [],
+                            "showTile": [],
+                            "isProtected": [],
+                            "URL": [],
+                            "additionalUrls": [],
+                            "groupPermission": [],
+                        },
+                    )
+                except Exception as e:
+                    logger.warning("Failed to delete the legacy permission ? " + str(e))
+                    logger.warning("Retrying without the label idk")
+                    try:
+                        ldap.update(
+                            f"cn={infos['cn'][0]},ou=permission",
+                            {
+                                "authHeader": [],
+                                "showTile": [],
+                                "isProtected": [],
+                                "URL": [],
+                                "additionalUrls": [],
+                                "groupPermission": [],
+                            },
+                        )
+                    except Exception as e:
+                        logger.warning("Failed to delete the legacy permission ? " + str(e))
         finally:
             regen_conf(["slapd"], force=True)
