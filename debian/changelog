@@ -1,3 +1,16 @@
+yunohost (12.1.15) stable; urgency=low
+
+  - 0033_rework_permission_infos: actually skip apps that do not exist (e0b6d5496)
+  - 0033_rework_permission_infos: make permission migration more robust against LDAP being a fucking idiot (3da214d95)
+  - dyndns: fix 'dictionary changed size during iteration' (0d5828657)
+  - dyndns: fixes 2 typos in log sentences (eac758595)
+  - codequality: Add typing and TypedDict in ssh.py (19831a5b1)
+  - codequality: add typing to Migration class (783e5175b)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, OniriCorpe)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 23 Aug 2025 15:54:02 +0200
+
 yunohost (12.1.14) stable; urgency=low
 
   - apps: fix tmp workdir for upgrade being rm'ed during the safety backup, because mtime / ctime confusion, inheriting metadata from the original source or whatev (95f148d2d)
