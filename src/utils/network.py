@@ -44,7 +44,7 @@ def get_public_ip(protocol: IPProto = 4) -> str | None:
 
     if (
         cache_file.exists()
-        and (cache_file.stat().st_ctime - time.time()) < cache_duration
+        and (time.time() - cache_file.stat().st_ctime) < cache_duration
     ):
         # Empty file (empty string) means there's no IP
         ip = read_file(str(cache_file)).strip() or None
