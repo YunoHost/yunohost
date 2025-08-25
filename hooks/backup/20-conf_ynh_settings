@@ -27,14 +27,14 @@ YNH_HELPERS_VERSION=2.1
 source /usr/share/yunohost/helpers
 
 # Backup destination
-backup_dir="${1}/conf/ynh"
+YNH_CORE_BACKUP_DIR="${YNH_BACKUP_DIR%/}/conf/ynh"
 
 # Backup the configuration
-ynh_backup "/etc/yunohost/firewall.yml" "${backup_dir}/firewall.yml"
-ynh_backup "/etc/yunohost/permissions.yml" "${backup_dir}/permissions.yml"
-ynh_backup "/etc/yunohost/current_host" "${backup_dir}/current_host"
-[ ! -d "/etc/yunohost/portal" ] || ynh_backup "/etc/yunohost/portal" "${backup_dir}/portal"
-[ ! -d "/etc/yunohost/domains" ] || ynh_backup "/etc/yunohost/domains" "${backup_dir}/domains"
-[ ! -e "/etc/yunohost/settings.yml" ] || ynh_backup "/etc/yunohost/settings.yml" "${backup_dir}/settings.yml"
-[ ! -d "/etc/yunohost/dyndns" ] || ynh_backup "/etc/yunohost/dyndns" "${backup_dir}/dyndns"
-[ ! -d "/etc/dkim" ] || ynh_backup "/etc/dkim" "${backup_dir}/dkim"
+ynh_backup "/etc/yunohost/firewall.yml"
+ynh_backup "/etc/yunohost/permissions.yml"
+ynh_backup "/etc/yunohost/current_host"
+[ ! -d "/etc/yunohost/portal" ] || ynh_backup "/etc/yunohost/portal"
+[ ! -d "/etc/yunohost/domains" ] || ynh_backup "/etc/yunohost/domains"
+[ ! -e "/etc/yunohost/settings.yml" ] || ynh_backup "/etc/yunohost/settings.yml"
+[ ! -d "/etc/yunohost/dyndns" ] || ynh_backup "/etc/yunohost/dyndns"
+[ ! -d "/etc/dkim" ] || ynh_backup "/etc/dkim"

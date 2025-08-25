@@ -617,6 +617,7 @@ class BackupManager:
 
         # Prepare environnement
         env_dict = self._get_env_var()
+        env_dict["YNH_CORE_SCRIPT"] = "1"
 
         # Actual call to backup scripts/hooks
 
@@ -1235,6 +1236,7 @@ class RestoreManager:
         env_dict = {
             "YNH_BACKUP_DIR": self.work_dir,
             "YNH_BACKUP_CSV": os.path.join(self.work_dir, "backup.csv"),
+            "YNH_CORE_SCRIPT": "1",
         }
         operation_logger.extra["env"] = env_dict
         operation_logger.flush()

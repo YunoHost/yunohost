@@ -26,16 +26,14 @@ YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
-YNH_CWD="${YNH_BACKUP_DIR%/}/conf/manually_modified_files"
-mkdir -p "$YNH_CWD"
-cd "$YNH_CWD"
+# Backup destination
+YNH_CORE_BACKUP_DIR="${YNH_BACKUP_DIR%/}/conf/manually_modified_files"
 
-yunohost tools shell -c "from yunohost.regenconf import manually_modified_files; print('\n'.join(manually_modified_files()))" > ./manually_modified_files_list
+mkdir -p "${YNH_CORE_BACKUP_DIR}"
+yunohost tools shell -c "from yunohost.regenconf import manually_modified_files; print('\n'.join(manually_modified_files()))" > "${YNH_CORE_BACKUP_DIR}/manually_modified_files_list"
 
-ynh_backup "./manually_modified_files_list"
-
-for file in $(cat ./manually_modified_files_list); do
+for file in $(cat "${YNH_CORE_BACKUP_DIR}/manually_modified_files_list"); do
     [[ -e $file ]] && ynh_backup "$file"
 done
 
-ynh_backup "/etc/ssowat/conf.json.persistent"
+[ ! -e '/etc/ssowat/conf.json.persistent' ] || ynh_backup "/etc/ssowat/conf.json.persistent"

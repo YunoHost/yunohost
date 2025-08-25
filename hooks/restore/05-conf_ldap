@@ -21,6 +21,11 @@
 # Exit hook on subcommand error or unset variable
 set -Eeuo pipefail
 
+# Source YNH helpers
+YNH_HELPERS_VERSION=2.1
+# shellcheck source=../../helpers/helpers
+source /usr/share/yunohost/helpers
+
 backup_dir="${1}/conf/ldap"
 
 systemctl stop slapd
@@ -53,7 +58,7 @@ die() {
 # Restore the configuration
 mv /etc/ldap/slapd.d "$TMPDIR"
 mkdir -p /etc/ldap/slapd.d
-cp -a "${backup_dir}/ldap.conf" /etc/ldap/ldap.conf
+ynh_restore /etc/ldap/ldap.conf
 # Legacy thing but we need it to force the regen-conf in case of it exist
 [ ! -e "${backup_dir}/slapd.conf" ] \
     || cp -a "${backup_dir}/slapd.conf" /etc/ldap/slapd.conf

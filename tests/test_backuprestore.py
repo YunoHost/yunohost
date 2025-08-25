@@ -668,7 +668,7 @@ def test_backup_binds_are_readonly(monkeypatch):
     def custom_mount_and_backup(self):
         self._organize_files()
 
-        conf = os.path.join(self.work_dir, "conf/ynh/dkim")
+        conf = os.path.join(self.work_dir, "conf/ynh/etc/dkim")
         output = subprocess.check_output(
             "touch %s/test 2>&1 || true" % conf,
             shell=True,

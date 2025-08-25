@@ -26,6 +26,7 @@ YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
-backup_dir="data/multimedia"
+# Backup destination
+YNH_CORE_BACKUP_DIR="${YNH_BACKUP_DIR%/}/data/multimedia"
 
-ynh_restore "${backup_dir}" --dest_path="/home/yunohost.multimedia" || true
+[ ! -d "$YNH_CORE_BACKUP_DIR" ] || ynh_restore /home/yunohost.multimedia

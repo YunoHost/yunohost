@@ -152,6 +152,7 @@ def regen_conf(
         )
     env["YNH_CONTEXT"] = "regenconf"
     env["YNH_HELPERS_VERSION"] = "2"
+    env["YNH_CORE_SCRIPT"] = "1"
     # perf: Export all global settings as a environment variable
     # so that scripts dont have to call 'yunohost settings get' manually
     # which is painful performance-wise

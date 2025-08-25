@@ -27,7 +27,7 @@ YNH_HELPERS_VERSION=2.1
 source /usr/share/yunohost/helpers
 
 # Backup destination
-backup_dir="${1}/conf/ynh/certs"
+YNH_CORE_BACKUP_DIR="${YNH_BACKUP_DIR%/}/conf/ynh/certs"
 
 # Backup certificates
-ynh_backup "/etc/yunohost/certs" "$backup_dir"
+ynh_backup "/etc/yunohost/certs"
