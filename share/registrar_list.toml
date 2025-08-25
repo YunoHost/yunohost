@@ -7,6 +7,11 @@
     type = "string"
     redact = true
 
+[arvancloud]
+    [arvancloud.auth_token]
+    type = "string"
+    redact = true
+
 [aurora]
     [aurora.auth_api_key]
     type = "string"
@@ -71,6 +76,7 @@
     
     [cloudns.port]
     type = "number"
+
 [cloudxns]
     [cloudxns.auth_username]
     type = "string"
@@ -108,7 +114,21 @@
     [constellix.auth_token]
     type = "string"
     redact = true
-    
+
+[ddns]
+    [ddns.auth_token]
+    type = "string"
+    redacte = true
+
+    [ddns.ddns_server]
+    type = "string"
+    redact = true
+
+[devnomads]
+    [devnomads.auth_token]
+    type = "string"
+    redact = true
+
 [digitalocean]
     [digitalocean.auth_token]
     type = "string"
@@ -176,9 +196,22 @@
     [dnspod.auth_token]
     type = "string"
     redact = true
+
+[dnsservices]
+    [dnsservices.auth_username]
+    type = "string"
+    redact = true
+
+    [dnsservices.auth_password]
+    type = "string"
     
 [dreamhost]
     [dreamhost.auth_token]
+    type = "string"
+    redact = true
+
+[duckdns]
+    [duckdns.auth_token]
     type = "string"
     redact = true
     
@@ -220,7 +253,16 @@
     [exoscale.auth_secret]
     type = "string"
     redact = true
-    
+
+[flexibleengine]
+    [flexibleengine.auth_token]
+    type = "string"
+    redact = true
+
+    [flexibleengine.zone_id]
+    type = "string"
+    redact = true
+
 [gandi]
     [gandi.auth_token]
     type = "string"
@@ -230,7 +272,7 @@
     type = "select"
     choices.rpc = "RPC"
     choices.rest = "REST"
-    default = "rest"
+    default = "rpc"
     visible = "false"
     
 [gehirn]
@@ -306,6 +348,10 @@
     
     [hover.auth_password]
     type = "password"
+
+    [hover.auth_totp_secret]
+    type = "string"
+    redact = true
     
 [infoblox]
     [infoblox.auth_user]
@@ -344,6 +390,11 @@
     
     [inwx.auth_password]
     type = "password"
+
+[ionos]
+    [ionos.api_key]
+    type = "string"
+    redact = true
     
 [joker]
     [joker.auth_token]
@@ -378,6 +429,11 @@
     [memset.auth_token]
     type = "string"
     redact = true
+
+[misaka]
+    [misaka.auth_token]
+    type = "string"
+    redact = true
     
 [mythicbeasts]
     [mythicbeasts.auth_username]
@@ -405,6 +461,15 @@
     redact = true
     
     [namecheap.auth_sandbox]
+    type = "string"
+    redact = true
+
+[namecom]
+    [namecom.auth_username]
+    type = "string"
+    redact = true
+
+    [namecom.auth_token]
     type = "string"
     redact = true
     
@@ -444,7 +509,48 @@
     [nsone.auth_token]
     type = "string"
     redact = true
-    
+
+[oci]
+    [oci.auth_config_file]
+    type = "string"
+    redact = true
+
+    [oci.auth_profile]
+    type = "string"
+    redact = true
+
+    [oci.auth_user]
+    type = "string"
+    redact = true
+
+    [oci.auth_tenancy]
+    type = "string"
+    redact = true
+
+    [oci.auth_fingerprint]
+    type = "string"
+    redact = true
+
+    [oci.auth_key_content]
+    type = "string"
+    redact = true
+
+    [oci.auth_key_file]
+    type = "string"
+    redact = true
+
+    [oci.auth_pass_phrase]
+    type = "password"
+
+    [oci.auth_region]
+    type = "string"
+    redact = true
+
+    [oci.auth_type]
+    type = "select"
+    choices = ["api_key", "instance_principal"]
+    default = "api_key"
+
 [onapp]
     [onapp.auth_username]
     type = "string"
@@ -466,7 +572,7 @@
 [ovh]
     [ovh.auth_entrypoint]
     type = "select"
-    choices = ["ovh-eu", "ovh-ca", "soyoustart-eu", "soyoustart-ca", "kimsufi-eu", "kimsufi-ca"]
+    choices = ["ovh-eu", "ovh-ca", "ovh-us, "soyoustart-eu", "soyoustart-ca", "kimsufi-eu", "kimsufi-ca"]
     default = "ovh-eu"
 
     [ovh.auth_application_key]
@@ -526,7 +632,16 @@
     
     [powerdns.pdns_disable_notify]
     type = "boolean"
-    
+
+[qcloud]
+    [qcloud.secret_id]
+    type = "string"
+    redact = true
+
+    [qcloud.secret_key]
+    type = "string"
+    redact = true
+
 [rackspace]
     [rackspace.auth_account]
     type = "string"
@@ -561,6 +676,11 @@
     [rcodezero.auth_token]
     type = "string"
     redact = true
+
+[regfish]
+    [regfish.auth_api_key]
+    type = "string"
+    redact = true
     
 [route53]
     [route53.auth_access_key]
@@ -572,6 +692,10 @@
     redact = true
     
     [route53.private_zone]
+    type = "string"
+    redact = true
+
+    [route53.zone_id]
     type = "string"
     redact = true
     
@@ -596,6 +720,11 @@
     [sakuracloud.auth_secret]
     type = "string"
     redact = true
+
+[scaleway]
+    [scaleway.auth_secret_key]
+    type = "string"
+    redact = true
     
 [softlayer]
     [softlayer.auth_username]
@@ -603,6 +732,11 @@
     redact = true
     
     [softlayer.auth_api_key]
+    type = "string"
+    redact = true
+
+[timeweb]
+    [timeweb.auth_token]
     type = "string"
     redact = true
     
@@ -626,24 +760,51 @@
     
     [ultradns.auth_password]
     type = "password"
+
+[valuedomain]
+    [valuedomain.auth_token]
+    type = "string"
+    redact = true
+
+[vercel]
+    [vercel.auth_token]
+    type = "string"
+    redact = true
     
 [vultr]
     [vultr.auth_token]
     type = "string"
     redact = true
 
-[webgo]
+[wedos]
     [webgo.auth_username]
     type = "string"
 
-    [webgo.auth_password]
+    [webgo.auth_pass]
     type = "password"
 
 [yandex]
     [yandex.auth_token]
     type = "string"
     redact = true
-    
+
+[yandexcloud]
+    [yandexcloud.auth_token]
+    type = "string"
+    redact = true
+
+    [yandexcloud.dns_zone_id]
+    type = "string"
+    redact = true
+
+    [yandexcloud.cloud_id]
+    type = "string"
+    redact = true
+
+    [yandexcloud.folder_id]
+    type = "string"
+    redact = true
+
 [zeit]
     [zeit.auth_token]
     type = "string"
