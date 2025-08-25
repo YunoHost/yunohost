@@ -572,7 +572,7 @@
 [ovh]
     [ovh.auth_entrypoint]
     type = "select"
-    choices = ["ovh-eu", "ovh-ca", "ovh-us, "soyoustart-eu", "soyoustart-ca", "kimsufi-eu", "kimsufi-ca"]
+    choices = ["ovh-eu", "ovh-ca", "ovh-us", "soyoustart-eu", "soyoustart-ca", "kimsufi-eu", "kimsufi-ca"]
     default = "ovh-eu"
 
     [ovh.auth_application_key]
