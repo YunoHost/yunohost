@@ -38,6 +38,10 @@ do_base_regen() {
     cp ssowat.conf "$nginx_conf_dir"
     cp yunohost_http_errors.conf.inc "$nginx_conf_dir"
     cp yunohost_sso.conf.inc "$nginx_conf_dir"
+    cp proxy_params "$nginx_dir"
+    cp proxy_params_no_auth "$nginx_dir"
+    cp fastcgi_params "$nginx_dir"
+    cp fastcgi_params_no_auth "$nginx_dir"
 
     ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
     ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
