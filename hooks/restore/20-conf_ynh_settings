@@ -32,9 +32,9 @@ ynh_restore /etc/yunohost/current_host
 ynh_restore /etc/yunohost/firewall.yml
 # Note we need to handle the old and the new backup path
 # ${YNH_CORE_BACKUP_DIR}/etc/yunohost/permissions.yml is the new one whereas ${YNH_CORE_BACKUP_DIR}/permissions.yml is the old one
-([ ! -e "${YNH_CORE_BACKUP_DIR}/etc/yunohost/permissions.yml" ] && [ ! -e "${YNH_CORE_BACKUP_DIR}/permissions.yml" ]) || ynh_restore /etc/yunohost/permissions.yml
-([ ! -d "${YNH_CORE_BACKUP_DIR}/etc/yunohost/portal" ] && [ ! -d "${YNH_CORE_BACKUP_DIR}/portal" ]) || ynh_restore '/etc/yunohost/portal'
-([ ! -d "${YNH_CORE_BACKUP_DIR}/etc/yunohost/domains" ] && [ ! -d "${YNH_CORE_BACKUP_DIR}/domains" ]) || ynh_restore '/etc/yunohost/domains'
-([ ! -e "${YNH_CORE_BACKUP_DIR}/etc/yunohost/settings.yml" ] && [ ! -e "${YNH_CORE_BACKUP_DIR}/settings.yml" ]) || ynh_restore '/etc/yunohost/settings.yml'
-([ ! -d "${YNH_CORE_BACKUP_DIR}/etc/yunohost/dyndns" ] && [ ! -d "${YNH_CORE_BACKUP_DIR}/dyndns" ]) || ynh_restore '/etc/yunohost/dyndns'
-([ ! -d "${YNH_CORE_BACKUP_DIR}/etc/dkim" ] && [ ! -d "${YNH_CORE_BACKUP_DIR}/dkim" ]) || ynh_restore '/etc/dkim'
+{ [ ! -e "${YNH_CORE_BACKUP_DIR}/etc/yunohost/permissions.yml" ] && [ ! -e "${YNH_CORE_BACKUP_DIR}/permissions.yml" ]; } || ynh_restore /etc/yunohost/permissions.yml
+{ [ ! -d "${YNH_CORE_BACKUP_DIR}/etc/yunohost/portal" ] && [ ! -d "${YNH_CORE_BACKUP_DIR}/portal" ]; } || ynh_restore '/etc/yunohost/portal'
+{ [ ! -d "${YNH_CORE_BACKUP_DIR}/etc/yunohost/domains" ] && [ ! -d "${YNH_CORE_BACKUP_DIR}/domains" ]; } || ynh_restore '/etc/yunohost/domains'
+{ [ ! -e "${YNH_CORE_BACKUP_DIR}/etc/yunohost/settings.yml" ] && [ ! -e "${YNH_CORE_BACKUP_DIR}/settings.yml" ]; } || ynh_restore '/etc/yunohost/settings.yml'
+{ [ ! -d "${YNH_CORE_BACKUP_DIR}/etc/yunohost/dyndns" ] && [ ! -d "${YNH_CORE_BACKUP_DIR}/dyndns" ]; } || ynh_restore '/etc/yunohost/dyndns'
+{ [ ! -d "${YNH_CORE_BACKUP_DIR}/etc/dkim" ] && [ ! -d "${YNH_CORE_BACKUP_DIR}/dkim" ]; } || ynh_restore '/etc/dkim'
