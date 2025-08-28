@@ -37,7 +37,7 @@ do_init_regen() {
     cp plain/etcdefault /etc/default/dnsmasq
 
     wireless_interfaces=""
-    ynh_config_add --jinja --template="dnsmasq.conf.tpl" --destination="${pending_dir}/etc/dnsmasq.conf"
+    ynh_config_add --jinja --template="dnsmasq.conf.tpl" --destination="/etc/dnsmasq.conf"
 
     # Remove / disable services likely to conflict with dnsmasq
     for SERVICE in systemd-resolved bind9; do

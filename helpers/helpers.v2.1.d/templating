@@ -77,7 +77,7 @@ ynh_config_add() {
         ynh_die "The provided template $template doesn't exist"
     fi
 
-    if [ "${YNH_CORE_SCRIPT:-}" -ne 1 ]; then
+    if [ "${YNH_CORE_SCRIPT:-}" != 1 ]; then
         # If we are in an app
         ynh_backup_if_checksum_is_different "$destination"
     fi
@@ -86,7 +86,7 @@ ynh_config_add() {
     # This is to cover a case where an attacker could have
     # created a file beforehand to have control over it
     # (cp won't overwrite ownership / modes by default...)
-    if [ "${YNH_CORE_SCRIPT:-}" -ne 1 ]; then
+    if [ "${YNH_CORE_SCRIPT:-}" != 1 ]; then
         # If we are in an app
         touch "$destination"
         chmod 640 "$destination"
@@ -105,7 +105,7 @@ ynh_config_add() {
         _ynh_replace_vars "$destination"
     fi
 
-    if [ "${YNH_CORE_SCRIPT:-}" -ne 1 ]; then
+    if [ "${YNH_CORE_SCRIPT:-}" != 1 ]; then
         ynh_store_file_checksum "$destination"
     fi
 }
