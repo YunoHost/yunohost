@@ -27,7 +27,6 @@ YNH_HELPERS_VERSION=2.1
 source /usr/share/yunohost/helpers
 
 do_init_regen() {
-
     cd /usr/share/yunohost/conf/dnsmasq
 
     cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf > /etc/resolv.dnsmasq.conf
@@ -86,7 +85,7 @@ do_pre_regen() {
     for domain in $YNH_DOMAINS; do
         [[ ! $domain =~ \.local$ ]] || continue
 
-        if grep -q "^$domain$" <<< "$domains_with_mail_in"; then
+        if grep -q "^$domain$" <<< "$domains_with_inbound_email_enabled"; then
             mail_in="True"
         else
             mail_in="False"
