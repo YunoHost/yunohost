@@ -175,6 +175,11 @@ i18n = "global_settings_setting"
         choices.ipv6 = "IPv6 Only"
         default = "both"
 
+    [misc.reverse_proxy]
+        [misc.reverse_proxy.reverse_proxy_list]
+        type = "tags"
+        default = ""
+
     [misc.tls_passthrough]
         [misc.tls_passthrough.tls_passthrough_explain]
         type = "alert"
