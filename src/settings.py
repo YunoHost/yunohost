@@ -321,6 +321,12 @@ def reconfigure_nginx(setting_name, old_value, new_value):
         regen_conf(names=["nginx"])
 
 
+@post_change_hook("trusted_proxies_list")
+def reconfigure_nginx_and_firewall(setting_name, old_value, new_value):
+    if old_value != new_value:
+        regen_conf(names=["nginx", "nftables"])
+
+
 @post_change_hook("security_experimental_enabled")
 def reconfigure_nginx_and_yunohost(setting_name, old_value, new_value):
     if old_value != new_value:
