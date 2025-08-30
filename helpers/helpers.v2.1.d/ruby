@@ -26,6 +26,12 @@ _ynh_load_ruby_in_path_and_other_tweaks() {
     # Get the absolute path of this version of Ruby
     ruby_dir="$RBENV_ROOT/versions/$app/bin"
 
+    if [ ! -e "$ruby_dir" ]
+    then
+        echo "Skipping loading ruby, because it doesn't seem to be provisioned yet. This is likely to happen during restore and other specific contexts."
+        return
+    fi
+
     # Load the path of this version of ruby in $PATH
     if [[ :$PATH: != *":$ruby_dir"* ]]; then
         PATH="$ruby_dir:$PATH"
