@@ -311,7 +311,6 @@ def regen_ssowatconf(setting_name, old_value, new_value):
         app_ssowatconf()
 
 
-@post_change_hook("tls_passthrough_enabled")
 @post_change_hook("tls_passthrough_list")
 @post_change_hook("nginx_redirect_to_https")
 @post_change_hook("nginx_compatibility")
@@ -320,6 +319,12 @@ def regen_ssowatconf(setting_name, old_value, new_value):
 def reconfigure_nginx(setting_name, old_value, new_value):
     if old_value != new_value:
         regen_conf(names=["nginx"])
+
+
+@post_change_hook("trusted_proxies_list")
+def reconfigure_nginx_and_firewall(setting_name, old_value, new_value):
+    if old_value != new_value:
+        regen_conf(names=["nginx", "nftables"])
 
 
 @post_change_hook("security_experimental_enabled")

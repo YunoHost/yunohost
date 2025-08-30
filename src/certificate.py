@@ -764,10 +764,8 @@ def _enable_certificate(domain, new_cert_folder):
     logger.debug("Restarting services...")
 
     if os.path.isfile("/etc/yunohost/installed"):
-        # regen nginx conf to be sure it integrates OCSP Stapling
-        # (We don't do this yet if postinstall is not finished yet)
-        # We also regenconf for postfix to propagate the SNI hash map thingy
-        regen_conf(names=["nginx", "postfix"])
+        # regen postfix conf to propagate the SNI hash map thingy
+        regen_conf(names=["postfix"])
 
     _run_service_command("reload", "nginx")
     _run_service_command("restart", "dovecot")
