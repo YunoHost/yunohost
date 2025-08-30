@@ -1,4 +1,16 @@
-yunohost (12.1.15.1) stable; urgency=low
+yunohost (12.1.16) stable; urgency=medium
+
+  - fix(nftables): drop policy and allow icmpv6 ([#2165](http://github.com/YunoHost/yunohost/pull/2165))
+  - fix(nginx): remove deprecated OCSP ([#2166](http://github.com/YunoHost/yunohost/pull/2166))
+  - fix(sse): logstreamcache files location ([#2164](http://github.com/YunoHost/yunohost/pull/2164))
+  - helpers2.1: fix attempting to load go/ruby/nodejs when it's not provisioned yet in some context (7a2b6820b)
+  - helpers2.1: remove --message ([#2162](http://github.com/YunoHost/yunohost/pull/2162))
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, alexAubin, Tagada, Thomas)
+
+ -- tituspijean <tituspijean@yunohost.org>  Sat, 30 Aug 2025 22:04:30 +0200
+
+ yunohost (12.1.15.1) stable; urgency=low
 
   - network: fixes IP reuse in cache in all cases (30ae06809)
   - i18n: Translations updated for French, Spanish
