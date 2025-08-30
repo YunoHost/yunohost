@@ -175,8 +175,8 @@ i18n = "global_settings_setting"
         choices.ipv6 = "IPv6 Only"
         default = "both"
 
-    [misc.reverse_proxy]
-        [misc.reverse_proxy.reverse_proxy_list]
+    [misc.trusted_proxies]
+        [misc.trusted_proxies.trusted_proxies_list]
         type = "tags"
         default = ""
 

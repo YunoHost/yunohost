@@ -52,7 +52,7 @@ do_init_regen() {
 
     cd /usr/share/yunohost/conf/nginx
 
-    export reverse_proxy_list="$(jq -r '.reverse_proxy_list' <<< "$YNH_SETTINGS" | int_to_bool)"
+    export trusted_proxies_list="$(jq -r '.trusted_proxies_list' <<< "$YNH_SETTINGS" | int_to_bool)"
     export compatibility="intermediate"
     do_base_regen ""
 
@@ -91,7 +91,7 @@ do_pre_regen() {
     export compatibility="$(jq -r '.nginx_compatibility' <<< "$YNH_SETTINGS" | int_to_bool)"
     export experimental="$(jq -r '.security_experimental_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
     export tls_passthrough_list="$(jq -r '.tls_passthrough_list' <<< "$YNH_SETTINGS" | sed 's/^null$//g')"
-    export reverse_proxy_list="$(jq -r '.reverse_proxy_list' <<< "$YNH_SETTINGS" | sed 's/^null$//g')"
+    export trusted_proxies_list="$(jq -r '.trusted_proxies_list' <<< "$YNH_SETTINGS" | sed 's/^null$//g')"
 
     do_base_regen "${pending_dir}"
 
