@@ -27,8 +27,7 @@ _ynh_load_nodejs_in_path_and_other_tweaks() {
     # Get the absolute path of this version of node
     nodejs_dir="$N_PREFIX/n/versions/node/$nodejs_version/bin"
 
-    if [ ! -e "$nodejs_dir" ]
-    then
+    if [ ! -e "$nodejs_dir" ]; then
         echo "Skipping loading nodejs, because it doesn't seem to be provisioned yet. This is likely to happen during restore and other specific contexts."
         return
     fi
