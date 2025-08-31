@@ -279,7 +279,9 @@ def portal_update(
         new_attr_dict["mail"] = mails
 
     if mailforward is not None:
-        is_allowed_to_edit_mail_forward = portal_settings["portal_allow_edit_email_forward"]
+        is_allowed_to_edit_mail_forward = portal_settings[
+            "portal_allow_edit_email_forward"
+        ]
         if not is_allowed_to_edit_mail_forward:
             raise YunohostValidationError("mail_edit_operation_unauthorized")
 
