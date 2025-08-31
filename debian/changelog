@@ -1,3 +1,15 @@
+yunohost (12.1.17) stable; urgency=low
+
+  - tools_update: remove passed requirements because it's hella confusing in CLI output (c3946a57c)
+  - app upgrade infos: fix display values when current_version == new_version (78d6b83e1)
+  - user: when updating admins group mail aliases, don't try to add aliases that are already there because LDAP is dumdum. (In particular for migration 0034) (249881336)
+  - portal api: fix allow_edit_email vs portal_allow_edit_email confusion (c465e40be)
+  - portal email settings: add post_change_hook to propagate settings when it's changed (a69553cec)
+
+  Thanks to all contributors <3 ! (tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 31 Aug 2025 23:12:38 +0200
+
 yunohost (12.1.16) stable; urgency=medium
 
   - fix(nftables): drop policy and allow icmpv6 ([#2165](http://github.com/YunoHost/yunohost/pull/2165))
@@ -6,11 +18,11 @@ yunohost (12.1.16) stable; urgency=medium
   - helpers2.1: fix attempting to load go/ruby/nodejs when it's not provisioned yet in some context (7a2b6820b)
   - helpers2.1: remove --message ([#2162](http://github.com/YunoHost/yunohost/pull/2162))
 
-  Thanks to all contributors <3 ! (Alexandre Aubin, alexAubin, Tagada, Thomas)
+  Thanks to all contributors <3 ! (Alexandre Aubin, Tagada, Thomas)
 
  -- tituspijean <tituspijean@yunohost.org>  Sat, 30 Aug 2025 22:04:30 +0200
 
- yunohost (12.1.15.1) stable; urgency=low
+yunohost (12.1.15.1) stable; urgency=low
 
   - network: fixes IP reuse in cache in all cases (30ae06809)
   - i18n: Translations updated for French, Spanish
