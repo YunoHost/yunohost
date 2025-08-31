@@ -1671,7 +1671,7 @@ def _update_admins_group_aliases(
             and a.split("@")[0] in ADMIN_ALIASES
         ]
     aliases_to_add = [f"{a}@{new_main_domain}" for a in ADMIN_ALIASES]
-    aliases_to_add = [a for a in ADMIN_ALIASES if a not in current_admin_aliases]
+    aliases_to_add = [a for a in aliases_to_add if a not in current_admin_aliases]
 
     user_group_update(
         "admins", add_mailalias=aliases_to_add, remove_mailalias=aliases_to_remove
