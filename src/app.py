@@ -2128,14 +2128,17 @@ def app_ssowatconf() -> None:
     }
     for domain, apps in portal_domains_apps.items():
         portal_settings = {}
-        portal_settings.update(portal_email_settings)
 
+        # If possible, load the existing file
         portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
         if portal_settings_path.exists():
             this_domain_portal_settings: dict[str, Any] = read_json(
                 str(portal_settings_path)
             )  # type: ignore[assignment]
             portal_settings.update(this_domain_portal_settings)
+
+        # Update with the new settings
+        portal_settings.update(portal_email_settings)
 
         # Do no override anything else than "apps" since the file is shared
         # with domain's config panel "portal" options
