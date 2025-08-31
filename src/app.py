@@ -415,8 +415,8 @@ def _app_upgrade_infos(app: str, current_version: str | None = None) -> AppUpgra
     # where the version may not have been bumped but we want a way to advertise it anyway
     # and distinguish the two versions, using the commit id
     if current_version == new_version:
-        current_version += f"({current_revision})"
-        new_version = f"{new_version} ({new_revision})"
+        current_version += f" ({current_revision or '?'})"
+        new_version = f"{new_version} ({new_revision[:7]})"
     else:
         new_version = new_version
 
