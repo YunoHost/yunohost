@@ -492,6 +492,12 @@ def _list_apps_with_upgrade_infos(
             continue
         if app_info_dict["upgrade"]["status"] == "up_to_date":
             continue
+        if app_info_dict["upgrade"]["requirements"]:
+            app_info_dict["upgrade"]["requirements"] = {
+                k: r
+                for k, r in app_info_dict["upgrade"]["requirements"].items()
+                if not r["passed"]
+            }
         if "settings" in app_info_dict:
             del app_info_dict["settings"]
 
