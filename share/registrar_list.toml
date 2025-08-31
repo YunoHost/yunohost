@@ -777,10 +777,10 @@
     redact = true
 
 [wedos]
-    [webgo.auth_username]
+    [wedos.auth_username]
     type = "string"
 
-    [webgo.auth_pass]
+    [wedos.auth_pass]
     type = "password"
 
 [yandex]
