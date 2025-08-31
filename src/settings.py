@@ -304,6 +304,9 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 
 
 @post_change_hook("portal_theme")
+@post_change_hook("portal_allow_edit_email")
+@post_change_hook("portal_allow_edit_email_alias")
+@post_change_hook("portal_allow_edit_email_forward")
 def regen_ssowatconf(setting_name, old_value, new_value):
     if old_value != new_value:
         from .app import app_ssowatconf
