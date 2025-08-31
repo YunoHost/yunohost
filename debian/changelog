@@ -1,3 +1,11 @@
+yunohost (12.1.17.1) stable; urgency=low
+
+  - fix: portal domain conf not properly updated with the portal_allow_mail_edit settings (#2167)
+
+  Thanks to all contributors <3 ! (tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 31 Aug 2025 23:37:15 +0200
+
 yunohost (12.1.17) stable; urgency=low
 
   - tools_update: remove passed requirements because it's hella confusing in CLI output (c3946a57c)
