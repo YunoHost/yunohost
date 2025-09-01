@@ -21,8 +21,8 @@
 import hashlib
 import os
 import re
-from pathlib import Path
 from logging import getLogger
+from pathlib import Path
 from typing import Any, Literal, NotRequired, TypedDict
 
 from moulinette import m18n
@@ -259,6 +259,7 @@ def _update_apps_catalog() -> None:
 
 _apps_catalog_cache_timestamp: float = 0
 _apps_catalog_cache: AppCatalog | None = None
+
 
 def _load_apps_catalog() -> AppCatalog:
     """
