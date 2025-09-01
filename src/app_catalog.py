@@ -278,7 +278,7 @@ def _load_apps_catalog() -> AppCatalog:
         timestamps.append(stats.st_mtime)
         timestamps.append(stats.st_ctime)
 
-    timestamp = max(timestamps)
+    timestamp = max(timestamps) if timestamps else 0
     global _apps_catalog_cache
     global _apps_catalog_cache_timestamp
     if _apps_catalog_cache and timestamp <= _apps_catalog_cache_timestamp:
