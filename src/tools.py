@@ -724,7 +724,8 @@ def tools_clean_old_kernels() -> None:
     else:
         kernels = dpkg_output.stdout.split("\n")[:-4]
         if kernels == []:
-            print("No kernel to remove")
+            logger.info("No kernel to remove")
+            return
         else:    
             for kernel in kernels:
                 if running_kernel[0] not in kernel:
