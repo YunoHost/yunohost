@@ -724,11 +724,9 @@ def tools_clean_old_kernels() -> None:
         logger.info("No kernel to remove")
         return
     else:    
-        for kernel in kernels:
-            if running_kernel not in kernel:
-                subprocess.run("apt remove -y --purge " + kernel, shell=True)
-            else:
-                print("This is the running kernel, it won't be removed")
+        kernels_to_remove = [kernel for kernel in kernels if running_kernel not in kernel]
+        cmd = f"apt remove -y --purge {' '.join(kernels_to_remove)}"
+        subprocess.run(cmd, shell=True)
 
 
 # ############################################ #
