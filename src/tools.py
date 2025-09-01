@@ -713,6 +713,7 @@ def tools_basic_space_cleanup() -> None:
     subprocess.run("rm /var/log/*/*.gz", shell=True)
     subprocess.run("rm /var/log/*.?", shell=True)
     subprocess.run("rm /var/log/*/*.?", shell=True)
+def tools_clean_old_kernels() -> None:
     # Removing kernel except last 2
     uname_output = subprocess.run("uname -r", capture_output=True, text=True, shell=True)
     running_kernel = uname_output.stdout.split("\n")[:-1]
