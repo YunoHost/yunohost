@@ -716,7 +716,8 @@ def tools_basic_space_cleanup() -> None:
 def tools_clean_old_kernels() -> None:
     # Removing kernel except last 2
     uname_output = subprocess.run("uname -r", capture_output=True, text=True, shell=True)
-    running_kernel = uname_output.stdout.split("\n")[:-1]
+    # running_kernel is expected to be something like : 6.1.0-28-amd64
+    running_kernel = uname_output.stdout.strip()
     dpkg_output = subprocess.run("dpkg -l | grep '^ii\s*linux-image' | awk '{print $2}'", capture_output=True, text=True, shell=True)
     if not dpkg_output.stdout.strip():
         logger.info("Couldn't find installed kernels. Maybe you are running Yunohost in an LXC container ?")
