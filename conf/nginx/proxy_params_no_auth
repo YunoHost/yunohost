@@ -6,7 +6,7 @@ proxy_set_header   X-Forwarded-Proto    $scheme;
 proxy_set_header   X-Forwarded-Host     $server_name;
 proxy_set_header   X-Forwarded-Scheme   https;
 proxy_set_header   X-Forwarded-Ssl      on;
-proxy_set_header   X-Forwarded-User     $http_ynh_user;
+proxy_set_header   X-Forwarded-User     "";
 proxy_set_header   X-Forwarded-Server   $host;
 
 # Clean all header to ensure that the client can't inject any header for authentication
