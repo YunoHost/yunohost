@@ -351,7 +351,7 @@ _ynh_apt() {
     # Optimization when just calling apt update : check if the cache was
     # already refreshed in the last 30 min, which should be enough and prevent
     # unecessary traffic and annoying wait time during app dependency installs etc
-    if [[ "$@" == "update" ]]
+    if [[ "$*" == "update" ]]
     then
         # trick from https://stackoverflow.com/a/205710
         local aptcache="/var/cache/apt/pkgcache.bin"
