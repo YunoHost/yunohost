@@ -355,14 +355,11 @@ _ynh_apt() {
     then
         # trick from https://stackoverflow.com/a/205710
         local aptcache="/var/cache/apt/pkgcache.bin"
-        touch -d '-30 minutes' /tmp/.30_minutes_ago
         sleep 1
-        if [[ -e $aptcache ]] && [[ $aptcache -nt /tmp/.30_minutes_ago ]] && [[ -z "$(find /etc/apt/sources.list* -type f -newer $aptcache)" ]]; then
-            rm -f /tmp/.30_minutes_ago
+        if [[ -e $aptcache ]] && [[ -n "$(find $aptcache -mmin 30)" ]] && [[ -z "$(find /etc/apt/sources.list* -type f -newer $aptcache)" ]]; then
             echo "apt cache was already updated in the last 30 minutes, skipping 'apt update'"
             return
         fi
-        rm -f /tmp/.30_minutes_ago
     fi
 
     _ynh_wait_dpkg_free
