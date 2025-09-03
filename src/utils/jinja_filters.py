@@ -19,8 +19,9 @@
 #
 
 import json
-import yaml
+
 import toml
+import yaml
 
 """
 Set of jinja filter to improve the usage of Jinja when called from bash script with simple variable with string.
