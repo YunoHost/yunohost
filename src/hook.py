@@ -29,6 +29,7 @@ from logging import getLogger
 
 from moulinette import Moulinette, m18n
 
+from .utils import jinja_filters
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import cp, read_yaml
 
@@ -473,6 +474,9 @@ def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
     # Apps that need the HOME var should define it in the app scripts
     if "HOME" in _env:
         del _env["HOME"]
+
+    # Pass jinja filters path for template helper
+    env["YNH_J2_FILTERS_FILE_PATH"] = jinja_filters.__file__
 
     returncode = call_async_output(command, loggers, shell=False, cwd=chdir, env=_env)
 
