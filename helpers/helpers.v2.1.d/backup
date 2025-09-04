@@ -96,11 +96,7 @@ ynh_backup() {
 
     # Add the relative current working directory to the destination path
     local rel_dir
-    if [ "${YNH_CORE_SCRIPT:-}" != 1 ]; then
-        rel_dir="${YNH_CWD#"$YNH_BACKUP_DIR"}"
-    else
-        rel_dir="${YNH_CORE_BACKUP_DIR#"$YNH_BACKUP_DIR"}"
-    fi
+    rel_dir="${YNH_CWD#"$YNH_BACKUP_DIR"}"
     rel_dir="${rel_dir%/}/"
     dest_path="${rel_dir}${dest_path}"
     dest_path="${dest_path#/}"
@@ -207,7 +203,7 @@ ynh_restore() {
         mv "$archive_path" "${target}"
     fi
 
-    if [ "${YNH_CORE_SCRIPT:-}" != 1 ]; then
+    if [ -n "${YNH_APP_ID:-}" ]; then
         _ynh_apply_default_permissions "$target"
     fi
 }
