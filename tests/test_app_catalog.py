@@ -38,6 +38,9 @@ from yunohost.app_catalog import (
     app_catalog,
     logger,
 )
+
+from yunohost import app_catalog as app_catalog_module
+
 from yunohost.utils.error import YunohostError
 from yunohost.utils.file_utils import read_json, write_to_json, write_to_yaml
 
@@ -70,6 +73,9 @@ def setup_function(function):
     # Clear apps_catalog conf
     if os.path.exists(APPS_CATALOG_CONF):
         os.remove(APPS_CATALOG_CONF)
+
+    app_catalog_module._apps_catalog_cache_timestamp = 0
+    app_catalog_module._apps_catalog_cache = None
 
 
 def teardown_function(function):
