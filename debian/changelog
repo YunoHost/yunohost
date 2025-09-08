@@ -1,3 +1,19 @@
+yunohost (12.1.18) stable; urgency=low
+
+  - perf: prevent domain list --features from taking ages because it fetches DNS infos and app upgradability even though it doesnt matter in that context (53ef24cad)
+  - perf: implement cache for load_apps_catalog because parsing 50 times the same 700kBish json in a single command is probably not a very efficient way to use CPU and IO bruh (c80e917e2)
+  - perf/helpers2.1: skip apt update when cache was already updated less than 30 minutes ago (#2147)
+  - helpers/configs: add jinja filter to load and dump json, yaml and toml (#2150)
+  - helpers/multimedia: disable logging when running all the mkdir and ln -s for each user to prevent leaking the users in logs, and also it's long and boring af (1fdaad770)
+  - helpers/systemd: when starting a service reaches timeout, don't try to check wether it's active or not to handle it as a failure (3268781dd)
+  - regenconf: fix postgresql issue (and possibly others) because sometimes, for god knows whatever reason, using dpkg --list | grep 'ii foobar' doesn't work, gotta use \s ... (17ea71641)
+  - logging: moar boring warnings to ignore (55d7eee0d)
+  - i18n: Translations updated for Basque, Chinese (Simplified)
+
+  Thanks to all contributors <3 ! (Josué Tille, xabirequejo, zamentur)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 08 Sep 2025 19:30:06 +0200
+
 yunohost (12.1.17.1) stable; urgency=low
 
   - fix: portal domain conf not properly updated with the portal_allow_mail_edit settings (#2167)
