@@ -25,7 +25,7 @@ set -Eeuo pipefail
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
-if ! dpkg --list | grep -q "ii *postgresql-$PSQL_VERSION "; then
+if ! dpkg --list | grep -q "^ii\s*postgresql-$PSQL_VERSION\s"; then
     echo 'postgresql is not installed, skipping'
     exit 0
 fi

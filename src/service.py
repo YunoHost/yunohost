@@ -721,7 +721,7 @@ def _get_services():
             del services[name]
 
     php_fpm_versions = check_output(
-        r"dpkg --list | grep -P 'ii  php\d.\d-fpm' | awk '{print $2}' | grep -o -P '\d.\d' || true",
+        r"dpkg --list | grep -P '^ii\s*php\d.\d-fpm' | awk '{print $2}' | grep -o -P '\d.\d' || true",
         cwd="/tmp",
     )
     php_fpm_versions = [v for v in php_fpm_versions.split("\n") if v.strip()]
