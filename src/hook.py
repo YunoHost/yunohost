@@ -387,7 +387,12 @@ def hook_exec(
             r"cannot open '/etc/ssl/certs/java/cacerts'",
             # Misc
             r"update-binfmts: warning:",
-            r"Not building database; man-db",
+            r"Not building database",
+            r"Reloading AppArmor profiles",
+            r"aspell-autobuildhash: processing:",
+            r"Setcap failed on /usr/sbin/mysqld",
+            r"Invalid file '/usr/sbin/mysqld'",
+            r"is a disabled or a static unit, not starting it.",
         ]
         return all(not re.search(w, msg) for w in irrelevant_warnings)
 
