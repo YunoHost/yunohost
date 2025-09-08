@@ -720,11 +720,11 @@ def tools_clean_old_kernels() -> None:
     running_kernel = uname_output.stdout.strip()
     dpkg_output = subprocess.run("dpkg -l | grep '^ii\s*linux-image-[0-9]' | awk '{print $2}'", capture_output=True, text=True, shell=True)
     kernels = dpkg_output.stdout.strip().split("\n")[:-3]
-    if not kernels:
+    kernels_to_remove = [kernel for kernel in kernels if running_kernel not in kernel]
+    if not kernels_to_remove:
         logger.info("No kernel to remove")
         return
-    else:    
-        kernels_to_remove = [kernel for kernel in kernels if running_kernel not in kernel]
+    else:
         cmd = f"apt remove -y --purge {' '.join(kernels_to_remove)}"
         subprocess.run(cmd, shell=True)
 
