@@ -2145,8 +2145,11 @@ def app_ssowatconf() -> None:
         portal_settings["apps"] = apps
 
         write_to_json(
-            str(portal_settings_path), portal_settings, sort_keys=True, indent=4
-        )  # type: ignore[arg-type]
+            str(portal_settings_path),
+            portal_settings,  # type: ignore[arg-type]
+            sort_keys=True,
+            indent=4
+        )
 
     # Cleanup old files from possibly old domains
     for setting_file in Path(PORTAL_SETTINGS_DIR).iterdir():
