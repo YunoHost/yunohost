@@ -2148,7 +2148,7 @@ def app_ssowatconf() -> None:
             str(portal_settings_path),
             portal_settings,  # type: ignore[arg-type]
             sort_keys=True,
-            indent=4
+            indent=4,
         )
 
     # Cleanup old files from possibly old domains
