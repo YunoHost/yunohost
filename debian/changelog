@@ -1,3 +1,10 @@
+yunohost (12.1.20) stable; urgency=low
+
+  - perf/postfix regenconf: use $YNH_SETTINGS rather than calling yunohost settings get (b6545c318)
+  - perf/log show: stoopid typo leading to unecessarily opening a gazillion yamls (c59b43b42)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 09 Sep 2025 01:46:07 +0200
+
 yunohost (12.1.19) stable; urgency=low
 
   - perf: further prevent regenconf from taking an absurd amount of time because calls to 'yunohost domain list --features' take, for example, 10ish secs on RPi2 ... To do so, the list of mail_in/mail_out domain is computed beforehand and passed as a global vars to the regen conf scripts (fbb99348a)
