@@ -1788,7 +1788,7 @@ tools:
         basic-space-cleanup:
             action_help: Basic space cleanup (apt, journalctl, logs, ...)
 
-        clean_old_kernels:
+        clean-old-kernels:
             action_help: Old kernels removal
 
         ### tools_shutdown()
