@@ -726,7 +726,7 @@ def tools_clean_old_kernels() -> None:
         return
     else:
         from .utils.app_utils import _ask_confirmation
-        _ask_confirmation(f"The system is currently running kernel {running_kernel}. This will remove the following kernels : {", ".join(kernels_to_remove)}. Proceed ?")
+        _ask_confirmation(f"The system is currently running kernel {running_kernel}. This will remove the following kernels : {', '.join(kernels_to_remove)}. Proceed ?")
         cmd = f"apt remove -y --purge {' '.join(kernels_to_remove)}"
         kernel_removal = subprocess.run(cmd, shell=True)
         if kernel_removal.returncode != 0:
