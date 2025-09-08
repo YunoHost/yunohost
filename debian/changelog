@@ -1,3 +1,9 @@
+yunohost (12.1.19) stable; urgency=low
+
+  - perf: further prevent regenconf from taking an absurd amount of time because calls to 'yunohost domain list --features' take, for example, 10ish secs on RPi2 ... To do so, the list of mail_in/mail_out domain is computed beforehand and passed as a global vars to the regen conf scripts (fbb99348a)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 09 Sep 2025 00:26:41 +0200
+
 yunohost (12.1.18) stable; urgency=low
 
   - perf: prevent domain list --features from taking ages because it fetches DNS infos and app upgradability even though it doesnt matter in that context (53ef24cad)
