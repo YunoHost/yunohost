@@ -69,8 +69,8 @@ do_pre_regen() {
     export enable_blocklists="$(jq -r '.enable_blocklists' <<< "$YNH_SETTINGS" | int_to_bool)"
 
     # Use this postfix server as a backup MX
-    export backup_mx_domains="$(yunohost settings get 'email.smtp.smtp_backup_mx_domains' | sed "s/,/ /g")"
-    export backup_mx_emails="$(yunohost settings get 'email.smtp.smtp_backup_mx_emails_whitelisted' | sed "s/,/ /g")"
+    export backup_mx_domains="$(jq -r '.smtp_backup_mx_domains' <<< "$YNH_SETTINGS" | sed "s/,/ /g")"
+    export backup_mx_emails="$(jq -r '.smtp_backup_mx_emails_whitelisted' <<< "$YNH_SETTINGS" | sed "s/,/ /g")"
     rm -f "${postfix_dir}/relay_recipients"
     touch "${postfix_dir}/relay_recipients"
     if [ -n "${backup_mx_domains}" ] && [ -n "${backup_mx_emails}" ]; then
