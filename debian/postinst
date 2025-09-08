@@ -32,6 +32,9 @@ do_configure() {
         if [ -d /etc/yunohost/apps/ ] && ls /etc/yunohost/apps/* >/dev/null 2>&1; then
             echo "Sounds like /etc/yunohost/installed mysteriously disappeared ... You should probably contact the Yunohost support ..."
         else
+            export YNH_CONTEXT=regenconf
+            export YNH_HELPERS_VERSION=2
+            export YNH_CORE_SCRIPT=1
             bash /usr/share/yunohost/hooks/conf_regen/01-yunohost init
             bash /usr/share/yunohost/hooks/conf_regen/02-ssl init
             bash /usr/share/yunohost/hooks/conf_regen/09-nslcd init

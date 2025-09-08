@@ -22,11 +22,12 @@
 set -Eeuo pipefail
 
 # Source YNH helpers
+YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
 # Backup destination
-backup_dir="${1}/data/mail"
+YNH_CORE_BACKUP_DIR="${YNH_BACKUP_DIR%/}/data/mail"
 
 # Backup mails
-ynh_backup /var/mail "$backup_dir" 1
+ynh_backup /var/mail

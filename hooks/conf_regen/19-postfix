@@ -19,9 +19,10 @@
 #
 
 # Exit hook on subcommand error or unset variable
-set -e
+set -Eeuo pipefail
 
 # Source YNH helpers
+YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
@@ -43,14 +44,14 @@ do_pre_regen() {
     main_domain=$(cat /etc/yunohost/current_host)
 
     # Support different strategy for security configurations
-    export compatibility="$(jq -r '.postfix_compatibility' <<< "$YNH_SETTINGS")"
+    compatibility="$(jq -r '.postfix_compatibility' <<< "$YNH_SETTINGS")"
 
     # Add possibility to specify a relay
     # Could be useful with some isp with no 25 port open or more complex setup
-    export relay_port=""
-    export relay_user=""
-    export relay_host=""
-    export relay_enabled="$(jq -r '.smtp_relay_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
+    relay_port=""
+    relay_user=""
+    relay_host=""
+    relay_enabled="$(jq -r '.smtp_relay_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
     if [ "${relay_enabled}" == "True" ]; then
         relay_host="$(jq -r '.smtp_relay_host' <<< "$YNH_SETTINGS")"
         relay_port="$(jq -r '.smtp_relay_port' <<< "$YNH_SETTINGS")"
@@ -66,11 +67,11 @@ do_pre_regen() {
 
         cat <<< "[${relay_host}]:${relay_port} ${relay_user}:${relay_password}" > "${postfix_dir}/sasl_passwd"
     fi
-    export enable_blocklists="$(jq -r '.enable_blocklists' <<< "$YNH_SETTINGS" | int_to_bool)"
+    enable_blocklists="$(jq -r '.enable_blocklists' <<< "$YNH_SETTINGS" | int_to_bool)"
 
     # Use this postfix server as a backup MX
-    export backup_mx_domains="$(yunohost settings get 'email.smtp.smtp_backup_mx_domains' | sed "s/,/ /g")"
-    export backup_mx_emails="$(yunohost settings get 'email.smtp.smtp_backup_mx_emails_whitelisted' | sed "s/,/ /g")"
+    backup_mx_domains="$(yunohost settings get 'email.smtp.smtp_backup_mx_domains' | sed "s/,/ /g")"
+    backup_mx_emails="$(yunohost settings get 'email.smtp.smtp_backup_mx_emails_whitelisted' | sed "s/,/ /g")"
     rm -f "${postfix_dir}/relay_recipients"
     touch "${postfix_dir}/relay_recipients"
     if [ -n "${backup_mx_domains}" ] && [ -n "${backup_mx_emails}" ]; then
@@ -80,10 +81,9 @@ do_pre_regen() {
         postmap "${postfix_dir}/relay_recipients"
     fi
 
-    export main_domain
-    export domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]" | tr '\n' ' ')"
-    ynh_render_template "main.cf" "${postfix_dir}/main.cf"
-    ynh_render_template "sni" "${postfix_dir}/sni"
+    domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]" | tr '\n' ' ')"
+    ynh_config_add --jinja --template="main.cf" --destination="${postfix_dir}/main.cf"
+    ynh_config_add --jinja --template="sni" --destination="${postfix_dir}/sni"
 
     # Activate mailbox only on domains with mail_in features
     # If mail_in is disabled for a domain, this allows to send

@@ -22,15 +22,16 @@
 set -Eeuo pipefail
 
 # Source YNH helpers
+YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
 # Backup destination
-backup_dir="${1}/data/multimedia"
+YNH_CORE_BACKUP_DIR="${YNH_BACKUP_DIR%/}/data/multimedia"
 
 if [ ! -e "/home/yunohost.multimedia" ] || [ -e "/home/yunohost.multimedia/.nobackup" ]; then
     exit 0
 fi
 
 # Backup multimedia directory
-ynh_backup --src_path="/home/yunohost.multimedia" --dest_path="${backup_dir}" --is_big --not_mandatory
+ynh_backup "/home/yunohost.multimedia"

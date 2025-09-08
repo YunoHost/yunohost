@@ -18,9 +18,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-set -e
+# Exit hook on subcommand error or unset variable
+set -Eeuo pipefail
 
 # Source YNH helpers
+YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
@@ -30,16 +32,16 @@ do_pre_regen() {
     cd /usr/share/yunohost/conf/ssh
 
     # Support different strategy for security configurations
-    export compatibility="$(jq -r '.ssh_compatibility' <<< "$YNH_SETTINGS")"
-    export port="$(jq -r '.ssh_port' <<< "$YNH_SETTINGS")"
-    export password_authentication="$(jq -r '.ssh_password_authentication' <<< "$YNH_SETTINGS" | int_to_bool)"
-    export ssh_keys=$(ls /etc/ssh/ssh_host_{ed25519,rsa,ecdsa}_key 2> /dev/null || true)
+    compatibility="$(jq -r '.ssh_compatibility' <<< "$YNH_SETTINGS")"
+    port="$(jq -r '.ssh_port' <<< "$YNH_SETTINGS")"
+    password_authentication="$(jq -r '.ssh_password_authentication' <<< "$YNH_SETTINGS" | int_to_bool)"
+    ssh_keys=$(ls /etc/ssh/ssh_host_{ed25519,rsa,ecdsa}_key 2> /dev/null || true)
 
     # do not listen to IPv6 if unavailable
     [[ -f /proc/net/if_inet6 ]] && ipv6_enabled=true || ipv6_enabled=false
-    export ipv6_enabled
 
-    ynh_render_template "sshd_config" "${pending_dir}/etc/ssh/sshd_config"
+    mkdir -p "${pending_dir}/etc/ssh"
+    ynh_config_add --jinja --template='sshd_config' --destination="${pending_dir}/etc/ssh/sshd_config"
 }
 
 do_post_regen() {

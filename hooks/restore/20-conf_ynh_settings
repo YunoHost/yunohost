@@ -21,13 +21,20 @@
 # Exit hook on subcommand error or unset variable
 set -Eeuo pipefail
 
-backup_dir="$1/conf/ynh"
+# Source YNH helpers
+YNH_HELPERS_VERSION=2.1
+# shellcheck source=../../helpers/helpers
+source /usr/share/yunohost/helpers
 
-cp -a "${backup_dir}/current_host" /etc/yunohost/current_host
-cp -a "${backup_dir}/firewall.yml" /etc/yunohost/firewall.yml
-cp -a "${backup_dir}/permissions.yml" /etc/yunohost/permissions.yml
-[ ! -d "${backup_dir}/portal" ] || cp -a "${backup_dir}/portal" /etc/yunohost/portal
-[ ! -d "${backup_dir}/domains" ] || cp -a "${backup_dir}/domains" /etc/yunohost/domains
-[ ! -e "${backup_dir}/settings.yml" ] || cp -a "${backup_dir}/settings.yml" "/etc/yunohost/settings.yml"
-[ ! -d "${backup_dir}/dyndns" ] || cp -raT "${backup_dir}/dyndns" "/etc/yunohost/dyndns"
-[ ! -d "${backup_dir}/dkim" ] || cp -raT "${backup_dir}/dkim" "/etc/dkim"
+YNH_CORE_BACKUP_DIR="${YNH_BACKUP_DIR%/}/conf/ynh"
+
+ynh_restore /etc/yunohost/current_host
+ynh_restore /etc/yunohost/firewall.yml
+# Note we need to handle the old and the new backup path
+# ${YNH_CORE_BACKUP_DIR}/etc/yunohost/permissions.yml is the new one whereas ${YNH_CORE_BACKUP_DIR}/permissions.yml is the old one
+{ [ ! -e "${YNH_CORE_BACKUP_DIR}/etc/yunohost/permissions.yml" ] && [ ! -e "${YNH_CORE_BACKUP_DIR}/permissions.yml" ]; } || ynh_restore /etc/yunohost/permissions.yml
+{ [ ! -d "${YNH_CORE_BACKUP_DIR}/etc/yunohost/portal" ] && [ ! -d "${YNH_CORE_BACKUP_DIR}/portal" ]; } || ynh_restore '/etc/yunohost/portal'
+{ [ ! -d "${YNH_CORE_BACKUP_DIR}/etc/yunohost/domains" ] && [ ! -d "${YNH_CORE_BACKUP_DIR}/domains" ]; } || ynh_restore '/etc/yunohost/domains'
+{ [ ! -e "${YNH_CORE_BACKUP_DIR}/etc/yunohost/settings.yml" ] && [ ! -e "${YNH_CORE_BACKUP_DIR}/settings.yml" ]; } || ynh_restore '/etc/yunohost/settings.yml'
+{ [ ! -d "${YNH_CORE_BACKUP_DIR}/etc/yunohost/dyndns" ] && [ ! -d "${YNH_CORE_BACKUP_DIR}/dyndns" ]; } || ynh_restore '/etc/yunohost/dyndns'
+{ [ ! -d "${YNH_CORE_BACKUP_DIR}/etc/dkim" ] && [ ! -d "${YNH_CORE_BACKUP_DIR}/dkim" ]; } || ynh_restore '/etc/dkim'

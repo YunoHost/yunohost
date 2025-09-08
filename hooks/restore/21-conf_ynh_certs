@@ -21,8 +21,9 @@
 # Exit hook on subcommand error or unset variable
 set -Eeuo pipefail
 
-backup_dir="$1/conf/ynh/certs"
+# Source YNH helpers
+YNH_HELPERS_VERSION=2.1
+# shellcheck source=../../helpers/helpers
+source /usr/share/yunohost/helpers
 
-mkdir -p /etc/yunohost/certs/
-
-cp -a "$backup_dir/." /etc/yunohost/certs/
+ynh_restore /etc/yunohost/certs

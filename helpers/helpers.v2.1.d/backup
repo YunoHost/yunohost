@@ -45,7 +45,14 @@ ynh_backup() {
     local is_data=false
 
     # If the path starts with /var/log/$app or $data_dir
-    if [[ (-n "${app:-}" && "$target" =~ ^/var/log/$app/?\*?$) || (-n "${data_dir:-}" && "$target" =~ ^$data_dir)     ]]; then
+    if [[ \
+        # Apps backup
+        (-n "${app:-}" && "$target" =~ ^/var/log/$app/?\*?$) \
+        || (-n "${data_dir:-}" && "$target" =~ ^$data_dir) \
+        # for core backups
+        || (-z "${app:-}" && "$target" == '/home/'*) \
+        || (-z "${app:-}" && "$target" == '/var/mail') \
+        ]]; then
         is_data=true
     fi
 
@@ -88,7 +95,12 @@ ynh_backup() {
     fi
 
     # Add the relative current working directory to the destination path
-    local rel_dir="${YNH_CWD#"$YNH_BACKUP_DIR"}"
+    local rel_dir
+    if [ "${YNH_CORE_SCRIPT:-}" != 1 ]; then
+        rel_dir="${YNH_CWD#"$YNH_BACKUP_DIR"}"
+    else
+        rel_dir="${YNH_CORE_BACKUP_DIR#"$YNH_BACKUP_DIR"}"
+    fi
     rel_dir="${rel_dir%/}/"
     dest_path="${rel_dir}${dest_path}"
     dest_path="${dest_path#/}"
@@ -195,7 +207,9 @@ ynh_restore() {
         mv "$archive_path" "${target}"
     fi
 
-    _ynh_apply_default_permissions "$target"
+    if [ "${YNH_CORE_SCRIPT:-}" != 1 ]; then
+        _ynh_apply_default_permissions "$target"
+    fi
 }
 
 # Restore all files that were previously backuped in an app backup script

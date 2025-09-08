@@ -22,17 +22,18 @@
 set -Eeuo pipefail
 
 # Source YNH helpers
+YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
 # Backup destination
-backup_dir="${1}/data/home"
+YNH_CORE_BACKUP_DIR="${YNH_BACKUP_DIR%/}/data/home"
 
 # Backup user home
 for f in $(find /home/* -type d -prune | awk -F/ '{print $NF}'); do
     if [[ ! "$f" =~ ^yunohost|lost\+found ]]; then
         if [ ! -e "/home/$f/.nobackup" ]; then
-            ynh_backup "/home/$f" "${backup_dir}/$f" 1
+            ynh_backup "/home/$f"
         fi
     fi
 done
