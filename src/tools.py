@@ -714,17 +714,19 @@ def tools_basic_space_cleanup() -> None:
     subprocess.run("rm /var/log/*.?", shell=True)
     subprocess.run("rm /var/log/*/*.?", shell=True)
 def tools_clean_old_kernels() -> None:
-    # Removing kernel except last 2
+    # Removing kernel except last one
     uname_output = subprocess.run("uname -r", capture_output=True, text=True, shell=True)
     # running_kernel is expected to be something like : 6.1.0-28-amd64
     running_kernel = uname_output.stdout.strip()
     dpkg_output = subprocess.run("dpkg -l | grep '^ii\s*linux-image-[0-9]' | awk '{print $2}'", capture_output=True, text=True, shell=True)
-    kernels = dpkg_output.stdout.strip().split("\n")[:-3]
+    kernels = dpkg_output.stdout.strip().split("\n")[:-1]
     kernels_to_remove = [kernel for kernel in kernels if running_kernel not in kernel]
     if not kernels_to_remove:
         logger.info("No kernel to remove")
         return
     else:
+        from .utils.app_utils import _ask_confirmation
+        _ask_confirmation(f"The system is currently running kernel {running_kernel}. This will remove the following kernels : {", ".join(kernels_to_remove)}. Proceed ?")
         cmd = f"apt remove -y --purge {' '.join(kernels_to_remove)}"
         subprocess.run(cmd, shell=True)
 
