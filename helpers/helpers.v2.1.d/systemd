@@ -175,12 +175,12 @@ ynh_systemctl() {
                 tail --lines="$length" "$log_path" >&2
             fi
 
-            # If we tried to reload/start/restart the service but systemctl consider it to be still inactive/broken, then handle it as a failure
+            # If we tried to reload/start/restart but reached timeout, then handle it as a failure
             if [ "$action" == "reload" ] || [ "$action" == "start" ] || [ "$action" == "restart" ]; then
-                if systemctl --quiet is-active "$service"; then
-                    _ynh_clean_check_starting
-                    return 1
-                fi
+                # NB: we don't check the actual 'active' status of the service,
+                # because if the service is on Restart=always, it may be in a starting loop where it's temporarily active...
+                _ynh_clean_check_starting
+                return 1
             fi
         fi
         _ynh_clean_check_starting
