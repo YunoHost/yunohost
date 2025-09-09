@@ -481,7 +481,7 @@ def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
         del _env["HOME"]
 
     # Pass jinja filters path for template helper
-    env["YNH_J2_FILTERS_FILE_PATH"] = jinja_filters.__file__
+    _env["YNH_J2_FILTERS_FILE_PATH"] = jinja_filters.__file__
 
     returncode = call_async_output(command, loggers, shell=False, cwd=chdir, env=_env)
 
