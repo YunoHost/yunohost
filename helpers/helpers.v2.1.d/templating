@@ -111,9 +111,13 @@ ynh_config_add() {
         (   
             # shellcheck disable=SC2046
             export $(compgen -v)
-            j2 "$template_path" -f env \
-                --filters "$YNH_J2_FILTERS_FILE_PATH" \
-                -o "$destination"
+            if [ -z ${YNH_J2_FILTERS_FILE_PATH+x} ]; then
+                j2 "$template_path" -f env -o "$destination"
+            else
+                j2 "$template_path" -f env \
+                    --filters "$YNH_J2_FILTERS_FILE_PATH" \
+                    -o "$destination"
+            fi
         )
     else
         cp -f "$template_path" "$destination"
