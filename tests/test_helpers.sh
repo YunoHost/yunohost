@@ -91,7 +91,9 @@ run_test() {
 for TEST in $TESTS; do
     log_test "$TEST"
 
-    if run_test "$TEST" > ./test.log 2>&1; then
+    run_test "$TEST" > ./test.log 2>&1
+    result=$?
+    if [ $result -eq 0 ]; then
         log_passed
     else
         echo -e "\n----------"
