@@ -43,6 +43,7 @@ trap cleanup EXIT SIGINT
 
 export YNH_STDINFO=1
 export YNH_ARCH=$(dpkg --print-architecture)
+export YNH_J2_FILTERS_FILE_PATH="$(python3 <<< 'from yunohost.utils import jinja_filters; print(jinja_filters.__file__)')"
 
 # Dummy http server, to serve archives for ynh_setup_source
 HTTPSERVER_DIR=$(mktemp -d)
