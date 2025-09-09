@@ -52,8 +52,11 @@ python3 -m http.server $HTTPSERVER_PORT --bind 127.0.0.1 &>/dev/null &
 HTTPSERVER="$!"
 popd >/dev/null
 
-VAR_WWW=$(mktemp -d)/var/www
+tmp_root=$(mktemp -d)
+VAR_WWW="$tmp_root/var/www"
 mkdir -p "$VAR_WWW"
+# Allow $app user to access to $VAR_WWW
+chmod o+rx -R "$tmp_root"
 
 # Needed to check the permission behavior in ynh_add_config x_x
 getent passwd ynhtest &>/dev/null || useradd --system ynhtest
