@@ -58,6 +58,8 @@ VAR_WWW="$tmp_root/var/www"
 mkdir -p "$VAR_WWW"
 # Allow $app user to access to $VAR_WWW
 chmod o+rx -R "$tmp_root"
+mkdir -p /etc/yunohost/apps/ynhtest
+echo 'id: ynhtest' > /etc/yunohost/apps/ynhtest/settings.yml
 
 # Needed to check the permission behavior in ynh_add_config x_x
 getent passwd ynhtest &>/dev/null || useradd --system ynhtest
