@@ -1,3 +1,10 @@
+yunohost (12.1.22) stable; urgency=low
+
+  - postfix/mailusers: check and display an error if postmap fails (a1aaa1e3f)
+  - 'set -Eeuo pipefail' is a fucking pitfall (1dece38a3)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 10 Sep 2025 18:39:32 +0200
+
 yunohost (12.1.21) stable; urgency=low
 
   - helpers/apt: tweak optimization to not run apt update : actually let's use 'find /etc/apt' when checking for changes, because that will also cover source files that got added or removed (because that will change the mtime of the folders such as sources.list.d) (490b2fc2c)
