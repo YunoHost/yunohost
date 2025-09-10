@@ -355,7 +355,7 @@ _ynh_apt() {
         # trick from https://stackoverflow.com/a/205710
         local aptcache="/var/cache/apt/pkgcache.bin"
         sleep 1
-        if [[ -e $aptcache ]] && [[ -n "$(find $aptcache -mmin -30)" ]] && [[ -z "$(find /etc/apt/sources.list* -type f -newer $aptcache)" ]]; then
+        if [[ -e $aptcache ]] && [[ -n "$(find $aptcache -mmin -30)" ]] && [[ -z "$(find /etc/apt/ -newer $aptcache)" ]]; then
             echo "apt cache was already updated in the last 30 minutes, skipping 'apt update'"
             return
         fi
