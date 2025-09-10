@@ -2650,6 +2650,8 @@ def regen_mail_app_user_config_for_dovecot_and_postfix(
         write_to_file(app_senders_map, content)
         chmod(app_senders_map, 0o440)
         chown(app_senders_map, "postfix", "root")
-        os.system(f"postmap {app_senders_map} 2>/dev/null")
+        ret = os.system(f"postmap {app_senders_map} 2>/dev/null")
+        if ret != 0:
+            logger.error(f"Uhoh, failed to run 'postmap {app_senders_map}' ?!")
         chmod(app_senders_map + ".db", 0o640)
         chown(app_senders_map + ".db", "postfix", "root")
