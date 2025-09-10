@@ -719,8 +719,10 @@ def tools_clean_old_kernels() -> None:
     # running_kernel is expected to be something like : 6.1.0-28-amd64
     running_kernel = uname_output.stdout.strip()
     dpkg_output = subprocess.run("dpkg -l | grep '^ii\s*linux-image-[0-9]' | awk '{print $2}'", capture_output=True, text=True, shell=True)
-    kernels = dpkg_output.stdout.strip().split("\n")[:-1]
-    kernels_to_remove = [kernel for kernel in kernels if running_kernel not in kernel]
+    installed_kernels = dpkg_output.stdout.strip().split("\n")
+    # Consider for removal all the installed kernels except the running one
+    # + the most recent one (which may be more recent than the running one if system didnt reboot since last kernel upgrade)
+    kernels_to_remove = [kernel for kernel in sorted(installed_kernels)[:-1] if running_kernel not in kernel]
     if not kernels_to_remove:
         logger.info("No kernel to remove")
         return
