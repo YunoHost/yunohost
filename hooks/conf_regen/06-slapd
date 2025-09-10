@@ -19,7 +19,7 @@
 #
 
 # Exit hook on subcommand error or unset variable
-set -Eeuo pipefail
+set -eu
 
 tmp_backup_dir_file="/root/slapd-backup-dir.txt"
 
