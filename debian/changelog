@@ -1,3 +1,12 @@
+yunohost (12.1.21) stable; urgency=low
+
+  - helpers/apt: tweak optimization to not run apt update : actually let's use 'find /etc/apt' when checking for changes, because that will also cover source files that got added or removed (because that will change the mtime of the folders such as sources.list.d) (490b2fc2c)
+  - helpers: fix YNH_J2_FILTERS_FILE_PATH definition  (#2172, #2173)
+
+  Thanks to all contributors <3 ! (Florian, Josue-T)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 10 Sep 2025 12:55:52 +0200
+
 yunohost (12.1.20) stable; urgency=low
 
   - perf/postfix regenconf: use $YNH_SETTINGS rather than calling yunohost settings get (b6545c318)
