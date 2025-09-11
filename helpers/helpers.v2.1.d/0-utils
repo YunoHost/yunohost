@@ -522,8 +522,8 @@ ynh_add_swap() {
         # Create file
         truncate -s 0 "/swap_$app"
 
-        # set the No_COW attribute on the swapfile with chattr
-        chattr +C "/swap_$app"
+        # try to set the No_COW attribute on the swapfile with chattr (depending of the filesystem type)
+        chattr +C "/swap_$app" 2> /dev/null
 
         # Preallocate space for the swap file, fallocate may sometime not be used, use dd instead in this case
         if ! fallocate -l ${swap_size}K "/swap_$app"; then
