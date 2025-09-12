@@ -1,3 +1,15 @@
+yunohost (12.1.23) stable; urgency=low
+
+  - helpers: fix ynh_add_swap helper / some filesystem do not support chattr +C (8708946f2)
+  - helpers/systemd: 60s timeout is too harsh for low-end hardware, let's go back to 300s as it was in helpers v2, but keep it to 120s on CI (eae5fa98c)
+  - helpers/apt: fix extra apt dependencies issue where apt update is not re-ran (2aa2aed9f)
+  - helpers: fix tests incorrectly passing (#2174)
+  - firewall: fix/add upnp rules in the nftables conf (#2175) (a122b73fa)
+
+  Thanks to all contributors <3 ! (Josue-T, Kayou, Sylvain)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 13 Sep 2025 00:12:26 +0200
+
 yunohost (12.1.22) stable; urgency=low
 
   - postfix/mailusers: check and display an error if postmap fails (a1aaa1e3f)
