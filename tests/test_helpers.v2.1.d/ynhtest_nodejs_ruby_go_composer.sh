@@ -31,7 +31,7 @@ EOF
     ynh_ruby_install
 
     ruby --version
-    ruby --version | grep '^3\.3\.5'
+    ruby --version | grep '^ruby 3\.3\.5'
 
     pushd "$install_dir"
         # FIXME: should test installing as non-root with ynh_exec_as_app to validate PATH propagation ?
@@ -47,7 +47,7 @@ ynhtest_go_install() {
     ynh_go_install
 
     go version
-    go version | grep 'go1.22 linux'
+    go version | grep 'go1.22.12 linux'
 
     pushd "$install_dir"
         # FIXME: should test building as non-root with ynh_exec_as_app to validate PATH propagation ?
@@ -64,13 +64,21 @@ EOF
 
 ynhtest_composer_install() {
     local install_dir="$(mktemp -d -p "$VAR_WWW")"
+    chown "${app:?}" -R "$install_dir"
+
+    cat << EOF > ../manifest.toml
+packaging_format = 2
+id = "${app:?}"
+version = "0.1~ynh2"
+EOF
+    php_version=8.2
+    ynh_apt_install_dependencies php$php_version-fpm
 
     composer_version="2.8.3"
-    php_version=8.2
 
-    install_dir="$(mktemp -d -p "$VAR_WWW")"
     pushd "$install_dir"
         ynh_composer_install
+
         # FIXME: should test installing as non-root with ynh_exec_as_app to validate PATH propagation ?
         # Install a random simple package to validate composer is working
         ynh_composer_exec require symfony/polyfill-mbstring 1.31.0

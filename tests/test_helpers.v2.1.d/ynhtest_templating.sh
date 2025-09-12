@@ -49,11 +49,14 @@ ynhtest_jinja_template_app_config() {
 
     mkdir -p "/etc/yunohost/apps/$app/"
     echo "id: $app" > "/etc/yunohost/apps/$app/settings.yml"
+    my_json='{"hello": "toto"}'
 
     template="$(mktemp -d -p "$VAR_WWW")/template.txt"
     cat << EOF > "$template"
 app={{ app }}
 {% if foo == "bar" %}foo=true{% endif %}
+{% set mydict = my_json | from_json -%}
+text_from_json={{ mydict.hello }}
 EOF
 
     # shellcheck disable=SC2034
@@ -63,7 +66,7 @@ EOF
 
     ynh_config_add --template="$template" --destination="$VAR_WWW/config.txt" --jinja
 
-    test "$(cat "$VAR_WWW/config.txt")" == "$(echo -ne 'app=ynhtest\nfoo=true')"
+    test "$(cat "$VAR_WWW/config.txt")" == "$(echo -ne 'app=ynhtest\nfoo=true\ntext_from_json=toto')"
     # shellcheck disable=SC2012
     test "$(ls -l "$VAR_WWW/config.txt" | cut -d' ' -f1-4)" == "-rw------- 1 ynhtest ynhtest"
 }
