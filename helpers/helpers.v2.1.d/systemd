@@ -82,12 +82,18 @@ ynh_systemctl() {
     wait_until=${wait_until:-}
     length=${length:-20}
     log_path="${log_path:-/var/log/$service/$service.log}"
-    timeout=${timeout:-60}
     # ===========================================
 
-    # On CI, use length=100 because it's sometime hell to debug otherwise for super-long output
     if ynh_in_ci_tests && [ "$length" -le 20 ]; then
+        # Use a shorter timeout than in production to save CI time (services should rarely take up more than 2 minutes to start with the CI hardware)
+        timeout=${timeout:-120}
+        # On CI, use length=100 because it's sometime hell to debug otherwise for super-long output
         length=100
+    else
+        # 300 is a conservative value, especially because it may take quite
+        # long for service to start on low-end hardware, and CI should already
+        # have validate that the service is expected to be working
+        timeout=${timeout:-300}
     fi
 
     # Manage case of service already stopped
