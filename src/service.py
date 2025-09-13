@@ -25,6 +25,7 @@ import time
 from datetime import datetime
 from glob import glob
 from logging import getLogger
+from typing import Literal, TypedDict, Any, Optional
 
 import yaml
 from moulinette import Moulinette, m18n
@@ -49,15 +50,26 @@ SERVICES_CONF_BASE = "/usr/share/yunohost/conf/yunohost/services.yml"
 logger = getLogger("yunohost.service")
 
 
+class ServiceInfo(TypedDict, total=False):
+    description: str
+    need_lock: bool
+    log: list[str]
+    test_status: str
+    test_conf: str
+    needs_exposed_ports: list[int]
+    actual_systemd_service: str
+
+
+
 def service_add(
-    name,
-    description=None,
-    log=None,
-    test_status=None,
-    test_conf=None,
-    needs_exposed_ports=None,
-    need_lock=False,
-):
+    name: str,
+    description: str | None = None,
+    log: str | list[str] | None = None,
+    test_status: str | None = None,
+    test_conf: str | None = None,
+    needs_exposed_ports: list[int] | None = None,
+    need_lock: bool = False,
+) -> None:
     """
     Add a custom service
 
@@ -72,7 +84,8 @@ def service_add(
     """
     services = _get_services()
 
-    services[name] = service = {}
+    services[name] = {}
+    service = services[name]
 
     if log is not None:
         if not isinstance(log, list):
@@ -127,7 +140,7 @@ def service_add(
     logger.success(m18n.n("service_added", service=name))
 
 
-def service_remove(name):
+def service_remove(name: str) -> None:
     """
     Remove a custom service
 
@@ -151,7 +164,7 @@ def service_remove(name):
 
 
 @is_unit_operation(flash=True)
-def service_start(names):
+def service_start(names: str | list[str]) -> None:
     """
     Start one or more services
 
@@ -179,7 +192,7 @@ def service_start(names):
 
 
 @is_unit_operation(flash=True)
-def service_stop(names):
+def service_stop(names: str | list[str]) -> None:
     """
     Stop one or more services
 
@@ -205,7 +218,7 @@ def service_stop(names):
             logger.debug(m18n.n("service_already_stopped", service=name))
 
 
-def service_reload(names):
+def service_reload(names: str | list[str]) -> None:
     """
     Reload one or more services
 
@@ -231,7 +244,7 @@ def service_reload(names):
 
 
 @is_unit_operation(flash=True)
-def service_restart(names):
+def service_restart(names: str | list[str]) -> None:
     """
     Restart one or more services. If the services are not running yet, they will be started.
 
@@ -256,7 +269,7 @@ def service_restart(names):
                 )
 
 
-def service_reload_or_restart(names, test_conf=True):
+def service_reload_or_restart(names: str | list[str], test_conf: bool = True) -> None:
     """
     Reload one or more services if they support it. If not, restart them instead. If the services are not running yet, they will be started.
 
@@ -309,7 +322,7 @@ def service_reload_or_restart(names, test_conf=True):
 
 
 @is_unit_operation(flash=True)
-def service_enable(names):
+def service_enable(names: str | list[str]) -> None:
     """
     Enable one or more services
 
@@ -328,7 +341,7 @@ def service_enable(names):
 
 
 @is_unit_operation(flash=True)
-def service_disable(names):
+def service_disable(names: str | list[str]) -> None:
     """
     Disable one or more services
 
@@ -346,7 +359,7 @@ def service_disable(names):
             raise YunohostError("service_disable_failed", service=name)
 
 
-def service_status(names=[]):
+def service_status(names: str | list[str] = []) -> dict[str, str] | dict[str, dict[str, str]]:
     """
     Show status information about one or more services (all by default)
 
@@ -387,7 +400,7 @@ def service_status(names=[]):
     return output
 
 
-def _get_service_information_from_systemd(service):
+def _get_service_information_from_systemd(service: str) -> tuple[dict[str, Any], dict[str, Any]] | tuple[None, None]:
     "this is the equivalent of 'systemctl status $service'"
     import dbus
 
@@ -404,17 +417,17 @@ def _get_service_information_from_systemd(service):
         service_proxy, "org.freedesktop.DBus.Properties"
     )
 
-    unit = properties_interface.GetAll("org.freedesktop.systemd1.Unit")
-    service = properties_interface.GetAll("org.freedesktop.systemd1.Service")
+    unit: dict[str, Any] = properties_interface.GetAll("org.freedesktop.systemd1.Unit")
+    infos: dict[str, Any] = properties_interface.GetAll("org.freedesktop.systemd1.Service")
 
     if unit.get("LoadState", "not-found") == "not-found":
         # Service doesn't really exist
         return (None, None)
     else:
-        return (unit, service)
+        return (unit, infos)
 
 
-def _get_and_format_service_status(service, infos):
+def _get_and_format_service_status(service: str, infos: ServiceInfo) -> dict[str, str]:
     systemd_service = infos.get("actual_systemd_service", service)
     raw_status, raw_service = _get_service_information_from_systemd(systemd_service)
 
@@ -429,6 +442,9 @@ def _get_and_format_service_status(service, infos):
             "description": "Error: failed to get information for this service, it doesn't exists for systemd",
             "configuration": "unknown",
         }
+
+    # For typing
+    assert raw_service is not None
 
     # Try to get description directly from services.yml
     description = infos.get("description")
@@ -502,14 +518,14 @@ def _get_and_format_service_status(service, infos):
         if p.returncode == 0:
             output["configuration"] = "valid"
         else:
-            out = out.decode()
+            outstr = out.decode()
             output["configuration"] = "broken"
-            output["configuration-details"] = out.strip().split("\n")
+            output["configuration-details"] = outstr.strip().split("\n")
 
     return output
 
 
-def service_log(name, number=50):
+def service_log(name: str, number: int = 50) -> dict[str, list[str]]:
     """
     Log every log files of a service
 
@@ -535,7 +551,7 @@ def service_log(name, number=50):
     if name in log_list:
         log_list.remove(name)
 
-    result = {}
+    result: dict[str, list[str]] = {}
 
     # First we always add the logs from journalctl / systemd
     result["journalctl"] = _get_journalctl_logs(name, number).splitlines()
@@ -638,7 +654,7 @@ def _run_service_command(action: str, service: str) -> bool:
     return True
 
 
-def _give_lock(action, service, p):
+def _give_lock(action: str, service: str, p: subprocess.Popen[bytes]) -> int:
     # Depending of the action, systemctl calls the PID differently :/
     if action == "start" or action == "restart":
         systemctl_PID_name = "MainPID"
@@ -664,7 +680,7 @@ def _give_lock(action, service, p):
     return son_PID
 
 
-def _remove_lock(PID_to_remove):
+def _remove_lock(PID_to_remove: int) -> None:
     # FIXME ironically not concurrency safe because it's not atomic...
 
     PIDs = read_file(MOULINETTE_LOCK).split("\n")
@@ -672,7 +688,7 @@ def _remove_lock(PID_to_remove):
     write_to_file(MOULINETTE_LOCK, "\n".join(PIDs_to_keep))
 
 
-def _get_services():
+def _get_services() -> dict[str, ServiceInfo]:
     """
     Get a dict of managed services with their parameters
 
@@ -747,7 +763,7 @@ def _get_services():
     return services
 
 
-def _save_services(services):
+def _save_services(services: dict[str, ServiceInfo]) -> None:
     """
     Save managed services to files
 
@@ -762,7 +778,7 @@ def _save_services(services):
 
     conf_base = yaml.safe_load(open(SERVICES_CONF_BASE)) or {}
 
-    diff = {}
+    diff: dict[str, dict[str, Any]] = {}
 
     for service_name, service_infos in services.items():
         # Ignore php-fpm services, they are to be added dynamically by the core,
@@ -784,7 +800,7 @@ def _save_services(services):
     write_to_yaml(SERVICES_CONF, diff)
 
 
-def _tail(file, n):
+def _tail(filename: str, n: int) -> list[str]:
     """
     Reads a n lines from f with an offset of offset lines.  The return
     value is a tuple in the form ``(lines, has_more)`` where `has_more` is
@@ -796,45 +812,45 @@ def _tail(file, n):
     to_read = n
 
     try:
-        if file.endswith(".gz"):
+        if filename.endswith(".gz"):
             import gzip
 
-            f = gzip.open(file)
-            lines = f.read().splitlines()
+            gzipfile = gzip.open(filename, "rt")
+            lines = gzipfile.read().splitlines()
         else:
-            f = open(file, errors="replace")
+            file = open(filename, errors="replace")
             pos = 1
             lines = []
             while len(lines) < to_read and pos > 0:
                 try:
-                    f.seek(-(avg_line_length * to_read), 2)
+                    file.seek(-(avg_line_length * to_read), 2)
                 except IOError:
                     # woops.  apparently file is smaller than what we want
                     # to step back, go to the beginning instead
-                    f.seek(0)
+                    file.seek(0)
 
-                pos = f.tell()
-                lines = f.read().splitlines()
+                pos = file.tell()
+                lines = file.read().splitlines()
 
                 if len(lines) >= to_read:
                     return lines[-to_read:]
 
-                avg_line_length *= 1.3
-        f.close()
+                avg_line_length = int(avg_line_length * 1.3)
+        file.close()
 
     except IOError as e:
-        logger.warning("Error while tailing file '%s': %s", file, e, exc_info=1)
+        logger.warning("Error while tailing file '%s': %s", filename, e, exc_info=1)
         return []
 
     if len(lines) < to_read:
-        previous_log_file = _find_previous_log_file(file)
+        previous_log_file = _find_previous_log_file(filename)
         if previous_log_file is not None:
             lines = _tail(previous_log_file, to_read - len(lines)) + lines
 
     return lines
 
 
-def _find_previous_log_file(file):
+def _find_previous_log_file(file: str) -> str | None:
     """
     Find the previous log file
     """
@@ -843,11 +859,11 @@ def _find_previous_log_file(file):
         file = splitext[0]
     splitext = os.path.splitext(file)
     ext = splitext[1]
-    i = re.findall(r"\.(\d+)", ext)
-    i = int(i[0]) + 1 if len(i) > 0 else 1
+    istr = re.findall(r"\.(\d+)", ext)
+    counter = int(istr[0]) + 1 if len(istr) > 0 else 1
 
-    previous_file = file if i == 1 else splitext[0]
-    previous_file = previous_file + f".{i}"
+    previous_file = file if counter == 1 else splitext[0]
+    previous_file = previous_file + f".{counter}"
     if os.path.exists(previous_file):
         return previous_file
 
@@ -858,7 +874,7 @@ def _find_previous_log_file(file):
     return None
 
 
-def _get_journalctl_logs(service, number="all"):
+def _get_journalctl_logs(service: str, number: int | Literal["all"] = "all") -> str:
     services = _get_services()
     systemd_service = services.get(service, {}).get("actual_systemd_service", service)
     try:
