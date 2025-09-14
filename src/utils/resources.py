@@ -1788,7 +1788,7 @@ class RubyAppResource(AppResource):
             "libyaml-dev",
             "zlib1g-dev",
         ]:
-            if os.system(f'dpkg --list | grep -q "^ii  {package}"') != 0:
+            if os.system(f'dpkg --list | grep -q "^ii\\s*{package}"') != 0:
                 raise YunohostValidationError(f"{package} is required to install Ruby")
 
         self.update_rbenv()

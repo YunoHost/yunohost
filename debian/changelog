@@ -1,3 +1,114 @@
+yunohost (12.1.23) stable; urgency=low
+
+  - helpers: fix ynh_add_swap helper / some filesystem do not support chattr +C (8708946f2)
+  - helpers/systemd: 60s timeout is too harsh for low-end hardware, let's go back to 300s as it was in helpers v2, but keep it to 120s on CI (eae5fa98c)
+  - helpers/apt: fix extra apt dependencies issue where apt update is not re-ran (2aa2aed9f)
+  - helpers: fix tests incorrectly passing (#2174)
+  - firewall: fix/add upnp rules in the nftables conf (#2175) (a122b73fa)
+
+  Thanks to all contributors <3 ! (Josue-T, Kayou, Sylvain)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 13 Sep 2025 00:12:26 +0200
+
+yunohost (12.1.22) stable; urgency=low
+
+  - postfix/mailusers: check and display an error if postmap fails (a1aaa1e3f)
+  - 'set -Eeuo pipefail' is a fucking pitfall (1dece38a3)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 10 Sep 2025 18:39:32 +0200
+
+yunohost (12.1.21) stable; urgency=low
+
+  - helpers/apt: tweak optimization to not run apt update : actually let's use 'find /etc/apt' when checking for changes, because that will also cover source files that got added or removed (because that will change the mtime of the folders such as sources.list.d) (490b2fc2c)
+  - helpers: fix YNH_J2_FILTERS_FILE_PATH definition  (#2172, #2173)
+
+  Thanks to all contributors <3 ! (Florian, Josue-T)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 10 Sep 2025 12:55:52 +0200
+
+yunohost (12.1.20) stable; urgency=low
+
+  - perf/postfix regenconf: use $YNH_SETTINGS rather than calling yunohost settings get (b6545c318)
+  - perf/log show: stoopid typo leading to unecessarily opening a gazillion yamls (c59b43b42)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 09 Sep 2025 01:46:07 +0200
+
+yunohost (12.1.19) stable; urgency=low
+
+  - perf: further prevent regenconf from taking an absurd amount of time because calls to 'yunohost domain list --features' take, for example, 10ish secs on RPi2 ... To do so, the list of mail_in/mail_out domain is computed beforehand and passed as a global vars to the regen conf scripts (fbb99348a)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 09 Sep 2025 00:26:41 +0200
+
+yunohost (12.1.18) stable; urgency=low
+
+  - perf: prevent domain list --features from taking ages because it fetches DNS infos and app upgradability even though it doesnt matter in that context (53ef24cad)
+  - perf: implement cache for load_apps_catalog because parsing 50 times the same 700kBish json in a single command is probably not a very efficient way to use CPU and IO bruh (c80e917e2)
+  - perf/helpers2.1: skip apt update when cache was already updated less than 30 minutes ago (#2147)
+  - helpers/configs: add jinja filter to load and dump json, yaml and toml (#2150)
+  - helpers/multimedia: disable logging when running all the mkdir and ln -s for each user to prevent leaking the users in logs, and also it's long and boring af (1fdaad770)
+  - helpers/systemd: when starting a service reaches timeout, don't try to check wether it's active or not to handle it as a failure (3268781dd)
+  - regenconf: fix postgresql issue (and possibly others) because sometimes, for god knows whatever reason, using dpkg --list | grep 'ii foobar' doesn't work, gotta use \s ... (17ea71641)
+  - logging: moar boring warnings to ignore (55d7eee0d)
+  - i18n: Translations updated for Basque, Chinese (Simplified)
+
+  Thanks to all contributors <3 ! (Josué Tille, xabirequejo, zamentur)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 08 Sep 2025 19:30:06 +0200
+
+yunohost (12.1.17.1) stable; urgency=low
+
+  - fix: portal domain conf not properly updated with the portal_allow_mail_edit settings (#2167)
+
+  Thanks to all contributors <3 ! (tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 31 Aug 2025 23:37:15 +0200
+
+yunohost (12.1.17) stable; urgency=low
+
+  - tools_update: remove passed requirements because it's hella confusing in CLI output (c3946a57c)
+  - app upgrade infos: fix display values when current_version == new_version (78d6b83e1)
+  - user: when updating admins group mail aliases, don't try to add aliases that are already there because LDAP is dumdum. (In particular for migration 0034) (249881336)
+  - portal api: fix allow_edit_email vs portal_allow_edit_email confusion (c465e40be)
+  - portal email settings: add post_change_hook to propagate settings when it's changed (a69553cec)
+
+  Thanks to all contributors <3 ! (tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 31 Aug 2025 23:12:38 +0200
+
+yunohost (12.1.16) stable; urgency=medium
+
+  - fix(nftables): drop policy and allow icmpv6 ([#2165](http://github.com/YunoHost/yunohost/pull/2165))
+  - fix(nginx): remove deprecated OCSP ([#2166](http://github.com/YunoHost/yunohost/pull/2166))
+  - fix(sse): logstreamcache files location ([#2164](http://github.com/YunoHost/yunohost/pull/2164))
+  - helpers2.1: fix attempting to load go/ruby/nodejs when it's not provisioned yet in some context (7a2b6820b)
+  - helpers2.1: remove --message ([#2162](http://github.com/YunoHost/yunohost/pull/2162))
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, Tagada, Thomas)
+
+ -- tituspijean <tituspijean@yunohost.org>  Sat, 30 Aug 2025 22:04:30 +0200
+
+yunohost (12.1.15.1) stable; urgency=low
+
+  - network: fixes IP reuse in cache in all cases (30ae06809)
+  - i18n: Translations updated for French, Spanish
+
+  Thanks to all contributors <3 ! (ako, OniriCorpe)
+
+ -- OniriCorpe <oniricorpe@yunohost.org>  Sat, 23 Aug 2025 22:00:00 +0200
+
+yunohost (12.1.15) stable; urgency=low
+
+  - 0033_rework_permission_infos: actually skip apps that do not exist (e0b6d5496)
+  - 0033_rework_permission_infos: make permission migration more robust against LDAP being a fucking idiot (3da214d95)
+  - dyndns: fix 'dictionary changed size during iteration' (0d5828657)
+  - dyndns: fixes 2 typos in log sentences (eac758595)
+  - codequality: Add typing and TypedDict in ssh.py (19831a5b1)
+  - codequality: add typing to Migration class (783e5175b)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, OniriCorpe)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 23 Aug 2025 15:54:02 +0200
+
 yunohost (12.1.14) stable; urgency=low
 
   - apps: fix tmp workdir for upgrade being rm'ed during the safety backup, because mtime / ctime confusion, inheriting metadata from the original source or whatev (95f148d2d)

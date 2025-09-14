@@ -50,6 +50,25 @@
 # For a full documentation of jinja's syntax you can refer to [the official Jinja documentation](https://jinja.palletsprojects.com/en/3.1.x/templates/).
 #
 # Note that in YunoHost context, all variables are from shell variables and therefore are strings
+# To help handling complex data Jinja engine are executed with theses additional filters:
+# - from_json: load a string as Json and return an object
+# - from_yaml: load a string as Yaml and return an object
+# - from_toml: load a string as Toml and return an object
+# - to_json: serialize to string an object to Json
+# - to_yaml: serialize to string an object to Yaml
+# - to_toml: serialize to string an object to Toml
+#
+# So by example, if you want to convert a json string `$my_json` to Toml, you can to this way:
+# {{ my_json | from_json | to_toml }}
+# Or you can iterate on a Json list `my_list='["a", "b", "c"]'` this way:
+# {% for i in my_list | from_json %}
+#  value {{ i }}
+# {% endfor }}
+#
+# which will result:
+# value a
+# value b
+# value c
 #
 # ##### Keeping track of manual changes by the admin
 #
@@ -92,7 +111,9 @@ ynh_config_add() {
         (   
             # shellcheck disable=SC2046
             export $(compgen -v)
-            j2 "$template_path" -f env -o "$destination"
+            j2 "$template_path" -f env \
+                --filters "$YNH_J2_FILTERS_FILE_PATH" \
+                -o "$destination"
         )
     else
         cp -f "$template_path" "$destination"

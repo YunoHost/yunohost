@@ -463,20 +463,20 @@ def dyndns_update(
 
     # no need to update
     if (not force and not dry_run) and (old_ipv4 == ipv4 and old_ipv6 == ipv6):
-        logger.info("No updated needed.")
+        logger.info("No update needed.")
         return
     else:
         operation_logger.related_to.append(("domain", domain))
         operation_logger.start()
-        logger.info("Updated needed, going on...")
+        logger.info("Update needed, going on...")
 
     dns_conf = _build_dns_conf(domain)
 
     # Delete custom DNS records, we don't support them (have to explicitly
     # authorize them on dynette)
-    for category in dns_conf.keys():
-        if category not in ["basic", "mail", "extra"]:
-            del dns_conf[category]
+    dns_conf = {
+        cat: v for cat, v in dns_conf.items() if cat in ["basic", "mail", "extra"]
+    }
 
     # Delete the old records for all domain/subdomains
 

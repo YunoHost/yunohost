@@ -412,8 +412,8 @@ def _app_upgrade_infos(app: str, current_version: str | None = None) -> AppUpgra
     # where the version may not have been bumped but we want a way to advertise it anyway
     # and distinguish the two versions, using the commit id
     if current_version == new_version:
-        current_version += f"({current_revision})"
-        new_version = f"{new_version} ({new_revision})"
+        current_version += f" ({current_revision or '?'})"
+        new_version = f"{new_version} ({new_revision[:7]})"
     else:
         new_version = new_version
 
@@ -2056,8 +2056,8 @@ def app_ssowatconf() -> None:
     }
     for domain, apps in portal_domains_apps.items():
         portal_settings = {}
-        portal_settings.update(portal_email_settings)
 
+        # If possible, load the existing file
         portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
         if portal_settings_path.exists():
             this_domain_portal_settings: dict[str, Any] = read_json(
@@ -2065,12 +2065,18 @@ def app_ssowatconf() -> None:
             )  # type: ignore[assignment]
             portal_settings.update(this_domain_portal_settings)
 
+        # Update with the new settings
+        portal_settings.update(portal_email_settings)
+
         # Do no override anything else than "apps" since the file is shared
         # with domain's config panel "portal" options
         portal_settings["apps"] = apps
 
         write_to_json(
-            str(portal_settings_path), portal_settings, sort_keys=True, indent=4
+            str(portal_settings_path),
+            portal_settings,  # type: ignore[arg-type]
+            sort_keys=True,
+            indent=4,
         )
 
     # Cleanup old files from possibly old domains
@@ -2572,6 +2578,8 @@ def regen_mail_app_user_config_for_dovecot_and_postfix(
         write_to_file(app_senders_map, content)
         chmod(app_senders_map, 0o440)
         chown(app_senders_map, "postfix", "root")
-        os.system(f"postmap {app_senders_map} 2>/dev/null")
+        ret = os.system(f"postmap {app_senders_map} 2>/dev/null")
+        if ret != 0:
+            logger.error(f"Uhoh, failed to run 'postmap {app_senders_map}' ?!")
         chmod(app_senders_map + ".db", 0o640)
         chown(app_senders_map + ".db", "postfix", "root")

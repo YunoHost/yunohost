@@ -1812,7 +1812,11 @@ class AppOption(BaseChoicesOption):
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from ..app import app_list
 
-        apps = app_list(full=True)["apps"]
+        apps = app_list()["apps"]
+
+        # Trick to avoid adding full=True to app_list() which is disastrous for performances
+        for app in apps:
+            app["is_webapp"] = bool(app.get("domain_path"))
 
         if values.get("filter", None):
             apps = [
@@ -1824,7 +1828,7 @@ class AppOption(BaseChoicesOption):
         value = {"_none": "---"}
         value.update(
             {
-                app["id"]: f"{app['label']} ({app.get('domain_path', app['id'])})"
+                app["id"]: f"{app['name']} ({app.get('domain_path', app['id'])})"
                 for app in apps
             }
         )

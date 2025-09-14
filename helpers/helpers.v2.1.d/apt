@@ -132,7 +132,7 @@ EOF
     # Install the fake package without its dependencies with dpkg --force-depends
     if ! LC_ALL=C dpkg-deb --build "${TMPDIR}/${app_ynh_deps}" "${TMPDIR}/${app_ynh_deps}.deb" > "${TMPDIR}/dpkg_log" 2>&1; then
         cat "${TMPDIR}/dpkg_log" >&2
-        ynh_die --message="Unable to install dependencies"
+        ynh_die "Unable to install dependencies"
     fi
     # Don't crash in case of error, because is nicely covered by the following line
     LC_ALL=C dpkg --force-depends --install "${TMPDIR}/${app_ynh_deps}.deb" 2>&1 | tee "${TMPDIR}/dpkg_log" || true
@@ -269,6 +269,12 @@ EOF
     # validate that the url+key is correct before going further
     _ynh_apt update -o Dir::Etc::sourcelist="/etc/apt/sources.list.d/$app.list"
 
+    # Force the cache to be reupdated on the next "apt update" (in
+    # ynh_apt_install_dependencies) because the previous command with
+    # ::sourcelist option makes apt forget about every other package for other,
+    # so we want to force the cache to be reupdated entirely
+    touch "/etc/apt/sources.list.d/$app.list"
+
     # Install requested dependencies from this extra repository.
     # NB: because of the mechanism with $ynh_apt_install_DEPENDENCIES_REPLACE,
     # this will usually only *append* to the existing list of dependency, not
@@ -347,6 +353,20 @@ _ynh_apt_package_version() {
 
 # APT wrapper for non-interactive operation
 _ynh_apt() {
+
+    # Optimization when just calling apt update : check if the cache was
+    # already refreshed in the last 30 min, which should be enough and prevent
+    # unecessary traffic and annoying wait time during app dependency installs etc
+    if [[ "$*" == "update" ]]; then
+        # trick from https://stackoverflow.com/a/205710
+        local aptcache="/var/cache/apt/pkgcache.bin"
+        sleep 1
+        if [[ -e $aptcache ]] && [[ -n "$(find $aptcache -mmin -30)" ]] && [[ -z "$(find /etc/apt/ -newer $aptcache)" ]]; then
+            echo "apt cache was already updated in the last 30 minutes, skipping 'apt update'"
+            return
+        fi
+    fi
+
     _ynh_wait_dpkg_free
     LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --assume-yes --quiet -o=Acquire::Retries=3 -o=Dpkg::Use-Pty=0 "$@"
 }

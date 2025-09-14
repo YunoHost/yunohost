@@ -22,6 +22,7 @@ import hashlib
 import os
 import re
 from logging import getLogger
+from pathlib import Path
 from typing import Any, Literal, NotRequired, TypedDict
 
 from moulinette import m18n
@@ -256,22 +257,43 @@ def _update_apps_catalog() -> None:
     logger.success(m18n.n("apps_catalog_update_success"))  # type: ignore
 
 
+_apps_catalog_cache_timestamp: float = 0
+_apps_catalog_cache: AppCatalog | None = None
+
+
 def _load_apps_catalog() -> AppCatalog:
     """
     Read all the apps catalog cache files and build a single dict (merged_catalog)
     corresponding to all known apps and categories
     """
 
+    timestamps = []
+    catalog_conf = Path(APPS_CATALOG_CONF)
+    if catalog_conf.exists():
+        stats = catalog_conf.stat()
+        timestamps.append(stats.st_mtime)
+        timestamps.append(stats.st_ctime)
+    for f in Path(APPS_CATALOG_CACHE).glob("*.json"):
+        stats = f.stat()
+        timestamps.append(stats.st_mtime)
+        timestamps.append(stats.st_ctime)
+
+    timestamp = max(timestamps) if timestamps else 0
+    global _apps_catalog_cache
+    global _apps_catalog_cache_timestamp
+    if _apps_catalog_cache and timestamp <= _apps_catalog_cache_timestamp:
+        return _apps_catalog_cache
+
     merged_catalog: AppCatalog = {"apps": {}, "categories": [], "antifeatures": []}
 
     for apps_catalog_id in [L["id"] for L in _read_apps_catalog_list()]:
         # Let's load the json from cache for this catalog
-        cache_file = f"{APPS_CATALOG_CACHE}/{apps_catalog_id}.json"
+        cache_file = Path(APPS_CATALOG_CACHE) / (apps_catalog_id + ".json")
 
         apps_catalog_content: AppCatalog | None
         try:
             apps_catalog_content = (
-                read_json(cache_file) if os.path.exists(cache_file) else None  # type: ignore[assignment]
+                read_json(str(cache_file)) if cache_file.exists() else None  # type: ignore[assignment]
             )
         except Exception as e:
             raise YunohostError(
@@ -288,7 +310,7 @@ def _load_apps_catalog() -> AppCatalog:
         ):
             logger.info(m18n.n("apps_catalog_obsolete_cache"))
             _update_apps_catalog()
-            apps_catalog_content = read_json(cache_file)  # type: ignore[assignment]
+            apps_catalog_content = read_json(str(cache_file))  # type: ignore[assignment]
 
         assert apps_catalog_content is not None
 
@@ -317,5 +339,9 @@ def _load_apps_catalog() -> AppCatalog:
         # (we use .get here, only because the dev catalog doesnt include the categories/antifeatures keys)
         merged_catalog["categories"] += apps_catalog_content.get("categories", [])
         merged_catalog["antifeatures"] += apps_catalog_content.get("antifeatures", [])
+
+    # Save as cache for next call
+    _apps_catalog_cache = merged_catalog
+    _apps_catalog_cache_timestamp = timestamp
 
     return merged_catalog

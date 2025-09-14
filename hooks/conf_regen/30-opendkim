@@ -19,7 +19,7 @@
 #
 
 # Exit hook on subcommand error or unset variable
-set -Eeuo pipefail
+set -eu
 
 do_pre_regen() {
     pending_dir=$1
@@ -37,8 +37,7 @@ do_post_regen() {
     echo "" > /etc/dkim/signingtable
 
     # create DKIM key for domains
-    domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]" | tr '\n' ' ')"
-    for domain in $domain_list; do
+    for domain in $YNH_DOMAINS_WITH_MAIL_IN_AND_OUT; do
         domain_key="/etc/dkim/${domain}.mail.key"
         if [ ! -f "$domain_key" ]; then
             # We use a 1024 bit size because nsupdate doesn't seem to be able to

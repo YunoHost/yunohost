@@ -21,12 +21,20 @@
 import os
 import pwd
 import re
-from typing import Literal
+from typing import Literal, NotRequired, TypedDict
 
 from .utils.error import YunohostValidationError
 from .utils.file_utils import chmod, chown, mkdir, read_file, write_to_file
 
 SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
+
+
+class UserSshInfo(TypedDict):
+    username: str
+    fullname: str
+    uid: NotRequired[str]
+    mail: str
+    homeDirectory: str
 
 
 def user_ssh_list_keys(username: str) -> dict[Literal["keys"], list[dict[str, str]]]:
@@ -147,8 +155,10 @@ def user_ssh_remove_key(username: str, key: str) -> None:
 #
 
 
-def _get_user_for_ssh(username, attrs=None):
-    def ssh_root_login_status():
+def _get_user_for_ssh(
+    username: str, attrs: list[str] | None = None
+) -> UserSshInfo | None:
+    def ssh_root_login_status() -> dict[Literal["PermitRootLogin"], bool]:
         # XXX temporary placed here for when the ssh_root commands are integrated
         # extracted from https://github.com/YunoHost/yunohost/pull/345
         # XXX should we support all the options?
@@ -181,7 +191,7 @@ def _get_user_for_ssh(username, attrs=None):
     from .utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
-    user = ldap.search(
+    user: list[UserSshInfo] = ldap.search(  # type: ignore
         "ou=users",
         "(&(objectclass=person)(uid=%s))" % username,
         attrs,

@@ -119,7 +119,6 @@ do_pre_regen() {
 
     # add domain conf files
     cert_status=$(yunohost domain cert status --json)
-    mail_domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]")"
     for domain in $YNH_DOMAINS; do
         domain_conf_dir="${nginx_conf_dir}/${domain}.d"
         mkdir -p "$domain_conf_dir"
@@ -131,7 +130,7 @@ do_pre_regen() {
         export domain_cert_ca=$(echo "$cert_status" \
             | jq ".certificates.\"$domain\".CA_type" \
             | tr -d '"')
-        if echo "$mail_domain_list" | grep -q "^$domain$"; then
+        if tr ' ' '\n' <<< "$YNH_DOMAINS_WITH_MAIL_IN_AND_OUT" | grep -q "^$domain$"; then
             export mail_enabled="True"
         else
             export mail_enabled="False"

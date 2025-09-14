@@ -1623,16 +1623,14 @@ class TestDomain(BaseTest):
 # ╰───────────────────────────────────────────────────────╯
 
 installed_webapp = {
-    "is_webapp": True,
     "is_default": True,
-    "label": "My webapp",
+    "name": "My webapp",
     "id": "my_webapp",
     "domain_path": "/ynh-dev",
 }
 installed_non_webapp = {
-    "is_webapp": False,
     "is_default": False,
-    "label": "My non webapp",
+    "name": "My non webapp",
     "id": "my_non_webapp",
 }
 

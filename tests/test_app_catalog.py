@@ -26,6 +26,7 @@ import pytest
 import requests
 import requests_mock
 from moulinette import m18n
+from yunohost import app_catalog as app_catalog_module
 from yunohost.app_catalog import (
     APPS_CATALOG_API_VERSION,
     APPS_CATALOG_CACHE,
@@ -70,6 +71,9 @@ def setup_function(function):
     # Clear apps_catalog conf
     if os.path.exists(APPS_CATALOG_CONF):
         os.remove(APPS_CATALOG_CONF)
+
+    app_catalog_module._apps_catalog_cache_timestamp = 0
+    app_catalog_module._apps_catalog_cache = None
 
 
 def teardown_function(function):

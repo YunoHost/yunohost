@@ -321,7 +321,7 @@ ynh_psql_remove_db() {
 ynh_psql_test_if_first_run() {
 
     # Make sure postgresql is indeed installed
-    dpkg --list | grep -q "ii  postgresql-$PSQL_VERSION" || ynh_die --message="postgresql-$PSQL_VERSION is not installed !?"
+    dpkg --list | grep -q "^ii\s*postgresql-$PSQL_VERSION" || ynh_die --message="postgresql-$PSQL_VERSION is not installed !?"
 
     yunohost tools regen-conf postgresql
 }

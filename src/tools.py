@@ -492,6 +492,12 @@ def _list_apps_with_upgrade_infos(
             continue
         if app_info_dict["upgrade"]["status"] == "up_to_date":
             continue
+        if app_info_dict["upgrade"]["requirements"]:
+            app_info_dict["upgrade"]["requirements"] = {
+                k: r
+                for k, r in app_info_dict["upgrade"]["requirements"].items()
+                if not r["passed"]
+            }
         if "settings" in app_info_dict:
             del app_info_dict["settings"]
 
@@ -1059,31 +1065,33 @@ class Migration:
 
     state: Literal["pending", "done", "skipped"] | None = None
     mode: Literal["auto", "manual"] = "auto"
-    dependencies: list[
-        str
-    ] = []  # List of migration ids required before running this migration
+    # List of migration ids required before running this migration
+    dependencies: list[str] = []
+
+    # For migrations that have @ldap_migration
+    ldap_migration_started = False
 
     @property
-    def disclaimer(self):
+    def disclaimer(self) -> str | None:
         return None
 
-    def run(self):
+    def run(self) -> None:
         raise NotImplementedError()
 
     # The followings shouldn't be overridden
 
-    def __init__(self, id_) -> None:
+    def __init__(self, id_: str) -> None:
         self.id = id_
         self.number = int(self.id.split("_", 1)[0])
         self.name = self.id.split("_", 1)[1]
 
     @property
     def description(self) -> str:
-        return m18n.n(f"migration_description_{self.id}")
+        return m18n.n(f"migration_description_{self.id}")  # type: ignore
 
     @staticmethod
-    def ldap_migration(run) -> Callable:
-        def func(self) -> None:
+    def ldap_migration(run: Callable[[Any, str], None]) -> Callable[[Any], None]:
+        def func(self: "Migration") -> None:
             # Backup LDAP before the migration
             logger.info(m18n.n("migration_ldap_backup_before_migration"))
             try:

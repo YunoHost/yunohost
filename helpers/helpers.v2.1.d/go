@@ -26,6 +26,11 @@ _ynh_load_go_in_path_and_other_tweaks() {
     # Get the absolute path of this version of go
     go_dir="$GOENV_ROOT/versions/$go_version/bin"
 
+    if [ ! -e "$go_dir" ]; then
+        echo "Skipping loading go, because it doesn't seem to be provisioned yet. This is likely to happen during restore and other specific contexts."
+        return
+    fi
+
     # Load the path of this version of go in $PATH
     if [[ :$PATH: != *":$go_dir"* ]]; then
         PATH="$go_dir:$PATH"

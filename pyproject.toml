@@ -120,14 +120,16 @@ allowlist_externals = ["black"]
 deps = ["flake8"]
 commands = [[
     "flake8", "src", "doc", "maintenance",
-    "--ignore", "E402,E501,E203,W503,E741"
+    "--ignore", "E402,E501,E203,W503,E741",
+    "--exclude", "src/vendor,tests"
 ]]
 
 [tool.tox.env.py313-invalidcode]
 deps = ["flake8"]
 commands = [[
     "flake8", "src", "bin", "maintenance",
-    "--select", "F,E722,W605"
+    "--select", "F,E722,W605",
+    "--exclude", "src/vendor,tests"
 ]]
 
 [tool.tox.env.py313-mypy]

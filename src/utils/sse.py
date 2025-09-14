@@ -153,9 +153,7 @@ class SSELogStreamingHandler(logging.Handler):
 
             # Start a new log stream cache, meant to be replayed for client opening
             # the SSE when an operation is already ongoing
-            stream_file = (
-                Path(OPERATIONS_PATH) / f"/.{self.operation_id}.logstreamcache"
-            )
+            stream_file = Path(OPERATIONS_PATH) / f".{self.operation_id}.logstreamcache"
             self.log_stream_cache = stream_file.open("w")
         else:
             self.log_stream_cache = None
