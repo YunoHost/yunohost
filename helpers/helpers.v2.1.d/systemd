@@ -173,7 +173,7 @@ ynh_systemctl() {
             echo "" >&2
         fi
         if [ "$i" -eq "$timeout" ]; then
-            ynh_print_warn "The service $service didn't fully executed the action ${action} before the timeout."
+            ynh_print_warn "The service $service didn't fully execute the action ${action} before the timeout."
             ynh_print_warn "Please find here an extract of the end of the log of the service $service:"
             journalctl --quiet --no-hostname --no-pager --lines="$length" --unit="$service" >&2
             if [ -e "$log_path" ]; then
