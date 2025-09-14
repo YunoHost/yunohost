@@ -64,7 +64,7 @@ ynh_abort_if_errors() {
 }
 
 # When running an app script, auto-enable ynh_abort_if_errors except for remove script
-if [[ "${YNH_CONTEXT:-}" != "regenconf" ]] && [[ "${YNH_APP_ACTION}" != "remove" ]]; then
+if [[ "${YNH_CONTEXT:-}" != "regenconf" ]] && [[ "${YNH_APP_ACTION:-}" != "remove" ]]; then
     ynh_abort_if_errors
 fi
 
