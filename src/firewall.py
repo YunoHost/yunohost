@@ -180,7 +180,9 @@ class YunoFirewall:
 
     def apply(self, upnp: bool = True) -> bool:
         # FIXME: Ensure SSH is allowed
-        self.open_port("tcp", _get_ssh_port(), "SSH port", upnp=True)
+        ssh_port = _get_ssh_port()
+        if not self.config["tcp"][ssh_port]["open"]:
+            self.open_port("tcp", ssh_port, "SSH port")
 
         # Just leverage regen_conf that will regen the nftables files, reload nftables
         try:
