@@ -39,9 +39,7 @@ ynh_string_random() {
     length=${length:-24}
     filter=${filter:-'A-Za-z0-9'}
 
-    dd if=/dev/urandom bs=1 count=1000 2> /dev/null \
-        | tr --complement --delete "$filter" \
-        | sed --quiet 's/\(.\{'"$length"'\}\).*/\1/p'
+    tr -dc "$filter" < /dev/urandom | head -c "$length"
 }
 
 # Substitute/replace a string (or expression) by another in a file
