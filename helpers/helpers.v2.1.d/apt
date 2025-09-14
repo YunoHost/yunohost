@@ -273,7 +273,7 @@ EOF
     # ynh_apt_install_dependencies) because the previous command with
     # ::sourcelist option makes apt forget about every other package for other,
     # so we want to force the cache to be reupdated entirely
-    touch /etc/apt/sources.list.d/$app.list
+    touch "/etc/apt/sources.list.d/$app.list"
 
     # Install requested dependencies from this extra repository.
     # NB: because of the mechanism with $ynh_apt_install_DEPENDENCIES_REPLACE,
