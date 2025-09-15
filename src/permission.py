@@ -869,11 +869,12 @@ def _get_system_perms() -> dict[str, SystemPermInfos]:
         logger.warning(f"Failed to read system perm configuration ? : {e}")
         raw_system_perm_conf = {}
 
-
     system_perm_conf = {}
     for p, infos in raw_system_perm_conf.items():
         if p not in SYSTEM_PERMS.keys():
-            logger.warning(f"Ignoring unexpected key '{p}' in system perm conf {SYSTEM_PERM_CONF}")
+            logger.warning(
+                f"Ignoring unexpected key '{p}' in system perm conf {SYSTEM_PERM_CONF}"
+            )
             continue
         if "allowed" not in infos:
             infos["allowed"] = []
