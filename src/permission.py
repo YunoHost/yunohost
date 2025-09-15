@@ -859,7 +859,8 @@ def _update_app_permission_setting(
 
 
 def _get_system_perms() -> dict[str, SystemPermInfos]:
-    system_perm_conf: dict[str, SystemPermInfos]
+
+    raw_system_perm_conf: dict[str, SystemPermInfos]
     try:
         raw_system_perm_conf = read_yaml(SYSTEM_PERM_CONF) or {}  # type: ignore[assignment]
         assert isinstance(raw_system_perm_conf, dict), (
