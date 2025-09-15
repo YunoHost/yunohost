@@ -861,20 +861,23 @@ def _update_app_permission_setting(
 def _get_system_perms() -> dict[str, SystemPermInfos]:
     system_perm_conf: dict[str, SystemPermInfos]
     try:
-        system_perm_conf = read_yaml(SYSTEM_PERM_CONF) or {}  # type: ignore[assignment]
-        assert isinstance(system_perm_conf, dict), (
+        raw_system_perm_conf = read_yaml(SYSTEM_PERM_CONF) or {}  # type: ignore[assignment]
+        assert isinstance(rawsystem_perm_conf, dict), (
             "Uhoh, the system perm conf read is not a dict ?!"
         )
     except Exception as e:
         logger.warning(f"Failed to read system perm configuration ? : {e}")
-        system_perm_conf = {}
+        raw_system_perm_conf = {}
 
-    for p, infos in system_perm_conf.items():
+
+    system_perm_conf = {}
+    for p, infos in raw_system_perm_conf.items():
         if p not in SYSTEM_PERMS.keys():
-            logger.warning("Ignoring unexpected key '{p}' in system perm conf")
-            del system_perm_conf[p]
+            logger.warning(f"Ignoring unexpected key '{p}' in system perm conf {SYSTEM_PERM_CONF}")
+            continue
         if "allowed" not in infos:
             infos["allowed"] = []
+        system_perm_conf[p] = infos
 
     # Try to have a failsafe to keep admins allowed for ssh access and mail
     # when the conf is broken for some reason...
