@@ -10,7 +10,7 @@ yunohost (12.1.24) stable; urgency=low
 
  -- tituspijean <tituspijean@yunohost.org>  Tue, 16 Sep 2025 21:49:12 +0200
 
- yunohost (12.1.23) stable; urgency=low
+yunohost (12.1.23) stable; urgency=low
 
   - helpers: fix ynh_add_swap helper / some filesystem do not support chattr +C (8708946f2)
   - helpers/systemd: 60s timeout is too harsh for low-end hardware, let's go back to 300s as it was in helpers v2, but keep it to 120s on CI (eae5fa98c)
