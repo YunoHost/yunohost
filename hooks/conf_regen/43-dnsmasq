@@ -22,6 +22,7 @@
 set -e
 
 # Source YNH helpers
+export YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
@@ -36,7 +37,7 @@ do_init_regen() {
     cp plain/etcdefault /etc/default/dnsmasq
 
     export wireless_interfaces=""
-    ynh_render_template "dnsmasq.conf.tpl" "${pending_dir}/etc/dnsmasq.conf"
+    ynh_config_add --jinja --template="dnsmasq.conf.tpl" --destination="${pending_dir}/etc/dnsmasq.conf"
 
     # Remove / disable services likely to conflict with dnsmasq
     for SERVICE in systemd-resolved bind9; do
@@ -79,7 +80,7 @@ do_pre_regen() {
 
     # General configuration
     export wireless_interfaces
-    ynh_render_template "dnsmasq.conf.tpl" "${pending_dir}/etc/dnsmasq.conf"
+    ynh_config_add --jinja --template="dnsmasq.conf.tpl" --destination="${pending_dir}/etc/dnsmasq.conf"
 
     # add domain conf files
     export interfaces
@@ -94,7 +95,7 @@ do_pre_regen() {
         else
             export mail_in="False"
         fi
-        ynh_render_template "domain.tpl" "${dnsmasq_dir}/${domain}"
+        ynh_config_add --jinja --template="domain.tpl" --destination="${dnsmasq_dir}/${domain}"
     done
 
     # remove old domain conf files

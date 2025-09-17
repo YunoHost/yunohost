@@ -22,6 +22,7 @@
 set -e
 
 # Source YNH helpers
+export YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
@@ -50,7 +51,7 @@ do_pre_regen() {
     cd /usr/share/yunohost/conf/nftables
     mkdir -p "${pending_dir}/etc/nftables.d"
     cp nftables.conf "${pending_dir}/etc/nftables.conf"
-    ynh_render_template nftables.d/yunohost-firewall.tpl.conf "${pending_dir}/etc/nftables.d/yunohost-firewall.conf"
+    ynh_config_add --jinja --template=nftables.d/yunohost-firewall.tpl.conf --destination="${pending_dir}/etc/nftables.d/yunohost-firewall.conf"
 }
 
 do_post_regen() {

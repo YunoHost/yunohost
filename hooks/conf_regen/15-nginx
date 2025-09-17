@@ -22,6 +22,7 @@
 set -e
 
 # Source YNH helpers
+export YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
@@ -39,10 +40,10 @@ do_base_regen() {
     cp yunohost_http_errors.conf.inc "$nginx_conf_dir"
     cp yunohost_sso.conf.inc "$nginx_conf_dir"
 
-    ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
-    ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
-    ynh_render_template "yunohost_admin.conf.inc" "${nginx_conf_dir}/yunohost_admin.conf.inc"
-    ynh_render_template "yunohost_api.conf.inc" "${nginx_conf_dir}/yunohost_api.conf.inc"
+    ynh_config_add --jinja --template "security.conf.inc" --destination="${nginx_conf_dir}/security.conf.inc"
+    ynh_config_add --jinja --template "yunohost_admin.conf" --destination="${nginx_conf_dir}/yunohost_admin.conf"
+    ynh_config_add --jinja --template "yunohost_admin.conf.inc" --destination="${nginx_conf_dir}/yunohost_admin.conf.inc"
+    ynh_config_add --jinja --template "yunohost_api.conf.inc" --destination="${nginx_conf_dir}/yunohost_api.conf.inc"
 
     mkdir -p "$nginx_conf_dir/default.d/"
     cp "redirect_to_admin.conf" "$nginx_conf_dir/default.d/"
@@ -98,12 +99,12 @@ do_pre_regen() {
     mkdir -p "${pending_dir}/etc/nginx/modules-enabled/"
 
     if [[ "$tls_passthrough_enabled" == "True" ]]; then
-        ynh_render_template "tls_passthrough.conf" "${tls_passthrough_module}"
+        ynh_config_add --jinja --template="tls_passthrough.conf" --destination="${tls_passthrough_module}"
         for tls_passthrough_domain_and_ip in ${tls_passthrough_list//,/ }; do
             export tls_passthrough_domain=$(echo "$tls_passthrough_domain_and_ip" | awk -F';' '{print $1}')
             export tls_passthrough_ip=$(echo "$tls_passthrough_domain_and_ip" | awk -F';' '{print $2}')
             export tls_passthrough_port=$(echo "$tls_passthrough_domain_and_ip" | awk -F';' '{print $3}')
-            ynh_render_template "tls_passthrough_server.conf" "${nginx_conf_dir}/${tls_passthrough_domain}.forward80.conf"
+            ynh_config_add --jinja --template="tls_passthrough_server.conf" --destination="${nginx_conf_dir}/${tls_passthrough_domain}.forward80.conf"
         done
     else
         touch "${tls_passthrough_module}"
@@ -111,7 +112,7 @@ do_pre_regen() {
 
     # "Touch" every known .conf file for every domain,
     # meaning it should be removed by the regen conf
-    # - For real 'existing' domains, this file will be overwritten with an actual conf right after using ynh_render_template
+    # - For real 'existing' domains, this file will be overwritten with an actual conf right after using ynh_config_add
     # - For old domains, this will tell the regen conf that it is "to be deleted"
     ls -1 /etc/nginx/conf.d \
         | awk '/^[^\.]+\.[^\.]+.*\.conf$/ { print $1 }' \
@@ -136,9 +137,9 @@ do_pre_regen() {
             export mail_enabled="False"
         fi
 
-        ynh_render_template "server.tpl.conf" "${nginx_conf_dir}/${domain}.conf"
+        ynh_config_add --jinja --template="server.tpl.conf" --destination="${nginx_conf_dir}/${domain}.conf"
         if [ $mail_enabled == "True" ]; then
-            ynh_render_template "autoconfig.tpl.xml" "${mail_autoconfig_dir}/config-v1.1.xml"
+            ynh_config_add --jinja --template="autoconfig.tpl.xml" --destination="${mail_autoconfig_dir}/config-v1.1.xml"
         fi
 
         touch "${domain_conf_dir}/yunohost_local.conf" # Clean legacy conf files
