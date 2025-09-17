@@ -722,7 +722,10 @@ def tools_basic_space_cleanup() -> None:
     subprocess.run("rm /var/log/*/*.gz", shell=True)
     subprocess.run("rm /var/log/*.?", shell=True)
     subprocess.run("rm /var/log/*/*.?", shell=True)
-    subprocess.run("find /var/log/yunohost/operations/ -type f,l -mtime +90 -execdir rm {} +", shell=True)
+    subprocess.run(
+        "find /var/log/yunohost/operations/ -type f,l -mtime +90 -execdir rm {} +",
+        shell=True,
+    )
 
 
 # ############################################ #
