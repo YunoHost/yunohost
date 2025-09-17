@@ -36,7 +36,6 @@ do_pre_regen() {
     # .list files were replaced with deb822 .sources files
     touch "${pending_dir}/etc/apt/sources.list.d/extra_php_version.list"
     touch "${pending_dir}/etc/apt/sources.list.d/yarn.list"
-    touch "${pending_dir}/etc/apt/sources.list.d/yunohost.list"
 
     # Copy the configuration files
     cp /usr/share/yunohost/conf/apt/preferences.d/* "${pending_dir}/etc/apt/preferences.d"
@@ -61,6 +60,11 @@ do_post_regen() {
 
     # Ensure the yunohost repo is not in sources.list
     sed '/yunohost.org/d' -i "/etc/apt/sources.list"
+
+    # Ensure the legacy, unmanaged file was deleted
+    if [ -f /etc/apt/sources.list.d/yunohost.list ]; then
+        rm -rf /etc/apt/sources.list.d/yunohost.list
+    fi
 
     # Download GPG keys
     # We do this only at the post regen and if the key doesn't already exists,
