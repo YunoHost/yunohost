@@ -36,7 +36,7 @@ do_init_regen() {
     cp plain/etcdefault /etc/default/dnsmasq
 
     export wireless_interfaces=""
-    ynh_render_template "dnsmasq.conf.tpl" "${pending_dir}/etc/dnsmasq.conf"
+    ynh_render_template "dnsmasq.conf.tpl" "/etc/dnsmasq.conf"
 
     # Remove / disable services likely to conflict with dnsmasq
     for SERVICE in systemd-resolved bind9; do

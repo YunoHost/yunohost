@@ -832,7 +832,9 @@ def _get_DomainConfigPanel() -> type["ConfigPanel"]:
             exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
         ) -> None:
             next_settings = {
-                k: v for k, v in form.dict().items() if previous_settings.get(k) != v
+                k: v
+                for k, v in form.model_dump().items()
+                if previous_settings.get(k) != v
             }
 
             if "default_app" in next_settings:
@@ -900,7 +902,7 @@ def _get_DomainConfigPanel() -> type["ConfigPanel"]:
                 # that can be read by the portal API.
                 # FIXME remove those from the config panel saved values?
 
-                portal_values = form.dict(include=set(portal_options))
+                portal_values = form.model_dump(include=set(portal_options))
                 # Remove logo from values else filename will replace b64 content
                 if "portal_logo" in portal_values:
                     portal_values.pop("portal_logo")

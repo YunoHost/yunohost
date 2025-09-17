@@ -110,13 +110,13 @@ omit = [
 
 
 [tool.tox]
-env_list = ["py311-lint", "py311-invalidcode", "py311-black-check", "py311-black-run"]
+env_list = ["py313-lint", "py313-invalidcode", "py313-black-check", "py313-black-run"]
 
 [tool.tox.env_run_base]
 skip_install = true
 allowlist_externals = ["black"]
 
-[tool.tox.env.py311-lint]
+[tool.tox.env.py313-lint]
 deps = ["flake8"]
 commands = [[
     "flake8", "src", "doc", "maintenance",
@@ -124,7 +124,7 @@ commands = [[
     "--exclude", "src/vendor,tests"
 ]]
 
-[tool.tox.env.py311-invalidcode]
+[tool.tox.env.py313-invalidcode]
 deps = ["flake8"]
 commands = [[
     "flake8", "src", "bin", "maintenance",
@@ -132,16 +132,16 @@ commands = [[
     "--exclude", "src/vendor,tests"
 ]]
 
-[tool.tox.env.py311-mypy]
+[tool.tox.env.py313-mypy]
 skip_install = false
 deps = ["mypy>=1.17"]
 dependency_groups = ["tests"]
 commands = [["mypy", "--install-types", "--non-interactive", "src/",]]
 
-[tool.tox.env.py311-black-check]
+[tool.tox.env.py313-black-check]
 deps = ["flake8"]
 commands = [["black", "bin", "src", "doc", "maintenance", "tests", "--check", "--diff"]]
 
-[tool.tox.env.py311-black-run]
+[tool.tox.env.py313-black-run]
 deps = ["black"]
 commands = [["black", "bin", "src", "doc", "maintenance", "tests"]]

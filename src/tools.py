@@ -73,8 +73,8 @@ def tools_rootpw(new_password: str, check_strength: bool = True) -> None:
         assert_password_is_strong_enough("admin", new_password)
 
     proc = subprocess.run(
-        ["passwd"],
-        input=f"{new_password}\n{new_password}\n".encode("utf-8"),
+        ["passwd", "--stdin"],
+        input=new_password.encode("utf-8"),
         capture_output=True,
     )
 
@@ -794,15 +794,6 @@ def tools_migrations_run(
                 return m
 
         raise YunohostValidationError("migrations_no_such_migration", id=target)
-
-    # Dirty hack to mark the bullseye->bookworm as done ...
-    # it may still be marked as 'pending' if for some reason the migration crashed,
-    # but the admins ran 'apt full-upgrade' to manually finish the migration
-    # ... in which case it won't be magically flagged as 'done' until here
-    migrate_to_bookworm = get_matching_migration("migrate_to_bookworm")
-    if migrate_to_bookworm.state == "pending":
-        migrate_to_bookworm.state = "done"
-        _write_migration_state(migrate_to_bookworm.id, "done")
 
     # auto, skip and force are exclusive options
     if auto + skip + force_rerun > 1:

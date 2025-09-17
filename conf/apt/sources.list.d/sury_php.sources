@@ -1,0 +1,5 @@
+Types: deb
+URIs: https://packages.sury.org/php/
+Suites: trixie
+Components: main
+Signed-By: /etc/apt/trusted.gpg.d/extra_php_version.gpg
