@@ -1,4 +1,16 @@
-yunohost (12.1.23) stable; urgency=low
+yunohost (12.1.24) stable; urgency=low
+
+  - firewall: only call open_port(ssh) when it's closed to prevent overriding comment (f6d08477c)
+  - permissions: fix edge case where there's some unknown key in system perm conf, previous code was triggering a 'dictionary changed size during iteration' exception (8f9cccbff)
+  - helpers(string): ensure that ynh_string_random returns a result (#2181) (c524acfc8)
+  - helpers(apt): fix shellcheck (a999219f7)
+  - helpers(systemd): typo in log (#2178) (100659581)
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, DeMiro5001, Félix Piédallu, Florent)
+
+ -- tituspijean <tituspijean@yunohost.org>  Tue, 16 Sep 2025 21:49:12 +0200
+
+ yunohost (12.1.23) stable; urgency=low
 
   - helpers: fix ynh_add_swap helper / some filesystem do not support chattr +C (8708946f2)
   - helpers/systemd: 60s timeout is too harsh for low-end hardware, let's go back to 300s as it was in helpers v2, but keep it to 120s on CI (eae5fa98c)
