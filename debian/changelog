@@ -1,3 +1,13 @@
+yunohost (12.1.25) stable; urgency=low
+
+  - dns: Update registrars list for the Lexicon integration (#2161)
+  - helpers/apt: When failing to install dependencies, suggest that it might be due to a conflict with other apps (#2170)
+  - tools: Make basic-space-cleanup delete YunoHost logs too (#2116)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, ljf, Thomas, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 18 Sep 2025 17:37:24 +0200
+
 yunohost (12.1.24) stable; urgency=low
 
   - firewall: only call open_port(ssh) when it's closed to prevent overriding comment (f6d08477c)
