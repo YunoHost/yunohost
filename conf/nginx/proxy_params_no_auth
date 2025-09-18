@@ -1,0 +1,16 @@
+proxy_set_header   Host                 $host;
+proxy_set_header   X-Real-IP            $remote_addr;
+proxy_set_header   X-Scheme             $scheme;
+proxy_set_header   X-Forwarded-For      $proxy_add_x_forwarded_for;
+proxy_set_header   X-Forwarded-Proto    $scheme;
+proxy_set_header   X-Forwarded-Host     $server_name;
+proxy_set_header   X-Forwarded-Scheme   https;
+proxy_set_header   X-Forwarded-Ssl      on;
+proxy_set_header   X-Forwarded-Server   $host;
+
+# Clean all header to ensure that the client can't inject any header for authentication
+proxy_set_header   Ynh-User             "";
+proxy_set_header   Ynh-User-Email       "";
+proxy_set_header   Ynh-User-Fullname    "";
+proxy_set_header   REMOTE_USER          "";
+proxy_set_header   X-Forwarded-User     "";
