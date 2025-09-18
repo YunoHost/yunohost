@@ -2284,7 +2284,10 @@ def _get_AppConfigPanel():
             previous_settings: dict[str, Any],
             exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
         ) -> None:
-            env = {key: str(value) for key, value in form.dict().items()}
+            # Transform None to '', as None is not recognized as a value by Yaml and would be otherwise
+            # deserialized as a string ("None").
+            # The empty string is deserialized as None by form.py Option classes.
+            env = {key: str(value if value is not None else '') for key, value in form.dict().items()}
             return_content = self._call_config_script("apply", env=env)
 
             # If the script returned validation error
