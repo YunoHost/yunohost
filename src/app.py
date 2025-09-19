@@ -1885,6 +1885,7 @@ def app_shell(app: str) -> None:
 
     env = _make_environment_for_app_script(app)
     env["PATH"] = os.environ["PATH"]
+    env["YNH_APP_BASEDIR"] = os.path.join(APPS_SETTING_PATH, app)
     subprocess.run(
         [
             "/bin/bash",
