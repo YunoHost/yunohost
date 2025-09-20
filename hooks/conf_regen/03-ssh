@@ -21,6 +21,7 @@
 set -e
 
 # Source YNH helpers
+export YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
@@ -39,7 +40,7 @@ do_pre_regen() {
     [[ -f /proc/net/if_inet6 ]] && ipv6_enabled=true || ipv6_enabled=false
     export ipv6_enabled
 
-    ynh_render_template "sshd_config" "${pending_dir}/etc/ssh/sshd_config"
+    ynh_config_add --jinja --template="sshd_config" --destination="${pending_dir}/etc/ssh/sshd_config"
 }
 
 do_post_regen() {

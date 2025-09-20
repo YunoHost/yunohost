@@ -22,6 +22,7 @@
 set -eu
 
 # Source YNH helpers
+export YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
@@ -47,7 +48,7 @@ do_post_regen() {
     # postgresql could be flagged as active even though the cluster is in
     # failed state because of how the service is configured..)
     if ! systemctl is-active "postgresql@$PSQL_VERSION-main" -q; then
-        ynh_systemd_action --service_name=postgresql --action=restart
+        ynh_systemctl --service=postgresql --action=restart
     fi
     if ! systemctl is-enabled postgresql -q; then
         systemctl enable postgresql --quiet
@@ -68,9 +69,9 @@ do_post_regen() {
     # Note: we can't use peer since YunoHost create users with nologin
     #  See: https://github.com/YunoHost/yunohost/blob/unstable/data/helpers.d/user
     local pg_hba=/etc/postgresql/$PSQL_VERSION/main/pg_hba.conf
-    ynh_replace_string --match_string="local\(\s*\)all\(\s*\)all\(\s*\)peer" --replace_string="local\1all\2all\3md5" --target_file="$pg_hba"
+    ynh_replace --match="local\(\s*\)all\(\s*\)all\(\s*\)peer" --replace="local\1all\2all\3md5" --file="$pg_hba"
 
-    ynh_systemd_action --service_name=postgresql --action=reload
+    ynh_systemctl --service=postgresql --action=reload
 }
 
 "do_$1_regen" "$(echo "${*:2}" | xargs)"
