@@ -1158,6 +1158,9 @@ backup:
                 --force:
                     help: Force restauration on an already installed system
                     action: store_true
+                --no-remove-on-failure:
+                    help: For app only, debug option to avoid removing the app on a failed restore
+                    action: store_true
 
         ### backup_list()
         list:
