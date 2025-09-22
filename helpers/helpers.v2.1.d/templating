@@ -296,6 +296,11 @@ ynh_read_var_in_file() {
 # | arg: --key=     - the key to set
 # | arg: --value=   - the value to set
 # | arg: --after=   - the line just before the key (in case of multiple lines with the name of the key in the file)
+#
+# This helpers replaces several var affectation use case in several languages
+# We don't use jq or equivalent to keep comments and blank space in files
+# This helpers works line by line, and is not made to replace a type by another.
+#
 ynh_write_var_in_file() {
     # ============ Argument parsing =============
     local -A args_array=([f]=file= [k]=key= [v]=value= [a]=after=)
@@ -361,6 +366,7 @@ ynh_write_var_in_file() {
     value=${value//&/"\&"}
     local first_char="${expression:0:1}"
     delimiter=$'\001'
+
     if [[ "$first_char" == '"' ]]; then
         # \ and sed is quite complex you need 2 \\ to get one in a sed
         # So we need \\\\ to go through 2 sed
@@ -373,9 +379,42 @@ ynh_write_var_in_file() {
         value="$(echo "$value" | sed "s/'/\\\\\\\\'/g")"
         sed -ri "${range}s$delimiter(^${var_part}')([^']|\\')*('"'[\s,;]*)(\s*'"$comments"'.*)?$'$delimiter'\1'"${value}'${endline}${delimiter}i" "$file"
     else
-        if [[ "$value" == *"'"* ]] || [[ "$value" == *'"'* ]] || [[ "$ext" =~ ^php|py|json|js$ ]]; then
-            value='\"'"$(echo "$value" | sed 's/"/\\\\"/g')"'\"'
+        formated="false"
+        # Boolean
+        true_equiv="^true|True|TRUE|on|yes|t|1$"
+        false_equiv="^false|False|FALSE|off|no|f|0$"
+        if [[ "$value" =~ $true_equiv ]] || [[ "$value" =~ $false_equiv ]]; then
+            _ynh_format_boolean() {
+                if [[ "$expression" =~ ^$1|$2$ ]] && [[ "$formated" == "false" ]]; then
+                    if [[ "$value" =~ $true_equiv ]]; then
+                        value="$1"
+                        formated="true"
+                    elif [[ "$value" =~ $false_equiv ]]; then
+                        value="$2"
+                        formated="true"
+                    fi
+                fi
+            }
+            _ynh_format_boolean true false
+            _ynh_format_boolean True False
+            _ynh_format_boolean TRUE FALSE
+            _ynh_format_boolean on off
+            _ynh_format_boolean yes no
+            _ynh_format_boolean t f
+            _ynh_format_boolean 1 0
         fi
+
+        # Number
+        if [[ "$formated" == "false" ]] && [[ "$value" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]]; then
+            formated="true"
+        fi
+
+        # String
+        if [[ "$formated" == "false" ]] && [[ "$value" == *"'"* || "$value" == *'"'* || "$value" =~ $comments || "$ext" =~ ^php|py|json|js$ ]] ; then
+            value='\"'"$(echo "$value" | sed 's/"/\\\\"/g')"'\"'
+            formated="true"
+        fi
+ 
         if [[ "$ext" =~ ^yaml|yml$ ]]; then
             value=" $value"
         fi
