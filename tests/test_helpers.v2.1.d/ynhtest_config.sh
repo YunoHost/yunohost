@@ -150,7 +150,7 @@ EOF
 _read_ini() {
     local file="$1"
     local key="$2"
-    python3 -c "import configparser; c = configparser.ConfigParser(); c.read('$file'); print(c['main']['$key'])"
+    python3 -c "import configparser; c = configparser.ConfigParser(); c.read('$file'); print(repr(c['main']['$key']))"
 }
 
 ynhtest_config_read_ini() {
@@ -179,19 +179,19 @@ EOF
     test "$(_read_ini                   "$file"       "enabled")" == "False"
     test "$(ynh_read_var_in_file --file="$file" --key="enabled")" == "False"
 
-    test "$(_read_ini                   "$file"       "title")" == "Lorem Ipsum"
+    test "$(_read_ini                   "$file"       "title")" == "'Lorem Ipsum'"
     test "$(ynh_read_var_in_file --file="$file" --key="title")" == "Lorem Ipsum"
 
-    test "$(_read_ini                   "$file"       "theme")" == "colib'ris"
+    test "$(_read_ini                   "$file"       "theme")" == "\"colib'ris\""
     test "$(ynh_read_var_in_file --file="$file" --key="theme")" == "colib'ris"
 
-    #test "$(_read_ini                   "$file"       "email")" == "root@example.com"
+    test "$(_read_ini                   "$file"       "email")" == "'root@example.com'"
     test "$(ynh_read_var_in_file --file="$file" --key="email")" == "root@example.com"
 
-    #test "$(_read_ini                   "$file"       "port")" == "1234"
+    test "$(_read_ini                   "$file"       "port")" == "1234"
     test "$(ynh_read_var_in_file --file="$file" --key="port")" == "1234"
 
-    test "$(_read_ini                   "$file"       "url")" == "https://yunohost.org"
+    test "$(_read_ini                   "$file"       "url")" == "'https://yunohost.org'"
     test "$(ynh_read_var_in_file --file="$file" --key="url")" == "https://yunohost.org"
 
     test "$(ynh_read_var_in_file --file="$file" --key="ldap_base")" == "ou=users,dc=yunohost,dc=org"
@@ -233,15 +233,15 @@ EOF
     test "$(ynh_read_var_in_file --file="$file" --key="enabled")"    == "True"
 
     ynh_write_var_in_file        --file="$file" --key="title" --value="Foo Bar"
-    test "$(_read_ini                   "$file"       "title")"    == "Foo Bar"
+    test "$(_read_ini                   "$file"       "title")"    == "'Foo Bar'"
     test "$(ynh_read_var_in_file --file="$file" --key="title")"    == "Foo Bar"
 
     ynh_write_var_in_file        --file="$file" --key="theme" --value="super-awesome-theme"
-    test "$(_read_ini                   "$file"       "theme")"    == "super-awesome-theme"
+    test "$(_read_ini                   "$file"       "theme")"    == "'super-awesome-theme'"
     test "$(ynh_read_var_in_file --file="$file" --key="theme")"    == "super-awesome-theme"
 
     ynh_write_var_in_file        --file="$file" --key="email" --value="sam@domain.tld"
-    test "$(_read_ini                   "$file"       "email")"    == "sam@domain.tld # This is a comment without quotes"
+    test "$(_read_ini                   "$file"       "email")"    == "'sam@domain.tld' # This is a comment without quotes"
     test "$(ynh_read_var_in_file --file="$file" --key="email")"    == "sam@domain.tld"
 
     ynh_write_var_in_file        --file="$file" --key="port" --value="5678"
@@ -249,7 +249,7 @@ EOF
     test "$(ynh_read_var_in_file --file="$file" --key="port")"    == "5678"
 
     ynh_write_var_in_file        --file="$file" --key="url" --value="https://domain.tld/foobar"
-    test "$(_read_ini                   "$file"       "url")"    == "https://domain.tld/foobar"
+    test "$(_read_ini                   "$file"       "url")"    == "'https://domain.tld/foobar'"
     test "$(ynh_read_var_in_file --file="$file" --key="url")"    == "https://domain.tld/foobar"
 
     ynh_write_var_in_file        --file="$file" --key="ldap_base" --value="ou=users,dc=yunohost,dc=org"
@@ -485,7 +485,7 @@ EOF
 
     ynh_write_var_in_file        --file="$file" --key="enabled" --value="true"
     cat "$file"
-    test "$(_read_json                  "$file"       "enabled")"    == "true"
+    test "$(_read_json                  "$file"       "enabled")"    == "True"
     test "$(ynh_read_var_in_file --file="$file" --key="enabled")"    == "true"
 
     ynh_write_var_in_file        --file="$file" --key="title" --value="Foo Bar"
