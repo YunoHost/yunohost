@@ -119,11 +119,12 @@ class AppResourceManager:
         return todos_by_type
 
     # FIXME: hmgnnnnn this is a bit hackish
-    def before_regen_conf(self):
+    def before_regen_conf(self) -> None:
 
         for type_, todos in self.todos.items():
             for todo, name, old, new in todos:
                 if todo in ["provision", "update"] and hasattr(new, "before_regen_conf"):
+                    assert new
                     new.before_regen_conf()
 
     def apply(
@@ -141,16 +142,16 @@ class AppResourceManager:
                 _, id_ = name
                 try:
                     if todo == "deprovision":
-                        logger.info(m18n.n("app_resource_deprovision", resource=old.description_with_id()))
                         assert old
+                        logger.info(m18n.n("app_resource_deprovision", resource=old.description_with_id()))
                         old.deprovision()
                     elif todo == "provision":
-                        logger.info(m18n.n("app_resource_provision", resource=new.description_with_id()))
                         assert new
+                        logger.info(m18n.n("app_resource_provision", resource=new.description_with_id()))
                         new.provision_or_update()
                     elif todo == "update":
-                        logger.info(m18n.n("app_resource_update", resource=new.description_with_id()))
                         assert new
+                        logger.info(m18n.n("app_resource_update", resource=new.description_with_id()))
                         new.provision_or_update()
                 except (KeyboardInterrupt, Exception) as e:
                     exception = e
@@ -301,10 +302,10 @@ class AppResource(BaseModel):
     exposed_properties: list[str]
     helpers_version: float = 0
 
-    def description(self):
+    def description(self) -> str:
         return self.type
 
-    def description_with_id(self):
+    def description_with_id(self) -> str:
         return self.description() + ("" if self.id == "main" else f" ({self.id})")
 
     @classmethod
@@ -559,7 +560,7 @@ class SourcesResource(AppResource):
 
     action_is_restore: str | None
 
-    def description(self):
+    def description(self) -> str:
         return m18n.n("app_resource_sources")
 
     def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
@@ -637,7 +638,7 @@ class SourcesResource(AppResource):
                 logger.warning(f"Uhoh, asset {existing_cache} doesnt match the checksum ?")
             else:
                 logger.debug(f"Reusing cache from {existing_cache}")
-                cp(str(existing_cache), tmp_dir / self.id)
+                cp(str(existing_cache), str(tmp_dir / self.id))
                 return
 
         self.prefetch_asset(url, sha256)
@@ -695,7 +696,7 @@ class SourcesResource(AppResource):
 
         # Save as "real cache" (urhg) as well,
         # to avoid re-downloading this multiple time in the near future
-        cp(tmp_file, str(Path(SOURCES_CACHE_DIR) / expected_sha256))
+        cp(str(tmp_file), str(Path(SOURCES_CACHE_DIR) / expected_sha256))
 
 
 class PermissionsResource(AppResource):
@@ -758,7 +759,7 @@ class PermissionsResource(AppResource):
 
     exposed_properties: list[str] = ["url", "additional_urls", "auth_header", "allowed", "show_tile", "protected"]
 
-    def description(self):
+    def description(self) -> str:
         return m18n.n("app_resource_permission")
 
     def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
@@ -905,7 +906,7 @@ class SystemuserAppResource(AppResource):
 
     exposed_properties: list[str] = ["allow_ssh", "allow_sftp", "allow_email", "allow_certs", "home"]
 
-    def description(self):
+    def description(self) -> str:
         return m18n.n("app_resource_system_user")
 
     def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
@@ -1078,7 +1079,7 @@ class InstalldirAppResource(AppResource):
 
     exposed_properties: list[str] = ["dir", "paths_for_www_data", "content"]
 
-    def description(self):
+    def description(self) -> str:
         return m18n.n("app_resource_install_dir")
 
     @staticmethod
@@ -1230,7 +1231,7 @@ class DatadirAppResource(AppResource):
 
     exposed_properties: list[str] = ["dir", "subdirs", "paths_for_www_data"]
 
-    def description(self):
+    def description(self) -> str:
         return m18n.n("app_resource_data_dir")
 
     @staticmethod
@@ -1344,7 +1345,7 @@ class AptDependenciesAppResource(AppResource):
 
     exposed_properties: list[str] = ["packages", "packages_for_build_only", "if_bookworm", "if_trixie", "packages_from_raw_bash", "extras"]
 
-    def description(self):
+    def description(self) -> str:
         return m18n.n("app_resource_apt")
 
     def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
@@ -1508,7 +1509,7 @@ class PortsResource(AppResource):
     # Internal
     need_firewall_reload: bool = False
 
-    def description(self):
+    def description(self) -> str:
         return m18n.n("app_resource_ports")
 
     def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
@@ -1685,7 +1686,7 @@ class DatabaseAppResource(AppResource):
 
     exposed_properties: list[str] = ["dbtype"]
 
-    def description(self):
+    def description(self) -> str:
         return m18n.n("app_resource_database", dbtype=self.dbtype)
 
     @staticmethod
@@ -1804,7 +1805,7 @@ class NodejsAppResource(AppResource):
     version: str
     exposed_properties: list[str] = ["version"]
 
-    def description(self):
+    def description(self) -> str:
         return f"nodejs {self.version}"
 
     @property
@@ -1905,7 +1906,7 @@ class RubyAppResource(AppResource):
     version: str = ""
     exposed_properties: list[str] = ["version"]
 
-    def description(self):
+    def description(self) -> str:
         return f"ruby {self.version}"
 
     @property
@@ -2031,7 +2032,7 @@ class GoAppResource(AppResource):
     version: str
     exposed_properties: list[str] = ["version"]
 
-    def description(self):
+    def description(self) -> str:
         return f"go {self.version}"
 
     @property
@@ -2076,13 +2077,13 @@ class GoAppResource(AppResource):
         self.garbage_collect_unused_versions()
 
     def garbage_collect_unused_versions(self) -> None:
-        installed_versions = check_output(
+        installed_versions_raw = check_output(
             f"{self.goenv} versions --bare --skip-aliases",
             env={"GOENV_ROOT": GOENV_ROOT},
         )
         installed_versions = [
             version
-            for version in installed_versions.strip().split("\n")
+            for version in installed_versions_raw.strip().split("\n")
             if "\\" not in version
         ]
 
@@ -2090,7 +2091,7 @@ class GoAppResource(AppResource):
         from ..app import _installed_apps, app_setting
 
         for app in _installed_apps():
-            v = app_setting(app, "go_version")
+            v: str | None = app_setting(app, "go_version")  # type: ignore[assignment]
             if v:
                 used_versions.append(v)
 
@@ -2138,7 +2139,7 @@ class ComposerAppResource(AppResource):
     version: str
     exposed_properties: list[str] = ["version"]
 
-    def description(self):
+    def description(self) -> str:
         return f"composer {self.version}"
 
     @property
