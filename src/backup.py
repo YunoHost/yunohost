@@ -1472,6 +1472,8 @@ class RestoreManager:
 
                 if not self.no_remove_on_failure:
                     app_remove(app_instance_name, force_workdir=app_workdir)
+                else:
+                    logger.error(f"The restore of {app_instance_name} failed, but was not cleaned up as requested by --no-remove-on-failure.")
 
                 logger.error(failure_message_with_debug_instructions)
 
