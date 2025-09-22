@@ -185,10 +185,10 @@ EOF
     test "$(_read_ini                   "$file"       "theme")" == "\"colib'ris\""
     test "$(ynh_read_var_in_file --file="$file" --key="theme")" == "colib'ris"
 
-    test "$(_read_ini                   "$file"       "email")" == "'root@example.com'"
+    test "$(_read_ini                   "$file"       "email")" == "'root@example.com ; This is a comment without quotes'"
     test "$(ynh_read_var_in_file --file="$file" --key="email")" == "root@example.com"
 
-    test "$(_read_ini                   "$file"       "port")" == "1234"
+    test "$(_read_ini                   "$file"       "port")" == "1234 ; This is a comment without quotes"
     test "$(ynh_read_var_in_file --file="$file" --key="port")" == "1234"
 
     test "$(_read_ini                   "$file"       "url")" == "'https://yunohost.org'"
