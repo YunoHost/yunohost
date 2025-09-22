@@ -173,10 +173,10 @@ url = https://yunohost.org
     ldap_base = ou=users,dc=yunohost,dc=org
 EOF
 
-    test "$(_read_ini                   "$file"       "foo")" == "null"
+    test "$(_read_ini                   "$file"       "foo")" == "'null'"
     test "$(ynh_read_var_in_file --file="$file" --key="foo")" == "null"
 
-    test "$(_read_ini                   "$file"       "enabled")" == "False"
+    test "$(_read_ini                   "$file"       "enabled")" == "'False'"
     test "$(ynh_read_var_in_file --file="$file" --key="enabled")" == "False"
 
     test "$(_read_ini                   "$file"       "title")" == "'Lorem Ipsum'"
@@ -225,11 +225,11 @@ url = https://yunohost.org
 EOF
 
     ynh_write_var_in_file        --file="$file" --key="foo" --value="bar"
-    test "$(_read_ini                   "$file"       "foo")"    == "bar"
+    test "$(_read_ini                   "$file"       "foo")"    == "'bar'"
     test "$(ynh_read_var_in_file --file="$file" --key="foo")"    == "bar"
 
     ynh_write_var_in_file        --file="$file" --key="enabled" --value="True"
-    test "$(_read_ini                   "$file"       "enabled")"    == "True"
+    test "$(_read_ini                   "$file"       "enabled")"    == "'True'"
     test "$(ynh_read_var_in_file --file="$file" --key="enabled")"    == "True"
 
     ynh_write_var_in_file        --file="$file" --key="title" --value="Foo Bar"
@@ -241,11 +241,11 @@ EOF
     test "$(ynh_read_var_in_file --file="$file" --key="theme")"    == "super-awesome-theme"
 
     ynh_write_var_in_file        --file="$file" --key="email" --value="sam@domain.tld"
-    test "$(_read_ini                   "$file"       "email")"    == "'sam@domain.tld' # This is a comment without quotes"
+    test "$(_read_ini                   "$file"       "email")"    == "'sam@domain.tld # This is a comment without quotes'"
     test "$(ynh_read_var_in_file --file="$file" --key="email")"    == "sam@domain.tld"
 
     ynh_write_var_in_file        --file="$file" --key="port" --value="5678"
-    test "$(_read_ini                   "$file"       "port")"    == "5678 # This is a comment without quotes"
+    test "$(_read_ini                   "$file"       "port")"    == "'5678 # This is a comment without quotes'"
     test "$(ynh_read_var_in_file --file="$file" --key="port")"    == "5678"
 
     ynh_write_var_in_file        --file="$file" --key="url" --value="https://domain.tld/foobar"
