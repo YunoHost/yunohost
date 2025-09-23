@@ -24,19 +24,19 @@ import os
 import re
 import time
 from datetime import datetime, timedelta
-from logging import FileHandler, getLogger, Formatter, INFO
 from io import IOBase
-from typing import List, Any
+from logging import INFO, FileHandler, Formatter, getLogger
+from typing import Any
 
 import psutil
 import yaml
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
-from moulinette.utils.filesystem import read_file, read_yaml
-from moulinette.utils.log import SUCCESS
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.system import get_ynh_package_version
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import read_file, read_yaml
+from .utils.logging import SUCCESS
+from .utils.system import get_ynh_package_version
 
 logger = getLogger("yunohost.log")
 
@@ -83,7 +83,6 @@ BORING_LOG_LINES = [
 
 
 def _update_log_cache_symlinks():
-
     one_year_ago = time.time() - 365 * 24 * 3600
 
     logs = glob.iglob(OPERATIONS_PATH + "*.yml")
@@ -290,7 +289,7 @@ def log_show(
         logs = list(log_list()["operation"])
 
         if position > len(logs):
-            raise YunohostValidationError("There isn't that many logs", raw_msg=True)
+            raise YunohostError("There isn't that many logs", raw_msg=True)
 
         path = logs[-position]["path"]
 
@@ -331,7 +330,7 @@ def log_show(
         log_path = base_path + ".log"
 
     if not os.path.exists(md_path) and not os.path.exists(log_path):
-        raise YunohostValidationError("log_does_exists", log=path)
+        raise YunohostError("log_does_exists", log=path)
 
     infos = {}
 
@@ -341,7 +340,7 @@ def log_show(
         infos["name"] = base_filename
 
     if share:
-        from yunohost.utils.yunopaste import yunopaste
+        from .utils.yunopaste import yunopaste
 
         content = ""
         if os.path.exists(md_path):
@@ -391,7 +390,7 @@ def log_show(
                         # We first retrict search to a ~48h time window to limit the number
                         # of .yml we look into
                         try:
-                            date = _get_datetime_from_name(base_filename)
+                            date = _get_datetime_from_name(filename)
                         except ValueError:
                             continue
                         if (date < log_start) or (
@@ -418,7 +417,7 @@ def log_show(
 
     # Display logs if exist
     if os.path.exists(log_path):
-        from yunohost.service import _tail
+        from .service import _tail
 
         if number and filter_irrelevant:
             logs = _tail(log_path, int(number * 6))
@@ -472,7 +471,6 @@ def is_unit_operation(
         func: Callable[Concatenate["OperationLogger", Param], RetType],
     ) -> Callable[Param, RetType]:
         def func_wrapper(*args, **kwargs):
-
             # If the function is called directly from an other part of the code
             # and not by the moulinette framework, we need to complete kwargs
             # dictionnary with the args list.
@@ -544,6 +542,15 @@ def is_unit_operation(
     return decorate
 
 
+# This is just a wrapper to is_unit_operation for proper typing purposes
+def is_flash_unit_operation(
+    entities=["app", "domain", "group", "service", "user"],
+    exclude=["password"],
+    sse_only=False,
+) -> Callable[[Callable[Param, RetType]], Callable[Param, RetType]]:
+    return is_unit_operation(entities, exclude, sse_only, True)  # type: ignore
+
+
 class RedactingFormatter(Formatter):
     def __init__(self, format_string, data_to_redact):
         super(RedactingFormatter, self).__init__(format_string)
@@ -593,7 +600,7 @@ class OperationLogger:
     This class record logs and metadata like context or  time/end time.
     """
 
-    _instances: List["OperationLogger"] = []
+    _instances: list["OperationLogger"] = []
 
     def __init__(
         self, operation, related_to=None, sse_only=False, flash=False, **kwargs
@@ -622,7 +629,7 @@ class OperationLogger:
         if not self.parent:
             if Moulinette.interface.type == "api":
                 try:
-                    from yunohost.authenticators.ldap_admin import Authenticator as Auth
+                    from .authenticators.ldap_admin import Authenticator as Auth
 
                     auth = Auth().get_session_cookie()
                     self.started_by = auth["user"]
@@ -692,7 +699,7 @@ class OperationLogger:
         # If nothing found, assume we're the root operation logger
         return None
 
-    def start(self):
+    def start(self) -> None:
         """
         Start to record logs that change the system
         Until this start method is run, no unit operation will be registered.
@@ -740,7 +747,7 @@ class OperationLogger:
 
         # Only do this one for the main parent operation
         if not self.parent:
-            from yunohost.utils.sse import SSELogStreamingHandler
+            from .utils.sse import SSELogStreamingHandler
 
             self.sse_handler = SSELogStreamingHandler(self.name, flash=self.flash)
             self.sse_handler.level = INFO if not self.flash else SUCCESS
@@ -861,6 +868,7 @@ class OperationLogger:
             and isinstance(error, Exception)
             and not isinstance(error, YunohostValidationError)
             and not self.flash
+            and not self.sse_only
         ):
             error.log_ref = self.name
 

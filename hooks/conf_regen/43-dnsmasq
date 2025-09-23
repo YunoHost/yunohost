@@ -65,9 +65,9 @@ do_pre_regen() {
     cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf > "${pending_dir}/etc/resolv.dnsmasq.conf"
 
     # retrieve variables
-    ipv4=$(curl --max-time 10 -s -4 https://ip.yunohost.org 2> /dev/null || true)
+    ipv4=$(curl --max-time 10 -s -4 https://ipv4.yunohost.org 2> /dev/null || true)
     ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
-    ipv6=$(curl --max-time 10 -s -6 https://ip6.yunohost.org 2> /dev/null || true)
+    ipv6=$(curl --max-time 10 -s -6 https://ipv6.yunohost.org 2> /dev/null || true)
     ynh_validate_ip6 "$ipv6" || ipv6=''
     interfaces="$(ip -j addr show | jq -r '[.[].ifname]|join(" ")')"
     wireless_interfaces="lo"
@@ -85,12 +85,11 @@ do_pre_regen() {
     export interfaces
     export ipv4
     export ipv6
-    domains_with_inbound_email_enabled=$(yunohost domain list --features mail_in --output-as json | jq -r ".domains[]")
     for domain in $YNH_DOMAINS; do
         [[ ! $domain =~ \.local$ ]] || continue
         export domain
 
-        if grep -q "^$domain$" <<< "$domains_with_mail_in"; then
+        if tr ' ' '\n' <<< "$YNH_DOMAINS_WITH_MAIL_IN" | grep -q "^$domain$"; then
             export mail_in="True"
         else
             export mail_in="False"

@@ -22,14 +22,14 @@ import hashlib
 import os
 import re
 from logging import getLogger
-from typing import TypedDict, Any, NotRequired, Literal
+from pathlib import Path
+from typing import Any, Literal, NotRequired, TypedDict
 
 from moulinette import m18n
-from moulinette.utils.filesystem import mkdir, read_json, read_yaml, write_to_json
-from moulinette.utils.network import download_json
 
-from yunohost.utils.error import YunohostError
-from yunohost.utils.i18n import _value_for_locale
+from .utils.error import YunohostError
+from .utils.file_utils import download_json, mkdir, read_json, read_yaml, write_to_json
+from .utils.i18n import _value_for_locale
 
 logger = getLogger("yunohost.app_catalog")
 
@@ -47,6 +47,7 @@ class AppCatalog(TypedDict):
     apps: dict[str, dict[str, Any]]
     categories: NotRequired[list[dict[str, Any]]]
     antifeatures: NotRequired[list[dict[str, Any]]]
+    from_api_version: NotRequired[int]
 
 
 def app_catalog(
@@ -56,7 +57,7 @@ def app_catalog(
     Return a dict of apps available to installation from Yunohost's app catalog
     """
 
-    from yunohost.app import _installed_apps
+    from .utils.app_utils import _installed_apps
 
     # Get app list from catalog cache
     catalog = _load_apps_catalog()
@@ -109,7 +110,7 @@ def app_catalog(
     return _catalog
 
 
-def app_search(string: str) -> dict[Literal["apps"], dict]:
+def app_search(string: str) -> dict[Literal["apps"], dict[str, Any]]:
     """
     Return a dict of apps whose description or name match the search string
     """
@@ -145,7 +146,7 @@ def _read_apps_catalog_list() -> list[dict[Literal["id", "url"], str]]:
                 pass
         # Support the case where file exists but is empty
         # by returning [] if list_ is None
-        return list_ if list_ else []
+        return list_ if list_ else []  # type: ignore[return-value]
     except Exception as e:
         raise YunohostError(
             f"Could not read the apps_catalog list ... : {e}", raw_msg=True
@@ -191,7 +192,7 @@ def _update_apps_catalog() -> None:
 
         # Fetch the json
         try:
-            apps_catalog_content = download_json(actual_api_url)
+            apps_catalog_content: AppCatalog = download_json(actual_api_url)  # type: ignore[assignment]
         except Exception as e:
             raise YunohostError(
                 "apps_catalog_failed_to_download",
@@ -205,7 +206,7 @@ def _update_apps_catalog() -> None:
         # Save the apps_catalog data in the cache
         cache_file = f"{APPS_CATALOG_CACHE}/{apps_catalog_id}.json"
         try:
-            write_to_json(cache_file, apps_catalog_content)
+            write_to_json(cache_file, apps_catalog_content)  # type: ignore[arg-type]
         except Exception as e:
             raise YunohostError(
                 f"Unable to write cache data for {apps_catalog_id} apps_catalog : {e}",
@@ -229,15 +230,15 @@ def _update_apps_catalog() -> None:
 
         import requests
 
-        def fetch_logo(logo_hash):
+        def fetch_logo(logo_hash: str) -> bool:
             try:
                 r = requests.get(
                     f"{apps_catalog['url']}/v{APPS_CATALOG_API_VERSION}/logos/{logo_hash}.png",
                     timeout=10,
                 )
-                assert (
-                    r.status_code == 200
-                ), f"Got status code {r.status_code}, expected 200"
+                assert r.status_code == 200, (
+                    f"Got status code {r.status_code}, expected 200"
+                )
                 if hashlib.sha256(r.content).hexdigest() != logo_hash:
                     raise Exception(
                         f"Found inconsistent hash while downloading logo {logo_hash}"
@@ -256,21 +257,43 @@ def _update_apps_catalog() -> None:
     logger.success(m18n.n("apps_catalog_update_success"))  # type: ignore
 
 
+_apps_catalog_cache_timestamp: float = 0
+_apps_catalog_cache: AppCatalog | None = None
+
+
 def _load_apps_catalog() -> AppCatalog:
     """
     Read all the apps catalog cache files and build a single dict (merged_catalog)
     corresponding to all known apps and categories
     """
 
+    timestamps = []
+    catalog_conf = Path(APPS_CATALOG_CONF)
+    if catalog_conf.exists():
+        stats = catalog_conf.stat()
+        timestamps.append(stats.st_mtime)
+        timestamps.append(stats.st_ctime)
+    for f in Path(APPS_CATALOG_CACHE).glob("*.json"):
+        stats = f.stat()
+        timestamps.append(stats.st_mtime)
+        timestamps.append(stats.st_ctime)
+
+    timestamp = max(timestamps) if timestamps else 0
+    global _apps_catalog_cache
+    global _apps_catalog_cache_timestamp
+    if _apps_catalog_cache and timestamp <= _apps_catalog_cache_timestamp:
+        return _apps_catalog_cache
+
     merged_catalog: AppCatalog = {"apps": {}, "categories": [], "antifeatures": []}
 
     for apps_catalog_id in [L["id"] for L in _read_apps_catalog_list()]:
         # Let's load the json from cache for this catalog
-        cache_file = f"{APPS_CATALOG_CACHE}/{apps_catalog_id}.json"
+        cache_file = Path(APPS_CATALOG_CACHE) / (apps_catalog_id + ".json")
 
+        apps_catalog_content: AppCatalog | None
         try:
             apps_catalog_content = (
-                read_json(cache_file) if os.path.exists(cache_file) else None
+                read_json(str(cache_file)) if cache_file.exists() else None  # type: ignore[assignment]
             )
         except Exception as e:
             raise YunohostError(
@@ -287,7 +310,9 @@ def _load_apps_catalog() -> AppCatalog:
         ):
             logger.info(m18n.n("apps_catalog_obsolete_cache"))
             _update_apps_catalog()
-            apps_catalog_content = read_json(cache_file)
+            apps_catalog_content = read_json(str(cache_file))  # type: ignore[assignment]
+
+        assert apps_catalog_content is not None
 
         del apps_catalog_content["from_api_version"]
 
@@ -314,5 +339,9 @@ def _load_apps_catalog() -> AppCatalog:
         # (we use .get here, only because the dev catalog doesnt include the categories/antifeatures keys)
         merged_catalog["categories"] += apps_catalog_content.get("categories", [])
         merged_catalog["antifeatures"] += apps_catalog_content.get("antifeatures", [])
+
+    # Save as cache for next call
+    _apps_catalog_cache = merged_catalog
+    _apps_catalog_cache_timestamp = timestamp
 
     return merged_catalog

@@ -22,16 +22,15 @@ import logging
 import os
 import re
 from subprocess import CalledProcessError
-from typing import List
-
-from moulinette.utils.filesystem import read_yaml
-from moulinette.utils.process import check_output
 
 import dns.resolver
-from yunohost.diagnosis import Diagnoser
-from yunohost.domain import _get_maindomain, domain_list
-from yunohost.settings import settings_get
-from yunohost.utils.dns import dig
+
+from ..diagnosis import Diagnoser
+from ..domain import _get_maindomain, domain_list
+from ..settings import settings_get
+from ..utils.dns import dig
+from ..utils.file_utils import read_yaml
+from ..utils.process import check_output
 
 DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/dnsbl_list.yml"
 
@@ -41,7 +40,7 @@ logger = logging.getLogger("yunohost.diagnosis")
 class MyDiagnoser(Diagnoser):
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
-    dependencies: List[str] = ["ip"]
+    dependencies: list[str] = ["ip"]
 
     def run(self):
         self.ehlo_domain = _get_maindomain().lower()

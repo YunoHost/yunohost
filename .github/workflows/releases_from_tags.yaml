@@ -25,9 +25,11 @@ jobs:
 
       - name: Create Release for Tag
         id: release_tag
-        uses: Akryum/release-tag@v4.0.7
+        uses: epreston/release-tag@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           release_name: YunoHost ${{ steps.patch-tag-name.outputs.version }}
           tag_name: ${{ github.ref }}
+          body: |
+            Refer to [the debian changelog](${{ github.server_url }}/${{ github.repository }}/blob/dev/debian/changelog) for details.

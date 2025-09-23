@@ -28,14 +28,14 @@ from logging import getLogger
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
-from moulinette.utils.filesystem import chmod, chown, rm, write_to_file
 
-from yunohost.domain import _get_maindomain
-from yunohost.log import is_unit_operation
-from yunohost.regenconf import regen_conf
-from yunohost.utils.dns import dig, is_yunohost_dyndns_domain
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.network import get_public_ip
+from .domain import _get_maindomain
+from .log import is_unit_operation
+from .regenconf import regen_conf
+from .utils.dns import dig, is_yunohost_dyndns_domain
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import chmod, chown, rm, write_to_file
+from .utils.network import get_public_ip
 
 logger = getLogger("yunohost.dyndns")
 
@@ -54,7 +54,7 @@ def is_subscribing_allowed():
     return len(dyndns_list()["domains"]) < MAX_DYNDNS_DOMAINS
 
 
-def _dyndns_available(domain):
+def _dyndns_available(domain: str) -> bool:
     """
     Checks if a domain is available on dyndns.yunohost.org
 
@@ -135,7 +135,7 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
         logger.warning(m18n.n("dyndns_no_recovery_password"))
 
     if recovery_password:
-        from yunohost.utils.password import assert_password_is_strong_enough
+        from .utils.password import assert_password_is_strong_enough
 
         assert_password_is_strong_enough("admin", recovery_password)
         operation_logger.data_to_redact.append(recovery_password)
@@ -295,7 +295,7 @@ def dyndns_set_recovery_password(domain, recovery_password):
     if not keys:
         raise YunohostValidationError("dyndns_key_not_found")
 
-    from yunohost.utils.password import assert_password_is_strong_enough
+    from .utils.password import assert_password_is_strong_enough
 
     assert_password_is_strong_enough("admin", recovery_password)
     secret = str(domain) + ":" + str(recovery_password).strip()
@@ -335,12 +335,12 @@ def dyndns_set_recovery_password(domain, recovery_password):
         )
 
 
-def dyndns_list():
+def dyndns_list() -> dict[str, list[str]]:
     """
     Returns all currently subscribed DynDNS domains ( deduced from the key files )
     """
 
-    from yunohost.domain import domain_list
+    from .domain import domain_list
 
     domains = domain_list(exclude_subdomains=True)["domains"]
     dyndns_domains = [
@@ -371,7 +371,8 @@ def dyndns_update(
     import dns.tsig
     import dns.tsigkeyring
     import dns.update
-    from yunohost.dns import _build_dns_conf
+
+    from .dns import _build_dns_conf
 
     # If domain is not given, update all DynDNS domains
     if domain is None:
@@ -399,7 +400,7 @@ def dyndns_update(
 
     if ipv4 is None and ipv6 is None:
         logger.debug(
-            "No ipv4 nor ipv6 ?! Sounds like the server is not connected to the internet, or the ip.yunohost.org infrastructure is down somehow"
+            "No ipv4 nor ipv6 ?! Sounds like the server is not connected to the internet, or the ipv4/6.yunohost.org infrastructure is down somehow"
         )
         return
 
@@ -462,25 +463,25 @@ def dyndns_update(
 
     # no need to update
     if (not force and not dry_run) and (old_ipv4 == ipv4 and old_ipv6 == ipv6):
-        logger.info("No updated needed.")
+        logger.info("No update needed.")
         return
     else:
         operation_logger.related_to.append(("domain", domain))
         operation_logger.start()
-        logger.info("Updated needed, going on...")
+        logger.info("Update needed, going on...")
 
     dns_conf = _build_dns_conf(domain)
 
     # Delete custom DNS records, we don't support them (have to explicitly
     # authorize them on dynette)
-    for category in dns_conf.keys():
-        if category not in ["basic", "mail", "extra"]:
-            del dns_conf[category]
+    dns_conf = {
+        cat: v for cat, v in dns_conf.items() if cat in ["basic", "mail", "extra"]
+    }
 
     # Delete the old records for all domain/subdomains
 
     # every dns_conf.values() is a list of :
-    # [{"name": "...", "ttl": "...", "type": "...", "value": "..."}]
+    # [{"name": "...", "ttl": "...", "type": "...", "content": "..."}]
     for records in dns_conf.values():
         for record in records:
             name = (
@@ -495,14 +496,14 @@ def dyndns_update(
             # (For some reason) here we want the format with everytime the
             # entire, full domain shown explicitly, not just "muc" or "@", it
             # should be muc.the.domain.tld. or the.domain.tld
-            if record["value"] == "@":
-                record["value"] = domain
-            record["value"] = record["value"].replace(";", r"\;")
+            if record["content"] == "@":
+                record["content"] = domain
+            record["content"] = record["content"].replace(";", r"\;")
             name = (
                 f"{record['name']}.{domain}." if record["name"] != "@" else f"{domain}."
             )
 
-            update.add(name, record["ttl"], record["type"], record["value"])
+            update.add(name, record["ttl"], record["type"], record["content"])
 
     logger.debug("Now pushing new conf to DynDNS host...")
     logger.debug(update)

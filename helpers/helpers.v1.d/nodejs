@@ -127,8 +127,13 @@ ynh_install_nodejs() {
         N_PREFIX=$n_install_dir "$YNH_HELPERS_DIR/vendor/n/n" $nodejs_version
     fi
 
+    # Find the last "real" version for this major version of node.
+    final_nodejs_version=$(find "$n_install_dir/n/versions/node/$nodejs_version"* -maxdepth 0 | sort --version-sort | tail --lines=1)
+    final_nodejs_version=$(basename "$final_nodejs_version")
+
     # Store nodejs_version into the config of this app
-    ynh_app_setting_set --app=$app --key=nodejs_version --value=$nodejs_version
+    nodejs_version="$final_nodejs_version"
+    ynh_app_setting_set --key=nodejs_version --value="$final_nodejs_version"
 
     ynh_use_nodejs
 }

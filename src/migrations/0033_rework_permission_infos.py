@@ -1,18 +1,18 @@
 import os
 from logging import getLogger
 
-from moulinette.utils.filesystem import read_yaml
-from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
-from yunohost.tools import Migration
-from yunohost.regenconf import regen_conf
-from yunohost.permission import (
-    _sync_permissions_with_ldap,
+from ..app import app_setting, app_ssowatconf
+from ..permission import (
     _set_system_perms,
+    _sync_permissions_with_ldap,
     permission_create,
 )
-from yunohost.app import app_setting, app_ssowatconf
-from yunohost.user import user_group_list
-
+from ..regenconf import regen_conf
+from ..tools import Migration
+from ..user import user_group_list
+from ..utils.app_utils import _is_installed
+from ..utils.file_utils import read_yaml
+from ..utils.ldap import _get_ldap_interface, _ldap_path_extract
 
 logger = getLogger("yunohost.migration")
 
@@ -20,21 +20,23 @@ SYSTEM_PERMS = ["mail", "sftp", "ssh"]
 
 
 class MyMigration(Migration):
-
     introduced_in_version = "12.1"
     dependencies = []
 
-    ldap_migration_started = False
-
     @Migration.ldap_migration
-    def run(self, *args):
-
+    def run(self, backup_folder: str) -> None:
         regen_conf(["slapd"], force=True)
 
         self.ldap_migration_started = True
 
         permissions_per_app, permission_system = self.read_legacy_permissions()
         for app, permissions in permissions_per_app.items():
+            if not _is_installed(app):
+                logger.warning(
+                    f"Found permissions for app {app}, but this app is not installed. It may just be a permission that was not properly cleaned up in the past. Details: {permissions}"
+                )
+                continue
+
             app_setting(app, "_permissions", permissions)
 
         _set_system_perms(permission_system)
@@ -44,7 +46,6 @@ class MyMigration(Migration):
         app_ssowatconf()
 
     def run_after_system_restore(self):
-
         regen_conf(["slapd"], force=True)
 
         _, permission_system = self.read_legacy_permissions()
@@ -54,8 +55,7 @@ class MyMigration(Migration):
         _sync_permissions_with_ldap()
         app_ssowatconf()
 
-    def run_before_app_restore(self, app_id):
-
+    def run_before_app_restore(self, app_id, app_backup_in_archive):
         # Prior to 12.1, the truth source for app permission was the LDAP db rather than app settings.
         # The LDAP db corresponding to the app was dump into a separate yaml
         permfile = f"/etc/yunohost/apps/{app_id}/permissions.yml"
@@ -97,7 +97,6 @@ class MyMigration(Migration):
         app_ssowatconf()
 
     def read_legacy_permissions(self):
-
         ldap = _get_ldap_interface()
         permissions_infos = ldap.search(
             "ou=permission",
@@ -147,7 +146,6 @@ class MyMigration(Migration):
         return permissions_per_app, permissions_system
 
     def delete_legacy_permissions(self):
-
         try:
             ldap = _get_ldap_interface()
             permissions_infos = ldap.search(
@@ -164,17 +162,37 @@ class MyMigration(Migration):
             )
             os.system("systemctl restart slapd")
             for infos in permissions_infos:
-                ldap.update(
-                    f'cn={infos["cn"][0]},ou=permission',
-                    {
-                        "label": [],
-                        "authHeader": [],
-                        "showTile": [],
-                        "isProtected": [],
-                        "URL": [],
-                        "additionalUrls": [],
-                        "groupPermission": [],
-                    },
-                )
+                try:
+                    ldap.update(
+                        f"cn={infos['cn'][0]},ou=permission",
+                        {
+                            "label": [],
+                            "authHeader": [],
+                            "showTile": [],
+                            "isProtected": [],
+                            "URL": [],
+                            "additionalUrls": [],
+                            "groupPermission": [],
+                        },
+                    )
+                except Exception as e:
+                    logger.warning("Failed to delete the legacy permission ? " + str(e))
+                    logger.warning("Retrying without the label idk")
+                    try:
+                        ldap.update(
+                            f"cn={infos['cn'][0]},ou=permission",
+                            {
+                                "authHeader": [],
+                                "showTile": [],
+                                "isProtected": [],
+                                "URL": [],
+                                "additionalUrls": [],
+                                "groupPermission": [],
+                            },
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            "Failed to delete the legacy permission ? " + str(e)
+                        )
         finally:
             regen_conf(["slapd"], force=True)

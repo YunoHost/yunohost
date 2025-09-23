@@ -37,6 +37,10 @@ ynh_multimedia_build_main_dir() {
     mkdir -p "$MEDIA_DIRECTORY/share/Video"
     mkdir -p "$MEDIA_DIRECTORY/share/eBook"
 
+    # Disable logging to prevent leaking the user list (and anyway it's long and boring)
+    local xtrace_enable=$(set +o | grep xtrace)
+    set +o xtrace # set +x
+
     ## Création des dossiers utilisateurs
     for user in $(yunohost user list --output-as json | jq -r '.users | keys[]'); do
         mkdir -p "$MEDIA_DIRECTORY/$user"
@@ -54,6 +58,10 @@ ynh_multimedia_build_main_dir() {
         # Propriétaires des dossiers utilisateurs.
         chown -R "$user" "$MEDIA_DIRECTORY/$user"
     done
+
+    # Re-enable logging
+    eval "$xtrace_enable"
+
     # Default yunohost hooks for post_user_create,delete will take care
     # of creating/deleting corresponding multimedia folders when users
     # are created/deleted in the future...

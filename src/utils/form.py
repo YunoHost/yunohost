@@ -38,13 +38,13 @@ from typing import (
     Literal,
     Mapping,
     Type,
+    Union,
     cast,
     overload,
 )
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
-from moulinette.utils.filesystem import read_yaml, write_to_file
 from pydantic import (
     BaseModel,
     Extra,
@@ -58,9 +58,10 @@ from pydantic.fields import Field
 from pydantic.networks import EmailStr, HttpUrl
 from pydantic.types import constr
 
-from yunohost.log import OperationLogger
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.i18n import _value_for_locale
+from ..log import OperationLogger
+from ..utils.error import YunohostError, YunohostValidationError
+from ..utils.i18n import _value_for_locale
+from .file_utils import read_yaml, write_to_file
 
 if TYPE_CHECKING:
     from pydantic.fields import FieldInfo, ModelField
@@ -78,11 +79,13 @@ logger = getLogger("yunohost.form")
 # Those js-like evaluate functions are used to eval safely visible attributes
 # The goal is to evaluate in the same way than js simple-evaluate
 # https://github.com/shepherdwind/simple-evaluate
-def evaluate_simple_ast(node, context=None):
+def evaluate_simple_ast(
+    node: ast.Expression | ast.expr, context: dict[str, Any] | None = None
+) -> Any:
     if context is None:
         context = {}
 
-    operators = {
+    operators: dict[type, Callable[..., Any]] = {
         ast.Not: op.not_,
         ast.Mult: op.mul,
         ast.Div: op.truediv,  # number
@@ -170,7 +173,8 @@ def evaluate_simple_ast(node, context=None):
     # match function call
     elif isinstance(node, ast.Call) and node.func.__dict__.get("id") == "match":
         return re.match(
-            evaluate_simple_ast(node.args[1], context), context[node.args[0].id]
+            evaluate_simple_ast(node.args[1], context),
+            context[node.args[0].id],  # type: ignore
         )
 
     # Unauthorized opcode
@@ -181,7 +185,7 @@ def evaluate_simple_ast(node, context=None):
         )
 
 
-def js_to_python(expr):
+def js_to_python(expr: str) -> str:
     in_string = None
     py_expr = ""
     i = 0
@@ -211,11 +215,13 @@ def js_to_python(expr):
     return py_expr
 
 
-def evaluate_simple_js_expression(expr: str, context: dict[str, Any] = {}) -> bool:
+def evaluate_simple_js_expression(
+    expr: str, context: Mapping[str, Any] = {}
+) -> int | float | str | bool | None | re.Match[str]:
     if not expr.strip():
         return False
     node = ast.parse(js_to_python(expr), mode="eval").body
-    return evaluate_simple_ast(node, context)
+    return evaluate_simple_ast(node, context)  # type: ignore
 
 
 # ╭───────────────────────────────────────────────────────╮
@@ -323,7 +329,7 @@ class BaseOption(BaseModel):
     Options are fields declaration that renders as form items, button, alert or text in the web-admin and printed or prompted in CLI.
     They are used in app manifests to declare the before installation form and in config panels.
 
-    [Have a look at the app config panel doc](/packaging_config_panels) for details about Panels and Sections.
+    [Have a look at the app config panel doc](/packaging/advanced/config_panels) for details about Panels and Sections.
 
     ! IMPORTANT: as for Panels and Sections you have to choose an id, but this one should be unique in all this document, even if the question is in an other panel.
 
@@ -369,14 +375,12 @@ class BaseOption(BaseModel):
         - else the value will be stored as the whole content of the file
         - you can use `__FINALPATH__` or `__INSTALL_DIR__` in your path to point to dynamic install paths
           - FIXME are other global variables accessible?
-      - [refer to `bind` doc for explaination and examples](#read-and-write-values-the)
+      - [refer to `bind` doc for explaination and examples](/packaging/advanced/config_panels#the-bind-statement)
     """
 
     type: OptionType
     id: str
-    mode: Mode = (
-        "bash"  # TODO use "python" as default mode with AppConfigPanel setuping it to "bash"
-    )
+    mode: Mode = "bash"  # TODO use "python" as default mode with AppConfigPanel setuping it to "bash"
     ask: Translation | None
     readonly: bool = False
     visible: JSExpression | bool = True
@@ -409,7 +413,7 @@ class BaseOption(BaseModel):
     @validator("name")
     def apply_legacy_name(cls, value: str | None, values: Values) -> str:
         if value is None:
-            return values["id"]
+            return values["id"]  # type: ignore
         return value
 
     @validator("readonly", pre=True)
@@ -428,7 +432,7 @@ class BaseOption(BaseModel):
         if isinstance(self.visible, bool):
             return self.visible
 
-        return evaluate_simple_js_expression(self.visible, context=context)
+        return evaluate_simple_js_expression(self.visible, context=context)  # type: ignore
 
     def _get_prompt_message(self, value: None) -> str:
         # force type to str
@@ -530,7 +534,7 @@ class ButtonOption(BaseReadonlyOption):
     Renders as a `button` in the web-admin and can be called with `yunohost [app|domain|settings] action run <action_id>` in CLI.
 
     Every options defined in an action section (a config panel section with at least one `button`) is guaranted to be shown/asked to the user and available in `scripts/config`'s scope.
-    [check examples in advanced use cases](#actions).
+    [check examples in advanced use cases](/packaging/advanced/config_panels#actions).
 
     #### Example
 
@@ -574,7 +578,7 @@ class ButtonOption(BaseReadonlyOption):
         if isinstance(self.enabled, bool):
             return self.enabled
 
-        return evaluate_simple_js_expression(self.enabled, context=context)
+        return evaluate_simple_js_expression(self.enabled, context=context)  # type: ignore
 
 
 # ╭───────────────────────────────────────────────────────╮
@@ -628,13 +632,13 @@ class BaseInputOption(BaseOption):
         return value
 
     @staticmethod
-    def humanize(value: Any, option={}) -> str:
+    def humanize(value: Any, option: Union["BaseOption", dict[Any, Any]] = {}) -> str:
         if value is None:
             return ""
         return str(value)
 
     @staticmethod
-    def normalize(value, option={}):
+    def normalize(value: Any, option: Union["BaseOption", dict[Any, Any]] = {}) -> Any:
         if isinstance(value, str):
             value = value.strip()
         return value
@@ -648,7 +652,7 @@ class BaseInputOption(BaseOption):
         return self._annotation
 
     @property
-    def _validators(self) -> dict[str, Callable]:
+    def _validators(self) -> dict[str, Callable[[Any, "ModelField"], Any]]:
         return {
             "pre": self._value_pre_validator,
             "post": self._value_post_validator,
@@ -862,7 +866,7 @@ class PasswordOption(BaseInputOption):
                 )
 
             # If it's an optional argument the value should be empty or strong enough
-            from yunohost.utils.password import assert_password_is_strong_enough
+            from ..utils.password import assert_password_is_strong_enough
 
             assert_password_is_strong_enough("user", value)
 
@@ -893,14 +897,18 @@ class ColorOption(BaseInputOption):
     _annotation = Color
 
     @staticmethod
-    def humanize(value: Color | str | None, option={}) -> str:
+    def humanize(
+        value: Color | str | None, option: Union["BaseOption", dict[Any, Any]] = {}
+    ) -> str:
         if isinstance(value, Color):
             value.as_named(fallback=True)
 
         return super(ColorOption, ColorOption).humanize(value, option)
 
     @staticmethod
-    def normalize(value: Color | str | None, option={}) -> str:
+    def normalize(
+        value: Color | str | None, option: Union["BaseOption", dict[Any, Any]] = {}
+    ) -> str:
         if isinstance(value, Color):
             return value.as_hex()
 
@@ -913,7 +921,7 @@ class ColorOption(BaseInputOption):
         if isinstance(value, Color):
             return value.as_hex()
 
-        return super()._value_post_validator(value, field)
+        return super()._value_post_validator(value, field)  # type: ignore
 
 
 # ─ NUMERIC ───────────────────────────────────────────────
@@ -953,7 +961,9 @@ class NumberOption(BaseInputOption):
     _none_as_empty_str = False
 
     @staticmethod
-    def normalize(value, option={}) -> int | None:
+    def normalize(
+        value: Any, option: Union["BaseOption", dict[Any, Any]] = {}
+    ) -> int | None:
         if isinstance(value, int):
             return value
 
@@ -1023,13 +1033,13 @@ class BooleanOption(BaseInputOption):
     yes: Any = 1
     no: Any = 0
     default: bool | int | str | None = 0
-    _annotation = bool | int | str
+    _annotation = bool | int | str  # type: ignore
     _yes_answers: ClassVar[set[str]] = {"1", "yes", "y", "true", "t", "on"}
     _no_answers: ClassVar[set[str]] = {"0", "no", "n", "false", "f", "off"}
     _none_as_empty_str = False
 
     @staticmethod
-    def humanize(value, option={}) -> str:
+    def humanize(value: Any, option: Union["BaseOption", dict[Any, Any]] = {}) -> str:
         option = option.dict() if isinstance(option, BaseOption) else option
 
         yes = option.get("yes", 1)
@@ -1052,7 +1062,7 @@ class BooleanOption(BaseInputOption):
         )
 
     @staticmethod
-    def normalize(value, option={}) -> Any:
+    def normalize(value: Any, option: Union["BaseOption", dict[Any, Any]] = {}) -> Any:
         option = option.dict() if isinstance(option, BaseOption) else option
 
         if isinstance(value, str):
@@ -1064,12 +1074,12 @@ class BooleanOption(BaseInputOption):
         no_answers = BooleanOption._no_answers
         yes_answers = BooleanOption._yes_answers
 
-        assert (
-            str(technical_yes).lower() not in no_answers
-        ), f"'yes' value can't be in {no_answers}"
-        assert (
-            str(technical_no).lower() not in yes_answers
-        ), f"'no' value can't be in {yes_answers}"
+        assert str(technical_yes).lower() not in no_answers, (
+            f"'yes' value can't be in {no_answers}"
+        )
+        assert str(technical_no).lower() not in yes_answers, (
+            f"'no' value can't be in {yes_answers}"
+        )
 
         no_answers.add(str(technical_no).lower())
         yes_answers.add(str(technical_yes).lower())
@@ -1091,7 +1101,7 @@ class BooleanOption(BaseInputOption):
             choices="yes/no",
         )
 
-    def get(self, key, default=None):
+    def get(self, key: str, default: Any = None) -> Any:
         return getattr(self, key, default)
 
     def _get_field_attrs(self) -> dict[str, Any]:
@@ -1102,7 +1112,7 @@ class BooleanOption(BaseInputOption):
         }
         return attrs
 
-    def _get_prompt_message(self, value: bool | None) -> str:
+    def _get_prompt_message(self, value: Any) -> str:
         message = super()._get_prompt_message(value)
 
         if not self.readonly:
@@ -1153,7 +1163,7 @@ class DateOption(BaseInputOption):
         if isinstance(value, datetime.date):
             return value.isoformat()
 
-        return super()._value_post_validator(value, field)
+        return super()._value_post_validator(value, field)  # type: ignore
 
 
 class TimeOption(BaseInputOption):
@@ -1187,7 +1197,7 @@ class TimeOption(BaseInputOption):
             # FIXME could use `value.isoformat()` to get `%H:%M:%S`
             return value.strftime("%H:%M")
 
-        return super()._value_post_validator(value, field)
+        return super()._value_post_validator(value, field)  # type: ignore
 
 
 # ─ LOCATIONS ─────────────────────────────────────────────
@@ -1238,7 +1248,7 @@ class WebPathOption(BaseStringOption):
     type: Literal[OptionType.path] = OptionType.path
 
     @staticmethod
-    def normalize(value, option={}) -> str:
+    def normalize(value: Any, option: Union["BaseOption", dict[Any, Any]] = {}) -> str:
         option = option.dict() if isinstance(option, BaseOption) else option
 
         if value is None:
@@ -1296,7 +1306,7 @@ class URLOption(BaseStringOption):
         if isinstance(value, HttpUrl):
             return str(value)
 
-        return super()._value_post_validator(value, field)
+        return super()._value_post_validator(value, field)  # type: ignore
 
 
 # ─ FILE ──────────────────────────────────────────────────
@@ -1334,7 +1344,7 @@ class FileOption(BaseInputOption):
     _upload_dirs: ClassVar[set[str]] = set()
 
     @property
-    def _validators(self) -> dict[str, Callable]:
+    def _validators(self) -> dict[str, Callable[[Any, "ModelField"], Any]]:
         return {
             "pre": self._value_pre_validator,
             "post": (
@@ -1416,7 +1426,7 @@ class FileOption(BaseInputOption):
         return file_path
 
     @classmethod
-    def _python_value_post_validator(cls, value: Any, field: "ModelField") -> str:
+    def _python_value_post_validator(cls, value: str, field: "ModelField") -> str:
         """File handling for "python" config panels"""
 
         import hashlib
@@ -1457,7 +1467,9 @@ class BaseChoicesOption(BaseInputOption):
     # choices: dict[str, Any] | list[Any] | None
 
     @validator("choices", pre=True, check_fields=False)
-    def parse_comalist_choices(value: Any) -> dict[str, Any] | list[Any] | None:
+    def parse_comalist_choices(
+        value: str | dict[str, Any] | list[Any] | None,
+    ) -> dict[str, Any] | list[Any] | None:
         if isinstance(value, str):
             values = [value.strip() for value in value.split(",")]
             return [value for value in values if value]
@@ -1465,9 +1477,10 @@ class BaseChoicesOption(BaseInputOption):
 
     @property
     def _dynamic_annotation(self) -> object | Type[str]:
-        if self.choices is not None:
+        # The bunch of type: ignore is because self.choices is not defined...
+        if self.choices is not None:  # type: ignore
             choices = (
-                self.choices if isinstance(self.choices, list) else self.choices.keys()
+                self.choices if isinstance(self.choices, list) else self.choices.keys()  # type: ignore
             )
             return Literal[tuple(choices)]
 
@@ -1477,18 +1490,18 @@ class BaseChoicesOption(BaseInputOption):
         message = super()._get_prompt_message(value)
 
         if self.readonly:
-            if isinstance(self.choices, dict) and value is not None:
-                value = self.choices[value]
+            if isinstance(self.choices, dict) and value is not None:  # type: ignore
+                value = self.choices[value]  # type: ignore
 
             return f"{colorize(message, 'purple')} {value}"
 
-        if self.choices:
+        if self.choices:  # type: ignore
             # Prevent displaying a shitload of choices
             # (e.g. 100+ available users when choosing an app admin...)
             choices = (
-                list(self.choices.keys())
-                if isinstance(self.choices, dict)
-                else self.choices
+                list(self.choices.keys())  # type: ignore
+                if isinstance(self.choices, dict)  # type: ignore
+                else self.choices  # type: ignore
             )
             splitted_choices = choices[:20]
             remaining_choices = len(choices[20:])
@@ -1574,7 +1587,9 @@ class TagsOption(BaseChoicesOption):
     _annotation = str
 
     @staticmethod
-    def humanize(value, option={}) -> str:
+    def humanize(
+        value: str | list[str] | None, option: Union["BaseOption", dict[Any, Any]] = {}
+    ) -> str:
         if isinstance(value, list):
             return ",".join(str(v) for v in value)
         if not value:
@@ -1582,7 +1597,9 @@ class TagsOption(BaseChoicesOption):
         return value
 
     @staticmethod
-    def normalize(value, option={}) -> str:
+    def normalize(
+        value: list[str] | str | None, option: Union["BaseOption", dict[Any, Any]] = {}
+    ) -> str:
         if isinstance(value, list):
             return ",".join(str(v) for v in value)
         if isinstance(value, str):
@@ -1613,7 +1630,7 @@ class TagsOption(BaseChoicesOption):
 
     @classmethod
     def _value_pre_validator(
-        cls, value: list | str | None, field: "ModelField"
+        cls, value: list[str] | str | None, field: "ModelField"
     ) -> str | None:
         if value is None or value == "":
             return None
@@ -1674,7 +1691,7 @@ class DomainOption(BaseChoicesOption):
         cls, value: dict[str, str] | None, values: Values
     ) -> dict[str, str]:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        from yunohost.domain import domain_list
+        from ..domain import domain_list
 
         data = domain_list()
         return {
@@ -1685,12 +1702,12 @@ class DomainOption(BaseChoicesOption):
     @validator("default", pre=True, always=True)
     def inject_default(cls, value: str | None, values: Values) -> str | None:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        from yunohost.domain import _get_maindomain
+        from ..domain import _get_maindomain
 
         return _get_maindomain()
 
     @staticmethod
-    def normalize(value, option={}) -> str:
+    def normalize(value: str, option: Union["BaseOption", dict[Any, Any]] = {}) -> str:
         if value.startswith("https://"):
             value = value[len("https://") :]
         elif value.startswith("http://"):
@@ -1731,9 +1748,13 @@ class AppOption(BaseChoicesOption):
         cls, value: dict[str, str] | None, values: Values
     ) -> dict[str, str]:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        from yunohost.app import app_list
+        from ..app import app_list
 
-        apps = app_list(full=True)["apps"]
+        apps = app_list()["apps"]
+
+        # Trick to avoid adding full=True to app_list() which is disastrous for performances
+        for app in apps:
+            app["is_webapp"] = bool(app.get("domain_path"))
 
         if values.get("filter", None):
             apps = [
@@ -1745,7 +1766,7 @@ class AppOption(BaseChoicesOption):
         value = {"_none": "---"}
         value.update(
             {
-                app["id"]: f"{app['label']} ({app.get('domain_path', app['id'])})"
+                app["id"]: f"{app['name']} ({app.get('domain_path', app['id'])})"
                 for app in apps
             }
         )
@@ -1778,7 +1799,7 @@ class UserOption(BaseChoicesOption):
     @root_validator(pre=True)
     def inject_users_choices_and_default(cls, values: Values) -> Values:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        from yunohost.user import user_list
+        from ..user import user_list
 
         users = user_list(fields=["username", "fullname", "mail", "groups"])["users"]
 
@@ -1834,11 +1855,11 @@ class GroupOption(BaseChoicesOption):
         cls, value: dict[str, str] | None, values: Values
     ) -> dict[str, str]:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        from yunohost.user import user_group_list
+        from ..user import user_group_list
 
         groups = list(user_group_list(include_primary_groups=False)["groups"].keys())
 
-        def _human_readable_group(groupname):
+        def _human_readable_group(groupname: str) -> str:
             # i18n: visitors
             # i18n: all_users
             # i18n: admins
@@ -1950,7 +1971,7 @@ class OptionsModel(BaseModel):
 
         return options_list
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(options=self.options_dict_to_list(kwargs))
 
     def translate_options(self, i18n_key: str | None = None) -> None:
@@ -2061,7 +2082,7 @@ def parse_prefilled_values(
     values: Values = {}
     if args_file:
         # Import YAML / JSON file
-        values |= read_yaml(args_file)
+        values |= read_yaml(args_file)  # type: ignore[arg-type]
     if args:
         # FIXME See `ask_questions_and_parse_answers`
         parsed = getattr(urllib.parse, method)(args, keep_blank_values=True)
@@ -2102,7 +2123,6 @@ def prompt_or_validate_form(
     hooks: Hooks = {},
 ) -> FormModel:
     for option in options:
-
         interactive = Moulinette.interface.type == "cli" and os.isatty(1)
 
         if isinstance(option, ButtonOption):
@@ -2194,7 +2214,12 @@ def prompt_or_validate_form(
                         and "regex" in err["type"]
                         and option.pattern is not None
                     ):
-                        err_text = option.pattern.error
+                        _error = option.pattern.error
+                        err_text = (
+                            _error
+                            if isinstance(_error, str)
+                            else _value_for_locale(_error)
+                        )
                     else:
                         err_text = m18n.n(
                             f"pydantic.{err['type']}".replace(".", "_"), **ctx
@@ -2237,7 +2262,7 @@ def prompt_or_validate_form(
 
 def ask_questions_and_parse_answers(
     raw_options: dict[str, Any],
-    prefilled_answers: str | Mapping[str, Any] = {},
+    prefilled_answers: str | Mapping[str, Any] | None = {},
     current_values: Mapping[str, Any] = {},
     hooks: Hooks = {},
 ) -> tuple[list[AnyOption], FormModel]:
@@ -2300,6 +2325,7 @@ def parse_raw_options(
     model.translate_options()
 
     if serialize:
-        return model.dict()["options"]
+        result: list[dict[str, Any]] | list[AnyOption] = model.dict()["options"]
+        return result
 
     return model.options

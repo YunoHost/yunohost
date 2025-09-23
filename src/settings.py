@@ -21,32 +21,32 @@
 import os
 import subprocess
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Union, Callable
+from typing import TYPE_CHECKING, Any, Callable, Union
 
 from moulinette import m18n
 
-from yunohost.firewall import firewall_reload
-from yunohost.log import is_unit_operation
-from yunohost.regenconf import regen_conf
-from yunohost.utils.configpanel import ConfigPanel, parse_filter_key
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.form import BaseOption
+from .firewall import firewall_reload
+from .log import is_unit_operation
+from .regenconf import regen_conf
+from .utils.configpanel import ConfigPanel, parse_filter_key
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.form import BaseOption
 
 if TYPE_CHECKING:
     from typing import cast
 
-    from moulinette.utils.log import MoulinetteLogger
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
-    from yunohost.log import OperationLogger
-    from yunohost.utils.configpanel import (
+    from .log import OperationLogger
+    from .utils.configpanel import (
         ConfigPanelGetMode,
         ConfigPanelModel,
         RawSettings,
     )
-    from yunohost.utils.form import FormModel
+    from .utils.form import FormModel
+    from .utils.logging import YunohostLogger
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.settings"))
+    logger = cast(YunohostLogger, getLogger("yunohost.settings"))
 else:
     logger = getLogger("yunohost.settings")
 
@@ -210,7 +210,7 @@ class SettingsConfigPanel(ConfigPanel):
 
         # Specific logic for virtual setting "passwordless_sudo"
         try:
-            from yunohost.utils.ldap import _get_ldap_interface
+            from .utils.ldap import _get_ldap_interface
 
             ldap = _get_ldap_interface()
             raw_settings["passwordless_sudo"] = "!authenticate" in ldap.search(
@@ -236,17 +236,17 @@ class SettingsConfigPanel(ConfigPanel):
             if root_password != root_password_confirm:
                 raise YunohostValidationError("password_confirmation_not_the_same")
 
-            from yunohost.tools import tools_rootpw
+            from .tools import tools_rootpw
 
             tools_rootpw(root_password, check_strength=True)
 
         if passwordless_sudo is not None:
-            from yunohost.utils.ldap import _get_ldap_interface
+            from .utils.ldap import _get_ldap_interface
 
             ldap = _get_ldap_interface()
             ldap.update(
                 "cn=admins,ou=sudo",
-                {"sudoOption": "!authenticate" if passwordless_sudo else set()},
+                {"sudoOption": "!authenticate" if passwordless_sudo else []},
             )
 
         # First save settings except virtual + default ones
@@ -304,9 +304,12 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 
 
 @post_change_hook("portal_theme")
+@post_change_hook("portal_allow_edit_email")
+@post_change_hook("portal_allow_edit_email_alias")
+@post_change_hook("portal_allow_edit_email_forward")
 def regen_ssowatconf(setting_name, old_value, new_value):
     if old_value != new_value:
-        from yunohost.app import app_ssowatconf
+        from .app import app_ssowatconf
 
         app_ssowatconf()
 
@@ -357,7 +360,6 @@ def reconfigure_postfix(setting_name, old_value, new_value):
 
 @post_change_hook("pop3_enabled")
 def reconfigure_dovecot(setting_name, old_value, new_value):
-
     environment = os.environ.copy()
     environment.update({"DEBIAN_FRONTEND": "noninteractive"})
 

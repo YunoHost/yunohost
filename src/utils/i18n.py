@@ -21,7 +21,7 @@
 from moulinette import m18n
 
 
-def _value_for_locale(values):
+def _value_for_locale(values: str | dict[str, str]) -> str:
     """
     Return proper value for current locale
 

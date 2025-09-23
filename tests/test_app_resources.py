@@ -20,15 +20,14 @@
 
 import os
 import tempfile
-
-import pytest
-from moulinette.utils.process import check_output
 from subprocess import check_call
 
+import pytest
 from yunohost.app import app_setting
 from yunohost.domain import _get_maindomain
 from yunohost.firewall import firewall_list
 from yunohost.permission import permission_delete, user_permission_list
+from yunohost.utils.process import check_output
 from yunohost.utils.resources import (
     AppResource,
     AppResourceClassesByType,
@@ -422,7 +421,6 @@ def test_resource_permissions():
 
 
 def test_resource_nodejs():
-
     manager = AppResourceManager(
         "testapp",
         current={},
@@ -462,7 +460,6 @@ def test_resource_nodejs():
 
 
 def test_resource_ruby():
-
     os.system("echo '[integration]' >> /etc/yunohost/apps/testapp/manifest.toml")
     os.system(
         "echo 'helpers_version = \"2.1\"' >> /etc/yunohost/apps/testapp/manifest.toml"
@@ -532,7 +529,6 @@ def test_resource_ruby():
 
 
 def test_resource_go():
-
     os.system("echo '[integration]' >> /etc/yunohost/apps/testapp/manifest.toml")
     os.system(
         "echo 'helpers_version = \"2.1\"' >> /etc/yunohost/apps/testapp/manifest.toml"
@@ -586,7 +582,6 @@ def test_resource_go():
 
 
 def test_resource_composer():
-
     os.system("echo '[integration]' >> /etc/yunohost/apps/testapp/manifest.toml")
     os.system(
         "echo 'helpers_version = \"2.1\"' >> /etc/yunohost/apps/testapp/manifest.toml"

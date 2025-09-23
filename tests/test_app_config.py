@@ -25,8 +25,6 @@ import shutil
 import pytest
 from mock import patch
 from moulinette import Moulinette
-from moulinette.utils.filesystem import read_file
-
 from yunohost.app import (
     _is_installed,
     app_config_get,
@@ -39,6 +37,7 @@ from yunohost.app import (
 from yunohost.domain import _get_maindomain
 from yunohost.user import user_create, user_delete
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.file_utils import read_file
 
 from .conftest import get_test_apps_dir
 
@@ -162,9 +161,11 @@ def test_app_config_regular_setting(config_app):
     assert app_config_get(config_app, "main.components.boolean") == 1
     assert app_setting(config_app, "boolean") == "1"
 
-    with pytest.raises(YunohostValidationError), patch.object(
-        os, "isatty", return_value=False
-    ), patch.object(Moulinette, "prompt", return_value="pwet"):
+    with (
+        pytest.raises(YunohostValidationError),
+        patch.object(os, "isatty", return_value=False),
+        patch.object(Moulinette, "prompt", return_value="pwet"),
+    ):
         app_config_set(config_app, "main.components.boolean", "pwet")
 
 
