@@ -283,6 +283,9 @@ class AppResourceManager:
                     continue
                 logger.debug(f"Loading resource {type_}.{key}")
                 ResourceClass.validate_properties_from_package(**values)
+                # Boring hack because apt needs a version number for the virtual dependency
+                if type_ == "apt":
+                    values["version"] = manifest.get("version", "0.0").split("~")[0]
                 yield ResourceClass(
                     **values,
                     id=key,
@@ -1336,6 +1339,7 @@ class AptDependenciesAppResource(AppResource):
     type = "apt"
     multi = False
 
+    version: str  # Automatically taken from the manifest
     packages: List[str] = []
     packages_for_build_only: List[str] = []
     if_bookworm: List[str] = []
@@ -1412,42 +1416,20 @@ class AptDependenciesAppResource(AppResource):
 
     def provision_or_update(self) -> None:
 
-        if self.helpers_version >= 2.1:
-            ynh_apt_install_dependencies = "ynh_apt_install_dependencies"
-            ynh_apt_install_dependencies_from_extra_repository = (
-                "ynh_apt_install_dependencies_from_extra_repository"
-            )
-        else:
-            ynh_apt_install_dependencies = "ynh_install_app_dependencies"
-            ynh_apt_install_dependencies_from_extra_repository = (
-                "ynh_install_extra_app_dependencies"
-            )
+        from .apt import apt_install_dependencies, apt_install_dependencies_from_extra_repository
 
-        script = ""
-        if self.packages:
-            script += " ".join([ynh_apt_install_dependencies, *self.packages])
+        apt_install_dependencies(app=self.app, version=self.version, packages=self.packages)
         for repo, values in self.extras.items():
-            script += "\n" + " ".join(
-                [
-                    ynh_apt_install_dependencies_from_extra_repository,
-                    f"--repo='{values['repo']}'",
-                    f"--key='{values['key']}'",
-                    f"--package='{' '.join(values['packages'])}'",
-                ]
-            )
-            # FIXME : we're feeding the raw value of values['packages'] to the helper ..
-            # if we want to be consistent, may they should be comma-separated,
-            # though in the majority of cases, only a single package is installed from an extra repo..
-
-        self._run_script("provision_or_update", script)
+            url: str = values["repo"]  # type: ignore[assignment]
+            key: str = values["key"]  # type: ignore[assignment]
+            packages = values['packages']
+            if isinstance(packages, str):
+                packages = [packages]
+            apt_install_dependencies_from_extra_repository(app=self.app, version=self.version, packages=packages, repo=url, key=key)
 
     def deprovision(self) -> None:
-        if self.helpers_version >= 2.1:
-            ynh_apt_remove_dependencies = "ynh_apt_remove_dependencies"
-        else:
-            ynh_apt_remove_dependencies = "ynh_remove_app_dependencies"
-
-        self._run_script("deprovision", ynh_apt_remove_dependencies)
+        from .apt import apt_remove_dependencies
+        apt_remove_dependencies(app=self.app)
 
 
 class PortsResource(AppResource):
