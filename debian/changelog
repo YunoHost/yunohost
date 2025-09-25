@@ -1,3 +1,22 @@
+yunohost (13.0.0~alpha1) unstable; urgency=low
+
+  - FIXME: remove conflicts with trixie package verisons (493c8534d)
+  - Upgrade to Pydantic v2 (#2001)
+  - Drop support for packaging v1 (a736988bf)
+  - Set Python version to 3.13 for Trixie (e18471ebb)
+  - conf-regen: apt: Refactorize with conf files (57fc4b51c)
+  - conf: Use repo.yunohost.org (f15aad34d)
+  - Bump PostgreSQL to v17 (#2155)
+  - Update Nginx configuration for 1.26 (5cba66bb4)
+  - Replace mysqlshow, mysqldump with mariadb-show, mariadb-dump (7f2f5f7a2)
+  - Replace spwd with direct call to passwd. (f8b65301a)
+  - conf: dovecot: Fix, 2.4.0 expects dovecot_config_version (70080847f)
+  - Update dovecot config for Trixie / dovecot 2.4 (a1082f34d)
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, alexAubin, axolotle, Florent, Salamandar, Thomas, tituspijean)
+
+ -- Félix Piédallu <felix@piedallu.me>  Thu, 25 Sep 2025 20:41:48 +0200
+
 yunohost (12.1.24) stable; urgency=low
 
   - firewall: only call open_port(ssh) when it's closed to prevent overriding comment (f6d08477c)
