@@ -43,6 +43,7 @@ trap cleanup EXIT SIGINT
 
 export YNH_STDINFO=1
 export YNH_ARCH=$(dpkg --print-architecture)
+export YNH_J2_FILTERS_FILE_PATH="$(python3 <<< 'from yunohost.utils import jinja_filters; print(jinja_filters.__file__)')"
 
 # Dummy http server, to serve archives for ynh_setup_source
 HTTPSERVER_DIR=$(mktemp -d)
@@ -52,8 +53,13 @@ python3 -m http.server $HTTPSERVER_PORT --bind 127.0.0.1 &>/dev/null &
 HTTPSERVER="$!"
 popd >/dev/null
 
-VAR_WWW=$(mktemp -d)/var/www
+tmp_root=$(mktemp -d)
+VAR_WWW="$tmp_root/var/www"
 mkdir -p "$VAR_WWW"
+# Allow $app user to access to $VAR_WWW
+chmod o+rx -R "$tmp_root"
+mkdir -p /etc/yunohost/apps/ynhtest
+echo 'id: ynhtest' > /etc/yunohost/apps/ynhtest/settings.yml
 
 # Needed to check the permission behavior in ynh_add_config x_x
 getent passwd ynhtest &>/dev/null || useradd --system ynhtest
@@ -91,7 +97,9 @@ run_test() {
 for TEST in $TESTS; do
     log_test "$TEST"
 
-    if run_test "$TEST" > ./test.log 2>&1; then
+    run_test "$TEST" > ./test.log 2>&1
+    result=$?
+    if [ $result -eq 0 ]; then
         log_passed
     else
         echo -e "\n----------"

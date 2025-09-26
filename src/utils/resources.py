@@ -1790,7 +1790,7 @@ class RubyAppResource(AppResource):
             "libyaml-dev",
             "zlib1g-dev",
         ]:
-            if os.system(f'dpkg --list | grep -q "^ii  {package}"') != 0:
+            if os.system(f'dpkg --list | grep -q "^ii\\s*{package}"') != 0:
                 raise YunohostValidationError(f"{package} is required to install Ruby")
 
         self.update_rbenv()
@@ -1809,7 +1809,7 @@ class RubyAppResource(AppResource):
             # Use half of available CPUs for compiling
             # The trick with 1 + ...  -1 is to prevent having '0' when there's only one CPU available.
             NB_CPU_TO_USE="$(( 1 + ($(grep -c ^processor /proc/cpuinfo) - 1) / 2 ))"
-            export MAKE_OPTS="-j$(NB_CPU_TO_USE)"
+            export MAKE_OPTS="-j$NB_CPU_TO_USE"
             {self.rbenv} install --skip-existing '{ruby_version}' 2>&1
             if {self.rbenv} alias --list | grep --quiet '{self.app} '; then
                 {self.rbenv} alias {self.app} --remove

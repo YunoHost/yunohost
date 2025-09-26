@@ -618,6 +618,9 @@ def _sync_permissions_with_ldap() -> None:
     Sychronize the 'memberUid' / 'inheritPermission' attributes in the ldap permission object
     according to the group members and permission "allowed" info from app settings (from user_permission_list)
     """
+
+    _garbarge_collect_permissions_for_nonexistent_users()
+
     from .utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
@@ -856,22 +859,26 @@ def _update_app_permission_setting(
 
 
 def _get_system_perms() -> dict[str, SystemPermInfos]:
-    system_perm_conf: dict[str, SystemPermInfos]
+    raw_system_perm_conf: dict[str, SystemPermInfos]
     try:
-        system_perm_conf = read_yaml(SYSTEM_PERM_CONF) or {}  # type: ignore[assignment]
-        assert isinstance(system_perm_conf, dict), (
+        raw_system_perm_conf = read_yaml(SYSTEM_PERM_CONF) or {}  # type: ignore[assignment]
+        assert isinstance(raw_system_perm_conf, dict), (
             "Uhoh, the system perm conf read is not a dict ?!"
         )
     except Exception as e:
         logger.warning(f"Failed to read system perm configuration ? : {e}")
-        system_perm_conf = {}
+        raw_system_perm_conf = {}
 
-    for p, infos in system_perm_conf.items():
+    system_perm_conf: dict[str, SystemPermInfos] = {}
+    for p, infos in raw_system_perm_conf.items():
         if p not in SYSTEM_PERMS.keys():
-            logger.warning("Ignoring unexpected key '{p}' in system perm conf")
-            del system_perm_conf[p]
+            logger.warning(
+                f"Ignoring unexpected key '{p}' in system perm conf {SYSTEM_PERM_CONF}"
+            )
+            continue
         if "allowed" not in infos:
             infos["allowed"] = []
+        system_perm_conf[p] = infos
 
     # Try to have a failsafe to keep admins allowed for ssh access and mail
     # when the conf is broken for some reason...
@@ -1020,3 +1027,26 @@ def _validate_and_sanitize_permission_url(
     _assert_no_conflicting_apps(domain, path, ignore_app=app)
 
     return sanitized_url
+
+
+def _garbarge_collect_permissions_for_nonexistent_users() -> None:
+    # automatically remove user/groups from the "allowed" info when they
+    # somehow disappeared from the system (for example this may happen when
+    # restoring an app on which not all the user/group exist)
+
+    from .app import app_setting
+    from .user import user_group_list
+    from .utils.app_utils import _installed_apps
+
+    all_existing_groups = user_group_list()["groups"].keys()
+    for app in _installed_apps():
+        perm_settings = app_setting(app, "_permissions") or {}
+        assert isinstance(perm_settings, dict)
+        for subperm, infos in perm_settings.items():
+            for group in infos.get("allowed") or []:
+                if group not in all_existing_groups:
+                    logger.debug(
+                        f"Removing {group} from {app}.{subperm} permission because this user or group doesn't exist (anymore?)"
+                    )
+                    infos["allowed"].remove(group)
+        app_setting(app, "_permissions", perm_settings)

@@ -490,6 +490,14 @@ def _list_apps_with_upgrade_infos(
         except Exception as e:
             logger.error(f"Failed to read info for {app_id} : {e}", exc_info=True)
             continue
+        if app_info_dict["upgrade"]["status"] == "up_to_date":
+            continue
+        if app_info_dict["upgrade"]["requirements"]:
+            app_info_dict["upgrade"]["requirements"] = {
+                k: r
+                for k, r in app_info_dict["upgrade"]["requirements"].items()
+                if not r["passed"]
+            }
         if "settings" in app_info_dict:
             del app_info_dict["settings"]
 
@@ -706,6 +714,7 @@ def tools_basic_space_cleanup() -> None:
     apt autoclean
     journalctl vacuum (leaves 50M of logs)
     archived logs removal
+    yunohost logs removal
     """
     subprocess.run("apt autoremove && apt autoclean", shell=True)
     subprocess.run("journalctl --vacuum-size=50M", shell=True)
@@ -713,6 +722,11 @@ def tools_basic_space_cleanup() -> None:
     subprocess.run("rm /var/log/*/*.gz", shell=True)
     subprocess.run("rm /var/log/*.?", shell=True)
     subprocess.run("rm /var/log/*/*.?", shell=True)
+    subprocess.run(
+        "find /var/log/yunohost/operations/ -type f,l -mtime +90 -execdir rm {} +",
+        shell=True,
+    )
+
 def tools_clean_old_kernels() -> None:
     # Removing kernel except last one
     uname_output = subprocess.run("uname -r", capture_output=True, text=True, shell=True)
@@ -1053,7 +1067,9 @@ def _tools_migrations_run_after_system_restore(backup_version: str) -> None:
                 raise
 
 
-def _tools_migrations_run_before_app_restore(backup_version, app_id):
+def _tools_migrations_run_before_app_restore(
+    backup_version, app_id, app_backup_in_archive
+):
     all_migrations = _get_migrations_list()
 
     current_version = version.parse(ynh_packages_version()["yunohost"]["version"])
@@ -1070,7 +1086,7 @@ def _tools_migrations_run_before_app_restore(backup_version, app_id):
         ):
             try:
                 logger.info(m18n.n("migrations_running_forward", id=migration.id))
-                migration.run_before_app_restore(app_id)
+                migration.run_before_app_restore(app_id, app_backup_in_archive)
             except Exception as e:
                 msg = m18n.n(
                     "migrations_migration_has_failed", exception=e, id=migration.id
@@ -1084,31 +1100,33 @@ class Migration:
 
     state: Literal["pending", "done", "skipped"] | None = None
     mode: Literal["auto", "manual"] = "auto"
-    dependencies: list[
-        str
-    ] = []  # List of migration ids required before running this migration
+    # List of migration ids required before running this migration
+    dependencies: list[str] = []
+
+    # For migrations that have @ldap_migration
+    ldap_migration_started = False
 
     @property
-    def disclaimer(self):
+    def disclaimer(self) -> str | None:
         return None
 
-    def run(self):
+    def run(self) -> None:
         raise NotImplementedError()
 
     # The followings shouldn't be overridden
 
-    def __init__(self, id_) -> None:
+    def __init__(self, id_: str) -> None:
         self.id = id_
         self.number = int(self.id.split("_", 1)[0])
         self.name = self.id.split("_", 1)[1]
 
     @property
     def description(self) -> str:
-        return m18n.n(f"migration_description_{self.id}")
+        return m18n.n(f"migration_description_{self.id}")  # type: ignore
 
     @staticmethod
-    def ldap_migration(run) -> Callable:
-        def func(self) -> None:
+    def ldap_migration(run: Callable[[Any, str], None]) -> Callable[[Any], None]:
+        def func(self: "Migration") -> None:
             # Backup LDAP before the migration
             logger.info(m18n.n("migration_ldap_backup_before_migration"))
             try:

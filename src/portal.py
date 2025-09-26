@@ -77,9 +77,9 @@ def _get_portal_settings(
         "portal_title": "YunoHost",
         "show_other_domains_apps": True,
         "domain": domain,
-        "allow_edit_email": False,
-        "allow_edit_email_alias": False,
-        "allow_edit_email_forward": False,
+        "portal_allow_edit_email": False,
+        "portal_allow_edit_email_alias": False,
+        "portal_allow_edit_email_forward": False,
     }
 
     portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{domain}.json")
@@ -219,7 +219,7 @@ def portal_update(
     new_mails = current_user["mail"]
 
     if mail is not None:
-        is_allowed_to_edit_main_email = portal_settings["allow_edit_email"]
+        is_allowed_to_edit_main_email = portal_settings["portal_allow_edit_email"]
         if not is_allowed_to_edit_main_email:
             raise YunohostValidationError("mail_edit_operation_unauthorized")
 
@@ -244,7 +244,7 @@ def portal_update(
         new_attr_dict["mail"] = new_mails
 
     if mailalias is not None:
-        is_allowed_to_edit_mail_alias = portal_settings["allow_edit_email_alias"]
+        is_allowed_to_edit_mail_alias = portal_settings["portal_allow_edit_email_alias"]
         if not is_allowed_to_edit_mail_alias:
             raise YunohostValidationError("mail_edit_operation_unauthorized")
 
@@ -279,7 +279,9 @@ def portal_update(
         new_attr_dict["mail"] = mails
 
     if mailforward is not None:
-        is_allowed_to_edit_mail_forward = portal_settings["allow_edit_email_forward"]
+        is_allowed_to_edit_mail_forward = portal_settings[
+            "portal_allow_edit_email_forward"
+        ]
         if not is_allowed_to_edit_mail_forward:
             raise YunohostValidationError("mail_edit_operation_unauthorized")
 
