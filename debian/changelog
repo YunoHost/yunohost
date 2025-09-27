@@ -1,4 +1,4 @@
-yunohost (13.0.0+alpha1) unstable; urgency=low
+yunohost (13.0.0.alpha1) unstable; urgency=low
 
   - FIXME: remove conflicts with trixie package verisons (493c8534d)
   - Upgrade to Pydantic v2 (#2001)
