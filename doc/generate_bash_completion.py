@@ -41,7 +41,10 @@ YUNOHOST_SRCDIR = Path(__file__).resolve().parent.parent
 
 def render(actions: dict[str, Any]) -> str:
     template_file = YUNOHOST_SRCDIR / "doc" / "bash_completion.sh.j2"
-    template = Template(template_file.read_text(), comment_start_string="disabled because bash contains {#")
+    template = Template(
+        template_file.read_text(),
+        comment_start_string="disabled because bash contains {#",
+    )
 
     result = template.render(
         categories=actions,
