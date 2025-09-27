@@ -37,6 +37,10 @@ do_pre_regen() {
     touch "${pending_dir}/etc/apt/sources.list.d/extra_php_version.list"
     touch "${pending_dir}/etc/apt/sources.list.d/yarn.list"
 
+    # Yarn repository was deleted
+    touch "${pending_dir}/etc/apt/preferences.d/yarn"
+    touch "${pending_dir}/etc/apt/sources.list.d/yarn.sources"
+
     # Copy the configuration files
     cp /usr/share/yunohost/conf/apt/preferences.d/* "${pending_dir}/etc/apt/preferences.d"
     cp /usr/share/yunohost/conf/apt/sources.list.d/* "${pending_dir}/etc/apt/sources.list.d"
@@ -71,8 +75,10 @@ do_post_regen() {
     # because we don't want the regenconf to fuck everything up if the regenconf
     # runs while the network is down
     _update_key "https://packages.sury.org/php/apt.gpg" "/etc/apt/trusted.gpg.d/extra_php_version.gpg"
-    _update_key "https://dl.yarnpkg.com/debian/pubkey.gpg" "/etc/apt/trusted.gpg.d/yarn.gpg"
     _update_key "https://repo.yunohost.org/keys/yunohost_trixie.asc" "/etc/apt/trusted.gpg.d/yunohost-trixie.gpg"
+
+    # Delete legacy Yarn repository key
+    rm -f "/etc/apt/trusted.gpg.d/yarn.gpg"
 
     # Make sure php7.4 is the default version when using php in cli
     if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION; then

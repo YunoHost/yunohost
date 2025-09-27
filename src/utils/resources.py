@@ -1259,16 +1259,33 @@ class AptDependenciesAppResource(AppResource):
             key: values for key, values in self.extras.items() if values["packages"]
         }
 
-        # Yarn repository is now provided by the core.
-        # Let's "move" any extra apt resources depending on yarn to the standard packages list.
+        # Yarn classic repository is deprecated, see https://classic.yarnpkg.com/lang/en/docs/install
+        # Let's forbid packages to add Yarn repository or apt dependency.
+        yarn_seen = False
+
+        if "yarn" in self.packages:
+            yarn_seen = True
+            self.packages.remove("yarn")
+
         for key in list(self.extras.keys()):
-            if self.extras[key][
-                "repo"
-            ] == "deb https://dl.yarnpkg.com/debian/ stable main" and self.extras[key][
+            yarn_repo = "deb https://dl.yarnpkg.com/debian/ stable main"
+            if self.extras[key]["repo"] == yarn_repo and self.extras[key][
                 "packages"
             ] == ["yarn"]:
-                self.packages.append("yarn")
+                yarn_seen = True
                 del self.extras[key]
+
+        if yarn_seen:
+            logger.warning(
+                "App depends on Yarn via APT, but this is not supported anymore."
+            )
+            logger.warning(
+                "Operation will most likely fail. You need to manually install Yarn before retrying."
+            )
+            logger.warning(
+                "Continuing, but this will become a hard error in the future..."
+            )
+            # raise YunohostError("App depends on Yarn via APT, but this is not supported anymore.")
 
     def provision_or_update(self, context: Dict = {}):
         if self.helpers_version >= 2.1:
