@@ -1,5 +1,0 @@
-Types: deb
-URIs: https://dl.yarnpkg.com/debian/
-Suites: stable
-Components: main
-Signed-By: /etc/apt/trusted.gpg.d/yarn.gpg
