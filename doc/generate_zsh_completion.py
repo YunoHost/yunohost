@@ -648,7 +648,7 @@ def render_zsh(categories: list[Category], functions: list[Function]) -> str:
     template = Template(
         template_file.read_text(),
         keep_trailing_newline=True,
-        comment_start_string="auieauieauie",
+        comment_start_string="disabled because bash contains {#",
     )
 
     return template.render(
