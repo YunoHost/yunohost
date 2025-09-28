@@ -1,3 +1,14 @@
+yunohost (12.1.26) stable; urgency=low
+
+  - helpers:: YNH_APP_BASEDIR missing for app shell (#2183)
+  - app resources: fix a typo in ruby helper (#2187)
+  - doc: Add ZSH completion script (de06819ed, e359fe841)
+  - postfix: 'smtp_backup_mx_domains' was passed as 'null' to the jinja template instead of empty string, resulting in the corresponding snippet in main.cf being enabled which may cause a variety of issues (0fdf3e5d7)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, getzze, Tagada, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 28 Sep 2025 16:46:46 +0200
+
 yunohost (12.1.25) stable; urgency=low
 
   - dns: Update registrars list for the Lexicon integration (#2161)
