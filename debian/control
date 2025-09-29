@@ -25,7 +25,7 @@ Depends: python3-all (>= 3.11),
  , apt, apt-transport-https, apt-utils, aptitude, dirmngr
  , openssh-server, nftables, fail2ban, bind9-dnsutils
  , openssl, ca-certificates, netcat-openbsd, iproute2
- , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
+ , sssd, sssd-tools, libsss-sudo, sssd-ldap, slapd, ldap-utils, libnss-sss, libpam-sss
  , dnsmasq, resolvconf, libnss-myhostname
  , postfix, postfix-ldap, postfix-policyd-spf-perl, postfix-pcre
  , dovecot-core, dovecot-ldap, dovecot-lmtpd, dovecot-managesieved
