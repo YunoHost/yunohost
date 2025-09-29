@@ -69,8 +69,7 @@ EOF
         | grep -v "none elapsed\|Closing DB" || true
     chown -R openldap: /var/lib/ldap
 
-    nscd -i group || true
-    nscd -i passwd || true
+    sss_cache -E
 
     systemctl restart slapd
 }
@@ -162,7 +161,7 @@ objectClass: posixGroup
 objectClass: top"
         chown -R openldap: /var/lib/ldap
         systemctl restart slapd
-        nscd -i group
+        sss_cache -E
     fi
 
     if [ -z "$regen_conf_files" ] && [ "$FORCE" == "false" ]; then

@@ -109,7 +109,8 @@ def _set_hostname(hostname: str, pretty_hostname: str | None = None) -> None:
         pretty_hostname = f"(YunoHost/{hostname})"
 
     # First clear nsswitch cache for hosts to make sure hostname is resolved...
-    subprocess.call(["nscd", "-i", "hosts"])
+    # FIXME: does sssd cache hosts ?
+    subprocess.call(["sss_cache", "-E"])
 
     # Then call hostnamectl
     commands = [
