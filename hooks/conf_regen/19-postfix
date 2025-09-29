@@ -73,6 +73,8 @@ do_pre_regen() {
     export backup_mx_emails="$(jq -r '.smtp_backup_mx_emails_whitelisted' <<< "$YNH_SETTINGS" | sed "s/,/ /g")"
     rm -f "${postfix_dir}/relay_recipients"
     touch "${postfix_dir}/relay_recipients"
+    rm -f "${postfix_dir}/relay_recipients.db"
+    touch "${postfix_dir}/relay_recipients.db"
     if [ -n "${backup_mx_domains}" ] && [ -n "${backup_mx_emails}" ]; then
         for mail in ${backup_mx_emails}; do
             echo "$mail OK" >> "${postfix_dir}/relay_recipients"
