@@ -23,7 +23,7 @@ set -eu
 
 do_init_regen() {
     do_pre_regen ""
-    systemctl restart unscd
+    systemctl restart sssd
 }
 
 do_pre_regen() {
@@ -38,7 +38,7 @@ do_post_regen() {
     regen_conf_files=$1
 
     if [[ -n "$regen_conf_files" ]]; then
-        systemctl restart unscd
+        systemctl restart sssd
     fi
 }
 
