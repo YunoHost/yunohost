@@ -846,10 +846,8 @@ def _check_domain_is_ready_for_ACME(domain):
     # - 'MISSING' for IPv6 ain't critical for ACME
     # - IPv4 can be None assuming there's at least an IPv6, and viveversa
     #    - (the case where both are None is checked before)
-    if not (
-        A_record_status in [None, "OK"]
-        and AAAA_record_status in [None, "OK", "MISSING"]
-    ):
+    statuses = [A_record_status, AAAA_record_status]
+    if "WRONG" in statuses or "OK" not in statuses:
         raise YunohostValidationError(
             "certmanager_domain_dns_ip_differs_from_public_ip", domain=domain
         )
