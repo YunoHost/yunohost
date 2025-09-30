@@ -842,10 +842,11 @@ def _check_domain_is_ready_for_ACME(domain):
             "certmanager_domain_not_diagnosed_yet", domain=domain
         )
 
-    # Check if IP from DNS matches public IP
-    # - 'MISSING' for IPv6 ain't critical for ACME
-    # - IPv4 can be None assuming there's at least an IPv6, and viveversa
-    #    - (the case where both are None is checked before)
+    # Check that DNS record matches public IP
+    # in particular we want at least one to be "OK" but neither to be "WRONG"
+    # (in particular Let's Encrypt will fail if there's an incorrect IPv6 despite a correct IPv4)
+    # Also we can live with a "MISSING" IPv4 or IPv6 record assuming the other one is OK
+    # (for example when there's theoretically an IPv6 on the machine, but the admins didnt define the AAAA record)
     statuses = [A_record_status, AAAA_record_status]
     if "WRONG" in statuses or "OK" not in statuses:
         raise YunohostValidationError(
