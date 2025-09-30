@@ -58,8 +58,6 @@ def clean():
 
     test_apps = [
         "break_yo_system",
-        "legacy_app",
-        "legacy_app__2",
         "manifestv2_app",
         "full_domain_app",
         "my_webapp",
@@ -125,8 +123,6 @@ def secondary_domain(request):
 
 def app_expected_files(domain, app):
     yield "/etc/nginx/conf.d/{}.d/{}.conf".format(domain, app)
-    if app.startswith("legacy_app"):
-        yield "/var/www/%s/index.html" % app
     yield "/etc/yunohost/apps/%s/settings.yml" % app
     if "manifestv2" in app or "my_webapp" in app:
         yield "/etc/yunohost/apps/%s/manifest.toml" % app
@@ -161,14 +157,6 @@ def app_is_exposed_on_http(domain, path, message_in_page):
         return False
 
 
-def install_legacy_app(domain, path, public=True):
-    app_install(
-        os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
-        args="domain={}&path={}&is_public={}".format(domain, path, 1 if public else 0),
-        force=True,
-    )
-
-
 def install_manifestv2_app(domain, path, public=True):
     app_install(
         os.path.join(get_test_apps_dir(), "manifestv2_app_ynh"),
@@ -181,7 +169,7 @@ def install_manifestv2_app(domain, path, public=True):
 
 def install_full_domain_app(domain):
     app_install(
-        os.path.join(get_test_apps_dir(), "full_domain_app_ynh"),
+        os.path.join(get_test_apps_dir(), "full_domain_app_v2_ynh"),
         args="domain=%s" % domain,
         force=True,
     )
@@ -189,46 +177,10 @@ def install_full_domain_app(domain):
 
 def install_break_yo_system(domain, breakwhat):
     app_install(
-        os.path.join(get_test_apps_dir(), "break_yo_system_ynh"),
+        os.path.join(get_test_apps_dir(), "break_yo_system_v2_ynh"),
         args="domain={}&breakwhat={}".format(domain, breakwhat),
         force=True,
     )
-
-
-def test_legacy_app_install_main_domain():
-    main_domain = _get_maindomain()
-
-    install_legacy_app(main_domain, "/legacy")
-
-    app_map_ = app_map(raw=True)
-    assert main_domain in app_map_
-    assert "/legacy" in app_map_[main_domain]
-    assert "id" in app_map_[main_domain]["/legacy"]
-    assert app_map_[main_domain]["/legacy"]["id"] == "legacy_app"
-
-    assert app_is_installed(main_domain, "legacy_app")
-    assert app_is_exposed_on_http(main_domain, "/legacy", "This is a dummy app")
-
-    app_remove("legacy_app")
-
-    assert app_is_not_installed(main_domain, "legacy_app")
-
-
-def test_legacy_app_manifest_preinstall():
-    m = app_manifest(os.path.join(get_test_apps_dir(), "legacy_app_ynh"))
-    # v1 manifesto are expected to have been autoconverted to v2
-
-    assert "id" in m
-    assert "description" in m
-    assert "integration" in m
-    assert "install" in m
-    assert m["doc"] == {}
-    assert m["notifications"] == {
-        "PRE_INSTALL": {},
-        "PRE_UPGRADE": {},
-        "POST_INSTALL": {},
-        "POST_UPGRADE": {},
-    }
 
 
 def test_manifestv2_app_manifest_preinstall():
@@ -348,7 +300,7 @@ def test_app_from_catalog():
 
     app_install(
         "my_webapp",
-        args=f"domain={main_domain}&path=/site&with_sftp=0&password=superpassword&init_main_permission=visitors&with_mysql=0&phpversion=none",
+        args=f"domain={main_domain}&path=/site&with_sftp=0&password=superpassword&init_main_permission=visitors&database=none&phpversion=none&custom_error_file=0",
     )
     app_map_ = app_map(raw=True)
     assert main_domain in app_map_
@@ -375,126 +327,126 @@ def test_app_from_catalog():
     assert app_is_not_installed(main_domain, "my_webapp")
 
 
-def test_legacy_app_install_secondary_domain(secondary_domain):
-    install_legacy_app(secondary_domain, "/legacy")
+def test_manifestv2_app_install_secondary_domain(secondary_domain):
+    install_manifestv2_app(secondary_domain, "/manifestv2")
 
-    assert app_is_installed(secondary_domain, "legacy_app")
-    assert app_is_exposed_on_http(secondary_domain, "/legacy", "This is a dummy app")
+    assert app_is_installed(secondary_domain, "manifestv2_app")
+    assert app_is_exposed_on_http(secondary_domain, "/manifestv2", "Hextris")
 
-    app_remove("legacy_app")
+    app_remove("manifestv2_app")
 
-    assert app_is_not_installed(secondary_domain, "legacy_app")
+    assert app_is_not_installed(secondary_domain, "manifestv2_app")
 
 
-def test_legacy_app_install_secondary_domain_on_root(secondary_domain):
-    install_legacy_app(secondary_domain, "/")
+def test_manifestv2_app_install_secondary_domain_on_root(secondary_domain):
+    install_manifestv2_app(secondary_domain, "/")
 
     app_map_ = app_map(raw=True)
     assert secondary_domain in app_map_
     assert "/" in app_map_[secondary_domain]
     assert "id" in app_map_[secondary_domain]["/"]
-    assert app_map_[secondary_domain]["/"]["id"] == "legacy_app"
+    assert app_map_[secondary_domain]["/"]["id"] == "manifestv2_app"
 
-    assert app_is_installed(secondary_domain, "legacy_app")
-    assert app_is_exposed_on_http(secondary_domain, "/", "This is a dummy app")
+    assert app_is_installed(secondary_domain, "manifestv2_app")
+    assert app_is_exposed_on_http(secondary_domain, "/", "Hextris")
 
-    app_remove("legacy_app")
+    app_remove("manifestv2_app")
 
-    assert app_is_not_installed(secondary_domain, "legacy_app")
+    assert app_is_not_installed(secondary_domain, "manifestv2_app")
 
 
-def test_legacy_app_install_private(secondary_domain):
-    install_legacy_app(secondary_domain, "/legacy", public=False)
+def test_manifestv2_app_install_private(secondary_domain):
+    install_manifestv2_app(secondary_domain, "/manifestv2", public=False)
 
-    assert app_is_installed(secondary_domain, "legacy_app")
+    assert app_is_installed(secondary_domain, "manifestv2_app")
     assert not app_is_exposed_on_http(
-        secondary_domain, "/legacy", "This is a dummy app"
+        secondary_domain, "/manifestv2", "Hextris"
     )
 
-    app_remove("legacy_app")
+    app_remove("manifestv2_app")
 
-    assert app_is_not_installed(secondary_domain, "legacy_app")
+    assert app_is_not_installed(secondary_domain, "manifestv2_app")
 
 
-def test_legacy_app_install_unknown_domain():
+def test_manifestv2_app_install_unknown_domain():
     with pytest.raises(YunohostError):
         with message("app_argument_invalid"):
-            install_legacy_app("whatever.nope", "/legacy")
+            install_manifestv2_app("whatever.nope", "/manifestv2")
 
-    assert app_is_not_installed("whatever.nope", "legacy_app")
-
-
-def test_legacy_app_install_multiple_instances(secondary_domain):
-    install_legacy_app(secondary_domain, "/foo")
-    install_legacy_app(secondary_domain, "/bar")
-
-    assert app_is_installed(secondary_domain, "legacy_app")
-    assert app_is_exposed_on_http(secondary_domain, "/foo", "This is a dummy app")
-
-    assert app_is_installed(secondary_domain, "legacy_app__2")
-    assert app_is_exposed_on_http(secondary_domain, "/bar", "This is a dummy app")
-
-    app_remove("legacy_app")
-
-    assert app_is_not_installed(secondary_domain, "legacy_app")
-    assert app_is_installed(secondary_domain, "legacy_app__2")
-
-    app_remove("legacy_app__2")
-
-    assert app_is_not_installed(secondary_domain, "legacy_app")
-    assert app_is_not_installed(secondary_domain, "legacy_app__2")
+    assert app_is_not_installed("whatever.nope", "manifestv2_app")
 
 
-def test_legacy_app_install_path_unavailable(secondary_domain):
+def test_manifestv2_app_install_multiple_instances(secondary_domain):
+    install_manifestv2_app(secondary_domain, "/foo")
+    install_manifestv2_app(secondary_domain, "/bar")
+
+    assert app_is_installed(secondary_domain, "manifestv2_app")
+    assert app_is_exposed_on_http(secondary_domain, "/foo", "Hextris")
+
+    assert app_is_installed(secondary_domain, "manifestv2_app__2")
+    assert app_is_exposed_on_http(secondary_domain, "/bar", "Hextris")
+
+    app_remove("manifestv2_app")
+
+    assert app_is_not_installed(secondary_domain, "manifestv2_app")
+    assert app_is_installed(secondary_domain, "manifestv2_app__2")
+
+    app_remove("manifestv2_app__2")
+
+    assert app_is_not_installed(secondary_domain, "manifestv2_app")
+    assert app_is_not_installed(secondary_domain, "manifestv2_app__2")
+
+
+def test_manifestv2_app_install_path_unavailable(secondary_domain):
     # These will be removed in teardown
-    install_legacy_app(secondary_domain, "/legacy")
+    install_manifestv2_app(secondary_domain, "/manifestv2")
 
     with pytest.raises(YunohostError):
         with message("app_location_unavailable"):
-            install_legacy_app(secondary_domain, "/")
+            install_manifestv2_app(secondary_domain, "/")
 
-    assert app_is_installed(secondary_domain, "legacy_app")
-    assert app_is_not_installed(secondary_domain, "legacy_app__2")
+    assert app_is_installed(secondary_domain, "manifestv2_app")
+    assert app_is_not_installed(secondary_domain, "manifestv2_app__2")
 
 
-def test_legacy_app_install_with_nginx_down(mocker, secondary_domain):
+def test_manifestv2_app_install_with_nginx_down(mocker, secondary_domain):
     os.system("systemctl stop nginx")
 
     with raiseYunohostError(
         mocker, "app_action_cannot_be_ran_because_required_services_down"
     ):
-        install_legacy_app(secondary_domain, "/legacy")
+        install_manifestv2_app(secondary_domain, "/manifestv2")
 
 
-def test_legacy_app_failed_install(secondary_domain):
+def test_manifestv2_app_failed_install(secondary_domain):
     # This will conflict with the folder that the app
     # attempts to create, making the install fail
-    mkdir("/var/www/legacy_app/", 0o750)
+    mkdir("/var/www/manifestv2_app/", 0o750)
 
     with pytest.raises(YunohostError):
         with message("app_install_script_failed"):
-            install_legacy_app(secondary_domain, "/legacy")
+            install_manifestv2_app(secondary_domain, "/manifestv2")
 
-    assert app_is_not_installed(secondary_domain, "legacy_app")
+    assert app_is_not_installed(secondary_domain, "manifestv2_app")
 
 
-def test_legacy_app_failed_remove(secondary_domain):
-    install_legacy_app(secondary_domain, "/legacy")
+def test_manifestv2_app_failed_remove(secondary_domain):
+    install_manifestv2_app(secondary_domain, "/manifestv2")
 
     # The remove script runs with set -eu and attempt to remove this
     # file without -f, so will fail if it's not there ;)
-    os.remove("/etc/nginx/conf.d/{}.d/{}.conf".format(secondary_domain, "legacy_app"))
+    os.remove("/etc/nginx/conf.d/{}.d/{}.conf".format(secondary_domain, "manifestv2_app"))
 
     # TODO / FIXME : can't easily validate that 'app_not_properly_removed'
     # is triggered for weird reasons ...
-    app_remove("legacy_app")
+    app_remove("manifestv2_app")
 
     #
     # Well here, we hit the classical issue where if an app removal script
     # fails, so far there's no obvious way to make sure that all files related
     # to this app got removed ...
     #
-    assert app_is_not_installed(secondary_domain, "legacy")
+    assert app_is_not_installed(secondary_domain, "manifestv2")
 
 
 def test_full_domain_app(secondary_domain):
@@ -504,7 +456,7 @@ def test_full_domain_app(secondary_domain):
 
 
 def test_full_domain_app_with_conflicts(mocker, secondary_domain):
-    install_legacy_app(secondary_domain, "/legacy")
+    install_manifestv2_app(secondary_domain, "/manifestv2")
 
     with raiseYunohostError(mocker, "app_full_domain_unavailable"):
         install_full_domain_app(secondary_domain)
@@ -550,21 +502,21 @@ def test_systemfuckedup_during_app_upgrade(secondary_domain):
 
 
 def test_failed_multiple_app_upgrade(secondary_domain):
-    install_legacy_app(secondary_domain, "/legacy")
+    install_manifestv2_app(secondary_domain, "/manifestv2")
     install_break_yo_system(secondary_domain, breakwhat="upgrade")
 
-    with message("apps_upgrade_cancelled", apps="legacy_app"):
+    with message("apps_upgrade_cancelled", apps="manifestv2_app"):
         res = app_upgrade(
-            ["break_yo_system", "legacy_app"],
+            ["break_yo_system", "manifestv2_app"],
             file={
                 "break_yo_system": os.path.join(
                     get_test_apps_dir(), "break_yo_system_ynh"
                 ),
-                "legacy_app": os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
+                "manifestv2_app": os.path.join(get_test_apps_dir(), "manifestv2_app_ynh"),
             },
         )
     assert "break_yo_system" in res["failed"]
-    assert "legacy_app" in res["cancelled"]
+    assert "manifestv2_app" in res["cancelled"]
 
 
 class TestMockedAppUpgrade:
