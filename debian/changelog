@@ -13,7 +13,7 @@ yunohost (13.0.0.alpha1) unstable; urgency=low
   - conf: dovecot: Fix, 2.4.0 expects dovecot_config_version (70080847f)
   - Update dovecot config for Trixie / dovecot 2.4 (a1082f34d)
 
-  Thanks to all contributors <3 ! (Alexandre Aubin, alexAubin, axolotle, Florent, Salamandar, Thomas, tituspijean)
+  Thanks to all contributors <3 ! (Alexandre Aubin, axolotle, Florent, Salamandar, Thomas, tituspijean)
 
  -- Félix Piédallu <felix@piedallu.me>  Thu, 25 Sep 2025 20:41:48 +0200
 
