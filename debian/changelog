@@ -17,7 +17,7 @@ yunohost (13.0.0.alpha1) unstable; urgency=low
 
  -- Félix Piédallu <felix@piedallu.me>  Thu, 25 Sep 2025 20:41:48 +0200
 
- yunohost (12.1.26) stable; urgency=low
+yunohost (12.1.26) stable; urgency=low
 
   - helpers:: YNH_APP_BASEDIR missing for app shell (#2183)
   - app resources: fix a typo in ruby helper (#2187)
