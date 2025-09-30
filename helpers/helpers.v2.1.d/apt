@@ -151,7 +151,7 @@ EOF
         if ((${#problematic_dependencies[@]} != 0)); then
             _ynh_apt_install "${problematic_dependencies[@]}" --dry-run 2>&1 | sed --quiet '/Reading state info/,$p' | grep -v "fix-broken\|Reading state info" >&2
         fi
-        ynh_die "Unable to install apt dependencies"
+        ynh_die "Unable to install apt dependencies, it might be due to a conflict with another app - or you should check and share the previous log about what are the problematic dependencies"
     }
     rm --recursive --force "$TMPDIR" # Remove the temp dir.
 
