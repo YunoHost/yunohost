@@ -1,5 +1,6 @@
 # See /usr/share/postfix/main.cf.dist for a commented, more complete version
 
+compatibility_level = 3.6
 
 # Debian specific:  Specifying a file name will cause the first
 # line of that file to be used as the name.  The Debian default
@@ -221,4 +222,3 @@ relay_domains = $mydestination {{backup_mx_domains}}
 relay_recipient_maps = hash:/etc/postfix/relay_recipients
 maximal_queue_lifetime = 20d
 {% endif %}
-
