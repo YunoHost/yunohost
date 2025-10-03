@@ -19,7 +19,11 @@
 #
 
 # (this is used in the apt helpers, big meh ...)
-readonly YNH_DEFAULT_PHP_VERSION=7.4
+DEBIAN_DEFAULT_PHP_VERSION=$(curl -fsSL "https://packages.debian.org/$YNH_DEBIAN_VERSION/php" \
+    | grep -Eo "/$YNH_DEBIAN_VERSION/php[0-9].[0-9]" \
+    | tail -n1 | sed "s@^/$YNH_DEBIAN_VERSION/php@@")
+    
+readonly YNH_DEFAULT_PHP_VERSION=$( [[ ! -z ${DEBIAN_DEFAULT_PHP_VERSION} ]] && echo ${DEBIAN_DEFAULT_PHP_VERSION} || echo "8.2" )
 
 # Create a dedicated PHP-FPM config
 #
