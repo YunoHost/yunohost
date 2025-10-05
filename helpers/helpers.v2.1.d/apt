@@ -80,7 +80,9 @@ ynh_apt_install_dependencies() {
         if test -e "/usr/bin/php$YNH_DEFAULT_PHP_VERSION"; then
             update-alternatives --set php "/usr/bin/php$YNH_DEFAULT_PHP_VERSION"
         fi
-    elif grep --quiet 'php' <<< "$dependencies"; then
+    # Otherwise force php_version back to the default version ...
+    # ... except we don't want to do this when appending the "extra" dependencies if they don't contain a php version ...
+    elif grep --quiet 'php' <<< "$dependencies" && [[ $YNH_APT_INSTALL_DEPENDENCIES_REPLACE == "true" ]]; then
         ynh_app_setting_set --key=php_version --value="$YNH_DEFAULT_PHP_VERSION"
     fi
 

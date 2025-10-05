@@ -1,3 +1,14 @@
+yunohost (12.1.27) stable; urgency=low
+
+  - postfix: make sure regen conf forgets about relay_recipients.db when not applicable (1184b6703)
+  - certificate: Allow IPv6-only domains to run ACME (10f666fc3)
+  - helpers: in 2.1, YNH_DEFAULT_PHP_VERSION was set to 7.4 instead of 8.2 like in the v2.0 helpers x_x (704cf0872)
+  - helpers: fix edge case in apt helpers for apps with 'extras' dependency *and* php version, it would automatically reset the php_version to the default one during the 'extra' install intead of keeping the correct value (8ece3163d)
+
+  Thanks to all contributors <3 ! (Félix Piédallu)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 05 Oct 2025 04:15:45 +0200
+
 yunohost (12.1.26) stable; urgency=low
 
   - helpers:: YNH_APP_BASEDIR missing for app shell (#2183)
