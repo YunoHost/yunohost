@@ -523,8 +523,11 @@ ynh_add_swap() {
         truncate -s 0 "/swap_$app"
 
         # try to set the No_COW attribute on the swapfile with chattr (depending of the filesystem type)
-        if grep -qs ' / .*btrfs' /proc/mounts; then
+        local root_fs_type=$(cat /proc/mounts | awk '{ if ($2 == var) print $3 }' var="/")
+        if [[ "$root_fs_type" == "btrfs" ]]; then
 			chattr +C "/swap_$app"
+        else
+            echo "Skipping chattr +C for swap because the root filesystem is btrfs  which doesn't support this attribute"
 		fi
 
         # Preallocate space for the swap file, fallocate may sometime not be used, use dd instead in this case
@@ -547,8 +550,11 @@ ynh_del_swap() {
         # Clean the fstab
         sed -i "/#Swap added by $app/d" /etc/fstab
         # Desactive the swap file if active
-		if grep -qs "/swap_$app" /proc/swaps; then
+		local swap_filename=$(cat /proc/swaps | awk '{ if ($1 == var) print $1 }' var="/swap_$app")
+		if [[ "$swap_filename" == "/swap_$app" ]]; then
 			swapoff "/swap_$app"
+        else
+            echo "Skipping swapoff because /swap_$app in not mounted"
 		fi
         # And remove it
         rm "/swap_$app"
