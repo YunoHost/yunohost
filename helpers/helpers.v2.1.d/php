@@ -19,7 +19,7 @@
 #
 
 # (this is used in the apt helpers, big meh ...)
-readonly YNH_DEFAULT_PHP_VERSION=7.4
+readonly YNH_DEFAULT_PHP_VERSION=8.2
 
 # Create a dedicated PHP-FPM config
 #
