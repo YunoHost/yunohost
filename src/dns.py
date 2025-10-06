@@ -734,15 +734,9 @@ def domain_dns_push(
         .with_dict(dict_object={"action": "list", "type": "all"})
     )
     client = LexiconClient(query)
-    try:
-        client.provider.authenticate()
-    except Exception as e:
-        raise YunohostValidationError(
-            "domain_dns_push_failed_to_authenticate", domain=domain, error=str(e)
-        )
 
     try:
-        current_records = client.provider.list_records()
+        current_records = client.execute()
     except Exception as e:
         raise YunohostError("domain_dns_push_failed_to_list", error=str(e))
 
