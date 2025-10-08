@@ -1233,12 +1233,8 @@ def app_upgrade(
                 app_, current_manifest, new_manifest, workdir, no_safety_backup
             )
         except YunohostError as e:
-            # If upgrading a single app from the webadmin : re-raise the Exception
-            if (
-                Moulinette.interface.type == "api"
-                and raw_requested_targets
-                and len(requested_targets) == 1
-            ):
+            # If upgrading a single app : re-raise the Exception
+            if raw_requested_targets and len(requested_targets) == 1:
                 raise e
 
             failed_to_upgrade_apps[app_] = str(e)
