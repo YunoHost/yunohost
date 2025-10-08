@@ -130,7 +130,7 @@ def disk_health(name, **kwargs):
 
     human_readable = kwargs.get("human_readable", False)
 
-    if not disk or not not disk.props.get("smart_supported"):
+    if not disk or not disk.props.get("smart_supported"):
         # If disk does not exist or SMART is not supported by disk
         return None
 
