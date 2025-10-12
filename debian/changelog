@@ -1,3 +1,16 @@
+yunohost (12.1.28) stable; urgency=low
+
+  - dns: Fix lexicon integration (#2194)
+  - mail: Include spam and trash in user quota (#2193)
+  - app upgrade: When upgrading a single app and that upgrade fails, make sure to raise an exception (an therefore a returncode != 0) (#2196)
+  - app shell: Inherit TERM when opening an app shell (#2195)
+  - app shell: Make sure to list all systemd units including dead/empty ones when looking for services related to the app (#2197)
+  - app helpers: fix files not templated correctly when values contains ampersands (&) (#2199)
+
+  Thanks to all contributors <3 ! (Florent, ljf, orhtej2)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 12 Oct 2025 16:46:10 +0200
+
 yunohost (12.1.27) stable; urgency=low
 
   - postfix: make sure regen conf forgets about relay_recipients.db when not applicable (1184b6703)
