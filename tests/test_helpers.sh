@@ -73,6 +73,9 @@ done
 
 # Hack to list all known function, keep only those starting by ynhtest_
 TESTS=$(declare -F | grep ' ynhtest_' | awk '{print $3}')
+if [ -n "${GREP:-}" ]; then
+    TESTS="$(grep -i "$GREP" <<< "$TESTS")"
+fi
 
 global_result=0
 
