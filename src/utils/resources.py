@@ -988,7 +988,10 @@ class InstalldirAppResource(AppResource):
         # If during install, /var/www/$app already exists, assume that it's okay to remove and recreate it
         # FIXME : is this the right thing to do ?
         if not current_install_dir and os.path.isdir(self.dir):
-            rm(self.dir, recursive=True)
+            raise YunohostError(
+                f"App installation directory '{self.dir}' already exists! Please delete or move it.",
+                raw_msg=True,
+            )
 
         # isdir will be True if the path is a symlink pointing to a dir
         # This should cover cases where people moved the data dir to another place via a symlink (ie we dont enter the if)
