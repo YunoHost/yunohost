@@ -240,7 +240,7 @@ class MyDiagnoser(Diagnoser):
                 reason = "-"
                 if status == "ok":
                     reason = ", ".join(answers)
-                    details.append("diagnosis_mail_blacklist_reason")
+                    details.append("diagnosis_mail_blacklist_reason" if "open resolver" not in reason else "diagnosis_mail_blacklist_reason_openresolver")
 
                 details.append("diagnosis_mail_blacklist_website")
 
