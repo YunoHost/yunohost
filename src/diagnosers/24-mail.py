@@ -208,7 +208,7 @@ class MyDiagnoser(Diagnoser):
         This check is ran on IPs and domains we could used to send mail.
         """
 
-        dns_blocklists = read_yaml(DEFAULT_DNS_blocklist)
+        dns_blocklists = read_yaml(DEFAULT_DNS_BLOCKLIST)
         for item in self.ips + self.mail_domains:
             for blocklist in dns_blocklists:
                 item_type = "domain"
