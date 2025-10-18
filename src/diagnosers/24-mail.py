@@ -235,12 +235,16 @@ class MyDiagnoser(Diagnoser):
                     name_severs = random.choice("abcde")
                     spamhaus_NS = dig("zen.spamhaus.org", "NS")
                     if spamhaus_NS[0] != "ok":
-                        logger.warning(f"Failed to fetch NS servers for spamhaus ? -> {spamhaus_NS}")
+                        logger.warning(
+                            f"Failed to fetch NS servers for spamhaus ? -> {spamhaus_NS}"
+                        )
                         continue
                     # FIXME: that won't work for ipv6-only instances ?
                     spamhaus_NS_ips = dig(random.choice(spamhaus_NS[1]), "A")
                     if spamhaus_NS_ips[0] != "ok":
-                        logger.warning(f"Failed to fetch IP for NS servers for spamhaus ? -> {spamhaus_NS_ips}")
+                        logger.warning(
+                            f"Failed to fetch IP for NS servers for spamhaus ? -> {spamhaus_NS_ips}"
+                        )
                         continue
                     resolvers = spamhaus_NS_ips[1]
                 else:
