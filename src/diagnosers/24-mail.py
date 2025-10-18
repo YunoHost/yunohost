@@ -232,7 +232,6 @@ class MyDiagnoser(Diagnoser):
                 # cf https://www.spamhaus.com/resource-center/successfully-accessing-spamhauss-free-block-lists-using-a-public-dns/#yes-but-why-block-queries-from-public-recursive-name-servers
                 if blacklist["dns_server"] == "zen.spamhaus.org":
                     # spamhaus has a/b/c/d/e nameservers, cf https://multirbl.valli.org/detail/zen.spamhaus.org.html
-                    name_severs = random.choice("abcde")
                     spamhaus_NS = dig("zen.spamhaus.org", "NS")
                     if spamhaus_NS[0] != "ok":
                         logger.warning(
