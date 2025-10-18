@@ -33,7 +33,7 @@ from ..utils.dns import dig
 from ..utils.file_utils import read_yaml
 from ..utils.process import check_output
 
-DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/dnsbl_list.yml"
+DEFAULT_DNS_BLOCKLIST = "/usr/share/yunohost/dnsbl_list.yml"
 
 logger = logging.getLogger("yunohost.diagnosis")
 
@@ -57,7 +57,7 @@ class MyDiagnoser(Diagnoser):
             "check_outgoing_port_25",  # i18n: diagnosis_mail_outgoing_port_25_ok
             "check_ehlo",  # i18n: diagnosis_mail_ehlo_ok
             "check_fcrdns",  # i18n: diagnosis_mail_fcrdns_ok
-            "check_blacklist",  # i18n: diagnosis_mail_blacklist_ok
+            "check_blocklist",  # i18n: diagnosis_mail_blocklist_ok
             "check_queue",  # i18n: diagnosis_mail_queue_ok
         ]
         for check in checks:
@@ -202,22 +202,22 @@ class MyDiagnoser(Diagnoser):
                     details=details,
                 )
 
-    def check_blacklist(self):
+    def check_blocklist(self):
         """
-        Check with dig onto blacklist DNS server
+        Check with dig onto blocklist DNS server
         This check is ran on IPs and domains we could used to send mail.
         """
 
-        dns_blacklists = read_yaml(DEFAULT_DNS_BLACKLIST)
+        dns_blocklists = read_yaml(DEFAULT_DNS_blocklist)
         for item in self.ips + self.mail_domains:
-            for blacklist in dns_blacklists:
+            for blocklist in dns_blocklists:
                 item_type = "domain"
                 if ":" in item:
                     item_type = "ipv6"
                 elif re.match(r"^\d+\.\d+\.\d+\.\d+$", item):
                     item_type = "ipv4"
 
-                if not blacklist[item_type]:
+                if not blocklist[item_type]:
                     continue
 
                 # Build the query for DNSBL
@@ -225,12 +225,12 @@ class MyDiagnoser(Diagnoser):
                 if item_type != "domain":
                     rev = dns.reversename.from_address(item)
                     subdomain = str(rev.split(3)[0])
-                query = subdomain + "." + blacklist["dns_server"]
+                query = subdomain + "." + blocklist["dns_server"]
 
                 # Gotta force the usage of resolvers for spamhaus,
                 # Which will otherwise complain that we may be using an open resolver...
                 # cf https://www.spamhaus.com/resource-center/successfully-accessing-spamhauss-free-block-lists-using-a-public-dns/#yes-but-why-block-queries-from-public-recursive-name-servers
-                if blacklist["dns_server"] == "zen.spamhaus.org":
+                if blocklist["dns_server"] == "zen.spamhaus.org":
                     # spamhaus has a/b/c/d/e nameservers, cf https://multirbl.valli.org/detail/zen.spamhaus.org.html
                     spamhaus_NS = dig("zen.spamhaus.org", "NS")
                     if spamhaus_NS[0] != "ok":
@@ -256,7 +256,7 @@ class MyDiagnoser(Diagnoser):
                 status, answers = dig(query, "A", resolvers=resolvers)
                 if status != "ok" or (
                     answers
-                    and set(answers) <= set(blacklist["non_blacklisted_return_code"])
+                    and set(answers) <= set(blocklist["non_blocklisted_return_code"])
                 ):
                     continue
 
@@ -266,23 +266,23 @@ class MyDiagnoser(Diagnoser):
                 reason = "-"
                 if status == "ok":
                     reason = ", ".join(answers)
-                    details.append("diagnosis_mail_blacklist_reason")
+                    details.append("diagnosis_mail_blocklist_reason")
 
-                details.append("diagnosis_mail_blacklist_website")
+                details.append("diagnosis_mail_blocklist_website")
 
                 yield dict(
                     meta={
-                        "test": "mail_blacklist",
+                        "test": "mail_blocklist",
                         "item": item,
-                        "blacklist": blacklist["dns_server"],
+                        "blocklist": blocklist["dns_server"],
                     },
                     data={
-                        "blacklist_name": blacklist["name"],
-                        "blacklist_website": blacklist["website"],
+                        "blocklist_name": blocklist["name"],
+                        "blocklist_website": blocklist["website"],
                         "reason": reason,
                     },
                     status="ERROR",
-                    summary="diagnosis_mail_blacklist_listed_by",
+                    summary="diagnosis_mail_blocklist_listed_by",
                     details=details,
                 )
 
