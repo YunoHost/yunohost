@@ -270,10 +270,19 @@ def _group_packages_per_categories(
                     "sudo",
                     "passwd",
                     "openssh",
-                    "firmware-"
+                    "firmware-",
                 ]
             )
-            or package in ["netbase", "apt", "dpkg", "aptitude", "init", "raspberrypi-sys-mods", "ssh"]
+            or package
+            in [
+                "netbase",
+                "apt",
+                "dpkg",
+                "aptitude",
+                "init",
+                "raspberrypi-sys-mods",
+                "ssh",
+            ]
         ):
             category = "kernel, systemd, and other critical packages"
         elif category in PACKAGE_CATEGORIES_REMAP:
