@@ -177,7 +177,7 @@ def install_full_domain_app(domain):
 
 def install_break_yo_system(domain, breakwhat):
     app_install(
-        os.path.join(get_test_apps_dir(), "break_yo_system_v2_ynh"),
+        os.path.join(get_test_apps_dir(), "break_yo_system_ynh"),
         args="domain={}&breakwhat={}".format(domain, breakwhat),
         force=True,
     )
@@ -502,7 +502,8 @@ def test_systemfuckedup_during_app_upgrade(secondary_domain):
 
 
 def test_failed_multiple_app_upgrade(secondary_domain):
-    install_manifestv2_app(secondary_domain, "/manifestv2")
+    main_domain = _get_maindomain()
+    install_manifestv2_app(main_domain, "/manifestv2")
     install_break_yo_system(secondary_domain, breakwhat="upgrade")
 
     with message("apps_upgrade_cancelled", apps="manifestv2_app"):
