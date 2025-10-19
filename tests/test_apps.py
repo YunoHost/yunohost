@@ -498,6 +498,7 @@ def test_systemfuckedup_during_app_upgrade(secondary_domain):
         app_upgrade(
             "break_yo_system",
             file=os.path.join(get_test_apps_dir(), "break_yo_system_ynh"),
+            no_safety_backup=True
         )
 
 
@@ -515,6 +516,7 @@ def test_failed_multiple_app_upgrade(secondary_domain):
                 ),
                 "manifestv2_app": os.path.join(get_test_apps_dir(), "manifestv2_app_ynh"),
             },
+            force=True
         )
     assert "break_yo_system" in res["failed"]
     assert "manifestv2_app" in res["cancelled"]
@@ -660,7 +662,7 @@ class TestMockedAppUpgrade:
 
         self.upgradable_apps_list.append("some_app")
 
-        app_upgrade()
+        app_upgrade(no_safety_backup=True)
 
         self.hook_exec_with_script_debug_if_failure.assert_called_once()
         assert (
@@ -683,13 +685,13 @@ class TestMockedAppUpgrade:
         self.hook_exec_with_script_debug_if_failure.side_effect = fails_on_b
 
         with message("apps_upgrade_cancelled", apps="c"):
-            res = app_upgrade()
+            res = app_upgrade(no_safety_backup=True)
         assert "a" in res["success"]
         assert "b" in res["failed"]
         assert "c" in res["cancelled"]
 
         with message("app_upgrade_continuing_with_other_apps", app="b"):
-            res = app_upgrade(continue_on_failure=True)
+            res = app_upgrade(no_safety_backup=True, continue_on_failure=True)
         assert "a" in res["success"]
         assert "b" in res["failed"]
         assert "c" in res["success"]
@@ -719,13 +721,13 @@ class TestMockedAppUpgrade:
         )
 
         with message("apps_upgrade_cancelled", apps="c"):
-            res = app_upgrade()
+            res = app_upgrade(no_safety_backup=True)
         assert "a" in res["success"]
         assert "broke_the_system" in res["failed"]
         assert "c" in res["cancelled"]
 
         with message("apps_upgrade_cancelled", apps="c"):
-            res = app_upgrade(continue_on_failure=True)
+            res = app_upgrade(no_safety_backup=True, continue_on_failure=True)
         assert "a" in res["success"]
         assert "broke_the_system" in res["failed"]
         # Difference with the previous test (without breaking the system) : breaking the system bypasses continue_on_failure
