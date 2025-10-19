@@ -588,15 +588,18 @@ def _fetch_and_enable_new_certificate(domain, no_checks=False):
 
 
 def _prepare_certificate_signing_request(domain, key_file, output_folder):
-    from OpenSSL import crypto  # lazy loading this module for performance reasons
+    from cryptography import x509  # lazy loading this module for performance reasons
+    from cryptography.x509.oid import AttributeOID, NameOID
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives import hashes
 
     from .hook import hook_callback
 
     # Init a request
-    csr = crypto.X509Req()
+    csr = x509.CertificateSigningRequestBuilder()
 
     # Set the domain
-    csr.get_subject().CN = domain
+    csr = csr.subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, domain)]))
 
     sanlist = []
     hook_results = hook_callback("cert_alternate_names", env={"domain": domain})
@@ -617,35 +620,33 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
                 sanlist += result["stdreturn"]
 
     if sanlist:
-        subsanlist = [f"DNS:{sub}.{domain}" for sub in sanlist if "." not in sub]
-        # This is meant for situation such as cryptpad where we need to be able to have a cert for sandbox-domain.tld (with a dash, not just sandbox.domain.tld)
-        domainsanlist = [f"DNS:{domain}" for domain in sanlist if "." in domain]
-        sanlist = ", ".join(subsanlist + domainsanlist)
-        csr.add_extensions(
-            [
-                crypto.X509Extension(
-                    b"subjectAltName",
-                    False,
-                    sanlist.encode("utf-8"),
-                )
-            ]
+        sanlist = [
+            f"{sub}.{domain}" for sub in sanlist if "." not in sub
+        ] + [
+            # This is meant for situation such as cryptpad where we need to be able to have a cert for sandbox-domain.tld (with a dash, not just sandbox.domain.tld)
+            altdomain for altdomain in sanlist if "." in altdomain
+        ]
+
+        csr = csr.add_extension(
+            x509.SubjectAlternativeName(
+                [x509.DNSName(altdomain) for altdomain in sanlist]
+            ),
+            critical=False,
         )
 
     # Set the key
-    with open(key_file, "rt") as f:
-        key = crypto.load_privatekey(crypto.FILETYPE_PEM, f.read())
-
-    csr.set_pubkey(key)
+    with open(key_file, "rt") as pem_file:
+        private_key = serialization.load_pem_private_key(pem_file.read(), password=None)
 
     # Sign the request
-    csr.sign(key, "sha256")
+    csr = csr.sign(private_key, hashes.SHA256())
 
     # Save the request in tmp folder
     csr_file = output_folder + domain + ".csr"
     logger.debug("Saving to %s.", csr_file)
 
-    with open(csr_file, "wb") as f:
-        f.write(crypto.dump_certificate_request(crypto.FILETYPE_PEM, csr))
+    with open(csr_file, "wb") as pem_file:
+        pem_file.write(csr.public_bytes(serialization.Encoding.PEM))
 
 
 def _get_status(domain):
@@ -654,10 +655,14 @@ def _get_status(domain):
     if not os.path.isfile(cert_file):
         raise YunohostError("certmanager_no_cert_file", domain=domain, file=cert_file)
 
-    from OpenSSL import crypto  # lazy loading this module for performance reasons
+    from cryptography import x509  # lazy loading this module for performance reasons
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.x509.oid import NameOID
 
     try:
-        cert = crypto.load_certificate(crypto.FILETYPE_PEM, open(cert_file).read())
+        with open(cert_file, "rb") as pem_file:
+            cert = x509.load_pem_x509_certificate(pem_file.read())
+
     except Exception as exception:
         import traceback
 
@@ -669,13 +674,11 @@ def _get_status(domain):
             reason=exception,
         )
 
-    cert_subject = cert.get_subject().CN
-    cert_issuer = cert.get_issuer().CN
-    organization_name = cert.get_issuer().O
-    valid_up_to = datetime.strptime(
-        cert.get_notAfter().decode("utf-8"), "%Y%m%d%H%M%SZ"
-    )
-    days_remaining = (valid_up_to - datetime.now(timezone.utc)).days
+    cert_subject = cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
+    cert_issuer = cert.issuer.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
+    cert_issuer = cert.issuer.get_attributes_for_oid(NameOID.ORGANIZATION_NAME)[0].value
+    valid_up_to_utc = cert.not_valid_after_utc
+    days_remaining = (valid_up_to_utc - datetime.now(tz=timezone.utc)).days
 
     # Identify that a domain's cert is self-signed if the cert dir
     # is actually a symlink to a dir ending with -selfsigned
@@ -729,14 +732,17 @@ def _generate_account_key():
 
 
 def _generate_key(destination_path):
-    from OpenSSL import crypto  # lazy loading this module for performance reasons
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
 
-    k = crypto.PKey()
-    k.generate_key(crypto.TYPE_RSA, KEY_SIZE)
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=KEY_SIZE)
 
-    with open(destination_path, "wb") as f:
-        f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
-
+    with open(destination_path, "wb") as key_file:
+        key_file.write(private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        ))
 
 def _set_permissions(path, user, group, permissions):
     chown(path, user, group)
