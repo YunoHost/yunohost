@@ -19,6 +19,7 @@
 #
 
 import json
+import toml
 import os
 import shutil
 import socket
@@ -91,13 +92,14 @@ def _permission_create_with_dummy_app(
             settings["path"] = path
         _set_app_settings(app, settings)
 
-        with open(os.path.join(APPS_SETTING_PATH, app, "manifest.json"), "w") as f:
-            json.dump(
+        with open(os.path.join(APPS_SETTING_PATH, app, "manifest.toml"), "w") as f:
+            toml.dump(
                 {
-                    "name": app,
+                    "packaging_format": 2,
                     "id": app,
+                    "name": app,
                     "description": {"en": "Dummy app to test permissions"},
-                    "arguments": {"install": []},
+                    "install": {},
                 },
                 f,
             )
