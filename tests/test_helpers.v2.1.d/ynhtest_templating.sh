@@ -9,14 +9,16 @@ ynhtest_simple_template_app_config() {
     cat << EOF > "$template"
 app=__APP__
 foo=__FOO__
+passwd=__WITH_SPECIAL_CHARS__
 EOF
 
     foo="bar"
+    with_special_chars="hello&world"
     install_dir="$VAR_WWW"
 
     ynh_config_add --template="$template" --destination="$VAR_WWW/config.txt"
 
-    test "$(cat "$VAR_WWW/config.txt")" == "$(echo -ne 'app=ynhtest\nfoo=bar')"
+    test "$(cat "$VAR_WWW/config.txt")" == "$(echo -ne 'app=ynhtest\nfoo=bar\npasswd=hello&world')"
     # shellcheck disable=SC2012
     test "$(ls -l "$VAR_WWW/config.txt" | cut -d' ' -f1-4)" == "-rw------- 1 ynhtest ynhtest"
 }

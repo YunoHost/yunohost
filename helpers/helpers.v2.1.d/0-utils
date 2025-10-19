@@ -74,7 +74,11 @@ fi
 #
 # usage: ynh_exec_as_app COMMAND [ARG ...]
 ynh_exec_as_app() {
-    sudo -u "$app" env PATH="$PATH" COREPACK_ENABLE_DOWNLOAD_PROMPT="0" "$@"
+    sudo -u "$app" env \
+        PATH="$PATH" \
+        COREPACK_ENABLE_DOWNLOAD_PROMPT="0" \
+        NPM_CONFIG_UPDATE_NOTIFIER="false" \
+        "$@"
 }
 
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
@@ -434,7 +438,7 @@ ynh_spawn_app_shell() {
 
     # Load the app's service name, or default to $app
     service=${service:-$app}
-    if systemctl list-units | grep -q "$service.service"; then
+    if systemctl list-units -a | grep -q "$service.service"; then
         # Load the Environment variables from the app's service
         local env_var=$(systemctl show "$service.service" -p "Environment" --value)
         [ -n "${env_var:-}" ] && export "${env_var?}"

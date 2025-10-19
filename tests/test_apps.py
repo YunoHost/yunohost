@@ -494,12 +494,13 @@ def test_systemfuckedup_during_app_install_and_remove(secondary_domain):
 def test_systemfuckedup_during_app_upgrade(secondary_domain):
     install_break_yo_system(secondary_domain, breakwhat="upgrade")
 
-    with message("app_upgrade_broke_the_system", app="break_yo_system"):
-        app_upgrade(
-            "break_yo_system",
-            file=os.path.join(get_test_apps_dir(), "break_yo_system_ynh"),
-            no_safety_backup=True
-        )
+    with pytest.raises(YunohostError):
+        with message("app_upgrade_broke_the_system", app="break_yo_system"):
+            app_upgrade(
+                "break_yo_system",
+                file=os.path.join(get_test_apps_dir(), "break_yo_system_ynh"),
+                no_safety_backup=True
+            )
 
 
 def test_failed_multiple_app_upgrade(secondary_domain):
