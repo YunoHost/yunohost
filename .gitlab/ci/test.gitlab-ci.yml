@@ -45,7 +45,7 @@ test-helpers2.1:
 .test-pytest:
   extends: .test-stage
   script:
-    - python3 -m pytest $TEST_FILE
+    - python3 -m pytest $TEST_FILE --durations=50
 
 test-domains:
   extends: .test-pytest
