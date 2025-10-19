@@ -111,16 +111,9 @@ def evaluate_simple_ast(
     if isinstance(node, ast.Name):  # Variable
         return context[node.id]
 
-    # Python <=3.7 String
-    elif isinstance(node, ast.Str):
-        return node.s
-
-    # Python <=3.7 Number
-    elif isinstance(node, ast.Num):
-        return node.n
-
-    # Boolean, None and Python 3.8 for Number, Boolean, String and None
-    elif isinstance(node, (ast.Constant, ast.NameConstant)):
+    # instances of str, bytes, int, float, complex, and bool,
+    # and the constants None and Ellipsis.
+    elif isinstance(node, ast.Constant):
         return node.value
 
     # + - * / %
