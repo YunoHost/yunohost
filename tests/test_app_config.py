@@ -55,7 +55,7 @@ def clean():
     os.system("mkdir -p /etc/ssowat/")
     app_ssowatconf()
 
-    test_apps = ["config_app", "manifest_v2_app"]
+    test_apps = ["config_app", "manifestv2_app"]
 
     for test_app in test_apps:
         if _is_installed(test_app):
@@ -83,17 +83,17 @@ def no_panel_app(request):
     main_domain = _get_maindomain()
 
     app_install(
-        os.path.join(get_test_apps_dir(), "manifest_v2_app_ynh"),
-        args="domain={}&path={}&is_public={}".format(main_domain, "/", 1),
+        os.path.join(get_test_apps_dir(), "manifestv2_app_ynh"),
+        args="domain={}&path={}&init_main_permission={}".format(main_domain, "/", "visitors"),
         force=True,
     )
 
     def remove_app():
-        app_remove("manifest_v2_app")
+        app_remove("manifestv2_app")
 
     request.addfinalizer(remove_app)
 
-    return "manifest_v2_app"
+    return "manifestv2_app"
 
 
 @pytest.fixture()
