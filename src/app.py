@@ -710,7 +710,7 @@ def app_change_url(
 def app_upgrade(
     app: str | list[str] = [],
     url: str | None = None,
-    file: str | None = None,
+    file: str | dict[str, str] | None = None,
     force: bool = False,
     no_safety_backup: bool = False,
     continue_on_failure: bool = False,
