@@ -42,100 +42,105 @@ test-helpers2.1:
     - cd tests
     - bash test_helpers.sh 2.1
 
-test-domains:
+.test-pytest:
   extends: .test-stage
   script:
-    - python3 -m pytest tests/test_domains.py
+    - python3 -m pytest $TEST_FILE
+
+test-domains:
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_domains.py
 
 test-dns:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_dns.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_dns.py
 
 test-apps:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_apps.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_apps.py
 
 test-appscatalog:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_app_catalog.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_app_catalog.py
 
 test-appurl:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_appurl.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_appurl.py
 
 test-questions:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_questions.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_questions.py
 
 test-app-config:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_app_config.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_app_config.py
 
 test-app-resources:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_app_resources.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_app_resources.py
 
 test-changeurl:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_changeurl.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_changeurl.py
 
 test-backuprestore:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_backuprestore.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_backuprestore.py
 
 test-permission:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_permission.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_permission.py
 
 test-settings:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_settings.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_settings.py
 
 test-user-group:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_user-group.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_user-group.py
 
 test-regenconf:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_regenconf.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_regenconf.py
 
 test-service:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_service.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_service.py
 
 test-ldapauth:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_ldapauth.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_ldapauth.py
 
 test-sso-and-portalapi:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_sso_and_portalapi.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_sso_and_portalapi.py
 
 test-process:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_process.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_process.py
 
 test-file-utils:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_file_utils.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_file_utils.py
 
 ########################################
 # COVERAGE REPORT
