@@ -55,7 +55,7 @@ def clean():
     os.system("mkdir -p /etc/ssowat/")
     app_ssowatconf()
 
-    test_apps = ["config_app", "legacy_app"]
+    test_apps = ["config_app", "manifest_v2_app"]
 
     for test_app in test_apps:
         if _is_installed(test_app):
@@ -79,21 +79,21 @@ def clean():
 
 
 @pytest.fixture()
-def legacy_app(request):
+def no_panel_app(request):
     main_domain = _get_maindomain()
 
     app_install(
-        os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
+        os.path.join(get_test_apps_dir(), "manifest_v2_app_ynh"),
         args="domain={}&path={}&is_public={}".format(main_domain, "/", 1),
         force=True,
     )
 
     def remove_app():
-        app_remove("legacy_app")
+        app_remove("manifest_v2_app")
 
     request.addfinalizer(remove_app)
 
-    return "legacy_app"
+    return "manifest_v2_app"
 
 
 @pytest.fixture()
@@ -125,9 +125,9 @@ def test_app_config_get(config_app):
     user_delete("alice", force=True)
 
 
-def test_app_config_nopanel(legacy_app):
+def test_app_config_nopanel(no_panel_app):
     with pytest.raises(YunohostValidationError):
-        app_config_get(legacy_app)
+        app_config_get(no_panel_app)
 
 
 def test_app_config_get_nonexistentstuff(config_app):
