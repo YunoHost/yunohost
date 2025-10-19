@@ -28,7 +28,7 @@ import tarfile
 import tempfile
 import time
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import reduce
 from glob import glob
 from logging import getLogger
@@ -926,7 +926,7 @@ class RestoreManager:
             logger.debug(
                 "restoring from backup '%s' created on %s",
                 self.name,
-                datetime.utcfromtimestamp(self.info["created_at"]),
+                datetime.fromtimestamp(self.info["created_at"], tz=timezone.utc),
             )
 
     def _postinstall_if_needed(self):
@@ -2443,7 +2443,7 @@ def backup_info(name, with_details=False, human_readable=False):
 
     result = {
         "path": archive_file,
-        "created_at": datetime.utcfromtimestamp(info["created_at"]),
+        "created_at": datetime.fromtimestamp(info["created_at"], tz=timezone.utc),
         "description": info["description"],
         "size": size,
     }
