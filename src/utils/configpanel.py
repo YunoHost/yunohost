@@ -947,7 +947,9 @@ class ConfigPanel:
         # get settings keys filtered by filter_key
         partial_settings_keys = form.model_fields.keys()
         # get filtered settings
-        partial_settings = form.model_dump(exclude_defaults=exclude_defaults, exclude=exclude)
+        partial_settings = form.model_dump(
+            exclude_defaults=exclude_defaults, exclude=exclude
+        )
         # get previous settings that we will updated with new settings
         current_settings = self.raw_settings.copy()
 

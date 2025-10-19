@@ -65,7 +65,7 @@ from .file_utils import read_yaml, write_to_file
 
 if TYPE_CHECKING:
     from pydantic import GetJsonSchemaHandler
-    from pydantic.fields import ValidationInfo, FieldInfo
+    from pydantic.fields import FieldInfo, ValidationInfo
     from pydantic.json_schema import JsonSchemaValue
     from pydantic_core.core_schema import CoreSchema
 
@@ -1385,9 +1385,7 @@ def _base_value_post_validator(
     ):
         path = Path(value)
         if not (path.exists() and path.is_absolute() and path.is_file()):
-            raise YunohostValidationError(
-                f"File {value} doesn't exists", raw_msg=True
-            )
+            raise YunohostValidationError(f"File {value} doesn't exists", raw_msg=True)
         content = path.read_bytes()
     else:
         content = b64decode(value)
@@ -1529,7 +1527,9 @@ class BaseChoicesOption(BaseInputOption):
 
     @field_validator("choices", mode="before", check_fields=False)
     @classmethod
-    def parse_comalist_choices(cls, value: str | dict[str, Any] | list[Any] | None) -> dict[str, Any] | list[Any] | None:
+    def parse_comalist_choices(
+        cls, value: str | dict[str, Any] | list[Any] | None
+    ) -> dict[str, Any] | list[Any] | None:
         if isinstance(value, str):
             values = [value.strip() for value in value.split(",")]
             return [value for value in values if value]
@@ -2377,15 +2377,13 @@ def ask_questions_and_parse_answers(
 @overload
 def parse_raw_options(  # noqa: E704
     raw_options: dict[str, Any], serialize: Literal[True]
-) -> list[dict[str, Any]]:
-    ...
+) -> list[dict[str, Any]]: ...
 
 
 @overload
 def parse_raw_options(  # noqa: E704
     raw_options: dict[str, Any], serialize: Literal[False] = False
-) -> list[AnyOption]:
-    ...
+) -> list[AnyOption]: ...
 
 
 def parse_raw_options(

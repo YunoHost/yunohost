@@ -19,7 +19,6 @@
 #
 
 import json
-import toml
 import os
 import shutil
 import socket
@@ -27,6 +26,7 @@ import string
 
 import pytest
 import requests
+import toml
 from yunohost.app import (
     APPS_SETTING_PATH,
     _get_app_settings,

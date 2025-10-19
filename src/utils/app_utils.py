@@ -353,7 +353,9 @@ def _get_manifest_of_app(path_or_app_id: str) -> AppManifest:
     )
 
     if manifest["packaging_format"] < 2:
-        raise YunohostError(f"Packaging format {manifest['packaging_format']} is not supported anymore")
+        raise YunohostError(
+            f"Packaging format {manifest['packaging_format']} is not supported anymore"
+        )
 
     manifest["install"] = _set_default_ask_questions(manifest.get("install", {}))
     manifest["doc"], manifest["notifications"] = _parse_app_doc_and_notifications(path)
@@ -1067,11 +1069,7 @@ def _assert_no_conflicting_apps(
 
 
 def _make_environment_for_app_script(
-    app,
-    args={},
-    args_prefix="APP_ARG_",
-    workdir=None,
-    action=None
+    app, args={}, args_prefix="APP_ARG_", workdir=None, action=None
 ) -> dict[str, str]:
     from ..log import OperationLogger
 

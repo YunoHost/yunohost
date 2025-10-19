@@ -159,10 +159,19 @@ class MyDiagnoser(Diagnoser):  # type: ignore
         lists = list(Path("/etc/apt/").rglob("*.list"))
         deb822 = list(Path("/etc/apt/").rglob("*.sources"))
 
-        lists_testing = any(re.match(r"^\s*deb\s*.*yunohost.org.*\btesting\b", file.read_text()) for file in lists)
+        lists_testing = any(
+            re.match(r"^\s*deb\s*.*yunohost.org.*\btesting\b", file.read_text())
+            for file in lists
+        )
         deb822_testing = any(
-            re.findall(r"^\s*URIs\s*:.*yunohost.org", file.read_text(), flags=re.MULTILINE)
-            and re.findall(r"^\s*Components\s*:.*\btesting\b.*", file.read_text(), flags=re.MULTILINE)
+            re.findall(
+                r"^\s*URIs\s*:.*yunohost.org", file.read_text(), flags=re.MULTILINE
+            )
+            and re.findall(
+                r"^\s*Components\s*:.*\btesting\b.*",
+                file.read_text(),
+                flags=re.MULTILINE,
+            )
             for file in deb822
         )
 

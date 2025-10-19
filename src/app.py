@@ -744,8 +744,8 @@ def app_upgrade(
     )
     from .permission import _sync_permissions_with_ldap
     from .regenconf import manually_modified_files
-    from .utils.system import free_space_in_directory
     from .utils.resources import AppResourceManager
+    from .utils.system import free_space_in_directory
 
     # "app" is a bad name for this arg but meh that's legacy and possibly can't easily be changed
     # (and actually a bit relevant in terms of what's shown in --help)
@@ -908,9 +908,7 @@ def app_upgrade(
 
         if no_safety_backup:
             # FIXME: i18n
-            logger.warning(
-                "Skipping the creation of a backup prior to the upgrade."
-            )
+            logger.warning("Skipping the creation of a backup prior to the upgrade.")
         else:
             # FIXME: i18n
             logger.info("Creating a safety backup prior to the upgrade")
@@ -1332,8 +1330,8 @@ def app_install(
     from .user import user_list
     from .utils.app_utils import _confirm_app_install, _next_instance_number_for_app
     from .utils.form import ask_questions_and_parse_answers
-    from .utils.system import free_space_in_directory
     from .utils.resources import AppResourceManager
+    from .utils.system import free_space_in_directory
 
     # Check if disk space available
     if free_space_in_directory("/") <= 512 * 1000 * 1000:
@@ -1570,9 +1568,9 @@ def app_install(
                     m18n.n("unexpected_error", error="\n" + traceback.format_exc())
                 )
 
-            AppResourceManager(
-                app_instance_name, wanted={}, current=manifest
-            ).apply(rollback_and_raise_exception_if_failure=False, action="remove")
+            AppResourceManager(app_instance_name, wanted={}, current=manifest).apply(
+                rollback_and_raise_exception_if_failure=False, action="remove"
+            )
 
             if remove_retcode != 0:
                 msg = m18n.n("app_not_properly_removed", app=app_instance_name)
@@ -2484,7 +2482,9 @@ ynh_app_config_run $1
             )
 
             next_settings = {
-                k: v for k, v in form.model_dump().items() if previous_settings.get(k) != v
+                k: v
+                for k, v in form.model_dump().items()
+                if previous_settings.get(k) != v
             }
 
             perm_changes: dict[str, dict[str, Any]] = {}
