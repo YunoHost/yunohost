@@ -672,7 +672,7 @@ def _get_status(domain):
 
     cert_subject = cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
     cert_issuer = cert.issuer.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
-    cert_issuer = cert.issuer.get_attributes_for_oid(NameOID.ORGANIZATION_NAME)[0].value
+    organization_name = cert.issuer.get_attributes_for_oid(NameOID.ORGANIZATION_NAME)[0].value
     valid_up_to_utc = cert.not_valid_after_utc
     days_remaining = (valid_up_to_utc - datetime.now(tz=timezone.utc)).days
 
