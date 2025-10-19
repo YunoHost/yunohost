@@ -589,9 +589,8 @@ def _fetch_and_enable_new_certificate(domain, no_checks=False):
 
 def _prepare_certificate_signing_request(domain, key_file, output_folder):
     from cryptography import x509  # lazy loading this module for performance reasons
+    from cryptography.hazmat.primitives import hashes, serialization
     from cryptography.x509.oid import AttributeOID, NameOID
-    from cryptography.hazmat.primitives import serialization
-    from cryptography.hazmat.primitives import hashes
 
     from .hook import hook_callback
 
@@ -620,12 +619,9 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
                 sanlist += result["stdreturn"]
 
     if sanlist:
-        sanlist = [
-            f"{sub}.{domain}" for sub in sanlist if "." not in sub
-        ] + [
-            # This is meant for situation such as cryptpad where we need to be able to have a cert for sandbox-domain.tld (with a dash, not just sandbox.domain.tld)
-            altdomain for altdomain in sanlist if "." in altdomain
-        ]
+        sanlist = [f"{sub}.{domain}" for sub in sanlist if "." not in sub]
+        # This is meant for situation such as cryptpad where we need to be able to have a cert for sandbox-domain.tld (with a dash, not just sandbox.domain.tld)
+        sanlist += [altdomain for altdomain in sanlist if "." in altdomain]
 
         csr = csr.add_extension(
             x509.SubjectAlternativeName(
@@ -738,11 +734,14 @@ def _generate_key(destination_path):
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=KEY_SIZE)
 
     with open(destination_path, "wb") as key_file:
-        key_file.write(private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption()
-        ))
+        key_file.write(
+            private_key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
+        )
+
 
 def _set_permissions(path, user, group, permissions):
     chown(path, user, group)
