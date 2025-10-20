@@ -26,18 +26,14 @@ YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
-# Backup destination
-YNH_CORE_BACKUP_DIR="${YNH_BACKUP_DIR%/}/data/home"
-
-pushd "$YNH_CORE_BACKUP_DIR"
 if [ ! -e home ]; then
     # Handle old backup way when we didn't keep the system hierarchy
-    for f in *; do
-        ynh_restore "/home/$f"
+    for f in "${YNH_CWD}/data/home"*; do
+        ynh_restore "${f%"$YNH_CWD"/data/home}"
     done
 else
-    for f in home/*; do
-        ynh_restore "/$f"
-    done
+    while read -r f; do
+        ynh_restore "/home/$f"
+    done <<< "${YNH_CWD}/data/home_dir_list"
 fi
 popd

@@ -23,15 +23,13 @@ set -Eeuo pipefail
 
 # Source YNH helpers
 YNH_HELPERS_VERSION=2.1
+
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
-# Backup destination
-YNH_CORE_BACKUP_DIR="${YNH_BACKUP_DIR%/}/conf/ldap"
-
 # Backup the configuration
 ynh_backup "/etc/ldap/ldap.conf"
-slapcat -b cn=config -l "${YNH_CORE_BACKUP_DIR}/cn=config.master.ldif"
+slapcat -b cn=config -l "${YNH_CWD%/}/conf/ldap/cn=config.master.ldif"
 
 # Backup the database
-slapcat -b dc=yunohost,dc=org -l "${YNH_CORE_BACKUP_DIR}/dc=yunohost-dc=org.ldif"
+slapcat -b dc=yunohost,dc=org -l "${YNH_CWD%/}/conf/ldap/dc=yunohost-dc=org.ldif"

@@ -625,7 +625,7 @@ class BackupManager:
             system_targets,
             args=[self.work_dir],
             env=env_dict,
-            chdir=self.work_dir,
+            chdir=os.path.join(self.work_dir, "system"),
         )
 
         ret_succeed = {

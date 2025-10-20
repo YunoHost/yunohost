@@ -26,7 +26,5 @@ YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
-YNH_CORE_BACKUP_DIR="${YNH_BACKUP_DIR%/}/data/mail"
-
-[ ! -d "${YNH_CORE_BACKUP_DIR}" ] || ynh_restore /var/mail
+{ [ ! -d "${YNH_CWD%/}/data/mail" ] && [ ! -d "${YNH_CWD%/}/var/mail" ]; } || ynh_restore /var/mail
 chown -R vmail:mail /var/mail/
