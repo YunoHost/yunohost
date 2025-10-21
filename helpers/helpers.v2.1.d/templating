@@ -40,6 +40,8 @@
 #   `__VAR_1__`    by `$var_1`
 #   `__VAR_2__`    by `$var_2`
 #
+# For this to work, template tags must be in uppercase and variables names must be in lowercase (for instance `__MY_var__` or `$myVar` would not be replaced as expected).
+#
 # Special case for `__PATH__/` which is replaced by `/` instead of `//` if `$path` is `/`
 #
 # ##### When --jinja is enabled
@@ -141,6 +143,8 @@ ynh_config_add() {
 #   `__APP__`      by `$app`
 #   `__VAR_1__`    by `$var_1`
 #   `__VAR_2__`    by `$var_2`
+#
+# For this to work, template tags must be in uppercase and variables names must be in lowercase (for instance `__MY_var__` or `$myVar` would not be replaced as expected).
 #
 # Special case for `__PATH__/` which is replaced by `/` instead of `//` if `$path` is `/`
 _ynh_replace_vars() {
