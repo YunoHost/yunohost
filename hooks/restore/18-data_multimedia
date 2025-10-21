@@ -26,4 +26,4 @@ YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
-{ [ ! -d "${YNH_CWD%/}/data/multimedia" ] && [ ! -d "${YNH_CWD%/}/home/yunohost.multimedia" ]; } || ynh_restore /home/yunohost.multimedia
+{ [ ! -d "${YNH_CWD%/}/multimedia" ] && [ ! -d "${YNH_CWD%/}/home/yunohost.multimedia" ]; } || ynh_restore /home/yunohost.multimedia

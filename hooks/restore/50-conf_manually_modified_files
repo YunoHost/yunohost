@@ -26,7 +26,7 @@ YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
-for file in $(cat "${YNH_CWD%/}/conf/manually_modified_files"); do
+for file in $(cat "${YNH_CWD%/}/manually_modified_files/manually_modified_files_list"); do
     ynh_restore "$file" || true
 done
 

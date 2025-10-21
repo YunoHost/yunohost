@@ -240,7 +240,7 @@ def hook_callback(
         env -- Dictionnary of environment variables to export
         pre_callback -- An object to call before each script execution with
             (name, priority, path, args) as arguments and which must return
-            the arguments to pass to the script
+            a tuple with: (the arguments to pass to the script, the chdir to set)
         post_callback -- An object to call after each script execution with
             (name, priority, path, succeed) as arguments
 
@@ -282,7 +282,7 @@ def hook_callback(
     if not callable(pre_callback):
 
         def pre_callback(name, priority, path, args):
-            return args
+            return args, chdir
 
     if not callable(post_callback):
 
@@ -295,11 +295,14 @@ def hook_callback(
             state = "succeed"
             path = info["path"]
             try:
-                hook_args = pre_callback(
+                hook_args, hook_chdir = pre_callback(
                     name=name, priority=priority, path=path, args=args
                 )
                 hook_return = hook_exec(
-                    path, args=hook_args, chdir=chdir, env=env, raise_on_error=True
+                    path,
+                    args=hook_args if hook_args else args,
+                    chdir=hook_chdir if hook_chdir else chdir,
+                    env=env, raise_on_error=True
                 )[1]
             except YunohostError as e:
                 state = "failed"

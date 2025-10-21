@@ -127,7 +127,7 @@ def regen_conf(
         # return the arguments to pass to the script
         return pre_args + [
             category_pending_path,
-        ]
+        ], None
 
     ssh_explicitly_specified = isinstance(names, list) and "ssh" in names
 
@@ -434,7 +434,7 @@ def regen_conf(
             regen_conf_files = ""
         return post_args + [
             regen_conf_files,
-        ]
+        ], None
 
     hook_callback("conf_regen", names, pre_callback=_pre_call2, env=env)
 

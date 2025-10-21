@@ -153,6 +153,8 @@ base_folder_and_perm_init() {
     chown root:root /var/cache/yunohost
     chmod 700 /var/cache/yunohost
 
+    mkdir -p /etc/ssowat
+
     [ ! -e /var/www/.well-known/ynh-diagnosis/ ] || chmod 775 /var/www/.well-known/ynh-diagnosis/
 
     if test -e /etc/yunohost/installed; then

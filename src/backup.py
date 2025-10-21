@@ -620,12 +620,20 @@ class BackupManager:
 
         # Actual call to backup scripts/hooks
 
+        def _pre_callback(name, priority, path, args):
+            if name.startswith("conf_"):
+                d = os.path.join(self.work_dir, "conf")
+            else:
+                d = os.path.join(*([self.work_dir] + name.split("_")))
+            os.makedirs(d, exist_ok=True)
+            return None, d
+
         ret = hook_callback(
             "backup",
             system_targets,
             args=[self.work_dir],
             env=env_dict,
-            chdir=os.path.join(self.work_dir, "system"),
+            pre_callback=_pre_callback
         )
 
         ret_succeed = {
@@ -1232,6 +1240,14 @@ class RestoreManager:
 
         logger.debug(m18n.n("restore_running_hooks"))
 
+        def _pre_callback(name, priority, path, args):
+            if name.startswith("conf_"):
+                d = os.path.join(self.work_dir, "conf")
+            else:
+                d = os.path.join(*([self.work_dir] + name.split("_")))
+            os.makedirs(d, exist_ok=True)
+            return None, d
+
         env_dict = {
             "YNH_BACKUP_DIR": self.work_dir,
             "YNH_BACKUP_CSV": os.path.join(self.work_dir, "backup.csv"),
@@ -1243,7 +1259,7 @@ class RestoreManager:
             system_targets,
             args=[self.work_dir],
             env=env_dict,
-            chdir=self.work_dir,
+            pre_callback=_pre_callback
         )
 
         ret_succeed = [

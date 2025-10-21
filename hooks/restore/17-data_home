@@ -28,12 +28,11 @@ source /usr/share/yunohost/helpers
 
 if [ ! -e home ]; then
     # Handle old backup way when we didn't keep the system hierarchy
-    for f in "${YNH_CWD}/data/home"*; do
-        ynh_restore "${f%"$YNH_CWD"/data/home}"
+    for f in "${YNH_CWD%/}/"*; do
+        ynh_restore "${f#"$YNH_CWD"}"
     done
 else
-    while read -r f; do
-        ynh_restore "/home/$f"
-    done <<< "${YNH_CWD}/data/home_dir_list"
+    for f in "${YNH_CWD%/}/home/"*; do
+        ynh_restore "${f#"$YNH_CWD"}"
+    done
 fi
-popd
