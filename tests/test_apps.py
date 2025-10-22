@@ -190,7 +190,7 @@ def install_full_domain_app(domain):
 def install_break_yo_system(domain, breakwhat):
     app_install(
         os.path.join(get_test_apps_dir(), "break_yo_system_ynh"),
-        args="domain={}&breakwhat={}".format(domain, breakwhat),
+        args="domain={}&path=/break_yo_system&breakwhat={}".format(domain, breakwhat),
         force=True,
     )
 

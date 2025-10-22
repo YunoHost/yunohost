@@ -1,3 +1,13 @@
+yunohost (12.1.29) stable; urgency=low
+
+  - diagnosis/email/dnsbl: fix infamous issue with spamhaus returning 'openresolver' (396e5d327)
+  - firewall: Fix using an ssh port not listed in firewall.yml leading to partial error (#2202)
+  - i18n: Translations updated for Persian)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, otm33)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 18 Oct 2025 19:33:21 +0200
+
 yunohost (12.1.28) stable; urgency=low
 
   - dns: Fix lexicon integration (#2194)
