@@ -17,6 +17,37 @@ yunohost (13.0.0.alpha1) unstable; urgency=low
 
  -- Félix Piédallu <felix@piedallu.me>  Thu, 25 Sep 2025 20:41:48 +0200
 
+yunohost (12.1.32) stable; urgency=low
+
+  - spamhaushell: try another way to address the issue by generating a dnsmasq snippet during regenconf (61d2f9fe8)
+  - dnsmasq: stabilize the resolver pool list shuffling by using a seed computed from the machine id and current month (0858ea37f)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 23 Oct 2025 14:28:38 +0200
+
+yunohost (12.1.31) stable; urgency=low
+
+  - Revert "diagnosis/mail/blocklists: use spamhaus' own ns to avoid 'open resolver' errors" (bf75e1940)
+
+ -- tituspijean <tituspijean@yunohost.org>  Thu, 23 Oct 2025 02:41:48 +0200
+
+yunohost (12.1.30) stable; urgency=low
+
+  - dns/mail: in DNSmasq conf, route queries about spamhaus to spamhaus's own nameservers to avoid 'open resolver' errors (b45b9d4f4)
+  - mail/postfix: remove reject_rbl_client abuseat.org because it's in fact spamshaus.org since a few years (42f0b91bf)
+  - diagnosis/mail/blocklists: revert prefix fix for diagnosis for spamhaus, which is obsolete now that dns queries for spamhaus are now route at dnsmasq level (51c468735)
+  - diagnosis/mail/blocklists: remove abuseat.org which is in fact spamhaus.org since a few years (6af034820)
+  - diagnosis/mail/blocklists: when obtaining an 'open resolver' reason, advise admins to check their /etc/resolv.conf (#2201) (d525bfbc6)
+  - dns: remove obsolete DNS resolver from pool because it times out (#2203)
+  - system updates: improve system packages categorization (89c27e3aa)
+  - helpers/nodejs: disable npm/node checking if there's a new version available and triggering a boring warning ... we use n which has legit versions etc (059e876af)
+  - helpers/templating: insist about case sensitivity in documentation (#2207)
+  - helpers/configpanel: fix boolean values handling in ynh_write_var_in_file (#2209)
+  - i18n: Translations updated for French
+
+  Thanks to all contributors <3 ! (Félix Piédallu, ljf, oleole39, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 22 Oct 2025 23:40:23 +0200
+
 yunohost (12.1.29) stable; urgency=low
 
   - diagnosis/email/dnsbl: fix infamous issue with spamhaus returning 'openresolver' (396e5d327)
