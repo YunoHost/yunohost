@@ -72,6 +72,9 @@ profile = "black"
 
 [tool.black]
 
+[tool.ty]
+environment.root = ["."]
+
 
 [tool.pytest.ini_options]
 # for --cov-config see https://github.com/nedbat/coveragepy/issues/512
