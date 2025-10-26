@@ -691,9 +691,6 @@ class PermissionsResource(AppResource):
             user_permission_update,
         )
 
-        # Delete legacy is_public setting if not already done
-        self.delete_setting("is_public")
-
         # Detect that we're using a full-domain app,
         # in which case we probably need to automagically
         # define the "path" setting with "/"
