@@ -32,6 +32,7 @@ from typing import (
     Optional,
     TypedDict,
     Union,
+    overload,
 )
 
 from moulinette import Moulinette, m18n
@@ -254,6 +255,14 @@ def _assert_domain_exists(domain: str) -> None:
 def _list_subdomains_of(parent_domain: str) -> list[str]:
     _assert_domain_exists(parent_domain)
     return [domain for domain in _get_domains() if domain.endswith(f".{parent_domain}")]
+
+
+@overload
+def _get_parent_domain_of(domain: str, return_self: Literal[True] = True, topest: bool = False) -> str: ...
+
+
+@overload
+def _get_parent_domain_of(domain: str, return_self: Literal[False], topest: bool = False) -> str | None: ...
 
 
 def _get_parent_domain_of(
