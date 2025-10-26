@@ -1599,6 +1599,12 @@ class SelectOption(BaseChoicesOption):
     default: str | None = None
     _annotation = str
 
+    @model_validator(mode="after")
+    def check_choices(self) -> Any:
+        if self.choices == []:
+            raise ValueError("select choices should not be empty")
+        return self
+
 
 class TagsOption(BaseChoicesOption):
     """
