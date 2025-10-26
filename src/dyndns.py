@@ -89,7 +89,7 @@ def _dyndns_available(domain: str) -> bool:
 
 
 @is_unit_operation(exclude=["recovery_password"])
-def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
+def dyndns_subscribe(operation_logger, domain, recovery_password=None):
     """
     Subscribe to a DynDNS service
 
