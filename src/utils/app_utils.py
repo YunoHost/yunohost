@@ -36,7 +36,7 @@ from typing import (
 )
 
 import yaml
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 from packaging import version
 
 from .error import YunohostError, YunohostValidationError
@@ -47,7 +47,7 @@ from .file_utils import (
     read_file,
     read_toml,
 )
-from .i18n import _value_for_locale
+from .i18n import _, _value_for_locale
 from .process import check_output
 from .system import (
     binary_to_human,
@@ -140,7 +140,7 @@ def _get_app_settings(app: str) -> dict[str, Any]:
             logger.error(
                 f"It looks like settings.yml for {app} is empty ... This should not happen ..."
             )
-            logger.error(m18n.n("app_not_correctly_installed", app=app))
+            logger.error(_("app_not_correctly_installed", app=app))
             return {}
 
         # Make the app id available as $app too
@@ -156,7 +156,7 @@ def _get_app_settings(app: str) -> dict[str, Any]:
 
         return settings
     except (IOError, TypeError, KeyError):
-        logger.error(m18n.n("app_not_correctly_installed", app=app))
+        logger.error(_("app_not_correctly_installed", app=app))
     return {}
 
 
@@ -504,7 +504,7 @@ def _set_default_ask_questions(questions: dict[str, Any], script_name: str = "in
             for question_with_default in questions_with_default
         ):
             # The key is for example "app_manifest_install_ask_domain"
-            question["ask"] = m18n.n(f"app_manifest_{script_name}_ask_{question['id']}")
+            question["ask"] = _(f"app_manifest_{script_name}_ask_{question['id']}")
 
             # Also it in fact doesn't make sense for any of those questions to have an example value nor a default value...
             if question.get("type") in ["domain", "user", "password"]:
@@ -619,7 +619,7 @@ def _extract_app_from_folder(path: str) -> tuple[AppManifest, str]:
     Keyword arguments:
         path -- Path of the tarball or directory
     """
-    logger.debug(m18n.n("extracting"))
+    logger.debug(_("extracting"))
 
     path = os.path.abspath(path)
 
@@ -650,7 +650,7 @@ def _extract_app_from_folder(path: str) -> tuple[AppManifest, str]:
     manifest = _get_manifest_of_app(extracted_app_folder)
     manifest["lastUpdate"] = int(time.time())
 
-    logger.debug(m18n.n("done"))
+    logger.debug(_("done"))
 
     manifest["remote"] = {"type": "file", "path": path}
     manifest["quality"] = {"level": -1, "state": "thirdparty"}
@@ -719,7 +719,7 @@ def _git_clone_light(
             else:
                 branch = default_branch
 
-    logger.debug(m18n.n("downloading"))
+    logger.debug(_("downloading"))
 
     # Download only specified commit
     # We don't use git clone because, git clone can't download
@@ -739,7 +739,7 @@ def _git_clone_light(
             cmd, cwd=dest_dir, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
         )
 
-    logger.debug(m18n.n("done"))
+    logger.debug(_("done"))
 
     if revision == "HEAD":
         try:
@@ -771,7 +771,7 @@ def _extract_app_from_gitrepo(
         logger.error(e)
         raise YunohostError("app_sources_fetch_failed")
     else:
-        logger.debug(m18n.n("done"))
+        logger.debug(_("done"))
 
     manifest = _get_manifest_of_app(extracted_app_folder)
 
@@ -823,7 +823,7 @@ def _check_manifest_requirements(
     """Check if required packages are met from the manifest"""
 
     app_base_id = manifest["id"]
-    logger.debug(m18n.n("app_requirements_checking", app=app))
+    logger.debug(_("app_requirements_checking", app=app))
 
     # Packaging format
     if manifest["packaging_format"] not in [2]:
@@ -839,7 +839,7 @@ def _check_manifest_requirements(
         "id": "required_yunohost_version",
         "passed": version.parse(required_yunohost_version)
         <= version.parse(current_yunohost_version),
-        "error": m18n.n(
+        "error": _(
             "app_yunohost_version_not_supported",
             current=current_yunohost_version,
             required=required_yunohost_version,
@@ -853,7 +853,7 @@ def _check_manifest_requirements(
     yield {
         "id": "arch",
         "passed": arch_requirement in ["all", "?"] or arch in arch_requirement,
-        "error": m18n.n(
+        "error": _(
             "app_arch_not_supported",
             current=arch,
             required=", ".join(arch_requirement)
@@ -875,7 +875,7 @@ def _check_manifest_requirements(
         yield {
             "id": "install",
             "passed": multi_instance,
-            "error": m18n.n("app_already_installed", app=app_base_id),
+            "error": _("app_already_installed", app=app_base_id),
         }
 
     # Disk
@@ -894,7 +894,7 @@ def _check_manifest_requirements(
         yield {
             "id": "disk",
             "passed": has_enough_disk,
-            "error": m18n.n(
+            "error": _(
                 "app_not_enough_disk",
                 current=free_space,
                 required=manifest["integration"]["disk"],
@@ -948,7 +948,7 @@ def _check_manifest_requirements(
     yield {
         "id": "ram",
         "passed": can_build and can_run,
-        "error": m18n.n(
+        "error": _(
             "app_not_enough_ram",
             current=binary_to_human(ram),
             required=max_build_runtime,
@@ -1379,18 +1379,16 @@ def _ask_confirmation(
 
     if kind == "simple":
         answer = Moulinette.prompt(
-            m18n.n(question, answers="Press enter to continue", **params),
+            _(question, answers="Press enter to continue", **params),
             color="yellow",
         )
         answer = True
     elif kind == "soft":
-        answer = Moulinette.prompt(
-            m18n.n(question, answers="Y/N", **params), color="yellow"
-        )
+        answer = Moulinette.prompt(_(question, answers="Y/N", **params), color="yellow")
         answer = answer.upper() == "Y"
     else:
         answer = Moulinette.prompt(
-            m18n.n(question, answers="Yes, I understand", **params), color="red"
+            _(question, answers="Yes, I understand", **params), color="red"
         )
         answer = answer == "Yes, I understand"
 

@@ -26,7 +26,7 @@ import os
 import subprocess
 from logging import getLogger
 
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 from moulinette.core import MoulinetteError
 
 from .domain import _get_maindomain
@@ -35,6 +35,7 @@ from .regenconf import regen_conf
 from .utils.dns import dig, is_yunohost_dyndns_domain
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import chmod, chown, rm, write_to_file
+from .utils.i18n import _
 from .utils.network import get_public_ip
 
 logger = getLogger("yunohost.dyndns")
@@ -112,9 +113,9 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
     if not _dyndns_available(domain):
         # Prompt for a password if running in CLI and no password provided
         if not recovery_password and Moulinette.interface.type == "cli":
-            logger.warning(m18n.n("ask_dyndns_recovery_password_explain_unavailable"))
+            logger.warning(_("ask_dyndns_recovery_password_explain_unavailable"))
             recovery_password = Moulinette.prompt(
-                m18n.n("ask_dyndns_recovery_password"), is_password=True
+                _("ask_dyndns_recovery_password"), is_password=True
             )
 
         if recovery_password:
@@ -126,13 +127,13 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
 
     # Prompt for a password if running in CLI and no password provided
     if not recovery_password and Moulinette.interface.type == "cli":
-        logger.warning(m18n.n("ask_dyndns_recovery_password_explain"))
+        logger.warning(_("ask_dyndns_recovery_password_explain"))
         recovery_password = Moulinette.prompt(
-            m18n.n("ask_dyndns_recovery_password"), is_password=True, confirm=True
+            _("ask_dyndns_recovery_password"), is_password=True, confirm=True
         )
 
     if not recovery_password:
-        logger.warning(m18n.n("dyndns_no_recovery_password"))
+        logger.warning(_("dyndns_no_recovery_password"))
 
     if recovery_password:
         from .utils.password import assert_password_is_strong_enough
@@ -211,7 +212,7 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
     subprocess.check_call(["bash", "-c", cmd.format(t="2 min")])
     subprocess.check_call(["bash", "-c", cmd.format(t="4 min")])
 
-    logger.success(m18n.n("dyndns_subscribed"))
+    logger.success(_("dyndns_subscribed"))
 
 
 @is_unit_operation(exclude=["recovery_password"])
@@ -237,11 +238,9 @@ def dyndns_unsubscribe(operation_logger, domain, recovery_password=None):
     # Otherwise, ask for the recovery password
     else:
         if Moulinette.interface.type == "cli" and not recovery_password:
-            logger.warning(
-                m18n.n("ask_dyndns_recovery_password_explain_during_unsubscribe")
-            )
+            logger.warning(_("ask_dyndns_recovery_password_explain_during_unsubscribe"))
             recovery_password = Moulinette.prompt(
-                m18n.n("ask_dyndns_recovery_password"), is_password=True
+                _("ask_dyndns_recovery_password"), is_password=True
             )
 
         if not recovery_password:
@@ -285,7 +284,7 @@ def dyndns_unsubscribe(operation_logger, domain, recovery_password=None):
             error=f"The server returned code {r.status_code}",
         )
 
-    logger.success(m18n.n("dyndns_unsubscribed"))
+    logger.success(_("dyndns_unsubscribed"))
 
 
 @is_unit_operation(flash=True)
@@ -321,7 +320,7 @@ def dyndns_set_recovery_password(domain, recovery_password):
         raise YunohostError("dyndns_set_recovery_password_failed", error=str(e))
 
     if r.status_code == 200:
-        logger.success(m18n.n("dyndns_set_recovery_password_success"))
+        logger.success(_("dyndns_set_recovery_password_success"))
     elif r.status_code == 403:
         raise YunohostError("dyndns_set_recovery_password_denied")
     elif r.status_code == 404:
@@ -519,7 +518,7 @@ def dyndns_update(
             logger.error(str(r))
             raise YunohostError("dyndns_ip_update_failed")
 
-        logger.success(m18n.n("dyndns_ip_updated"))
+        logger.success(_("dyndns_ip_updated"))
     else:
         print(
             "Warning: dry run, this is only the generated config, it won't be applied"

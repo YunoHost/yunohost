@@ -25,7 +25,7 @@ import time
 from importlib import import_module
 from logging import getLogger
 
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 
 from .log import is_unit_operation
 from .utils.error import YunohostError, YunohostValidationError
@@ -35,6 +35,7 @@ from .utils.file_utils import (
     write_to_json,
     write_to_yaml,
 )
+from .utils.i18n import _
 
 logger = getLogger("yunohost.diagnosis")
 
@@ -72,7 +73,7 @@ def diagnosis_show(
     categories=[], issues=False, full=False, share=False, human_readable=False
 ):
     if not os.path.exists(DIAGNOSIS_CACHE):
-        logger.warning(m18n.n("diagnosis_never_ran_yet"))
+        logger.warning(_("diagnosis_never_ran_yet"))
         return
 
     # Get all the categories
@@ -94,7 +95,7 @@ def diagnosis_show(
         try:
             report = Diagnoser.get_cached_report(category)
         except Exception as e:
-            logger.error(m18n.n("diagnosis_failed", category=category, error=str(e)))
+            logger.error(_("diagnosis_failed", category=category, error=str(e)))
             continue
 
         Diagnoser.i18n(report, force_remove_html_tags=share or human_readable)
@@ -127,7 +128,7 @@ def diagnosis_show(
         content = _dump_human_readable_reports(all_reports)
         url = yunopaste(content)
 
-        logger.info(m18n.n("log_available_on_yunopaste", url=url))
+        logger.info(_("log_available_on_yunopaste", url=url))
         if Moulinette.interface.type == "api":
             return {"url": url}
         else:
@@ -195,7 +196,7 @@ def diagnosis_run(
             import traceback
 
             logger.error(
-                m18n.n(
+                _(
                     "diagnosis_failed_for_category",
                     category=category,
                     error="\n" + traceback.format_exc(),
@@ -215,7 +216,7 @@ def diagnosis_run(
     if email:
         _email_diagnosis_issues()
     if issues and Moulinette.interface.type == "cli":
-        logger.warning(m18n.n("diagnosis_display_tip"))
+        logger.warning(_("diagnosis_display_tip"))
 
 
 @is_unit_operation(flash=True)
@@ -275,12 +276,12 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
 
         # Sanity checks for the provided arguments
         if len(filter_) == 0:
-            raise YunohostValidationError(m18n.n("diagnosis_ignore_missing_criteria"))
+            raise YunohostValidationError(_("diagnosis_ignore_missing_criteria"))
         category = filter_[0]
         if category not in all_categories_names:
             raise YunohostValidationError(f"{category} is not a diagnosis category")
         if any("=" not in criteria for criteria in filter_[1:]):
-            raise YunohostValidationError(m18n.n("diagnosis_ignore_criteria_error"))
+            raise YunohostValidationError(_("diagnosis_ignore_criteria_error"))
 
         # Convert the provided criteria into a nice dict
         criterias = {c.split("=")[0]: c.split("=")[1] for c in filter_[1:]}
@@ -303,7 +304,7 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
             issue_matches_criterias(i, criterias)
             for i in current_issues_for_this_category
         ):
-            raise YunohostError(m18n.n("diagnosis_ignore_no_issue_found"))
+            raise YunohostError(_("diagnosis_ignore_no_issue_found"))
 
         # Make sure the subdicts/lists exists
         if "ignore_filters" not in configuration:
@@ -312,14 +313,12 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
             configuration["ignore_filters"][category] = []
 
         if criterias in configuration["ignore_filters"][category]:
-            logger.warning(
-                m18n.n("diagnosis_ignore_already_filtered", category=category)
-            )
+            logger.warning(_("diagnosis_ignore_already_filtered", category=category))
             return
 
         configuration["ignore_filters"][category].append(criterias)
         _diagnosis_write_configuration(configuration)
-        logger.success(m18n.n("diagnosis_ignore_filter_added", category=category))
+        logger.success(_("diagnosis_ignore_filter_added", category=category))
         return
 
     if remove_filter:
@@ -332,14 +331,12 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
             configuration["ignore_filters"][category] = []
 
         if criterias not in configuration["ignore_filters"][category]:
-            logger.warning(
-                m18n.n("diagnosis_ignore_no_filter_found", category=category)
-            )
+            logger.warning(_("diagnosis_ignore_no_filter_found", category=category))
             return
 
         configuration["ignore_filters"][category].remove(criterias)
         _diagnosis_write_configuration(configuration)
-        logger.success(m18n.n("diagnosis_ignore_filter_removed", category=category))
+        logger.success(_("diagnosis_ignore_filter_removed", category=category))
         return
 
 
@@ -415,9 +412,7 @@ class Diagnoser:
     def diagnose(self, force=False):
         if not force and self.cached_time_ago() < self.cache_duration:
             logger.debug(f"Cache still valid : {self.cache_file}")
-            logger.info(
-                m18n.n("diagnosis_cache_still_valid", category=self.description)
-            )
+            logger.info(_("diagnosis_cache_still_valid", category=self.description))
             return 0, {}
 
         for dependency in self.dependencies:
@@ -432,7 +427,7 @@ class Diagnoser:
 
             if dep_errors:
                 logger.error(
-                    m18n.n(
+                    _(
                         "diagnosis_cant_run_because_of_dep",
                         category=self.description,
                         dep=Diagnoser.get_description(dependency),
@@ -475,7 +470,7 @@ class Diagnoser:
         ]
         ignored_msg = (
             " "
-            + m18n.n(
+            + _(
                 "diagnosis_ignored_issues",
                 nb_ignored=len(errors_ignored + warning_ignored),
             )
@@ -485,7 +480,7 @@ class Diagnoser:
 
         if errors and warnings:
             logger.error(
-                m18n.n(
+                _(
                     "diagnosis_found_errors_and_warnings",
                     errors=len(errors),
                     warnings=len(warnings),
@@ -495,7 +490,7 @@ class Diagnoser:
             )
         elif errors:
             logger.error(
-                m18n.n(
+                _(
                     "diagnosis_found_errors",
                     errors=len(errors),
                     category=new_report["description"],
@@ -504,7 +499,7 @@ class Diagnoser:
             )
         elif warnings:
             logger.warning(
-                m18n.n(
+                _(
                     "diagnosis_found_warnings",
                     warnings=len(warnings),
                     category=new_report["description"],
@@ -513,7 +508,7 @@ class Diagnoser:
             )
         else:
             logger.success(
-                m18n.n("diagnosis_everything_ok", category=new_report["description"])
+                _("diagnosis_everything_ok", category=new_report["description"])
                 + ignored_msg
             )
 
@@ -528,7 +523,7 @@ class Diagnoser:
         cache_file = Diagnoser.cache_file(id_)
         if not os.path.exists(cache_file):
             if warn_if_no_cache:
-                logger.warning(m18n.n("diagnosis_no_cache", category=id_))
+                logger.warning(_("diagnosis_no_cache", category=id_))
             report = {"id": id_, "cached_for": -1, "timestamp": -1, "items": []}
         else:
             report = read_json(cache_file)
@@ -546,12 +541,12 @@ class Diagnoser:
     def get_description(id_):
         key = "diagnosis_description_" + id_
         # If no description available, fallback to id
-        return m18n.n(key) if m18n.key_exists(key) else id_
+        return _(key) if m18n.key_exists(key) else id_
 
     @staticmethod
     def i18n(report, force_remove_html_tags=False):
-        # "Render" the strings with m18n.n
-        # N.B. : we do those m18n.n right now instead of saving the already-translated report
+        # "Render" the strings with _
+        # N.B. : we do those _ right now instead of saving the already-translated report
         # because we can't be sure we'll redisplay the infos with the same locale as it
         # was generated ... e.g. if the diagnosing happened inside a cron job with locale EN
         # instead of FR used by the actual admin...
@@ -575,7 +570,7 @@ class Diagnoser:
                 if not isinstance(info, tuple) and not isinstance(info, list):
                     info = (info, {})
                 info[1].update(meta_data)
-                s = m18n.n(info[0], **(info[1]))
+                s = _(info[0], **(info[1]))
                 # In cli, we remove the html tags
                 if Moulinette.interface.type != "api" or force_remove_html_tags:
                     s = s.replace("<cmd>", "'").replace("</cmd>", "'")

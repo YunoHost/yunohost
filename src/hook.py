@@ -27,11 +27,12 @@ from glob import iglob
 from importlib import import_module
 from logging import getLogger
 
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 
 from .utils import jinja_filters
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import cp, read_yaml
+from .utils.i18n import _
 
 HOOK_FOLDER = "/usr/share/yunohost/hooks/"
 CUSTOM_HOOK_FOLDER = "/etc/yunohost/hooks.d/"
@@ -424,7 +425,7 @@ def hook_exec(
         if raise_on_error:
             raise YunohostError("hook_exec_not_terminated", path=path)
         else:
-            logger.error(m18n.n("hook_exec_not_terminated", path=path))
+            logger.error(_("hook_exec_not_terminated", path=path))
             return 1, {}
     elif raise_on_error and returncode != 0:
         raise YunohostError("hook_exec_failed", path=path)
@@ -565,14 +566,14 @@ def hook_exec_with_script_debug_if_failure(*args, **kwargs):
     # Script got manually interrupted ...
     # N.B. : KeyboardInterrupt does not inherit from Exception
     except (KeyboardInterrupt, EOFError):
-        error = m18n.n("operation_interrupted")
+        error = _("operation_interrupted")
         logger.error(error_message_if_failed(error))
         failure_message_with_debug_instructions = operation_logger.error(error)
     # Something wrong happened in Yunohost's code (most probably hook_exec)
     except Exception:
         import traceback
 
-        error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
+        error = _("unexpected_error", error="\n" + traceback.format_exc())
         logger.error(error_message_if_failed(error))
         failure_message_with_debug_instructions = operation_logger.error(error)
 

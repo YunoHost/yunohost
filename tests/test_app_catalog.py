@@ -41,6 +41,7 @@ from yunohost.app_catalog import (
 )
 from yunohost.utils.error import YunohostError
 from yunohost.utils.file_utils import read_json, write_to_json, write_to_yaml
+from yunohost.utils.i18n import _
 
 from .conftest import message
 
@@ -109,8 +110,8 @@ def test_apps_catalog_update_nominal(mocker):
 
         mocker.spy(m18n, "n")
         _update_apps_catalog()
-        m18n.n.assert_any_call("apps_catalog_updating")
-        m18n.n.assert_any_call("apps_catalog_update_success")
+        _.assert_any_call("apps_catalog_updating")
+        _.assert_any_call("apps_catalog_update_success")
 
     # Cache shouldn't be empty anymore empty
     assert glob.glob(APPS_CATALOG_CACHE + "/*")
@@ -135,7 +136,7 @@ def test_apps_catalog_update_404(mocker):
         with pytest.raises(YunohostError):
             mocker.spy(m18n, "n")
             _update_apps_catalog()
-            m18n.n.assert_any_call("apps_catalog_failed_to_download")
+            _.assert_any_call("apps_catalog_failed_to_download")
 
 
 def test_apps_catalog_update_timeout(mocker):
@@ -148,7 +149,7 @@ def test_apps_catalog_update_timeout(mocker):
         with pytest.raises(YunohostError):
             mocker.spy(m18n, "n")
             _update_apps_catalog()
-            m18n.n.assert_any_call("apps_catalog_failed_to_download")
+            _.assert_any_call("apps_catalog_failed_to_download")
 
 
 def test_apps_catalog_update_sslerror(mocker):
@@ -161,7 +162,7 @@ def test_apps_catalog_update_sslerror(mocker):
         with pytest.raises(YunohostError):
             mocker.spy(m18n, "n")
             _update_apps_catalog()
-            m18n.n.assert_any_call("apps_catalog_failed_to_download")
+            _.assert_any_call("apps_catalog_failed_to_download")
 
 
 def test_apps_catalog_update_corrupted(mocker):
@@ -174,7 +175,7 @@ def test_apps_catalog_update_corrupted(mocker):
         with pytest.raises(YunohostError):
             mocker.spy(m18n, "n")
             _update_apps_catalog()
-            m18n.n.assert_any_call("apps_catalog_failed_to_download")
+            _.assert_any_call("apps_catalog_failed_to_download")
 
 
 def test_apps_catalog_load_with_empty_cache(mocker):
@@ -190,8 +191,8 @@ def test_apps_catalog_load_with_empty_cache(mocker):
         # This should implicitly trigger an update in the background
         mocker.spy(m18n, "n")
         app_dict = _load_apps_catalog()["apps"]
-        m18n.n.assert_any_call("apps_catalog_obsolete_cache")
-        m18n.n.assert_any_call("apps_catalog_update_success")
+        _.assert_any_call("apps_catalog_obsolete_cache")
+        _.assert_any_call("apps_catalog_update_success")
 
     # Cache shouldn't be empty anymore empty
     assert glob.glob(APPS_CATALOG_CACHE + "/*")

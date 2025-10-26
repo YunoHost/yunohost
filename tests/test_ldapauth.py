@@ -21,11 +21,11 @@
 import os
 
 import pytest
-from moulinette import m18n
 from moulinette.core import MoulinetteError
 from yunohost.authenticators.ldap_admin import Authenticator as LDAPAuth
 from yunohost.domain import _get_maindomain
 from yunohost.user import user_create, user_delete, user_list, user_update
+from yunohost.utils.i18n import _
 
 
 def setup_function(function):
@@ -64,7 +64,7 @@ def test_authenticate_with_user_who_is_not_admin():
     with pytest.raises(MoulinetteError) as exception:
         LDAPAuth().authenticate_credentials(credentials="bob:test123Ynh")
 
-    translation = m18n.n("invalid_credentials")
+    translation = _("invalid_credentials")
     expected_msg = translation.format()
     assert expected_msg in str(exception)
 
@@ -73,7 +73,7 @@ def test_authenticate_with_wrong_password():
     with pytest.raises(MoulinetteError) as exception:
         LDAPAuth().authenticate_credentials(credentials="alice:bad_password_lul")
 
-    translation = m18n.n("invalid_credentials")
+    translation = _("invalid_credentials")
     expected_msg = translation.format()
     assert expected_msg in str(exception)
 
@@ -92,7 +92,7 @@ def test_authenticate_change_password():
     with pytest.raises(MoulinetteError) as exception:
         LDAPAuth().authenticate_credentials(credentials="alice:Yunohost")
 
-    translation = m18n.n("invalid_credentials")
+    translation = _("invalid_credentials")
     expected_msg = translation.format()
     assert expected_msg in str(exception)
 

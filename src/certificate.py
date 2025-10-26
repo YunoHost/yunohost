@@ -27,14 +27,13 @@ from glob import glob
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, cast
 
-from moulinette import m18n
-
 from .diagnosis import Diagnoser
 from .log import OperationLogger
 from .regenconf import regen_conf
 from .service import _run_service_command
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import chmod, chown, read_file
+from .utils.i18n import _
 from .utils.network import get_public_ip
 from .utils.process import check_output
 from .vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
@@ -236,7 +235,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
         if status and status["CA_type"] == "selfsigned" and status["validity"] > 3648:
             logger.success(
-                m18n.n("certmanager_cert_install_success_selfsigned", domain=domain)
+                _("certmanager_cert_install_success_selfsigned", domain=domain)
             )
             operation_logger.success()
         else:
@@ -312,7 +311,7 @@ def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
                 )
             failed_cert_install.append(domain)
         else:
-            logger.success(m18n.n("certmanager_cert_install_success", domain=domain))
+            logger.success(_("certmanager_cert_install_success", domain=domain))
 
             operation_logger.success()
 
@@ -357,7 +356,7 @@ def certificate_renew(
             # Check ACME challenge configured for given domain
             if not _check_acme_challenge_configuration(domain):
                 logger.warning(
-                    m18n.n("certmanager_acme_not_configured_for_domain", domain=domain)
+                    _("certmanager_acme_not_configured_for_domain", domain=domain)
                 )
                 continue
 
@@ -440,7 +439,7 @@ def certificate_renew(
                 logger.error("Sending email with details to root ...")
                 _email_renewing_failed(domain, msg + "\n" + str(e), stack.getvalue())
         else:
-            logger.success(m18n.n("certmanager_cert_renew_success", domain=domain))
+            logger.success(_("certmanager_cert_renew_success", domain=domain))
             operation_logger.success()
 
     if failed_cert_install:
@@ -905,7 +904,7 @@ def _name_self_CA():
     ca_conf = os.path.join(SSL_DIR, "openssl.ca.cnf")
 
     if not os.path.exists(ca_conf):
-        logger.warning(m18n.n("certmanager_self_ca_conf_file_not_found", file=ca_conf))
+        logger.warning(_("certmanager_self_ca_conf_file_not_found", file=ca_conf))
         return ""
 
     with open(ca_conf) as f:
@@ -915,7 +914,7 @@ def _name_self_CA():
         if line.startswith("commonName_default"):
             return line.split()[2]
 
-    logger.warning(m18n.n("certmanager_unable_to_parse_self_CA_name", file=ca_conf))
+    logger.warning(_("certmanager_unable_to_parse_self_CA_name", file=ca_conf))
     return ""
 
 

@@ -21,6 +21,14 @@
 from moulinette import m18n
 
 
+def _(message: str, *args, **kwargs) -> str:
+    """
+    This function allows for both moulinette-like calls and gettext-like calls.
+    """
+    noformat = not (args or kwargs)
+    return m18n.n(message, noformat=noformat)
+
+
 def _value_for_locale(values: str | dict[str, str]) -> str:
     """
     Return proper value for current locale

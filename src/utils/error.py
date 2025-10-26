@@ -20,8 +20,9 @@
 
 from typing import Any
 
-from moulinette import m18n
 from moulinette.core import MoulinetteAuthenticationError, MoulinetteError
+
+from .i18n import _
 
 
 class YunohostError(MoulinetteError):
@@ -31,7 +32,7 @@ class YunohostError(MoulinetteError):
     Yunohost base exception
 
     The (only?) main difference with MoulinetteError being that keys
-    are translated via m18n.n (namespace) instead of m18n.g (global?)
+    are translated via _ (namespace) instead of m18n.g (global?)
     """
 
     def __init__(
@@ -50,7 +51,7 @@ class YunohostError(MoulinetteError):
         if raw_msg:
             msg = key
         else:
-            msg = m18n.n(key, *args, **kwargs)
+            msg = _(key, *args, **kwargs)
 
         super(YunohostError, self).__init__(msg, raw_msg=True)
 

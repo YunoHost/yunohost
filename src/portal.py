@@ -178,7 +178,7 @@ def portal_me():
 
     # FIXME / TODO : add mail quota status ?
     #  result_dict["mailbox-quota"] = {
-    #      "limit": userquota if is_limited else m18n.n("unlimit"),
+    #      "limit": userquota if is_limited else _("unlimit"),
     #      "use": storage_use,
     #  }
     # Could use : doveadm -c /dev/null -f flow quota recalc -u johndoe

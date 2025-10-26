@@ -27,10 +27,10 @@ from typing import Any, Literal, TypedDict
 
 import miniupnpc
 import yaml
-from moulinette import m18n
 
 from .regenconf import regen_conf
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.i18n import _
 
 logger: Any = getLogger("yunohost.firewall")
 
@@ -255,7 +255,7 @@ class YunoUPnP:
             logger.warning("Failed to find any UPnP device on the network")
             self.device_found = -1
         if self.device_found < 1:
-            logger.error(m18n.n("upnp_dev_not_found"))
+            logger.error(_("upnp_dev_not_found"))
             return False
         logger.debug("Found %d UPnP device(s)", int(self.device_found))
         return self.select_device()
@@ -419,16 +419,16 @@ def firewall_open(
 
     firewall.open_port(protocol, port, comment, upnp)
     if not reload_if_changed and not firewall.need_reload:
-        logger.warning(m18n.n("port_already_opened", port=port))
+        logger.warning(_("port_already_opened", port=port))
 
     will_reload = (firewall.need_reload and reload_if_changed) or (
         not no_reload and not reload_if_changed
     )
     if will_reload:
         if firewall.apply():
-            logger.success(m18n.n("firewall_reloaded"))
+            logger.success(_("firewall_reloaded"))
         else:
-            logger.error(m18n.n("firewall_reload_failed"))
+            logger.error(_("firewall_reload_failed"))
 
 
 def firewall_close(
@@ -451,16 +451,16 @@ def firewall_close(
 
     firewall.close_port(protocol, port, upnp_only=upnp_only)
     if not firewall.need_reload and not reload_if_changed:
-        logger.warning(m18n.n("port_already_closed", port=port))
+        logger.warning(_("port_already_closed", port=port))
 
     will_reload = (firewall.need_reload and reload_if_changed) or (
         not no_reload and not reload_if_changed
     )
     if will_reload:
         if firewall.apply():
-            logger.success(m18n.n("firewall_reloaded"))
+            logger.success(_("firewall_reloaded"))
         else:
-            logger.error(m18n.n("firewall_reload_failed"))
+            logger.error(_("firewall_reload_failed"))
 
 
 # Legacy APIs
@@ -523,16 +523,16 @@ def firewall_delete(
     firewall.delete_port(protocol, port)
 
     if not firewall.need_reload and not reload_if_changed:
-        logger.warning(m18n.n("port_already_closed", port=port))
+        logger.warning(_("port_already_closed", port=port))
 
     will_reload = (firewall.need_reload and reload_if_changed) or (
         not no_reload and not reload_if_changed
     )
     if will_reload:
         if firewall.apply():
-            logger.success(m18n.n("firewall_reloaded"))
+            logger.success(_("firewall_reloaded"))
         else:
-            logger.error(m18n.n("firewall_reload_failed"))
+            logger.error(_("firewall_reload_failed"))
 
 
 def firewall_list(
@@ -564,9 +564,9 @@ def firewall_reload(skip_upnp: bool = False) -> None:
     """
     firewall = YunoFirewall()
     if firewall.apply(upnp=not skip_upnp):
-        logger.success(m18n.n("firewall_reloaded"))
+        logger.success(_("firewall_reloaded"))
     else:
-        logger.error(m18n.n("firewall_reload_failed"))
+        logger.error(_("firewall_reload_failed"))
 
 
 def firewall_upnp(action: str = "status", no_refresh: bool = False) -> dict[str, bool]:
@@ -597,9 +597,7 @@ def firewall_upnp(action: str = "status", no_refresh: bool = False) -> dict[str,
 
     if upnp.refresh(firewall):
         # Display success message if needed
-        logger.success(
-            m18n.n("upnp_enabled") if upnp.enabled() else m18n.n("upnp_disabled")
-        )
+        logger.success(_("upnp_enabled") if upnp.enabled() else _("upnp_disabled"))
     else:
         # FIXME: Do not update the config file to let a refresh handle the failure?
         raise YunohostError("upnp_port_open_failed")

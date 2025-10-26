@@ -25,11 +25,9 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, Literal, NotRequired, TypedDict
 
-from moulinette import m18n
-
 from .utils.error import YunohostError
 from .utils.file_utils import download_json, mkdir, read_json, read_yaml, write_to_json
-from .utils.i18n import _value_for_locale
+from .utils.i18n import _, _value_for_locale
 
 logger = getLogger("yunohost.app_catalog")
 
@@ -173,7 +171,7 @@ def _update_apps_catalog() -> None:
 
     apps_catalog_list = _read_apps_catalog_list()
 
-    logger.info(m18n.n("apps_catalog_updating"))
+    logger.info(_("apps_catalog_updating"))
 
     # Create cache folder if needed
     if not os.path.exists(APPS_CATALOG_CACHE):
@@ -254,7 +252,7 @@ def _update_apps_catalog() -> None:
             # Is this even needed to iterate on the results ?
             pass
 
-    logger.success(m18n.n("apps_catalog_update_success"))  # type: ignore
+    logger.success(_("apps_catalog_update_success"))  # type: ignore
 
 
 _apps_catalog_cache_timestamp: float = 0
@@ -308,7 +306,7 @@ def _load_apps_catalog() -> AppCatalog:
             not apps_catalog_content
             or apps_catalog_content.get("from_api_version") != APPS_CATALOG_API_VERSION
         ):
-            logger.info(m18n.n("apps_catalog_obsolete_cache"))
+            logger.info(_("apps_catalog_obsolete_cache"))
             _update_apps_catalog()
             apps_catalog_content = read_json(str(cache_file))  # type: ignore[assignment]
 
