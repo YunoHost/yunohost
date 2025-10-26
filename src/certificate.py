@@ -672,7 +672,7 @@ def _get_status(domain):
 
     cert_subject = cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
     cert_issuer = cert.issuer.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
-    organization_name = cert.issuer.get_attributes_for_oid(NameOID.ORGANIZATION_NAME)[0].value
+    org_name = cert.issuer.get_attributes_for_oid(NameOID.ORGANIZATION_NAME)[0].value
     valid_up_to_utc = cert.not_valid_after_utc
     days_remaining = (valid_up_to_utc - datetime.now(tz=timezone.utc)).days
 
@@ -680,7 +680,7 @@ def _get_status(domain):
     # is actually a symlink to a dir ending with -selfsigned
     if os.path.realpath(os.path.join(CERT_FOLDER, domain)).endswith("-selfsigned"):
         CA_type = "selfsigned"
-    elif organization_name == "Let's Encrypt":
+    elif org_name == "Let's Encrypt":
         CA_type = "letsencrypt"
     else:
         CA_type = "other"
