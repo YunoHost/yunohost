@@ -1465,7 +1465,7 @@ class TestSelect(BaseTest):
             ],
             "scenarios": [
                 *nones(None, "", output=""),
-                *unchanged(-1, 0, 1, 10), 
+                *unchanged(-1, 0, 1, 10),
                 *all_fails("-1", "0", "1", "10"),
                 *all_fails("100", 100),
             ]
@@ -2021,11 +2021,8 @@ def test_question_string_default_type():
 def test_option_default_type_with_choices_is_select():
     questions = {
         "some_choices": {"choices": ["a", "b"]},
-        # LEGACY (`choices` in option `string` used to be valid)
-        # make sure this result as a `select` option
-        "some_legacy": {"type": "string", "choices": ["a", "b"]},
     }
-    answers = {"some_choices": "a", "some_legacy": "a"}
+    answers = {"some_choices": "a"}
 
     options, form = ask_questions_and_parse_answers(questions, answers)
     for option in options:
