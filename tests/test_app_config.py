@@ -84,7 +84,9 @@ def no_panel_app(request):
 
     app_install(
         os.path.join(get_test_apps_dir(), "manifestv2_app_ynh"),
-        args="domain={}&path={}&init_main_permission={}".format(main_domain, "/", "visitors"),
+        args="domain={}&path={}&init_main_permission={}".format(
+            main_domain, "/", "visitors"
+        ),
         force=True,
     )
 

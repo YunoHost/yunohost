@@ -359,9 +359,7 @@ def test_manifestv2_app_install_private(secondary_domain):
     install_manifestv2_app(secondary_domain, "/manifestv2", public=False)
 
     assert app_is_installed(secondary_domain, "manifestv2_app")
-    assert not app_is_exposed_on_http(
-        secondary_domain, "/manifestv2", "Hextris"
-    )
+    assert not app_is_exposed_on_http(secondary_domain, "/manifestv2", "Hextris")
 
     app_remove("manifestv2_app")
 
@@ -435,7 +433,9 @@ def test_manifestv2_app_failed_remove(secondary_domain):
 
     # The remove script runs with set -eu and attempt to remove this
     # file without -f, so will fail if it's not there ;)
-    os.remove("/etc/nginx/conf.d/{}.d/{}.conf".format(secondary_domain, "manifestv2_app"))
+    os.remove(
+        "/etc/nginx/conf.d/{}.d/{}.conf".format(secondary_domain, "manifestv2_app")
+    )
 
     # TODO / FIXME : can't easily validate that 'app_not_properly_removed'
     # is triggered for weird reasons ...
@@ -499,7 +499,7 @@ def test_systemfuckedup_during_app_upgrade(secondary_domain):
             app_upgrade(
                 "break_yo_system",
                 file=os.path.join(get_test_apps_dir(), "break_yo_system_ynh"),
-                no_safety_backup=True
+                no_safety_backup=True,
             )
 
 
@@ -515,9 +515,11 @@ def test_failed_multiple_app_upgrade(secondary_domain):
                 "break_yo_system": os.path.join(
                     get_test_apps_dir(), "break_yo_system_ynh"
                 ),
-                "manifestv2_app": os.path.join(get_test_apps_dir(), "manifestv2_app_ynh"),
+                "manifestv2_app": os.path.join(
+                    get_test_apps_dir(), "manifestv2_app_ynh"
+                ),
             },
-            force=True
+            force=True,
         )
     assert "break_yo_system" in res["failed"]
     assert "manifestv2_app" in res["cancelled"]
