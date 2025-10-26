@@ -2027,13 +2027,6 @@ class OptionsModel(BaseModel):
             if option["type"] not in READONLY_TYPES:
                 option["optional"] = option.get("optional", optional)
 
-            # LEGACY (`choices` in option `string` used to be valid)
-            if "choices" in option and option["type"] == OptionType.string:
-                logger.warning(
-                    f"Packagers: option {id_} has 'choices' but has type 'string', use 'select' instead to remove this warning."
-                )
-                option["type"] = OptionType.select
-
             options_list.append(option)
 
         return options_list
