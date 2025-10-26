@@ -34,7 +34,7 @@ from typing import (
     Union,
 )
 
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 from moulinette.core import MoulinetteError
 
 from .log import OperationLogger, is_unit_operation
@@ -49,6 +49,7 @@ from .utils.file_utils import (
     write_to_json,
     write_to_yaml,
 )
+from .utils.i18n import _
 
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny, cast
@@ -332,7 +333,7 @@ def domain_add(
             raise YunohostValidationError("domain_dyndns_already_subscribed")
 
         if not skip_tos and Moulinette.interface.type == "cli" and os.isatty(1):
-            Moulinette.display(m18n.n("tos_dyndns_acknowledgement"), style="warning")
+            Moulinette.display(_("tos_dyndns_acknowledgement"), style="warning")
             # i18n: confirm_tos_acknowledgement
             _ask_confirmation("confirm_tos_acknowledgement", kind="soft")
 
@@ -418,10 +419,10 @@ def domain_add(
 
     hook_callback("post_domain_add", args=[domain])
 
-    logger.success(m18n.n("domain_created"))
+    logger.success(_("domain_created"))
 
     if failed_letsencrypt_cert_install:
-        logger.warning(m18n.n("certmanager_cert_install_failed", domains=domain))
+        logger.warning(_("certmanager_cert_install_failed", domains=domain))
 
 
 @is_unit_operation(exclude=["dyndns_recovery_password"])
@@ -499,7 +500,7 @@ def domain_remove(
         if remove_apps:
             if Moulinette.interface.type == "cli" and not force:
                 answer = Moulinette.prompt(
-                    m18n.n(
+                    _(
                         "domain_remove_confirm_apps_removal",
                         apps="\n".join([x[1] for x in apps_on_that_domain]),
                         answers="y/N",
@@ -576,7 +577,7 @@ def domain_remove(
 
     hook_callback("post_domain_remove", args=[domain])
 
-    logger.success(m18n.n("domain_deleted"))
+    logger.success(_("domain_deleted"))
 
 
 def domain_dyndns_subscribe(*args: Any, **kwargs: Any) -> None:
@@ -669,7 +670,7 @@ def domain_main_domain(
         old_main_domain=old_main_domain, new_main_domain=new_main_domain
     )
 
-    logger.success(m18n.n("main_domain_changed"))
+    logger.success(_("main_domain_changed"))
     return None
 
 
@@ -793,7 +794,7 @@ def _get_DomainConfigPanel() -> type["ConfigPanel"]:
                 # i18n: domain_config_cert_summary_abouttoexpire
                 # i18n: domain_config_cert_summary_ok
                 # i18n: domain_config_cert_summary_letsencrypt
-                raw_config["cert"]["cert_"]["cert_summary"]["ask"] = m18n.n(
+                raw_config["cert"]["cert_"]["cert_summary"]["ask"] = _(
                     f"domain_config_cert_summary_{status['summary']}"
                 )
 

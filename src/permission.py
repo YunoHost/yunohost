@@ -34,10 +34,9 @@ from typing import (
     cast,
 )
 
-from moulinette import m18n
-
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import read_yaml, write_to_yaml
+from .utils.i18n import _
 
 if TYPE_CHECKING:
     from .utils.logging import YunohostLogger
@@ -269,9 +268,7 @@ def user_permission_update(
                 raise YunohostValidationError("group_unknown", group=group)
             if group in current_allowed_groups:
                 logger.warning(
-                    m18n.n(
-                        "permission_already_allowed", permission=permission, group=group
-                    )
+                    _("permission_already_allowed", permission=permission, group=group)
                 )
             else:
                 new_allowed_groups += [group]
@@ -281,7 +278,7 @@ def user_permission_update(
         for group in groups_to_remove:
             if group not in current_allowed_groups:
                 logger.warning(
-                    m18n.n(
+                    _(
                         "permission_already_disallowed",
                         permission=permission,
                         group=group,
@@ -299,7 +296,7 @@ def user_permission_update(
     # though, but it's not fine to have ["all_users", "visitors", "volunteers"]
     if "all_users" in new_allowed_groups and len(new_allowed_groups) >= 2:
         if "visitors" not in new_allowed_groups or len(new_allowed_groups) >= 3:
-            logger.warning(m18n.n("permission_currently_allowed_for_all_users"))
+            logger.warning(_("permission_currently_allowed_for_all_users"))
 
     if (
         existing_permission.get("url")
@@ -307,7 +304,7 @@ def user_permission_update(
         and show_tile
     ):
         logger.warning(
-            m18n.n(
+            _(
                 "regex_incompatible_with_tile",
                 regex=existing_permission["url"],  # type: ignore
                 permission=permission,
@@ -336,9 +333,9 @@ def user_permission_update(
     # This is meant to reduce noise during resource update/provisioning
     # but display a "success" flash message when admins trigger this operation manually ?
     if log_success_as_debug:
-        logger.debug(m18n.n("permission_updated", permission=permission))
+        logger.debug(_("permission_updated", permission=permission))
     else:
-        logger.success(m18n.n("permission_updated", permission=permission))
+        logger.success(_("permission_updated", permission=permission))
 
     return user_permission_info(permission)
 
@@ -453,7 +450,7 @@ def permission_create(
         _sync_permissions_with_ldap()
         app_ssowatconf()
 
-    logger.debug(m18n.n("permission_created", permission=permission))
+    logger.debug(_("permission_created", permission=permission))
     return user_permission_info(permission)
 
 
@@ -514,7 +511,7 @@ def permission_url(
         assert url
         if url.startswith("re:") and existing_permission.get("show_tile"):
             logger.warning(
-                m18n.n("regex_incompatible_with_tile", regex=url, permission=permission)
+                _("regex_incompatible_with_tile", regex=url, permission=permission)
             )
             update_settings["show_tile"] = False
 
@@ -525,9 +522,7 @@ def permission_url(
         for ur in add_url:
             if ur in current_additional_urls:
                 logger.warning(
-                    m18n.n(
-                        "additional_urls_already_added", permission=permission, url=ur
-                    )
+                    _("additional_urls_already_added", permission=permission, url=ur)
                 )
             else:
                 ur = _validate_and_sanitize_permission_url(ur, app_main_path, app)
@@ -537,9 +532,7 @@ def permission_url(
         for ur in remove_url:
             if ur not in current_additional_urls:
                 logger.warning(
-                    m18n.n(
-                        "additional_urls_already_removed", permission=permission, url=ur
-                    )
+                    _("additional_urls_already_removed", permission=permission, url=ur)
                 )
 
         new_additional_urls = [u for u in new_additional_urls if u not in remove_url]
@@ -574,7 +567,7 @@ def permission_url(
         # In the past, this was a call to _sync_permissions_with_ldap but nowadays these changes dont impact ldap, only the ssowat conf
         app_ssowatconf()
 
-    logger.debug(m18n.n("permission_updated", permission=permission))
+    logger.debug(_("permission_updated", permission=permission))
     return user_permission_info(permission)
 
 
@@ -610,7 +603,7 @@ def permission_delete(
         _sync_permissions_with_ldap()
         app_ssowatconf()
 
-    logger.debug(m18n.n("permission_deleted", permission=permission))
+    logger.debug(_("permission_deleted", permission=permission))
 
 
 def _sync_permissions_with_ldap() -> None:
@@ -785,7 +778,7 @@ def _update_app_permission_setting(
         if show_tile is True:
             if not existing_permission_url:
                 logger.warning(
-                    m18n.n(
+                    _(
                         "show_tile_cant_be_enabled_for_url_not_defined",
                         permission=permission,
                     )
@@ -793,7 +786,7 @@ def _update_app_permission_setting(
                 update_settings["show_tile"] = False
             elif existing_permission_url.startswith("re:"):
                 logger.warning(
-                    m18n.n("show_tile_cant_be_enabled_for_regex", permission=permission)
+                    _("show_tile_cant_be_enabled_for_regex", permission=permission)
                 )
                 update_settings["show_tile"] = False
 

@@ -29,10 +29,10 @@ import ldap
 import ldap.modlist as modlist
 import ldap.sasl
 from ldap.ldapobject import LDAPObject, ReconnectLDAPObject
-from moulinette import m18n
 from moulinette.core import MoulinetteError
 
 from ..utils.error import YunohostError
+from ..utils.i18n import _
 
 logger = logging.getLogger("yunohost.utils.ldap")
 
@@ -156,7 +156,7 @@ class LDAPInterface:
             con = _reconnect()
         except ldap.SERVER_DOWN:
             # ldap is down, attempt to restart it before really failing
-            logger.warning(m18n.n("ldap_server_is_down_restart_it"))
+            logger.warning(_("ldap_server_is_down_restart_it"))
             os.system("systemctl restart slapd")
             time.sleep(10)  # waits 10 secondes so we are sure that slapd has restarted
             try:

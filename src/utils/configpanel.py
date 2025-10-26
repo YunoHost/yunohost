@@ -26,7 +26,7 @@ from collections.abc import Generator
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union, cast
 
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 from moulinette.interfaces.cli import colorize
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 
@@ -46,7 +46,7 @@ from .form import (
     parse_prefilled_values,
     prompt_or_validate_form,
 )
-from .i18n import _value_for_locale
+from .i18n import _, _value_for_locale
 
 if TYPE_CHECKING:
     from pydantic import GetJsonSchemaHandler
@@ -92,7 +92,7 @@ class ContainerModel(BaseModel):
             if value:
                 setattr(self, key, _value_for_locale(value))
             elif m18n.key_exists(f"{i18n_key}_{self.id}_{key}"):
-                setattr(self, key, m18n.n(f"{i18n_key}_{self.id}_{key}"))
+                setattr(self, key, _(f"{i18n_key}_{self.id}_{key}"))
 
 
 class SectionModel(ContainerModel, OptionsModel):
@@ -630,15 +630,15 @@ class ConfigPanel:
         # Script got manually interrupted ...
         # N.B. : KeyboardInterrupt does not inherit from Exception
         except (KeyboardInterrupt, EOFError):
-            error = m18n.n("operation_interrupted")
-            logger.error(m18n.n("config_apply_failed", error=error))
+            error = _("operation_interrupted")
+            logger.error(_("config_apply_failed", error=error))
             raise
         # Something wrong happened in Yunohost's code (most probably hook_exec)
         except Exception:
             import traceback
 
-            error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
-            logger.error(m18n.n("config_apply_failed", error=error))
+            error = _("unexpected_error", error="\n" + traceback.format_exc())
+            logger.error(_("config_apply_failed", error=error))
             raise
         finally:
             # Delete files uploaded from API
@@ -719,15 +719,15 @@ class ConfigPanel:
         # Script got manually interrupted ...
         # N.B. : KeyboardInterrupt does not inherit from Exception
         except (KeyboardInterrupt, EOFError):
-            error = m18n.n("operation_interrupted")
-            logger.error(m18n.n("config_action_failed", action=key, error=error))
+            error = _("operation_interrupted")
+            logger.error(_("config_action_failed", action=key, error=error))
             raise
         # Something wrong happened in Yunohost's code (most probably hook_exec)
         except Exception:
             import traceback
 
-            error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
-            logger.error(m18n.n("config_action_failed", action=key, error=error))
+            error = _("unexpected_error", error="\n" + traceback.format_exc())
+            logger.error(_("config_action_failed", action=key, error=error))
             raise
         finally:
             # Delete files uploaded from API

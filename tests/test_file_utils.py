@@ -43,6 +43,7 @@ from yunohost.utils.file_utils import (
     write_to_json,
     write_to_yaml,
 )
+from yunohost.utils.i18n import _
 
 
 def test_read_file(test_file):
@@ -56,7 +57,7 @@ def test_read_file_missing_file():
     with pytest.raises(YunohostError) as exception:
         read_file(bad_file)
 
-    translation = m18n.n("file_not_exist", path=bad_file)
+    translation = _("file_not_exist", path=bad_file)
     expected_msg = translation.format(path=bad_file)
     assert expected_msg in str(exception)
 
@@ -68,7 +69,7 @@ def test_read_file_cannot_read_ioerror(test_file, mocker):
     with pytest.raises(YunohostError) as exception:
         read_file(str(test_file))
 
-    translation = m18n.n("cannot_open_file", file=str(test_file), error=error)
+    translation = _("cannot_open_file", file=str(test_file), error=error)
     expected_msg = translation.format(file=str(test_file), error=error)
     assert expected_msg in exception.value.content()
 
@@ -80,7 +81,7 @@ def test_read_file_cannot_read_exception(test_file, mocker):
     with pytest.raises(YunohostError) as exception:
         read_file(str(test_file))
 
-    translation = m18n.n("unknown_error_reading_file", file=str(test_file), error=error)
+    translation = _("unknown_error_reading_file", file=str(test_file), error=error)
     expected_msg = translation.format(file=str(test_file), error=error)
     assert expected_msg in exception.value.content()
 
@@ -98,7 +99,7 @@ def test_read_json_cannot_read(test_json, mocker):
     with pytest.raises(YunohostError) as exception:
         read_json(str(test_json))
 
-    translation = m18n.n("corrupted_json", ressource=str(test_json), error=error)
+    translation = _("corrupted_json", ressource=str(test_json), error=error)
     expected_msg = translation.format(ressource=str(test_json), error=error)
     assert expected_msg in exception.value.content()
 
@@ -116,7 +117,7 @@ def test_read_yaml_cannot_read(test_yaml, mocker):
     with pytest.raises(YunohostError) as exception:
         read_yaml(str(test_yaml))
 
-    translation = m18n.n("corrupted_yaml", ressource=str(test_yaml), error=error)
+    translation = _("corrupted_yaml", ressource=str(test_yaml), error=error)
     expected_msg = translation.format(ressource=str(test_yaml), error=error)
     assert expected_msg in exception.value.content()
 
@@ -134,7 +135,7 @@ def test_read_toml_cannot_read(test_toml, mocker):
     with pytest.raises(YunohostError) as exception:
         read_toml(str(test_toml))
 
-    translation = m18n.n("corrupted_toml", ressource=str(test_toml), error=error)
+    translation = _("corrupted_toml", ressource=str(test_toml), error=error)
     expected_msg = translation.format(ressource=str(test_toml), error=error)
     assert expected_msg in exception.value.content()
 
@@ -160,7 +161,7 @@ def test_write_to_existing_file_bad_perms(test_file, mocker):
     with pytest.raises(YunohostError) as exception:
         write_to_file(str(test_file), "yolo\nswag")
 
-    translation = m18n.n("cannot_write_file", file=str(test_file), error=error)
+    translation = _("cannot_write_file", file=str(test_file), error=error)
     expected_msg = translation.format(file=str(test_file), error=error)
     assert expected_msg in exception.value.content()
 
@@ -172,7 +173,7 @@ def test_write_to_file_exception(test_file, mocker):
     with pytest.raises(YunohostError) as exception:
         write_to_file(str(test_file), "yolo\nswag")
 
-    translation = m18n.n("error_writing_file", file=str(test_file), error=error)
+    translation = _("error_writing_file", file=str(test_file), error=error)
     expected_msg = translation.format(file=str(test_file), error=error)
     assert expected_msg in exception.value.content()
 
@@ -229,7 +230,7 @@ def test_write_json_to_existing_file_bad_perms(test_file, mocker):
     with pytest.raises(YunohostError) as exception:
         write_to_json(str(test_file), dummy_dict)
 
-    translation = m18n.n("cannot_write_file", file=str(test_file), error=error)
+    translation = _("cannot_write_file", file=str(test_file), error=error)
     expected_msg = translation.format(file=str(test_file), error=error)
     assert expected_msg in exception.value.content()
 
@@ -243,7 +244,7 @@ def test_write_json_to_file_exception(test_file, mocker):
     with pytest.raises(YunohostError) as exception:
         write_to_json(str(test_file), dummy_dict)
 
-    translation = m18n.n("error_writing_file", file=str(test_file), error=error)
+    translation = _("error_writing_file", file=str(test_file), error=error)
     expected_msg = translation.format(file=str(test_file), error=error)
     assert expected_msg in exception.value.content()
 
@@ -265,7 +266,7 @@ def test_write_to_json_bad_perms(test_json, mocker):
     with pytest.raises(YunohostError) as exception:
         write_to_json(str(test_json), {"a": 1})
 
-    translation = m18n.n("cannot_write_file", file=str(test_json), error=error)
+    translation = _("cannot_write_file", file=str(test_json), error=error)
     expected_msg = translation.format(file=str(test_json), error=error)
     assert expected_msg in exception.value.content()
 
@@ -298,7 +299,7 @@ def test_write_yaml_to_existing_file_bad_perms(test_file, mocker):
     with pytest.raises(YunohostError) as exception:
         write_to_yaml(str(test_file), dummy_dict)
 
-    translation = m18n.n("cannot_write_file", file=str(test_file), error=error)
+    translation = _("cannot_write_file", file=str(test_file), error=error)
     expected_msg = translation.format(file=str(test_file), error=error)
     assert expected_msg in exception.value.content()
 
@@ -312,7 +313,7 @@ def test_write_yaml_to_file_exception(test_file, mocker):
     with pytest.raises(YunohostError) as exception:
         write_to_yaml(str(test_file), dummy_dict)
 
-    translation = m18n.n("error_writing_file", file=str(test_file), error=error)
+    translation = _("error_writing_file", file=str(test_file), error=error)
     expected_msg = translation.format(file=str(test_file), error=error)
     assert expected_msg in exception.value.content()
 
@@ -334,7 +335,7 @@ def test_write_to_yaml_bad_perms(test_yaml, mocker):
     with pytest.raises(YunohostError) as exception:
         write_to_yaml(str(test_yaml), {"a": 1})
 
-    translation = m18n.n("cannot_write_file", file=str(test_yaml), error=error)
+    translation = _("cannot_write_file", file=str(test_yaml), error=error)
     expected_msg = translation.format(file=str(test_yaml), error=error)
     assert expected_msg in exception.value.content()
 
@@ -416,7 +417,7 @@ def test_chown(test_file):
     with pytest.raises(YunohostError) as exception:
         chown(str(test_file), fake_user)
 
-    translation = m18n.n("unknown_user", user=fake_user)
+    translation = _("unknown_user", user=fake_user)
     expected_msg = translation.format(user=fake_user)
     assert expected_msg in exception.value.content()
 
@@ -424,7 +425,7 @@ def test_chown(test_file):
     with pytest.raises(YunohostError) as exception:
         chown(str(test_file), gid=fake_grp)
 
-    translation = m18n.n("unknown_group", group=fake_grp)
+    translation = _("unknown_group", group=fake_grp)
     expected_msg = translation.format(group=fake_grp)
     assert expected_msg in exception.value.content()
 
@@ -445,7 +446,7 @@ def test_chown_exception(test_file, mocker):
     with pytest.raises(YunohostError) as exception:
         chown(str(test_file), 1)
 
-    translation = m18n.n(
+    translation = _(
         "error_changing_file_permissions", path=str(test_file), error=str(error)
     )
     expected_msg = translation.format(path=str(test_file), error=str(error))
@@ -484,7 +485,7 @@ def test_chmod_exception(test_file, mocker):
     with pytest.raises(YunohostError) as exception:
         chmod(str(test_file), 0o000)
 
-    translation = m18n.n(
+    translation = _(
         "error_changing_file_permissions", path=str(test_file), error=str(error)
     )
     expected_msg = translation.format(path=str(test_file), error=str(error))
@@ -504,7 +505,7 @@ def test_remove_file_bad_perms(test_file, mocker):
     with pytest.raises(YunohostError) as exception:
         rm(str(test_file))
 
-    translation = m18n.n("error_removing", path=str(test_file), error=error)
+    translation = _("error_removing", path=str(test_file), error=error)
     expected_msg = translation.format(path=str(test_file), error=error)
     assert expected_msg in exception.value.content()
 

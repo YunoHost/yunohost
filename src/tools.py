@@ -27,13 +27,14 @@ from importlib import import_module
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Callable, Literal, cast
 
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 from packaging import version
 from typing_extensions import TypedDict
 
 from .log import OperationLogger, is_unit_operation
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import chown, cp, mkdir, read_yaml, rm, write_to_yaml
+from .utils.i18n import _
 from .utils.process import call_async_output
 from .utils.system import (
     _apt_log_line_is_relevant,
@@ -79,11 +80,11 @@ def tools_rootpw(new_password: str, check_strength: bool = True) -> None:
     )
 
     if proc.returncode == 0:
-        logger.info(m18n.n("root_password_changed"))
+        logger.info(_("root_password_changed"))
     else:
         logger.warning(proc.stdout)
         logger.warning(proc.stderr)
-        logger.warning(m18n.n("root_password_desynchronized"))
+        logger.warning(_("root_password_desynchronized"))
 
 
 def tools_maindomain(new_main_domain: str | None = None) -> dict[str, str] | None:
@@ -127,7 +128,7 @@ def _set_hostname(hostname: str, pretty_hostname: str | None = None) -> None:
         if p.returncode != 0:
             logger.warning(command)
             logger.warning(out)
-            logger.error(m18n.n("domain_hostname_failed"))
+            logger.error(_("domain_hostname_failed"))
         else:
             logger.debug(out)
 
@@ -171,7 +172,7 @@ def tools_postinstall(
         )
 
     if Moulinette.interface.type == "cli" and os.isatty(1):
-        Moulinette.display(m18n.n("tos_postinstall_acknowledgement"), style="warning")
+        Moulinette.display(_("tos_postinstall_acknowledgement"), style="warning")
         if not i_have_read_terms_of_services:
             # i18n: confirm_tos_acknowledgement
             _ask_confirmation("confirm_tos_acknowledgement", kind="soft")
@@ -234,7 +235,7 @@ def tools_postinstall(
         )
 
     operation_logger.start()
-    logger.info(m18n.n("yunohost_installing"))
+    logger.info(_("yunohost_installing"))
 
     _set_system_perms(
         {
@@ -292,9 +293,9 @@ def tools_postinstall(
 
     tools_regen_conf(force=True)
 
-    logger.success(m18n.n("yunohost_configured"))
+    logger.success(_("yunohost_configured"))
 
-    logger.warning(m18n.n("yunohost_postinstall_end_tip"))
+    logger.warning(_("yunohost_postinstall_end_tip"))
 
 
 def tools_regen_conf(
@@ -388,7 +389,7 @@ def tools_update(
         )
 
         if refresh:
-            logger.info(m18n.n("updating_apt_cache"))
+            logger.info(_("updating_apt_cache"))
 
             returncode = call_async_output(command, callbacks, shell=True)
 
@@ -399,13 +400,13 @@ def tools_update(
                 )
             elif warnings:
                 logger.error(
-                    m18n.n(
+                    _(
                         "update_apt_cache_warning",
                         sourceslist="\n".join(_dump_sources_list()),
                     )
                 )
 
-            logger.debug(m18n.n("done"))
+            logger.debug(_("done"))
 
         upgradable_system_packages = list(_list_upgradable_apt_packages())
 
@@ -426,7 +427,7 @@ def tools_update(
         ]
 
     if len(upgradable_apps) == 0 and len(upgradable_system_packages) == 0:
-        logger.info(m18n.n("already_up_to_date"))
+        logger.info(_("already_up_to_date"))
 
     important_yunohost_upgrade = False
     if upgradable_system_packages and any(
@@ -551,7 +552,7 @@ def tools_upgrade(operation_logger: OperationLogger, target: str | None = None) 
         ]
 
         if not upgradable_apps:
-            logger.info(m18n.n("apps_already_up_to_date"))
+            logger.info(_("apps_already_up_to_date"))
             return
 
         # Actually start the upgrades
@@ -560,7 +561,7 @@ def tools_upgrade(operation_logger: OperationLogger, target: str | None = None) 
             app_upgrade(app=upgradable_apps)
         except Exception as e:
             logger.warning(f"unable to upgrade apps: {e}")
-            logger.error(m18n.n("app_upgrade_some_app_failed"))
+            logger.error(_("app_upgrade_some_app_failed"))
 
         return
 
@@ -572,9 +573,9 @@ def tools_upgrade(operation_logger: OperationLogger, target: str | None = None) 
         # Check that there's indeed some packages to upgrade
         upgradables = list(_list_upgradable_apt_packages())
         if not upgradables:
-            logger.info(m18n.n("already_up_to_date"))
+            logger.info(_("already_up_to_date"))
 
-        logger.info(m18n.n("upgrading_packages"))
+        logger.info(_("upgrading_packages"))
         operation_logger.start()
 
         # Prepare dist-upgrade command
@@ -590,7 +591,7 @@ def tools_upgrade(operation_logger: OperationLogger, target: str | None = None) 
             dist_upgrade += ' -o Dpkg::Options::="--force-conf{}"'.format(conf_flag)
         dist_upgrade += " dist-upgrade"
 
-        logger.info(m18n.n("tools_upgrade"))
+        logger.info(_("tools_upgrade"))
 
         logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
@@ -623,13 +624,13 @@ def tools_upgrade(operation_logger: OperationLogger, target: str | None = None) 
         if returncode != 0:
             upgradables = list(_list_upgradable_apt_packages())
             logger.warning(
-                m18n.n(
+                _(
                     "tools_upgrade_failed",
                     packages_list=", ".join([p["name"] for p in upgradables]),
                 )
             )
 
-        logger.success(m18n.n("system_upgraded"))
+        logger.success(_("system_upgraded"))
         operation_logger.success()
 
 
@@ -639,7 +640,7 @@ def tools_shutdown(operation_logger: OperationLogger, force: bool = False) -> No
     if not shutdown:
         try:
             # Ask confirmation for server shutdown
-            i = Moulinette.prompt(m18n.n("server_shutdown_confirm", answers="y/N"))
+            i = Moulinette.prompt(_("server_shutdown_confirm", answers="y/N"))
         except NotImplementedError:
             pass
         else:
@@ -648,7 +649,7 @@ def tools_shutdown(operation_logger: OperationLogger, force: bool = False) -> No
 
     if shutdown:
         operation_logger.start()
-        logger.warning(m18n.n("server_shutdown"))
+        logger.warning(_("server_shutdown"))
         subprocess.check_call(["systemctl", "poweroff"])
 
 
@@ -658,7 +659,7 @@ def tools_reboot(operation_logger: OperationLogger, force: bool = False) -> None
     if not reboot:
         try:
             # Ask confirmation for restoring
-            i = Moulinette.prompt(m18n.n("server_reboot_confirm", answers="y/N"))
+            i = Moulinette.prompt(_("server_reboot_confirm", answers="y/N"))
         except NotImplementedError:
             pass
         else:
@@ -666,7 +667,7 @@ def tools_reboot(operation_logger: OperationLogger, force: bool = False) -> None
                 reboot = True
     if reboot:
         operation_logger.start()
-        logger.warning(m18n.n("server_reboot"))
+        logger.warning(_("server_reboot"))
         subprocess.check_call(["systemctl", "reboot"])
 
 
@@ -833,7 +834,7 @@ def tools_migrations_run(
 
     # So, is there actually something to do ?
     if not migrationtargets:
-        logger.info(m18n.n("migrations_no_migrations_to_run"))
+        logger.info(_("migrations_no_migrations_to_run"))
         return
 
     # Actually run selected migrations
@@ -843,7 +844,7 @@ def tools_migrations_run(
         # migrations to be ran manually by the user, stop there and ask the
         # user to run the migration manually.
         if auto and migration.mode == "manual":
-            logger.warning(m18n.n("migrations_to_be_ran_manually", id=migration.id))
+            logger.warning(_("migrations_to_be_ran_manually", id=migration.id))
 
             # We go to the next migration
             continue
@@ -858,7 +859,7 @@ def tools_migrations_run(
             ]
             if pending_dependencies:
                 logger.error(
-                    m18n.n(
+                    _(
                         "migrations_dependencies_not_satisfied",
                         id=migration.id,
                         dependencies_id=", ".join(pending_dependencies),
@@ -872,7 +873,7 @@ def tools_migrations_run(
             # Otherwise, go to the next migration
             if not accept_disclaimer:
                 logger.warning(
-                    m18n.n(
+                    _(
                         "migrations_need_to_accept_disclaimer",
                         id=migration.id,
                         disclaimer=migration.disclaimer,
@@ -888,24 +889,22 @@ def tools_migrations_run(
         operation_logger.start()
 
         if skip:
-            logger.warning(m18n.n("migrations_skip_migration", id=migration.id))
+            logger.warning(_("migrations_skip_migration", id=migration.id))
             migration.state = "skipped"
             _write_migration_state(migration.id, "skipped")
             operation_logger.success()
         else:
             try:
-                logger.info(m18n.n("migrations_running_forward", id=migration.id))
+                logger.info(_("migrations_running_forward", id=migration.id))
                 migration.run()
             except Exception as e:
                 # migration failed, let's stop here but still update state because
                 # we managed to run the previous ones
-                msg = m18n.n(
-                    "migrations_migration_has_failed", exception=e, id=migration.id
-                )
+                msg = _("migrations_migration_has_failed", exception=e, id=migration.id)
                 logger.error(msg, exc_info=True)
                 operation_logger.error(msg)
             else:
-                logger.success(m18n.n("migrations_success_forward", id=migration.id))
+                logger.success(_("migrations_success_forward", id=migration.id))
                 migration.state = "done"
                 _write_migration_state(migration.id, "done")
 
@@ -981,7 +980,7 @@ def _get_migration_by_name(migration_name):
 def _load_migration(migration_file: str) -> "Migration":
     migration_id = migration_file[: -len(".py")]
 
-    logger.debug(m18n.n("migrations_loading_migration", id=migration_id))
+    logger.debug(_("migrations_loading_migration", id=migration_id))
 
     try:
         # this is python builtin method to import a module using a name, we
@@ -1028,12 +1027,10 @@ def _tools_migrations_run_after_system_restore(backup_version: str) -> None:
             and hasattr(migration, "run_after_system_restore")
         ):
             try:
-                logger.info(m18n.n("migrations_running_forward", id=migration.id))
+                logger.info(_("migrations_running_forward", id=migration.id))
                 migration.run_after_system_restore()
             except Exception as e:
-                msg = m18n.n(
-                    "migrations_migration_has_failed", exception=e, id=migration.id
-                )
+                msg = _("migrations_migration_has_failed", exception=e, id=migration.id)
                 logger.error(msg, exc_info=True)
                 raise
 
@@ -1056,12 +1053,10 @@ def _tools_migrations_run_before_app_restore(
             and hasattr(migration, "run_before_app_restore")
         ):
             try:
-                logger.info(m18n.n("migrations_running_forward", id=migration.id))
+                logger.info(_("migrations_running_forward", id=migration.id))
                 migration.run_before_app_restore(app_id, app_backup_in_archive)
             except Exception as e:
-                msg = m18n.n(
-                    "migrations_migration_has_failed", exception=e, id=migration.id
-                )
+                msg = _("migrations_migration_has_failed", exception=e, id=migration.id)
                 logger.error(msg, exc_info=1)
                 raise
 
@@ -1093,13 +1088,13 @@ class Migration:
 
     @property
     def description(self) -> str:
-        return m18n.n(f"migration_description_{self.id}")  # type: ignore
+        return _(f"migration_description_{self.id}")  # type: ignore
 
     @staticmethod
     def ldap_migration(run: Callable[[Any, str], None]) -> Callable[[Any], None]:
         def func(self: "Migration") -> None:
             # Backup LDAP before the migration
-            logger.info(m18n.n("migration_ldap_backup_before_migration"))
+            logger.info(_("migration_ldap_backup_before_migration"))
             try:
                 backup_folder = "/home/yunohost.backup/premigration/" + time.strftime(
                     "%Y%m%d-%H%M%S", time.gmtime()
@@ -1125,7 +1120,7 @@ class Migration:
             except Exception:
                 if self.ldap_migration_started:
                     logger.warning(
-                        m18n.n("migration_ldap_migration_failed_trying_to_rollback")
+                        _("migration_ldap_migration_failed_trying_to_rollback")
                     )
                     os.system("systemctl stop slapd")
                     # To be sure that we don't keep some part of the old config
@@ -1144,7 +1139,7 @@ class Migration:
                     )
                     os.system("systemctl start slapd")
                     rm(backup_folder, force=True, recursive=True)
-                    logger.info(m18n.n("migration_ldap_rollback_success"))
+                    logger.info(_("migration_ldap_rollback_success"))
                 raise
             else:
                 rm(backup_folder, force=True, recursive=True)

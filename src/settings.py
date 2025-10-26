@@ -23,14 +23,13 @@ import subprocess
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Callable, Union
 
-from moulinette import m18n
-
 from .firewall import firewall_reload
 from .log import is_unit_operation
 from .regenconf import regen_conf
 from .utils.configpanel import ConfigPanel, parse_filter_key
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.form import BaseOption
+from .utils.i18n import _
 
 if TYPE_CHECKING:
     from typing import cast
@@ -184,18 +183,18 @@ class SettingsConfigPanel(ConfigPanel):
         # Script got manually interrupted ...
         # N.B. : KeyboardInterrupt does not inherit from Exception
         except (KeyboardInterrupt, EOFError):
-            error = m18n.n("operation_interrupted")
-            logger.error(m18n.n("config_apply_failed", error=error))
+            error = _("operation_interrupted")
+            logger.error(_("config_apply_failed", error=error))
             raise
         # Something wrong happened in Yunohost's code (most probably hook_exec)
         except Exception:
             import traceback
 
-            error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
-            logger.error(m18n.n("config_apply_failed", error=error))
+            error = _("unexpected_error", error="\n" + traceback.format_exc())
+            logger.error(_("config_apply_failed", error=error))
             raise
 
-        logger.success(m18n.n("global_settings_reset_success"))
+        logger.success(_("global_settings_reset_success"))
 
         if operation_logger:
             operation_logger.success()

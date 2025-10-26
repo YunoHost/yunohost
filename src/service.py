@@ -27,7 +27,7 @@ from glob import glob
 from logging import getLogger
 
 import yaml
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 
 from .diagnosis import diagnosis_ignore, diagnosis_unignore
 from .log import is_unit_operation
@@ -39,6 +39,7 @@ from .utils.file_utils import (
     write_to_file,
     write_to_yaml,
 )
+from .utils.i18n import _
 from .utils.process import check_output
 
 MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
@@ -124,7 +125,7 @@ def service_add(
         # we'll get a logger.warning with more details in _save_services
         raise YunohostError("service_add_failed", service=name)
 
-    logger.success(m18n.n("service_added", service=name))
+    logger.success(_("service_added", service=name))
 
 
 def service_remove(name):
@@ -147,7 +148,7 @@ def service_remove(name):
         # we'll get a logger.warning with more details in _save_services
         raise YunohostError("service_remove_failed", service=name)
 
-    logger.success(m18n.n("service_removed", service=name))
+    logger.success(_("service_removed", service=name))
 
 
 @is_unit_operation(flash=True)
@@ -164,7 +165,7 @@ def service_start(names):
 
     for name in names:
         if _run_service_command("start", name):
-            logger.success(m18n.n("service_started", service=name))
+            logger.success(_("service_started", service=name))
         else:
             if service_status(name)["status"] != "running":
                 logs = _get_journalctl_logs(name, number=25)
@@ -175,7 +176,7 @@ def service_start(names):
                     service=name,
                     error_details=logs,
                 )
-            logger.debug(m18n.n("service_already_started", service=name))
+            logger.debug(_("service_already_started", service=name))
 
 
 @is_unit_operation(flash=True)
@@ -191,7 +192,7 @@ def service_stop(names):
         names = [names]
     for name in names:
         if _run_service_command("stop", name):
-            logger.success(m18n.n("service_stopped", service=name))
+            logger.success(_("service_stopped", service=name))
         else:
             if service_status(name)["status"] != "inactive":
                 logs = _get_journalctl_logs(name, number=25)
@@ -202,7 +203,7 @@ def service_stop(names):
                     service=name,
                     error_details=logs,
                 )
-            logger.debug(m18n.n("service_already_stopped", service=name))
+            logger.debug(_("service_already_stopped", service=name))
 
 
 def service_reload(names):
@@ -217,7 +218,7 @@ def service_reload(names):
         names = [names]
     for name in names:
         if _run_service_command("reload", name):
-            logger.success(m18n.n("service_reloaded", service=name))
+            logger.success(_("service_reloaded", service=name))
         else:
             if service_status(name)["status"] != "running":
                 logs = _get_journalctl_logs(name, number=25)
@@ -243,7 +244,7 @@ def service_restart(names):
         names = [names]
     for name in names:
         if _run_service_command("restart", name):
-            logger.success(m18n.n("service_restarted", service=name))
+            logger.success(_("service_restarted", service=name))
         else:
             if service_status(name)["status"] != "running":
                 logs = _get_journalctl_logs(name, number=25)
@@ -286,7 +287,7 @@ def service_reload_or_restart(names, test_conf=True):
             if p.returncode != 0:
                 errors = out.decode().strip().split("\n")
                 logger.error(
-                    m18n.n(
+                    _(
                         "service_not_reloading_because_conf_broken",
                         name=name,
                         errors=errors,
@@ -295,7 +296,7 @@ def service_reload_or_restart(names, test_conf=True):
                 continue
 
         if _run_service_command("reload-or-restart", name):
-            logger.success(m18n.n("service_reloaded_or_restarted", service=name))
+            logger.success(_("service_reloaded_or_restarted", service=name))
         else:
             if service_status(name)["status"] != "running":
                 logs = _get_journalctl_logs(name, number=25)
@@ -322,7 +323,7 @@ def service_enable(names):
     for name in names:
         if _run_service_command("enable", name):
             diagnosis_unignore(["services", f"service={name}"])
-            logger.success(m18n.n("service_enabled", service=name))
+            logger.success(_("service_enabled", service=name))
         else:
             raise YunohostError("service_enable_failed", service=name)
 
@@ -341,7 +342,7 @@ def service_disable(names):
     for name in names:
         if _run_service_command("disable", name):
             diagnosis_ignore(["services", f"service={name}"])
-            logger.success(m18n.n("service_disabled", service=name))
+            logger.success(_("service_disabled", service=name))
         else:
             raise YunohostError("service_disable_failed", service=name)
 
@@ -437,7 +438,7 @@ def _get_and_format_service_status(service, infos):
     if not description:
         translation_key = f"service_description_{service}"
         if m18n.key_exists(translation_key):
-            description = m18n.n(translation_key)
+            description = _(translation_key)
         else:
             description = str(raw_status.get("Description", ""))
 
@@ -623,11 +624,11 @@ def _run_service_command(action: str, service: str) -> bool:
         p.communicate()
 
         if p.returncode != 0:
-            logger.warning(m18n.n("service_cmd_exec_failed", command=cmd))
+            logger.warning(_("service_cmd_exec_failed", command=cmd))
             return False
 
     except Exception as e:
-        logger.warning(m18n.n("unexpected_error", error=str(e)))
+        logger.warning(_("unexpected_error", error=str(e)))
         return False
 
     finally:

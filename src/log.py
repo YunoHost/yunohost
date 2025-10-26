@@ -30,11 +30,12 @@ from typing import Any
 
 import psutil
 import yaml
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 from moulinette.core import MoulinetteError
 
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import read_file, read_yaml
+from .utils.i18n import _
 from .utils.logging import SUCCESS
 from .utils.system import get_ynh_package_version
 
@@ -106,7 +107,7 @@ def _update_log_cache_symlinks():
             )  # Making sure this is a dict and not  None..?
         except Exception as e:
             # If we can't read the yaml for some reason, report an error and ignore this entry...
-            logger.error(m18n.n("log_corrupted_md_file", md_file=log_md, error=e))
+            logger.error(_("log_corrupted_md_file", md_file=log_md, error=e))
             continue
 
         if not os.path.islink(success_symlink) or os.path.getmtime(
@@ -216,9 +217,7 @@ def log_list(
                     )  # Making sure this is a dict and not  None..?
                 except Exception as e:
                     # If we can't read the yaml for some reason, report an error and ignore this entry...
-                    logger.error(
-                        m18n.n("log_corrupted_md_file", md_file=md_path, error=e)
-                    )
+                    logger.error(_("log_corrupted_md_file", md_file=md_path, error=e))
                     continue
                 else:
                     log_list_cache[name] = {
@@ -352,7 +351,7 @@ def log_show(
 
         url = yunopaste(content)
 
-        logger.success(m18n.n("log_available_on_yunopaste", url=url))
+        logger.success(_("log_available_on_yunopaste", url=url))
         if Moulinette.interface.type == "api":
             return {"url": url}
         else:
@@ -363,7 +362,7 @@ def log_show(
         try:
             metadata = read_yaml(md_path) or {}
         except MoulinetteError as e:
-            error = m18n.n("log_corrupted_md_file", md_file=md_path, error=e)
+            error = _("log_corrupted_md_file", md_file=md_path, error=e)
             if os.path.exists(log_path):
                 logger.warning(error)
             else:
@@ -901,21 +900,19 @@ class OperationLogger:
             desc = _get_description_from_name(self.name)
             if error is None:
                 if is_api:
-                    msg = m18n.n("log_link_to_log", name=self.name, desc=desc)
+                    msg = _("log_link_to_log", name=self.name, desc=desc)
                 else:
-                    msg = m18n.n("log_help_to_get_log", name=self.name, desc=desc)
+                    msg = _("log_help_to_get_log", name=self.name, desc=desc)
                 logger.debug(msg)
             else:
                 if is_api:
                     msg = (
                         "<strong>"
-                        + m18n.n("log_link_to_failed_log", name=self.name, desc=desc)
+                        + _("log_link_to_failed_log", name=self.name, desc=desc)
                         + "</strong>"
                     )
                 else:
-                    msg = m18n.n(
-                        "log_help_to_get_failed_log", name=self.name, desc=desc
-                    )
+                    msg = _("log_help_to_get_failed_log", name=self.name, desc=desc)
                 logger.info(msg)
         else:
             msg = None
@@ -931,7 +928,7 @@ class OperationLogger:
         if self.ended_at is not None or self.started_at is None:
             return
         else:
-            self.error(m18n.n("log_operation_unit_unclosed_properly"))
+            self.error(_("log_operation_unit_unclosed_properly"))
 
     def dump_script_log_extract_for_debugging(self):
         with open(self.log_path, "r") as f:
@@ -997,7 +994,7 @@ def _get_description_from_name(name):
         else:
             key = "log_" + parts[2]
             args = parts[3:]
-        return m18n.n(key, *args)
+        return _(key, *args)
     except IndexError:
         return name
 
@@ -1015,13 +1012,13 @@ def _guess_who_started_process(process: psutil.Process) -> str:
     cmdlines = [parent.cmdline() for parent in parents]
 
     if any("/usr/sbin/CRON" in cli for cli in cmdlines):
-        return m18n.n("automatic_task")
+        return _("automatic_task")
 
     elif any("/usr/bin/yunohost-api" in cli for cli in cmdlines):
-        return m18n.n("yunohost_api")
+        return _("yunohost_api")
 
     elif process.terminal() is None:
-        return m18n.n("noninteractive_task")
+        return _("noninteractive_task")
 
     else:
         return "root"

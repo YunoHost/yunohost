@@ -39,7 +39,7 @@ REFERENCE_FILE = LOCALE_FOLDER + "en.json"
 
 def find_expected_string_keys():
     # Try to find :
-    #    m18n.n(   "foo"
+    #    _(   "foo"
     #    YunohostError("foo"
     #    YunohostValidationError("foo"
     #    # i18n: foo

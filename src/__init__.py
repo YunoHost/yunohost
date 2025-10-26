@@ -33,6 +33,7 @@ import moulinette
 from moulinette import m18n
 from moulinette.interfaces.cli import colorize, get_locale
 
+from .utils.i18n import _
 from .utils.logging import init_logging
 
 
@@ -133,7 +134,7 @@ def check_command_is_valid_before_postinstall(args: list[str]) -> None:
 
     if len(args) < 2 or (args[0] + " " + args[1] not in allowed_if_not_postinstalled):
         init_i18n()
-        print(colorize(m18n.g("error"), "red") + " " + m18n.n("yunohost_not_installed"))
+        print(colorize(m18n.g("error"), "red") + " " + _("yunohost_not_installed"))
         sys.exit(1)
 
 
@@ -160,7 +161,7 @@ def init_i18n() -> None:
     """
     Initialize the i18n locale dir and locale.
     This should only be called when not willing to go through moulinette.cli
-    or moulinette.api but still willing to call m18n.n/g...
+    or moulinette.api but still willing to call _/g...
     """
     m18n.set_locales_dir("/usr/share/yunohost/locales/")
     m18n.set_locale(get_locale())

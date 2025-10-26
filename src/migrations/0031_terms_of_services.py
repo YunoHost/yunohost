@@ -20,9 +20,8 @@
 
 import logging
 
-from moulinette import m18n
-
 from ..tools import Migration
+from ..utils.i18n import _
 
 logger = logging.getLogger("yunohost.migration")
 
@@ -38,7 +37,7 @@ class MyMigration(Migration):
     @property
     def disclaimer(self):
         return (
-            m18n.n("migration_0031_terms_of_services")
+            _("migration_0031_terms_of_services")
             + "\n\n"
-            + m18n.n("tos_postinstall_acknowledgement")
+            + _("tos_postinstall_acknowledgement")
         )

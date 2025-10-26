@@ -43,7 +43,7 @@ from typing import (
     overload,
 )
 
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 from moulinette.interfaces.cli import colorize
 from pydantic import (
     BaseModel,
@@ -60,8 +60,8 @@ from pydantic_extra_types.color import Color
 
 from ..log import OperationLogger
 from ..utils.error import YunohostError, YunohostValidationError
-from ..utils.i18n import _value_for_locale
-from .file_utils import read_yaml, write_to_file
+from ..utils.file_utils import read_yaml, write_to_file
+from ..utils.i18n import _, _value_for_locale
 
 if TYPE_CHECKING:
     from pydantic import GetJsonSchemaHandler
@@ -409,7 +409,7 @@ class BaseOption(BaseModel):
     @classmethod
     def check_id_is_not_forbidden(cls, value: str) -> str:
         if value in FORBIDDEN_KEYWORDS:
-            raise ValueError(m18n.n("config_forbidden_keyword", keyword=value))
+            raise ValueError(_("config_forbidden_keyword", keyword=value))
         return value
 
     # FIXME Legacy, is `name` still needed?
@@ -425,7 +425,7 @@ class BaseOption(BaseModel):
     def can_be_readonly(cls, value: bool, info: "ValidationInfo") -> bool:
         if value is True and info.data["type"] in FORBIDDEN_READONLY_TYPES:
             raise ValueError(
-                m18n.n(
+                _(
                     "config_forbidden_readonly_type",
                     type=info.data["type"],
                     id=info.data["id"],
@@ -528,7 +528,7 @@ class AlertOption(BaseReadonlyOption):
             State.warning: "yellow",
             State.danger: "red",
         }
-        message = m18n.g(self.style) if self.style != State.danger else m18n.n("danger")
+        message = m18n.g(self.style) if self.style != State.danger else _("danger")
         return f"{colorize(message, colors[self.style])} {self.ask}"
 
 
@@ -994,7 +994,7 @@ class NumberOption(BaseInputOption):
         raise YunohostValidationError(
             "app_argument_invalid",
             name=option.get("id"),
-            error=m18n.n("invalid_number"),
+            error=_("invalid_number"),
         )
 
     def _get_field_attrs(self) -> dict[str, Any]:
@@ -1560,9 +1560,7 @@ class BaseChoicesOption(BaseInputOption):
             remaining_choices = len(choices[20:])
 
             if remaining_choices > 0:
-                splitted_choices += [
-                    m18n.n("other_available_options", n=remaining_choices)
-                ]
+                splitted_choices += [_("other_available_options", n=remaining_choices)]
 
             choices_to_display = " | ".join(str(choice) for choice in splitted_choices)
 
@@ -1926,7 +1924,7 @@ class GroupOption(BaseChoicesOption):
             # i18n: all_users
             # i18n: admins
             return (
-                m18n.n(groupname)
+                _(groupname)
                 if groupname in ["visitors", "all_users", "admins"]
                 else groupname
             )
@@ -2047,9 +2045,9 @@ class OptionsModel(BaseModel):
                 if value:
                     setattr(option, key, _value_for_locale(value))
                 elif key == "ask" and m18n.key_exists(f"{i18n_key}_{option.id}"):
-                    setattr(option, key, m18n.n(f"{i18n_key}_{option.id}"))
+                    setattr(option, key, _(f"{i18n_key}_{option.id}"))
                 elif key == "help" and m18n.key_exists(f"{i18n_key}_{option.id}_help"):
-                    setattr(option, key, m18n.n(f"{i18n_key}_{option.id}_help"))
+                    setattr(option, key, _(f"{i18n_key}_{option.id}_help"))
                 elif key == "ask":
                     # FIXME warn?
                     option.ask = option.id
@@ -2285,7 +2283,7 @@ def prompt_or_validate_form(
                     else:
                         i18n_key = f"pydantic.{err['type']}".replace(".", "_")
                         err_text = (
-                            m18n.n(i18n_key, **ctx)
+                            _(i18n_key, **ctx)
                             if m18n.key_exists(i18n_key)
                             else err["msg"]
                         )
@@ -2300,7 +2298,7 @@ def prompt_or_validate_form(
 
                 if isinstance(e, ValidationError):
                     if not interactive:
-                        err_text = m18n.n(
+                        err_text = _(
                             "app_argument_invalid", name=option.id, error=err_text
                         )
 

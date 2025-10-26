@@ -27,8 +27,9 @@ import moulinette
 import pytest
 import toml
 import yaml
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 from yunohost.utils.error import YunohostError
+from yunohost.utils.i18n import _
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -50,14 +51,14 @@ def get_test_apps_dir():
 
 @contextmanager
 def message(key, **kwargs):
-    m = Mock(wraps=m18n.n)
-    old_m18n = m18n.n
-    m18n.n = m
+    m = Mock(wraps=_)
+    old_m18n = _
+    _ = m
     yield
     try:
         m.assert_any_call(key, **kwargs)
     finally:
-        m18n.n = old_m18n
+        _ = old_m18n
 
 
 @contextmanager
