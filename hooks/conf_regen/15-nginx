@@ -140,9 +140,6 @@ do_pre_regen() {
         if [ $mail_enabled == "True" ]; then
             ynh_render_template "autoconfig.tpl.xml" "${mail_autoconfig_dir}/config-v1.1.xml"
         fi
-
-        touch "${domain_conf_dir}/yunohost_local.conf" # Clean legacy conf files
-
     done
 
     # Legacy file to remove, but we can't really remove it because it may be included by app confs...
