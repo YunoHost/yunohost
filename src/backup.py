@@ -1971,13 +1971,13 @@ class TarBackupMethod(BackupMethod):
                 for tarinfo in tar.getmembers()
                 if tarinfo.name.startswith(leading_dot + system_part)
             ]
-            tar.extractall(members=subdir_and_files, path=self.work_dir, filter="data")
+            tar.extractall(members=subdir_and_files, path=self.work_dir, filter="tar")
         subdir_and_files = [
             tarinfo
             for tarinfo in tar.getmembers()
             if tarinfo.name.startswith(leading_dot + "hooks/restore/")
         ]
-        tar.extractall(members=subdir_and_files, path=self.work_dir, filter="data")
+        tar.extractall(members=subdir_and_files, path=self.work_dir, filter="tar")
 
         # Extract apps backup
         for app in apps_targets:
@@ -1986,7 +1986,7 @@ class TarBackupMethod(BackupMethod):
                 for tarinfo in tar.getmembers()
                 if tarinfo.name.startswith(leading_dot + "apps/" + app)
             ]
-            tar.extractall(members=subdir_and_files, path=self.work_dir, filter="data")
+            tar.extractall(members=subdir_and_files, path=self.work_dir, filter="tar")
 
         tar.close()
 
@@ -1997,7 +1997,7 @@ class TarBackupMethod(BackupMethod):
         file_to_extract = tar.getmember(file)
         # Remove the path
         file_to_extract.name = os.path.basename(file_to_extract.name)
-        tar.extract(file_to_extract, path=target, filter="data")
+        tar.extract(file_to_extract, path=target, filter="tar")
         tar.close()
 
 
