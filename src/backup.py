@@ -297,9 +297,7 @@ class BackupManager:
         self.name = name
 
         # Define working directory if needed and initialize it
-        self.work_dir = work_dir
-        if self.work_dir is None:
-            self.work_dir = os.path.join(BACKUP_PATH, "tmp", name)
+        self.work_dir = work_dir or os.path.join(BACKUP_PATH, "tmp", name)
         self._init_work_dir()
 
         # Initialize backup methods
@@ -1273,7 +1271,7 @@ class RestoreManager:
         else:
             operation_logger.success()
 
-        domain.domain_list_cache = {}
+        domain.domain_list_cache = []
 
         regen_conf()
 
@@ -1553,6 +1551,11 @@ class BackupMethod:
     @property
     def method_name(self):
         """Return the string name of a BackupMethod (eg "tar" or "copy")"""
+        raise YunohostError("backup_abstract_method")
+
+
+    def backup(self):
+        """Save the prepared files"""
         raise YunohostError("backup_abstract_method")
 
     @property
