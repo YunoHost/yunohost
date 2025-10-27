@@ -48,6 +48,7 @@ tests = [
     "types-pyYAML",
     "types-requests",
     "types-toml",
+    "pytest",
 ]
 
 [tool.mypy]
