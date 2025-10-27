@@ -82,7 +82,7 @@ environment.root = ["."]
 
 [tool.pytest.ini_options]
 # for --cov-config see https://github.com/nedbat/coveragepy/issues/512
-addopts = "-s -v --cov-config=pyproject.toml"
+addopts = "-v --cov-config=pyproject.toml"
 norecursedirs = ["dist", "doc", "build", ".tox", ".eggs"]
 testpaths = ["tests/"]
 markers = [
