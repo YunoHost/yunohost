@@ -72,7 +72,7 @@ def var_www_tempdir() -> Generator[Path, None, None]:
     tempdir = Path(tempfile.mkdtemp())
     var_www = tempdir / "var" / "www"
     var_www.mkdir(parents=True)
-    var_www.chmod(stat.S_IROTH | stat.S_IXOTH)
+    tempdir.chmod(stat.S_IROTH | stat.S_IXOTH)
     yield tempdir
     shutil.rmtree(tempdir)
 
@@ -119,4 +119,5 @@ def test_helpers(
     subprocess.check_call(
         [wrapper_file, version, test_file, test_func],
         env=test_env,
+        stderr=subprocess.STDOUT
     )
