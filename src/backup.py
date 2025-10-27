@@ -1929,10 +1929,10 @@ class TarBackupMethod(BackupMethod):
 
         if "info.json" in tar.getnames():
             leading_dot = ""
-            tar.extract("info.json", path=self.work_dir)
+            tar.extract("info.json", path=self.work_dir, filter="data")
         elif "./info.json" in files_in_archive:
             leading_dot = "./"
-            tar.extract("./info.json", path=self.work_dir)
+            tar.extract("./info.json", path=self.work_dir, filter="data")
         else:
             logger.debug(
                 "unable to retrieve 'info.json' inside the archive", exc_info=1
@@ -1943,9 +1943,9 @@ class TarBackupMethod(BackupMethod):
             )
 
         if "backup.csv" in files_in_archive:
-            tar.extract("backup.csv", path=self.work_dir)
+            tar.extract("backup.csv", path=self.work_dir, filter="data")
         elif "./backup.csv" in files_in_archive:
-            tar.extract("./backup.csv", path=self.work_dir)
+            tar.extract("./backup.csv", path=self.work_dir, filter="data")
         else:
             # Old backup archive have no backup.csv file
             pass
@@ -1971,13 +1971,13 @@ class TarBackupMethod(BackupMethod):
                 for tarinfo in tar.getmembers()
                 if tarinfo.name.startswith(leading_dot + system_part)
             ]
-            tar.extractall(members=subdir_and_files, path=self.work_dir)
+            tar.extractall(members=subdir_and_files, path=self.work_dir, filter="data")
         subdir_and_files = [
             tarinfo
             for tarinfo in tar.getmembers()
             if tarinfo.name.startswith(leading_dot + "hooks/restore/")
         ]
-        tar.extractall(members=subdir_and_files, path=self.work_dir)
+        tar.extractall(members=subdir_and_files, path=self.work_dir, filter="data")
 
         # Extract apps backup
         for app in apps_targets:
@@ -1986,7 +1986,7 @@ class TarBackupMethod(BackupMethod):
                 for tarinfo in tar.getmembers()
                 if tarinfo.name.startswith(leading_dot + "apps/" + app)
             ]
-            tar.extractall(members=subdir_and_files, path=self.work_dir)
+            tar.extractall(members=subdir_and_files, path=self.work_dir, filter="data")
 
         tar.close()
 
@@ -1997,7 +1997,7 @@ class TarBackupMethod(BackupMethod):
         file_to_extract = tar.getmember(file)
         # Remove the path
         file_to_extract.name = os.path.basename(file_to_extract.name)
-        tar.extract(file_to_extract, path=target)
+        tar.extract(file_to_extract, path=target, filter="data")
         tar.close()
 
 
@@ -2403,9 +2403,9 @@ def backup_info(name, with_details=False, human_readable=False):
 
         try:
             if "info.json" in files_in_archive:
-                tar.extract("info.json", path=info_dir)
+                tar.extract("info.json", path=info_dir, filter="data")
             elif "./info.json" in files_in_archive:
-                tar.extract("./info.json", path=info_dir)
+                tar.extract("./info.json", path=info_dir, filter="data")
             else:
                 raise KeyError
         except KeyError:
