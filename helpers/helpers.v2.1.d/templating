@@ -381,8 +381,8 @@ ynh_write_var_in_file() {
     else
         formated="false"
         # Boolean
-        true_equiv="^true|True|TRUE|on|yes|t|1$"
-        false_equiv="^false|False|FALSE|off|no|f|0$"
+        true_equiv="^(true|True|TRUE|on|yes|t|1)$"
+        false_equiv="^(false|False|FALSE|off|no|f|0)$"
         if [[ "$value" =~ $true_equiv ]] || [[ "$value" =~ $false_equiv ]]; then
             _ynh_format_boolean() {
                 if [[ "$expression" =~ ^$1|$2$ ]] && [[ "$formated" == "false" ]]; then

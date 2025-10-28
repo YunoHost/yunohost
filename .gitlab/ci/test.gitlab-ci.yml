@@ -30,22 +30,15 @@
 # TESTS
 ########################################
 
-test-helpers2:
-  extends: .test-stage
-  script:
-    - cd tests
-    - bash test_helpers.sh
-
-test-helpers2.1:
-  extends: .test-stage
-  script:
-    - cd tests
-    - bash test_helpers.sh 2.1
-
 .test-pytest:
   extends: .test-stage
   script:
     - python3 -m pytest $TEST_FILE --durations=50
+
+test-helpers:
+  extends: .test-pytest
+  variables:
+    TEST_FILE: tests/test_helpers.py
 
 test-domains:
   extends: .test-pytest
