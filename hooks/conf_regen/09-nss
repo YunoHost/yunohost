@@ -41,6 +41,9 @@ do_post_regen() {
         sss_cache -E
         systemctl restart sssd
     fi
+
+    chmod 644 "/etc/nsswitch.conf"
+    chmod 640 "/etc/sssd/sssd.conf"
 }
 
 "do_$1_regen" "$(echo "${*:2}" | xargs)"
