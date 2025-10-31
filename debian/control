@@ -44,13 +44,12 @@ Conflicts: iptables-persistent
  , bind9
  , openresolv
  , systemd-resolved
-# FIXME: Those version should be updated to trixie-backports versions
-#  , nginx-extras (>= 1.23)
-#  , openssl (>= 3.1)
-#  , slapd (>= 2.6)
-#  , dovecot-core (>= 1:2.4)
-#  , fail2ban (>= 1.1)
-#  , nftables (>= 1.1)
+ , nginx-extras (>= 1.28)
+ , openssl (>= 3.5.4)
+ , slapd (>= 2.6.11)
+ , dovecot-core (>= 1:2.5)
+ , fail2ban (>= 1.2)
+ , nftables (>= 1.1.5)
 Description: manageable and configured self-hosting server
  YunoHost aims to make self-hosting accessible to everyone. It configures
  an email, Web and IM server alongside a LDAP base. It also provides
