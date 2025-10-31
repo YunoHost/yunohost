@@ -17,6 +17,23 @@ yunohost (13.0.0.alpha1) unstable; urgency=low
 
  -- Félix Piédallu <felix@piedallu.me>  Thu, 25 Sep 2025 20:41:48 +0200
 
+yunohost (12.1.33) stable; urgency=low
+
+  - upgrades: when parsing package<->section lines, try to gracefully handle edgecase were there's more than 2 items to split (17a11b12a)
+  - i18n: Translations updated for Catalan, French, Galician
+
+  Thanks to all contributors <3 ! (Francescc, José M, ppr)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 31 Oct 2025 13:38:22 +0100
+
+yunohost (12.1.32.1) stable; urgency=low
+
+  - helpers/templating: fixes boolean detection (d3dbdfa45)
+
+  Thanks to all contributors <3 ! (ljf (zamentur))
+
+ -- OniriCorpe <oniricorpe@disroot.org>  Tue, 28 Oct 2025 12:35:00 +0100
+
 yunohost (12.1.32) stable; urgency=low
 
   - spamhaushell: try another way to address the issue by generating a dnsmasq snippet during regenconf (61d2f9fe8)

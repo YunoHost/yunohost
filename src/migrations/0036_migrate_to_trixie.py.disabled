@@ -1,0 +1,636 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+"""
+Devlopement notes to test the migration:
+incus image copy yunohost:yunohost/bookworm-stable/core-tests local: --copy-aliases --auto-update
+incus delete --force migration-to-trixie
+incus launch yunohost/bookworm-stable/core-tests migration-to-trixie
+incus exec migration-to-trixie -- apt update
+incus exec migration-to-trixie -- apt full-upgrade -y
+incus exec migration-to-trixie -- apt install -y python3-debian nano htop
+incus snapshot create migration-to-trixie postinstall
+---
+incus snapshot restore migration-to-trixie postinstall
+incus file push src/migrations/0036_migrate_to_trixie.py.disabled migration-to-trixie/usr/lib/python3/dist-packages/yunohost/migrations/0036_trixie.py
+incus exec migration-to-trixie -- yunohost tools migrations list
+incus exec migration-to-trixie -- yunohost tools migrations run 0036 --accept-disclaimer
+
+"""
+
+# See https://www.debian.org/releases/trixie/release-notes/upgrading.html
+
+# Explicitly import packages to prevent an issue that may arise later because of python3.9 being replaced by 3.11 in the middle of the upgrade etc
+# TRIXIE? import _strptime  # noqa: F401
+import jinja2
+import logging
+import re
+import subprocess
+import textwrap
+from datetime import date
+from pathlib import Path
+from time import sleep
+
+import requests
+from debian.deb822 import Deb822
+
+# TRIXIE? import _ldap  # noqa: F401
+from moulinette import Moulinette, m18n
+
+from ..app import app_list
+from ..regenconf import manually_modified_files
+from ..tools import Migration, _write_migration_state, tools_update
+from ..utils.error import YunohostError
+from ..utils.process import call_async_output, check_output
+from ..utils.system import (
+    _list_upgradable_apt_packages,
+    aptitude_with_progress_bar,
+    free_space_in_directory,
+    get_ynh_package_version,
+)
+
+logger = logging.getLogger("yunohost.migration")
+
+
+N_CURRENT_DEBIAN = 12
+N_CURRENT_YUNOHOST = 12
+
+VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_trixie_upgrade.txt"
+
+
+def _get_all_venvs(dir: Path, level: int = 0, maxlevel: int = 3) -> list[Path]:
+    """
+    Returns the list of all python virtual env directories recursively
+
+    Arguments:
+        dir - the directory to scan in
+        maxlevel - the depth of the recursion
+        level - do not edit this, used as an iterator
+    """
+    if not dir.exists():
+        return []
+
+    result = []
+    # Using os functions instead of glob, because glob doesn't support hidden folders, and we need recursion with a fixed depth
+    for path in dir.iterdir():
+        if path.is_dir():
+            activatepath = path / "bin" / "activate"
+            if activatepath.is_file():
+                content = activatepath.read_text()
+                if ("VIRTUAL_ENV" in content) and ("PYTHONHOME" in content):
+                    result.append(path)
+                    continue
+            if level < maxlevel:
+                result += _get_all_venvs(path, level=level + 1)
+    return result
+
+
+def _backup_pip_freeze_for_python_app_venvs():
+    """
+    Generate a requirements file for all python virtual env located inside /opt/ and /var/www/
+    """
+    venvs = _get_all_venvs(Path("/opt/")) + _get_all_venvs(Path("/var/www/"))
+    for venv in venvs:
+        # Generate a requirements file from venv
+        # Remove pkg resources from the freeze to avoid an error during the python venv https://stackoverflow.com/a/40167445
+        pip = venv / "bin" / "pip"
+        pip_freeze = subprocess.run([pip, "freeze"], check=True).stdout.decode("utf-8")
+        pip_freeze = re.sub(r"^pkg(-|_)resources==.*$", "", pip_freeze)
+        (venv / VENV_REQUIREMENTS_SUFFIX).write_text(pip_freeze)
+
+
+def unstable_apps() -> list[str]:
+    output = []
+    # FIXME: update this at some point with apps that we know are not going to make it past the bookworm era
+    # in https://apps.yunohost.org/dash?filter=regressions_trixie
+    deprecated_apps = ["mailman", "ffsync"]
+
+    for infos in app_list(full=True)["apps"]:
+        if (
+            not infos.get("from_catalog")
+            or infos.get("from_catalog", {}).get("state")
+            in [
+                "inprogress",
+                "notworking",
+            ]
+            or infos["id"] in deprecated_apps
+        ):
+            output.append(infos["id"])
+
+    return output
+
+
+def download_gpg_key(url: str, file: Path) -> None:
+    armored = requests.get(url, timeout=900).content
+    dearmored = subprocess.check_output(["gpg", "--dearmor"], input=armored)
+    file.write_bytes(dearmored)
+
+
+class MyMigration(Migration):
+    "Upgrade the system to Debian Trixie and Yunohost 13.x"
+
+    mode = "manual"
+
+    def run(self) -> None:
+        self.check_assertions()
+
+        logger.info(m18n.n("migration_0036_start"))
+
+        # Add new apt .deb signing key
+        download_gpg_key(
+            "https://repo.yunohost.org/keys/yunohost_trixie.asc",
+            Path("/etc/apt/trusted.gpg.d/yunohost-trixie.gpg"),
+        )
+
+        # Add Sury key even if extra_php_version.list was already there,
+        # because some old system may be using an outdated key not valid for Trixie
+        # and that'll block the migration
+        download_gpg_key(
+            "https://packages.sury.org/php/apt.gpg",
+            Path("/etc/apt/trusted.gpg.d/extra_php_version.gpg"),
+        )
+
+        # Patch sources.list
+        logger.info(m18n.n("migration_0036_patching_sources_list"))
+        self.patch_apt_sources_list()
+
+        #
+        # Get requirements of the different venvs from python apps
+        #
+
+        _backup_pip_freeze_for_python_app_venvs()
+
+        #
+        # Run apt update
+        #
+
+        aptitude_with_progress_bar("update")
+
+        # Tell libc6 it's okay to restart system stuff during the upgrade
+        subprocess.run(
+            ["debconf-set-selections"],
+            input="libc6 libraries/restart-without-asking boolean true".encode("utf-8"),
+            check=True,
+        )
+
+        # Stupid stuff because resolvconf later wants to edit /etc/resolv.conf and will miserably crash if it's immutable
+        subprocess.check_call(["chattr", "-i", "/etc/resolv.conf"])
+
+        # Do not restart services during apt upgrade, that we know for sure will be broken before a conf-regen
+        # FIXME : we should find a ~robust way to auto-delete the policy-rc.d file after the migration went through,
+        # ideally wrapping everything in a context manager somehow
+        self.prevent_services_restart_during_upgrade([
+            "nginx",
+            "dovecot"
+        ])
+
+        # Don't send an email to root about the postgresql migration. It should be handled automatically after.
+        subprocess.run(
+            ["debconf-set-selections"],
+            input="postgresql-common postgresql-common/obsolete-major seen true".encode("utf-8"),
+            check=True,
+        )
+
+        #
+        # Patch yunohost conflicts
+        #
+        logger.info(m18n.n("migration_0036_patch_yunohost_dpkg"))
+
+        self.patch_yunohost_dpkg()
+
+        #
+        # Main upgrade
+        #
+        logger.info(m18n.n("migration_0036_main_upgrade"))
+
+        # Hold import yunohost packages
+        apps_packages = self.get_apps_equivs_packages()
+        ynh_packages = [
+            "yunohost",
+            "moulinette",
+            "ssowat",
+            "yunohost-admin",
+            "yunohost-portal",
+        ]
+        aptitude_with_progress_bar(" ".join(("hold", *ynh_packages, *apps_packages)))
+
+        # Specific trick because libluajit changed name **again**
+        # And also the t64 apocalypse that makes aptitude derp
+        packages_problematic = [
+            "libluajit2-5.1-2- libluajit2-5.1-common- libluajit-5.1-2+M libluajit-5.1-common+M",
+        ] + self.apt_t64_packages_list()
+
+        packages_problematic_str = " ".join(packages_problematic)
+
+        aptitude_with_progress_bar(
+            f"full-upgrade {packages_problematic_str} --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'"
+        )
+
+        # For some reason aptitude is derping about python3 / python3-venv so try to explicitly tell to install python3.11 to replace 3.9...
+        # Note the '+M' prefix which is here to mark the packages as automatically installed
+        # FIXME: This is from bookworm migration, might not be needed for Trixie ... not sure ... keeping this code commented for now
+        # python_upgrade_list = "python3 python3.11+M python3.9- "
+        # if os.system('dpkg --list | grep -q "^ii  python3.9-venv "') == 0:
+        #     python_upgrade_list += "python3-venv+M python3.11-venv+M python3.9-venv-"
+        # aptitude_with_progress_bar(
+        #     f"full-upgrade {python_upgrade_list} --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'"
+        # )
+
+        # Full upgrade of "every" packages except the yunohost ones which are held
+        aptitude_with_progress_bar(
+            "full-upgrade --show-why -o Dpkg::Options::='--force-confold'"
+        )
+
+        # Force regenconf of nsswitch because for some reason
+        # /etc/nsswitch.conf is reset despite the --force-confold? It's a
+        # disaster because then admins cannot "sudo" >_> ...
+        # FIXME: This is from bookworm migration, ... might be needed still required?
+        # regen_conf(names=["nsswitch"], force=True)
+
+        if self.debian_major_version() == N_CURRENT_DEBIAN:
+            raise YunohostError("migration_0036_still_on_bookworm_after_main_upgrade")
+
+        # Clean the mess
+        logger.info(m18n.n("migration_0036_cleaning_up"))
+        subprocess.run(
+            "LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt autoremove --assume-yes",
+            shell=True,
+            check=True,
+        )
+        subprocess.run("apt clean --assume-yes", shell=True, check=True)
+
+        #
+        # Stupid hack for stupid dnsmasq not picking up its new init.d script then breaking everything ...
+        # https://forum.yunohost.org/t/20676
+        #
+        # FIXME : this is from buster->bullseye, do we still needed it ?
+        #
+        # if os.path.exists("/etc/init.d/dnsmasq.dpkg-dist"):
+        #    logger.info("Copying new version for /etc/init.d/dnsmasq ...")
+        #    os.system("cp /etc/init.d/dnsmasq.dpkg-dist /etc/init.d/dnsmasq")
+
+        #
+        # Yunohost upgrade
+        #
+        logger.info(m18n.n("migration_0036_yunohost_upgrade"))
+        aptitude_with_progress_bar(" ".join(("unhold", *ynh_packages)))
+
+        full_upgrade_cmd = (
+            "full-upgrade --show-why -o Dpkg::Options::='--force-confold' "
+        )
+        full_upgrade_cmd += "yunohost yunohost-admin yunohost-portal moulinette ssowat "
+
+        try:
+            aptitude_with_progress_bar(full_upgrade_cmd)
+        except Exception:
+            # Retry after unholding the app packages, maybe it can unlock the situation idk
+            if apps_packages:
+                aptitude_with_progress_bar("unhold " + ' '.join(apps_packages))
+                aptitude_with_progress_bar(full_upgrade_cmd)
+        else:
+            # If the upgrade was sucessful, we want to unhold the apps packages
+            if apps_packages:
+                aptitude_with_progress_bar("unhold " + ' '.join(apps_packages))
+
+        # Mark this migration as completed before triggering the "new" migrations
+        _write_migration_state(self.id, "done")
+
+        callbacks = (
+            lambda l: logger.debug("+ " + l.rstrip() + "\r"),
+            lambda l: logger.warning(l.rstrip()),
+        )
+        try:
+            call_async_output(["yunohost", "tools", "migrations", "run"], callbacks)
+        except Exception as e:
+            logger.error(e)
+
+        # If running from the webadmin, restart the API after a delay
+        if Moulinette.interface.type == "api":
+            logger.warning(m18n.n("migration_0036_delayed_api_restart"))
+            sleep(5)
+            # Restart the API after 10 sec (at now doesn't support sub-minute times...)
+            # We do this so that the API / webadmin still gets the proper HTTP response
+            cmd = 'at -M now >/dev/null 2>&1 <<< "sleep 10; systemctl restart nginx yunohost-api"'
+            # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
+            subprocess.check_call(["bash", "-c", cmd])
+
+        if self.yunohost_major_version() != N_CURRENT_YUNOHOST + 1:
+            raise YunohostError(
+                "Still on YunoHost 12.x at the end of the migration, eh? Sounds like the migration didn't really complete!?",
+                raw_msg=True,
+            )
+
+    def debian_major_version(self):
+        # The python module "platform" and lsb_release are not reliable because
+        # on some setup, they may still return Release=9 even after upgrading to
+        # buster ... (Apparently this is related to OVH overriding some stuff
+        # with /etc/lsb-release for instance -_-)
+        # Instead, we rely on /etc/os-release which should be the raw info from
+        # the distribution...
+        return int(
+            check_output(
+                "grep VERSION_ID /etc/os-release | head -n 1 | tr '\"' ' ' | cut -d ' ' -f2"
+            )
+        )
+
+    def yunohost_major_version(self):
+        return int(get_ynh_package_version("yunohost")["version"].split(".")[0])
+
+    def check_assertions(self):
+        # Be on bookworm (12.x) and yunohost 12.x
+        # NB : we do both check to cover situations where the upgrade crashed
+        # in the middle and debian version could be > 13.x but yunohost package
+        # would still be in 12.x...
+        if (
+            not self.debian_major_version() == N_CURRENT_DEBIAN
+            and not self.yunohost_major_version() == N_CURRENT_YUNOHOST
+        ):
+            try:
+                # Here we try to find the previous migration log, which should be somewhat recent and be at least 10k (we keep the biggest one)
+                migration_logs = sorted(
+                    [
+                        file
+                        for file in Path("/var/log/yunohost/operations").glob(
+                            "*migrate*.log"
+                        )
+                        # if file.stat().st_size > 10 * 1024
+                    ],
+                    key=lambda file: file.stat().st_mtime,
+                )
+                if migration_logs:
+                    logger.info(
+                        f"NB: the previous migration log id seems to be {migration_logs[-1]}. "
+                        f"You can share it with the support team with : "
+                        f"sudo yunohost log share {migration_logs[-1]}"
+                    )
+            except Exception:
+                # Yeah it's not that important ... it's to simplify support ...
+                pass
+
+            raise YunohostError("migration_0036_not_bullseye")
+
+        # Have > 1 Go free space on /var/ ?
+        if free_space_in_directory("/var/") / (1024**3) < 1.0:
+            raise YunohostError("migration_0036_not_enough_free_space")
+
+        # Have > 70 MB free space on /boot/ ?
+        if free_space_in_directory("/boot/") / (1024**2) < 70.0:
+            raise YunohostError(
+                "/boot/ has less than 70MB available. This will probably trigger a crash during the upgrade "
+                "because a new kernel needs to be installed. Please look for advice on the forum on how to "
+                "remove old, unused kernels to free up some space in /boot/.",
+                raw_msg=True,
+            )
+
+        # Check system is up to date
+        # (but we don't if 'trixie' is already in the sources.list ...
+        # which means maybe a previous upgrade crashed and we're re-running it)
+        sources_list = Path("/etc/apt/sources.list")
+        if sources_list.exists() and " trixie " not in sources_list.read_text():
+            tools_update(target="system")
+            upgradable_system_packages = list(_list_upgradable_apt_packages())
+            upgradable_system_packages = [
+                package["name"] for package in upgradable_system_packages
+            ]
+            upgradable_system_packages = set(upgradable_system_packages)
+            # Lime2 have hold packages to avoid ethernet instability
+            # See https://github.com/YunoHost/arm-images/commit/b4ef8c99554fd1a122a306db7abacc4e2f2942df
+            # TODO:
+            lime2_hold_packages = set(
+                [
+                    "armbian-firmware",
+                    "armbian-bsp-cli-lime2",
+                    "linux-dtb-current-sunxi",
+                    "linux-image-current-sunxi",
+                    "linux-u-boot-lime2-current",
+                    "linux-image-next-sunxi",
+                ]
+            )
+
+            if upgradable_system_packages - lime2_hold_packages:
+                raise YunohostError("migration_0036_system_not_fully_up_to_date")
+
+    @property
+    def disclaimer(self):
+        # Avoid having a super long disclaimer + uncessary check if we ain't
+        # on bookworm / yunohost 12.x
+        # NB : we do both check to cover situations where the upgrade crashed
+        # in the middle and debian version could be 13.x but yunohost package
+        # would still be in 21.x...
+        if (
+            not self.debian_major_version() == N_CURRENT_DEBIAN
+            and not self.yunohost_major_version() == N_CURRENT_YUNOHOST
+        ):
+            return None
+
+        # TODO:
+
+        message_jinja = textwrap.dedent("""\
+            {%- if migration_recent and not beta -%}
+N.B.: This migration has been tested by the community over the last few months but \
+has only been declared stable recently. If your server hosts critical services and \
+if you are not too confident with debugging possible issues, we recommend you to \
+wait a little bit more while we gather more feedback and polish things up. If on the \
+other hand you are relatively confident with debugging small issues that may arise, \
+you are encouraged to run this migration 😉!
+
+            {% endif -%}
+You can read the full **BETA** release note, remaining known issues and feedback from the \
+community here: <https://forum.yunohost.org/t/40656>. In particular, we encourage \
+you to pay attention to the fact that:
+   - the LDAP integration has been reworked and may cause issue if configurations are not \
+properly regenerated during the upgrade. It is recommended to double-check that you have \
+a way to login **directly as root** in case things go sideway (typically by SSHing from the \
+local network, or through rescue access on a VPS). *Or* at least keep a terminal \
+open on the side, in which you are root (e.g. via `sudo -i`).
+
+            {{ migration_0036_general_warning }}
+            {%- if problematic_apps %}
+
+            {{ problematic_apps_warning }}
+            {%- for app in problematic_apps %}
+                - {{app}}
+            {%- endfor %}
+            {%- endif -%}
+            {%- if modified_files %}
+
+            {{ modified_files_warning }}
+            {%- for file in modified_files %}
+                - {{file}}
+            {%- endfor %}
+            {% endif %}
+        """)
+
+        return jinja2.Template(message_jinja).render(
+            beta=True,
+            migration_recent=date.today() < date(2026, 6, 1),  # FIXME: maybe retweak this later for the stable trixie release
+            migration_0036_general_warning=m18n.n("migration_0036_general_warning"),
+            # Get list of problematic apps ? I.e. not official or community+working
+            problematic_apps=unstable_apps(),
+            problematic_apps_warning=m18n.n("migration_0036_problematic_apps_warning"),
+            # Manually modified files ? (c.f. yunohost service regen-conf)
+            modified_files=manually_modified_files(),
+            modified_files_warning=m18n.n("migration_0036_modified_files"),
+        )
+
+    def patch_apt_sources_list(self):
+        sources_list_d = Path("/etc/apt/sources.list.d")
+        dot_list: list[Path] = [*sources_list_d.glob("*.list")]
+        if (main_sources := Path("/etc/apt/sources.list")).exists():
+            dot_list.append(main_sources)
+
+        deb822s: list[Path] = [*sources_list_d.glob("*.sources")]
+
+        # TODO: migrate to deb822? See apt modernize-sources after upgrade
+
+        # This :
+        # - replace single 'bookworm' occurence by 'trixie'
+        # - comments lines containing "backports"
+        # - replace 'bookworm/updates' by 'trixie/updates' (or same with -)
+        # Special note about the security suite:
+        # https://www.debian.org/releases/bookworm/amd64/release-notes/ch-information.en.html#security-archive
+        def patch_list_line(line: str) -> str:
+            line = (
+                line.replace(
+                    "/usr/share/keyrings/yunohost-bookworm.gpg",
+                    "/etc/apt/trusted.gpg.d/yunohost-trixie.gpg",
+                )
+                .replace(
+                    "http://forge.yunohost.org/debian/ bookworm stable",
+                    # FIXME: REPLACE WITH STABLE
+                    "https://repo.yunohost.org/debian/ trixie unstable",
+                )
+                .replace(" bookworm ", " trixie ")
+                .replace(" bookworm-", " trixie-")
+            )
+
+            if "backports" in line:
+                line = f"# {line}"
+            return line
+
+        for file in dot_list:
+            lines = file.read_text().splitlines(keepends=True)
+            file.write_text("".join(patch_list_line(line) for line in lines))
+
+        for file in deb822s:
+            new_file_pars = []
+            paragraphs = Deb822.iter_paragraphs(file.read_text())
+            for paragraph in paragraphs:
+                paragraph["Suites"] = "trixie"
+
+                if re.match(
+                    r"^https?://(repo|forge)\.yunohost\.org.*", paragraph["URIs"]
+                ):
+                    paragraph["URIs"] = "https://repo.yunohost.org/debian/"
+                    paragraph["Signed-By"] = (
+                        "/etc/apt/trusted.gpg.d/yunohost-trixie.gpg"
+                    )
+
+                new_file_pars.append(str(paragraph))
+
+            file.write_text("\n".join(new_file_pars))
+
+        # Stupid OVH has some repo configured which dont work with next debian and break apt...
+        for file in sources_list_d.glob("ovh-*.list"):
+            file.unlink()
+
+    def prevent_services_restart_during_upgrade(self, services: list[str]) -> None:
+        # c.f. https://manpages.debian.org/bullseye/init-system-helpers/deb-systemd-invoke.1p.en.html
+        # and zcat /usr/share/doc/init-system-helpers/README.policy-rc.d.gz
+        # and the code inside /usr/bin/deb-systemd-invoke to see how it calls /usr/sbin/policy-rc.d ...
+        # and also invoke-rc.d ...
+
+        shell_test = "true"
+        for service in services:
+            shell_test += f' || [[ "$1" =~ "{service}" ]]'
+
+        policy_rc = Path("/usr/sbin/policy-rc.d")
+        policy_rc.write_text(
+            textwrap.dedent(f"""\
+            #!/usr/bin/env bash
+            if {shell_test}; then
+                exit 101
+            fi
+        """)
+        )
+        policy_rc.chmod(755)
+
+    def apt_t64_packages_list(self) -> list[str]:
+        # https://media1.tenor.com/m/vzLCBSJxywUAAAAd/quelle-indignit%C3%A9-sarkozy.gif
+
+        installed_packages = check_output("apt list --installed 2>/dev/null | grep -v -F 'Listing...' | awk -F/ '{print $1}'", shell=True).strip().split("\n")
+        t64_packages = check_output("apt search '.*t64' 2>/dev/null | grep 't64/' | awk -F/ '{print $1}'", shell=True).strip().split("\n")
+
+        t64_upgrades = []
+        for t64_package in t64_packages:
+            package = t64_package.replace("t64", "")
+            if package in installed_packages:
+                t64_upgrades += [package + "-", t64_package + "+M"]
+
+        return t64_upgrades
+
+    def get_apps_equivs_packages(self):
+        command = (
+            "dpkg --get-selections"
+            " | grep -v deinstall"
+            " | awk '{print $1}'"
+            " | { grep 'ynh-deps$' || true; }"
+        )
+
+        output = check_output(command)
+
+        return output.split("\n") if output else []
+
+    def patch_yunohost_dpkg(self) -> None:
+        #
+        # This is a super dirty hack to remove the conflicts from yunohost's debian/control file
+        # Those conflicts are there to prevent mistakenly upgrading critical packages
+        # such as dovecot, postfix, nginx, openssl, etc... usually related to mistakenly
+        # using backports etc.
+        #
+        # The hack consists in savagely removing the conflicts directly in /var/lib/dpkg/status
+        #
+
+        # We only patch the conflict if we're on yunohost 12.x
+        if self.yunohost_major_version() != N_CURRENT_YUNOHOST:
+            return
+
+        dpkg_status = Path("/var/lib/dpkg/status")
+
+        conflicts = check_output("dpkg-query -s yunohost | grep '^Conflicts:'").strip()
+        # We want to keep conflicting with apache/bind9 tho
+        new_conflicts = "Conflicts: apache2, bind9"
+
+        depends = check_output("dpkg-query -s yunohost | grep '^Depends:'").strip()
+        depends_to_remove = [
+            "dovecot-antispam",
+            "udisks2-zram",
+            "udisks2-bcache",
+            "sudo-ldap",
+        ]
+        new_depends = depends
+        for to_remove in depends_to_remove:
+            new_depends = new_depends.replace(f"{to_remove}, ", "")
+
+        dpkg_status.write_text(
+            dpkg_status.read_text()
+            .replace(conflicts, new_conflicts)
+            .replace(depends, new_depends)
+        )

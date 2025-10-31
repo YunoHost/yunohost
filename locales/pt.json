@@ -224,8 +224,6 @@
     "certmanager_cert_renew_success": "Certificado Let's Encrypt renovado para o domínio '{domain}'",
     "admins": "Admins",
     "file_not_exist": "O ficheiro não existe: '{path}'",
-    "folder_exists": "A pasta já existe: '{path}'",
-    "websocket_request_expected": "Esperado um pedido a WebSocket",
     "unknown_group": "Grupo '{group}' desconhecido",
     "unknown_user": "Nome de utilizador '{user}' desconhecido",
     "cannot_open_file": "Não foi possível abrir o arquivo {file} (reason: {error})",

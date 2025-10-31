@@ -579,7 +579,6 @@
     "domain_config_auth_token": "Token de autenticación",
     "domain_config_auth_key": "Chave de autenticación",
     "domain_config_auth_entrypoint": "Punto de entrada da API",
-    "domain_dns_push_failed_to_authenticate": "Fallou a autenticación na API da rexistradora do dominio '{domain}'. Comprobaches que sexan as credenciais correctas? (Erro: {error})",
     "domain_registrar_is_not_configured": "A rexistradora non aínda non está configurada para o dominio {domain}.",
     "domain_dns_push_not_applicable": "A función de rexistro DNS automático non é aplicable ao dominio {domain}. Debes configurar manualmente os teus rexistros DNS seguindo a documentación de https://yunohost.org/dns_config.",
     "domain_dns_push_managed_in_parent_domain": "A función de rexistro DNS automático está xestionada polo dominio nai {parent_domain}.",
@@ -849,7 +848,6 @@
     "global_settings_setting_enable_blocklists": "Activar listas de bloqueo para o tráfico entrante",
     "mail_edit_operation_unauthorized": "Non tes permiso para facer este cambio na túa conta.",
     "global_settings_setting_enable_blocklists_help": "Lista de servidores bloqueados procedente de spamcop.net, spamhaus.org e abuseat.org. Ten en conta que podería causar problemas para entregar o correo a algúns servidores que poderían aparecer nesas listas pero ser inofensivos, nese caso tampouco vas recibir correo procedente deses servidores.",
-    "folder_exists": "Xa existe o cartafol: '{path}'",
     "file_not_exist": "Non existe o ficheiro: '{path}'",
     "unknown_user": "Usuaria '{user}' descoñecida",
     "unknown_group": "Grupo '{group}' descoñecido",
@@ -867,7 +865,6 @@
     "unknown_error_reading_file": "Erro descoñecido ao intentar ler o ficheiro {file} (razón: {error})",
     "cannot_write_file": "Non se puido escribir o ficheiro {file} (razón: {error})",
     "cannot_open_file": "Non se puido abrir o ficheiro {file} (razón: {error})",
-    "websocket_request_expected": "Agardábase unha solicitude WebSocket",
     "app_upgrade_bad_quality": "Esta aplicación está actualmente marcada como estragada no catálogo de YunoHost. Pode ser un problema temporal mentras intentamos arranxar a incidencia. Mentras tanto temos desactivada a actualización de esta aplicación.",
     "global_settings_setting_portal_allow_edit_email_alias_help": "Se está desactivado, precisas pedirlle a Admin que o faga.",
     "backup_app_script_failed": "Fallou a recollida de ficheiros para a copia de apoio de {app}.",
@@ -893,5 +890,6 @@
     "global_settings_setting_portal_allow_edit_email_help": "Se está desactivado, precisas pedirlle a Admin que o faga.",
     "backup_before_upgrade_deleted_because_replaced_by_newer_backup": "Eliminouse a copia {name} porque foi substituída pola nova copia {newname}",
     "migration_description_0034_fix_missing_admins_aliases": "Arranxar os alias de correo que faltan para o grupo de admins",
-    "migration_description_0035_fix_apps_nodejs_version": "Arranxar as versións de nodejs na configuración de systemd da app"
+    "migration_description_0035_fix_apps_nodejs_version": "Arranxar as versións de nodejs na configuración de systemd da app",
+    "diagnosis_mail_blocklist_reason_openresolver": "Semella que a razón menciona «open resolver».<br/>Normalmente isto significa que o teu servidor non está usando o seu DNS local, se non un público (aberto).<br/>Mira o contido de <code>/etc/resolv.conf</code>, debería conter <code>nameserver 127.0.0.1</code>.<br/>Xa que este ficheiro se crea automaticamente non o edites de xeito manual. Comproba os axustes DHCP, ou os axustes VPN se estás a usar unha, ou se usaches unha imaxe Debian creada, por exemplo, por un provedor VPS, busca a configuración <code>cloudinit</code>.<br/>Podes consultar as canles de axuda de YunoHost onde intentaremos axudarche coa incidencia.<br/>A razón literal do bloqueo é: {reason}"
 }

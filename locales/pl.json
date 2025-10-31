@@ -315,9 +315,7 @@
     "unknown_error_reading_file": "Nieznany błąd podczas próby odczytania pliku {file} (przyczyna: {error})",
     "cannot_write_file": "Nie można zapisać pliku {file} (przyczyna: {error})",
     "cannot_open_file": "Nie można otworzyć pliku {file} (przyczyna: {error})",
-    "websocket_request_expected": "Oczekiwano żądania WebSocket",
     "unknown_user": "Nieznany użytkownik '{user}'",
     "unknown_group": "Nieznana grupa '{group}'",
-    "folder_exists": "Folder już istnieje: „{path}”",
     "file_not_exist": "Plik nie istnieje: „{path}”"
 }

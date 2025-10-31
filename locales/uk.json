@@ -571,7 +571,6 @@
     "domain_config_auth_token": "Токен автентифікації",
     "domain_config_auth_entrypoint": "Точка входу API",
     "domain_config_auth_consumer_key": "Ключ споживача",
-    "domain_dns_push_failed_to_authenticate": "Неможливо пройти автентифікацію на API реєстратора для домену '{domain}'. Ймовірно, облікові дані недійсні? (Помилка: {error})",
     "domain_dns_push_failed_to_list": "Не вдалося скласти список поточних записів за допомогою API реєстратора: {error}",
     "domain_dns_push_record_failed": "Не вдалося виконати дію {action} запису {type}/{name} : {error}",
     "domain_config_auth_key": "Ключ автентифікації",
@@ -723,9 +722,7 @@
     "unknown_error_reading_file": "Невідома помилка під час спроби прочитати файл {file} (причина: {error})",
     "cannot_write_file": "Не можу записати файл {file} (причина: {error})",
     "cannot_open_file": "Не можу відкрити файл {file} (причина: {error})",
-    "websocket_request_expected": "Очікується запит WebSocket",
     "unknown_user": "Невідомий користувач '{user}'",
     "unknown_group": "Невідома група '{group}'",
-    "folder_exists": "Каталог вже існує: '{path}'",
     "file_not_exist": "Файл не існує: '{path}'"
 }

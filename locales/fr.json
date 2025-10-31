@@ -564,7 +564,6 @@
     "domain_dns_registrar_managed_in_parent_domain": "Ce domaine est un sous-domaine de {parent_domain_link}. La configuration du registrar DNS doit être gérée dans le panneau de configuration de {parent_domain}.",
     "domain_dns_registrar_not_supported": "YunoHost n'a pas pu détecter automatiquement le bureau d'enregistrement gérant ce domaine. Vous devez configurer manuellement vos enregistrements DNS en suivant la documentation sur https://yunohost.org/dns.",
     "domain_dns_registrar_experimental": "Pour l'instant, l'interface avec l'API de **{registrar}** n'a pas été correctement testée et revue par la communauté YunoHost. Son support est **très expérimentale** - faites preuve de prudence !",
-    "domain_dns_push_failed_to_authenticate": "Échec de l'authentification sur l'API du registrar pour le domaine '{domain}'. Les informations d'identification sont elles justes ? (Erreur : {error})",
     "domain_dns_push_failed_to_list": "Échec de la liste des enregistrements actuels à l'aide de l'API du registraire : {error}",
     "domain_dns_push_already_up_to_date": "Dossiers déjà à jour.",
     "domain_dns_pushing": "Transmission des enregistrements DNS…",
@@ -854,10 +853,8 @@
     "global_settings_setting_antispam_name": "Antispam",
     "global_settings_setting_portal_allow_edit_email_forward_help": "Si désactivé, les personnes souhaitant changer leurs adresses de transfert devront demander aux administrateur·ice·s.",
     "file_not_exist": "Le fichier '{path}' n'existe pas",
-    "folder_exists": "Le dossier existe déjà : '{path}'",
     "unknown_group": "Le groupe '{group}' est inconnu",
     "unknown_user": "Le compte '{user}' est inconnu",
-    "websocket_request_expected": "Une requête WebSocket est attendue",
     "cannot_open_file": "Impossible d'ouvrir le fichier {file} (raison : {error})",
     "cannot_write_file": "Ne peut pas écrire le fichier {file} (raison : {error})",
     "unknown_error_reading_file": "Erreur inconnue en essayant de lire le fichier {file} (raison :{error})",
@@ -893,5 +890,6 @@
     "backup_no_file_collected": "Échec de la collecte des fichiers à sauvegarder",
     "backup_before_upgrade_deleted_because_replaced_by_newer_backup": "La sauvegarde {name} a été supprimée car elle a été remplacée par une sauvegarde plus récente {newname}",
     "migration_description_0034_fix_missing_admins_aliases": "Correction des alias de messagerie manquants pour le groupe admins",
-    "migration_description_0035_fix_apps_nodejs_version": "Correction des versions nodejs dans les configurations systemd de l'application"
+    "migration_description_0035_fix_apps_nodejs_version": "Correction des versions nodejs dans les configurations systemd de l'application",
+    "diagnosis_mail_blocklist_reason_openresolver": "Il semble que la raison mentionne « open resolver ».<br/>Cela signifie généralement que votre serveur n'utilise pas son DNS local, mais un DNS public et ouvert.<br/> Vérifiez le contenu de <code>/etc/resolv.conf</code>, il devrait contenir <code>nameserver 127.0.0.1</code>.<br/>Comme ce fichier est généralement généré automatiquement, ne le modifiez pas manuellement. Vérifiez vos paramètres DHCP ou vos paramètres VPN si vous en utilisez un, ou si vous avez utilisé une image Debian créée, par exemple, par un fournisseur de VPS, recherchez une configuration <code>cloudinit</code>.<br/> N'hésitez pas à vous rendre sur les canaux d'assistance YunoHost pour obtenir de l'aide sur ce problème.<br/> La raison exacte de la liste noire est : {reason}"
 }

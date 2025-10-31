@@ -125,9 +125,7 @@
     "unknown_error_reading_file": "Vyskytla se neznámá chyba při čtení souboru/ů {file} (reason: {error})",
     "cannot_write_file": "Nelze zapsat soubor/y {file} (reason: {error})",
     "cannot_open_file": "Nelze otevřít soubor/y {file} (reason: {error})",
-    "websocket_request_expected": "Očekáván WebSocket požadavek",
     "unknown_user": "Neznámý '{user}' uživatel",
     "unknown_group": "Neznámá '{group}' skupina",
-    "folder_exists": "Adresář již existuje: '{path}'",
     "file_not_exist": "Soubor neexistuje: '{path}'"
 }
