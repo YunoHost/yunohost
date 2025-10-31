@@ -1123,7 +1123,7 @@ class DatadirAppResource(AppResource):
         for subdir in self.subdirs:
             full_path = os.path.join(self.dir, subdir)
             if not os.path.isdir(full_path):
-                mkdir(full_path, parents=True)
+                mkdir(full_path, parents=True, force=True)
 
         owner, owner_perm = self.owner.split(":")
         group, group_perm = self.group.split(":")
