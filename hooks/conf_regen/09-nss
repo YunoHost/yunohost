@@ -37,13 +37,14 @@ do_pre_regen() {
 do_post_regen() {
     regen_conf_files=$1
 
+    chmod 644 "/etc/nsswitch.conf"
+    chmod 640 "/etc/sssd/sssd.conf"
+
     if [[ -n "$regen_conf_files" ]]; then
         sss_cache -E
         systemctl restart sssd
     fi
 
-    chmod 644 "/etc/nsswitch.conf"
-    chmod 640 "/etc/sssd/sssd.conf"
 }
 
 "do_$1_regen" "$(echo "${*:2}" | xargs)"
