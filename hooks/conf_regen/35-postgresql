@@ -25,7 +25,7 @@ set -eu
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
-if [ "$(dpkg-query --show --showformat='${db:Status-Status}' "postgresql-$PSQL_VERSION")" != "installed" ]; then
+if ynh_package_is_installed "postgresql-$PSQL_VERSION"; then
     echo 'postgresql is not installed, skipping'
     exit 0
 fi
