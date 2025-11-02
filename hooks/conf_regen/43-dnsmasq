@@ -44,7 +44,7 @@ do_init_regen() {
     cp plain/etcdefault /etc/default/dnsmasq
 
     export wireless_interfaces=""
-    ynh_render_template "dnsmasq.conf.tpl" "/etc/dnsmasq.conf"
+    ynh_render_template "dnsmasq.conf.j2" "/etc/dnsmasq.conf"
 
     # Remove / disable services likely to conflict with dnsmasq
     for SERVICE in systemd-resolved bind9; do
@@ -96,7 +96,7 @@ do_pre_regen() {
 
     # General configuration
     export wireless_interfaces
-    ynh_render_template "dnsmasq.conf.tpl" "${pending_dir}/etc/dnsmasq.conf"
+    ynh_render_template "dnsmasq.conf.j2" "${pending_dir}/etc/dnsmasq.conf"
 
     # add domain conf files
     export interfaces
@@ -111,7 +111,7 @@ do_pre_regen() {
         else
             export mail_in="False"
         fi
-        ynh_render_template "domain.tpl" "${dnsmasq_dir}/${domain}"
+        ynh_render_template "domain.j2" "${dnsmasq_dir}/${domain}"
     done
 
     # We arbitrarily pick 'c' for spamhaus NS but there's a/b/c/e

@@ -41,7 +41,7 @@ do_pre_regen() {
     export main_domain=$(cat /etc/yunohost/current_host)
     export domain_list="$YNH_DOMAINS_WITH_MAIL_IN_AND_OUT"
 
-    ynh_render_template "dovecot.conf" "${dovecot_dir}/dovecot.conf"
+    ynh_render_template "dovecot.conf.j2" "${dovecot_dir}/dovecot.conf"
 
     # adapt it for IPv4-only hosts
     if [ ! -f /proc/net/if_inet6 ]; then
