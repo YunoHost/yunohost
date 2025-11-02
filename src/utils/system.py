@@ -252,7 +252,13 @@ def _group_packages_per_categories(
     all_packages_and_categories = {}
     for line in out.split("\n"):
         if " " in line:
-            package, category = line.split(" ")
+            package, category = line.split(" ", 1)
+            if category == "non-free / misc":
+                category = "misc utils and libs"
+            elif " " in category:
+                logger.warning(
+                    f"Hmm? Not sure what's the deal with category '{category}' for package '{package}' ? Raw original line is: {line}"
+                )
         else:
             package, category = line, "?"
         if "yunohost" in package or package in ["moulinette", "ssowat"]:

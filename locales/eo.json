@@ -495,9 +495,7 @@
     "unknown_error_reading_file": "Nekonata eraro dum provi legi dosieron {file} (kialo: {error})",
     "cannot_write_file": "Ne povis skribi dosieron {file} (kialo: {error})",
     "cannot_open_file": "Ne povis malfermi dosieron {file} (kialo: {error})",
-    "websocket_request_expected": "Atendis ret-peto",
     "unknown_user": "Nekonata uzanto '{user}'",
     "unknown_group": "Nekonata grupo \"{group}\"",
-    "folder_exists": "Dosierujo jam ekzistas: '{path}'",
     "file_not_exist": "Dosiero ne ekzistas: '{path}'"
 }

@@ -433,7 +433,6 @@
     "config_unknown_filter_key": "Kunci filter '{filter_key}' tidak sesuai.",
     "config_forbidden_keyword": "Kata kunci '{keyword}' sudah ada, Anda tidak dapat membuat atau menggunakan panel konfigurasi disertai pertanyaan dengan id ini.",
     "good_practices_about_user_password": "Sekarang Anda akan menentukan kata sandi pengguna baru. Kata sandi harus terdiri dari minimal 8 karakter—meskipun sebaiknya menggunakan kata sandi yang lebih panjang (misalnya parafrasa) dan/atau menggunakan beragam karakter (huruf besar, huruf kecil, angka, dan karakter khusus).",
-    "domain_dns_push_failed_to_authenticate": "Autentikasi gagal pada API registrar untuk domain '{domain}'. Besar kemungkinan karena kredensial tidak sesuai? (Galat: {error})",
     "certmanager_domain_dns_ip_differs_from_public_ip": "Rekaman DNS untuk domain '{domain}' berbeda dengan IP server ini. Silakan periksa kategori 'Catatan DNS' (dasar) dalam diagnosis untuk info lebih lanjut. Jika Anda baru saja memodifikasi rekaman A, silakan menunggu hingga rekaman tersebut disebarkan (beberapa pemeriksa sebaran DNS tersedia online). (Jika Anda tahu apa yang Anda lakukan, gunakan '--no-checks' untuk mematikan pemeriksaan ini.)",
     "certmanager_hit_rate_limit": "Terlalu banyak sertifikat yang telah diterbitkan untuk kumpulan domain {domain} ini baru-baru ini. Silakan coba lagi nanti. Lihat https://letsencrypt.org/docs/rate-limits/ untuk detail lebih lanjut",
     "ask_dyndns_recovery_password_explain_unavailable": "Domain DynDNS ini sudah terdaftar. Jika Anda adalah orang yang pertama kali mendaftarkan domain ini, Anda dapat memasukkan kata sandi pemulihan untuk mengeklaim kembali domain ini.",
@@ -749,12 +748,10 @@
     "download_unknown_error": "Galat ketika mengunduh data dari {url}: {error}",
     "download_bad_status_code": "{url} menjawab dengan kode status {code}",
     "file_not_exist": "Berkas tidak ada: '{path}'",
-    "folder_exists": "Berkas sudah ada: '{path}'",
     "error_writing_file": "Galat ketika menyimpan berkas {file}: {error}",
     "error_changing_file_permissions": "Galat ketika mengubah izin untuk {path}: {error}",
     "download_ssl_error": "Galat SSL ketika menghubungi {url}",
     "corrupted_yaml": "Pembacaan rusak untuk YAML {ressource} (alasan: {error})",
     "corrupted_toml": "Pembacaan rusak untuk TOML {ressource} (alasan: {error})",
-    "corrupted_json": "Pembacaan rusak untuk JSON {ressource} (alasan: {error})",
-    "websocket_request_expected": "Mengharapkan permintaan WebSocket"
+    "corrupted_json": "Pembacaan rusak untuk JSON {ressource} (alasan: {error})"
 }

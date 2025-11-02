@@ -15,6 +15,7 @@ dependencies = [
     "bottle",
     "cryptography",
     # "dbus-python",
+    "python-debian",
     "dnspython",
     "email-validator",
     "jinja2",
