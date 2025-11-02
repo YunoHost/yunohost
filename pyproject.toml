@@ -7,7 +7,7 @@ authors = [
     { name = "YunoHost", email = "yunohost@yunohost.org" }
 ]
 
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 
 # These dependencies might not be up to date, please see debian/control instead
 dependencies = [
