@@ -66,7 +66,7 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 # Those are the public, external modules that don't provide typing
 module = ["jwt", "sortedcollections", "IPython", "ldap.*", "dbus", "sdbus.*",
-    "psutil", "bottle", "miniupnpc", "lexicon.*", "publicsuffix2"]
+    "psutil", "bottle", "miniupnpc", "lexicon.*", "publicsuffix2", "pydantic_extra_types.*"]
 ignore_missing_imports = true
 
 
