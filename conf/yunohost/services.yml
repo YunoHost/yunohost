@@ -28,7 +28,6 @@ opendkim:
   test_conf: opendkim -n
 postfix:
   log: [/var/log/mail.log,/var/log/mail.err]
-  actual_systemd_service: postfix@-
   needs_exposed_ports: [25, 587]
   category: email
 postgresql:
