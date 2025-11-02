@@ -590,7 +590,7 @@ def _fetch_and_enable_new_certificate(domain, no_checks=False):
 def _prepare_certificate_signing_request(domain, key_file, output_folder):
     from cryptography import x509  # lazy loading this module for performance reasons
     from cryptography.hazmat.primitives import hashes, serialization
-    from cryptography.x509.oid import AttributeOID, NameOID
+    from cryptography.x509.oid import NameOID
 
     from .hook import hook_callback
 
@@ -652,7 +652,6 @@ def _get_status(domain):
         raise YunohostError("certmanager_no_cert_file", domain=domain, file=cert_file)
 
     from cryptography import x509  # lazy loading this module for performance reasons
-    from cryptography.hazmat.primitives import serialization
     from cryptography.x509.oid import NameOID
 
     try:

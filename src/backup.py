@@ -1553,7 +1553,6 @@ class BackupMethod:
         """Return the string name of a BackupMethod (eg "tar" or "copy")"""
         raise YunohostError("backup_abstract_method")
 
-
     def backup(self):
         """Save the prepared files"""
         raise YunohostError("backup_abstract_method")

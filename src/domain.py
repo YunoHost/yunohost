@@ -258,11 +258,15 @@ def _list_subdomains_of(parent_domain: str) -> list[str]:
 
 
 @overload
-def _get_parent_domain_of(domain: str, return_self: Literal[True] = True, topest: bool = False) -> str: ...
+def _get_parent_domain_of(  # noqa: E704
+    domain: str, return_self: Literal[True] = True, topest: bool = False
+) -> str: ...
 
 
 @overload
-def _get_parent_domain_of(domain: str, return_self: Literal[False], topest: bool = False) -> str | None: ...
+def _get_parent_domain_of(  # noqa: E704
+    domain: str, return_self: Literal[False], topest: bool = False
+) -> str | None: ...
 
 
 def _get_parent_domain_of(
