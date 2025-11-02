@@ -2,14 +2,14 @@ Source: yunohost
 Section: utils
 Priority: extra
 Maintainer: YunoHost Contributors <contrib@yunohost.org>
-Build-Depends: debhelper (>=9), debhelper-compat (= 13), dh-python, python3-all (>= 3.11), python3-yaml, python3-jinja2 (>= 3.0)
+Build-Depends: debhelper (>=9), debhelper-compat (= 13), dh-python, python3-all (>= 3.13), python3-yaml, python3-jinja2 (>= 3.0)
 Standards-Version: 3.9.6
 Homepage: https://yunohost.org/
 
 Package: yunohost
 Essential: yes
 Architecture: all
-Depends: python3-all (>= 3.11),
+Depends: python3-all (>= 3.13),
  , moulinette (>= 12.1), ssowat (>= 12.0),
  , python3-psutil, python3-requests, python3-dnspython
  , python3-miniupnpc, python3-dbus, python3-jinja2 (>= 3.0)
