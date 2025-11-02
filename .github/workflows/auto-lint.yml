@@ -21,13 +21,13 @@ jobs:
       run: pip install tox toml pyyaml
 
     - if: success() || failure()
-      run: tox -e py311-lint
+      run: tox -e py313-lint
 
     - if: success() || failure()
-      run: tox -e py311-invalidcode
+      run: tox -e py313-invalidcode
 
     - if: success() || failure()
-      run: tox -e py311-mypy
+      run: tox -e py313-mypy
 
     - name: Check i18n keys
       if: success() || failure()
