@@ -7,7 +7,7 @@ dovecot_storage_version = 2.4.0
 
 !include_try /usr/share/dovecot/protocols.d/*.protocol
 
-listen = *, ::
+listen = *{% if ipv6_enabled %}, ::{% endif %}
 auth_mechanisms = plain login
 
 mail_driver = maildir
