@@ -787,11 +787,12 @@ def app_upgrade(
             new_version = upgrade_infos.get("new_version")
 
             new_app_src: str
-            if file and isinstance(file, dict):
-                # We use this hack to test chained upgrades in unit/functional tests
-                new_app_src = file[app_]
-            elif file:
-                new_app_src = file
+            if file:
+                if isinstance(file, dict):
+                    # We use this hack to test chained upgrades in unit/functional tests
+                    new_app_src = file[app_]
+                else:
+                    new_app_src = file
             elif url:
                 new_app_src = url
             elif status == "url_required":
