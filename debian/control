@@ -45,7 +45,7 @@ Conflicts: iptables-persistent
  , openresolv
  , systemd-resolved
  , nginx-extras (>= 1.28)
- , openssl (>= 3.5.4)
+ , openssl (>= 3.6)
  , slapd (>= 2.6.11)
  , dovecot-core (>= 1:2.5)
  , fail2ban (>= 1.2)
