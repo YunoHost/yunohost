@@ -27,7 +27,7 @@ Depends: python3-all (>= 3.13),
  , openssl, ca-certificates, netcat-openbsd, iproute2
  , sssd, sssd-tools, libsss-sudo, sssd-ldap, slapd, ldap-utils, libnss-sss, libpam-sss
  , dnsmasq, resolvconf, libnss-myhostname
- , postfix, postfix-ldap, postfix-policyd-spf-perl, postfix-pcre
+ , postfix, postfix-ldap, postfix-policyd-spf-perl, postfix-pcre, libsasl2-modules
  , dovecot-core, dovecot-imapd, dovecot-ldap, dovecot-lmtpd, dovecot-managesieved
  , opendkim-tools, opendkim, postsrsd, procmail, mailutils
  , acl

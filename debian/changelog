@@ -35,6 +35,16 @@ yunohost (13.0.0) testing; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 31 Oct 2025 18:38:56 +0100
  
+yunohost (12.1.34) stable; urgency=low
+
+  - migrations: Add draft, "hidden" migration to Trixie ([#2216](http://github.com/YunoHost/yunohost/pull/2216), 97c9c2ca2, c90e7264a, ca7d9dc1d)
+  - upgrades: properly handle .deb category 'non-free / misc' in package classification (3722281b7)
+  - diagnosis: Fixup kern.log parsing (c9c31acc6)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, orhtej2)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 03 Nov 2025 17:39:08 +0100
+
 yunohost (12.1.33) stable; urgency=low
 
   - upgrades: when parsing package<->section lines, try to gracefully handle edgecase were there's more than 2 items to split (17a11b12a)

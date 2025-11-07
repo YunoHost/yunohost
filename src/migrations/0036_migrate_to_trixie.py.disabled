@@ -111,7 +111,7 @@ def _backup_pip_freeze_for_python_app_venvs():
         # Generate a requirements file from venv
         # Remove pkg resources from the freeze to avoid an error during the python venv https://stackoverflow.com/a/40167445
         pip = venv / "bin" / "pip"
-        pip_freeze = subprocess.run([pip, "freeze"], check=True).stdout.decode("utf-8")
+        pip_freeze = subprocess.check_output([pip, "freeze"]).decode(encoding="utf-8")
         pip_freeze = re.sub(r"^pkg(-|_)resources==.*$", "", pip_freeze)
         (venv / VENV_REQUIREMENTS_SUFFIX).write_text(pip_freeze)
 
@@ -143,6 +143,16 @@ def download_gpg_key(url: str, file: Path) -> None:
     file.write_bytes(dearmored)
 
 
+def package_is_installed(package: str) -> bool:
+    result = subprocess.run(
+        f"dpkg --list | grep '^ii ' | grep -q -w {package}",
+        check=False,
+        shell=True,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    )
+    return result.returncode == 0
+
+
 class MyMigration(Migration):
     "Upgrade the system to Debian Trixie and Yunohost 13.x"
 
@@ -152,6 +162,56 @@ class MyMigration(Migration):
         self.check_assertions()
 
         logger.info(m18n.n("migration_0036_start"))
+
+        # Stupid stuff because resolvconf later wants to edit /etc/resolv.conf and will miserably crash if it's immutable
+        subprocess.check_call(["chattr", "-i", Path("/etc/resolv.conf").resolve()])
+
+        # Get requirements of the different venvs from python apps
+        _backup_pip_freeze_for_python_app_venvs()
+
+        # Tell libc6 it's okay to restart system stuff during the upgrade
+        subprocess.run(
+            ["debconf-set-selections"],
+            input="libc6 libraries/restart-without-asking boolean true".encode("utf-8"),
+            check=True,
+        )
+
+        # Don't send an email to root about the postgresql migration. It should be handled automatically after.
+        if package_is_installed("postgresql-common"):
+            subprocess.run(
+                ["debconf-set-selections"],
+                input="postgresql-common postgresql-common/obsolete-major seen true".encode("utf-8"),
+                check=True,
+            )
+
+        # Do not restart services during apt upgrade, that we know for sure will be broken before a conf-regen
+        # FIXME : we should find a ~robust way to auto-delete the policy-rc.d file after the migration went through,
+        # ideally wrapping everything in a context manager somehow
+        self.prevent_services_restart_during_upgrade([
+            "nginx",
+            "dovecot"
+        ])
+
+        # Hold import yunohost packages
+        apps_packages = self.get_apps_equivs_packages()
+        ynh_packages = [
+            "yunohost",
+            "moulinette",
+            "ssowat",
+            "yunohost-admin",
+            "yunohost-portal",
+        ]
+        aptitude_with_progress_bar(" ".join(("hold", *ynh_packages, *apps_packages)))
+
+        #
+        # Patch yunohost conflicts
+        #
+        logger.info(m18n.n("migration_0036_patch_yunohost_dpkg"))
+
+        self.patch_yunohost_dpkg()
+
+        # Patch sources.list
+        logger.info(m18n.n("migration_0036_patching_sources_list"))
 
         # Add new apt .deb signing key
         download_gpg_key(
@@ -167,69 +227,18 @@ class MyMigration(Migration):
             Path("/etc/apt/trusted.gpg.d/extra_php_version.gpg"),
         )
 
-        # Patch sources.list
-        logger.info(m18n.n("migration_0036_patching_sources_list"))
         self.patch_apt_sources_list()
-
-        #
-        # Get requirements of the different venvs from python apps
-        #
-
-        _backup_pip_freeze_for_python_app_venvs()
-
-        #
-        # Run apt update
-        #
-
-        aptitude_with_progress_bar("update")
-
-        # Tell libc6 it's okay to restart system stuff during the upgrade
-        subprocess.run(
-            ["debconf-set-selections"],
-            input="libc6 libraries/restart-without-asking boolean true".encode("utf-8"),
-            check=True,
-        )
-
-        # Stupid stuff because resolvconf later wants to edit /etc/resolv.conf and will miserably crash if it's immutable
-        subprocess.check_call(["chattr", "-i", "/etc/resolv.conf"])
-
-        # Do not restart services during apt upgrade, that we know for sure will be broken before a conf-regen
-        # FIXME : we should find a ~robust way to auto-delete the policy-rc.d file after the migration went through,
-        # ideally wrapping everything in a context manager somehow
-        self.prevent_services_restart_during_upgrade([
-            "nginx",
-            "dovecot"
-        ])
-
-        # Don't send an email to root about the postgresql migration. It should be handled automatically after.
-        subprocess.run(
-            ["debconf-set-selections"],
-            input="postgresql-common postgresql-common/obsolete-major seen true".encode("utf-8"),
-            check=True,
-        )
-
-        #
-        # Patch yunohost conflicts
-        #
-        logger.info(m18n.n("migration_0036_patch_yunohost_dpkg"))
-
-        self.patch_yunohost_dpkg()
 
         #
         # Main upgrade
         #
         logger.info(m18n.n("migration_0036_main_upgrade"))
 
-        # Hold import yunohost packages
-        apps_packages = self.get_apps_equivs_packages()
-        ynh_packages = [
-            "yunohost",
-            "moulinette",
-            "ssowat",
-            "yunohost-admin",
-            "yunohost-portal",
-        ]
-        aptitude_with_progress_bar(" ".join(("hold", *ynh_packages, *apps_packages)))
+        #
+        # Run apt update
+        #
+
+        aptitude_with_progress_bar("update")
 
         # Specific trick because libluajit changed name **again**
         # And also the t64 apocalypse that makes aptitude derp
@@ -444,22 +453,22 @@ class MyMigration(Migration):
 
         message_jinja = textwrap.dedent("""\
             {%- if migration_recent and not beta -%}
-N.B.: This migration has been tested by the community over the last few months but \
-has only been declared stable recently. If your server hosts critical services and \
-if you are not too confident with debugging possible issues, we recommend you to \
-wait a little bit more while we gather more feedback and polish things up. If on the \
-other hand you are relatively confident with debugging small issues that may arise, \
-you are encouraged to run this migration 😉!
+            N.B.: This migration has been tested by the community over the last few \
+months but has only been declared stable recently. If your server hosts critical \
+services and if you are not too confident with debugging possible issues, we recommend \
+you to wait a little bit more while we gather more feedback and polish things up. \
+If on the other hand you are relatively confident with debugging small issues that \
+may arise, you are encouraged to run this migration 😉!
 
             {% endif -%}
-You can read the full **BETA** release note, remaining known issues and feedback from the \
-community here: <https://forum.yunohost.org/t/40656>. In particular, we encourage \
-you to pay attention to the fact that:
-   - the LDAP integration has been reworked and may cause issue if configurations are not \
-properly regenerated during the upgrade. It is recommended to double-check that you have \
-a way to login **directly as root** in case things go sideway (typically by SSHing from the \
-local network, or through rescue access on a VPS). *Or* at least keep a terminal \
-open on the side, in which you are root (e.g. via `sudo -i`).
+            You can read the full **BETA** release note, remaining known issues and \
+feedback from the community here: <https://forum.yunohost.org/t/40656>. \
+In particular, we encourage you to pay attention to the fact that:
+            - the LDAP integration has been reworked and may cause issue if \
+configurations are not properly regenerated during the upgrade. It is recommended \
+to double-check that you have a way to login **directly as root** in case things go \
+sideway (typically by SSHing from the local network, or through rescue access on a VPS). \
+*Or* at least keep a terminal open on the side, in which you are root (e.g. via `sudo -i`).
 
             {{ migration_0036_general_warning }}
             {%- if problematic_apps %}

@@ -95,15 +95,6 @@ ynh_exec_as_app() {
 #
 # `$domain` and `$path` should be defined externally (and correspond to the domain.tld and the /path (of the app?))
 ynh_local_curl() {
-    # Define url of page to curl
-    local local_page=$(ynh_normalize_url_path "$1")
-    local full_path=$path$local_page
-
-    if [ "${path}" == "/" ]; then
-        full_path=$local_page
-    fi
-
-    local full_page_url=https://localhost$full_path
 
     # Concatenate all other arguments with '&' to prepare POST data
     local POST_data=""
@@ -113,10 +104,28 @@ ynh_local_curl() {
     done
     if [ -n "$POST_data" ]; then
         # Add --data arg and remove the last character, which is an unecessary '&'
-        POST_data_arg=(--data "${POST_data::-1}")
+        ynh_local_curl_raw "$1" --data "${POST_data::-1}"
     else
-        POST_data_arg=()
+        ynh_local_curl_raw "$1"
     fi
+}
+
+# More low-level curl wrapper, meant for more elaborate use case where people
+# want to pass arbitrary headers and other curl options, not just POST data
+#
+# [internal]
+#
+# example: ynh_local_curl_raw "/install.php?installButton" --data "foo=$var1&bar=$var2"
+ynh_local_curl_raw() {
+    # Define url of page to curl
+    local local_page=$(ynh_normalize_url_path "$1")
+    local full_path=$path$local_page
+
+    if [ "${path}" == "/" ]; then
+        full_path=$local_page
+    fi
+
+    local full_page_url=https://localhost$full_path
 
     # Wait untils nginx has fully reloaded (avoid curl fail with http2)
     sleep 2
@@ -133,7 +142,8 @@ ynh_local_curl() {
     fi
 
     # Curl the URL
-    curl --silent --show-error --insecure --location --header "Host: $domain" --resolve "$domain:443:127.0.0.1" "${POST_data_arg[@]}" "$full_page_url" --cookie-jar "$cookiefile" --cookie "$cookiefile"
+    shift
+    curl --silent --show-error --insecure --location --header "Host: $domain" --resolve "$domain:443:127.0.0.1" "$full_page_url" --cookie-jar "$cookiefile" --cookie "$cookiefile" "$@"
 
     if [[ $visitors_enabled == "no" ]]; then
         ynh_permission_update --permission="main" --remove="visitors"

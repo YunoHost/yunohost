@@ -188,7 +188,7 @@
     "diagnosis_everything_ok": "Все выглядит отлично для {category}!",
     "diagnosis_dns_good_conf": "DNS-записи правильно настроены для домена {domain} (категория {category})",
     "diagnosis_display_tip": "Чтобы увидеть найденные проблемы, вы можете перейти в раздел Диагностика в веб-интерфейсе или выполнить команду 'yunohost diagnosis show --issues --human-readable' из командной строки.",
-    "diagnosis_dns_point_to_doc": "Если вам нужна помощь по настройке DNS-записей, обратитесь к документации на сайте <a href='https://yunohost.org/dns_config'>https://yunohost.org/dns_config</a>.",
+    "diagnosis_dns_point_to_doc": "Если вам нужна помощь по настройке DNS-записей, обратитесь к документации на сайте <a href='https://doc.yunohost.org/dns_config'>https://doc.yunohost.org/dns_config</a>.",
     "diagnosis_domain_expiration_error": "Срок действия некоторых доменов истекает ОЧЕНЬ СКОРО!",
     "diagnosis_failed": "Не удалось получить результат диагностики для категории '{category}': {error}",
     "domain_created": "Домен создан",
