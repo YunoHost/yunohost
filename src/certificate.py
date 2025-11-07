@@ -631,7 +631,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
         )
 
     # Set the key
-    with open(key_file, "rt") as pem_file:
+    with open(key_file, "rb") as pem_file:
         private_key = serialization.load_pem_private_key(pem_file.read(), password=None)
 
     # Sign the request
