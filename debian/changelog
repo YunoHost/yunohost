@@ -1,3 +1,23 @@
+yunohost (13.0.1) testing; urgency=low
+
+  - debian/control: tweak openssl conflict rule (936d7c193)
+  - certificate: cryptography.serialization.load_pem_private_key expects binary data (a127563f6)
+  - regenconf: Rename all jinja templates as *.j2 (0fb7ac1f4)
+  - regenconf/nss: Fix post_regen, chmod before restarting the server (f584f26e1)
+  - postgresql: Use helper to prevent warning messages (379818502)
+  - postgresql: Ooops, test checking if postgresql was installed was inverted (cb54f5990)
+  - dovecot: Fix mail_plugins definition in config file (0b7d69d86)
+  - dovecot: Add back the global_script before sieve script (9b708b48e)
+  - dovecot: Remove legacy, non existing antispam plugin (14b5c300f)
+  - dovecot: replace sed with jinja expression (70bbf4af2)
+  - postfix: in Trixie, postfix main runner is not postfix@- anymore (a17a4ca29)
+  - postfix: replace sed and file creation with jinja expression (1a06c45e3)
+  - misc: more tweaks to set Python to 3.13 (8b5cd50c9, c262d3a99, f72b3b264, e245fc42f, 2fb86e364)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, orhtej2)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 07 Nov 2025 15:22:09 +0100
+
 yunohost (13.0.0) testing; urgency=low
 
   Major changes
