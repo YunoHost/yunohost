@@ -1889,6 +1889,43 @@ class CopyBackupMethod(BackupMethod):
 class TarBackupMethod(BackupMethod):
     method_name = "tar"
 
+    @classmethod
+    def _find_tar_archive(cls, name):
+        """Find the tar archive file for a given backup name"""
+        tar_path = f"{ARCHIVES_PATH}/{name}.tar"
+        if os.path.lexists(tar_path):
+            return tar_path
+
+        tar_gz_path = f"{ARCHIVES_PATH}/{name}.tar.gz"
+        if os.path.lexists(tar_gz_path):
+            return tar_gz_path
+
+        return None
+
+    @classmethod
+    def _extract_info_from_tar(cls, tar_path, name):
+        """Extract info.json from a tar archive"""
+        try:
+            tar = tarfile.open(tar_path, "r:gz" if tar_path.endswith(".gz") else "r")
+            try:
+                # Try with and without leading ./
+                if "info.json" in tar.getnames():
+                    info_member = tar.getmember("info.json")
+                elif "./info.json" in tar.getnames():
+                    info_member = tar.getmember("./info.json")
+                else:
+                    raise YunohostError("backup_archive_cant_retrieve_info_json")
+
+                info_file = tar.extractfile(info_member)
+                info_data = json.load(info_file)
+                tar.close()
+                return info_data
+            finally:
+                tar.close()
+        except Exception as e:
+            logger.debug(f"Could not extract info from {tar_path}: {e}")
+            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+
     @property
     def _archive_file(self):
         from .settings import settings_get
