@@ -1926,6 +1926,41 @@ class TarBackupMethod(BackupMethod):
             logger.debug(f"Could not extract info from {tar_path}: {e}")
             raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
+    @classmethod
+    def list_backups(cls):
+        """List all TAR backups by looking for .info.json and .tar files"""
+        backups = {}
+
+        # From .info.json files
+        info_files = glob(f"{ARCHIVES_PATH}/*.info.json")
+        for info_file in info_files:
+            name = os.path.basename(info_file)[: -len(".info.json")]
+            try:
+                with open(info_file) as f:
+                    info_data = json.load(f)
+                    # Only include if it's a tar backup (or method not specified for retrocompat)
+                    if info_data.get("backup_method", "tar") == "tar":
+                        backups[name] = info_data
+            except Exception:
+                pass  # Skip malformed info files
+
+        # From .tar and .tar.gz files without .info.json (if it's missing)
+        tar_files = glob(f"{ARCHIVES_PATH}/*.tar.gz") + glob(f"{ARCHIVES_PATH}/*.tar")
+        for tar_file in tar_files:
+            if tar_file.endswith(".tar.gz"):
+                name = os.path.basename(tar_file)[: -len(".tar.gz")]
+            else:
+                name = os.path.basename(tar_file)[: -len(".tar")]
+
+            # Only add if not already listed via .info.json
+            if name not in backups:
+                try:
+                    backups[name] = cls.get_backup_info(name)
+                except Exception:
+                    pass  # Skip if we can't get info
+
+        return backups
+
     @property
     def _archive_file(self):
         from .settings import settings_get
