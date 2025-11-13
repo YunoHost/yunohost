@@ -163,7 +163,7 @@ i18n = "global_settings_setting"
 [misc]
 
     [misc.backup]
-        [misc.backup.backup_compress_tar_archives]
+        [misc.backup.tar_compress]
         type = "boolean"
         default = false
 
