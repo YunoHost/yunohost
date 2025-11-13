@@ -1539,6 +1539,67 @@ class BackupMethod:
         backup_method = known_methods.get(method, CustomBackupMethod)
         return backup_method(manager, method=method, **kwargs)
 
+    @classmethod
+    def list_backups(cls):
+        """
+        List all backups handled by this method.
+
+        Returns:
+            dict: Dictionary mapping backup names to their info dictionaries
+        """
+        raise NotImplementedError("Subclasses must implement list_backups()")
+
+    @classmethod
+    def get_backup_info(cls, name):
+        """
+        Get detailed information about a specific backup.
+
+        Args:
+            name -- Backup name
+
+        Returns:
+            dict: Backup information dictionary
+        """
+        raise NotImplementedError("Subclasses must implement get_backup_info()")
+
+    @classmethod
+    def can_handle(cls, name):
+        """
+        Check if this backup method can handle the given backup.
+
+        Args:
+            name -- Backup name
+
+        Returns:
+            bool: True if this method can handle the backup, False otherwise
+        """
+        raise NotImplementedError("Subclasses must implement can_handle()")
+
+    @classmethod
+    def get_download_path(cls, name):
+        """
+        Get the file path for downloading this backup.
+
+        For some methods (like Borg), this may create a temporary export file.
+
+        Args:
+            name -- Backup name
+
+        Returns:
+            str: Path to downloadable file
+        """
+        raise NotImplementedError("Subclasses must implement get_download_path()")
+
+    @classmethod
+    def delete_backup(cls, name):
+        """
+        Delete a backup and all associated files.
+
+        Args:
+            name -- Backup name
+        """
+        raise NotImplementedError("Subclasses must implement delete_backup()")
+
     def __init__(self, manager, repo=None, **kwargs):
         """
         BackupMethod constructors
