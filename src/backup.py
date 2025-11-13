@@ -1961,6 +1961,100 @@ class TarBackupMethod(BackupMethod):
 
         return backups
 
+    @classmethod
+    def get_backup_info(cls, name):
+        """Get info about a TAR backup, from .info.json or by extracting from archive"""
+        # Find the tar archive path
+        tar_path = cls._find_tar_archive(name)
+        if not tar_path:
+            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+
+        # Resolve symlinks and validate
+        archive_path = tar_path
+        if os.path.islink(archive_path):
+            archive_path = os.path.realpath(archive_path)
+            # Raise exception if link is broken
+            if not os.path.exists(archive_path):
+                raise YunohostValidationError("backup_archive_broken_link", path=archive_path)
+
+        # Try to read .info.json if it exists
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        info = None
+        if os.path.exists(info_file):
+            try:
+                with open(info_file) as f:
+                    info = json.load(f)
+            except Exception:
+                pass  # Will try extracting below
+
+        # Extract from tar archive if needed (retrocompat)
+        if not info:
+            info = cls._extract_info_from_tar(tar_path, name)
+
+        # Add path to info
+        info["path"] = archive_path
+        return info
+
+    @classmethod
+    def can_handle(cls, name):
+        """Check if this is a TAR backup"""
+        # Check if .info.json says tar
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        if os.path.exists(info_file):
+            try:
+                with open(info_file) as f:
+                    info = json.load(f)
+                    return info.get("backup_method", "tar") == "tar"
+            except Exception:
+                pass
+
+        # Check if .tar file exists
+        return cls._find_tar_archive(name) is not None
+
+    @classmethod
+    def get_download_path(cls, name):
+        """Get the path to the TAR file for download"""
+        # Find the tar archive
+        tar_path = cls._find_tar_archive(name)
+        if not tar_path:
+            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+
+        # Resolve symlinks
+        archive_path = tar_path
+        if os.path.islink(archive_path):
+            archive_path = os.path.realpath(archive_path)
+            # Raise exception if link is broken
+            if not os.path.exists(archive_path):
+                raise YunohostValidationError("backup_archive_broken_link", path=archive_path)
+
+        return archive_path
+
+    @classmethod
+    def delete_backup(cls, name):
+        """Delete TAR backup files"""
+        # Find tar archive
+        archive_file = f"{ARCHIVES_PATH}/{name}.tar"
+        if not os.path.exists(archive_file) and os.path.exists(archive_file + ".gz"):
+            archive_file += ".gz"
+
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        files_to_delete = [archive_file, info_file]
+
+        # Handle symlinks - also delete the actual file
+        if os.path.islink(archive_file):
+            actual_archive = os.path.realpath(archive_file)
+            files_to_delete.append(actual_archive)
+
+        # Delete all files
+        for backup_file in files_to_delete:
+            if not os.path.exists(backup_file):
+                continue
+            try:
+                os.remove(backup_file)
+            except Exception:
+                logger.debug("unable to delete '%s'", backup_file, exc_info=True)
+                logger.warning(m18n.n("backup_delete_error", path=backup_file))
+
     @property
     def _archive_file(self):
         from .settings import settings_get
