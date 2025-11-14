@@ -2464,6 +2464,95 @@ class BorgBackupMethod(BackupMethod):
                     f"Failed to initialize Borg repository: {e.stderr.decode()}"
                 )
 
+    @classmethod
+    def _list_borg_archives(cls, repo_path):
+        """List all archives in a Borg repository"""
+        env = cls._get_borg_env()
+        try:
+            result = subprocess.run(
+                ["borg", "list", "--short", repo_path],
+                capture_output=True,
+                text=True,
+                env=env,
+                check=False
+            )
+            if result.returncode == 0:
+                return [line.strip() for line in result.stdout.strip().split('\n') if line.strip()]
+            return []
+        except Exception:
+            return []
+
+    @classmethod
+    def _extract_info_from_archive(cls, name, repo_path):
+        """Extract info.json from a Borg archive"""
+        env = cls._get_borg_env()
+        try:
+            # Try to extract info.json from the archive
+            cmd = ["borg", "extract", f"{repo_path}::{name}", "--stdout", "info.json"]
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                env=env,
+                check=False
+            )
+            if result.returncode == 0:
+                return json.loads(result.stdout)
+            else:
+                logger.warning(f"Failed to extract info.json from Borg archive {name}: {result.stderr}")
+        except json.JSONDecodeError as e:
+            logger.warning(f"info.json from Borg archive {name} is not valid JSON: {e}")
+        except Exception as e:
+            logger.warning(f"Exception while extracting info.json from Borg archive {name}: {e}")
+
+        # Fallback: create minimal info
+        logger.info(f"Using fallback minimal info for Borg archive {name}")
+        return {
+            "name": name,
+            "backup_method": "borg",
+            "size": cls._get_archive_size(name, repo_path)
+        }
+
+    @classmethod
+    def _get_archive_size(cls, name, repo_path):
+        """Get the size of a Borg archive"""
+        env = cls._get_borg_env()
+        try:
+            cmd = ["borg", "info", "--json", f"{repo_path}::{name}"]
+            result = subprocess.run(cmd, capture_output=True, env=env, check=False)
+            if result.returncode == 0:
+                data = json.loads(result.stdout)
+                return data["archives"][0]["stats"]["original_size"]
+        except Exception:
+            pass
+        return 0
+
+    @classmethod
+    def list_backups(cls):
+        """List all Borg backups"""
+        repo = cls._get_repo_path()
+        if not cls._repo_exists(repo):
+            return {}
+
+        backups = {}
+        archive_names = cls._list_borg_archives(repo)
+
+        for name in archive_names:
+            # Check if .info.json exists
+            info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+            if os.path.exists(info_file):
+                try:
+                    with open(info_file) as f:
+                        backups[name] = json.load(f)
+                except Exception:
+                    # Extract from borg archive
+                    backups[name] = cls._extract_info_from_archive(name, repo)
+            else:
+                # Extract from borg archive
+                backups[name] = cls._extract_info_from_archive(name, repo)
+
+        return backups
+
 
 class CustomBackupMethod(BackupMethod):
     """
