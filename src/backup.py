@@ -1836,6 +1836,112 @@ class CopyBackupMethod(BackupMethod):
 
     method_name = "copy"
 
+    @classmethod
+    def list_backups(cls):
+        """List all Copy backups"""
+        backups = {}
+
+        # For copy method, look for .info.json files that specify copy method
+        info_files = glob(f"{ARCHIVES_PATH}/*.info.json")
+        for info_file in info_files:
+            name = os.path.basename(info_file)[: -len(".info.json")]
+            try:
+                with open(info_file) as f:
+                    info_data = json.load(f)
+                    if info_data.get("backup_method") == "copy":
+                        backups[name] = info_data
+            except Exception:
+                pass
+
+        return backups
+
+    @classmethod
+    def get_backup_info(cls, name):
+        """Get info about a Copy backup"""
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        if os.path.exists(info_file):
+            try:
+                with open(info_file) as f:
+                    info = json.load(f)
+                    if info.get("backup_method") == "copy":
+                        # Ensure path is in info (should already be there from backup creation)
+                        # If not present, it means the copy directory location was lost
+                        if "path" not in info:
+                            info["path"] = info_file  # Fallback to info file location
+                        return info
+            except Exception:
+                pass
+
+        raise YunohostValidationError("backup_archive_name_unknown", name=name)
+
+    @classmethod
+    def can_handle(cls, name):
+        """Check if this is a Copy backup"""
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        if os.path.exists(info_file):
+            try:
+                with open(info_file) as f:
+                    info = json.load(f)
+                    return info.get("backup_method") == "copy"
+            except Exception:
+                pass
+        return False
+
+    @classmethod
+    def get_download_path(cls, name):
+        """Create a TAR archive from copy directory for download"""
+        # Get the copy directory path from info
+        info = cls.get_backup_info(name)
+        copy_dir = info.get("path")
+
+        if not copy_dir or not os.path.isdir(copy_dir):
+            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+
+        # Create temporary tar file
+        temp_file = f"/tmp/{name}_copy_export.tar.gz"
+
+        try:
+            # Create tar archive from copy directory
+            tar = tarfile.open(temp_file, "w:gz")
+            tar.add(copy_dir, arcname=".")
+            tar.close()
+
+            return temp_file
+        except Exception as e:
+            logger.error(f"Failed to create tar from copy directory: {e}")
+            # Clean up temp file if it was created
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+            raise YunohostError("backup_copy_tar_failed")
+
+    @classmethod
+    def delete_backup(cls, name):
+        """Delete Copy backup directory and files"""
+        # Get the copy directory path from info
+        try:
+            info = cls.get_backup_info(name)
+            copy_dir = info.get("path")
+
+            # Delete copy directory if it exists
+            if copy_dir and os.path.isdir(copy_dir):
+                try:
+                    import shutil
+                    shutil.rmtree(copy_dir)
+                except Exception:
+                    logger.debug("unable to delete copy directory '%s'", copy_dir, exc_info=True)
+                    logger.warning(m18n.n("backup_delete_error", path=copy_dir))
+        except Exception:
+            logger.warning(f"Could not get copy directory path for {name}")
+
+        # Delete .info.json file
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        if os.path.exists(info_file):
+            try:
+                os.remove(info_file)
+            except Exception:
+                logger.debug("unable to delete '%s'", info_file, exc_info=True)
+                logger.warning(m18n.n("backup_delete_error", path=info_file))
+
     def backup(self):
         """Copy prepared files into a the repo"""
         # Check free space in output
