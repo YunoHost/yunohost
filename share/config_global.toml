@@ -166,12 +166,38 @@ i18n = "global_settings_setting"
         [misc.backup.default_backup_method]
         type = "select"
         choices.tar = "TAR (traditional compressed archive)"
+        choices.borg = "Borg (deduplicated and encrypted)"
         choices.copy = "Copy (uncompressed, requires external storage)"
         default = "tar"
 
         [misc.backup.tar_compress]
         type = "boolean"
         default = false
+
+        [misc.backup.borg_repository_path]
+        type = "path"
+        optional = true
+        default = ""
+
+        [misc.backup.borg_passphrase]
+        type = "password"
+        optional = true
+        default = ""
+
+        [misc.backup.borg_relocated_repo_access_is_ok]
+        type = "boolean"
+        default = true
+        optional = true
+
+        [misc.backup.borg_rsh]
+        type = "string"
+        optional = true
+        default = ""
+
+        [misc.backup.borg_remote_path]
+        type = "string"
+        optional = true
+        default = ""
 
     [misc.network]
         [misc.network.dns_exposure]
