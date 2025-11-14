@@ -163,6 +163,12 @@ i18n = "global_settings_setting"
 [misc]
 
     [misc.backup]
+        [misc.backup.default_backup_method]
+        type = "select"
+        choices.tar = "TAR (traditional compressed archive)"
+        choices.copy = "Copy (uncompressed, requires external storage)"
+        default = "tar"
+
         [misc.backup.tar_compress]
         type = "boolean"
         default = false
