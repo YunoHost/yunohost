@@ -2352,6 +2352,119 @@ class TarBackupMethod(BackupMethod):
         tar.close()
 
 
+class BorgBackupMethod(BackupMethod):
+    """
+    This class implements BorgBackup integration for YunoHost backups.
+    Borg provides deduplication, compression, and encryption.
+    """
+
+    method_name = "borg"
+
+    @classmethod
+    def _get_repo_path(cls):
+        """Get the Borg repository path from settings or default"""
+        from .settings import settings_get
+        repo = settings_get("misc.backup.borg_repository_path")
+        return repo if repo else os.path.join(ARCHIVES_PATH, "borg")
+
+    @classmethod
+    def _is_ssh_repo(cls, repo_path):
+        """Check if a repo path is a remote SSH repository"""
+        return "@" in repo_path and ":" in repo_path
+
+    @classmethod
+    def _repo_exists(cls, repo_path):
+        """Check if a Borg repository exists"""
+        if cls._is_ssh_repo(repo_path):
+            # For SSH repos, assume they exist (will fail later if not)
+            return True
+        # For local repos, check if it's a valid borg repo
+        return os.path.isdir(repo_path) and os.path.exists(os.path.join(repo_path, "config"))
+
+    @classmethod
+    def _get_borg_env(cls):
+        """Return environment variables for borg commands"""
+        from .settings import settings_get
+
+        env = os.environ.copy()
+
+        # Passphrase
+        passphrase = settings_get("misc.backup.borg_passphrase")
+        if passphrase:
+            env["BORG_PASSPHRASE"] = passphrase
+
+        # Allow relocated repositories
+        relocated_ok = settings_get("misc.backup.borg_relocated_repo_access_is_ok")
+        if relocated_ok:
+            env["BORG_RELOCATED_REPO_ACCESS_IS_OK"] = "yes"
+
+        # SSH command (for remote repos)
+        borg_rsh = settings_get("misc.backup.borg_rsh")
+        if borg_rsh:
+            env["BORG_RSH"] = borg_rsh
+
+        # Remote borg path
+        borg_remote_path = settings_get("misc.backup.borg_remote_path")
+        if borg_remote_path:
+            env["BORG_REMOTE_PATH"] = borg_remote_path
+
+        return env
+
+    def __init__(self, manager, repo=None, **kwargs):
+        # Get settings from YunoHost config if not provided
+        from .settings import settings_get
+
+        # Override repo with settings if not explicitly provided
+        if repo is None:
+            borg_repo = settings_get("misc.backup.borg_repository_path")
+            if borg_repo:
+                repo = borg_repo
+            else:
+                # Default: use a 'borg' subdirectory in ARCHIVES_PATH
+                repo = os.path.join(ARCHIVES_PATH, "borg")
+
+        super(BorgBackupMethod, self).__init__(manager, repo)
+
+        # Get passphrase from settings
+        self.passphrase = kwargs.get("passphrase") or settings_get("misc.backup.borg_passphrase") or None
+        self.compression = "zstd,3"
+        if (self.passphrase is None) or (self.passphrase == ""):
+            self.encryption = "none"
+        else:
+            self.encryption = "repokey-blake2"
+
+    def _ensure_borg_installed(self):
+        """Check if borg is installed"""
+        try:
+            subprocess.run(
+                ["borg", "--version"],
+                capture_output=True,
+                check=True
+            )
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            raise YunohostError(
+                "Borg is not installed. Please install it with: apt install borgbackup"
+            )
+
+    def _init_repo(self):
+        """Initialize borg repository if it doesn't exist"""
+        if not os.path.exists(os.path.join(self.repo, "config")):
+            logger.info("Initializing new Borg repository at %s", self.repo)
+            try:
+                cmd = ["borg", "init", "--encryption", self.encryption, self.repo]
+
+                subprocess.run(
+                    cmd,
+                    env=self._get_borg_env(),
+                    check=True,
+                    capture_output=True
+                )
+            except subprocess.CalledProcessError as e:
+                raise YunohostError(
+                    f"Failed to initialize Borg repository: {e.stderr.decode()}"
+                )
+
+
 class CustomBackupMethod(BackupMethod):
     """
     This class use a bash script/hook "backup_method" to do the
