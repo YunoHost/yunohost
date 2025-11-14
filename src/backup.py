@@ -865,19 +865,17 @@ class RestoreManager:
         return restore_manager.result
     """
 
-    def __init__(self, name, method="tar"):
+    def __init__(self, name, method=None):
         """
         RestoreManager constructor
 
         Args:
         name -- (string) Archive name
-        method -- (string) Method name to use to mount the archive
+        method -- (string) Method name to use to mount the archive. If None, auto-detect from archive
         """
         from packaging import version
 
         # Retrieve and open the archive
-        # FIXME this way to get the info is not compatible with copy or custom
-        # backup methods
         self.info = backup_info(name, with_details=True)
 
         from_version = self.info.get("from_yunohost_version", "")
@@ -890,6 +888,24 @@ class RestoreManager:
 
         self.archive_path = self.info["path"]
         self.name = name
+
+        # Auto-detect method using BackupMethod.can_handle()
+        if method is None:
+            method = self.info.get("backup_method")
+            if not method:
+                # Use can_handle() to detect which method owns this backup
+                for method_class in BackupMethod.__subclasses__():
+                    try:
+                        if method_class.can_handle(name):
+                            method = method_class.method_name
+                            break
+                    except (NotImplementedError, Exception):
+                        pass
+
+                # Fallback to tar if no method found
+                if not method:
+                    method = "tar"
+
         self.method = BackupMethod.create(method, self)
         self.targets = BackupRestoreTargetsManager()
 
