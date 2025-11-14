@@ -723,34 +723,24 @@ def domain_dns_push(
         registrar: registrar_credentials,
     }
 
-    # Ugly hack to be able to fetch all record types at once:
-    # we initialize a LexiconClient with a dummy type "all"
-    # (which lexicon doesnt actually understands)
-    # then trigger ourselves the authentication + list_records
-    # instead of calling .execute()
-    query = (
-        LexiconConfigResolver()
-        .with_dict(dict_object=base_config)
-        .with_dict(dict_object={"action": "list", "type": "all"})
-    )
-    client = LexiconClient(query)
-    try:
-        client.provider.authenticate()
-    except Exception as e:
-        raise YunohostValidationError(
-            "domain_dns_push_failed_to_authenticate", domain=domain, error=str(e)
-        )
+    # Get only records for relevant types: A, AAAA, MX, TXT, CNAME, SRV
+    relevant_types = ["A", "AAAA", "MX", "TXT", "CNAME", "SRV", "CAA"]
+    current_records = []
 
-    try:
-        current_records = client.provider.list_records()
-    except Exception as e:
-        raise YunohostError("domain_dns_push_failed_to_list", error=str(e))
+    for rtype in relevant_types:
+        query = (
+            LexiconConfigResolver()
+            .with_dict(dict_object=base_config)
+            .with_dict(dict_object={"action": "list", "type": rtype})
+        )
+        client = LexiconClient(query)
+
+        try:
+            current_records.extend(client.execute())
+        except Exception as e:
+            raise YunohostError("domain_dns_push_failed_to_list", error=str(e))
 
     managed_dns_records_hashes = _get_managed_dns_records_hashes(domain)
-
-    # Keep only records for relevant types: A, AAAA, MX, TXT, CNAME, SRV
-    relevant_types = ["A", "AAAA", "MX", "TXT", "CNAME", "SRV", "CAA"]
-    current_records = [r for r in current_records if r["type"] in relevant_types]
 
     # Ignore records which are for a higher-level domain
     # i.e. we don't care about the records for domain.tld when pushing yuno.domain.tld

@@ -977,7 +977,7 @@ def test_show_tile_cant_be_enabled():
 def test_permission_app_install():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
-        args="domain=%s&domain_2=%s&path=%s&is_public=0&admin=%s"
+        args="domain=%s&domain_2=%s&path=%s&init_main_permission=all_users&admin=%s"
         % (maindomain, maindomain, "/urlpermissionapp", "alice"),
         force=True,
     )
@@ -1009,7 +1009,7 @@ def test_permission_app_install():
 def test_permission_app_remove():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
-        args="domain=%s&domain_2=%s&path=%s&is_public=0&admin=%s"
+        args="domain=%s&domain_2=%s&path=%s&init_main_permission=all_users&admin=%s"
         % (maindomain, maindomain, "/urlpermissionapp", "alice"),
         force=True,
     )
@@ -1023,7 +1023,7 @@ def test_permission_app_remove():
 def test_permission_app_change_url():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
-        args="domain=%s&domain_2=%s&path=%s&is_public=1&admin=%s"
+        args="domain=%s&domain_2=%s&path=%s&init_main_permission=visitors&admin=%s"
         % (maindomain, maindomain, "/urlpermissionapp", "alice"),
         force=True,
     )
@@ -1045,7 +1045,7 @@ def test_permission_app_change_url():
 def test_permission_protection_management_by_helper():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
-        args="domain=%s&domain_2=%s&path=%s&is_public=1&admin=%s"
+        args="domain=%s&domain_2=%s&path=%s&init_main_permission=visitors&admin=%s"
         % (maindomain, maindomain, "/urlpermissionapp", "alice"),
         force=True,
     )
@@ -1069,7 +1069,7 @@ def test_permission_protection_management_by_helper():
 def test_permission_app_propagation_on_ssowat():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
-        args="domain=%s&domain_2=%s&path=%s&is_public=1&admin=%s"
+        args="domain=%s&domain_2=%s&path=%s&init_main_permission=visitors&admin=%s"
         % (maindomain, maindomain, "/urlpermissionapp", "alice"),
         force=True,
     )

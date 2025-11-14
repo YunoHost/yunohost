@@ -19,7 +19,7 @@
 #
 
 # Exit hook on subcommand error or unset variable
-set -Eeuo pipefail
+set -eu
 
 # Source YNH helpers
 YNH_HELPERS_VERSION=2.1
@@ -40,7 +40,7 @@ do_pre_regen() {
 
     pop3_enabled="$(jq -r '.pop3_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
     main_domain=$(cat /etc/yunohost/current_host)
-    domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]" | tr '\n' ' ')"
+    domain_list="$YNH_DOMAINS_WITH_MAIL_IN_AND_OUT"
 
     ynh_config_add --jinja --template="dovecot.conf" --destination="${dovecot_dir}/dovecot.conf"
 

@@ -390,7 +390,7 @@ def log_show(
                         # We first retrict search to a ~48h time window to limit the number
                         # of .yml we look into
                         try:
-                            date = _get_datetime_from_name(base_filename)
+                            date = _get_datetime_from_name(filename)
                         except ValueError:
                             continue
                         if (date < log_start) or (

@@ -26,6 +26,11 @@ _ynh_load_ruby_in_path_and_other_tweaks() {
     # Get the absolute path of this version of Ruby
     ruby_dir="$RBENV_ROOT/versions/$app/bin"
 
+    if [ ! -e "$ruby_dir" ]; then
+        echo "Skipping loading ruby, because it doesn't seem to be provisioned yet. This is likely to happen during restore and other specific contexts."
+        return
+    fi
+
     # Load the path of this version of ruby in $PATH
     if [[ :$PATH: != *":$ruby_dir"* ]]; then
         PATH="$ruby_dir:$PATH"
@@ -74,7 +79,7 @@ ynh_ruby_install() {
     mkdir -p "${RBENV_ROOT}/shims"
 
     # Install the requested version of Ruby
-    local final_ruby_version=$(rbenv latest --print "$ruby_version")
+    local final_ruby_version=$("${RBENV_ROOT}/bin/rbenv" latest --print "$ruby_version")
     ruby_version=${final_ruby_version:-$ruby_version}
     ynh_app_setting_set --key=ruby_version --value="$ruby_version"
 
@@ -125,11 +130,11 @@ ynh_ruby_remove() {
 _ynh_ruby_cleanup() {
 
     # Remove no more needed Ruby versions
-    local installed_ruby_versions=$(rbenv versions --bare --skip-aliases | grep -Ev '/')
+    local installed_ruby_versions=$("${RBENV_ROOT}/bin/rbenv" versions --bare --skip-aliases | grep -Ev '/')
     for installed_ruby_version in $installed_ruby_versions; do
         if ! grep -qE "^ruby_version: '?$installed_ruby_version'?" /etc/yunohost/apps/*/settings.yml; then
             ynh_print_info "Removing Ruby-$installed_ruby_version"
-            $RBENV_ROOT/bin/rbenv uninstall --force "$installed_ruby_version"
+            "$RBENV_ROOT/bin/rbenv" uninstall --force "$installed_ruby_version"
         fi
     done
 

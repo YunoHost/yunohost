@@ -44,7 +44,6 @@
     "app_manifest_install_ask_path": "Bu uygulamanın yüklenmesi gereken URL yolunu (alan adından sonra) seçin",
     "app_not_enough_disk": "Bu uygulama {required} boş alan gerektirir.",
     "app_not_correctly_installed": "{app} yanlış kurulmuş gibi görünüyor",
-    "websocket_request_expected": "WebSocket isteği gerekli",
     "download_bad_status_code": "{url} döndürülen durum kodu {code}",
     "download_unknown_error": "{url} adresinden veri indirilirken hata oluştu: {error}",
     "download_timeout": "{url} yanıtlaması çok uzun sürdü, pes etti.",
@@ -61,6 +60,5 @@
     "cannot_open_file": "{file} dosyası açılamadı (nedeni: {error})",
     "unknown_user": "Bilinmeyen '{user}' kullanıcı",
     "unknown_group": "Bilinmeyen '{group}' grubu",
-    "folder_exists": "Klasör zaten var: '{path}'",
     "file_not_exist": "Dosya mevcut değil: '{path}'"
 }

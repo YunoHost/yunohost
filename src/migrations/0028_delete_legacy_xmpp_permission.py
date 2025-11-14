@@ -37,8 +37,6 @@ class MyMigration(Migration):
     introduced_in_version = "12.0"
     dependencies = []
 
-    ldap_migration_started = False
-
     @Migration.ldap_migration
     def run(self, *args):
         # Superseded by migration 0033 / permission rework to move infos out of ldap

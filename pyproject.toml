@@ -11,9 +11,11 @@ requires-python = ">=3.11"
 
 # These dependencies might not be up to date, please see debian/control instead
 dependencies = [
+    "moulinette @ git+https://github.com/yunohost/moulinette@dev",
     "bottle",
     "cryptography",
     # "dbus-python",
+    "python-debian",
     "dnspython",
     "email-validator",
     "jinja2",
@@ -47,6 +49,7 @@ tests = [
     "types-pyYAML",
     "types-requests",
     "types-toml",
+    "pytest",
 ]
 
 [tool.mypy]
@@ -74,10 +77,13 @@ profile = "black"
 
 [tool.black]
 
+[tool.ty]
+environment.root = ["."]
+
 
 [tool.pytest.ini_options]
 # for --cov-config see https://github.com/nedbat/coveragepy/issues/512
-addopts = "-s -v --cov-config=pyproject.toml"
+addopts = "-v --cov-config=pyproject.toml"
 norecursedirs = ["dist", "doc", "build", ".tox", ".eggs"]
 testpaths = ["tests/"]
 markers = [
@@ -120,14 +126,16 @@ allowlist_externals = ["black"]
 deps = ["flake8"]
 commands = [[
     "flake8", "src", "doc", "maintenance",
-    "--ignore", "E402,E501,E203,W503,E741"
+    "--ignore", "E402,E501,E203,W503,E741",
+    "--exclude", "src/vendor,tests"
 ]]
 
 [tool.tox.env.py311-invalidcode]
 deps = ["flake8"]
 commands = [[
     "flake8", "src", "bin", "maintenance",
-    "--select", "F,E722,W605"
+    "--select", "F,E722,W605",
+    "--exclude", "src/vendor,tests"
 ]]
 
 [tool.tox.env.py311-mypy]

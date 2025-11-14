@@ -74,7 +74,11 @@ fi
 #
 # usage: ynh_exec_as_app COMMAND [ARG ...]
 ynh_exec_as_app() {
-    sudo -u "$app" env PATH="$PATH" COREPACK_ENABLE_DOWNLOAD_PROMPT="0" "$@"
+    sudo -u "$app" env \
+        PATH="$PATH" \
+        COREPACK_ENABLE_DOWNLOAD_PROMPT="0" \
+        NPM_CONFIG_UPDATE_NOTIFIER="false" \
+        "$@"
 }
 
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
@@ -91,15 +95,6 @@ ynh_exec_as_app() {
 #
 # `$domain` and `$path` should be defined externally (and correspond to the domain.tld and the /path (of the app?))
 ynh_local_curl() {
-    # Define url of page to curl
-    local local_page=$(ynh_normalize_url_path "$1")
-    local full_path=$path$local_page
-
-    if [ "${path}" == "/" ]; then
-        full_path=$local_page
-    fi
-
-    local full_page_url=https://localhost$full_path
 
     # Concatenate all other arguments with '&' to prepare POST data
     local POST_data=""
@@ -109,10 +104,28 @@ ynh_local_curl() {
     done
     if [ -n "$POST_data" ]; then
         # Add --data arg and remove the last character, which is an unecessary '&'
-        POST_data_arg=(--data "${POST_data::-1}")
+        ynh_local_curl_raw "$1" --data "${POST_data::-1}"
     else
-        POST_data_arg=()
+        ynh_local_curl_raw "$1"
     fi
+}
+
+# More low-level curl wrapper, meant for more elaborate use case where people
+# want to pass arbitrary headers and other curl options, not just POST data
+#
+# [internal]
+#
+# example: ynh_local_curl_raw "/install.php?installButton" --data "foo=$var1&bar=$var2"
+ynh_local_curl_raw() {
+    # Define url of page to curl
+    local local_page=$(ynh_normalize_url_path "$1")
+    local full_path=$path$local_page
+
+    if [ "${path}" == "/" ]; then
+        full_path=$local_page
+    fi
+
+    local full_page_url=https://localhost$full_path
 
     # Wait untils nginx has fully reloaded (avoid curl fail with http2)
     sleep 2
@@ -129,7 +142,8 @@ ynh_local_curl() {
     fi
 
     # Curl the URL
-    curl --silent --show-error --insecure --location --header "Host: $domain" --resolve "$domain:443:127.0.0.1" "${POST_data_arg[@]}" "$full_page_url" --cookie-jar "$cookiefile" --cookie "$cookiefile"
+    shift
+    curl --silent --show-error --insecure --location --header "Host: $domain" --resolve "$domain:443:127.0.0.1" "$full_page_url" --cookie-jar "$cookiefile" --cookie "$cookiefile" "$@"
 
     if [[ $visitors_enabled == "no" ]]; then
         ynh_permission_update --permission="main" --remove="visitors"
@@ -434,7 +448,7 @@ ynh_spawn_app_shell() {
 
     # Load the app's service name, or default to $app
     service=${service:-$app}
-    if systemctl list-units | grep -q "$service.service"; then
+    if systemctl list-units -a | grep -q "$service.service"; then
         # Load the Environment variables from the app's service
         local env_var=$(systemctl show "$service.service" -p "Environment" --value)
         [ -n "${env_var:-}" ] && export "${env_var?}"
@@ -478,7 +492,7 @@ ynh_spawn_app_shell() {
 # | arg: -s, --size= - Amount of SWAP to add in Mb.
 ynh_add_swap() {
     if systemd-detect-virt --container --quiet; then
-        ynh_print_warn --message="You are inside a container/VM. swap will not be added, but that can cause troubles for the app $app. Please make sure you have enough RAM available."
+        ynh_print_warn "You are inside a container/VM. swap will not be added, but that can cause troubles for the app $app. Please make sure you have enough RAM available."
         return
     fi
 
@@ -498,7 +512,7 @@ ynh_add_swap() {
 
     # Swap on SD card only if it's is specified
     if ynh_is_main_device_a_sd_card && [ "$SD_CARD_CAN_SWAP" == "0" ]; then
-        ynh_print_warn --message="The main mountpoint of your system '/' is on an SD card, swap will not be added to prevent some damage of this one, but that can cause troubles for the app $app. If you still want activate the swap, you can relaunch the command preceded by 'SD_CARD_CAN_SWAP=1'"
+        ynh_print_warn "The main mountpoint of your system '/' is on an SD card, swap will not be added to prevent some damage of this one, but that can cause troubles for the app $app. If you still want activate the swap, you can relaunch the command preceded by 'SD_CARD_CAN_SWAP=1'"
         return
     fi
 
@@ -522,8 +536,8 @@ ynh_add_swap() {
         # Create file
         truncate -s 0 "/swap_$app"
 
-        # set the No_COW attribute on the swapfile with chattr
-        chattr +C "/swap_$app"
+        # try to set the No_COW attribute on the swapfile with chattr (depending of the filesystem type)
+        chattr +C "/swap_$app" 2> /dev/null
 
         # Preallocate space for the swap file, fallocate may sometime not be used, use dd instead in this case
         if ! fallocate -l ${swap_size}K "/swap_$app"; then

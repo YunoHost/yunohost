@@ -762,7 +762,6 @@ def _get_DomainConfigPanel() -> type["ConfigPanel"]:
             # TODO add mechanism to share some settings with other domains on the same zone
             raw_config = super()._get_raw_config()
 
-            any_filter = all(self.filter_key)
             panel_id, section_id, option_id = self.filter_key
 
             # Portal settings are only available on "topest" domains
@@ -772,7 +771,7 @@ def _get_DomainConfigPanel() -> type["ConfigPanel"]:
             # Optimize wether or not to load the DNS section,
             # e.g. we don't want to trigger the whole _get_registary_config_section
             # when just getting the current value from the feature section
-            if not any_filter or panel_id == "dns":
+            if panel_id in ["dns", None]:
                 from .dns import _get_registrar_config_section
 
                 raw_config["dns"]["registrar"] = _get_registrar_config_section(
@@ -780,7 +779,7 @@ def _get_DomainConfigPanel() -> type["ConfigPanel"]:
                 )
 
             # Cert stuff
-            if not any_filter or panel_id == "cert":
+            if panel_id in ["cert", None]:
                 from .certificate import certificate_status
 
                 status = certificate_status([self.entity], full=True)["certificates"][

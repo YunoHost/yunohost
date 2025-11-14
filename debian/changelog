@@ -1,3 +1,253 @@
+yunohost (12.1.35) stable; urgency=low
+
+  - i18n/doc: update yunohost.org urls such that they point directly to the new doc on doc.yunohost.org etc (4ca736130)
+  - debian/mail: Apparently using email relay requires libsasl2-modules in some context (69a2b95b8)
+  - helpers: split ynh_local_curl to have a low-level version to cover elaborate usecases where packagers want to pass arbitrary curl options and headers, not just post data (7898db59a)
+  - trixie: Fix pip freeze call of subprocess (9d2627d54)
+  - trixie: Reorganize the steps * First run the pip, debconf-set-selections, chattr, apt hold, etc * Then run the apt/dpkg patching, at the last possible moment before apt update/uprgade (7b37187bf)
+  - helpers: utils: add quotes for shellcheck (c796a7eef)
+  - i18n: Translations updated for Basque, Catalan, Galician
+
+  Thanks to all contributors <3 ! (Félix Piédallu, Francescc, José M, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 07 Nov 2025 15:29:25 +0100
+
+yunohost (12.1.34) stable; urgency=low
+
+  - migrations: Add draft, "hidden" migration to Trixie ([#2216](http://github.com/YunoHost/yunohost/pull/2216), 97c9c2ca2, c90e7264a, ca7d9dc1d)
+  - upgrades: properly handle .deb category 'non-free / misc' in package classification (3722281b7)
+  - diagnosis: Fixup kern.log parsing (c9c31acc6)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, orhtej2)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 03 Nov 2025 17:39:08 +0100
+
+yunohost (12.1.33) stable; urgency=low
+
+  - upgrades: when parsing package<->section lines, try to gracefully handle edgecase were there's more than 2 items to split (17a11b12a)
+  - i18n: Translations updated for Catalan, French, Galician
+
+  Thanks to all contributors <3 ! (Francescc, José M, ppr)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 31 Oct 2025 13:38:22 +0100
+
+yunohost (12.1.32.1) stable; urgency=low
+
+  - helpers/templating: fixes boolean detection (d3dbdfa45)
+
+  Thanks to all contributors <3 ! (ljf (zamentur))
+
+ -- OniriCorpe <oniricorpe@disroot.org>  Tue, 28 Oct 2025 12:35:00 +0100
+
+yunohost (12.1.32) stable; urgency=low
+
+  - spamhaushell: try another way to address the issue by generating a dnsmasq snippet during regenconf (61d2f9fe8)
+  - dnsmasq: stabilize the resolver pool list shuffling by using a seed computed from the machine id and current month (0858ea37f)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 23 Oct 2025 14:28:38 +0200
+
+yunohost (12.1.31) stable; urgency=low
+
+  - Revert "diagnosis/mail/blocklists: use spamhaus' own ns to avoid 'open resolver' errors" (bf75e1940)
+
+ -- tituspijean <tituspijean@yunohost.org>  Thu, 23 Oct 2025 02:41:48 +0200
+
+yunohost (12.1.30) stable; urgency=low
+
+  - dns/mail: in DNSmasq conf, route queries about spamhaus to spamhaus's own nameservers to avoid 'open resolver' errors (b45b9d4f4)
+  - mail/postfix: remove reject_rbl_client abuseat.org because it's in fact spamshaus.org since a few years (42f0b91bf)
+  - diagnosis/mail/blocklists: revert prefix fix for diagnosis for spamhaus, which is obsolete now that dns queries for spamhaus are now route at dnsmasq level (51c468735)
+  - diagnosis/mail/blocklists: remove abuseat.org which is in fact spamhaus.org since a few years (6af034820)
+  - diagnosis/mail/blocklists: when obtaining an 'open resolver' reason, advise admins to check their /etc/resolv.conf (#2201) (d525bfbc6)
+  - dns: remove obsolete DNS resolver from pool because it times out (#2203)
+  - system updates: improve system packages categorization (89c27e3aa)
+  - helpers/nodejs: disable npm/node checking if there's a new version available and triggering a boring warning ... we use n which has legit versions etc (059e876af)
+  - helpers/templating: insist about case sensitivity in documentation (#2207)
+  - helpers/configpanel: fix boolean values handling in ynh_write_var_in_file (#2209)
+  - i18n: Translations updated for French
+
+  Thanks to all contributors <3 ! (Félix Piédallu, ljf, oleole39, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 22 Oct 2025 23:40:23 +0200
+
+yunohost (12.1.29) stable; urgency=low
+
+  - diagnosis/email/dnsbl: fix infamous issue with spamhaus returning 'openresolver' (396e5d327)
+  - firewall: Fix using an ssh port not listed in firewall.yml leading to partial error (#2202)
+  - i18n: Translations updated for Persian)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, otm33)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 18 Oct 2025 19:33:21 +0200
+
+yunohost (12.1.28) stable; urgency=low
+
+  - dns: Fix lexicon integration (#2194)
+  - mail: Include spam and trash in user quota (#2193)
+  - app upgrade: When upgrading a single app and that upgrade fails, make sure to raise an exception (an therefore a returncode != 0) (#2196)
+  - app shell: Inherit TERM when opening an app shell (#2195)
+  - app shell: Make sure to list all systemd units including dead/empty ones when looking for services related to the app (#2197)
+  - app helpers: fix files not templated correctly when values contains ampersands (&) (#2199)
+
+  Thanks to all contributors <3 ! (Florent, ljf, orhtej2)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 12 Oct 2025 16:46:10 +0200
+
+yunohost (12.1.27) stable; urgency=low
+
+  - postfix: make sure regen conf forgets about relay_recipients.db when not applicable (1184b6703)
+  - certificate: Allow IPv6-only domains to run ACME (10f666fc3)
+  - helpers: in 2.1, YNH_DEFAULT_PHP_VERSION was set to 7.4 instead of 8.2 like in the v2.0 helpers x_x (704cf0872)
+  - helpers: fix edge case in apt helpers for apps with 'extras' dependency *and* php version, it would automatically reset the php_version to the default one during the 'extra' install intead of keeping the correct value (8ece3163d)
+
+  Thanks to all contributors <3 ! (Félix Piédallu)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 05 Oct 2025 04:15:45 +0200
+
+yunohost (12.1.26) stable; urgency=low
+
+  - helpers:: YNH_APP_BASEDIR missing for app shell (#2183)
+  - app resources: fix a typo in ruby helper (#2187)
+  - doc: Add ZSH completion script (de06819ed, e359fe841)
+  - postfix: 'smtp_backup_mx_domains' was passed as 'null' to the jinja template instead of empty string, resulting in the corresponding snippet in main.cf being enabled which may cause a variety of issues (0fdf3e5d7)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, getzze, Tagada, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 28 Sep 2025 16:46:46 +0200
+
+yunohost (12.1.25) stable; urgency=low
+
+  - dns: Update registrars list for the Lexicon integration (#2161)
+  - helpers/apt: When failing to install dependencies, suggest that it might be due to a conflict with other apps (#2170)
+  - tools: Make basic-space-cleanup delete YunoHost logs too (#2116)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, ljf, Thomas, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 18 Sep 2025 17:37:24 +0200
+
+yunohost (12.1.24) stable; urgency=low
+
+  - firewall: only call open_port(ssh) when it's closed to prevent overriding comment (f6d08477c)
+  - permissions: fix edge case where there's some unknown key in system perm conf, previous code was triggering a 'dictionary changed size during iteration' exception (8f9cccbff)
+  - helpers(string): ensure that ynh_string_random returns a result (#2181) (c524acfc8)
+  - helpers(apt): fix shellcheck (a999219f7)
+  - helpers(systemd): typo in log (#2178) (100659581)
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, DeMiro5001, Félix Piédallu, Florent)
+
+ -- tituspijean <tituspijean@yunohost.org>  Tue, 16 Sep 2025 21:49:12 +0200
+
+yunohost (12.1.23) stable; urgency=low
+
+  - helpers: fix ynh_add_swap helper / some filesystem do not support chattr +C (8708946f2)
+  - helpers/systemd: 60s timeout is too harsh for low-end hardware, let's go back to 300s as it was in helpers v2, but keep it to 120s on CI (eae5fa98c)
+  - helpers/apt: fix extra apt dependencies issue where apt update is not re-ran (2aa2aed9f)
+  - helpers: fix tests incorrectly passing (#2174)
+  - firewall: fix/add upnp rules in the nftables conf (#2175) (a122b73fa)
+
+  Thanks to all contributors <3 ! (Josue-T, Kayou, Sylvain)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 13 Sep 2025 00:12:26 +0200
+
+yunohost (12.1.22) stable; urgency=low
+
+  - postfix/mailusers: check and display an error if postmap fails (a1aaa1e3f)
+  - 'set -Eeuo pipefail' is a fucking pitfall (1dece38a3)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 10 Sep 2025 18:39:32 +0200
+
+yunohost (12.1.21) stable; urgency=low
+
+  - helpers/apt: tweak optimization to not run apt update : actually let's use 'find /etc/apt' when checking for changes, because that will also cover source files that got added or removed (because that will change the mtime of the folders such as sources.list.d) (490b2fc2c)
+  - helpers: fix YNH_J2_FILTERS_FILE_PATH definition  (#2172, #2173)
+
+  Thanks to all contributors <3 ! (Florian, Josue-T)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 10 Sep 2025 12:55:52 +0200
+
+yunohost (12.1.20) stable; urgency=low
+
+  - perf/postfix regenconf: use $YNH_SETTINGS rather than calling yunohost settings get (b6545c318)
+  - perf/log show: stoopid typo leading to unecessarily opening a gazillion yamls (c59b43b42)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 09 Sep 2025 01:46:07 +0200
+
+yunohost (12.1.19) stable; urgency=low
+
+  - perf: further prevent regenconf from taking an absurd amount of time because calls to 'yunohost domain list --features' take, for example, 10ish secs on RPi2 ... To do so, the list of mail_in/mail_out domain is computed beforehand and passed as a global vars to the regen conf scripts (fbb99348a)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 09 Sep 2025 00:26:41 +0200
+
+yunohost (12.1.18) stable; urgency=low
+
+  - perf: prevent domain list --features from taking ages because it fetches DNS infos and app upgradability even though it doesnt matter in that context (53ef24cad)
+  - perf: implement cache for load_apps_catalog because parsing 50 times the same 700kBish json in a single command is probably not a very efficient way to use CPU and IO bruh (c80e917e2)
+  - perf/helpers2.1: skip apt update when cache was already updated less than 30 minutes ago (#2147)
+  - helpers/configs: add jinja filter to load and dump json, yaml and toml (#2150)
+  - helpers/multimedia: disable logging when running all the mkdir and ln -s for each user to prevent leaking the users in logs, and also it's long and boring af (1fdaad770)
+  - helpers/systemd: when starting a service reaches timeout, don't try to check wether it's active or not to handle it as a failure (3268781dd)
+  - regenconf: fix postgresql issue (and possibly others) because sometimes, for god knows whatever reason, using dpkg --list | grep 'ii foobar' doesn't work, gotta use \s ... (17ea71641)
+  - logging: moar boring warnings to ignore (55d7eee0d)
+  - i18n: Translations updated for Basque, Chinese (Simplified)
+
+  Thanks to all contributors <3 ! (Josué Tille, xabirequejo, zamentur)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 08 Sep 2025 19:30:06 +0200
+
+yunohost (12.1.17.1) stable; urgency=low
+
+  - fix: portal domain conf not properly updated with the portal_allow_mail_edit settings (#2167)
+
+  Thanks to all contributors <3 ! (tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 31 Aug 2025 23:37:15 +0200
+
+yunohost (12.1.17) stable; urgency=low
+
+  - tools_update: remove passed requirements because it's hella confusing in CLI output (c3946a57c)
+  - app upgrade infos: fix display values when current_version == new_version (78d6b83e1)
+  - user: when updating admins group mail aliases, don't try to add aliases that are already there because LDAP is dumdum. (In particular for migration 0034) (249881336)
+  - portal api: fix allow_edit_email vs portal_allow_edit_email confusion (c465e40be)
+  - portal email settings: add post_change_hook to propagate settings when it's changed (a69553cec)
+
+  Thanks to all contributors <3 ! (tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 31 Aug 2025 23:12:38 +0200
+
+yunohost (12.1.16) stable; urgency=medium
+
+  - fix(nftables): drop policy and allow icmpv6 ([#2165](http://github.com/YunoHost/yunohost/pull/2165))
+  - fix(nginx): remove deprecated OCSP ([#2166](http://github.com/YunoHost/yunohost/pull/2166))
+  - fix(sse): logstreamcache files location ([#2164](http://github.com/YunoHost/yunohost/pull/2164))
+  - helpers2.1: fix attempting to load go/ruby/nodejs when it's not provisioned yet in some context (7a2b6820b)
+  - helpers2.1: remove --message ([#2162](http://github.com/YunoHost/yunohost/pull/2162))
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, Tagada, Thomas)
+
+ -- tituspijean <tituspijean@yunohost.org>  Sat, 30 Aug 2025 22:04:30 +0200
+
+yunohost (12.1.15.1) stable; urgency=low
+
+  - network: fixes IP reuse in cache in all cases (30ae06809)
+  - i18n: Translations updated for French, Spanish
+
+  Thanks to all contributors <3 ! (ako, OniriCorpe)
+
+ -- OniriCorpe <oniricorpe@yunohost.org>  Sat, 23 Aug 2025 22:00:00 +0200
+
+yunohost (12.1.15) stable; urgency=low
+
+  - 0033_rework_permission_infos: actually skip apps that do not exist (e0b6d5496)
+  - 0033_rework_permission_infos: make permission migration more robust against LDAP being a fucking idiot (3da214d95)
+  - dyndns: fix 'dictionary changed size during iteration' (0d5828657)
+  - dyndns: fixes 2 typos in log sentences (eac758595)
+  - codequality: Add typing and TypedDict in ssh.py (19831a5b1)
+  - codequality: add typing to Migration class (783e5175b)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, OniriCorpe)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 23 Aug 2025 15:54:02 +0200
+
 yunohost (12.1.14) stable; urgency=low
 
   - apps: fix tmp workdir for upgrade being rm'ed during the safety backup, because mtime / ctime confusion, inheriting metadata from the original source or whatev (95f148d2d)
