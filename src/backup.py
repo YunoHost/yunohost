@@ -2553,6 +2553,121 @@ class BorgBackupMethod(BackupMethod):
 
         return backups
 
+    @classmethod
+    def get_backup_info(cls, name):
+        """Get info about a Borg backup"""
+        # Get repository path
+        repo = cls._get_repo_path()
+
+        # Validate repo exists
+        if not cls._repo_exists(repo):
+            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+
+        # Validate repo for local repos (not SSH)
+        if not cls._is_ssh_repo(repo):
+            if not os.path.isdir(repo):
+                raise YunohostValidationError("backup_archive_broken_link", path=repo)
+
+        # Try to read .info.json if it exists
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        info = None
+        if os.path.exists(info_file):
+            try:
+                with open(info_file) as f:
+                    info = json.load(f)
+            except Exception:
+                pass
+
+        # Extract from borg archive if needed
+        if not info:
+            info = cls._extract_info_from_archive(name, repo)
+
+        # Add path to info (the repo path, not the archive)
+        info["path"] = repo
+        return info
+
+    @classmethod
+    def can_handle(cls, name):
+        """Check if this is a Borg backup"""
+        # Check if .info.json says borg
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        if os.path.exists(info_file):
+            try:
+                with open(info_file) as f:
+                    info = json.load(f)
+                    return info.get("backup_method") == "borg"
+            except Exception:
+                pass
+
+        # Check if archive exists in borg repo
+        repo = cls._get_repo_path()
+        if not cls._repo_exists(repo):
+            return False
+
+        archive_names = cls._list_borg_archives(repo)
+        return name in archive_names
+
+    @classmethod
+    def get_download_path(cls, name):
+        """Export Borg archive as TAR for download"""
+        import tempfile
+
+        # Get repository path
+        repo = cls._get_repo_path()
+        if not cls._repo_exists(repo):
+            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+
+        # Create temporary tar file
+        temp_file = f"/tmp/{name}_borg_export.tar.gz"
+
+        # Use borg export-tar to create downloadable tar
+        env = cls._get_borg_env()
+        try:
+            cmd = ["borg", "export-tar", f"{repo}::{name}", temp_file]
+
+            result = subprocess.run(cmd, capture_output=True, env=env, check=False)
+
+            if result.returncode != 0:
+                logger.error(f"Failed to export Borg archive: {result.stderr}")
+                raise YunohostError("backup_borg_export_failed")
+
+            return temp_file
+        except Exception as e:
+            logger.error(f"Failed to export Borg archive: {e}")
+            # Clean up temp file if it was created
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+            raise YunohostError("backup_borg_export_failed")
+
+    @classmethod
+    def delete_backup(cls, name):
+        """Delete Borg backup from repository"""
+        # Get repository path
+        repo = cls._get_repo_path()
+        if not cls._repo_exists(repo):
+            logger.warning(f"Borg repository not found: {repo}")
+            # Still try to delete .info.json
+        else:
+            # Delete archive from Borg repository
+            env = cls._get_borg_env()
+            try:
+                cmd = ["borg", "delete", f"{repo}::{name}"]
+                result = subprocess.run(cmd, capture_output=True, env=env, check=False)
+
+                if result.returncode != 0:
+                    logger.warning(f"Failed to delete Borg archive: {result.stderr}")
+            except Exception as e:
+                logger.warning(f"Failed to delete Borg archive: {e}")
+
+        # Delete .info.json file
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        if os.path.exists(info_file):
+            try:
+                os.remove(info_file)
+            except Exception:
+                logger.debug("unable to delete '%s'", info_file, exc_info=True)
+                logger.warning(m18n.n("backup_delete_error", path=info_file))
+
 
 class CustomBackupMethod(BackupMethod):
     """
