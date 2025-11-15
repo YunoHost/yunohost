@@ -83,7 +83,6 @@ do_pre_regen() {
         postmap "${postfix_dir}/relay_recipients"
     fi
 
-    main_domain
     domain_list="$YNH_DOMAINS_WITH_MAIL_IN_AND_OUT"
     ynh_render_template "main.cf" "${postfix_dir}/main.cf"
     ynh_render_template "sni" "${postfix_dir}/sni"
