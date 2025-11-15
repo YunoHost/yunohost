@@ -54,6 +54,7 @@ do_init_regen() {
     cd /usr/share/yunohost/conf/nginx
 
     compatibility="intermediate"
+    experimental='False'
     do_base_regen ""
 
     # probably run with init: just disable default site, restart NGINX and exit
