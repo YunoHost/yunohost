@@ -2668,6 +2668,119 @@ class BorgBackupMethod(BackupMethod):
                 logger.debug("unable to delete '%s'", info_file, exc_info=True)
                 logger.warning(m18n.n("backup_delete_error", path=info_file))
 
+    def need_mount(self):
+        """Return True so BackupManager organizes files in work_dir before backup"""
+        return True
+
+    def backup(self):
+        """Create a borg backup archive"""
+        self._ensure_borg_installed()
+
+        if not os.path.exists(self.repo):
+            mkdir(self.repo, 0o750, parents=True)
+
+        self._init_repo()
+
+        # Create archive name
+        archive_name = f"{self.name}"
+        full_archive_path = f"{self.repo}::{archive_name}"
+
+        logger.info(m18n.n("backup_applying_method_borg", method="borg"))
+
+        # Since need_mount() returns True, BackupManager has already organized
+        # all files in work_dir with the correct structure. We just backup work_dir.
+        try:
+            cmd = [
+                "borg", "create",
+                "--compression", self.compression,
+                full_archive_path,
+                "."  # Backup everything in work_dir
+            ]
+
+            result = subprocess.run(
+                cmd,
+                cwd=self.manager.work_dir,  # Run from work_dir
+                env=self._get_borg_env(),
+                capture_output=True,
+                text=True
+            )
+
+            if result.returncode != 0:
+                raise YunohostError(
+                    f"Borg backup failed: {result.stderr}"
+                )
+
+            logger.debug(result.stdout)
+
+            # Save backup info
+            info_file = os.path.join(ARCHIVES_PATH, f"{self.name}.info.json")
+            info_data = self.manager.info.copy()
+            info_data["backup_method"] = "borg"
+            info_data["borg_repo"] = self.repo
+            info_data["borg_archive"] = archive_name
+
+            with open(info_file, "w") as f:
+                json.dump(info_data, f)
+
+        except subprocess.CalledProcessError as e:
+            raise YunohostError(f"Borg backup failed: {e.stderr.decode()}")
+        except Exception as e:
+            raise YunohostError(f"Borg backup failed: {str(e)}")
+
+    def mount(self):
+        """Mount borg archive for restore"""
+        super(BorgBackupMethod, self).mount()
+        self._ensure_borg_installed()
+
+        # Get archive info
+        info = self.manager.info
+        borg_repo = info.get("borg_repo", self.repo)
+        borg_archive = info.get("borg_archive", self.name)
+        full_archive_path = f"{borg_repo}::{borg_archive}"
+
+        logger.info("Mounting Borg archive for restore")
+
+        # Mount the archive using borg mount
+        try:
+            cmd = [
+                "borg", "mount",
+                full_archive_path,
+                self.work_dir
+            ]
+            logger.debug(f"Running: {' '.join(cmd)}")
+            result = subprocess.run(
+                cmd,
+                env=self._get_borg_env(),
+                capture_output=True,
+                text=True,
+                check=True
+            )
+
+            logger.debug(result.stdout)
+            logger.info(f"Borg archive mounted at {self.work_dir}")
+
+        except subprocess.CalledProcessError as e:
+            raise YunohostError(f"Failed to mount Borg archive: {e.stderr}")
+
+    def copy(self, file, target):
+        """Copy a specific file from mounted borg archive"""
+        # Files are accessible directly in work_dir from the mounted archive
+        source_path = os.path.join(self.work_dir, file)
+
+        if not os.path.exists(source_path):
+            raise YunohostError(f"File {file} not found in mounted Borg archive")
+
+        try:
+            if os.path.isdir(source_path):
+                import shutil
+                dest_path = os.path.join(target, os.path.basename(file))
+                shutil.copytree(source_path, dest_path, symlinks=True)
+            else:
+                import shutil
+                shutil.copy2(source_path, target)
+        except Exception as e:
+            raise YunohostError(f"Failed to copy file from Borg archive: {str(e)}")
+
 
 class CustomBackupMethod(BackupMethod):
     """
