@@ -53,8 +53,13 @@ do_init_regen() {
 
     cd /usr/share/yunohost/conf/nginx
 
+    webadmin_allowlist_enabled='False'
+    redirect_to_https='True'
     compatibility="intermediate"
     experimental='False'
+    tls_passthrough_enabled='False'
+    tls_passthrough_list=''
+
     do_base_regen ""
 
     # probably run with init: just disable default site, restart NGINX and exit
