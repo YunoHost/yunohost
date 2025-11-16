@@ -31,7 +31,8 @@ mkdir -p "${YNH_CWD}"
 
 # Backup the configuration
 ynh_backup "/etc/ldap/ldap.conf"
-slapcat -b cn=config -l "${YNH_CWD%/}/cn=config.master.ldif"
+mkdir -p "${YNH_CWD%/}/ldap"
+slapcat -b cn=config -l "${YNH_CWD%/}/ldap/cn=config.master.ldif"
 
 # Backup the database
-slapcat -b dc=yunohost,dc=org -l "${YNH_CWD%/}/dc=yunohost-dc=org.ldif"
+slapcat -b dc=yunohost,dc=org -l "${YNH_CWD%/}/ldap/dc=yunohost-dc=org.ldif"
