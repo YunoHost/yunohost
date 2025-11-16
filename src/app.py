@@ -133,7 +133,7 @@ def app_list(full: bool = False) -> dict[Literal["apps"], list[AppInfo]]:
     """
 
     out = []
-    for app_id in sorted(_installed_apps()):
+    for app_id in sorted(_installed_apps(), key=str.casefold):
         try:
             app_info_dict = app_info(app_id, full=full)
         except Exception as e:
