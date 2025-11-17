@@ -307,8 +307,8 @@ def sse_stream() -> Generator[str, None, None]:
         else:
             entries = [entry.strip() for entry in log_stream_cache.readlines()]
             for payload in entries:
-                type, payload = payload.split(":", 1)
-                yield f"event: {type}\n"
+                event_type, payload = payload.split(":", 1)
+                yield f"event: {event_type}\n"
                 yield f"data: {payload}\n\n"
         finally:
             if log_stream_cache:
@@ -319,23 +319,39 @@ def sse_stream() -> Generator[str, None, None]:
 
     try:
         while True:
-            if time.time() - last_heartbeat > SSE_HEARTBEAT_PERIOD:
-                _, current_operation_id, cmdline, started_by = get_current_operation()
-                event: SSEEventHeartbeat = {
-                    "current_operation": current_operation_id,
-                    "cmdline": cmdline,
-                    "timestamp": time.time(),
-                    "started_by": started_by,
-                }
-                payload = json.dumps(event)
-                yield "event: heartbeat\n"
-                yield f"data: {payload}\n\n"
-                last_heartbeat = time.time()
-            if sub.poll(10, zmq.POLLIN):
-                _, payload = sub.recv_multipart()
-                type, payload = payload.decode().split(":", 1)
-                yield f"event: {type}\n"
-                yield f"data: {payload}\n\n"
+            # Calculate remaining time until next heartbeat
+            time_until_heartbeat = SSE_HEARTBEAT_PERIOD - (time.time() - last_heartbeat)
+
+            if time_until_heartbeat <= 0:
+                # Time to send heartbeat
+                try:
+                    _, current_operation_id, cmdline, started_by = get_current_operation()
+                    event: SSEEventHeartbeat = {
+                        "current_operation": current_operation_id,
+                        "cmdline": cmdline,
+                        "timestamp": time.time(),
+                        "started_by": started_by,
+                    }
+                    payload = json.dumps(event)
+                    yield "event: heartbeat\n"
+                    yield f"data: {payload}\n\n"
+                    last_heartbeat = time.time()
+                except Exception as e:
+                    logging.warning(f"Failed to send heartbeat: {e}")
+                    last_heartbeat = time.time()  # Reset to avoid spamming errors
+
+            # Poll for messages with a timeout that aligns with heartbeat timing
+            # Use the time until next heartbeat (in ms) or 1 second max to keep responsive
+            poll_timeout = min(int(time_until_heartbeat * 1000), 1000) if time_until_heartbeat > 0 else 1000
+
+            if sub.poll(poll_timeout, zmq.POLLIN):
+                try:
+                    _, message_payload = sub.recv_multipart()
+                    event_type, event_data = message_payload.decode().split(":", 1)
+                    yield f"event: {event_type}\n"
+                    yield f"data: {event_data}\n\n"
+                except Exception as e:
+                    logging.warning(f"Failed to process message: {e}")
     finally:
         sub.close()
         ctx.term()
