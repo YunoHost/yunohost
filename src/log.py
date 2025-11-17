@@ -82,13 +82,13 @@ BORING_LOG_LINES = [
 ]
 
 
-def _update_log_cache_symlinks():
-    one_year_ago = time.time() - 365 * 24 * 3600
+def _update_log_cache_symlinks(since_days_ago=365):
+    cutoff_time = time.time() - since_days_ago * 24 * 3600
 
     logs = glob.iglob(OPERATIONS_PATH + "*.yml")
     for log_md in logs:
-        if os.path.getmtime(log_md) < one_year_ago:
-            # Let's ignore files older than one year because hmpf reading a shitload of yml is not free
+        if os.path.getmtime(log_md) < cutoff_time:
+            # Let's ignore old files because hmpf reading a shitload of yml is not free
             continue
 
         name = log_md.split("/")[-1][: -len(".yml")]
@@ -137,7 +137,7 @@ log_list_cache: dict[str, dict[str, Any]] = {}
 
 
 def log_list(
-    limit=None, with_details=False, with_suboperations=False, since_days_ago=365
+    limit=None, with_details=False, with_suboperations=False, since_days_ago=30
 ):
     """
     List available logs
@@ -154,7 +154,7 @@ def log_list(
 
     operations = {}
 
-    _update_log_cache_symlinks()
+    _update_log_cache_symlinks(since_days_ago)
 
     since = time.time() - since_days_ago * 24 * 3600
     logs = [
