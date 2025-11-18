@@ -20,27 +20,35 @@
 
 # Create a dedicated systemd config
 #
-# usage: ynh_config_add_systemd [--service=service] [--template=template]
+# usage: ynh_config_add_systemd [--mount=mount] [--service=service] [--template=template]
+# | arg: --mount=       - Mount name (optionnal, `replace_me` by default)
 # | arg: --service=     - Service name (optionnal, `$app` by default)
-# | arg: --template=    - Name of template file (optionnal, this is 'systemd' by default, meaning `../conf/systemd.service` will be used as template)
+# | arg: --template=    - Name of template file (optionnal, this is 'systemd.service' by default, meaning `../conf/systemd.service` will be used as template)
 #
-# This will use the template `../conf/<templatename>.service`.
+# This will use the template `../conf/<templatename>`.
 #
 # See the documentation of `ynh_config_add` for a description of the template
 # format and how placeholders are replaced with actual variables.
 ynh_config_add_systemd() {
     # ============ Argument parsing =============
-    local -A args_array=([s]=service= [t]=template=)
+    local -A args_array=([m]=mount= [s]=service= [t]=template=)
+    local mount
     local service
     local template
     ynh_handle_getopts_args "$@"
+    mount="${mount:-replace_me}"
     service="${service:-$app}"
     template="${template:-systemd.service}"
     # ===========================================
 
+    if [[ $mount != "replace_me" ]]
+    then
+    ynh_config_add --template="$template" --destination="/etc/systemd/system/$mount.mount"
+    systemctl enable "$mount" --quiet
+    else
     ynh_config_add --template="$template" --destination="/etc/systemd/system/$service.service"
-
     systemctl enable "$service" --quiet
+    fi
     systemctl daemon-reload
 }
 
