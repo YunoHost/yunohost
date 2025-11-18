@@ -24,6 +24,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tarfile
 import tempfile
 import time
@@ -1743,7 +1744,10 @@ class BackupMethod:
 
         # Ask confirmation for copying
         if size > MB_ALLOWED_TO_ORGANIZE:
-            try:
+            # Check if we're in an interactive terminal
+            is_interactive = sys.stdout.isatty() if hasattr(sys.stdout, 'isatty') else False
+
+            if is_interactive:
                 i = Moulinette.prompt(
                     m18n.n(
                         "backup_ask_for_copying_if_needed",
@@ -1751,11 +1755,11 @@ class BackupMethod:
                         size=str(size),
                     )
                 )
-            except NotImplementedError:
-                raise YunohostError("backup_unable_to_organize_files")
-            else:
                 if i != "y" and i != "Y":
                     raise YunohostError("backup_unable_to_organize_files")
+            else:
+                # In non-interactive mode, accept automatically with a warning
+                logger.warning(f"Copying {size:.1f} MB without confirmation (non-interactive mode)")
 
         # Copy unbinded path
         logger.debug(m18n.n("backup_copying_to_organize_the_archive", size=str(size)))
