@@ -2899,7 +2899,9 @@ def backup_create(
 
     # By default we backup using the tar method
     if not methods:
-        methods = ["tar"]
+        from .settings import settings_get
+        default_method = settings_get("misc.backup.default_backup_method")
+        methods = [default_method] if default_method else ["tar"]
 
     # Validate output_directory option
     if output_directory:
