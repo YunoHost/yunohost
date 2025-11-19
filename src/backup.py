@@ -3236,26 +3236,21 @@ def backup_delete(name, display_success: bool = True):
 
     hook_callback("pre_backup_delete", args=[name])
 
-    archive_file = f"{ARCHIVES_PATH}/{name}.tar"
-    if not os.path.exists(archive_file) and os.path.exists(archive_file + ".gz"):
-        archive_file += ".gz"
-    info_file = f"{ARCHIVES_PATH}/{name}.info.json"
-
-    files_to_delete = [archive_file, info_file]
-
-    # To handle the case where archive_file is in fact a symlink
-    if os.path.islink(archive_file):
-        actual_archive = os.path.realpath(archive_file)
-        files_to_delete.append(actual_archive)
-
-    for backup_file in files_to_delete:
-        if not os.path.exists(backup_file):
-            continue
+    # Find which backup method can handle this backup
+    method_class = None
+    for cls in BackupMethod.__subclasses__():
         try:
-            os.remove(backup_file)
-        except Exception:
-            logger.debug("unable to delete '%s'", backup_file, exc_info=True)
-            logger.warning(m18n.n("backup_delete_error", path=backup_file))
+            if cls.can_handle(name):
+                method_class = cls
+                break
+        except (NotImplementedError, Exception):
+            pass
+
+    if not method_class:
+        raise YunohostValidationError("backup_archive_name_unknown", name=name)
+
+    # Delegate deletion to the method class
+    method_class.delete_backup(name)
 
     hook_callback("post_backup_delete", args=[name])
 
