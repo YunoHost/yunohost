@@ -3064,27 +3064,44 @@ def backup_list(with_info=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
-    # Get local archives sorted according to last modification time
-    # (we do a realpath() to resolve symlinks)
-    archives = glob(f"{ARCHIVES_PATH}/*.tar.gz") + glob(f"{ARCHIVES_PATH}/*.tar")
-    archives = {os.path.realpath(archive) for archive in archives}
-    archives = {archive for archive in archives if os.path.exists(archive)}
-    archives = sorted(archives, key=lambda x: os.path.getctime(x))
-    # Extract only filename without the extension
+    # Collect backups from all backup methods
+    all_backups = {}
 
-    def remove_extension(f):
-        if f.endswith(".tar.gz"):
-            return os.path.basename(f)[: -len(".tar.gz")]
-        else:
-            return os.path.basename(f)[: -len(".tar")]
+    # Get all BackupMethod subclasses (tar, borg, copy, custom)
+    for method_class in BackupMethod.__subclasses__():
+        try:
+            backups = method_class.list_backups()
+            all_backups.update(backups)
+        except NotImplementedError:
+            # Skip methods that haven't implemented list_backups
+            pass
+        except Exception as e:
+            logger.debug(f"Could not list backups for {method_class.method_name}: {e}")
 
-    archives = [remove_extension(f) for f in archives]
+    # Sort by creation time
+    def get_ctime(name):
+        info_path = f"{ARCHIVES_PATH}/{name}.info.json"
+        if os.path.exists(info_path):
+            return os.path.getctime(info_path)
+        tar_path = f"{ARCHIVES_PATH}/{name}.tar"
+        if os.path.exists(tar_path):
+            return os.path.getctime(tar_path)
+        tar_gz_path = f"{ARCHIVES_PATH}/{name}.tar.gz"
+        if os.path.exists(tar_gz_path):
+            return os.path.getctime(tar_gz_path)
+        return 0
+
+    archives = sorted(list(all_backups.keys()), key=get_ctime)
 
     if with_info:
         d = OrderedDict()
         for archive in archives:
             try:
-                d[archive] = backup_info(archive, human_readable=human_readable)
+                # If we already have the info from list_backups, use it
+                if archive in all_backups:
+                    d[archive] = all_backups[archive]
+                else:
+                    d[archive] = backup_info(archive, human_readable=human_readable)
             except YunohostError as e:
                 logger.warning(str(e))
             except Exception:
