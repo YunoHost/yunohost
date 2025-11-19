@@ -3122,23 +3122,27 @@ def backup_download(name):
         )
         return
 
-    archive_file = f"{ARCHIVES_PATH}/{name}.tar"
+    # Remove extension if provided
+    if name.endswith(".tar.gz"):
+        name = name[: -len(".tar.gz")]
+    elif name.endswith(".tar"):
+        name = name[: -len(".tar")]
 
-    # Check file exist (even if it's a broken symlink)
-    if not os.path.lexists(archive_file):
-        archive_file += ".gz"
-        if not os.path.lexists(archive_file):
-            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+    # Find which backup method can handle this backup
+    method_class = None
+    for cls in BackupMethod.__subclasses__():
+        try:
+            if cls.can_handle(name):
+                method_class = cls
+                break
+        except (NotImplementedError, Exception):
+            pass
 
-    # If symlink, retrieve the real path
-    if os.path.islink(archive_file):
-        archive_file = os.path.realpath(archive_file)
+    if not method_class:
+        raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
-        # Raise exception if link is broken (e.g. on unmounted external storage)
-        if not os.path.exists(archive_file):
-            raise YunohostValidationError(
-                "backup_archive_broken_link", path=archive_file
-            )
+    # Get download path from the method (may create temporary export for Borg/Copy)
+    archive_file = method_class.get_download_path(name)
 
     # We return a raw bottle HTTPresponse (instead of serializable data like
     # list/dict, ...), which is gonna be picked and used directly by moulinette
