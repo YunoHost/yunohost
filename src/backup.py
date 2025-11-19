@@ -3162,94 +3162,39 @@ def backup_info(name, with_details=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
-    original_name = name
-
+    # Remove extension if provided
     if name.endswith(".tar.gz"):
         name = name[: -len(".tar.gz")]
     elif name.endswith(".tar"):
         name = name[: -len(".tar")]
+    elif name.endswith(".info.json"):
+        name = name[: -len(".info.json")]
 
-    archive_file = f"{ARCHIVES_PATH}/{name}.tar"
-
-    # Check file exist (even if it's a broken symlink)
-    if not os.path.lexists(archive_file):
-        archive_file += ".gz"
-        if not os.path.lexists(archive_file):
-            # Maybe the user provided a path to the backup?
-            archive_file = original_name
-            if not os.path.lexists(archive_file):
-                raise YunohostValidationError("backup_archive_name_unknown", name=name)
-
-    # If symlink, retrieve the real path
-    if os.path.islink(archive_file):
-        archive_file = os.path.realpath(archive_file)
-
-        # Raise exception if link is broken (e.g. on unmounted external storage)
-        if not os.path.exists(archive_file):
-            raise YunohostValidationError(
-                "backup_archive_broken_link", path=archive_file
-            )
-
-    info_file = f"{ARCHIVES_PATH}/{name}.info.json"
-
-    if not os.path.exists(info_file):
-        tar = tarfile.open(
-            archive_file, "r:gz" if archive_file.endswith(".gz") else "r"
-        )
-        info_dir = info_file + ".d"
-
+    # Find which backup method can handle this backup
+    method_class = None
+    for cls in BackupMethod.__subclasses__():
         try:
-            files_in_archive = tar.getnames()
-        except (IOError, EOFError, tarfile.ReadError) as e:
-            raise YunohostError(
-                "backup_archive_corrupted", archive=archive_file, error=str(e)
-            )
+            if cls.can_handle(name):
+                method_class = cls
+                break
+        except NotImplementedError:
+            pass
+        except Exception:
+            pass
 
-        try:
-            if "info.json" in files_in_archive:
-                tar.extract("info.json", path=info_dir)
-            elif "./info.json" in files_in_archive:
-                tar.extract("./info.json", path=info_dir)
-            else:
-                raise KeyError
-        except KeyError:
-            logger.debug(
-                "unable to retrieve '%s' inside the archive", info_file, exc_info=1
-            )
-            raise YunohostError(
-                "backup_archive_cant_retrieve_info_json", archive=archive_file
-            )
-        else:
-            shutil.move(os.path.join(info_dir, "info.json"), info_file)
-        finally:
-            tar.close()
-        os.rmdir(info_dir)
+    if not method_class:
+        raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
-    try:
-        with open(info_file) as f:
-            # Retrieve backup info
-            info = json.load(f)
-    except Exception:
-        logger.debug("unable to load '%s'", info_file, exc_info=1)
-        raise YunohostError(
-            "backup_archive_cant_retrieve_info_json", archive=archive_file
-        )
+    # Get backup info from the method (includes path and validation)
+    info = method_class.get_backup_info(name)
 
-    # Retrieve backup size
+    # Format size if needed
     size = info.get("size", 0)
-    if not size:
-        tar = tarfile.open(
-            archive_file, "r:gz" if archive_file.endswith(".gz") else "r"
-        )
-        size = reduce(
-            lambda x, y: getattr(x, "size", x) + getattr(y, "size", y), tar.getmembers()
-        )
-        tar.close()
     if human_readable:
-        size = binary_to_human(size) + "B"
+        size = binary_to_human(size) + "B" if size else "N/A"
 
     result = {
-        "path": archive_file,
+        "path": info["path"],
         "created_at": datetime.utcfromtimestamp(info["created_at"]),
         "description": info["description"],
         "size": size,
@@ -3263,14 +3208,14 @@ def backup_info(name, with_details=False, human_readable=False):
 
         if "size_details" in info.keys():
             for category in ["apps", "system"]:
-                for name, key_info in info[category].items():
+                for item_name, key_info in info[category].items():
                     if category == "system":
-                        info[category][name] = key_info = {"paths": key_info}
+                        info[category][item_name] = key_info = {"paths": key_info}
                     else:
-                        info[category][name] = key_info
+                        info[category][item_name] = key_info
 
-                    if name in info["size_details"][category].keys():
-                        key_info["size"] = info["size_details"][category][name]
+                    if item_name in info["size_details"][category].keys():
+                        key_info["size"] = info["size_details"][category][item_name]
                         if human_readable:
                             key_info["size"] = binary_to_human(key_info["size"]) + "B"
                     else:
