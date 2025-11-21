@@ -573,19 +573,22 @@ class RedactingFormatter(Formatter):
         # Wrapping this in a try/except because we don't want this to
         # break everything in case it fails miserably for some reason :s
         try:
-            # This matches stuff like db_pwd=the_secret or admin_password=other_secret
-            # (the secret part being at least 3 chars to avoid catching some lines like just "db_pwd=")
+            # This matches stuff like db_pwd=the_secret, admin_password=other_secret
+            # or login_secret="some secret" (we avoid catching empty lines like just "db_pwd=")
             # Some names like "key" or "manifest_key" are ignored, used in helpers like ynh_app_setting_set or ynh_read_manifest
             match = re.search(
-                r"(pwd|pass|passwd|password|passphrase|secret\w*|\w+key|token|PASSPHRASE)=(\S{3,})$",
+                r"(pwd|pass|passwd|password|passphrase|secret\w*|\w+key|token|PASSPHRASE)=([\"'])?(.+?)\2?$",
                 record.strip(),
             )
             if (
                 match
-                and match.group(2) not in self.data_to_redact
+                and match.group(3) not in self.data_to_redact
                 and match.group(1) not in ["key", "manifest_key"]
             ):
-                self.data_to_redact.append(match.group(2))
+                self.data_to_redact.append(match.group(3))
+                # In conditions, the string might be split with backslashes, so we need
+                # to replace these as well.
+                self.data_to_redact.append("".join("\\" + c for c in match.group(3)))
         except Exception as e:
             logger.warning(
                 "Failed to parse line to try to identify data to redact ... : %s" % e
