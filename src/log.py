@@ -558,7 +558,7 @@ class RedactingFormatter(Formatter):
 
     def format(self, record):
         msg = super(RedactingFormatter, self).format(record)
-        self.identify_data_to_redact(msg)
+        self.identify_data_to_redact(record.msg)
         for data in self.data_to_redact:
             # we check that data is not empty string,
             # otherwise this may lead to super epic stuff
@@ -570,26 +570,109 @@ class RedactingFormatter(Formatter):
         return msg
 
     def identify_data_to_redact(self, record):
+        print(record)
+        # This matches stuff like db_pwd=the_secret or admin_password=other_secret
+        # (the secret part being at least 3 chars to avoid catching some lines like just "db_pwd=")
+        # Some names like "key" or "manifest_key" are ignored, used in helpers like ynh_app_setting_set or ynh_read_manifest
+        secret_keys = 'pass|secret|token|salt'
+        secret_keys = f"{secret_keys}|{secret_keys.upper()}|pwd"
+        # Avoid to match some non relevant var compound with 'key'
+        secret_keys_regex = f"\w*({secret_keys})\w*|local key_?| key\w*|\w+key\w*|\w*KEY\w+|\w+KEY"
+        operator_regex = r'(\s+\-\-value)?='
+        value_regex = r"'([^']|'\''){5,}'|-----BEGIN.*-----END|\S{5,}"
+        redact_regex = fr"({secret_keys_regex}){operator_regex}({value_regex})",
+        exclude_keys = [
+            "manifest_key",
+            "bind_key_",
+            "local key",
+            "local key_",
+            "version_key",
+            "version_key_",
+            "cache_key",
+            "foreign_key",
+            "primary_key",
+            "keys_zone",
+            "meta_keywords",
+            "csrf_token",
+            "jsonwebtoken",
+            "MYSQL_ROOT_PWD_FILE",
+            "SALTCORN_BIN",
+            "tls_passthrough_module",
+        ]
+        exclude_keys_suffixes = (
+            '_uri', '_url', '_path', '_key_expires', '_key_expires_date', '_enabled'
+        )
+        exclude_values = (
+            "true",
+            "false",
+            "value",
+            "value1",
+            "value2",
+            "value3",
+            "version",
+            "db_pwd",
+            "disabled",
+            "enabled",
+            "lambda",
+            "by_order",
+            '\K\w+',
+            "(generate_random_password)",
+        )
         # Wrapping this in a try/except because we don't want this to
         # break everything in case it fails miserably for some reason :s
         try:
-            # This matches stuff like db_pwd=the_secret or admin_password=other_secret
-            # (the secret part being at least 3 chars to avoid catching some lines like just "db_pwd=")
-            # Some names like "key" or "manifest_key" are ignored, used in helpers like ynh_app_setting_set or ynh_read_manifest
-            match = re.search(
-                r"(pwd|pass|passwd|password|passphrase|secret\w*|\w+key|token|PASSPHRASE)=(\S{3,})$",
-                record.strip(),
-            )
-            if (
-                match
-                and match.group(2) not in self.data_to_redact
-                and match.group(1) not in ["key", "manifest_key"]
-            ):
-                self.data_to_redact.append(match.group(2))
-        except Exception as e:
+            match = re.search(redact_regex, record.strip())
+        except re.error as e:
             logger.warning(
                 "Failed to parse line to try to identify data to redact ... : %s" % e
             )
+            match = None
+        if match:
+            key = match.group(1).strip()
+            to_redact = match.group(4)
+            if (
+                to_redact
+                # Some keys are false positive and should not be redacted
+                and key not in exclude_keys
+                # Keys that end ups by uri, url or path are just path and not secret
+                and not key.lower().endswith(exclude_keys_suffixes)
+                # Python venv build could display some false positive library
+                # like passlib or tokenizer
+                # example: 'Collecting tokenizers==0.19.1'
+                and not record.strip().startswith(("Created serverSetting through seed key",))
+                # Some values are clearly vars or function call
+                and to_redact.strip("'{}\"$,") not in exclude_values + (key.lower(), key.upper())
+            ):
+                # key='https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x0C54D189F4BA284D'
+                # key=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+                # key=https://download.docker.com/linux/debian/gpg
+                if (
+                    (key == "key" and to_redact.split("'").startswith(("https://", "--key=https://")))
+                    or (key == 'pwd_output' and to_redact.startswith("/var/cache/yunohost/"))
+                    or (key == 'ynh_key' and to_redact.startswith("/etc/yunohost/certs"))
+                    or (key == "ssh_keys" and "/etc/ssh/ssh_host_" in to_redact)
+                    or (key == "public_key" and to_redact.startswith("ssh-"))
+                    or (key == "AUTH_KEYS" and to_redact == "/root/.ssh/authorized_keys")
+                ):
+                    to_redact = None
+                elif record.strip(' +').startswith(('POST_data=', 'curl --silent')):
+                    to_redact = to_redact.split("&")[0]
+
+                # Python venv build could display some false positive library
+                # like passlib or tokenizer
+                # example: 'Collecting tokenizers==0.19.1'
+                elif to_redact.startswith("=") and record.strip().startswith(("Collecting ", "Requirement already satisfied")):
+                    to_redact = None
+
+                # Synapse displayed strings like this difficult to catch properly
+                # macaroon_secret_key_param='macaroon_secret_key: "*******"'
+                elif key == "macaroon_secret_key_param":
+                    to_replace = "macaroon_secret_key_param='macaroon_secret_key: "
+                    to_redact = to_redact.replace(to_replace, '').strip('"')
+
+                # Avoid to readd same secrets
+                if to_redact and to_redact not in self.data_to_redact:
+                    self.data_to_redact.append(to_redact.removeprefix("base64:"))
 
 
 class OperationLogger:
