@@ -570,7 +570,6 @@ class RedactingFormatter(Formatter):
         return msg
 
     def identify_data_to_redact(self, record):
-        print(record)
         # This matches stuff like db_pwd=the_secret or admin_password=other_secret
         # (the secret part being at least 3 chars to avoid catching some lines like just "db_pwd=")
         # Some names like "key" or "manifest_key" are ignored, used in helpers like ynh_app_setting_set or ynh_read_manifest
@@ -580,7 +579,7 @@ class RedactingFormatter(Formatter):
         secret_keys_regex = f"\w*({secret_keys})\w*|local key_?| key\w*|\w+key\w*|\w*KEY\w+|\w+KEY"
         operator_regex = r'(\s+\-\-value)?='
         value_regex = r"'([^']|'\''){5,}'|-----BEGIN.*-----END|\S{5,}"
-        redact_regex = fr"({secret_keys_regex}){operator_regex}({value_regex})",
+        redact_regex = re.compile(f"({secret_keys_regex}){operator_regex}({value_regex})")
         exclude_keys = [
             "manifest_key",
             "bind_key_",
