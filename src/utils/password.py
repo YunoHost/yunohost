@@ -293,9 +293,6 @@ def find_secrets(data: str, known_secrets: list = []) -> list:
                 or key in EXCLUDE_KEYS
                 # Keys that end ups by uri, url or path are just path and not secret
                 or key.lower().endswith(EXCLUDE_KEYS_SUFFIXES)
-                # Python venv build could display some false positive library
-                # like passlib or tokenizer
-                # example: 'Collecting tokenizers==0.19.1'
                 or line.strip(' +').startswith(("Created serverSetting through seed key", "getent passwd "))
             ):
                 continue
