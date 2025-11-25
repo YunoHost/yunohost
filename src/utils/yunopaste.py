@@ -27,6 +27,7 @@ import requests
 from ..domain import _get_maindomain, domain_list
 from ..utils.error import YunohostError
 from ..utils.network import get_public_ip
+from ..utils.password import redact_secrets
 
 logger = logging.getLogger("yunohost.utils.yunopaste")
 
@@ -111,4 +112,6 @@ def anonymize(data: str) -> str:
     if ipv6:
         data = data.replace(str(ipv6), "xx:xx:xx:xx:xx:xx")
 
+    # Try to find and remove secrets like password, token, keys...
+    data = redact_secrets(data)
     return data
