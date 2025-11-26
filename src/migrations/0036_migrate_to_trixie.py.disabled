@@ -112,6 +112,7 @@ def _backup_pip_freeze_for_python_app_venvs():
         # Remove pkg resources from the freeze to avoid an error during the python venv https://stackoverflow.com/a/40167445
         pip = venv / "bin" / "pip"
         if not pip.is_file():
+            logger.warning(f"Skipping venv {venv} because no 'pip' bin found")
             continue
         pip_freeze = subprocess.check_output([pip, "freeze"]).decode(encoding="utf-8")
         pip_freeze = re.sub(r"^pkg(-|_)resources==.*$", "", pip_freeze)
