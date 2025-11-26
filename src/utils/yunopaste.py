@@ -122,6 +122,7 @@ def anonymize(data: str) -> str:
             split = match.split("@")
             if len(split) != 2:
                 logger.error("Eeeeeh, while anonymizing the file to be pasted with Yunopaste, found an email pattern with more than one @ but it shouldnt happen because of the regex definition...?")
+                continue
             user_part, domain_part = split
 
             # Redact the email, but try to be smart about it to not over-redact stuff making debug/support unecessarily harder...
@@ -136,6 +137,7 @@ def anonymize(data: str) -> str:
             redacted = ("*****" if redact_user_part else user_part) + "@" + ("*****.***" if redact_domain_part else domain_part)
             data = data.replace(match, redacted)
 
+        return data
 
     data = re.sub("\nstarted_by: .*\n", "\nstarted_by: ******\n", data)
 
