@@ -244,23 +244,19 @@ class MyMigration(Migration):
 
         # Specific trick because libluajit changed name **again**
         # And also the t64 apocalypse that makes aptitude derp
-        # FIXME: For some unknown reason, we need to run the upgrade in two separate steps
+        # For some unknown reason, we need to run the upgrade in two separate steps
         # First upgrade the luajit packages, then the t64 packages
         # Running them together in a single full-upgrade doesn't work properly
-        packages_problematic = [
-            "libluajit2-5.1-2- libluajit2-5.1-common- libluajit-5.1-2+M libluajit-5.1-common+M",
-        ]
 
-        packages_problematic_str = " ".join(packages_problematic)
-
+        # Upgrade problematic libluajit packages
+        libluajit_pkgs = "libluajit2-5.1-2- libluajit2-5.1-common- libluajit-5.1-2+M libluajit-5.1-common+M"
         aptitude_with_progress_bar(
-            f"full-upgrade {packages_problematic_str} --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'"
+            f"full-upgrade {libluajit_pkgs} --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'"
         )
 
-        packages_problematic_str = " ".join(self.apt_t64_packages_list())
-
+        # Upgrade the t64-related packages
         aptitude_with_progress_bar(
-            f"full-upgrade {packages_problematic_str} --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'"
+            f"full-upgrade {' '.join(self.apt_t64_packages_list())} --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'"
         )
         
         # For some reason aptitude is derping about python3 / python3-venv so try to explicitly tell to install python3.11 to replace 3.9...
