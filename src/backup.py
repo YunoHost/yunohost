@@ -866,19 +866,17 @@ class RestoreManager:
         return restore_manager.result
     """
 
-    def __init__(self, name, method="tar"):
+    def __init__(self, name, method=None):
         """
         RestoreManager constructor
 
         Args:
         name -- (string) Archive name
-        method -- (string) Method name to use to mount the archive
+        method -- (string) Method name to use to mount the archive. If None, auto-detect from archive
         """
         from packaging import version
 
         # Retrieve and open the archive
-        # FIXME this way to get the info is not compatible with copy or custom
-        # backup methods
         self.info = backup_info(name, with_details=True)
 
         from_version = self.info.get("from_yunohost_version", "")
@@ -891,6 +889,24 @@ class RestoreManager:
 
         self.archive_path = self.info["path"]
         self.name = name
+
+        # Auto-detect method using BackupMethod.can_handle()
+        if method is None:
+            method = self.info.get("backup_method")
+            if not method:
+                # Use can_handle() to detect which method owns this backup
+                for method_class in BackupMethod.__subclasses__():
+                    try:
+                        if method_class.can_handle(name):
+                            method = method_class.method_name
+                            break
+                    except (NotImplementedError, Exception):
+                        pass
+
+                # Fallback to tar if no method found
+                if not method:
+                    method = "tar"
+
         self.method = BackupMethod.create(method, self)
         self.targets = BackupRestoreTargetsManager()
 
@@ -1540,6 +1556,67 @@ class BackupMethod:
         backup_method = known_methods.get(method, CustomBackupMethod)
         return backup_method(manager, method=method, **kwargs)
 
+    @classmethod
+    def list_backups(cls):
+        """
+        List all backups handled by this method.
+
+        Returns:
+            dict: Dictionary mapping backup names to their info dictionaries
+        """
+        raise NotImplementedError("Subclasses must implement list_backups()")
+
+    @classmethod
+    def get_backup_info(cls, name):
+        """
+        Get detailed information about a specific backup.
+
+        Args:
+            name -- Backup name
+
+        Returns:
+            dict: Backup information dictionary
+        """
+        raise NotImplementedError("Subclasses must implement get_backup_info()")
+
+    @classmethod
+    def can_handle(cls, name):
+        """
+        Check if this backup method can handle the given backup.
+
+        Args:
+            name -- Backup name
+
+        Returns:
+            bool: True if this method can handle the backup, False otherwise
+        """
+        raise NotImplementedError("Subclasses must implement can_handle()")
+
+    @classmethod
+    def get_download_path(cls, name):
+        """
+        Get the file path for downloading this backup.
+
+        For some methods (like Borg), this may create a temporary export file.
+
+        Args:
+            name -- Backup name
+
+        Returns:
+            str: Path to downloadable file
+        """
+        raise NotImplementedError("Subclasses must implement get_download_path()")
+
+    @classmethod
+    def delete_backup(cls, name):
+        """
+        Delete a backup and all associated files.
+
+        Args:
+            name -- Backup name
+        """
+        raise NotImplementedError("Subclasses must implement delete_backup()")
+
     def __init__(self, manager, repo=None, **kwargs):
         """
         BackupMethod constructors
@@ -1783,6 +1860,112 @@ class CopyBackupMethod(BackupMethod):
 
     method_name = "copy"
 
+    @classmethod
+    def list_backups(cls):
+        """List all Copy backups"""
+        backups = {}
+
+        # For copy method, look for .info.json files that specify copy method
+        info_files = glob(f"{ARCHIVES_PATH}/*.info.json")
+        for info_file in info_files:
+            name = os.path.basename(info_file)[: -len(".info.json")]
+            try:
+                with open(info_file) as f:
+                    info_data = json.load(f)
+                    if info_data.get("backup_method") == "copy":
+                        backups[name] = info_data
+            except Exception:
+                pass
+
+        return backups
+
+    @classmethod
+    def get_backup_info(cls, name):
+        """Get info about a Copy backup"""
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        if os.path.exists(info_file):
+            try:
+                with open(info_file) as f:
+                    info = json.load(f)
+                    if info.get("backup_method") == "copy":
+                        # Ensure path is in info (should already be there from backup creation)
+                        # If not present, it means the copy directory location was lost
+                        if "path" not in info:
+                            info["path"] = info_file  # Fallback to info file location
+                        return info
+            except Exception:
+                pass
+
+        raise YunohostValidationError("backup_archive_name_unknown", name=name)
+
+    @classmethod
+    def can_handle(cls, name):
+        """Check if this is a Copy backup"""
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        if os.path.exists(info_file):
+            try:
+                with open(info_file) as f:
+                    info = json.load(f)
+                    return info.get("backup_method") == "copy"
+            except Exception:
+                pass
+        return False
+
+    @classmethod
+    def get_download_path(cls, name):
+        """Create a TAR archive from copy directory for download"""
+        # Get the copy directory path from info
+        info = cls.get_backup_info(name)
+        copy_dir = info.get("path")
+
+        if not copy_dir or not os.path.isdir(copy_dir):
+            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+
+        # Create temporary tar file
+        temp_file = f"/tmp/{name}_copy_export.tar.gz"
+
+        try:
+            # Create tar archive from copy directory
+            tar = tarfile.open(temp_file, "w:gz")
+            tar.add(copy_dir, arcname=".")
+            tar.close()
+
+            return temp_file
+        except Exception as e:
+            logger.error(f"Failed to create tar from copy directory: {e}")
+            # Clean up temp file if it was created
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+            raise YunohostError("backup_copy_tar_failed")
+
+    @classmethod
+    def delete_backup(cls, name):
+        """Delete Copy backup directory and files"""
+        # Get the copy directory path from info
+        try:
+            info = cls.get_backup_info(name)
+            copy_dir = info.get("path")
+
+            # Delete copy directory if it exists
+            if copy_dir and os.path.isdir(copy_dir):
+                try:
+                    import shutil
+                    shutil.rmtree(copy_dir)
+                except Exception:
+                    logger.debug("unable to delete copy directory '%s'", copy_dir, exc_info=True)
+                    logger.warning(m18n.n("backup_delete_error", path=copy_dir))
+        except Exception:
+            logger.warning(f"Could not get copy directory path for {name}")
+
+        # Delete .info.json file
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        if os.path.exists(info_file):
+            try:
+                os.remove(info_file)
+            except Exception:
+                logger.debug("unable to delete '%s'", info_file, exc_info=True)
+                logger.warning(m18n.n("backup_delete_error", path=info_file))
+
     def backup(self):
         """Copy prepared files into a the repo"""
         # Check free space in output
@@ -1836,6 +2019,172 @@ class CopyBackupMethod(BackupMethod):
 class TarBackupMethod(BackupMethod):
     method_name = "tar"
 
+    @classmethod
+    def _find_tar_archive(cls, name):
+        """Find the tar archive file for a given backup name"""
+        tar_path = f"{ARCHIVES_PATH}/{name}.tar"
+        if os.path.lexists(tar_path):
+            return tar_path
+
+        tar_gz_path = f"{ARCHIVES_PATH}/{name}.tar.gz"
+        if os.path.lexists(tar_gz_path):
+            return tar_gz_path
+
+        return None
+
+    @classmethod
+    def _extract_info_from_tar(cls, tar_path, name):
+        """Extract info.json from a tar archive"""
+        try:
+            tar = tarfile.open(tar_path, "r:gz" if tar_path.endswith(".gz") else "r")
+            try:
+                # Try with and without leading ./
+                if "info.json" in tar.getnames():
+                    info_member = tar.getmember("info.json")
+                elif "./info.json" in tar.getnames():
+                    info_member = tar.getmember("./info.json")
+                else:
+                    raise YunohostError("backup_archive_cant_retrieve_info_json")
+
+                info_file = tar.extractfile(info_member)
+                info_data = json.load(info_file)
+                tar.close()
+                return info_data
+            finally:
+                tar.close()
+        except Exception as e:
+            logger.debug(f"Could not extract info from {tar_path}: {e}")
+            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+
+    @classmethod
+    def list_backups(cls):
+        """List all TAR backups by looking for .info.json and .tar files"""
+        backups = {}
+
+        # From .info.json files
+        info_files = glob(f"{ARCHIVES_PATH}/*.info.json")
+        for info_file in info_files:
+            name = os.path.basename(info_file)[: -len(".info.json")]
+            try:
+                with open(info_file) as f:
+                    info_data = json.load(f)
+                    # Only include if it's a tar backup (or method not specified for retrocompat)
+                    if info_data.get("backup_method", "tar") == "tar":
+                        backups[name] = info_data
+            except Exception:
+                pass  # Skip malformed info files
+
+        # From .tar and .tar.gz files without .info.json (if it's missing)
+        tar_files = glob(f"{ARCHIVES_PATH}/*.tar.gz") + glob(f"{ARCHIVES_PATH}/*.tar")
+        for tar_file in tar_files:
+            if tar_file.endswith(".tar.gz"):
+                name = os.path.basename(tar_file)[: -len(".tar.gz")]
+            else:
+                name = os.path.basename(tar_file)[: -len(".tar")]
+
+            # Only add if not already listed via .info.json
+            if name not in backups:
+                try:
+                    backups[name] = cls.get_backup_info(name)
+                except Exception:
+                    pass  # Skip if we can't get info
+
+        return backups
+
+    @classmethod
+    def get_backup_info(cls, name):
+        """Get info about a TAR backup, from .info.json or by extracting from archive"""
+        # Find the tar archive path
+        tar_path = cls._find_tar_archive(name)
+        if not tar_path:
+            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+
+        # Resolve symlinks and validate
+        archive_path = tar_path
+        if os.path.islink(archive_path):
+            archive_path = os.path.realpath(archive_path)
+            # Raise exception if link is broken
+            if not os.path.exists(archive_path):
+                raise YunohostValidationError("backup_archive_broken_link", path=archive_path)
+
+        # Try to read .info.json if it exists
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        info = None
+        if os.path.exists(info_file):
+            try:
+                with open(info_file) as f:
+                    info = json.load(f)
+            except Exception:
+                pass  # Will try extracting below
+
+        # Extract from tar archive if needed (retrocompat)
+        if not info:
+            info = cls._extract_info_from_tar(tar_path, name)
+
+        # Add path to info
+        info["path"] = archive_path
+        return info
+
+    @classmethod
+    def can_handle(cls, name):
+        """Check if this is a TAR backup"""
+        # Check if .info.json says tar
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        if os.path.exists(info_file):
+            try:
+                with open(info_file) as f:
+                    info = json.load(f)
+                    return info.get("backup_method", "tar") == "tar"
+            except Exception:
+                pass
+
+        # Check if .tar file exists
+        return cls._find_tar_archive(name) is not None
+
+    @classmethod
+    def get_download_path(cls, name):
+        """Get the path to the TAR file for download"""
+        # Find the tar archive
+        tar_path = cls._find_tar_archive(name)
+        if not tar_path:
+            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+
+        # Resolve symlinks
+        archive_path = tar_path
+        if os.path.islink(archive_path):
+            archive_path = os.path.realpath(archive_path)
+            # Raise exception if link is broken
+            if not os.path.exists(archive_path):
+                raise YunohostValidationError("backup_archive_broken_link", path=archive_path)
+
+        return archive_path
+
+    @classmethod
+    def delete_backup(cls, name):
+        """Delete TAR backup files"""
+        # Find tar archive
+        archive_file = f"{ARCHIVES_PATH}/{name}.tar"
+        if not os.path.exists(archive_file) and os.path.exists(archive_file + ".gz"):
+            archive_file += ".gz"
+
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        files_to_delete = [archive_file, info_file]
+
+        # Handle symlinks - also delete the actual file
+        if os.path.islink(archive_file):
+            actual_archive = os.path.realpath(archive_file)
+            files_to_delete.append(actual_archive)
+
+        # Delete all files
+        for backup_file in files_to_delete:
+            if not os.path.exists(backup_file):
+                continue
+            try:
+                os.remove(backup_file)
+            except Exception:
+                logger.debug("unable to delete '%s'", backup_file, exc_info=True)
+                logger.warning(m18n.n("backup_delete_error", path=backup_file))
+
     @property
     def _archive_file(self):
         from .settings import settings_get
@@ -1844,7 +2193,7 @@ class TarBackupMethod(BackupMethod):
             return self.manager.archive_path
 
         if isinstance(self.manager, BackupManager) and settings_get(
-            "misc.backup.backup_compress_tar_archives"
+            "misc.backup.tar_compress"
         ):
             return os.path.join(self.repo, self.name + ".tar.gz")
 
@@ -2011,6 +2360,436 @@ class TarBackupMethod(BackupMethod):
         tar.close()
 
 
+class BorgBackupMethod(BackupMethod):
+    """
+    This class implements BorgBackup integration for YunoHost backups.
+    Borg provides deduplication, compression, and encryption.
+    """
+
+    method_name = "borg"
+
+    @classmethod
+    def _get_repo_path(cls):
+        """Get the Borg repository path from settings or default"""
+        from .settings import settings_get
+        repo = settings_get("misc.backup.borg_repository_path")
+        return repo if repo else os.path.join(ARCHIVES_PATH, "borg")
+
+    @classmethod
+    def _is_ssh_repo(cls, repo_path):
+        """Check if a repo path is a remote SSH repository"""
+        return "@" in repo_path and ":" in repo_path
+
+    @classmethod
+    def _repo_exists(cls, repo_path):
+        """Check if a Borg repository exists"""
+        if cls._is_ssh_repo(repo_path):
+            # For SSH repos, assume they exist (will fail later if not)
+            return True
+        # For local repos, check if it's a valid borg repo
+        return os.path.isdir(repo_path) and os.path.exists(os.path.join(repo_path, "config"))
+
+    @classmethod
+    def _get_borg_env(cls):
+        """Return environment variables for borg commands"""
+        from .settings import settings_get
+
+        env = os.environ.copy()
+
+        # Passphrase
+        passphrase = settings_get("misc.backup.borg_passphrase")
+        if passphrase:
+            env["BORG_PASSPHRASE"] = passphrase
+
+        # Allow relocated repositories
+        relocated_ok = settings_get("misc.backup.borg_relocated_repo_access_is_ok")
+        if relocated_ok:
+            env["BORG_RELOCATED_REPO_ACCESS_IS_OK"] = "yes"
+
+        # SSH command (for remote repos)
+        borg_rsh = settings_get("misc.backup.borg_rsh")
+        if borg_rsh:
+            env["BORG_RSH"] = borg_rsh
+
+        # Remote borg path
+        borg_remote_path = settings_get("misc.backup.borg_remote_path")
+        if borg_remote_path:
+            env["BORG_REMOTE_PATH"] = borg_remote_path
+
+        return env
+
+    def __init__(self, manager, repo=None, **kwargs):
+        # Get settings from YunoHost config if not provided
+        from .settings import settings_get
+
+        # Override repo with settings if not explicitly provided
+        if repo is None:
+            borg_repo = settings_get("misc.backup.borg_repository_path")
+            if borg_repo:
+                repo = borg_repo
+            else:
+                # Default: use a 'borg' subdirectory in ARCHIVES_PATH
+                repo = os.path.join(ARCHIVES_PATH, "borg")
+
+        super(BorgBackupMethod, self).__init__(manager, repo)
+
+        # Get passphrase from settings
+        self.passphrase = kwargs.get("passphrase") or settings_get("misc.backup.borg_passphrase") or None
+        self.compression = "zstd,3"
+        if (self.passphrase is None) or (self.passphrase == ""):
+            self.encryption = "none"
+        else:
+            self.encryption = "repokey-blake2"
+
+    def _ensure_borg_installed(self):
+        """Check if borg is installed"""
+        try:
+            subprocess.run(
+                ["borg", "--version"],
+                capture_output=True,
+                check=True
+            )
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            raise YunohostError(
+                "Borg is not installed. Please install it with: apt install borgbackup"
+            )
+
+    def _init_repo(self):
+        """Initialize borg repository if it doesn't exist"""
+        if not os.path.exists(os.path.join(self.repo, "config")):
+            logger.info("Initializing new Borg repository at %s", self.repo)
+            try:
+                cmd = ["borg", "init", "--encryption", self.encryption, self.repo]
+
+                subprocess.run(
+                    cmd,
+                    env=self._get_borg_env(),
+                    check=True,
+                    capture_output=True
+                )
+            except subprocess.CalledProcessError as e:
+                raise YunohostError(
+                    f"Failed to initialize Borg repository: {e.stderr.decode()}"
+                )
+
+    @classmethod
+    def _list_borg_archives(cls, repo_path):
+        """List all archives in a Borg repository"""
+        env = cls._get_borg_env()
+        try:
+            result = subprocess.run(
+                ["borg", "list", "--short", repo_path],
+                capture_output=True,
+                text=True,
+                env=env,
+                check=False
+            )
+            if result.returncode == 0:
+                return [line.strip() for line in result.stdout.strip().split('\n') if line.strip()]
+            return []
+        except Exception:
+            return []
+
+    @classmethod
+    def _extract_info_from_archive(cls, name, repo_path):
+        """Extract info.json from a Borg archive"""
+        env = cls._get_borg_env()
+        try:
+            # Try to extract info.json from the archive
+            cmd = ["borg", "extract", f"{repo_path}::{name}", "--stdout", "info.json"]
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                env=env,
+                check=False
+            )
+            if result.returncode == 0:
+                return json.loads(result.stdout)
+            else:
+                logger.warning(f"Failed to extract info.json from Borg archive {name}: {result.stderr}")
+        except json.JSONDecodeError as e:
+            logger.warning(f"info.json from Borg archive {name} is not valid JSON: {e}")
+        except Exception as e:
+            logger.warning(f"Exception while extracting info.json from Borg archive {name}: {e}")
+
+        # Fallback: create minimal info
+        logger.info(f"Using fallback minimal info for Borg archive {name}")
+        return {
+            "name": name,
+            "backup_method": "borg",
+            "size": cls._get_archive_size(name, repo_path)
+        }
+
+    @classmethod
+    def _get_archive_size(cls, name, repo_path):
+        """Get the size of a Borg archive"""
+        env = cls._get_borg_env()
+        try:
+            cmd = ["borg", "info", "--json", f"{repo_path}::{name}"]
+            result = subprocess.run(cmd, capture_output=True, env=env, check=False)
+            if result.returncode == 0:
+                data = json.loads(result.stdout)
+                return data["archives"][0]["stats"]["original_size"]
+        except Exception:
+            pass
+        return 0
+
+    @classmethod
+    def list_backups(cls):
+        """List all Borg backups"""
+        repo = cls._get_repo_path()
+        if not cls._repo_exists(repo):
+            return {}
+
+        backups = {}
+        archive_names = cls._list_borg_archives(repo)
+
+        for name in archive_names:
+            # Check if .info.json exists
+            info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+            if os.path.exists(info_file):
+                try:
+                    with open(info_file) as f:
+                        backups[name] = json.load(f)
+                except Exception:
+                    # Extract from borg archive
+                    backups[name] = cls._extract_info_from_archive(name, repo)
+            else:
+                # Extract from borg archive
+                backups[name] = cls._extract_info_from_archive(name, repo)
+
+        return backups
+
+    @classmethod
+    def get_backup_info(cls, name):
+        """Get info about a Borg backup"""
+        # Get repository path
+        repo = cls._get_repo_path()
+
+        # Validate repo exists
+        if not cls._repo_exists(repo):
+            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+
+        # Validate repo for local repos (not SSH)
+        if not cls._is_ssh_repo(repo):
+            if not os.path.isdir(repo):
+                raise YunohostValidationError("backup_archive_broken_link", path=repo)
+
+        # Try to read .info.json if it exists
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        info = None
+        if os.path.exists(info_file):
+            try:
+                with open(info_file) as f:
+                    info = json.load(f)
+            except Exception:
+                pass
+
+        # Extract from borg archive if needed
+        if not info:
+            info = cls._extract_info_from_archive(name, repo)
+
+        # Add path to info (the repo path, not the archive)
+        info["path"] = repo
+        return info
+
+    @classmethod
+    def can_handle(cls, name):
+        """Check if this is a Borg backup"""
+        # Check if .info.json says borg
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        if os.path.exists(info_file):
+            try:
+                with open(info_file) as f:
+                    info = json.load(f)
+                    return info.get("backup_method") == "borg"
+            except Exception:
+                pass
+
+        # Check if archive exists in borg repo
+        repo = cls._get_repo_path()
+        if not cls._repo_exists(repo):
+            return False
+
+        archive_names = cls._list_borg_archives(repo)
+        return name in archive_names
+
+    @classmethod
+    def get_download_path(cls, name):
+        """Export Borg archive as TAR for download"""
+        import tempfile
+
+        # Get repository path
+        repo = cls._get_repo_path()
+        if not cls._repo_exists(repo):
+            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+
+        # Create temporary tar file
+        temp_file = f"/tmp/{name}_borg_export.tar.gz"
+
+        # Use borg export-tar to create downloadable tar
+        env = cls._get_borg_env()
+        try:
+            cmd = ["borg", "export-tar", f"{repo}::{name}", temp_file]
+
+            result = subprocess.run(cmd, capture_output=True, env=env, check=False)
+
+            if result.returncode != 0:
+                logger.error(f"Failed to export Borg archive: {result.stderr}")
+                raise YunohostError("backup_borg_export_failed")
+
+            return temp_file
+        except Exception as e:
+            logger.error(f"Failed to export Borg archive: {e}")
+            # Clean up temp file if it was created
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+            raise YunohostError("backup_borg_export_failed")
+
+    @classmethod
+    def delete_backup(cls, name):
+        """Delete Borg backup from repository"""
+        # Get repository path
+        repo = cls._get_repo_path()
+        if not cls._repo_exists(repo):
+            logger.warning(f"Borg repository not found: {repo}")
+            # Still try to delete .info.json
+        else:
+            # Delete archive from Borg repository
+            env = cls._get_borg_env()
+            try:
+                cmd = ["borg", "delete", f"{repo}::{name}"]
+                result = subprocess.run(cmd, capture_output=True, env=env, check=False)
+
+                if result.returncode != 0:
+                    logger.warning(f"Failed to delete Borg archive: {result.stderr}")
+            except Exception as e:
+                logger.warning(f"Failed to delete Borg archive: {e}")
+
+        # Delete .info.json file
+        info_file = f"{ARCHIVES_PATH}/{name}.info.json"
+        if os.path.exists(info_file):
+            try:
+                os.remove(info_file)
+            except Exception:
+                logger.debug("unable to delete '%s'", info_file, exc_info=True)
+                logger.warning(m18n.n("backup_delete_error", path=info_file))
+
+    def need_mount(self):
+        """Return True so BackupManager organizes files in work_dir before backup"""
+        return True
+
+    def backup(self):
+        """Create a borg backup archive"""
+        self._ensure_borg_installed()
+
+        if not os.path.exists(self.repo):
+            mkdir(self.repo, 0o750, parents=True)
+
+        self._init_repo()
+
+        # Create archive name
+        archive_name = f"{self.name}"
+        full_archive_path = f"{self.repo}::{archive_name}"
+
+        logger.info(m18n.n("backup_applying_method_borg", method="borg"))
+
+        # Since need_mount() returns True, BackupManager has already organized
+        # all files in work_dir with the correct structure. We just backup work_dir.
+        try:
+            cmd = [
+                "borg", "create",
+                "--compression", self.compression,
+                full_archive_path,
+                "."  # Backup everything in work_dir
+            ]
+
+            result = subprocess.run(
+                cmd,
+                cwd=self.manager.work_dir,  # Run from work_dir
+                env=self._get_borg_env(),
+                capture_output=True,
+                text=True
+            )
+
+            if result.returncode != 0:
+                raise YunohostError(
+                    f"Borg backup failed: {result.stderr}"
+                )
+
+            logger.debug(result.stdout)
+
+            # Save backup info
+            info_file = os.path.join(ARCHIVES_PATH, f"{self.name}.info.json")
+            info_data = self.manager.info.copy()
+            info_data["backup_method"] = "borg"
+            info_data["borg_repo"] = self.repo
+            info_data["borg_archive"] = archive_name
+
+            with open(info_file, "w") as f:
+                json.dump(info_data, f)
+
+        except subprocess.CalledProcessError as e:
+            raise YunohostError(f"Borg backup failed: {e.stderr.decode()}")
+        except Exception as e:
+            raise YunohostError(f"Borg backup failed: {str(e)}")
+
+    def mount(self):
+        """Mount borg archive for restore"""
+        super(BorgBackupMethod, self).mount()
+        self._ensure_borg_installed()
+
+        # Get archive info
+        info = self.manager.info
+        borg_repo = info.get("borg_repo", self.repo)
+        borg_archive = info.get("borg_archive", self.name)
+        full_archive_path = f"{borg_repo}::{borg_archive}"
+
+        logger.info("Mounting Borg archive for restore")
+
+        # Mount the archive using borg mount
+        try:
+            cmd = [
+                "borg", "mount",
+                full_archive_path,
+                self.work_dir
+            ]
+            logger.debug(f"Running: {' '.join(cmd)}")
+            result = subprocess.run(
+                cmd,
+                env=self._get_borg_env(),
+                capture_output=True,
+                text=True,
+                check=True
+            )
+
+            logger.debug(result.stdout)
+            logger.info(f"Borg archive mounted at {self.work_dir}")
+
+        except subprocess.CalledProcessError as e:
+            raise YunohostError(f"Failed to mount Borg archive: {e.stderr}")
+
+    def copy(self, file, target):
+        """Copy a specific file from mounted borg archive"""
+        # Files are accessible directly in work_dir from the mounted archive
+        source_path = os.path.join(self.work_dir, file)
+
+        if not os.path.exists(source_path):
+            raise YunohostError(f"File {file} not found in mounted Borg archive")
+
+        try:
+            if os.path.isdir(source_path):
+                import shutil
+                dest_path = os.path.join(target, os.path.basename(file))
+                shutil.copytree(source_path, dest_path, symlinks=True)
+            else:
+                import shutil
+                shutil.copy2(source_path, target)
+        except Exception as e:
+            raise YunohostError(f"Failed to copy file from Borg archive: {str(e)}")
+
+
 class CustomBackupMethod(BackupMethod):
     """
     This class use a bash script/hook "backup_method" to do the
@@ -2128,7 +2907,9 @@ def backup_create(
 
     # By default we backup using the tar method
     if not methods:
-        methods = ["tar"]
+        from .settings import settings_get
+        default_method = settings_get("misc.backup.default_backup_method")
+        methods = [default_method] if default_method else ["tar"]
 
     # Validate output_directory option
     if output_directory:
@@ -2291,27 +3072,44 @@ def backup_list(with_info=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
-    # Get local archives sorted according to last modification time
-    # (we do a realpath() to resolve symlinks)
-    archives = glob(f"{ARCHIVES_PATH}/*.tar.gz") + glob(f"{ARCHIVES_PATH}/*.tar")
-    archives = {os.path.realpath(archive) for archive in archives}
-    archives = {archive for archive in archives if os.path.exists(archive)}
-    archives = sorted(archives, key=lambda x: os.path.getctime(x))
-    # Extract only filename without the extension
+    # Collect backups from all backup methods
+    all_backups = {}
 
-    def remove_extension(f):
-        if f.endswith(".tar.gz"):
-            return os.path.basename(f)[: -len(".tar.gz")]
-        else:
-            return os.path.basename(f)[: -len(".tar")]
+    # Get all BackupMethod subclasses (tar, borg, copy, custom)
+    for method_class in BackupMethod.__subclasses__():
+        try:
+            backups = method_class.list_backups()
+            all_backups.update(backups)
+        except NotImplementedError:
+            # Skip methods that haven't implemented list_backups
+            pass
+        except Exception as e:
+            logger.debug(f"Could not list backups for {method_class.method_name}: {e}")
 
-    archives = [remove_extension(f) for f in archives]
+    # Sort by creation time
+    def get_ctime(name):
+        info_path = f"{ARCHIVES_PATH}/{name}.info.json"
+        if os.path.exists(info_path):
+            return os.path.getctime(info_path)
+        tar_path = f"{ARCHIVES_PATH}/{name}.tar"
+        if os.path.exists(tar_path):
+            return os.path.getctime(tar_path)
+        tar_gz_path = f"{ARCHIVES_PATH}/{name}.tar.gz"
+        if os.path.exists(tar_gz_path):
+            return os.path.getctime(tar_gz_path)
+        return 0
+
+    archives = sorted(list(all_backups.keys()), key=get_ctime)
 
     if with_info:
         d = OrderedDict()
         for archive in archives:
             try:
-                d[archive] = backup_info(archive, human_readable=human_readable)
+                # If we already have the info from list_backups, use it
+                if archive in all_backups:
+                    d[archive] = all_backups[archive]
+                else:
+                    d[archive] = backup_info(archive, human_readable=human_readable)
             except YunohostError as e:
                 logger.warning(str(e))
             except Exception:
@@ -2332,23 +3130,27 @@ def backup_download(name):
         )
         return
 
-    archive_file = f"{ARCHIVES_PATH}/{name}.tar"
+    # Remove extension if provided
+    if name.endswith(".tar.gz"):
+        name = name[: -len(".tar.gz")]
+    elif name.endswith(".tar"):
+        name = name[: -len(".tar")]
 
-    # Check file exist (even if it's a broken symlink)
-    if not os.path.lexists(archive_file):
-        archive_file += ".gz"
-        if not os.path.lexists(archive_file):
-            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+    # Find which backup method can handle this backup
+    method_class = None
+    for cls in BackupMethod.__subclasses__():
+        try:
+            if cls.can_handle(name):
+                method_class = cls
+                break
+        except (NotImplementedError, Exception):
+            pass
 
-    # If symlink, retrieve the real path
-    if os.path.islink(archive_file):
-        archive_file = os.path.realpath(archive_file)
+    if not method_class:
+        raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
-        # Raise exception if link is broken (e.g. on unmounted external storage)
-        if not os.path.exists(archive_file):
-            raise YunohostValidationError(
-                "backup_archive_broken_link", path=archive_file
-            )
+    # Get download path from the method (may create temporary export for Borg/Copy)
+    archive_file = method_class.get_download_path(name)
 
     # We return a raw bottle HTTPresponse (instead of serializable data like
     # list/dict, ...), which is gonna be picked and used directly by moulinette
@@ -2368,94 +3170,39 @@ def backup_info(name, with_details=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
-    original_name = name
-
+    # Remove extension if provided
     if name.endswith(".tar.gz"):
         name = name[: -len(".tar.gz")]
     elif name.endswith(".tar"):
         name = name[: -len(".tar")]
+    elif name.endswith(".info.json"):
+        name = name[: -len(".info.json")]
 
-    archive_file = f"{ARCHIVES_PATH}/{name}.tar"
-
-    # Check file exist (even if it's a broken symlink)
-    if not os.path.lexists(archive_file):
-        archive_file += ".gz"
-        if not os.path.lexists(archive_file):
-            # Maybe the user provided a path to the backup?
-            archive_file = original_name
-            if not os.path.lexists(archive_file):
-                raise YunohostValidationError("backup_archive_name_unknown", name=name)
-
-    # If symlink, retrieve the real path
-    if os.path.islink(archive_file):
-        archive_file = os.path.realpath(archive_file)
-
-        # Raise exception if link is broken (e.g. on unmounted external storage)
-        if not os.path.exists(archive_file):
-            raise YunohostValidationError(
-                "backup_archive_broken_link", path=archive_file
-            )
-
-    info_file = f"{ARCHIVES_PATH}/{name}.info.json"
-
-    if not os.path.exists(info_file):
-        tar = tarfile.open(
-            archive_file, "r:gz" if archive_file.endswith(".gz") else "r"
-        )
-        info_dir = info_file + ".d"
-
+    # Find which backup method can handle this backup
+    method_class = None
+    for cls in BackupMethod.__subclasses__():
         try:
-            files_in_archive = tar.getnames()
-        except (IOError, EOFError, tarfile.ReadError) as e:
-            raise YunohostError(
-                "backup_archive_corrupted", archive=archive_file, error=str(e)
-            )
+            if cls.can_handle(name):
+                method_class = cls
+                break
+        except NotImplementedError:
+            pass
+        except Exception:
+            pass
 
-        try:
-            if "info.json" in files_in_archive:
-                tar.extract("info.json", path=info_dir)
-            elif "./info.json" in files_in_archive:
-                tar.extract("./info.json", path=info_dir)
-            else:
-                raise KeyError
-        except KeyError:
-            logger.debug(
-                "unable to retrieve '%s' inside the archive", info_file, exc_info=1
-            )
-            raise YunohostError(
-                "backup_archive_cant_retrieve_info_json", archive=archive_file
-            )
-        else:
-            shutil.move(os.path.join(info_dir, "info.json"), info_file)
-        finally:
-            tar.close()
-        os.rmdir(info_dir)
+    if not method_class:
+        raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
-    try:
-        with open(info_file) as f:
-            # Retrieve backup info
-            info = json.load(f)
-    except Exception:
-        logger.debug("unable to load '%s'", info_file, exc_info=1)
-        raise YunohostError(
-            "backup_archive_cant_retrieve_info_json", archive=archive_file
-        )
+    # Get backup info from the method (includes path and validation)
+    info = method_class.get_backup_info(name)
 
-    # Retrieve backup size
+    # Format size if needed
     size = info.get("size", 0)
-    if not size:
-        tar = tarfile.open(
-            archive_file, "r:gz" if archive_file.endswith(".gz") else "r"
-        )
-        size = reduce(
-            lambda x, y: getattr(x, "size", x) + getattr(y, "size", y), tar.getmembers()
-        )
-        tar.close()
     if human_readable:
-        size = binary_to_human(size) + "B"
+        size = binary_to_human(size) + "B" if size else "N/A"
 
     result = {
-        "path": archive_file,
+        "path": info["path"],
         "created_at": datetime.utcfromtimestamp(info["created_at"]),
         "description": info["description"],
         "size": size,
@@ -2469,14 +3216,14 @@ def backup_info(name, with_details=False, human_readable=False):
 
         if "size_details" in info.keys():
             for category in ["apps", "system"]:
-                for name, key_info in info[category].items():
+                for item_name, key_info in info[category].items():
                     if category == "system":
-                        info[category][name] = key_info = {"paths": key_info}
+                        info[category][item_name] = key_info = {"paths": key_info}
                     else:
-                        info[category][name] = key_info
+                        info[category][item_name] = key_info
 
-                    if name in info["size_details"][category].keys():
-                        key_info["size"] = info["size_details"][category][name]
+                    if item_name in info["size_details"][category].keys():
+                        key_info["size"] = info["size_details"][category][item_name]
                         if human_readable:
                             key_info["size"] = binary_to_human(key_info["size"]) + "B"
                     else:
@@ -2497,26 +3244,21 @@ def backup_delete(name, display_success: bool = True):
 
     hook_callback("pre_backup_delete", args=[name])
 
-    archive_file = f"{ARCHIVES_PATH}/{name}.tar"
-    if not os.path.exists(archive_file) and os.path.exists(archive_file + ".gz"):
-        archive_file += ".gz"
-    info_file = f"{ARCHIVES_PATH}/{name}.info.json"
-
-    files_to_delete = [archive_file, info_file]
-
-    # To handle the case where archive_file is in fact a symlink
-    if os.path.islink(archive_file):
-        actual_archive = os.path.realpath(archive_file)
-        files_to_delete.append(actual_archive)
-
-    for backup_file in files_to_delete:
-        if not os.path.exists(backup_file):
-            continue
+    # Find which backup method can handle this backup
+    method_class = None
+    for cls in BackupMethod.__subclasses__():
         try:
-            os.remove(backup_file)
-        except Exception:
-            logger.debug("unable to delete '%s'", backup_file, exc_info=True)
-            logger.warning(m18n.n("backup_delete_error", path=backup_file))
+            if cls.can_handle(name):
+                method_class = cls
+                break
+        except (NotImplementedError, Exception):
+            pass
+
+    if not method_class:
+        raise YunohostValidationError("backup_archive_name_unknown", name=name)
+
+    # Delegate deletion to the method class
+    method_class.delete_backup(name)
 
     hook_callback("post_backup_delete", args=[name])
 
