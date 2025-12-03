@@ -16,6 +16,7 @@ fastcgi_param  SERVER_SOFTWARE    nginx/$nginx_version;
 
 fastcgi_param  REMOTE_ADDR        $remote_addr;
 fastcgi_param  REMOTE_PORT        $remote_port;
+# (no REMOTE_USER compared to the version "with auth")
 fastcgi_param  SERVER_ADDR        $server_addr;
 fastcgi_param  SERVER_PORT        $server_port;
 fastcgi_param  SERVER_NAME        $server_name;
