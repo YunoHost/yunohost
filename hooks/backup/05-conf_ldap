@@ -29,7 +29,7 @@ source /usr/share/yunohost/helpers
 
 # Backup the configuration
 ynh_backup "/etc/ldap/ldap.conf"
-mkdir "/ldap"
+mkdir "ldap"
 slapcat -b cn=config -l "ldap/cn=config.master.ldif"
 
 # Backup the database
