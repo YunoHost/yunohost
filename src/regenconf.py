@@ -115,20 +115,6 @@ def regen_conf(
     else:
         mkdir(PENDING_CONF_DIR, 0o755, True)
 
-    # Execute hooks for pre-regen
-    # element 2 and 3 with empty string is because of legacy...
-    pre_args = ["pre", "", ""]
-
-    def _pre_call(name, priority, path, args):
-        # create the pending conf directory for the category
-        category_pending_path = os.path.join(PENDING_CONF_DIR, name)
-        mkdir(category_pending_path, 0o755, True, uid="root")
-
-        # return the arguments to pass to the script
-        return pre_args + [
-            category_pending_path,
-        ], None
-
     ssh_explicitly_specified = isinstance(names, list) and "ssh" in names
 
     # By default, we regen everything
@@ -165,7 +151,16 @@ def regen_conf(
     env["YNH_SETTINGS"] = json.dumps(settings_get("", export=True))
     env["FORCE"] = "true" if force else "false"
 
-    pre_result = hook_callback("conf_regen", names, pre_callback=_pre_call, env=env)
+    def _compute_args_and_workdir_for_individual_script(name, priority, path, args):
+        # create the pending conf directory for the category
+        category_pending_path = os.path.join(PENDING_CONF_DIR, name)
+        mkdir(category_pending_path, 0o755, True, uid="root")
+
+        # return the arguments to pass to the script
+        # element 2 and 3 with empty string is because of legacy...
+        return ["pre", "", "", category_pending_path], None
+
+    pre_result = hook_callback("conf_regen", names, compute_args_and_workdir_for_individual_script=_compute_args_and_workdir_for_individual_script, env=env)
 
     # Keep only the hook names with at least one success
     names = [
@@ -430,20 +425,16 @@ def regen_conf(
         return result
 
     # Execute hooks for post-regen
-    # element 2 and 3 with empty string is because of legacy...
-    post_args = ["post", "", ""]
-
-    def _pre_call2(name, priority, path, args):
+    def _compute_args_and_workdir_for_individual_script2(name, priority, path, args):
         # append coma-separated applied changes for the category
         if name in result and result[name]["applied"]:
             regen_conf_files = ",".join(result[name]["applied"].keys())
         else:
             regen_conf_files = ""
-        return post_args + [
-            regen_conf_files,
-        ], None
+        # element 2 and 3 with empty string is because of legacy...
+        return ["post", "", "", regen_conf_files], None
 
-    hook_callback("conf_regen", names, pre_callback=_pre_call2, env=env)
+    hook_callback("conf_regen", names, compute_args_and_workdir_for_individual_script=_compute_args_and_workdir_for_individual_script2, env=env)
 
     operation_logger.success()
 

@@ -620,7 +620,7 @@ class BackupManager:
 
         # Actual call to backup scripts/hooks
 
-        def _pre_callback(name, priority, path, args):
+        def _compute compute_args_and_workdir_for_individual_script(name, priority, path, args):
             if name.startswith("conf_"):
                 d = os.path.join(self.work_dir, "conf")
             else:
@@ -633,7 +633,7 @@ class BackupManager:
             system_targets,
             args=[self.work_dir],
             env=env_dict,
-            pre_callback=_pre_callback
+            compute_args_and_workdir_for_individual_script=_compute_args_and_workdir_for_individual_script
         )
 
         ret_succeed = {
@@ -1240,7 +1240,7 @@ class RestoreManager:
 
         logger.debug(m18n.n("restore_running_hooks"))
 
-        def _pre_callback(name, priority, path, args):
+        def _compute_args_and_workdir_for_individual_script(name, priority, path, args):
             if name.startswith("conf_"):
                 d = os.path.join(self.work_dir, "conf")
             else:
@@ -1259,7 +1259,7 @@ class RestoreManager:
             system_targets,
             args=[self.work_dir],
             env=env_dict,
-            pre_callback=_pre_callback
+            compute_args_and_workdir_for_individual_script=_compute_args_and_workdir_for_individual_script
         )
 
         ret_succeed = [
