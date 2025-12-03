@@ -111,12 +111,8 @@ ynh_config_add() {
     # This is to cover a case where an attacker could have
     # created a file beforehand to have control over it
     # (cp won't overwrite ownership / modes by default...)
-    if [ -n "${YNH_APP_ID:-}" ]; then
-        # If we are in an app
-        touch "$destination"
-        chmod 640 "$destination"
-        _ynh_apply_default_permissions "$destination"
-    fi
+    touch "$destination"
+    _ynh_apply_default_permissions "$destination"
 
     if [[ "$jinja" == 1 ]]; then
         # This is ran in a subshell such that the "export" does not "contaminate" the main process

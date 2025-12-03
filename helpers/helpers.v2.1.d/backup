@@ -203,7 +203,8 @@ ynh_restore() {
         mv "$archive_path" "${target}"
     fi
 
-    if [ -n "${YNH_APP_ID:-}" ]; then
+    if [ -n "${app:-}" ]; then
+        # When restoring backups from the core, we want to keep the existing permissions (e.g. on home folders etc)
         _ynh_apply_default_permissions "$target"
     fi
 }
