@@ -253,6 +253,13 @@ class AppResourceManager:
         for type_, res_properties in resources.items():
 
             res_properties = res_properties.copy()
+
+            if packaging_format < 3 and type_ == "database":
+                dbtype = res_properties.get("type") or res_properties.get("dbtype")
+                assert dbtype in ["mysql", "postgresql"]
+                type_ = db_type
+                res_properties = {}
+
             if type_ not in AppResourceClassesByType:
                 raise YunohostPackagingError(f"Unknown resource type {type_}")
 
@@ -1301,7 +1308,7 @@ class DatadirAppResource(AppResource):
 
 class AptDependenciesAppResource(AppResource):
     """
-    Create a virtual package in apt, depending on the list of specified packages that the app needs. The virtual packages is called `$app-ynh-deps` (with `_` being replaced by `-` in the app name, see `ynh_install_app_dependencies`)
+    Create a virtual apt/dpkg package, that depends on the specified list of packages that the app depends on. The virtual packages is called `$app-ynh-deps` (with `_` being replaced by `-` in the app name))
 
     ### Example
 
@@ -1309,7 +1316,7 @@ class AptDependenciesAppResource(AppResource):
     [resources.apt]
     packages = ["nyancat", "lolcat", "sl"]
 
-    # (this part is optional and corresponds to the legacy ynh_install_extra_app_dependencies helper)
+    # ('extras' blocks are optional and only meant for apps that need to install apt packages from additional sources)
     extras.yarn.repo = "deb https://dl.yarnpkg.com/debian/ stable main"
     extras.yarn.key = "https://dl.yarnpkg.com/debian/pubkey.gpg"
     extras.yarn.packages = ["yarn"]
@@ -1323,12 +1330,12 @@ class AptDependenciesAppResource(AppResource):
 
     ### Provision/Update
 
-    - The code literally calls the bash helpers `ynh_install_app_dependencies` and `ynh_install_extra_app_dependencies`, similar to what happens in v1.
+    - Creates/update the virtual package with the provided dependencies, and make sure dependencies are installed / updated.
     - Note that when `packages` contains some phpX.Y-foobar dependencies, this will automagically define a `phpversion` setting equal to `X.Y` which can therefore be used in app scripts ($phpversion) or templates (`__PHPVERSION__`)
 
     ### Deprovision
 
-    - The code literally calls the bash helper `ynh_remove_app_dependencies`
+    - Remove the virtual dependency
     """
 
     # Notes for future?
@@ -1620,39 +1627,37 @@ class PortsResource(AppResource):
         # FIXME : we could also want to gargage-collect all the "port" vars not referenced anymore
 
 
-class DatabaseAppResource(AppResource):
+class MysqlAppResource(AppResource):
     """
-    Initialize a database, either using MySQL or Postgresql. Relevant DB infos are stored in settings `$db_name`, `$db_user` and `$db_pwd`.
+    Initialize a MySQL/Mariadb database. Relevant DB infos are stored in settings `$mysql_db_name`, `$mysql_db_user` and `$mysql_db_pwd`.
 
-    NB: only one DB can be handled in such a way (is there really an app that would need two completely different DB ?...)
-
-    NB2: no automagic migration will happen in an suddenly change `type` from `mysql` to `postgresql` or viceversa in its life
+    NB: no automagic migration will happen if an app suddenly replaces a `mysql` db with a `postgresql` one or viceversa during its life.
 
     ### Example
 
     ```toml
-    [resources.database]
-    type = "mysql"   # or : "postgresql". Only these two values are supported
+    [resources.mysql]
+    # (empty should be fine for most apps... )
     ```
 
     ### Properties
 
-    - `type`: The database type, either `mysql` or `postgresql`
+    - `extra_dbs`: A list of suffixes for additional DB to initialize. For example if $app is "helloworld" and extra_dbs is set to ["foo", "bar"], then DB "helloworld_foo" and "helloworld_bar" will be provisioned in addition to the regular "helloworld", with the same user/password credentials.
 
     ### Provision/Update
 
-    - (Re)set the `$db_name` and `$db_user` settings with the sanitized app name (replacing `-` and `.` with `_`)
-    - If `$db_pwd` doesn't already exists, pick a random database password and store it in that setting
-    - If the database doesn't exists yet, create the SQL user and DB using `ynh_mysql_create_db` or `ynh_psql_create_db`.
+    - (Re)set the `$mysql_db_name` and `$mysql_db_user` settings with the sanitized app name (replacing `-` and `.` with `_`)
+    - If `$mysql_db_pwd` doesn't already exists, pick a random database password and store it in that setting
+    - If the database doesn't exists yet, create the SQL user and DB
 
     ### Deprovision
 
-    - Drop the DB using `ynh_mysql_remove_db` or `ynh_psql_remove_db`
-    - Deletes the `db_name`, `db_user` and `db_pwd` settings
+    - Drop the DB
+    - Delete the settings
 
     ### Legacy management
 
-    - In the past, the sql passwords may have been named `mysqlpwd` or `psqlpwd`, in which case it will automatically be renamed as `db_pwd`
+    - When transitioning from packaging v2 [resources.database] to v3 [resources.mysql] (or postgresql), the setting are automatically renamed from db_name, db_user, db_pwd to the mysql/postgresql counterpart
     """
 
     # Notes for future?
@@ -1660,90 +1665,176 @@ class DatabaseAppResource(AppResource):
     # backup -> dump db
     # restore -> setup + inject db dump
 
-    type = "database"
-    multi = True
+    type = "mysql"
+    multi = False
 
-    # NB : it's actually 'type' in the toml for convenience but autoconverted to 'dbtype' in the code
-    dbtype: Literal["mysql", "postgresql"]
-
-    exposed_properties: list[str] = ["dbtype"]
+    extra_dbs: List = []
+    exposed_properties: list[str] = ["extra_dbs"]
 
     def description(self) -> str:
-        return m18n.n("app_resource_database", dbtype=self.dbtype)
+        return m18n.n("app_resource_mysql")
 
-    @staticmethod
-    def convert_packaging_v2_props(props: dict[str, Any]) -> None:
-        if "type" in props:
-            props["main"] = {"dbtype": props.pop("type")}
-
-    def db_exists(self, db_name: str) -> bool:
-
-        if self.dbtype == "mysql":
-            cmd = f"mysqlshow | grep -q -w '{db_name}' 2>/dev/null"
-        elif self.dbtype == "postgresql":
-            cmd = f"sudo --login --user=postgres psql '{db_name}' -c ';' >/dev/null 2>/dev/null"
-        else:
-            cmd = "false"
-        return os.system(cmd) == 0
+    def convert_legacy_db_settings(self):
+        db_pwd = self.get_setting("db_pwd")
+        mysql_db_pwd = self.get_setting("mysql_db_pwd")
+        if db_pwd and not mysql_db_pwd:
+            self.set_setting("mysql_db_pwd", db_pwd)
+            self.delete_setting("db_pwd")
+        db_name = self.get_setting("db_name")
+        mysql_db_name = self.get_setting("mysql_db_name")
+        if db_name and not mysql_db_name:
+            self.set_setting("mysql_db_name", db_name)
+            self.delete_setting("db_name")
+        # This last one is always force-reset
+        # to $app (modulo - and . replaced to _)
+        self.delete_setting("db_user")
 
     def provision_or_update(self) -> None:
-        # This is equivalent to ynh_sanitize_dbid
+
+        self.convert_legacy_db_settings()
+
+        # Can't use the raw id directly because it may contain '-' or '.'
         db_user = self.app.replace("-", "_").replace(".", "_")
-        db_name = self.get_setting("db_name") or db_user
-        self.set_setting("db_name", db_name)
-        self.set_setting("db_user", db_user)
+        db_name = self.get_setting("mysql_db_name") or db_user
+        self.set_setting("mysql_db_name", db_name)
+        self.set_setting("mysql_db_user", db_user)
 
-        db_pwd = None
-        if self.get_setting("db_pwd"):
-            db_pwd = self.get_setting("db_pwd")
-        else:
-            # Legacy setting migration
-            legacypasswordsetting = (
-                "psqlpwd" if self.dbtype == "postgresql" else "mysqlpwd"
-            )
-            if self.get_setting(legacypasswordsetting):
-                db_pwd = self.get_setting(legacypasswordsetting)
-                self.delete_setting(legacypasswordsetting)
-                self.set_setting("db_pwd", db_pwd)
-
+        db_pwd = self.get_setting("mysql_db_pwd")
         if not db_pwd:
             db_pwd = random_ascii(24)
-            self.set_setting("db_pwd", db_pwd)
+            self.set_setting("mysql_db_pwd", db_pwd)
 
-        if not self.db_exists(db_name):
-            if self.dbtype == "mysql":
-                self._run_script(
-                    "provision",
-                    f"ynh_mysql_create_db '{db_name}' '{db_user}' '{db_pwd}'",
-                )
-            elif self.dbtype == "postgresql":
-                self._run_script(
-                    "provision",
-                    f"ynh_psql_create_user '{db_user}' '{db_pwd}'; ynh_psql_create_db '{db_name}' '{db_user}'",
-                )
+        from .database import mysql_create_db, mysql_db_exists
+        if not mysql_db_exists(db_name):
+            mysql_create_db(db_name, db_user, db_pwd)
+        for suffix in self.extra_dbs:
+            extra_db_name = f"{db_name}_{suffix}"
+            if not mysql_db_exists(extra_db_name):
+                mysql_create_db(extra_db_name, db_user, db_pwd)
 
     def deprovision(self) -> None:
         db_user = self.app.replace("-", "_").replace(".", "_")
-        db_name = self.get_setting("db_name") or db_user
+        db_name = self.get_setting("mysql_db_name") or db_user
 
-        if self.dbtype == "mysql":
-            db_helper_name = "mysql"
-        elif self.dbtype == "postgresql":
-            db_helper_name = "psql"
-        else:
-            raise RuntimeError(f"Invalid dbtype {self.dbtype}")
+        from .database import mysql_db_exists, mysql_user_exists, mysql_drop_db, mysql_drop_user
+        if mysql_db_exists(db_name):
+            mysql_drop_db(db_name)
+        for suffix in self.extra_dbs:
+            extra_db_name = f"{db_name}_{suffix}"
+            if not mysql_db_exists(extra_db_name):
+                mysql_drop_db(extra_db_name)
 
-        self._run_script(
-            "deprovision",
-            f"""
-ynh_{db_helper_name}_database_exists "{db_name}" && ynh_{db_helper_name}_drop_db "{db_name}" || true
-ynh_{db_helper_name}_user_exists "{db_user}" && ynh_{db_helper_name}_drop_user "{db_user}" || true
-""",
-        )
+        if mysql_user_exists(db_user):
+            mysql_drop_user(db_user)
 
-        self.delete_setting("db_name")
+        self.delete_setting("mysql_db_name")
+        self.delete_setting("mysql_db_user")
+        self.delete_setting("mysql_db_pwd")
+
+
+class PostgresqlAppResource(AppResource):
+    """
+    Initialize a Postgresql database. Relevant DB infos are stored in settings `$psql_db_name`, `$psql_db_user` and `$psql_db_pwd`.
+
+    NB: no automagic migration will happen if an app suddenly replaces a `postgresql` db with a `mysql` one or viceversa during its life.
+
+    ### Example
+
+    ```toml
+    [resources.postgresql]
+    # (empty should be fine for most apps... )
+    ```
+
+    ### Properties
+
+    - `extra_dbs`: A list of suffixes for additional DB to initialize. For example if $app is "helloworld" and extra_dbs is set to ["foo", "bar"], then DB "helloworld_foo" and "helloworld_bar" will be provisioned in addition to the regular "helloworld", with the same user/password credentials.
+
+    ### Provision/Update
+
+    - (Re)set the `$psql_db_name` and `$psql_db_user` settings with the sanitized app name (replacing `-` and `.` with `_`)
+    - If `$psql_db_pwd` doesn't already exists, pick a random database password and store it in that setting
+    - If the database doesn't exists yet, create the SQL user and DB
+
+    ### Deprovision
+
+    - Drop the DB
+    - Delete the settings
+
+    ### Legacy management
+
+    - When transitioning from packaging v2 [resources.database] to v3 [resources.postgresql] (or mysql), the setting are automatically renamed from db_name, db_user, db_pwd to the mysql/postgresql counterpart
+    """
+
+    # Notes for future?
+    # deep_clean  -> ... idk look into any db name that would not be related to any app...
+    # backup -> dump db
+    # restore -> setup + inject db dump
+
+    type = "postgresql"
+    multi = False
+
+    extra_dbs: List = []
+    exposed_properties: list[str] = ["extra_dbs"]
+
+    def description(self) -> str:
+        return m18n.n("app_resource_postgresql")
+
+    def convert_legacy_db_settings(self):
+        db_pwd = self.get_setting("db_pwd")
+        psql_db_pwd = self.get_setting("psql_db_pwd")
+        if db_pwd and not psql_db_pwd:
+            self.set_setting("psql_db_pwd", db_pwd)
+            self.delete_setting("db_pwd")
+        db_name = self.get_setting("db_name")
+        psql_db_name = self.get_setting("psql_db_name")
+        if db_name and not psql_db_name:
+            self.set_setting("psql_db_name", db_name)
+            self.delete_setting("db_name")
+        # This last one is always force-reset
+        # to $app (modulo - and . replaced to _)
         self.delete_setting("db_user")
-        self.delete_setting("db_pwd")
+
+    def provision_or_update(self) -> None:
+
+        self.convert_legacy_db_settings()
+
+        # Can't use the raw id directly because it may contain '-' or '.'
+        db_user = self.app.replace("-", "_").replace(".", "_")
+        db_name = self.get_setting("psql_db_name") or db_user
+        self.set_setting("psql_db_name", db_name)
+        self.set_setting("psql_db_user", db_user)
+
+        db_pwd = self.get_setting("psql_db_pwd")
+        if not db_pwd:
+            db_pwd = random_ascii(24)
+            self.set_setting("psql_db_pwd", db_pwd)
+
+        from .database import psql_create_db, psql_create_user, psql_db_exists
+        if not psql_db_exists(db_name):
+            psql_create_user(db_user, db_pwd); psql_create_db(db_name, db_user)
+        for suffix in self.extra_dbs:
+            extra_db_name = f"{db_name}_{suffix}"
+            if not psql_db_exists(extra_db_name):
+                psql_create_user(db_user, db_pwd); psql_create_db(db_name, db_user)
+
+    def deprovision(self) -> None:
+        db_user = self.app.replace("-", "_").replace(".", "_")
+        db_name = self.get_setting("psql_db_name") or db_user
+
+        from .database import psql_db_exists, psql_user_exists, psql_drop_db, psql_drop_user
+        if psql_db_exists(db_name):
+            psql_drop_db(db_name)
+        for suffix in self.extra_dbs:
+            extra_db_name = f"{db_name}_{suffix}"
+            if not psql_db_exists(extra_db_name):
+                psql_drop_db(extra_db_name)
+
+        if psql_user_exists(db_user):
+            psql_drop_user(db_user)
+
+        self.delete_setting("psql_db_name")
+        self.delete_setting("psql_db_user")
+        self.delete_setting("psql_db_pwd")
 
 
 class NodejsAppResource(AppResource):
