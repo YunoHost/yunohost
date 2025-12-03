@@ -27,12 +27,10 @@ YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
-mkdir -p "${YNH_CWD}"
-
 # Backup the configuration
 ynh_backup "/etc/ldap/ldap.conf"
-mkdir -p "${YNH_CWD%/}/ldap"
-slapcat -b cn=config -l "${YNH_CWD%/}/ldap/cn=config.master.ldif"
+mkdir "/ldap"
+slapcat -b cn=config -l "ldap/cn=config.master.ldif"
 
 # Backup the database
-slapcat -b dc=yunohost,dc=org -l "${YNH_CWD%/}/ldap/dc=yunohost-dc=org.ldif"
+slapcat -b dc=yunohost,dc=org -l "ldap/dc=yunohost-dc=org.ldif"
