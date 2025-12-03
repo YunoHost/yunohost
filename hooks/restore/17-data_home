@@ -26,13 +26,15 @@ YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
-if [ ! -e home ]; then
-    # Handle old backup way when we didn't keep the system hierarchy
-    for f in "${YNH_CWD%/}/"*; do
-        ynh_restore "${f#"$YNH_CWD"}"
-    done
-else
-    for f in "${YNH_CWD%/}/home/"*; do
-        ynh_restore "${f#"$YNH_CWD"}"
-    done
+if [ -d home ]; then
+    cd home
 fi
+
+# NB : we use 'find' to avoid using * / globbing which has possible pitfalls such as
+# nullglobs, not matching entries starting with dots, etc...
+# The printf %f allows to obtain only the file name, without the basedir in front
+for f in $(find ./ -mindepth 1 -prune -type d -printf '%f\n')
+do
+    ynh_restore "/home/${f}"
+done
+

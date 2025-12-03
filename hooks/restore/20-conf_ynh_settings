@@ -26,13 +26,12 @@ YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
-ynh_restore /etc/yunohost/current_host
-ynh_restore /etc/yunohost/firewall.yml
-# Note we need to handle the old and the new backup path
-# ${YNH_CWD}/etc/yunohost/permissions.yml is the new one whereas ${YNH_CWD}/permissions.yml is the old one
-{ [ ! -e "${YNH_CWD}/etc/yunohost/permissions.yml" ] && [ ! -e "${YNH_CWD}/permissions.yml" ]; } || ynh_restore /etc/yunohost/permissions.yml
-{ [ ! -d "${YNH_CWD}/etc/yunohost/portal" ] && [ ! -d "${YNH_CWD}/portal" ]; } || ynh_restore '/etc/yunohost/portal'
-{ [ ! -d "${YNH_CWD}/etc/yunohost/domains" ] && [ ! -d "${YNH_CWD}/domains" ]; } || ynh_restore '/etc/yunohost/domains'
-{ [ ! -e "${YNH_CWD}/etc/yunohost/settings.yml" ] && [ ! -e "${YNH_CWD}/settings.yml" ]; } || ynh_restore '/etc/yunohost/settings.yml'
-{ [ ! -d "${YNH_CWD}/etc/yunohost/dyndns" ] && [ ! -d "${YNH_CWD}/dyndns" ]; } || ynh_restore '/etc/yunohost/dyndns'
-{ [ ! -d "${YNH_CWD}/etc/dkim" ] && [ ! -d "${YNH_CWD}/dkim" ]; } || ynh_restore '/etc/dkim'
+ynh_restore '/etc/yunohost/current_host'
+ynh_restore '/etc/yunohost/firewall.yml'
+# NB : these may not exists on some older backups
+ynh_restore '/etc/yunohost/permissions.yml' || true
+ynh_restore '/etc/yunohost/portal' || true
+ynh_restore '/etc/yunohost/domains' || true
+ynh_restore '/etc/yunohost/settings.yml' || true
+ynh_restore '/etc/yunohost/dyndns' || true
+ynh_restore '/etc/dkim' || true

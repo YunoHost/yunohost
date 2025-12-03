@@ -26,8 +26,6 @@ YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
-backup_dir="${YNH_CWD%/}"
-
 systemctl stop slapd
 
 # Create a directory for backup
@@ -59,19 +57,15 @@ die() {
 mv /etc/ldap/slapd.d "$TMPDIR"
 mkdir -p /etc/ldap/slapd.d
 ynh_restore /etc/ldap/ldap.conf
-# Legacy thing but we need it to force the regen-conf in case of it exist
-{ [ ! -e "${backup_dir}/ldap/slapd.conf" ] && [ ! -d "${YNH_CWD%/}/etc/ldap/slapd.conf" ]; } \
-    || cp -a "${backup_dir}/slapd.conf" /etc/ldap/slapd.conf
-slapadd -F /etc/ldap/slapd.d -b cn=config \
-    -l "${backup_dir}/ldap/cn=config.master.ldif" \
+
+slapadd -F /etc/ldap/slapd.d -b cn=config -l "./ldap/cn=config.master.ldif" \
     || die 1 "Unable to restore LDAP configuration"
 chown -R openldap: /etc/ldap/slapd.d
 
 # Restore the database
 mv /var/lib/ldap "$TMPDIR"
 mkdir -p /var/lib/ldap
-slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org \
-    -l "${backup_dir}/ldap/dc=yunohost-dc=org.ldif" \
+slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org -l "./ldap/dc=yunohost-dc=org.ldif" \
     || die 2 "Unable to restore LDAP database"
 chown -R openldap: /var/lib/ldap
 
