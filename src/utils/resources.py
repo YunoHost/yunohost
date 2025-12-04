@@ -18,92 +18,208 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import copy
+# mypy: disallow_untyped_defs
+
 import os
 import random
+import re
 import shutil
 import subprocess
 import tempfile
+import time
+from pathlib import Path
+from pydantic import BaseModel
 from logging import getLogger
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, List, Union, Literal, Iterator, TYPE_CHECKING
 
 from moulinette import m18n
 
-from ..utils.error import YunohostError, YunohostValidationError
-from ..utils.system import debian_version, debian_version_id, system_arch
-from .file_utils import chmod, chown, mkdir, rm, write_to_file
+from .file_utils import chmod, chown, mkdir, rm, cp
+from .error import YunohostError, YunohostValidationError, YunohostPackagingError
 from .misc import random_ascii
 from .process import check_output
+from .system import system_arch
+
+if TYPE_CHECKING:
+    from ..log import OperationLogger
 
 logger = getLogger("yunohost.utils.resources")
 
+# We have two dirs, the "tmp" is for ephemeral source storage
+# during app install/upgrade/... + making them available to the $app user
+SOURCES_TMP_DIR = "/var/tmp/yunohost/download/"
+# The 'cache' one caches the assets for 24 hours (just to not have to
+# re-download them everytime we do something we the same app, which is
+# especially a waste during tests)
+SOURCES_CACHE_DIR = "/var/cache/yunohost/appsources/"
+N_INSTALL_DIR = "/opt/node_n"
+RBENV_ROOT = "/opt/rbenv"
+GOENV_ROOT = "/opt/goenv"
+
+IFClause = bool | str
+
+
+def evaluate_if_clause(if_clause: str, env: dict[str, Any]) -> bool:
+    from .eval import evaluate_simple_js_expression
+    from ..app import _hydrate_app_template
+    if_clause_hydrated = _hydrate_app_template(if_clause, env, raise_exception_if_missing_var=True)
+    try:
+        return evaluate_simple_js_expression(if_clause_hydrated, env)
+    except KeyError as e:
+        logger.error(f"Failed to interpret if clause « {if_clause} »")
+        if re.search(r"[A-Z0-9]__\s*[=!]+\s*['\"]\w", if_clause):
+            logger.error("Beware that when comparing __FOO__ to a string, __FOO__ should itself be wrapped in quotes")
+        raise e
+
+
+AppResourceTodo = \
+    tuple[Literal["provision"], tuple[str, str], None, "AppResource"] | \
+    tuple[Literal["update"], tuple[str, str], "AppResource", "AppResource"] | \
+    tuple[Literal["deprovision"], tuple[str, str], "AppResource", None]
+
 
 class AppResourceManager:
-    def __init__(self, app: str, current: Dict, wanted: Dict, workdir=None):
+
+    def __init__(self, app: str, current: Dict, wanted: Dict, env: dict[str, Any]):
         self.app = app
         self.current = current
         self.wanted = wanted
-        self.workdir = workdir
+        self.env = env
 
         if "resources" not in self.current:
             self.current["resources"] = {}
         if "resources" not in self.wanted:
             self.wanted["resources"] = {}
 
+        self.todos = self.compute_todos(env)
+
+    def compute_todos(self, env: dict[str, Any]) -> dict[str, list["AppResourceTodo"]]:
+
+        current = {(r.type, r.id): r for r in self.load_resources(self.current, env)}
+        wanted = {(r.type, r.id): r for r in self.load_resources(self.wanted, env)}
+
+        todos_by_type: dict[str, list["AppResourceTodo"]] = {}
+
+        for type_and_id, res in reversed(current.items()):
+            type_, id_ = type_and_id
+            if type_and_id not in wanted.keys():
+                if type_ not in todos_by_type:
+                    todos_by_type[type_] = []
+                todos_by_type[type_].append(("deprovision", type_and_id, res, None))
+
+        for type_and_id, res in wanted.items():
+            type_, id_ = type_and_id
+            if type_ not in todos_by_type:
+                todos_by_type[type_] = []
+            if type_and_id not in current.keys():
+                todos_by_type[type_].append(("provision", type_and_id, None, res))
+            else:
+                todos_by_type[type_].append(("update", type_and_id, current[type_and_id], res))
+
+        return todos_by_type
+
+    # FIXME: hmgnnnnn this is a bit hackish
+    def before_regen_conf(self) -> None:
+
+        for type_, todos in self.todos.items():
+            for todo, name, old, new in todos:
+                if todo in ["provision", "update"] and hasattr(new, "before_regen_conf"):
+                    assert new
+                    new.before_regen_conf()
+
     def apply(
-        self, rollback_and_raise_exception_if_failure, operation_logger=None, **context
-    ):
-        todos = list(self.compute_todos())
-        completed = []
+        self,
+        rollback_and_raise_exception_if_failure: bool,
+        operation_logger: Union["OperationLogger", None] = None
+    ) -> None:
+
+        completed: dict[str, list] = {type_: [] for type_ in self.todos.keys()}
         rollback = False
         exception = None
 
-        for todo, name, old, new in todos:
-            try:
-                if todo == "deprovision":
-                    # FIXME : i18n, better info strings
-                    logger.info(f"Deprovisioning {name}...")
-                    old.deprovision(context=context)
-                elif todo == "provision":
-                    logger.info(f"Provisioning {name}...")
-                    new.provision_or_update(context=context)
-                elif todo == "update":
-                    logger.info(f"Updating {name}...")
-                    new.provision_or_update(context=context)
-            except (KeyboardInterrupt, Exception) as e:
-                exception = e
-                if isinstance(e, KeyboardInterrupt):
-                    logger.error(m18n.n("operation_interrupted"))
-                else:
-                    logger.warning(f"Failed to {todo} {name} : {e}")
-                if rollback_and_raise_exception_if_failure:
-                    rollback = True
-                    completed.append((todo, name, old, new))
-                    break
-                else:
-                    pass
-            else:
-                completed.append((todo, name, old, new))
-
-        if rollback:
-            for todo, name, old, new in completed:
+        for type_, todos in self.todos.items():
+            for todo, name, old, new in todos:
+                _, id_ = name
                 try:
-                    # (NB. here we want to undo the todo)
                     if todo == "deprovision":
-                        # FIXME : i18n, better info strings
-                        logger.info(f"Reprovisioning {name}...")
-                        old.provision_or_update(context=context)
+                        assert old
+                        logger.info(m18n.n("app_resource_deprovision", resource=old.description_with_id()))
+                        old.deprovision()
                     elif todo == "provision":
-                        logger.info(f"Deprovisioning {name}...")
-                        new.deprovision(context=context)
+                        assert new
+                        logger.info(m18n.n("app_resource_provision", resource=new.description_with_id()))
+                        new.provision_or_update()
                     elif todo == "update":
-                        logger.info(f"Reverting {name}...")
-                        old.provision_or_update(context=context)
+                        assert new
+                        logger.info(m18n.n("app_resource_update", resource=new.description_with_id()))
+                        new.provision_or_update()
                 except (KeyboardInterrupt, Exception) as e:
+                    exception = e
                     if isinstance(e, KeyboardInterrupt):
                         logger.error(m18n.n("operation_interrupted"))
                     else:
-                        logger.error(f"Failed to rollback {name} : {e}")
+                        logger.warning(f"Failed to {todo} {name} : {e}")
+                    if rollback_and_raise_exception_if_failure:
+                        rollback = True
+                        completed[type_].append((todo, name, old, new))
+                        break
+                    else:
+                        # We actually want to continue if rollback_and_raise_exception_if_failure is False
+                        # for example in the context of a remove script, we want to cleanup as much as possible
+                        # even if for some reason some stuff may fail to get cleaned up
+                        pass
+                else:
+                    completed[type_].append((todo, name, old, new))
+
+            if rollback:
+                break
+
+            if hasattr(AppResourceClassesByType[type_], "grouped_trigger_after_apply"):
+                completed_for_this_type = [(old if todo == "deprovision" else new) for todo, _, old, new in completed[type_]]
+                try:
+                    AppResourceClassesByType[type_].grouped_trigger_after_apply(completed_for_this_type)
+                except (KeyboardInterrupt, Exception) as e:
+                    logger.warning(f"Failed to propagate changes related to {type_} : {e}")
+                    if rollback_and_raise_exception_if_failure:
+                        rollback = True
+                        break
+
+        if rollback:
+            rollbacked: dict[str, list["AppResourceTodo"]] = {type_: [] for type_ in completed.keys()}
+            for type_, completed_for_this_type in completed.items():
+                for todo, name, old, new in completed_for_this_type:
+                    try:
+                        # (NB. here we want to undo the todo)
+                        if todo == "deprovision":
+                            logger.info(m18n.n("app_resource_reprovision", resource=old.description_with_id()))
+                            assert old
+                            old.provision_or_update()
+                        elif todo == "provision":
+                            logger.info(m18n.n("app_resource_deprovision", resource=new.description_with_id()))
+                            assert new
+                            new.deprovision()
+                        elif todo == "update":
+                            logger.info(f"Reverting {name}...")
+                            logger.info(m18n.n("app_resource_revert", resource=old.description_with_id()))
+                            assert old
+                            old.provision_or_update()
+                    except (KeyboardInterrupt, Exception) as e:
+                        if isinstance(e, KeyboardInterrupt):
+                            logger.error(m18n.n("operation_interrupted"))
+                        else:
+                            logger.error(f"Failed to rollback {name} : {e}")
+                    else:
+                        rollbacked[type_].append((todo, name, old, new))
+
+                if hasattr(AppResourceClassesByType[type_], "grouped_trigger_after_apply"):
+                    rollbacked_for_this_type = [(new if todo == "provision" else old) for todo, _, old, new in rollbacked[type_]]
+                    try:
+                        AppResourceClassesByType[type_].grouped_trigger_after_apply(rollbacked_for_this_type)
+                    except (KeyboardInterrupt, Exception) as e:
+                        logger.warning(f"Failed to propagate changes related to {type_}'s rollback : {e}")
+                        if rollback_and_raise_exception_if_failure:
+                            rollback = True
+                            break
 
         if exception:
             if rollback_and_raise_exception_if_failure:
@@ -114,6 +230,11 @@ class AppResourceManager:
                     failure_message_with_debug_instructions = operation_logger.error(
                         str(exception)
                     )
+                    # FIXME : tmp, this shouldnt be needed, that's to debug an issue on the CI I dont reproduce ...
+                    if failure_message_with_debug_instructions is None:
+                        print(operation_logger.ended_at)
+                        print(operation_logger.started_at)
+                        failure_message_with_debug_instructions = exception
                     raise YunohostError(
                         failure_message_with_debug_instructions, raw_msg=True
                     )
@@ -122,196 +243,179 @@ class AppResourceManager:
             else:
                 logger.error(exception)
 
-    def compute_todos(self):
-        for name, infos in reversed(self.current["resources"].items()):
-            if name not in self.wanted["resources"].keys():
-                resource = AppResourceClassesByType[name](infos, self.app, self)
-                yield ("deprovision", name, resource, None)
+    def load_resources(self, manifest: dict[str, dict[str, Any]], env: dict[str, Any]) -> Iterator["AppResource"]:
 
-        for name, infos in self.wanted["resources"].items():
-            wanted_resource = AppResourceClassesByType[name](infos, self.app, self)
-            if name not in self.current["resources"].keys():
-                yield ("provision", name, None, wanted_resource)
+        resources: dict[str, dict[str, Any]] = manifest["resources"]
+        # NB: the "manifest" may actually be basically empty for cases like install
+        # where the current state is empty
+        packaging_format = float(manifest.get("packaging_format", 0))  # type: ignore[arg-type]
+
+        for type_, res_properties in resources.items():
+
+            res_properties = res_properties.copy()
+
+            if packaging_format < 3 and type_ == "database":
+                dbtype = res_properties.get("type") or res_properties.get("dbtype")
+                assert dbtype in ["mysql", "postgresql"]
+                type_ = db_type
+                res_properties = {}
+
+            if type_ not in AppResourceClassesByType:
+                raise YunohostPackagingError(f"Unknown resource type {type_}")
+
+            ResourceClass = AppResourceClassesByType[type_]
+
+            # Handle compabitibility with packaging v2 because some properties names changes since then
+            if packaging_format < 3 and hasattr(ResourceClass, "convert_packaging_v2_props"):
+                ResourceClass.convert_packaging_v2_props(res_properties)
+
+            multi = ResourceClass.__fields__["multi"].default
+            if not multi:
+                res_properties = {"main": res_properties}
             else:
-                infos_ = self.current["resources"][name]
-                current_resource = AppResourceClassesByType[name](
-                    infos_, self.app, self
+                # Make sure we have a "main" property and that it's first in the list
+                res_properties = {"main": res_properties.pop("main", {}), **res_properties}
+
+            # Iterate on other confs than "main"
+            for key, values in res_properties.items():
+
+                if not isinstance(values, dict):
+                    raise YunohostPackagingError(
+                        f"Uhoh, in {type_} resource properties, {key} should be associated with a dict ... (did you meant <res_id>.{key} ?)"
+                    )
+
+                if_clause = values.pop("if") if "if" in values else None
+                if if_clause is not None and not evaluate_if_clause(if_clause, self.env):
+                    logger.debug(f"Skipping resource {type_}.{key} because 'if' clause is not met")
+                    continue
+                logger.debug(f"Loading resource {type_}.{key}")
+                ResourceClass.validate_properties_from_package(**values)
+                # Boring hack because apt needs a version number for the virtual dependency
+                if type_ == "apt":
+                    values["version"] = manifest.get("version", "0.0").split("~")[0]
+                yield ResourceClass(
+                    **values,
+                    id=key,
+                    env=env,
+                    type=type_,
+                    app=self.app,
                 )
-                yield ("update", name, current_resource, wanted_resource)
 
 
-class AppResource:
-    type: str = ""
-    default_properties: Dict[str, Any] = {}
+class AppResource(BaseModel):
 
-    def __init__(self, properties: Dict[str, Any], app: str, manager=None):
-        self.app = app
-        self.workdir = manager.workdir if manager else None
-        properties = self.default_properties | properties
+    id: str
+    app: str
+    type: str
+    workdir: str | None = None
+    multi: bool = False
+    exposed_properties: list[str]
+    helpers_version: float = 0
 
-        # It's not guaranteed that this info will be defined, e.g. during unit tests, only small resource snippets are used, not proper manifests
-        app_upstream_version = ""
-        if manager and manager.wanted and "version" in manager.wanted:
-            app_upstream_version = manager.wanted["version"].split("~")[0]
-        elif manager and manager.current and "version" in manager.current:
-            app_upstream_version = manager.current["version"].split("~")[0]
+    def description(self) -> str:
+        return self.type
 
-        # FIXME : should use packaging.version to properly parse / compare versions >_>
-        self.helpers_version: float = 0
-        if (
-            manager
-            and manager.wanted
-            and manager.wanted.get("integration", {}).get("helpers_version")
-        ):
-            self.helpers_version = float(
-                manager.wanted.get("integration", {}).get("helpers_version")
-            )
-        elif (
-            manager
-            and manager.current
-            and manager.current.get("integration", {}).get("helpers_version")
-        ):
-            self.helpers_version = float(
-                manager.current.get("integration", {}).get("helpers_version")
-            )
-        elif manager and manager.wanted and manager.wanted.get("packaging_format"):
-            self.helpers_version = float(manager.wanted.get("packaging_format"))
-        elif manager and manager.current and manager.current.get("packaging_format"):
-            self.helpers_version = float(manager.current.get("packaging_format"))
-        if not self.helpers_version:
-            self.helpers_version = 1.0
+    def description_with_id(self) -> str:
+        return self.description() + ("" if self.id == "main" else f" ({self.id})")
 
-        replacements: dict[str, str] = {
-            "__APP__": self.app,
-            "__YNH_ARCH__": system_arch(),
-            "__YNH_DEBIAN_VERSION__": debian_version(),
-            "__YNH_DEBIAN_VERSION_ID__": debian_version_id(),
-            "__YNH_APP_UPSTREAM_VERSION__": app_upstream_version,
-        }
+    @classmethod
+    def validate_properties_from_package(cls, **props) -> None:  # type: ignore[no-untyped-def]
 
-        def recursive_apply(function: Callable, data: Any) -> Any:
-            if isinstance(data, dict):  # FIXME: hashable?
+        exposed_properties = cls.__fields__["exposed_properties"].default
+        incorrect_properties = [k for k in props.keys() if k not in exposed_properties]
+        if incorrect_properties:
+            cls_type = cls.__fields__["type"].default
+            raise YunohostPackagingError(f"Uhoh, the following properties are unknown / not exposed for {cls_type}-type resources: {', '.join(incorrect_properties)}")
+
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
+
+        env = kwargs.pop("env")
+
+        try:
+            super().__init__(**kwargs)
+        except Exception as e:
+            raise YunohostPackagingError(f"Failed to load resource {kwargs.get('type')}.{kwargs.get('id')}: " + str(e))
+
+        self.helpers_version = float(env["YNH_HELPERS_VERSION"])
+        self.workdir = env.get("YNH_APP_BASEDIR")
+        self.hydrate_properties(env=env)
+
+    def hydrate_properties(self, env: dict[str, Any]) -> None:
+
+        # FIXME : recheck support for YNH_DEBIAN_VERSION, YNH_APP_UPSTREAM_VERSION etc
+
+        def _recursive_apply(function: Callable, data: Any) -> Any:
+            if isinstance(data, dict):
                 return {
-                    key: recursive_apply(function, value) for key, value in data.items()
+                    key: _recursive_apply(function, value) for key, value in data.items()
                 }
 
-            if isinstance(data, list):  # FIXME: iterable?
-                return [recursive_apply(function, value) for value in data]
+            if isinstance(data, list):
+                return [_recursive_apply(function, value) for value in data]
 
             return function(data)
 
-        def replace_tokens_in_strings(data: Any):
-            if not isinstance(data, str):
-                return data
-            for token, replacement in replacements.items():
-                data = data.replace(token, replacement)
+        def _hydrate(value: str) -> str:
+            from ..app import _hydrate_app_template
+            if not isinstance(value, str):
+                return value
+            return _hydrate_app_template(
+                value,
+                env,
+                raise_exception_if_missing_var=True,
+            )
 
-            return data
+        for key, value in dict(self).items():
+            if isinstance(value, (str, list, dict)):
+                setattr(self, key, _recursive_apply(_hydrate, value))
 
-        properties = recursive_apply(replace_tokens_in_strings, properties)
-
-        for key, value in properties.items():
-            setattr(self, key, value)
-
-    def get_setting(self, key):
+    def get_setting(self, key: str) -> Any:
         from ..app import app_setting
-
         return app_setting(self.app, key)
 
-    def set_setting(self, key, value):
+    def set_setting(self, key: str, value: Any) -> None:
         from ..app import app_setting
-
         app_setting(self.app, key, value=value)
 
-    def delete_setting(self, key):
+    def delete_setting(self, key: str) -> None:
         from ..app import app_setting
-
         app_setting(self.app, key, delete=True)
 
-    def check_output_bash_snippet(self, snippet, env={}):
+    def check_output_bash_snippet(self, snippet: str) -> tuple[str, str]:
         from ..app import _make_environment_for_app_script
 
-        env_ = _make_environment_for_app_script(
+        env = _make_environment_for_app_script(
             self.app,
             force_include_app_settings=True,
         )
-        env_.update(env)
 
         with tempfile.NamedTemporaryFile(prefix="ynh_") as fp:
             fp.write(snippet.encode())
             fp.seek(0)
             with tempfile.TemporaryFile() as stderr:
-                out = check_output(f"bash {fp.name}", env=env_, stderr=stderr)
+                out = check_output(f"bash {fp.name}", env=env, stderr=stderr)
 
                 stderr.seek(0)
                 err = stderr.read().decode()
 
         return out, err
 
-    def _run_script(self, action, script, env={}):
-        from ..app import (
-            _make_environment_for_app_script,
-            _make_tmp_workdir_for_app,
-        )
-        from ..hook import hook_exec_with_script_debug_if_failure
-
-        workdir = self.workdir or _make_tmp_workdir_for_app(app=self.app)
-
-        env_ = _make_environment_for_app_script(
+    def _run_script(self, action: str, script: str, env: dict = {}) -> None:
+        from ..app import _run_app_script_or_snippet
+        _run_app_script_or_snippet(
             self.app,
-            workdir=workdir,
-            action=f"{action}_{self.type}",
-            force_include_app_settings=True,
+            f"{action}_{self.type}",
+            script,
+            env={"YNH_HELPERS_VERSION": str(self.helpers_version).replace(".0", "")},
+            workdir=self.workdir,
+            raise_exception_if_failure=True
         )
-        env_.update(env)
 
-        script_path = f"{workdir}/{action}_{self.type}"
-        script = f"""
-source /usr/share/yunohost/helpers
-ynh_abort_if_errors
+    def provision_or_update(self) -> None:
+        raise NotImplementedError
 
-{script}
-"""
-
-        write_to_file(script_path, script)
-
-        from ..log import OperationLogger
-
-        # FIXME ? : this is an ugly hack :(
-        active_operation_loggers = [
-            o for o in OperationLogger._instances if o.ended_at is None
-        ]
-        if active_operation_loggers:
-            operation_logger = active_operation_loggers[-1]
-        else:
-            operation_logger = OperationLogger(
-                "resource_snippet", [("app", self.app)], env=env_
-            )
-            operation_logger.start()
-
-        try:
-            (
-                call_failed,
-                failure_message_with_debug_instructions,
-            ) = hook_exec_with_script_debug_if_failure(
-                script_path,
-                env=env_,
-                operation_logger=operation_logger,
-                error_message_if_script_failed="An error occured inside the script snippet",
-                error_message_if_failed=lambda e: f"{action} failed for {self.type} : {e}",
-            )
-        finally:
-            if call_failed:
-                raise YunohostError(
-                    failure_message_with_debug_instructions, raw_msg=True
-                )
-            else:
-                # FIXME: currently in app install code, we have
-                # more sophisticated code checking if this broke something on the system etc.
-                # dunno if we want to do this here or manage it elsewhere
-                pass
-
-        # print(ret)
+    def deprovision(self) -> None:
+        raise NotImplementedError
 
 
 class SourcesResource(AppResource):
@@ -450,64 +554,109 @@ class SourcesResource(AppResource):
     """
 
     type = "sources"
-    priority = 10
+    multi = True
 
-    default_sources_properties: Dict[str, Any] = {
-        "prefetch": True,
-        "url": None,
-        "sha256": None,
-    }
+    url: str | dict[Literal["amd64", "i386", "armhf", "arm64"], str]
+    sha256: str | dict[Literal["amd64", "i386", "armhf", "arm64"], str]
+    prefetch: bool = True
+    format: str | None = None
+    in_subdir: bool | None = None
+    extract: bool | None = None
+    rename: str | None = None
+    platform: str | None = None
+    autoupdate: dict | None = None
 
-    sources: Dict[str, Dict[str, Any]] = {}
+    exposed_properties: list[str] = ["prefetch", "url", "sha256", "prefetch", "format", "in_subdir", "extract", "rename", "platform", "autoupdate"]
 
-    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
-        for source_id, infos in properties.items():
-            properties[source_id] = copy.copy(self.default_sources_properties)
-            properties[source_id].update(infos)
+    action_is_restore: str | None
 
-        super().__init__({"sources": properties}, *args, **kwargs)
+    def description(self) -> str:
+        return m18n.n("app_resource_sources")
 
-    def deprovision(self, context: Dict = {}):
-        if os.path.isdir(f"/var/cache/yunohost/download/{self.app}/"):
-            rm(f"/var/cache/yunohost/download/{self.app}/", recursive=True)
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
-    def provision_or_update(self, context: Dict = {}):
+        # Writing 'amd64.url = ...' in the manifest is practical and neat,
+        # but not easy to handle in term of datastructure and typing
+        # hence we invert it to have url (str) = "..."" (arch-agnostic) or url (dict[Literal, str]) = {'amd64': "...", ...} (arch-specific)
+        url_per_arch = {}
+        sha256_per_arch = {}
+        for arch in ["amd64", "i386", "armhf", "arm64"]:
+            if arch in kwargs:
+                if not isinstance(kwargs[arch], dict) or "url" not in kwargs[arch] or "sha256" not in kwargs[arch]:
+                    raise YunohostPackagingError(f"Uhoh, it sounds like there's an issue when parsing arch-specific info for source '{kwargs['id']}', expected to find a dict with an 'url' and 'sha256' key")
+                arch_infos = kwargs.pop(arch)
+                url_per_arch[arch] = arch_infos["url"]
+                sha256_per_arch[arch] = arch_infos["sha256"]
+
+        if url_per_arch:
+            if "url" in kwargs or "sha256" in kwargs:
+                raise YunohostPackagingError(f"Packager, you can't mix arch-specific and arch-agnostic url/sha256 (when initializing source '{kwargs['id']}')")
+            kwargs["url"] = url_per_arch
+            kwargs["sha256"] = sha256_per_arch
+
+        super().__init__(**kwargs)
+
+        self.action_is_restore = kwargs["env"].get("YNH_APP_ACTION") == "restore"
+
+    def deprovision(self) -> None:
+        tmp_dir = Path(SOURCES_TMP_DIR) / self.app
+        tmp_file = tmp_dir / self.id
+        if tmp_file.exists():
+            tmp_file.unlink()
+        if tmp_dir.exists() and not list(tmp_dir.iterdir()):
+            tmp_dir.rmdir()
+
+    def provision_or_update(self) -> None:
         # Don't prefetch stuff during restore
-        if context.get("action") == "restore":
+        if self.action_is_restore == "restore":
             return
 
-        for source_id, infos in self.sources.items():
-            if not infos["prefetch"]:
-                continue
+        cache_dir = Path(SOURCES_CACHE_DIR)
+        cache_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+        # Cleanup files older than 24h, just so that this cache doesn't grow over time...
+        for file in cache_dir.iterdir():
+            if file.is_file() and (time.time() - file.stat().st_ctime) > 24 * 3600:
+                file.unlink()
 
-            if infos["url"] is None:
-                arch = system_arch()
-                if (
-                    arch in infos
-                    and isinstance(infos[arch], dict)
-                    and isinstance(infos[arch].get("url"), str)
-                    and isinstance(infos[arch].get("sha256"), str)
-                ):
-                    self.prefetch(source_id, infos[arch]["url"], infos[arch]["sha256"])
-                else:
-                    raise YunohostError(
-                        f"In resources.sources: it looks like you forgot to define url/sha256 or {arch}.url/{arch}.sha256",
-                        raw_msg=True,
-                    )
+        tmp_dir = Path(SOURCES_TMP_DIR) / self.app
+        tmp_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+        # We later give ownership to $app in the system_user
+        chown(str(tmp_dir), "root", recursive=True)
+
+        if not self.prefetch:
+            return
+
+        if isinstance(self.url, dict):
+            assert isinstance(self.sha256, dict)
+            arch = system_arch()
+            if arch not in self.url:
+                raise YunohostPackagingError(
+                    f"In resources.sources: it looks like you forgot to define url/sha256 or {arch}.url/{arch}.sha256"
+                )
+            url = self.url[arch]
+            sha256 = self.sha256[arch]
+        else:
+            url = self.url
+            assert isinstance(self.sha256, str) and self.sha256.isalnum(), f"sha256 sums are expected to be purely alphanumeric (culprit: {self.sha256})"
+            sha256 = self.sha256
+
+        # Check if we already have a cache for this
+        if (cache_dir / sha256).exists():
+            existing_cache = cache_dir / sha256
+            computed_sha256 = check_output(f"sha256sum {existing_cache}").split()[0]
+            if computed_sha256 != sha256:
+                logger.warning(f"Uhoh, asset {existing_cache} doesnt match the checksum ?")
             else:
-                if infos["sha256"] is None:
-                    raise YunohostError(
-                        f"In resources.sources: it looks like the sha256 is missing for {source_id}",
-                        raw_msg=True,
-                    )
-                self.prefetch(source_id, infos["url"], infos["sha256"])
+                logger.debug(f"Reusing cache from {existing_cache}")
+                cp(str(existing_cache), str(tmp_dir / self.id))
+                return
 
-    def prefetch(self, source_id, url, expected_sha256):
-        logger.debug(f"Prefetching asset {source_id}: {url} ...")
+        self.prefetch_asset(url, sha256)
 
-        if not os.path.isdir(f"/var/cache/yunohost/download/{self.app}/"):
-            mkdir(f"/var/cache/yunohost/download/{self.app}/", parents=True)
-        filename = f"/var/cache/yunohost/download/{self.app}/{source_id}"
+    def prefetch_asset(self, url: str, expected_sha256: str) -> None:
+        logger.debug(f"Prefetching asset {self.id}: {url} ...")
+
+        tmp_file = Path(SOURCES_TMP_DIR) / self.app / self.id
 
         # NB: we use wget and not requests.get() because we want to output to a file (ie avoid ending up with the full archive in RAM)
         # AND the nice --tries, --no-dns-cache, --timeout options ...
@@ -518,7 +667,7 @@ class SourcesResource(AppResource):
                 "--no-dns-cache",
                 "--timeout=900",
                 "--no-verbose",
-                "--output-document=" + filename,
+                "--output-document=" + str(tmp_file),
                 url,
             ],
             stdout=subprocess.PIPE,
@@ -527,33 +676,37 @@ class SourcesResource(AppResource):
         out, _ = p.communicate()
         returncode = p.returncode
         if returncode != 0:
-            if os.path.exists(filename):
-                rm(filename)
+            if tmp_file.exists():
+                tmp_file.unlink()
             raise YunohostError(
                 "app_failed_to_download_asset",
-                source_id=source_id,
+                source_id=self.id,
                 url=url,
                 app=self.app,
                 out=out.decode(),
             )
 
-        assert os.path.exists(filename), (
-            f"For some reason, wget worked but {filename} doesnt exists?"
+        assert tmp_file.exists(), (
+            f"For some reason, wget worked but {tmp_file} doesnt exists?"
         )
 
-        computed_sha256 = check_output(f"sha256sum {filename}").split()[0]
+        computed_sha256 = check_output(f"sha256sum {tmp_file}").split()[0]
         if computed_sha256 != expected_sha256:
-            size = check_output(f"du -hs {filename}").split()[0]
-            rm(filename)
+            size = check_output(f"du -hs {tmp_file}").split()[0]
+            tmp_file.unlink()
             raise YunohostError(
                 "app_corrupt_source",
-                source_id=source_id,
+                source_id=self.id,
                 url=url,
                 app=self.app,
                 expected_sha256=expected_sha256,
                 computed_sha256=computed_sha256,
                 size=size,
             )
+
+        # Save as "real cache" (urhg) as well,
+        # to avoid re-downloading this multiple time in the near future
+        cp(str(tmp_file), str(Path(SOURCES_CACHE_DIR) / expected_sha256))
 
 
 class PermissionsResource(AppResource):
@@ -605,90 +758,36 @@ class PermissionsResource(AppResource):
     # restore -> handled by the core, should be integrated in there (restore .ldif/yml?)
 
     type = "permissions"
-    priority = 80
+    multi = True
 
-    default_properties: Dict[str, Any] = {}
+    url: str | None = None
+    additional_urls: list[str] = []
+    auth_header: bool = True
+    allowed: str | list[str] | None = None
+    show_tile: bool | None = None  # Automagically set to True by default if an url is defined and show_tile not provided
+    protected: bool = False
 
-    default_perm_properties: Dict[str, Any] = {
-        "url": None,
-        "additional_urls": [],
-        "auth_header": True,
-        "allowed": None,
-        "show_tile": None,  # To be automagically set to True by default if an url is defined and show_tile not provided
-        "protected": False,
-    }
+    exposed_properties: list[str] = ["url", "additional_urls", "auth_header", "allowed", "show_tile", "protected"]
 
-    permissions: Dict[str, Dict[str, Any]] = {}
+    def description(self) -> str:
+        return m18n.n("app_resource_permission")
 
-    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
         # FIXME : if url != None, we should check that there's indeed a domain/path defined ? ie that app is a webapp
 
-        # Validate packager-provided infos
-        for perm, infos in properties.items():
-            if "auth_header" in infos and not isinstance(
-                infos.get("auth_header"), bool
-            ):
-                raise YunohostError(
-                    f"In manifest, for permission '{perm}', 'auth_header' should be a boolean",
-                    raw_msg=True,
-                )
-            if "show_tile" in infos and not isinstance(infos.get("show_tile"), bool):
-                raise YunohostError(
-                    f"In manifest, for permission '{perm}', 'show_tile' should be a boolean",
-                    raw_msg=True,
-                )
-            if "protected" in infos and not isinstance(infos.get("protected"), bool):
-                raise YunohostError(
-                    f"In manifest, for permission '{perm}', 'protected' should be a boolean",
-                    raw_msg=True,
-                )
-            if "additional_urls" in infos and not isinstance(
-                infos.get("additional_urls"), list
-            ):
-                raise YunohostError(
-                    f"In manifest, for permission '{perm}', 'additional_urls' should be a list",
-                    raw_msg=True,
-                )
+        if "show_tile" not in kwargs and isinstance(kwargs.get("url"), str):
+            kwargs["show_tile"] = True
 
-        if "main" not in properties:
-            properties["main"] = copy.copy(self.default_perm_properties)
-
-        for perm, infos in properties.items():
-            properties[perm] = copy.copy(self.default_perm_properties)
-            properties[perm].update(infos)
-            if properties[perm]["show_tile"] is None:
-                properties[perm]["show_tile"] = bool(properties[perm]["url"])
-
-        if properties["main"]["url"] is not None and (
-            not isinstance(properties["main"].get("url"), str)
-            or properties["main"]["url"] != "/"
-        ):
-            raise YunohostError(
-                "URL for the 'main' permission should be '/' for webapps (or left undefined for non-webapps). Note that / refers to the install url of the app, i.e $domain.tld/$path/",
-                raw_msg=True,
+        if kwargs["id"] == "main" and kwargs.get("url") not in [None, "/"]:
+            raise YunohostPackagingError(
+                "URL for the 'main' permission should be '/' for webapps (or left undefined for non-webapps). Note that / refers to the install url of the app, i.e $domain.tld/$path/"
             )
 
-        super().__init__({"permissions": properties}, *args, **kwargs)
+        super().__init__(**kwargs)
 
-        from ..app import _get_app_settings, _hydrate_app_template
-
-        settings = _get_app_settings(self.app)
-        for perm, infos in self.permissions.items():
-            if infos.get("url") and "__" in infos.get("url"):  # type: ignore
-                infos["url"] = _hydrate_app_template(infos["url"], settings)
-
-            if infos.get("additional_urls"):
-                infos["additional_urls"] = [
-                    _hydrate_app_template(url, settings)
-                    for url in infos["additional_urls"]
-                ]
-
-    def provision_or_update(self, context: Dict = {}):
-        from ..app import app_ssowatconf
+    def provision_or_update(self) -> None:
         from ..permission import (
-            _sync_permissions_with_ldap,
             permission_create,
-            permission_delete,
             permission_url,
             user_permission_update,
         )
@@ -699,72 +798,72 @@ class PermissionsResource(AppResource):
         # Detect that we're using a full-domain app,
         # in which case we probably need to automagically
         # define the "path" setting with "/"
-        if (
-            isinstance(self.permissions["main"]["url"], str)
-            and self.get_setting("domain")
-            and not self.get_setting("path")
-        ):
+        if self.id == "main" and isinstance(self.url, str) and self.get_setting("domain") and not self.get_setting("path"):
             self.set_setting("path", "/")
 
         existing_perms = list((self.get_setting("_permissions") or {}).keys())
-        for perm in existing_perms:
-            if perm not in self.permissions.keys():
-                permission_delete(f"{self.app}.{perm}", force=True, sync_perm=False)
-
-        for perm, infos in self.permissions.items():
-            perm_id = f"{self.app}.{perm}"
-            if perm not in existing_perms:
-                # Use the 'allowed' key from the manifest,
-                # or use the 'init_{perm}_permission' from the install questions
-                # which is temporarily saved as a setting as an ugly hack to pass the info to this piece of code...
-                init_allowed = (
-                    infos["allowed"]
-                    or self.get_setting(f"init_{perm}_permission")
-                    or []
-                )
-
-                # If we're choosing 'visitors' from the init_{perm}_permission question, add all_users too
-                if not infos["allowed"] and init_allowed == "visitors":
-                    init_allowed = ["visitors", "all_users"]
-
-                permission_create(
-                    perm_id,
-                    allowed=init_allowed,
-                    url=infos["url"],
-                    additional_urls=infos["additional_urls"],
-                    auth_header=infos["auth_header"],
-                    sync_perm=False,
-                )
-                self.delete_setting(f"init_{perm}_permission")
-
-            user_permission_update(
-                perm_id,
-                show_tile=infos["show_tile"],
-                protected=infos["protected"],
-                sync_perm=False,
-                log_success_as_debug=True,
-            )
-            permission_url(
-                perm_id,
-                url=infos["url"],
-                set_url=infos["additional_urls"],
-                auth_header=infos["auth_header"],
-                sync_perm=False,
+        perm_id = f"{self.app}.{self.id}"
+        if self.id not in existing_perms:
+            # Use the 'allowed' key from the manifest,
+            # or use the 'init_{perm}_permission' from the install questions
+            # which is temporarily saved as a setting as an ugly hack to pass the info to this piece of code...
+            init_allowed = (
+                self.allowed
+                or self.get_setting(f"init_{self.id}_permission")
+                or []
             )
 
-        _sync_permissions_with_ldap()
-        app_ssowatconf()
+            # If we're choosing 'visitors' from the init_{perm}_permission question, add all_users too
+            if not self.allowed and init_allowed == "visitors":
+                init_allowed = ["visitors", "all_users"]
 
-    def deprovision(self, context: Dict = {}):
-        from ..app import app_ssowatconf
-        from ..permission import (
-            _sync_permissions_with_ldap,
-            permission_delete,
+            permission_create(
+                perm_id,
+                allowed=init_allowed,
+                url=self.url,
+                additional_urls=self.additional_urls,
+                auth_header=self.auth_header,
+                sync_perm=False,
+            )
+            self.delete_setting(f"init_{self.id}_permission")
+
+        user_permission_update(
+            perm_id,
+            show_tile=self.show_tile,
+            protected=self.protected,
+            sync_perm=False,
+            log_success_as_debug=True,
+        )
+        permission_url(
+            perm_id,
+            url=self.url,
+            set_url=self.additional_urls,
+            auth_header=self.auth_header,
+            sync_perm=False,
         )
 
+    def deprovision(self) -> None:
+        from ..permission import permission_delete
+
         existing_perms = list((self.get_setting("_permissions") or {}).keys())
-        for perm in existing_perms:
-            permission_delete(f"{self.app}.{perm}", force=True, sync_perm=False)
+        if self.id in existing_perms:
+            permission_delete(f"{self.app}.{self.id}", force=True, sync_perm=False)
+
+    @staticmethod
+    def grouped_trigger_after_apply(resources: list[AppResource]) -> None:
+        from ..app import app_ssowatconf
+        from ..permission import _sync_permissions_with_ldap, permission_delete
+
+        # Garbage-collect any perm in setting that may still be there somehow
+        # but was not properly removed
+        if resources:
+            app = resources[0].app
+            existing_perms = list((resources[0].get_setting("_permissions") or {}).keys())
+            processed_perms = [r.id for r in resources]
+            garbage_perms = [p for p in existing_perms if p not in processed_perms and p != "main"]
+            for p in garbage_perms:
+                logger.debug(f"Deleting perm '{app}.{p}' that should not exists ?")
+                permission_delete(f"{app}.{p}", force=True, sync_perm=False)
 
         _sync_permissions_with_ldap()
         app_ssowatconf()
@@ -806,23 +905,29 @@ class SystemuserAppResource(AppResource):
     # restore -> provision
 
     type = "system_user"
-    priority = 20
+    multi = False
 
-    default_properties: Dict[str, Any] = {
-        "allow_ssh": False,
-        "allow_sftp": False,
-        "allow_email": False,
-        "home": "/var/www/__APP__",
-    }
-
-    # FIXME : wat do regarding ssl-cert, multimedia, and other groups
-
-    allow_ssh: bool = False
+    allow_ssh: bool = False  # FIXME : document the fact that it now supports conditional
     allow_sftp: bool = False
     allow_email: bool = False
-    home: str = ""
+    allow_certs: bool = False  # FIXME : to be implemented and documnted
+    # FIXME : support something like additional arbitrary groups ?
+    home: str = "/var/www/__APP__"
 
-    def provision_or_update(self, context: Dict = {}):
+    exposed_properties: list[str] = ["allow_ssh", "allow_sftp", "allow_email", "allow_certs", "home"]
+
+    def description(self) -> str:
+        return m18n.n("app_resource_system_user")
+
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
+
+        for key in ["allow_ssh", "allow_sftp", "allow_email", "allow_certs"]:
+            if isinstance(kwargs.get(key), str):
+                kwargs[key] = evaluate_if_clause(kwargs[key], kwargs["env"])
+
+        super().__init__(**kwargs)
+
+    def provision_or_update(self) -> None:
         from ..app import regen_mail_app_user_config_for_dovecot_and_postfix
 
         # FIXME : validate that no yunohost user exists with that name?
@@ -851,6 +956,11 @@ class SystemuserAppResource(AppResource):
             groups.add("sftp.app")
         elif "sftp.app" in groups:
             groups.remove("sftp.app")
+
+        if self.allow_certs:
+            groups.add("ssl-cert")
+        elif "ssl-cert" in groups:
+            groups.remove("ssl-cert")
 
         os.system(f"usermod -G {','.join(groups)} {self.app}")
 
@@ -891,7 +1001,11 @@ class SystemuserAppResource(AppResource):
             ):
                 regen_mail_app_user_config_for_dovecot_and_postfix()
 
-    def deprovision(self, context: Dict = {}):
+        # Allow user to access pre-fetch source (or create files in there during scripts)
+        if os.path.isdir(f"{SOURCES_TMP_DIR}/{self.app}"):
+            chown(f"{SOURCES_TMP_DIR}/{self.app}", self.app, recursive=True)
+
+    def deprovision(self) -> None:
         from ..app import regen_mail_app_user_config_for_dovecot_and_postfix
 
         if os.system(f"getent passwd {self.app} >/dev/null 2>/dev/null") == 0:
@@ -941,7 +1055,7 @@ class InstalldirAppResource(AppResource):
 
     ### Provision/Update
 
-    - during install, the folder will be deleted if it already exists (FIXME: is this what we want?)
+    - during install, the folder will be deleted if it already exists
     - if the dir path changed and a folder exists at the old location, the folder will be `mv`'ed to the new location
     - otherwise, creates the directory if it doesn't exists yet
     - (re-)apply permissions (only on the folder itself, not recursively)
@@ -964,24 +1078,32 @@ class InstalldirAppResource(AppResource):
     # restore -> cp install dir
 
     type = "install_dir"
-    priority = 30
+    multi = False
 
-    default_properties: Dict[str, Any] = {
-        "dir": "/var/www/__APP__",
-        "owner": "__APP__:rwx",
-        "group": "__APP__:rx",
-    }
+    dir: str = "/var/www/__APP__"
+    # FIXME : cant we find a better name ?
+    paths_for_www_data: list[str] = []
+    # Should be useful for backup policies + computing space usage per nature
+    # FIXME : cant we find a better name ?
+    content: dict[Literal["cache", "conf", "data", "static", "source", "logs", "dependencies"], list[str]] = {}
 
-    dir: str = ""
-    owner: str = ""
-    group: str = ""
+    exposed_properties: list[str] = ["dir", "paths_for_www_data", "content"]
 
-    # FIXME: change default dir to /opt/stuff if app ain't a webapp...
+    def description(self) -> str:
+        return m18n.n("app_resource_install_dir")
 
-    def provision_or_update(self, context: Dict = {}):
+    @staticmethod
+    def convert_packaging_v2_props(props: dict[str, Any]) -> None:
+        owner = props.pop("owner", None)
+        if owner and not owner.startswith("__APP__"):
+            owner_user = owner.split(":")
+            logger.warning(f"Packagers: 'owner' prop ain't supported anymore in the install_dir resource. Ownership will be granted to the app's system user instead of {owner_user}")
+        group = props.pop("group", None)
+        if group and group.startswith("www-data"):
+            props["paths_for_www_data"] = ["*"]
+
+    def provision_or_update(self) -> None:
         assert self.dir.strip()  # Be paranoid about self.dir being empty...
-        assert self.owner.strip()
-        assert self.group.strip()
 
         current_install_dir = self.get_setting("install_dir") or self.get_setting(
             "final_path"
@@ -1007,39 +1129,63 @@ class InstalldirAppResource(AppResource):
             else:
                 mkdir(self.dir, parents=True)
 
-        owner, owner_perm = self.owner.split(":")
-        group, group_perm = self.group.split(":")
-        owner_perm_octal = (
-            (4 if "r" in owner_perm else 0)
-            + (2 if "w" in owner_perm else 0)
-            + (1 if "x" in owner_perm else 0)
-        )
-        group_perm_octal = (
-            (4 if "r" in group_perm else 0)
-            + (2 if "w" in group_perm else 0)
-            + (1 if "x" in group_perm else 0)
-        )
-
-        perm_octal = 0o100 * owner_perm_octal + 0o010 * group_perm_octal
-
+        owner = self.app
+        group = "www-data" if self.paths_for_www_data else self.app
         # NB: we use realpath here to cover cases where self.dir could actually be a symlink
         # in which case we want to apply the perm to the pointed dir, not to the symlink
-        chmod(os.path.realpath(self.dir), perm_octal)
+        chmod(os.path.realpath(self.dir), 0o750)
         chown(os.path.realpath(self.dir), owner, group)
-        # FIXME: shall we apply permissions recursively ?
 
         self.set_setting("install_dir", self.dir)
         self.delete_setting("final_path")  # Legacy
 
-    def deprovision(self, context: Dict = {}):
+    def deprovision(self) -> None:
         assert self.dir.strip()  # Be paranoid about self.dir being empty...
-        assert self.owner.strip()
-        assert self.group.strip()
 
         # FIXME : check that self.dir has a sensible value to prevent catastrophes
         if os.path.isdir(self.dir):
             rm(self.dir, recursive=True)
         # FIXME : in fact we should delete settings to be consistent
+
+    def before_regen_conf(self) -> None:
+
+        logger.debug("Applying install dir chown/chmod")
+
+        # NB: we use realpath here to cover cases where self.dir could actually be a symlink
+        # in which case we want to apply the perm to the pointed dir, not to the symlink
+        chmod(os.path.realpath(self.dir), 0o710)
+
+        # This case is essentially for packaging v2
+        if self.paths_for_www_data == ["*"]:
+            chown(os.path.realpath(self.dir), self.app, "www-data", recursive=True)
+            return
+
+        # Remove r/x rights for recursively
+        # (such that only the owner/group may read a file or enter a dir ...
+        # for example to prevent www-data to enter subdirs when it has r-x on the parent dir, or read secret files)
+        os.system(f"chmod -R o-rwx '{self.dir}'")
+
+        chown(os.path.realpath(self.dir), self.app, self.app, recursive=True)
+        for path_pattern in self.paths_for_www_data:
+            assert path_pattern.strip()
+            assert not path_pattern.startswith("/")
+            # FIXME : cant remember why i was so insistent to had this bit
+            #if not path_pattern.startswith("./"):
+            #    path_pattern = "./" + path_pattern
+            assert ".." not in path_pattern
+            paths = list(Path(self.dir).resolve().glob(path_pattern))
+            if not paths:
+                logger.warning(f"Packagers: in install_dir's paths_for_www_data, no path seems to match {path_pattern} ?")
+                continue
+            for path in paths:
+                chown(str(path), self.app, "www-data", recursive=True)
+                # Gotta make sure www-data is the group on all folder along the way such that it has +x rights
+                path_parts = str(path.relative_to(self.dir)).split("/")
+                current_path = Path(self.dir)
+                chown(str(current_path), self.app, "www-data")  # NB: Not recursive
+                for path_part in path_parts[:-1]:
+                    current_path = current_path / path_part
+                    chown(str(current_path), self.app, "www-data")  # NB: Not recursive
 
 
 class DatadirAppResource(AppResource):
@@ -1086,24 +1232,37 @@ class DatadirAppResource(AppResource):
     # restore -> cp data dir ? (if in backup)
 
     type = "data_dir"
-    priority = 40
+    multi = False
 
-    default_properties: Dict[str, Any] = {
-        "dir": "/home/yunohost.app/__APP__",
-        "subdirs": [],
-        "owner": "__APP__:rwx",
-        "group": "__APP__:rx",
-    }
-
-    dir: str = ""
+    dir: str = "/home/yunohost.app/__APP__"
     subdirs: list = []
-    owner: str = ""
-    group: str = ""
+    paths_for_www_data: list[str] = []
+    purge = False
 
-    def provision_or_update(self, context: Dict = {}):
+    exposed_properties: list[str] = ["dir", "subdirs", "paths_for_www_data"]
+
+    def description(self) -> str:
+        return m18n.n("app_resource_data_dir")
+
+    @staticmethod
+    def convert_packaging_v2_props(props: dict[str, Any]) -> None:
+        owner = props.pop("owner", None)
+        if owner and not owner.startswith("__APP__"):
+            owner_user = owner.split(":")
+            logger.warning(f"Packagers: 'owner' prop ain't supported anymore in the data_dir resource. Ownership will be granted to the app's system user instead of {owner_user}")
+        group = props.pop("group", None)
+        if group and group.startswith("www-data"):
+            props["paths_for_www_data"] = ["*"]
+
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
+
+        super().__init__(**kwargs)
+
+        if kwargs["env"].get("YNH_APP_PURGE") == "1":
+            self.purge = True
+
+    def provision_or_update(self) -> None:
         assert self.dir.strip()  # Be paranoid about self.dir being empty...
-        assert self.owner.strip()
-        assert self.group.strip()
 
         current_data_dir = self.get_setting("data_dir") or self.get_setting("datadir")
 
@@ -1125,38 +1284,23 @@ class DatadirAppResource(AppResource):
             if not os.path.isdir(full_path):
                 mkdir(full_path, parents=True)
 
-        owner, owner_perm = self.owner.split(":")
-        group, group_perm = self.group.split(":")
-        owner_perm_octal = (
-            (4 if "r" in owner_perm else 0)
-            + (2 if "w" in owner_perm else 0)
-            + (1 if "x" in owner_perm else 0)
-        )
-        group_perm_octal = (
-            (4 if "r" in group_perm else 0)
-            + (2 if "w" in group_perm else 0)
-            + (1 if "x" in group_perm else 0)
-        )
-        perm_octal = 0o100 * owner_perm_octal + 0o010 * group_perm_octal
-
+        group = "www-data" if self.paths_for_www_data else self.app
         # NB: we use realpath here to cover cases where self.dir could actually be a symlink
         # in which case we want to apply the perm to the pointed dir, not to the symlink
-        chmod(os.path.realpath(self.dir), perm_octal)
-        chown(os.path.realpath(self.dir), owner, group)
+        chmod(os.path.realpath(self.dir), 0o750)
+        chown(os.path.realpath(self.dir), self.app, group)
         for subdir in self.subdirs:
             full_path = os.path.join(self.dir, subdir)
-            chmod(os.path.realpath(full_path), perm_octal)
-            chown(os.path.realpath(full_path), owner, group)
+            chmod(os.path.realpath(full_path), 0o750)
+            chown(os.path.realpath(full_path), self.app, group)
 
         self.set_setting("data_dir", self.dir)
         self.delete_setting("datadir")  # Legacy
 
-    def deprovision(self, context: Dict = {}):
+    def deprovision(self) -> None:
         assert self.dir.strip()  # Be paranoid about self.dir being empty...
-        assert self.owner.strip()
-        assert self.group.strip()
 
-        if context.get("purge_data_dir", False) and os.path.isdir(self.dir):
+        if self.purge and os.path.isdir(self.dir):
             rm(self.dir, recursive=True)
 
         self.delete_setting("data_dir")
@@ -1164,7 +1308,7 @@ class DatadirAppResource(AppResource):
 
 class AptDependenciesAppResource(AppResource):
     """
-    Create a virtual package in apt, depending on the list of specified packages that the app needs. The virtual packages is called `$app-ynh-deps` (with `_` being replaced by `-` in the app name, see `ynh_install_app_dependencies`)
+    Create a virtual apt/dpkg package, that depends on the specified list of packages that the app depends on. The virtual packages is called `$app-ynh-deps` (with `_` being replaced by `-` in the app name))
 
     ### Example
 
@@ -1172,7 +1316,7 @@ class AptDependenciesAppResource(AppResource):
     [resources.apt]
     packages = ["nyancat", "lolcat", "sl"]
 
-    # (this part is optional and corresponds to the legacy ynh_install_extra_app_dependencies helper)
+    # ('extras' blocks are optional and only meant for apps that need to install apt packages from additional sources)
     extras.yarn.repo = "deb https://dl.yarnpkg.com/debian/ stable main"
     extras.yarn.key = "https://dl.yarnpkg.com/debian/pubkey.gpg"
     extras.yarn.packages = ["yarn"]
@@ -1186,12 +1330,12 @@ class AptDependenciesAppResource(AppResource):
 
     ### Provision/Update
 
-    - The code literally calls the bash helpers `ynh_install_app_dependencies` and `ynh_install_extra_app_dependencies`, similar to what happens in v1.
+    - Creates/update the virtual package with the provided dependencies, and make sure dependencies are installed / updated.
     - Note that when `packages` contains some phpX.Y-foobar dependencies, this will automagically define a `phpversion` setting equal to `X.Y` which can therefore be used in app scripts ($phpversion) or templates (`__PHPVERSION__`)
 
     ### Deprovision
 
-    - The code literally calls the bash helper `ynh_remove_app_dependencies`
+    - Remove the virtual dependency
     """
 
     # Notes for future?
@@ -1200,22 +1344,30 @@ class AptDependenciesAppResource(AppResource):
     # restore = provision
 
     type = "apt"
-    priority = 50
+    multi = False
 
-    default_properties: Dict[str, Any] = {"packages": [], "extras": {}}
-
-    packages: List = []
+    version: str  # Automatically taken from the manifest
+    packages: List[str] = []
+    packages_for_build_only: List[str] = []
+    if_bookworm: List[str] = []
+    if_trixie: List[str] = []
     packages_from_raw_bash: str = ""
-    extras: Dict[str, Dict[str, Union[str, List]]] = {}
+    extras: Dict[str, Dict[str, str | List]] = {}
 
-    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
-        super().__init__(properties, *args, **kwargs)
+    exposed_properties: list[str] = ["packages", "packages_for_build_only", "if_bookworm", "if_trixie", "packages_from_raw_bash", "extras"]
 
-        if isinstance(self.packages, str):
-            if self.packages.strip() == "":
-                self.packages = []
+    def description(self) -> str:
+        return m18n.n("app_resource_apt")
+
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
+
+        if "packages" in kwargs and isinstance(kwargs["packages"], str):
+            if kwargs["packages"].strip() == "":
+                kwargs["packages"] = []
             else:
-                self.packages = [value.strip() for value in self.packages.split(",")]
+                kwargs["packages"] = [value.strip() for value in kwargs["packages"].split(",")]
+
+        super().__init__(**kwargs)
 
         if self.packages_from_raw_bash:
             out, err = self.check_output_bash_snippet(self.packages_from_raw_bash)
@@ -1228,15 +1380,13 @@ class AptDependenciesAppResource(AppResource):
 
         for key, values in self.extras.items():
             if isinstance(values.get("packages"), str):
-                values["packages"] = [
-                    value.strip()
-                    for value in values["packages"].split(",")  # type: ignore
-                ]
+                packages: str = values["packages"]  # type: ignore
+                values["packages"] = [value.strip() for value in packages.split(",")]
 
             if isinstance(values.get("packages_from_raw_bash"), str):
-                out, err = self.check_output_bash_snippet(
-                    values.get("packages_from_raw_bash")
-                )
+                snippet = values.get("packages_from_raw_bash")
+                assert isinstance(snippet, str)
+                out, err = self.check_output_bash_snippet(snippet)
                 if err:
                     logger.error(
                         f"Error while running apt resource packages_from_raw_bash snippet for '{key}' extras:"
@@ -1251,9 +1401,8 @@ class AptDependenciesAppResource(AppResource):
                 or not isinstance(values.get("key"), str)
                 or not isinstance(values.get("packages"), list)
             ):
-                raise YunohostError(
+                raise YunohostPackagingError(
                     "In apt resource in the manifest: 'extras' repo should have the keys 'repo', 'key' defined as strings, 'packages' defined as list or 'packages_from_raw_bash' defined as string",
-                    raw_msg=True,
                 )
 
         # Drop 'extras' entries associated to no packages
@@ -1272,41 +1421,22 @@ class AptDependenciesAppResource(AppResource):
                 self.packages.append("yarn")
                 del self.extras[key]
 
-    def provision_or_update(self, context: Dict = {}):
-        if self.helpers_version >= 2.1:
-            ynh_apt_install_dependencies = "ynh_apt_install_dependencies"
-            ynh_apt_install_dependencies_from_extra_repository = (
-                "ynh_apt_install_dependencies_from_extra_repository"
-            )
-        else:
-            ynh_apt_install_dependencies = "ynh_install_app_dependencies"
-            ynh_apt_install_dependencies_from_extra_repository = (
-                "ynh_install_extra_app_dependencies"
-            )
+    def provision_or_update(self) -> None:
 
-        script = ""
-        if self.packages:
-            script += " ".join([ynh_apt_install_dependencies, *self.packages])
+        from .apt import apt_install_dependencies, apt_install_dependencies_from_extra_repository
+
+        apt_install_dependencies(app=self.app, version=self.version, packages=self.packages)
         for repo, values in self.extras.items():
-            script += "\n" + " ".join(
-                [
-                    ynh_apt_install_dependencies_from_extra_repository,
-                    f"--repo='{values['repo']}'",
-                    f"--key='{values['key']}'",
-                    f"--package='{' '.join(values['packages'])}'",
-                ]
-            )
-            # FIXME : we're feeding the raw value of values['packages'] to the helper .. if we want to be consistent, may they should be comma-separated, though in the majority of cases, only a single package is installed from an extra repo..
+            url: str = values["repo"]  # type: ignore[assignment]
+            key: str = values["key"]  # type: ignore[assignment]
+            packages = values['packages']
+            if isinstance(packages, str):
+                packages = [packages]
+            apt_install_dependencies_from_extra_repository(app=self.app, version=self.version, packages=packages, repo=url, key=key)
 
-        self._run_script("provision_or_update", script)
-
-    def deprovision(self, context: Dict = {}):
-        if self.helpers_version >= 2.1:
-            ynh_apt_remove_dependencies = "ynh_apt_remove_dependencies"
-        else:
-            ynh_apt_remove_dependencies = "ynh_remove_app_dependencies"
-
-        self._run_script("deprovision", ynh_apt_remove_dependencies)
+    def deprovision(self) -> None:
+        from .apt import apt_remove_dependencies
+        apt_remove_dependencies(app=self.app)
 
 
 class PortsResource(AppResource):
@@ -1356,51 +1486,48 @@ class PortsResource(AppResource):
     # restore -> nothing (restore port setting)
 
     type = "ports"
-    priority = 70
+    multi = True
 
-    default_properties: Dict[str, Any] = {}
+    default: int | None = None
+    exposed: bool | Literal["TCP", "UDP", "Both"] = False
+    fixed: bool = False
+    # FIXME : maybe add a 'comment' for ports exposed ? for packaging v3 ?
 
-    default_port_properties = {
-        "default": None,
-        "exposed": False,  # or True(="Both"), "TCP", "UDP"
-        "fixed": False,
-        "upnp": False,
-    }
+    exposed_properties: list[str] = ["default", "exposed", "fixed"]
 
-    ports: Dict[str, Dict[str, Any]]
+    # Internal
+    need_firewall_reload: bool = False
 
-    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
-        if "main" not in properties:
-            properties["main"] = {}
+    def description(self) -> str:
+        return m18n.n("app_resource_ports")
 
-        for port, infos in properties.items():
-            properties[port] = copy.copy(self.default_port_properties)
-            properties[port].update(infos)
+    def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
 
-            if properties[port]["default"] is None:
-                properties[port]["default"] = random.randint(10000, 60000)
+        if kwargs.get("default") is None:
+            kwargs["default"] = random.randint(10000, 60000)
 
-        # This is to prevent using twice the same port during provisionning.
-        self.ports_used_by_self: list[int] = []
+        super().__init__(**kwargs)
 
-        super().__init__({"ports": properties}, *args, **kwargs)
-
-    def _port_is_used(self, port):
+    def _port_is_used(self, port: int) -> bool:
         # FIXME : this could be less brutal than two os.system...
         used_by_process = (
             os.system(
-                "ss --numeric --listening --tcp --udp | awk '{print$5}' | grep --quiet --extended-regexp ':%s$'"
-                % port
+                "ss --numeric --listening --tcp --udp "
+                "| awk '{print$5}' "
+                f"| grep --quiet --extended-regexp ':{port}$'"
             )
             == 0
         )
         # This second command is mean to cover (most) case where an app is using a port yet ain't currently using it for some reason (typically service ain't up)
+        # FIXME : hmm shouldnt we check for <something>_port and port_<something> here, instead of just 'port' ?
         used_by_app = (
             os.system(
                 f"grep --quiet --extended-regexp \"port: '?{port}'?\" /etc/yunohost/apps/*/settings.yml"
             )
             == 0
         )
+
+        # Prevent to use twice the same port when provisioning
         used_by_self_provisioning = port in self.ports_used_by_self
 
         return used_by_process or used_by_app or used_by_self_provisioning
@@ -1412,100 +1539,125 @@ class PortsResource(AppResource):
             return ["tcp", "udp"]
         return [exposed.lower()]
 
-    def provision_or_update(self, context: Dict = {}):
-        from ..firewall import YunoFirewall
-
-        firewall = YunoFirewall()
-
-        for name, infos in self.ports.items():
-            setting_name = f"port_{name}" if name != "main" else "port"
-            port_value = self.get_setting(setting_name)
-            if not port_value and name != "main":
-                # Automigrate from legacy setting foobar_port (instead of port_foobar)
-                legacy_setting_name = f"{name}_port"
-                port_value = self.get_setting(legacy_setting_name)
-                if port_value:
-                    self.set_setting(setting_name, port_value)
-                    self.delete_setting(legacy_setting_name)
-                    continue
-
-            if not port_value:
-                port_value = infos["default"]
-
-                if infos["fixed"]:
-                    if self._port_is_used(port_value):
-                        raise YunohostValidationError(
-                            f"Port {port_value} is already used by another process or app.",
-                            raw_msg=True,
-                        )
-                else:
-                    while self._port_is_used(port_value):
-                        port_value += 1
-
-            self.ports_used_by_self.append(port_value)
-            self.set_setting(setting_name, port_value)
-
-            comment = f"{self.app} {name}"
-            if infos["exposed"]:
-                for proto in self._exposed_to_protos(infos["exposed"]):
-                    firewall.open_port(proto, port_value, comment, infos["upnp"])
+    @property
+    def ports_used_by_self(self) -> list[int]:
+        from ..app import _get_app_settings
+        out = []
+        for key, value in _get_app_settings(self.app).items():
+            if key != "port" and not key.startswith("port_") and not key.endswith("_port"):
+                continue
+            try:
+                value = int(str(value).strip())
+            except Exception:
+                logger.debug(f"In ports_used_by_self: ignoring non-int value {value} for {key}. (This is probably not a huge deal?)")
             else:
-                for proto in ["tcp", "udp"]:
-                    firewall.close_port(proto, port_value)
+                out.append(value)
+        return out
 
-        if firewall.need_reload:
-            firewall.apply()
+    @property
+    def setting_name(self) -> str:
+        return f"port_{self.id}" if self.id != "main" else "port"
 
-    def deprovision(self, context: Dict = {}):
+    def provision_or_update(self) -> None:
         from ..firewall import YunoFirewall
 
         firewall = YunoFirewall()
 
-        for name, infos in self.ports.items():
-            setting_name = f"port_{name}" if name != "main" else "port"
-            value = self.get_setting(setting_name)
-            self.delete_setting(setting_name)
-            if value and str(value).strip():
-                for proto in self._exposed_to_protos(infos["exposed"]):
-                    firewall.delete_port(proto, value)
+        port_value = self.get_setting(self.setting_name)
+        if not port_value and self.id != "main":
+            # Automigrate from legacy setting foobar_port (instead of port_foobar)
+            legacy_setting_name = f"{self.id}_port"
+            port_value = self.get_setting(legacy_setting_name)
+            if port_value:
+                self.set_setting(self.setting_name, port_value)
+                self.delete_setting(legacy_setting_name)
+                # FIXME : hmmm chck this return ?
+                return
+
+        if not port_value:
+            assert self.default
+            port_value = self.default
+
+            if self.fixed:
+                if self._port_is_used(port_value):
+                    raise YunohostValidationError(
+                        f"Port {port_value} is already used by another process or app.",
+                        raw_msg=True,
+                    )
+            else:
+                while self._port_is_used(port_value):
+                    port_value += 1
+
+        self.set_setting(self.setting_name, port_value)
+
+        if self.exposed:
+            comment = f"{self.app} {self.id}"
+            for proto in self._exposed_to_protos(self.exposed):
+                firewall.open_port(proto, port_value, comment)
+        else:
+            for proto in ["tcp", "udp"]:
+                firewall.close_port(proto, port_value)
 
         if firewall.need_reload:
-            firewall.apply()
+            # cf group_trigger_after_apply
+            self.need_firewall_reload = True
+
+    def deprovision(self) -> None:
+        from ..firewall import YunoFirewall
+
+        firewall = YunoFirewall()
+
+        value = self.get_setting(self.setting_name)
+        self.delete_setting(self.setting_name)
+        if value and str(value).strip():
+            for proto in self._exposed_to_protos(self.exposed):
+                firewall.delete_port(proto, value)
+
+        if firewall.need_reload:
+            # cf group_trigger_after_apply
+            self.need_firewall_reload = True
+
+    # FIXME : meh i don't know what to call this
+    @staticmethod
+    def grouped_trigger_after_apply(resources: list["PortsResource"]) -> None:
+        if any(r.need_firewall_reload for r in resources):
+            from ..firewall import YunoFirewall
+            YunoFirewall().apply()
+
+        # FIXME : we could also want to gargage-collect all the "port" vars not referenced anymore
 
 
-class DatabaseAppResource(AppResource):
+class MysqlAppResource(AppResource):
     """
-    Initialize a database, either using MySQL or Postgresql. Relevant DB infos are stored in settings `$db_name`, `$db_user` and `$db_pwd`.
+    Initialize a MySQL/Mariadb database. Relevant DB infos are stored in settings `$mysql_db_name`, `$mysql_db_user` and `$mysql_db_pwd`.
 
-    NB: only one DB can be handled in such a way (is there really an app that would need two completely different DB ?...)
-
-    NB2: no automagic migration will happen in an suddenly change `type` from `mysql` to `postgresql` or viceversa in its life
+    NB: no automagic migration will happen if an app suddenly replaces a `mysql` db with a `postgresql` one or viceversa during its life.
 
     ### Example
 
     ```toml
-    [resources.database]
-    type = "mysql"   # or : "postgresql". Only these two values are supported
+    [resources.mysql]
+    # (empty should be fine for most apps... )
     ```
 
     ### Properties
 
-    - `type`: The database type, either `mysql` or `postgresql`
+    - `extra_dbs`: A list of suffixes for additional DB to initialize. For example if $app is "helloworld" and extra_dbs is set to ["foo", "bar"], then DB "helloworld_foo" and "helloworld_bar" will be provisioned in addition to the regular "helloworld", with the same user/password credentials.
 
     ### Provision/Update
 
-    - (Re)set the `$db_name` and `$db_user` settings with the sanitized app name (replacing `-` and `.` with `_`)
-    - If `$db_pwd` doesn't already exists, pick a random database password and store it in that setting
-    - If the database doesn't exists yet, create the SQL user and DB using `ynh_mysql_create_db` or `ynh_psql_create_db`.
+    - (Re)set the `$mysql_db_name` and `$mysql_db_user` settings with the sanitized app name (replacing `-` and `.` with `_`)
+    - If `$mysql_db_pwd` doesn't already exists, pick a random database password and store it in that setting
+    - If the database doesn't exists yet, create the SQL user and DB
 
     ### Deprovision
 
-    - Drop the DB using `ynh_mysql_remove_db` or `ynh_psql_remove_db`
-    - Deletes the `db_name`, `db_user` and `db_pwd` settings
+    - Drop the DB
+    - Delete the settings
 
     ### Legacy management
 
-    - In the past, the sql passwords may have been named `mysqlpwd` or `psqlpwd`, in which case it will automatically be renamed as `db_pwd`
+    - When transitioning from packaging v2 [resources.database] to v3 [resources.mysql] (or postgresql), the setting are automatically renamed from db_name, db_user, db_pwd to the mysql/postgresql counterpart
     """
 
     # Notes for future?
@@ -1513,102 +1665,176 @@ class DatabaseAppResource(AppResource):
     # backup -> dump db
     # restore -> setup + inject db dump
 
-    type = "database"
-    priority = 90
-    dbtype: str = ""
+    type = "mysql"
+    multi = False
 
-    default_properties: Dict[str, Any] = {
-        "dbtype": None,
-    }
+    extra_dbs: List = []
+    exposed_properties: list[str] = ["extra_dbs"]
 
-    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
-        if "type" not in properties or properties["type"] not in [
-            "mysql",
-            "postgresql",
-        ]:
-            raise YunohostError(
-                "Specifying the type of db ('mysql' or 'postgresql') is mandatory for db resources",
-                raw_msg=True,
-            )
+    def description(self) -> str:
+        return m18n.n("app_resource_mysql")
 
-        # Hack so that people can write type = "mysql/postgresql" in toml but it's loaded as dbtype
-        # to avoid conflicting with the generic self.type of the resource object...
-        # dunno if that's really a good idea :|
-        properties = {"dbtype": properties["type"]}
+    def convert_legacy_db_settings(self):
+        db_pwd = self.get_setting("db_pwd")
+        mysql_db_pwd = self.get_setting("mysql_db_pwd")
+        if db_pwd and not mysql_db_pwd:
+            self.set_setting("mysql_db_pwd", db_pwd)
+            self.delete_setting("db_pwd")
+        db_name = self.get_setting("db_name")
+        mysql_db_name = self.get_setting("mysql_db_name")
+        if db_name and not mysql_db_name:
+            self.set_setting("mysql_db_name", db_name)
+            self.delete_setting("db_name")
+        # This last one is always force-reset
+        # to $app (modulo - and . replaced to _)
+        self.delete_setting("db_user")
 
-        super().__init__(properties, *args, **kwargs)
+    def provision_or_update(self) -> None:
 
-    def db_exists(self, db_name):
-        if self.dbtype == "mysql":
-            return os.system(f"mysqlshow | grep -q -w '{db_name}' 2>/dev/null") == 0
-        elif self.dbtype == "postgresql":
-            return (
-                os.system(
-                    f"sudo --login --user=postgres psql '{db_name}' -c ';' >/dev/null 2>/dev/null"
-                )
-                == 0
-            )
-        else:
-            return False
+        self.convert_legacy_db_settings()
 
-    def provision_or_update(self, context: Dict = {}):
-        # This is equivalent to ynh_sanitize_dbid
+        # Can't use the raw id directly because it may contain '-' or '.'
         db_user = self.app.replace("-", "_").replace(".", "_")
-        db_name = self.get_setting("db_name") or db_user
-        self.set_setting("db_name", db_name)
-        self.set_setting("db_user", db_user)
+        db_name = self.get_setting("mysql_db_name") or db_user
+        self.set_setting("mysql_db_name", db_name)
+        self.set_setting("mysql_db_user", db_user)
 
-        db_pwd = None
-        if self.get_setting("db_pwd"):
-            db_pwd = self.get_setting("db_pwd")
-        else:
-            # Legacy setting migration
-            legacypasswordsetting = (
-                "psqlpwd" if self.dbtype == "postgresql" else "mysqlpwd"
-            )
-            if self.get_setting(legacypasswordsetting):
-                db_pwd = self.get_setting(legacypasswordsetting)
-                self.delete_setting(legacypasswordsetting)
-                self.set_setting("db_pwd", db_pwd)
-
+        db_pwd = self.get_setting("mysql_db_pwd")
         if not db_pwd:
             db_pwd = random_ascii(24)
-            self.set_setting("db_pwd", db_pwd)
+            self.set_setting("mysql_db_pwd", db_pwd)
 
-        if not self.db_exists(db_name):
-            if self.dbtype == "mysql":
-                self._run_script(
-                    "provision",
-                    f"ynh_mysql_create_db '{db_name}' '{db_user}' '{db_pwd}'",
-                )
-            elif self.dbtype == "postgresql":
-                self._run_script(
-                    "provision",
-                    f"ynh_psql_create_user '{db_user}' '{db_pwd}'; ynh_psql_create_db '{db_name}' '{db_user}'",
-                )
+        from .database import mysql_create_db, mysql_db_exists
+        if not mysql_db_exists(db_name):
+            mysql_create_db(db_name, db_user, db_pwd)
+        for suffix in self.extra_dbs:
+            extra_db_name = f"{db_name}_{suffix}"
+            if not mysql_db_exists(extra_db_name):
+                mysql_create_db(extra_db_name, db_user, db_pwd)
 
-    def deprovision(self, context: Dict = {}):
+    def deprovision(self) -> None:
         db_user = self.app.replace("-", "_").replace(".", "_")
-        db_name = self.get_setting("db_name") or db_user
+        db_name = self.get_setting("mysql_db_name") or db_user
 
-        if self.dbtype == "mysql":
-            db_helper_name = "mysql"
-        elif self.dbtype == "postgresql":
-            db_helper_name = "psql"
-        else:
-            raise RuntimeError(f"Invalid dbtype {self.dbtype}")
+        from .database import mysql_db_exists, mysql_user_exists, mysql_drop_db, mysql_drop_user
+        if mysql_db_exists(db_name):
+            mysql_drop_db(db_name)
+        for suffix in self.extra_dbs:
+            extra_db_name = f"{db_name}_{suffix}"
+            if not mysql_db_exists(extra_db_name):
+                mysql_drop_db(extra_db_name)
 
-        self._run_script(
-            "deprovision",
-            f"""
-ynh_{db_helper_name}_database_exists "{db_name}" && ynh_{db_helper_name}_drop_db "{db_name}" || true
-ynh_{db_helper_name}_user_exists "{db_user}" && ynh_{db_helper_name}_drop_user "{db_user}" || true
-""",
-        )
+        if mysql_user_exists(db_user):
+            mysql_drop_user(db_user)
 
-        self.delete_setting("db_name")
+        self.delete_setting("mysql_db_name")
+        self.delete_setting("mysql_db_user")
+        self.delete_setting("mysql_db_pwd")
+
+
+class PostgresqlAppResource(AppResource):
+    """
+    Initialize a Postgresql database. Relevant DB infos are stored in settings `$psql_db_name`, `$psql_db_user` and `$psql_db_pwd`.
+
+    NB: no automagic migration will happen if an app suddenly replaces a `postgresql` db with a `mysql` one or viceversa during its life.
+
+    ### Example
+
+    ```toml
+    [resources.postgresql]
+    # (empty should be fine for most apps... )
+    ```
+
+    ### Properties
+
+    - `extra_dbs`: A list of suffixes for additional DB to initialize. For example if $app is "helloworld" and extra_dbs is set to ["foo", "bar"], then DB "helloworld_foo" and "helloworld_bar" will be provisioned in addition to the regular "helloworld", with the same user/password credentials.
+
+    ### Provision/Update
+
+    - (Re)set the `$psql_db_name` and `$psql_db_user` settings with the sanitized app name (replacing `-` and `.` with `_`)
+    - If `$psql_db_pwd` doesn't already exists, pick a random database password and store it in that setting
+    - If the database doesn't exists yet, create the SQL user and DB
+
+    ### Deprovision
+
+    - Drop the DB
+    - Delete the settings
+
+    ### Legacy management
+
+    - When transitioning from packaging v2 [resources.database] to v3 [resources.postgresql] (or mysql), the setting are automatically renamed from db_name, db_user, db_pwd to the mysql/postgresql counterpart
+    """
+
+    # Notes for future?
+    # deep_clean  -> ... idk look into any db name that would not be related to any app...
+    # backup -> dump db
+    # restore -> setup + inject db dump
+
+    type = "postgresql"
+    multi = False
+
+    extra_dbs: List = []
+    exposed_properties: list[str] = ["extra_dbs"]
+
+    def description(self) -> str:
+        return m18n.n("app_resource_postgresql")
+
+    def convert_legacy_db_settings(self):
+        db_pwd = self.get_setting("db_pwd")
+        psql_db_pwd = self.get_setting("psql_db_pwd")
+        if db_pwd and not psql_db_pwd:
+            self.set_setting("psql_db_pwd", db_pwd)
+            self.delete_setting("db_pwd")
+        db_name = self.get_setting("db_name")
+        psql_db_name = self.get_setting("psql_db_name")
+        if db_name and not psql_db_name:
+            self.set_setting("psql_db_name", db_name)
+            self.delete_setting("db_name")
+        # This last one is always force-reset
+        # to $app (modulo - and . replaced to _)
         self.delete_setting("db_user")
-        self.delete_setting("db_pwd")
+
+    def provision_or_update(self) -> None:
+
+        self.convert_legacy_db_settings()
+
+        # Can't use the raw id directly because it may contain '-' or '.'
+        db_user = self.app.replace("-", "_").replace(".", "_")
+        db_name = self.get_setting("psql_db_name") or db_user
+        self.set_setting("psql_db_name", db_name)
+        self.set_setting("psql_db_user", db_user)
+
+        db_pwd = self.get_setting("psql_db_pwd")
+        if not db_pwd:
+            db_pwd = random_ascii(24)
+            self.set_setting("psql_db_pwd", db_pwd)
+
+        from .database import psql_create_db, psql_create_user, psql_db_exists
+        if not psql_db_exists(db_name):
+            psql_create_user(db_user, db_pwd); psql_create_db(db_name, db_user)
+        for suffix in self.extra_dbs:
+            extra_db_name = f"{db_name}_{suffix}"
+            if not psql_db_exists(extra_db_name):
+                psql_create_user(db_user, db_pwd); psql_create_db(db_name, db_user)
+
+    def deprovision(self) -> None:
+        db_user = self.app.replace("-", "_").replace(".", "_")
+        db_name = self.get_setting("psql_db_name") or db_user
+
+        from .database import psql_db_exists, psql_user_exists, psql_drop_db, psql_drop_user
+        if psql_db_exists(db_name):
+            psql_drop_db(db_name)
+        for suffix in self.extra_dbs:
+            extra_db_name = f"{db_name}_{suffix}"
+            if not psql_db_exists(extra_db_name):
+                psql_drop_db(extra_db_name)
+
+        if psql_user_exists(db_user):
+            psql_drop_user(db_user)
+
+        self.delete_setting("psql_db_name")
+        self.delete_setting("psql_db_user")
+        self.delete_setting("psql_db_pwd")
 
 
 class NodejsAppResource(AppResource):
@@ -1647,32 +1873,33 @@ class NodejsAppResource(AppResource):
     # restore -> nothing/re-provision
 
     type = "nodejs"
-    priority = 100
-    version: str = ""
+    multi = False
 
-    default_properties: Dict[str, Any] = {
-        "version": None,
-    }
+    version: str
+    exposed_properties: list[str] = ["version"]
 
-    N_INSTALL_DIR = "/opt/node_n"
+    def description(self) -> str:
+        return f"nodejs {self.version}"
 
     @property
-    def n(self):
+    def n(self) -> str:
         return f"/usr/share/yunohost/helpers.v{self.helpers_version}.d/vendor/n/n"
 
-    def installed_versions(self):
-        out = check_output(f"{self.n} ls", env={"N_PREFIX": self.N_INSTALL_DIR})
+    def installed_versions(self) -> list[str]:
+
+        out = check_output(f"{self.n} ls", env={"N_PREFIX": N_INSTALL_DIR})
         return [version.split("/")[-1] for version in out.strip().split("\n")]
 
-    def provision_or_update(self, context: Dict = {}):
-        os.makedirs(self.N_INSTALL_DIR, exist_ok=True)
+    def provision_or_update(self) -> None:
+
+        os.makedirs(N_INSTALL_DIR, exist_ok=True)
 
         cmd = f"{self.n} install {self.version}"
         if system_arch() == "arm64":
             cmd += " --arch=arm64"
 
         self._run_script(
-            "provision_or_update", cmd, env={"N_PREFIX": self.N_INSTALL_DIR}
+            "provision_or_update", cmd, env={"N_PREFIX": N_INSTALL_DIR}
         )
         matching_versions = [
             v
@@ -1690,16 +1917,18 @@ class NodejsAppResource(AppResource):
         self.set_setting("nodejs_version", actual_version)
         self.garbage_collect_unused_versions()
 
-    def deprovision(self, context: Dict = {}):
+    def deprovision(self) -> None:
+
         self.delete_setting("nodejs_version")
         self.garbage_collect_unused_versions()
 
-    def garbage_collect_unused_versions(self):
+    def garbage_collect_unused_versions(self) -> None:
+
         from ..app import _installed_apps, app_setting
 
-        used_versions = []
+        used_versions: list[str] = []
         for app in _installed_apps():
-            v = app_setting(app, "nodejs_version")
+            v: str | None = app_setting(app, "nodejs_version")  # type: ignore
             if v:
                 used_versions.append(v)
 
@@ -1707,7 +1936,7 @@ class NodejsAppResource(AppResource):
         if unused_versions:
             cmds = [f"{self.n} rm {version}" for version in unused_versions]
             self._run_script(
-                "cleanup", "\n".join(cmds), env={"N_PREFIX": self.N_INSTALL_DIR}
+                "cleanup", "\n".join(cmds), env={"N_PREFIX": N_INSTALL_DIR}
             )
 
 
@@ -1745,43 +1974,42 @@ class RubyAppResource(AppResource):
     """
 
     type = "ruby"
-    priority = 100
+    multi = False
+
     version: str = ""
+    exposed_properties: list[str] = ["version"]
 
-    default_properties: Dict[str, Any] = {
-        "version": None,
-    }
-
-    RBENV_ROOT = "/opt/rbenv"
+    def description(self) -> str:
+        return f"ruby {self.version}"
 
     @property
-    def rbenv(self):
-        return f"{self.RBENV_ROOT}/bin/rbenv"
+    def rbenv(self) -> str:
+        return f"{RBENV_ROOT}/bin/rbenv"
 
-    def installed_versions(self):
+    def installed_versions(self) -> list[str]:
         return (
             check_output(
                 f"{self.rbenv} versions --bare --skip-aliases | grep -Ev '/'",
-                env={"RBENV_ROOT": self.RBENV_ROOT},
+                env={"RBENV_ROOT": RBENV_ROOT},
             )
             .strip()
             .split("\n")
         )
 
-    def update_rbenv(self):
+    def update_rbenv(self) -> None:
         self._run_script(
             "provision_or_update",
             f"""
-            _ynh_git_clone "https://github.com/rbenv/rbenv" "{self.RBENV_ROOT}"
-            _ynh_git_clone "https://github.com/rbenv/ruby-build" "{self.RBENV_ROOT}/plugins/ruby-build"
-            _ynh_git_clone "https://github.com/tpope/rbenv-aliases" "{self.RBENV_ROOT}/plugins/rbenv-aliase"
-            _ynh_git_clone "https://github.com/momo-lab/xxenv-latest" "{self.RBENV_ROOT}/plugins/xxenv-latest"
-            mkdir -p "{self.RBENV_ROOT}/cache"
-            mkdir -p "{self.RBENV_ROOT}/shims"
+            _ynh_git_clone "https://github.com/rbenv/rbenv" "{RBENV_ROOT}"
+            _ynh_git_clone "https://github.com/rbenv/ruby-build" "{RBENV_ROOT}/plugins/ruby-build"
+            _ynh_git_clone "https://github.com/tpope/rbenv-aliases" "{RBENV_ROOT}/plugins/rbenv-aliase"
+            _ynh_git_clone "https://github.com/momo-lab/xxenv-latest" "{RBENV_ROOT}/plugins/xxenv-latest"
+            mkdir -p "{RBENV_ROOT}/cache"
+            mkdir -p "{RBENV_ROOT}/shims"
         """,
         )
 
-    def provision_or_update(self, context: Dict = {}):
+    def provision_or_update(self) -> None:
         for package in [
             "gcc",
             "make",
@@ -1791,20 +2019,20 @@ class RubyAppResource(AppResource):
             "zlib1g-dev",
         ]:
             if os.system(f'dpkg --list | grep -q "^ii\\s*{package}"') != 0:
-                raise YunohostValidationError(f"{package} is required to install Ruby")
+                raise YunohostPackagingError(f"{package} is required to install Ruby")
 
         self.update_rbenv()
 
         ruby_version = check_output(
             f"{self.rbenv} latest --print '{self.version}'",
-            env={"RBENV_ROOT": self.RBENV_ROOT},
+            env={"RBENV_ROOT": RBENV_ROOT},
         )
         self.set_setting("ruby_version", ruby_version)
         logger.info(f"Building Ruby {ruby_version}, this may take some time...")
         self._run_script(
             "provision_or_update",
             f"""
-            #export RBENV_ROOT='{self.RBENV_ROOT}'
+            #export RBENV_ROOT='{RBENV_ROOT}'
             export RUBY_CONFIGURE_OPTS='--disable-install-doc --with-jemalloc'
             # Use half of available CPUs for compiling
             # The trick with 1 + ...  -1 is to prevent having '0' when there's only one CPU available.
@@ -1819,16 +2047,16 @@ class RubyAppResource(AppResource):
         )
         self.garbage_collect_unused_versions()
 
-    def deprovision(self, context: Dict = {}):
+    def deprovision(self) -> None:
         self.delete_setting("ruby_version")
         self.garbage_collect_unused_versions()
 
-    def garbage_collect_unused_versions(self):
+    def garbage_collect_unused_versions(self) -> None:
         from ..app import _installed_apps, app_setting
 
-        used_versions = []
+        used_versions: list[str] = []
         for app in _installed_apps():
-            v = app_setting(app, "ruby_version")
+            v: str | None = app_setting(app, "ruby_version")  # type: ignore[assignment]
             if v:
                 used_versions.append(v)
 
@@ -1872,63 +2100,63 @@ class GoAppResource(AppResource):
     """
 
     type = "go"
-    priority = 100
-    version: str = ""
+    multi = False
 
-    default_properties: Dict[str, Any] = {
-        "version": None,
-    }
+    version: str
+    exposed_properties: list[str] = ["version"]
 
-    GOENV_ROOT = "/opt/goenv"
-
-    @property
-    def goenv(self):
-        return f"{self.GOENV_ROOT}/bin/goenv"
+    def description(self) -> str:
+        return f"go {self.version}"
 
     @property
-    def goenv_latest(self):
-        return f"{self.GOENV_ROOT}/plugins/xxenv-latest/bin/goenv-latest"
+    def goenv(self) -> str:
+        return f"{GOENV_ROOT}/bin/goenv"
 
-    def update_goenv(self):
+    @property
+    def goenv_latest(self) -> str:
+        return f"{GOENV_ROOT}/plugins/xxenv-latest/bin/goenv-latest"
+
+    def update_goenv(self) -> None:
         self._run_script(
             "provision_or_update",
             f"""
-            _ynh_git_clone https://github.com/syndbg/goenv '{self.GOENV_ROOT}'
-            _ynh_git_clone https://github.com/momo-lab/xxenv-latest '{self.GOENV_ROOT}/plugins/xxenv-latest'
-            mkdir -p '{self.GOENV_ROOT}/cache'
-            mkdir -p '{self.GOENV_ROOT}/shims'
+            _ynh_git_clone https://github.com/syndbg/goenv '{GOENV_ROOT}'
+            _ynh_git_clone https://github.com/momo-lab/xxenv-latest '{GOENV_ROOT}/plugins/xxenv-latest'
+            mkdir -p '{GOENV_ROOT}/cache'
+            mkdir -p '{GOENV_ROOT}/shims'
         """,
         )
 
-    def provision_or_update(self, context: Dict = {}):
+    def provision_or_update(self) -> None:
+
         self.update_goenv()
         go_version = check_output(
             f"{self.goenv_latest} --print {self.version}",
             env={
-                "GOENV_ROOT": self.GOENV_ROOT,
-                "PATH": self.GOENV_ROOT + "/bin/:" + os.environ["PATH"],
+                "GOENV_ROOT": GOENV_ROOT,
+                "PATH": GOENV_ROOT + "/bin/:" + os.environ["PATH"],
             },
         )
         self.set_setting("go_version", go_version)
         self._run_script(
             "provision_or_update",
             f"{self.goenv} install --quiet --skip-existing '{go_version}' 2>&1",
-            env={"GOENV_ROOT": self.GOENV_ROOT},
+            env={"GOENV_ROOT": GOENV_ROOT},
         )
         self.garbage_collect_unused_versions()
 
-    def deprovision(self, context: Dict = {}):
+    def deprovision(self) -> None:
         self.delete_setting("go_version")
         self.garbage_collect_unused_versions()
 
-    def garbage_collect_unused_versions(self):
-        installed_versions = check_output(
+    def garbage_collect_unused_versions(self) -> None:
+        installed_versions_raw = check_output(
             f"{self.goenv} versions --bare --skip-aliases",
-            env={"GOENV_ROOT": self.GOENV_ROOT},
+            env={"GOENV_ROOT": GOENV_ROOT},
         )
         installed_versions = [
             version
-            for version in installed_versions.strip().split("\n")
+            for version in installed_versions_raw.strip().split("\n")
             if "\\" not in version
         ]
 
@@ -1936,7 +2164,7 @@ class GoAppResource(AppResource):
         from ..app import _installed_apps, app_setting
 
         for app in _installed_apps():
-            v = app_setting(app, "go_version")
+            v: str | None = app_setting(app, "go_version")  # type: ignore[assignment]
             if v:
                 used_versions.append(v)
 
@@ -1947,7 +2175,7 @@ class GoAppResource(AppResource):
                 for version in unused_versions
             ]
             self._run_script(
-                "cleanup", "\n".join(cmds), env={"GOENV_ROOT": self.GOENV_ROOT}
+                "cleanup", "\n".join(cmds), env={"GOENV_ROOT": GOENV_ROOT}
             )
 
 
@@ -1979,26 +2207,27 @@ class ComposerAppResource(AppResource):
     """
 
     type = "composer"
-    priority = 100
-    version: str = ""
+    multi = False
 
-    default_properties: Dict[str, Any] = {
-        "version": None,
-    }
+    version: str
+    exposed_properties: list[str] = ["version"]
+
+    def description(self) -> str:
+        return f"composer {self.version}"
 
     @property
-    def composer_url(self):
+    def composer_url(self) -> str:
         return f"https://getcomposer.org/download/{self.version}/composer.phar"
 
-    def provision_or_update(self, context: Dict = {}):
+    def provision_or_update(self) -> None:
         install_dir = self.get_setting("install_dir")
         if not install_dir:
-            raise YunohostError(
+            raise YunohostPackagingError(
                 "This app has no install_dir defined ? Packagers: please make sure to have the install_dir resource before composer"
             )
 
         if not self.get_setting("php_version"):
-            raise YunohostError(
+            raise YunohostPackagingError(
                 "This app has no php_version defined ? Packagers: please make sure to install php dependencies using apt before composer"
             )
 
@@ -2006,15 +2235,16 @@ class ComposerAppResource(AppResource):
 
         composer_r = requests.get(self.composer_url, timeout=30)
         assert composer_r.status_code == 200, (
-            "Uhoh, failed to download {self.composer_url} ? Return code: {composer_r.status_code}"
+            f"Uhoh, failed to download {self.composer_url} ? Return code: {composer_r.status_code}"
         )
 
         with open(f"{install_dir}/composer.phar", "wb") as f:
             f.write(composer_r.content)
+        chown(f"{install_dir}/composer.phar", self.app)
 
         self.set_setting("composer_version", self.version)
 
-    def deprovision(self, context: Dict = {}):
+    def deprovision(self) -> None:
         install_dir = self.get_setting("install_dir")
 
         self.delete_setting("composer_version")
@@ -2022,4 +2252,4 @@ class ComposerAppResource(AppResource):
             os.remove(f"{install_dir}/composer.phar")
 
 
-AppResourceClassesByType = {c.type: c for c in AppResource.__subclasses__()}
+AppResourceClassesByType = {c.__fields__["type"].default: c for c in AppResource.__subclasses__()}

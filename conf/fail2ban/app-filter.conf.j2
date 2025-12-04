@@ -1,0 +1,11 @@
+[INCLUDES]
+before = common.conf
+[Definition]
+{% if auth_route and path == "/" %}
+failregex = ^<HOST> -.*\"POST {{ auth_route }} HTTP/\d.\d\" 40\d
+{% elif auth_route %}
+failregex = ^<HOST> -.*\"POST {{ path }}/{{ auth_route }} HTTP/\d.\d\" 40\d
+{% else %}
+failregex = {{ fail_regex }}
+{% endif %}
+ignoreregex =

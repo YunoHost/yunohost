@@ -25,7 +25,7 @@ import subprocess
 from collections.abc import Generator
 from functools import cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from moulinette import Moulinette
 
@@ -56,7 +56,7 @@ def debian_version_id() -> str:
 
 
 @cache
-def system_arch() -> str:
+def system_arch() -> Literal["amd64", "i386", "arm64", "armhf"]:
     command = "dpkg --print-architecture 2>/dev/null"
     return check_output(command)
 
@@ -135,6 +135,12 @@ def ram_available() -> tuple[int, int]:
     import psutil
 
     return (psutil.virtual_memory().available, psutil.swap_memory().free)
+
+
+def ram_total() -> tuple[int, int]:
+    import psutil
+
+    return (psutil.virtual_memory().total, psutil.swap_memory().total)
 
 
 def get_ynh_package_version(package: str) -> dict[str, str]:

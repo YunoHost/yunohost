@@ -75,6 +75,11 @@ test-app-config:
   variables:
    TEST_FILE: tests/test_app_config.py
 
+test-app-regenconf:
+  extends: .test-stage
+  variables:
+   TEST_FILE: tests/test_app_regenconf.py
+
 test-app-resources:
   extends: .test-pytest
   variables:
@@ -156,7 +161,11 @@ test-file-utils:
 #      artifacts: true
 #    - job: test-questions
 #      artifacts: true
-#    - job: test-app-config
+#    - job: test-app-configpanel
+#      artifacts: true
+#    - job: test-app-regenconf
+#      artifacts: true
+#    - job: test-app-resources
 #      artifacts: true
 #    - job: test-app-resources
 #      artifacts: true
@@ -185,3 +194,5 @@ test-file-utils:
 #  script:
 #    - coverage combine ./.coverage_*
 #    - coverage report
+
+

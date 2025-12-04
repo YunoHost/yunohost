@@ -39,20 +39,23 @@ import yaml
 from moulinette import Moulinette, m18n
 from packaging import version
 
-from .error import YunohostError, YunohostValidationError
+from .error import YunohostError, YunohostValidationError, YunohostPackagingError
 from .file_utils import (
     chmod,
     chown,
     cp,
+    rm,
     read_file,
     read_json,
     read_toml,
+    write_to_file,
 )
 from .i18n import _value_for_locale
 from .process import check_output
 from .system import (
     binary_to_human,
     debian_version,
+    debian_version_id,
     dpkg_is_broken,
     free_space_in_directory,
     get_ynh_package_version,
@@ -69,7 +72,7 @@ else:
     logger = getLogger("yunohost.app")
 
 APPS_SETTING_PATH = "/etc/yunohost/apps/"
-APPS_TMP_WORKDIRS = "/var/cache/yunohost/app_tmp_work_dirs"
+APPS_TMP_WORKDIRS = "/var/tmp/yunohost/"
 GIT_CLONE_CACHE = "/var/cache/yunohost/gitclones"
 
 re_app_instance_name = re.compile(
@@ -446,15 +449,21 @@ def _parse_app_doc_and_notifications(
     return doc, notifications
 
 
-def _hydrate_app_template(template: str, data: dict[str, Any]):
+def _hydrate_app_template(template: str, data: dict[str, Any], raise_exception_if_missing_var=False):
     # Apply jinja for stuff like {% if .. %} blocks,
     # but only if there's indeed an if block (to try to reduce overhead or idk)
     if "{%" in template:
-        from jinja2 import Template
+        from jinja2 import Template, Undefined, StrictUndefined
+        undefined = StrictUndefined if raise_exception_if_missing_var else Undefined
 
-        template = Template(template).render(**data)
+        template = Template(template, undefined=undefined).render(**data)
 
     stuff_to_replace = set(re.findall(r"__[A-Z0-9]+?[A-Z0-9_]*?[A-Z0-9]*?__", template))
+
+    if raise_exception_if_missing_var:
+        missing_vars = [v for v in stuff_to_replace if v.strip("_").lower() not in data]
+        if missing_vars:
+            raise YunohostPackagingError("app_uninitialized_variables", vars=', '.join(missing_vars))
 
     for stuff in stuff_to_replace:
         varname = stuff.strip("_").lower()
@@ -910,7 +919,7 @@ def _check_manifest_requirements(
     logger.debug(m18n.n("app_requirements_checking", app=app))
 
     # Packaging format
-    if manifest["packaging_format"] not in [1, 2]:
+    if manifest["packaging_format"] not in [1, 2, 3]:
         raise YunohostValidationError("app_packaging_format_not_supported")
 
     # Yunohost version
@@ -1193,6 +1202,7 @@ def _make_environment_for_app_script(
         "YNH_APP_INSTANCE_NAME": app,
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
         "YNH_APP_MANIFEST_VERSION": manifest.get("version", "?"),
+        "YNH_APP_UPSTREAM_VERSION": manifest.get("version", "?").split("~")[0],
         "YNH_APP_PACKAGING_FORMAT": str(manifest["packaging_format"]),
         "YNH_HELPERS_VERSION": str(
             manifest.get("integration", {}).get("helpers_version")
@@ -1200,6 +1210,7 @@ def _make_environment_for_app_script(
         ).replace(".0", ""),
         "YNH_ARCH": system_arch(),
         "YNH_DEBIAN_VERSION": debian_version(),
+        "YNH_DEBIAN_VERSION_ID": debian_version_id(),
     }
 
     if workdir:
@@ -1507,3 +1518,90 @@ def _ask_confirmation(
 
     if not answer:
         raise YunohostError("aborting")
+
+
+def _run_app_script_or_snippet(app, action, script, env={}, workdir=None, as_app=False, raise_exception_if_failure=False):
+
+    import tempfile
+    from ..log import OperationLogger
+    from ..hook import hook_exec_with_script_debug_if_failure
+
+    if not workdir:
+        workdir = _make_tmp_workdir_for_app(app=app)
+        chmod(workdir, 0o700, recursive=True)
+        if as_app:
+            chown(workdir, app, recursive=True)
+        delete_workdir_at_the_end = True
+    else:
+        delete_workdir_at_the_end = False
+
+    env_ = _make_environment_for_app_script(
+        app,
+        workdir=workdir,
+        action=action,
+        force_include_app_settings=True,
+    )
+    env_.update(env)
+
+    # FIXME ? : this is an ugly hack :(
+    active_operation_loggers = [
+        o for o in OperationLogger._instances if o.ended_at is None
+    ]
+    if active_operation_loggers:
+        operation_logger = active_operation_loggers[-1]
+    else:
+        operation_logger = OperationLogger(
+            "app_script_or_snippet", [("app", app)], env=env_
+        )
+        operation_logger.start()
+
+    with tempfile.NamedTemporaryFile(prefix="ynh_") as script_path:
+        script_path = script_path.name
+        script_content = f"""
+source /usr/share/yunohost/helpers
+ynh_abort_if_errors
+
+{script}
+"""
+        write_to_file(script_path, script_content)
+        if as_app:
+            chmod(script_path, 0o500)
+            chown(script_path, app)
+
+        (
+            call_failed,
+            failure_message_with_debug_instructions,
+        ) = hook_exec_with_script_debug_if_failure(
+            script_path,
+            user=app if as_app else "root",
+            env=env_,
+            chdir=workdir,
+            operation_logger=operation_logger,
+            error_message_if_script_failed="An error occured inside the script",
+            error_message_if_failed=lambda e: f"{action} failed for {app} : {e}",
+        )
+
+        if delete_workdir_at_the_end:
+            rm(workdir, recursive=True, force=True)
+
+        if call_failed:
+            if raise_exception_if_failure:
+                raise YunohostError(
+                    failure_message_with_debug_instructions, raw_msg=True
+                )
+        else:
+            # FIXME: currently in app install code, we have
+            # more sophisticated code checking if this broke something on the system etc.
+            # dunno if we want to do this here or manage it elsewhere
+            pass
+
+        return call_failed, failure_message_with_debug_instructions
+
+
+def _list_packagingv3_app_scripts(app: str, workdir: str) -> list[str]:
+    try:
+        # FIXME : turn this into a helper function somehow
+        return check_output(f"bash -c \"source '{workdir}/scripts.sh'; declare -F | cut -d' ' -f3\"").split("\n")
+    except Exception as e:
+        raise YunohostPackagingError(f"Uhoh !? Failed to parse available functions for {app} ? {e}", raw_msg=True)
+

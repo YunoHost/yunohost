@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+readonly GOENV_ROOT="/opt/goenv"
+export GOENV_ROOT
+
+_ynh_load_go_in_path_and_other_tweaks() {
+
+    # Get the absolute path of this version of go
+    go_dir="$GOENV_ROOT/versions/$go_version/bin"
+
+    # Load the path of this version of go in $PATH
+    if [[ :$PATH: != *":$go_dir"* ]]; then
+        PATH="$go_dir:$PATH"
+    fi
+
+    # Export PATH such that it's available through sudo -E / ynh_exec_as $app
+    export PATH
+
+    # This is in full lowercase such that it gets replaced in templates
+    path_with_go="$PATH"
+    PATH_with_go="$PATH"
+
+    # Sets the local application-specific go version
+    pushd "${install_dir}"
+        "$GOENV_ROOT/bin/goenv" local "$go_version"
+    popd
+}
+
+# Auto-load Go path tweaks if this app uses the Go resource in the manifest
+if [ -n "${go_version:-}" ] && (cat "$YNH_APP_BASEDIR/manifest.toml" | toml_to_json | jq -e ".resources.go" > /dev/null); then
+    _ynh_load_go_in_path_and_other_tweaks
+fi

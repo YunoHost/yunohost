@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+# get the first available redis database
+#
+# usage: ynh_redis_get_free_db
+# | returns: the database number to use
+ynh_redis_get_free_db() {
+    local result max db
+    result=$(redis-cli INFO keyspace)
+
+    # get the num
+    max=$(cat /etc/redis/redis.conf | grep ^databases | grep -Eow "[0-9]+")
+
+    db=0
+    # default Debian setting is 15 databases
+    for i in $(seq 0 "$max"); do
+        if ! echo "$result" | grep -q "db$i"; then
+            db=$i
+            break 1
+        fi
+        db=-1
+    done
+
+    test "$db" -eq -1 && ynh_die "No available Redis databases..."
+
+    echo "$db"
+}
+
+# Erase a redis database so it can be reused by other apps.
+#
+# usage: ynh_redis_remove_db database
+# | arg: database - the database to erase
+ynh_redis_remove_db() {
+    local db=$1
+    redis-cli -n "$db" flushdb
+}

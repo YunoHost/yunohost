@@ -457,16 +457,27 @@ def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
         f.write("")
     env["YNH_STDRETURN"] = stdreturn
 
+
+
     # Construct command to execute
-    if user == "root":
-        command = ["sh", "-c"]
+    if user != "root":
+        import pwd
+        pw_record = pwd.getpwnam(user)
+        homedir = pw_record.pw_dir
+        user_uid = pw_record.pw_uid
+        user_gid = pw_record.pw_gid
+        def demote():
+            os.setgid(user_gid)
+            os.setuid(user_uid)
+        env.update({'HOME': homedir, 'USER': user})
+        preexec_fn = demote
     else:
-        command = ["sudo", "-n", "-u", user, "-H", "sh", "-c"]
+        preexec_fn = None
 
     # use xtrace on fd 7 which is redirected to stdout
     env["BASH_XTRACEFD"] = "7"
-    command.append(f'/bin/bash -x "{cmd_script}" {cmd_args} 7>&1')
 
+    command = ["sh", "-c", f'/bin/bash -x "{cmd_script}" {cmd_args} 7>&1']
     logger.debug("Executing command '%s'" % command)
 
     _env = os.environ.copy()
@@ -483,7 +494,7 @@ def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
     # Pass jinja filters path for template helper
     _env["YNH_J2_FILTERS_FILE_PATH"] = jinja_filters.__file__
 
-    returncode = call_async_output(command, loggers, shell=False, cwd=chdir, env=_env)
+    returncode = call_async_output(command, loggers, shell=False, cwd=chdir, env=_env, preexec_fn=preexec_fn)
 
     raw_content = None
     try:

@@ -153,6 +153,14 @@ base_folder_and_perm_init() {
     chown root:root /var/cache/yunohost
     chmod 700 /var/cache/yunohost
 
+    mkdir -p /var/tmp/yunohost
+    mkdir /var/tmp/yunohost/download
+    chown root:root /var/tmp/yunohost
+    chown root:root /var/tmp/yunohost/download
+    # 711 because we want $app-s to be able to access their assets folder (as non-root) during scripts
+    chmod 711 /var/tmp/yunohost
+    chmod 711 /var/tmp/yunohost/download
+
     [ ! -e /var/www/.well-known/ynh-diagnosis/ ] || chmod 775 /var/www/.well-known/ynh-diagnosis/
 
     if test -e /etc/yunohost/installed; then
