@@ -36,15 +36,15 @@ ynh_config_add_systemd() {
     local service
     local template
     ynh_handle_getopts_args "$@"
-    mount="${mount:-replace_me}"
+    mount="${mount:-}"
     service="${service:-$app}"
     template="${template:-systemd.service}"
     # ===========================================
 
-    if [[ $mount != "replace_me" ]]
+    if [[ -n "$mount" ]]
     then
-    ynh_config_add --template="$template" --destination="/etc/systemd/system/$mount.mount"
-    systemctl enable "$mount" --quiet
+        ynh_config_add --template="$template" --destination="/etc/systemd/system/$mount.mount"
+        systemctl enable "$mount" --quiet
     else
     ynh_config_add --template="$template" --destination="/etc/systemd/system/$service.service"
     systemctl enable "$service" --quiet
