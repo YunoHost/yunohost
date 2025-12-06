@@ -63,7 +63,9 @@ do_post_regen() {
     done
 
     # Ensure the yunohost repo is not in sources.list
-    sed '/yunohost.org/d' -i "/etc/apt/sources.list"
+    if [ -f "/etc/apt/sources.list" ]; then
+        sed '/yunohost.org/d' -i "/etc/apt/sources.list"
+    fi
 
     # Ensure the legacy, unmanaged file was deleted
     if [ -f /etc/apt/sources.list.d/yunohost.list ]; then
