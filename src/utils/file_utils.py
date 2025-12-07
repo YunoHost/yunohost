@@ -138,6 +138,16 @@ def _ensure_write_file_valid(file_path: str | Path) -> Path:
     return file_path
 
 
+def ensure_file_endline_terminated(file: str | Path) -> None:
+    """Ensure the file is terminated by an empty line"""
+    with Path(file).open("rb+") as stream:
+        stream.seek(-1, os.SEEK_END)
+        last_char = stream.read(1)
+        if last_char != b"\n":
+            stream.seek(0, os.SEEK_END)
+            stream.write(b"\n")
+
+
 def write_to_file(
     file_path: str | Path, data: str | bytes | list, file_mode: str = "w"
 ) -> None:
