@@ -176,6 +176,7 @@ def write_to_file(
 
     try:
         file_path.open(file_mode).write(data)
+        ensure_file_endline_terminated(file_path)
     except IOError as e:
         raise YunohostError("cannot_write_file", file=file_path, error=str(e))
     except Exception as e:
@@ -222,6 +223,7 @@ def write_to_json(
     try:
         with file_path.open("w") as f:
             json.dump(data, f, sort_keys=sort_keys, indent=indent)
+        ensure_file_endline_terminated(file_path)
     except IOError as e:
         raise YunohostError("cannot_write_file", file=file_path, error=str(e))
     except Exception as e:
@@ -245,6 +247,7 @@ def write_to_yaml(file_path: str | Path, data: Jsonable) -> None:
     try:
         with file_path.open("w") as f:
             yaml.safe_dump(data, f, default_flow_style=False)
+        ensure_file_endline_terminated(file_path)
     except IOError as e:
         raise YunohostError("cannot_write_file", file=file_path, error=str(e))
     except Exception as e:
