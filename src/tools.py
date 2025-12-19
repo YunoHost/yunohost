@@ -233,6 +233,25 @@ def tools_postinstall(
             raw_msg=True,
         )
 
+    internet_ok = False
+    if os.system("ping -c1 -w3 yunohost.org >/dev/null") == 0:
+        internet_ok = True
+    elif os.system("ping -c1 -w3 8.8.8.8 >/dev/null") == 0:
+        if os.system("timeout 3 dig +short yunohost.org") == 0:
+            # yunohost.org does resolves, and 8.8.8.8 pings ... most likely yunohost.org is down?
+            logger.warning(
+                "This machine can ping the Internet and resolve DNS, but not yunohost.org? Maybe there's currently an outage on yunohost.org infrastructure which may or may not impact the postinstall process..."
+            )
+        else:
+            # yunohost.org doesnt ping, but 8.8.8.8 pings ... most likely DNS resolution is broken?
+            logger.warning(
+                "It looks like DNS resolution is broken on your server, which may impact the postinstall process..."
+            )
+    else:
+        logger.warning(
+            "It looks like internet connectivity is not available, which may or may not be what you're expecting ..."
+        )
+
     operation_logger.start()
     logger.info(m18n.n("yunohost_installing"))
 
@@ -262,10 +281,15 @@ def tools_postinstall(
     # Try to fetch the apps catalog ...
     # we don't fail miserably if this fails,
     # because that could be for example an offline installation...
-    try:
-        _update_apps_catalog()
-    except Exception as e:
-        logger.warning(str(e))
+    if internet_ok is True:
+        try:
+            _update_apps_catalog()
+        except Exception as e:
+            logger.warning(str(e))
+    else:
+        logger.warning(
+            "Skipping catalog initialization due to lack of Internet connectivity?"
+        )
 
     # Init migrations (skip them, no need to run them on a fresh system)
     _skip_all_migrations()

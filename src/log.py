@@ -565,6 +565,8 @@ class RedactingFormatter(Formatter):
             # (try to run "foo".replace("", "bar"))
             if data:
                 msg = msg.replace(data, "**********")
+                # bash set -x display comparison like this: [[ ohno != \o\h\n\o ]]
+                msg = msg.replace("\\" + "\\".join(data), "**********")
         return msg
 
     def identify_data_to_redact(self, record):

@@ -55,6 +55,46 @@ yunohost (13.0.0) testing; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 31 Oct 2025 18:38:56 +0100
  
+yunohost (12.1.37) stable; urgency=low
+
+  - security: introduce a new security issue list that is fetched alongside the catalog, such that the diagnosis reports a warning/error for older versions of apps (or system packagers) vulnerable to known security issues ([#2077](http://github.com/YunoHost/yunohost/pull/2077))
+  - regenconf: properly check that categories to regen exists, to remove confusion when people try to regenconf stuff that dont exist like 'ssowat' or whatever... (1285fb7ff)
+  - apps: improve app restore debugging with a new no-remove-on-failure option, similar to the one for install ([#2184](http://github.com/YunoHost/yunohost/pull/2184))
+  - apps/nginx: add include snippets for fastcgi params and proxy param with and without authentication headers ([#2163](http://github.com/YunoHost/yunohost/pull/2163))
+
+  Thanks to all contributors <3 ! (Josue-T)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 18 Dec 2025 17:39:45 +0100
+
+yunohost (12.1.36) stable; urgency=low
+
+  - bookworm->trixie: fix some issues encountered during migration ([#2227](http://github.com/YunoHost/yunohost/pull/2227))
+  - sse: Improve heartbeat handling and error logging in sse_stream ([#2238](http://github.com/YunoHost/yunohost/pull/2238))
+  - logs: fix redacting mechanism not redacting secrets in some cases because of the way set -x display if comparisons in some cases ([#2234](http://github.com/YunoHost/yunohost/pull/2234))
+  - logs: improve yunopaste to also redact email-like patterns ([#2232](http://github.com/YunoHost/yunohost/pull/2232))
+  - logs/helpers: remove debug logs in some part of configpanel's ynh_app_config_validate to reduce noise, and as an additional layer to prevent from leaking secrets ([#2233](http://github.com/YunoHost/yunohost/pull/2233))
+  - backup: add interactive terminal check for backup confirmation prompt ([#2229](http://github.com/YunoHost/yunohost/pull/2229))
+  - postinstall: improve resilience and logging when no internet connectivity is available during postinstall (14248db34)
+  - i18n: Translations updated for Basque, Catalan, French, Galician, Occitan, Polish, Portuguese (Brazil), Russian
+
+  Thanks to all contributors <3 ! (Alekseï, Eduardo Mozart de Oliveira, Eryk Michalak, Francescc, HgO, José M, Kayou, ljf, orhtej2, ppr, Quentí, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 27 Nov 2025 01:29:22 +0100
+
+yunohost (12.1.35) stable; urgency=low
+
+  - i18n/doc: update yunohost.org urls such that they point directly to the new doc on doc.yunohost.org etc (4ca736130)
+  - debian/mail: Apparently using email relay requires libsasl2-modules in some context (69a2b95b8)
+  - helpers: split ynh_local_curl to have a low-level version to cover elaborate usecases where packagers want to pass arbitrary curl options and headers, not just post data (7898db59a)
+  - trixie: Fix pip freeze call of subprocess (9d2627d54)
+  - trixie: Reorganize the steps * First run the pip, debconf-set-selections, chattr, apt hold, etc * Then run the apt/dpkg patching, at the last possible moment before apt update/uprgade (7b37187bf)
+  - helpers: utils: add quotes for shellcheck (c796a7eef)
+  - i18n: Translations updated for Basque, Catalan, Galician
+
+  Thanks to all contributors <3 ! (Félix Piédallu, Francescc, José M, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 07 Nov 2025 15:29:25 +0100
+
 yunohost (12.1.34) stable; urgency=low
 
   - migrations: Add draft, "hidden" migration to Trixie ([#2216](http://github.com/YunoHost/yunohost/pull/2216), 97c9c2ca2, c90e7264a, ca7d9dc1d)

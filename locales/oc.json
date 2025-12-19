@@ -458,5 +458,7 @@
     "download_bad_status_code": "{url} tòrna lo còdi d’estat {code}",
     "corrupted_json": "Fichièr Json corromput legit de {ressource} (rason : {error})",
     "corrupted_yaml": "Fichièr YAML corromput legit de {ressource} (rason : {error})",
-    "corrupted_toml": "Fichièr TOML corromput en lectura de {ressource} estant (rason : {error})"
+    "corrupted_toml": "Fichièr TOML corromput en lectura de {ressource} estant (rason : {error})",
+    "admins": "Administrators",
+    "all_users": "Totes los utilizaires de YunoHost"
 }

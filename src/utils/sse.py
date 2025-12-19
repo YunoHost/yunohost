@@ -325,7 +325,9 @@ def sse_stream() -> Generator[str, None, None]:
             if time_until_heartbeat <= 0:
                 # Time to send heartbeat
                 try:
-                    _, current_operation_id, cmdline, started_by = get_current_operation()
+                    _, current_operation_id, cmdline, started_by = (
+                        get_current_operation()
+                    )
                     event: SSEEventHeartbeat = {
                         "current_operation": current_operation_id,
                         "cmdline": cmdline,
@@ -342,7 +344,11 @@ def sse_stream() -> Generator[str, None, None]:
 
             # Poll for messages with a timeout that aligns with heartbeat timing
             # Use the time until next heartbeat (in ms) or 1 second max to keep responsive
-            poll_timeout = min(int(time_until_heartbeat * 1000), 1000) if time_until_heartbeat > 0 else 1000
+            poll_timeout = (
+                min(int(time_until_heartbeat * 1000), 1000)
+                if time_until_heartbeat > 0
+                else 1000
+            )
 
             if sub.poll(poll_timeout, zmq.POLLIN):
                 try:

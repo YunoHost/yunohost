@@ -25,9 +25,11 @@ import subprocess
 from collections.abc import Generator
 from functools import cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from moulinette import Moulinette
+
+from debian import debian_support
 
 from ..utils.error import YunohostError
 from .process import check_output
@@ -52,19 +54,39 @@ def os_release() -> dict[str, str]:
 
 
 @cache
-def debian_version() -> str:
-    return os_release()["VERSION_CODENAME"]
+def debian_version() -> Literal["bookworm", "trixie"]:
+    return os_release()["VERSION_CODENAME"]  # type: ignore[return-value]
 
 
 @cache
 def debian_version_id() -> str:
-    return os_release()["VERSION_ID"]
+    return int(os_release()["VERSION_ID"])  # type: ignore[return-value]
 
 
 @cache
-def system_arch() -> str:
+def system_arch() -> Literal["amd64", "i386", "armhf", "arm64"]:
     command = "dpkg --print-architecture 2>/dev/null"
-    return check_output(command)
+    return check_output(command)  # type: ignore[return-value]
+
+
+def dpkg_list_installed_packages() -> list[str]:
+    command = r"dpkg --list | grep -P '^ii\s*' | tr ':' ' ' | awk '{print $2}'"
+    return list(set(check_output(command).strip().split("\n")))
+
+
+def dpkg_package_version(package):
+    return check_output(
+        "dpkg-query --showformat='${Version}' --show " + package
+    ).strip()
+
+
+def dpkg_compare_version(a, b) -> Literal[-1, 0, 1]:
+    """
+    Return 1 (or positive value?) if a > b
+    or -1 (or negative value?) if a < b
+    or 0 if a == b
+    """
+    return debian_support.version_compare(a, b)
 
 
 @cache
