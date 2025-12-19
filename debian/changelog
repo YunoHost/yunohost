@@ -1,3 +1,16 @@
+yunohost (13.0.3) testing; urgency=low
+
+  - debian: Add an explicit dependency on sudo: libsss-sudo doesn't actually depend on sudo... (cbf9af29c)
+  - log: Update log cache symlink handling to accept configurable age parameter, change since_days_ago default param to 1 month (b75f4cdfd)
+  - sssd: remove useless fields in sssd conf (65c1b0f55)
+  - nginx: Fix http2 setting (3edf1ddf8)
+  - nginx: Fix jinja template to remove empty lines (4d9a145ff)
+  - apt: Fix when sources.list does not exist on postinstall (030dac676)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, Kay0u)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 19 Dec 2025 19:36:50 +0100
+
 yunohost (13.0.1) testing; urgency=low
 
   - debian/control: tweak openssl conflict rule (936d7c193)
