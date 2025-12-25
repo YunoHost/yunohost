@@ -1622,6 +1622,11 @@ class TestDomain(BaseTest):
     ]
     # fmt: on
 
+    @classmethod
+    def _test_basic_attrs(self):
+        with patch_domains(domains=[main_domain], main_domain=main_domain):
+            super()._test_basic_attrs()
+
     def test_options_prompted_with_ask_help(self, prefill_data=None):
         with patch_domains(domains=[main_domain], main_domain=main_domain):
             super().test_options_prompted_with_ask_help(prefill_data=prefill_data)
@@ -1890,6 +1895,11 @@ class TestGroup(BaseTest):
         },
     ]
     # fmt: on
+
+    @classmethod
+    def _test_basic_attrs(self):
+        with patch_groups(groups=groups1):
+            super()._test_basic_attrs()
 
     def test_options_prompted_with_ask_help(self, prefill_data=None):
         with patch_groups(groups=groups2):
@@ -2204,9 +2214,10 @@ def test_normalize_boolean_special_yesno():
 
 
 def test_normalize_domain():
-    assert DomainOption().normalize("https://yolo.swag/") == "yolo.swag"
-    assert DomainOption().normalize("http://yolo.swag") == "yolo.swag"
-    assert DomainOption().normalize("yolo.swag/") == "yolo.swag"
+    with patch_domains(domains=[main_domain], main_domain=main_domain):
+        assert DomainOption().normalize("https://yolo.swag/") == "yolo.swag"
+        assert DomainOption().normalize("http://yolo.swag") == "yolo.swag"
+        assert DomainOption().normalize("yolo.swag/") == "yolo.swag"
 
 
 def test_normalize_path():
@@ -2306,9 +2317,9 @@ def test_simple_evaluate():
         if result == bool:
             assert bool(evaluate_simple_js_expression(expression, context)), expression
         else:
-            assert evaluate_simple_js_expression(expression, context) == result, (
-                expression
-            )
+            assert (
+                evaluate_simple_js_expression(expression, context) == result
+            ), expression
 
     for expression, error in trigger_errors.items():
         with pytest.raises(error):
