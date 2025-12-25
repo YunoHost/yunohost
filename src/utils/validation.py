@@ -9,7 +9,8 @@ from pydantic import AnyUrl, ValidationError
 from pydantic_core import PydanticCustomError, PydanticUseDefault, core_schema as cs
 
 from moulinette import Moulinette
-from yunohost.log import OperationLogger
+from ..log import OperationLogger
+from .i18n import _value_for_locale
 
 if t.TYPE_CHECKING:
     from pydantic import (
@@ -33,7 +34,7 @@ Translation = dict[str, str] | str
 @dataclass
 class Pattern:
     regexp: str
-    error: Translation = "pydantic.value_error.str.regex"
+    error: Translation = "string_pattern_mismatch"
 
 
 # TYPE CHECKING
@@ -206,7 +207,7 @@ class StringConstraints(BaseConstraints):
         Catch "string_pattern_mismatch" validation error to raise another error with
         the custom pattern error message
         """
-        if not self.pattern:
+        if not self.pattern or self.pattern.error == "string_pattern_mismatch":
             return handler(v)
         try:
             return handler(v)
@@ -216,16 +217,18 @@ class StringConstraints(BaseConstraints):
                 None,
             )
             if pattern_error:
+                # Special error case where error is custom and should not be translated in global handler
                 raise PydanticCustomError(
-                    "string_pattern_mismatch", str(self.pattern.error)
+                    "error_ynh_custom",
+                    _value_for_locale(self.pattern.error),
                 )
             raise err
 
     def validate(self, v: str) -> str:
         if not self.multiline and "\n" in v or "\r" in v:
             raise PydanticCustomError(
-                "multiline",
-                "String contains multiline character",
+                "error_ynh_multiline",
+                "error_ynh_multiline",
             )
 
         return v
@@ -266,8 +269,8 @@ class PasswordConstraints(BaseConstraints):
     def validate(self, v: str) -> str:
         if any(char in v for char in (self.forbidden_chars)):
             raise PydanticCustomError(
-                "pattern_password_app",
-                "forbidden characters in string: {chars}",  # FIXME trad
+                "error_ynh_forbidden_chars",
+                "error_ynh_forbidden_chars",
                 {"forbidden_chars": self.forbidden_chars},
             )
 
@@ -278,8 +281,7 @@ class PasswordConstraints(BaseConstraints):
 
         if status == "error":
             raise PydanticCustomError(
-                error_key,
-                error_key,  # FIXME trad
+                "error_ynh_" + error_key, "error_ynh_" + error_key
             )
 
         return v
@@ -336,7 +338,7 @@ class BooleanConstraints(BaseConstraints):
     def validate(self, v: t.Any) -> t.Any:
         v = self.preparse(v)
         v = v.strip() if isinstance(v, str) else v
-        
+
         if v == self.serialization[0]:
             return True
         elif v == self.serialization[1]:
@@ -349,7 +351,7 @@ class BooleanConstraints(BaseConstraints):
             return self.serialization[0] if v is True else self.serialization[1]
         if self.mode == "human":
             return "yes" if v is True else "no"
-            
+
         return v
 
 
@@ -428,14 +430,16 @@ class PathConstraints(BaseConstraints):
                 v = Path(t.cast(str, AnyUrl(v).path).strip("/"))
             else:
                 v = v.strip().strip("/")
+                forbidden_chars = [
+                    chars for chars in ("?", "\n", "\t", "\r", " ", "./") if chars in v
+                ]
 
-                for chars in ("?", "\n", "\t", "\r", " ", "./"):
-                    if chars in v:
-                        raise PydanticCustomError(
-                            "forbidden_chars",
-                            "Forbidden characters in string: {chars}",
-                            {"chars": chars},
-                        )
+                if forbidden_chars:
+                    raise PydanticCustomError(
+                        "error_ynh_forbidden_chars",
+                        "error_ynh_forbidden_chars",
+                        {"forbidden_chars": forbidden_chars},
+                    )
 
         path: Path | None = handler(v)
 
@@ -485,8 +489,11 @@ class FileConstraints(BaseConstraints):
         ):
             path = Path(v)
             if not (path.exists() and path.is_absolute() and path.is_file()):
-                # FIXME, search pydantic eq error i18n key
-                raise PydanticCustomError("file_not_exists", "File {v} doesn't exists")
+                raise PydanticCustomError(
+                    "error_ynh_file_not_exists",
+                    "error_ynh_file_not_exists",
+                    {"path": str(path)},
+                )
             content = path.read_bytes()
         else:
             content = b64decode(v)
@@ -495,8 +502,8 @@ class FileConstraints(BaseConstraints):
 
         if self.accept and mimetype not in self.accept:
             raise PydanticCustomError(
-                "file_unsupported_type",
-                "Unsupported file type '{mimetype}', expected a type among '{accept_list}'.",
+                "error_ynh_file_unsupported_type",
+                "error_ynh_file_unsupported_type",
                 {"mimetype": mimetype, "accept_list": ", ".join(self.accept)},
             )
 

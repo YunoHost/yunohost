@@ -1825,22 +1825,33 @@ def parse_prefilled_values(
 
     return values
 
-
-# i18n: pydantic_type_error
-# i18n: pydantic_type_error_none_not_allowed
-# i18n: pydantic_type_error_str
-# i18n: pydantic_value_error_color
-# i18n: pydantic_value_error_const
-# i18n: pydantic_value_error_date
-# i18n: pydantic_value_error_email
-# i18n: pydantic_value_error_number_not_ge
-# i18n: pydantic_value_error_number_not_le
-# i18n: pydantic_value_error_str_regex
-# i18n: pydantic_value_error_time
-# i18n: pydantic_value_error_url_extra
-# i18n: pydantic_value_error_url_host
-# i18n: pydantic_value_error_url_port
-# i18n: pydantic_value_error_url_scheme
+# i18n: error_pydantic_bool_type
+# i18n: error_pydantic_bool_parsing
+# i18n: error_pydantic_color_error
+# i18n: error_pydantic_date_type
+# i18n: error_pydantic_date_from_datetime_parsing
+# i18n: error_pydantic_greater_than_equal
+# i18n: error_pydantic_int_type
+# i18n: error_pydantic_int_parsing
+# i18n: error_pydantic_int_from_float
+# i18n: error_pydantic_less_than_equal
+# i18n: error_pydantic_list_type
+# i18n: error_pydantic_literal_error
+# i18n: error_pydantic_path_type
+# i18n: error_pydantic_string_pattern_mismatch
+# i18n: error_pydantic_string_type
+# i18n: error_pydantic_time_parsing
+# i18n: error_pydantic_time_type
+# i18n: error_pydantic_url_type
+# i18n: error_pydantic_url_parsing
+# i18n: error_pydantic_url_scheme
+# i18n: error_pydantic_value_error
+# i18n: error_ynh_file_not_exists
+# i18n: error_ynh_file_unsupported_type
+# i18n: error_ynh_multiline
+# i18n: error_ynh_forbidden_chars
+# i18n: error_ynh_password_listed
+# i18n: error_ynh_password_too_simple_1
 
 MAX_RETRIES = 4
 
@@ -1929,36 +1940,28 @@ def prompt_or_validate_form(
                 if isinstance(option, BooleanOption) and form[option.id] is not None:
                     context[option.id] = form[option.id] == option.yes
 
-            except (ValidationError, YunohostValidationError) as e:
-                if isinstance(e, ValidationError):
-                    # TODO: handle multiple errors
-                    err = e.errors()[0]
-                    ctx = err.get("ctx", {})
+            except ValidationError as e:
+                # TODO: handle multiple errors
+                err = e.errors()[0]
+                ctx = err.get("ctx", {})
 
-                    if "permitted" in ctx:
-                        ctx["permitted"] = ", ".join(
-                            f"'{choice}'" for choice in ctx["permitted"]
-                        )
-                    if (
-                        isinstance(option, (BaseStringOption, TagsOption))
-                        and "pattern" in err["type"]
-                        and option.pattern is not None
-                    ):
-                        _error = option.pattern.error
-                        err_text = (
-                            _error
-                            if isinstance(_error, str)
-                            else _value_for_locale(_error)
-                        )
-                    else:
-                        i18n_key = f"pydantic.{err['type']}".replace(".", "_")
-                        err_text = (
-                            m18n.n(i18n_key, **ctx)
-                            if m18n.key_exists(i18n_key)
-                            else err["msg"]
-                        )
+                if err["type"] == "error_ynh_custom":
+                    # Special case where the error is custom, defined in the option
+                    # Do not translate
+                    err_text = err["msg"]
                 else:
-                    err_text = str(e)
+                    err_type = (
+                        err["type"]
+                        if err["type"].startswith("error_ynh")
+                        else "error_pydantic_" + err["type"]
+                    )
+
+                    if m18n.key_exists(err_type):
+                        err_text = m18n.n(err_type, **ctx)
+                    else:
+                        # FIXME raise YunoHost error instead?
+                        logger.error(f"Missing translation for error key '{err_type}'")
+                        err_text = err["msg"] or err_type
 
                 # If in interactive cli, re-ask the current question
                 if i < MAX_RETRIES and interactive:
@@ -1966,16 +1969,12 @@ def prompt_or_validate_form(
                     value = None
                     continue
 
-                if isinstance(e, ValidationError):
-                    if not interactive:
-                        err_text = m18n.n(
-                            "app_argument_invalid", name=option.id, error=err_text
-                        )
+                if not interactive:
+                    err_text = m18n.n(
+                        "app_argument_invalid", name=option.id, error=err_text
+                    )
 
-                    raise YunohostValidationError(err_text, raw_msg=True)
-
-                # Otherwise raise the ValidationError
-                raise e
+                raise YunohostValidationError(err_text, raw_msg=True)
 
             break
 
