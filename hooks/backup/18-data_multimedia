@@ -31,4 +31,4 @@ if [ ! -e "/home/yunohost.multimedia" ] || [ -e "/home/yunohost.multimedia/.noba
 fi
 
 # Backup multimedia directory
-ynh_backup "/home/yunohost.multimedia"
+[ ! -e "/home/yunohost.multimedia" ] || ynh_backup "/home/yunohost.multimedia"
