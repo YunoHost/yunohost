@@ -259,8 +259,6 @@ do_pre_regen() {
 
     mkdir -p "$pending_dir/etc/systemd/system/nftables.service.d/"
     cp yunohost-nftables-hooks-override.conf "$pending_dir/etc/systemd/system/nftables.service.d/yunohost-nftables-hooks.conf"
-    # Delete legacy conflict between yunohost and nftables
-    touch "$pending_dir/etc/systemd/system/nftables.service.d/ynh-override.conf"
 
     # Don't suspend computer on LidSwitch
     mkdir -p "$pending_dir/etc/systemd/logind.conf.d/"
@@ -270,11 +268,15 @@ do_pre_regen() {
     cp yunohost-portal-api.service "$pending_dir/etc/systemd/system/yunohost-portal-api.service"
     cp yunoprompt.service "$pending_dir/etc/systemd/system/yunoprompt.service"
     cp proc-hidepid.service "$pending_dir/etc/systemd/system/proc-hidepid.service"
-    # Delete legacy yunohost-firewall service
-    touch "$pending_dir/etc/systemd/system/yunohost-firewall.service"
 
     mkdir -p "$pending_dir/etc/dpkg/origins/"
     cp dpkg-origins "$pending_dir/etc/dpkg/origins/yunohost"
+
+    # Delete legacy conflict between yunohost and nftables
+    touch "$pending_dir/etc/systemd/system/nftables.service.d/ynh-override.conf"
+
+    # Delete legacy yunohost-firewall service
+    touch "$pending_dir/etc/systemd/system/yunohost-firewall.service"
 
     # Remove legacy hackish/clumsy nodejs autoupdate which ends up filling up space with ambiguous upgrades >_>
     touch "$pending_dir/etc/cron.daily/node_update"
