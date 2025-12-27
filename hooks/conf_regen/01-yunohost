@@ -355,29 +355,28 @@ do_post_regen() {
     grep -q '^ssh.app:' /etc/group || groupadd ssh.app
     grep -q '^sftp.app:' /etc/group || groupadd sftp.app
 
+
+    # Reload systemd if any system service was touched
+    if [[ "$regen_conf_files" =~ "/etc/systemd/system" ]]; then
+        systemctl daemon-reload
+    fi
+
     # Propagates changes in systemd service config overrides
     if systemctl | grep -q 'ntp.service'; then
         [[ ! "$regen_conf_files" =~ "ntp.service.d/ynh-override.conf" ]] || {
-            systemctl daemon-reload
             systemctl restart ntp
         }
     fi
 
     [[ ! "$regen_conf_files" =~ "login.conf.d/ynh-override.conf" ]] || {
-        systemctl daemon-reload
         systemctl restart systemd-logind
     }
-    [[ ! "$regen_conf_files" =~ "yunohost-api.service" ]] || systemctl daemon-reload
-    [[ ! "$regen_conf_files" =~ "yunohost-portal-api.service" ]] || systemctl daemon-reload
-    [[ ! "$regen_conf_files" =~ "nftables.service.d/yunohost-nftables-hooks.conf" ]] || systemctl daemon-reload
 
     if [[ "$regen_conf_files" =~ "yunoprompt.service" ]]; then
-        systemctl daemon-reload
         action=$([[ -e /etc/systemd/system/yunoprompt.service ]] && echo 'enable' || echo 'disable')
         systemctl "$action" yunoprompt --quiet --now
     fi
     if [[ "$regen_conf_files" =~ "proc-hidepid.service" ]]; then
-        systemctl daemon-reload
         action=$([[ -e /etc/systemd/system/proc-hidepid.service ]] && echo 'enable' || echo 'disable')
         systemctl "$action" proc-hidepid --quiet --now
     fi
