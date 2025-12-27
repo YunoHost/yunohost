@@ -906,5 +906,9 @@
     "download_ssl_error": "Erro de SSL ao se conectar a {url}",
     "download_timeout": "{url} demorou muito para responder, abortado.",
     "download_unknown_error": "Erro ao baixar dados de {url}: {error}",
-    "download_bad_status_code": "{url} retornou o código de status {code}"
+    "download_bad_status_code": "{url} retornou o código de status {code}",
+    "diagnosis_package_security_issue_error": "O pacote de sistema '{package}' está atualmente na versão '{current_version}', que é vulnerável a uma falha de segurança GRAVE: {title}. Recomenda-se atualizar O MAIS RÁPIDO POSSÍVEL para a versão '{fixed_in_version}'. Mais informações: {more_infos_list}",
+    "diagnosis_apps_security_issue_warning": "O aplicativo {app} está atualmente na versão '{current_version}', que é vulnerável a um problema de segurança moderado: {title}. Recomenda-se atualizá-lo para a versão '{fixed_in_version}'. Mais informações: {more_infos_list}",
+    "diagnosis_apps_security_issue_error": "O aplicativo {app} está atualmente na versão '{current_version}', que é vulnerável a uma falha de segurança GRAVE: {title}. Recomenda-se atualizá-lo O MAIS RÁPIDO POSSÍVEL para a versão '{fixed_in_version}'. Mais informações: {more_infos_list}",
+    "diagnosis_package_security_issue_warning": "O pacote de sistema '{package}' está atualmente na versão '{current_version}', que é vulnerável a um problema de segurança moderado: {title}. Recomenda-se atualizá-lo para a versão '{fixed_in_version}'. Mais informações: {more_infos_list}"
 }

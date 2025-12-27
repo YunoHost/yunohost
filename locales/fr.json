@@ -181,7 +181,7 @@
     "restore_not_enough_disk_space": "Espace disponible insuffisant (L'espace libre est de {free_space} octets. Le besoin d'espace nécessaire est de {needed_space} octets. En appliquant une marge de sécurité, la quantité d'espace nécessaire est de {margin} octets)",
     "restore_system_part_failed": "Impossible de restaurer la partie '{part}' du système",
     "backup_couldnt_bind": "Impossible de lier {src} avec {dest}.",
-    "domain_dns_conf_is_just_a_recommendation": "Cette section montre la configuration *recommandée*. Elle ne configure *pas* le DNS pour vous. Il est de votre ressort de configurer votre zone DNS, généralement depuis l'interface web de votre fournisseur de nom de domaine (registrar) conformément à cette recommandation.",
+    "domain_dns_conf_is_just_a_recommendation": "Cette section montre la configuration *recommandée*. Elle ne configure pas le DNS pour vous. Il est de votre ressort de configurer votre zone DNS chez votre fournisseur de nom de domaine (registrar) conformément à cette recommandation.",
     "migrations_loading_migration": "Chargement de la migration {id}…",
     "migrations_migration_has_failed": "La migration {id} a échoué, abandon. Erreur : {exception}",
     "migrations_no_migrations_to_run": "Aucune migration à lancer",
@@ -906,5 +906,9 @@
     "migration_0036_still_on_bookworm_after_main_upgrade": "Une chose s'est mal passée pendant la mise à niveau principale, le système semble toujours être sur Debian Bookworm.",
     "migration_0036_system_not_fully_up_to_date": "Votre système n'est pas entièrement à jour. Veuillez effectuer une mise à jour standard avant de lancer la migration vers Trixie.",
     "migration_0036_yunohost_upgrade": "Lancement de la mise à niveau du système/cœur de YunoHost …",
-    "migration_description_0036_migrate_to_trixie": "Mise à niveau du système vers Debian Trixie et YunoHost 13"
+    "migration_description_0036_migrate_to_trixie": "Mise à niveau du système vers Debian Trixie et YunoHost 13",
+    "diagnosis_apps_security_issue_warning": "L'application {app} est actuellement dans la version '{current_version}', qui présente une vulnérabilité modérée : {title}. Il est recommandé de la mettre à jour vers la version '{fixed_in_version}'. Plus d'informations : {more_infos_list}",
+    "diagnosis_apps_security_issue_error": "L'application {app} est actuellement dans la version '{current_version}', qui est vulnérable à un problème de sécurité MAJEUR : {title}. Il est recommandé de la mettre à jour DÈS QUE POSSIBLE vers la version '{fixed_in_version}'. Plus d'informations : {more_infos_list}",
+    "diagnosis_package_security_issue_warning": "Le package système '{package}' est actuellement dans la version '{current_version}', qui est vulnérable à un problème de sécurité modéré : {title}. Il est recommandé de le mettre à niveau vers '{fixed_in_version}'. Plus d'informations : {more_infos_list}",
+    "diagnosis_package_security_issue_error": "Le paquet système '{package}' est actuellement dans la version '{current_version}', qui est vulnérable à un problème de sécurité MAJEUR : {title}. Il est recommandé de passer dès que possible à la version '{fixed_in_version}'. Plus d'informations : {more_infos_list}"
 }

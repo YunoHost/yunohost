@@ -8,6 +8,11 @@ proxy_set_header   X-Forwarded-Scheme   $scheme;
 proxy_set_header   X-Forwarded-Ssl      $https;
 proxy_set_header   X-Forwarded-Server   $host;
 
+# Mainly for websocket support but shouldn't hurt to set it globally
+proxy_http_version 1.1;
+proxy_set_header   Upgrade              $http_upgrade;
+proxy_set_header   Connection           $connection_upgrade;
+
 # Clean all header to ensure that the client can't inject any header for authentication
 proxy_set_header   Ynh-User             "";
 proxy_set_header   Ynh-User-Email       "";
