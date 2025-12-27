@@ -1,0 +1,12 @@
+[Unit]
+Description=YunoHost Automatic Diagnosis
+
+[Timer]
+OnCalendar=*-*-* 0/12:00:00
+# TODO forky: Use RandomizedOffsetSec instead and remove FixedRandomDelay
+RandomizedDelaySec=12h
+FixedRandomDelay=1
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -230,52 +230,27 @@ do_pre_regen() {
     mkdir -p "$pending_dir/etc/cron.d/"
     mkdir -p "$pending_dir/etc/cron.daily/"
 
-    # add cron job for diagnosis to be ran at 7h and 19h + a random delay between
-    # 0 and 20min, meant to avoid every instances running their diagnosis at
-    # exactly the same time, which may overload the diagnosis server.
-    cat > "$pending_dir/etc/cron.d/yunohost-diagnosis" << EOF
-SHELL=/bin/bash
-0 7,19 * * * root : YunoHost Automatic Diagnosis; sleep \$((RANDOM\\%1200)); yunohost diagnosis run --email > /dev/null 2>/dev/null || echo "Running the automatic diagnosis failed miserably"
-EOF
+    # Twice a day job for YunoHost diagnosis
+    cp yunohost-diagnosis.timer "$pending_dir/etc/systemd/system/yunohost-diagnosis.timer"
+    cp yunohost-diagnosis.service "$pending_dir/etc/systemd/system/yunohost-diagnosis.service"
 
-    # Cron job that upgrade the app list everyday
-    cat > "$pending_dir/etc/cron.daily/yunohost-fetch-apps-catalog" << EOF
-#!/bin/bash
-sleep \$((RANDOM%3600)); yunohost tools update apps > /dev/null
-EOF
+    # Daily job for app catalog update
+    cp yunohost-update-catalog.timer "$pending_dir/etc/systemd/system/yunohost-update-catalog.timer"
+    cp yunohost-update-catalog.service "$pending_dir/etc/systemd/system/yunohost-update-catalog.service"
 
-    # Cron job that renew lets encrypt certificates if there's any that needs renewal
-    cat > "$pending_dir/etc/cron.daily/yunohost-certificate-renew" << EOF
-#!/bin/bash
-yunohost domain cert renew --email
-EOF
+    # Daily job for SSL certificate update
+    cp yunohost-renew-certs.timer "$pending_dir/etc/systemd/system/yunohost-renew-certs.timer"
+    cp yunohost-renew-certs.service "$pending_dir/etc/systemd/system/yunohost-renew-certs.service"
 
-    # If we subscribed to a dyndns domain, add the corresponding cron
-    # - delay between 0 and 60 secs to spread the check over a 1 min window
-    # - do not run the command if some process already has the lock, to avoid queuing hundreds of commands...
-    if ls -l /etc/yunohost/dyndns/K*.key 2> /dev/null; then
-        cat > "$pending_dir/etc/cron.d/yunohost-dyndns" << EOF
-SHELL=/bin/bash
-# Every 10 minutes,
-#   - (sleep random 60 is here to spread requests over a 1-min window)
-#   - if ipv4/6.yunohost.org answers ping (basic check to validate that we're connected to the internet and yunohost infra aint down)
-#   - and if lock ain't already taken by another command
-#   - trigger yunohost dyndns update
-*/10 * * * * root : YunoHost DynDNS update; sleep \$((RANDOM\\%60)); ! ping -q -W5 -c1 ipv4.yunohost.org >/dev/null 2>&1 || test -e /var/run/moulinette_yunohost.lock || yunohost dyndns update >> /dev/null
-EOF
-    else
-        # (Delete cron if no dyndns domain found)
-        touch "$pending_dir/etc/cron.d/yunohost-dyndns"
-    fi
+    # Every 10 minutes job to update the DynDNS records
+    # It will only be enabled if we actually subscribed to a dyndns domain
+    cp yunohost-dyndns.timer "$pending_dir/etc/systemd/system/yunohost-dyndns.timer"
+    cp yunohost-dyndns.service "$pending_dir/etc/systemd/system/yunohost-dyndns.service"
 
     # Skip ntp if inside a container (inspired from the conf of systemd-timesyncd)
     if systemctl | grep -q 'ntp.service'; then
         mkdir -p "$pending_dir/etc/systemd/system/ntp.service.d/"
-        cat > "$pending_dir/etc/systemd/system/ntp.service.d/ynh-override.conf" << EOF
-[Unit]
-ConditionCapability=CAP_SYS_TIME
-ConditionVirtualization=!container
-EOF
+        cp ntp-ynh-override.conf "$pending_dir/etc/systemd/system/ntp.service.d/ynh-override.conf"
     fi
 
     mkdir -p "$pending_dir/etc/systemd/system/nftables.service.d/"
@@ -285,12 +260,7 @@ EOF
 
     # Don't suspend computer on LidSwitch
     mkdir -p "$pending_dir/etc/systemd/logind.conf.d/"
-    cat > "$pending_dir/etc/systemd/logind.conf.d/ynh-override.conf" << EOF
-[Login]
-HandleLidSwitch=ignore
-HandleLidSwitchDocked=ignore
-HandleLidSwitchExternalPower=ignore
-EOF
+    cp logind-ynh-override.conf "$pending_dir/etc/systemd/logind.conf.d/ynh-override.conf"
 
     cp yunohost-api.service "$pending_dir/etc/systemd/system/yunohost-api.service"
     cp yunohost-portal-api.service "$pending_dir/etc/systemd/system/yunohost-portal-api.service"
@@ -304,6 +274,12 @@ EOF
 
     # Remove legacy hackish/clumsy nodejs autoupdate which ends up filling up space with ambiguous upgrades >_>
     touch "$pending_dir/etc/cron.daily/node_update"
+
+    # Remove legacy crons replaced with systemd timers/services
+    touch "$pending_dir/etc/cron.d/yunohost-diagnosis"
+    touch "$pending_dir/etc/cron.daily/yunohost-fetch-apps-catalog"
+    touch "$pending_dir/etc/cron.daily/yunohost-certificate-renew"
+    touch "$pending_dir/etc/cron.d/yunohost-dyndns"
 }
 
 do_post_regen() {
@@ -379,6 +355,20 @@ do_post_regen() {
     if [[ "$regen_conf_files" =~ "proc-hidepid.service" ]]; then
         action=$([[ -e /etc/systemd/system/proc-hidepid.service ]] && echo 'enable' || echo 'disable')
         systemctl "$action" proc-hidepid --quiet --now
+    fi
+
+    systemctl enable yunohost-diagnosis.timer --quiet --now
+    systemctl enable yunohost-update-catalog.timer --quiet --now
+    systemctl enable yunohost-renew-certs.timer --quiet --now
+
+    # If we subscribed to a dyndns domain, enable the dyndns timer
+    if ls -l /etc/yunohost/dyndns/K*.key 2> /dev/null; then
+        systemctl enable yunohost-dyndns.timer --quiet --now
+    else
+        if systemctl is-active yunohost-dyndns.timer --quiet; then
+            systemctl stop yunohost-dyndns.timer --quiet
+        fi
+        systemctl disable yunohost-dyndns.timer --quiet
     fi
 
     systemctl enable yunohost-portal-api.service --quiet
