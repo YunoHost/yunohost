@@ -391,7 +391,7 @@ def _load_security_issues_list() -> dict[
             dict[Literal["apps", "system"], dict[str, list[SecurityIssueInfos]]] | None
         ) = content.get("security")
         security_index_version: int | None = (
-            security_index.get("version") if security_index else None
+            security_index.get("version") if security_index else None  # type: ignore
         )  # type: ignore[index,call-overload]
         # Even if not mentioned in the typing, security_index has a "version" key
         if security_index_version != SECURITY_INDEX_SUPPORTED_VERSION:
