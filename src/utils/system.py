@@ -60,7 +60,7 @@ def debian_version() -> Literal["bookworm", "trixie"]:
 
 @cache
 def debian_version_id() -> Literal[12, 13]:
-    return int(os_release()["VERSION_ID"].strip('"'))
+    return int(os_release()["VERSION_ID"].strip('"'))  # type: ignore[return-value]
 
 
 @cache
