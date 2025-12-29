@@ -1943,21 +1943,15 @@ def prompt_or_validate_form(
             except ValidationError as e:
                 # TODO: handle multiple errors
                 err = e.errors()[0]
-                ctx = err.get("ctx", {})
 
-                if err["type"] == "error_ynh_custom":
-                    # Special case where the error is custom, defined in the option
-                    # Do not translate
+                if err["type"].startswith("error_ynh_"):
+                    # Error has already been translated
                     err_text = err["msg"]
                 else:
-                    err_type = (
-                        err["type"]
-                        if err["type"].startswith("error_ynh")
-                        else "error_pydantic_" + err["type"]
-                    )
+                    err_type = f"error_pydantic_{err["type"]}"
 
                     if m18n.key_exists(err_type):
-                        err_text = m18n.n(err_type, **ctx)
+                        err_text = m18n.n(err_type, **err.get("ctx", {}))
                     else:
                         # FIXME raise YunoHost error instead?
                         logger.error(f"Missing translation for error key '{err_type}'")

@@ -10,7 +10,7 @@ from pydantic_core import PydanticCustomError, PydanticUseDefault, core_schema a
 
 from moulinette import Moulinette
 from ..log import OperationLogger
-from .i18n import _value_for_locale
+from .i18n import m18n, _value_for_locale
 
 if t.TYPE_CHECKING:
     from pydantic import (
@@ -29,6 +29,30 @@ logger = getLogger("yunohost.validation")
 
 Mode = t.Literal["normal", "string", "human"]
 Translation = dict[str, str] | str
+
+
+def YunohostCustomError(
+    error_type: t.LiteralString,
+    message_template: t.LiteralString | None = None,
+    context: dict[str, t.Any] | None = None,
+) -> PydanticCustomError:
+    """
+    Simple helper to build a translated PydanticCustomError
+    """
+
+    error_type = f"error_ynh_{error_type}"
+
+    # "error_ynh_custom" is special case where the error is defined in the option, do not translate it
+    if error_type != "error_ynh_custom":
+        if m18n.key_exists(error_type):
+            # Get translation string without formating (inherited class will do it)
+            message_template = m18n.n(error_type, noformat=True)
+        else:
+            logger.error(f"Missing translation for error key '{error_type}'")
+            # Fallback to error type as message
+            message_template = error_type
+
+    return PydanticCustomError(error_type, message_template, context)
 
 
 @dataclass
@@ -218,18 +242,14 @@ class StringConstraints(BaseConstraints):
             )
             if pattern_error:
                 # Special error case where error is custom and should not be translated in global handler
-                raise PydanticCustomError(
-                    "error_ynh_custom",
-                    _value_for_locale(self.pattern.error),
+                raise YunohostCustomError(
+                    "custom", message_template=_value_for_locale(self.pattern.error)
                 )
             raise err
 
     def validate(self, v: str) -> str:
         if not self.multiline and "\n" in v or "\r" in v:
-            raise PydanticCustomError(
-                "error_ynh_multiline",
-                "error_ynh_multiline",
-            )
+            raise YunohostCustomError("multiline")
 
         return v
 
@@ -268,10 +288,8 @@ class PasswordConstraints(BaseConstraints):
 
     def validate(self, v: str) -> str:
         if any(char in v for char in (self.forbidden_chars)):
-            raise PydanticCustomError(
-                "error_ynh_forbidden_chars",
-                "error_ynh_forbidden_chars",
-                {"forbidden_chars": self.forbidden_chars},
+            raise YunohostCustomError(
+                "forbidden_chars", context={"forbidden_chars": self.forbidden_chars}
             )
 
         from yunohost.utils.password import PasswordValidator
@@ -280,9 +298,7 @@ class PasswordConstraints(BaseConstraints):
         status, error_key = validator.validation_summary(v)
 
         if status == "error":
-            raise PydanticCustomError(
-                "error_ynh_" + error_key, "error_ynh_" + error_key
-            )
+            raise YunohostCustomError(error_key)
 
         return v
 
@@ -435,10 +451,8 @@ class PathConstraints(BaseConstraints):
                 ]
 
                 if forbidden_chars:
-                    raise PydanticCustomError(
-                        "error_ynh_forbidden_chars",
-                        "error_ynh_forbidden_chars",
-                        {"forbidden_chars": forbidden_chars},
+                    raise YunohostCustomError(
+                        "forbidden_chars", context={"forbidden_chars": forbidden_chars}
                     )
 
         path: Path | None = handler(v)
@@ -489,10 +503,8 @@ class FileConstraints(BaseConstraints):
         ):
             path = Path(v)
             if not (path.exists() and path.is_absolute() and path.is_file()):
-                raise PydanticCustomError(
-                    "error_ynh_file_not_exists",
-                    "error_ynh_file_not_exists",
-                    {"path": str(path)},
+                raise YunohostCustomError(
+                    "file_not_exists", context={"path": str(path)}
                 )
             content = path.read_bytes()
         else:
@@ -501,10 +513,9 @@ class FileConstraints(BaseConstraints):
         mimetype = Magic(mime=True).from_buffer(content)
 
         if self.accept and mimetype not in self.accept:
-            raise PydanticCustomError(
-                "error_ynh_file_unsupported_type",
-                "error_ynh_file_unsupported_type",
-                {"mimetype": mimetype, "accept_list": ", ".join(self.accept)},
+            raise YunohostCustomError(
+                "file_unsupported_type",
+                context={"mimetype": mimetype, "accept_list": ", ".join(self.accept)},
             )
 
         ext = mimetypes.guess_extension(mimetype)
