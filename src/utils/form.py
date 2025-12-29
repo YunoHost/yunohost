@@ -1826,6 +1826,7 @@ def parse_prefilled_values(
 
     return values
 
+
 # i18n: error_pydantic_bool_type
 # i18n: error_pydantic_bool_parsing
 # i18n: error_pydantic_color_error
@@ -1992,7 +1993,7 @@ def ask_questions_and_parse_answers(
     prefilled_answers: str | Mapping[str, Any] | None = {},
     current_values: Mapping[str, Any] = {},
     hooks: Hooks = {},
-) -> tuple[list[AnyOption], Values]:
+) -> tuple[list[AnyOption], Type[FormModel]]:
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.
 
@@ -2025,7 +2026,7 @@ def ask_questions_and_parse_answers(
     form = prompt_or_validate_form(
         model_options, form, prefilled_answers=answers, context=context, hooks=hooks
     )
-    return (model_options, form.model_dump())
+    return (model_options, form)
 
 
 @overload
