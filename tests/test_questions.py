@@ -52,6 +52,7 @@ from yunohost.utils.validation import (
     coerce_nonish_to_none,
 )
 
+
 MULTIPLE_NONISH: Any = (*NONISH_VALUES, ",", ", , ", [])
 
 """
@@ -430,7 +431,10 @@ def _fill_or_prompt_one_option(raw_option, intake):
     answers = {id_: intake} if intake is not None else {}
 
     options, form = ask_questions_and_parse_answers(options, answers)
-    return (options[0], form[id_] if isinstance(options[0], BaseInputOption) else None)
+    return (
+        options[0],
+        form.model_dump()[id_] if isinstance(options[0], BaseInputOption) else None,
+    )
 
 
 def _test_value_is_expected_output(value, expected_output):
@@ -2029,12 +2033,12 @@ def test_options_query_string():
     with patch_interface("api"), patch_file_api(file_content1) as b64content:
         with patch_query_string(b64content.decode("utf-8")) as query_string:
             options, form = ask_questions_and_parse_answers(raw_options, query_string)
-            _assert_correct_values(options, form, raw_options)
+            _assert_correct_values(options, form.model_dump(), raw_options)
 
     with patch_interface("cli"), patch_file_cli(file_content1) as filepath:
         with patch_query_string(filepath) as query_string:
             options, form = ask_questions_and_parse_answers(raw_options, query_string)
-            _assert_correct_values(options, form, raw_options)
+            _assert_correct_values(options, form.model_dump(), raw_options)
 
 
 def test_question_string_default_type():
@@ -2045,7 +2049,7 @@ def test_question_string_default_type():
     option = options[0]
     assert option.id == "some_string"
     assert option.type == "string"
-    assert form[option.id] == "some_value"
+    assert form.model_dump()[option.id] == "some_value"
 
 
 def test_option_default_type_with_choices_is_select():
@@ -2055,6 +2059,7 @@ def test_option_default_type_with_choices_is_select():
     answers = {"some_choices": "a"}
 
     options, form = ask_questions_and_parse_answers(questions, answers)
+    form = form.model_dump()
     for option in options:
         assert option.type == "select"
         assert form[option.id] == "a"
