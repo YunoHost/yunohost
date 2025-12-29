@@ -1,7 +1,7 @@
 import datetime
 import email_validator
 import typing as t
-import urllib
+import urllib.parse
 from dataclasses import dataclass
 from logging import getLogger
 from pathlib import Path
@@ -292,7 +292,7 @@ class PasswordConstraints(BaseConstraints):
                 "forbidden_chars", context={"forbidden_chars": self.forbidden_chars}
             )
 
-        from yunohost.utils.password import PasswordValidator
+        from .password import PasswordValidator
 
         validator = PasswordValidator("user")
         status, error_key = validator.validation_summary(v)
@@ -482,6 +482,10 @@ class FileConstraints(BaseConstraints):
     ) -> "CoreSchema":
         schema = handler(source_type)
         type_schema = find_type_schema(schema, "str")
+
+        if not type_schema:
+            return self.apply_base_schema(schema)
+
         type_schema.update(
             cs.with_info_after_validator_function(
                 self.file_normal if self.mode == "normal" else self.file_string,

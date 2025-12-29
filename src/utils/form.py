@@ -38,6 +38,7 @@ from typing import (
     Iterable,
     Literal,
     Mapping,
+    Sequence,
     Type,
     Union,
     cast,
@@ -1284,7 +1285,7 @@ class BaseChoicesOption(BaseInputOption):
 
 class BaseSelectOption(BaseChoicesOption):
     choices: dict[str, str] | list[str]
-    default: str | list[str] | None = None
+    default: str | Sequence[str] | None = None
 
     def get_annotation(self, mode: Mode = "normal") -> tuple[Any, "FieldInfo"]:
         choices = tuple(
