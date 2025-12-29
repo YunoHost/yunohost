@@ -1468,7 +1468,6 @@ def app_install(
     # Prepare env. var. to pass to script
     env_dict = _make_environment_for_app_script(
         app_instance_name,
-        args=install_answers,  # FIXME Could be removed if every mentions of $YNH_APP_ARG* is removed from app scripts
         workdir=extracted_app_folder,
         action="install",
     )
@@ -1479,12 +1478,6 @@ def app_install(
     for option in options:
         if option.type == "password":
             env_dict[option.id] = install_answers[option.id]
-
-            # We want to hav the env_dict in the log ... but not password values
-            # Or should it be more generally option.redact ?
-            if f"YNH_APP_ARG_{option.id.upper()}" in env_dict_for_logging:
-                # FIXME Could be removed if every mentions of $YNH_APP_ARG* is removed from app scripts
-                del env_dict_for_logging[f"YNH_APP_ARG_{option.id.upper()}"]
 
     operation_logger.extra.update({"env": env_dict_for_logging})
 
