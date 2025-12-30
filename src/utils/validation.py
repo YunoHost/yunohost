@@ -269,6 +269,7 @@ class PasswordConstraints(BaseConstraints):
     def __get_pydantic_core_schema__(
         self, source_type: t.Any, handler: "GetCoreSchemaHandler"
     ) -> "CoreSchema":
+        assert self.redact is True  # Just in case
 
         schema = handler(source_type)
         str_schema = find_type_schema(schema, "str")
