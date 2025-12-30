@@ -9,6 +9,7 @@ from pydantic import AnyUrl, ValidationError
 from pydantic_core import PydanticCustomError, PydanticUseDefault, core_schema as cs
 
 from moulinette import Moulinette
+from .error import YunohostError
 from ..log import OperationLogger
 from .i18n import m18n, _value_for_locale
 
@@ -208,7 +209,9 @@ class StringConstraints(BaseConstraints):
         str_schema = find_type_schema(schema, "str")
 
         if str_schema is None:
-            return schema
+            raise YunohostError(
+                "Couldn't find base 'str' schema in StringConstraints", raw_msg=True
+            )
 
         str_schema.update(
             cs.no_info_after_validator_function(
@@ -271,7 +274,9 @@ class PasswordConstraints(BaseConstraints):
         str_schema = find_type_schema(schema, "str")
 
         if str_schema is None:
-            return schema
+            raise YunohostError(
+                "Couldn't find base 'str' schema in PasswordConstraints", raw_msg=True
+            )
 
         str_schema.update(
             cs.no_info_after_validator_function(
@@ -317,7 +322,9 @@ class NumberConstraints(BaseConstraints):
         int_schema = find_type_schema(schema, "int")
 
         if int_schema is None:
-            return schema
+            raise YunohostError(
+                "Couldn't find base 'int' schema in NumberConstraints", raw_msg=True
+            )
 
         int_schema.update(
             cs.int_schema(
@@ -481,12 +488,14 @@ class FileConstraints(BaseConstraints):
         self, source_type: t.Any, handler: "GetCoreSchemaHandler"
     ) -> "CoreSchema":
         schema = handler(source_type)
-        type_schema = find_type_schema(schema, "str")
+        str_schema = find_type_schema(schema, "str")
 
-        if not type_schema:
-            return self.apply_base_schema(schema)
+        if not str_schema:
+            raise YunohostError(
+                "Couldn't find base 'str' schema in FileConstraints", raw_msg=True
+            )
 
-        type_schema.update(
+        str_schema.update(
             cs.with_info_after_validator_function(
                 self.file_normal if self.mode == "normal" else self.file_string,
                 cs.str_schema(),
@@ -580,10 +589,12 @@ class ListConstraints:
         self, source_type: t.Any, handler: "GetCoreSchemaHandler"
     ) -> "CoreSchema":
         schema = handler(source_type)
-        type_schema = find_type_schema(schema, "list")
+        list_schema = find_type_schema(schema, "list")
 
-        if not type_schema:
-            return schema
+        if not list_schema:
+            raise YunohostError(
+                "Couldn't find base 'list' schema in ListConstraints", raw_msg=True
+            )
 
         schema = cs.no_info_before_validator_function(
             self.validate,
@@ -591,7 +602,7 @@ class ListConstraints:
             serialization=(
                 cs.wrap_serializer_function_ser_schema(
                     self.serialize,
-                    schema=type_schema["items_schema"],
+                    schema=list_schema["items_schema"],
                 )
             ),
         )
