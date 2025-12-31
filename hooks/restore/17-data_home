@@ -33,8 +33,8 @@ fi
 # NB : we use 'find' to avoid using * / globbing which has possible pitfalls such as
 # nullglobs, not matching entries starting with dots, etc...
 # The printf %f allows to obtain only the file name, without the basedir in front
-for f in $(find ./ -mindepth 1 -prune -type d -printf '%f\n')
+while read -r f
 do
     ynh_restore "/home/${f}"
-done
+done <<< "$(find ./ -mindepth 1 -prune -type d -printf '%f\n')"
 
