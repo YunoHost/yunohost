@@ -248,9 +248,9 @@ class PanelModel(ContainerModel):
     ) -> "JsonSchemaValue":
         schema = handler(core_schema)
         del schema["properties"]["id"]
-        del schema["properties"]["sections"]
+        sections = schema["properties"].pop("sections")
         del schema["required"]
-        schema["additionalProperties"] = {"$ref": "#/definitions/SectionModel"}
+        schema["additionalProperties"] = sections["items"]
 
         return schema
 
@@ -323,9 +323,9 @@ class ConfigPanelModel(BaseModel):
         `{"panels`: [{"id": "panel_1", "sections": [{"id": "section_1", "options": [{"id": "option_1"}]}]}]
         """
         schema = handler(core_schema)
-        del schema["properties"]["panels"]
+        panels = schema["properties"].pop("panels")
         del schema["required"]
-        schema["additionalProperties"] = {"$ref": "#/definitions/PanelModel"}
+        schema["additionalProperties"] = panels["items"]
 
         return schema
 
