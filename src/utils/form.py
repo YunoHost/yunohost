@@ -1380,8 +1380,14 @@ class TagsOption(BaseChoicesOption):
     icon: str | None = None
 
     def get_annotation(self, mode: Mode = "normal") -> tuple[Any, "FieldInfo"]:
+        if self.choices is not None:
+            return self._build_annotation(
+                Literal[tuple(self.choices)],
+                BaseConstraints(mode=mode, redact=self.redact),
+                mode=mode,
+            )
         return self._build_annotation(
-            Literal[tuple(self.choices)] if self.choices is not None else str,
+            str,
             StringConstraints(
                 mode=mode,
                 redact=self.redact,
