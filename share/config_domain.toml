@@ -36,7 +36,7 @@ i18n = "domain_config"
         [feature.portal.portal_logo]
         type = "file"
         accept = ["image/png", "image/jpeg", "image/svg+xml"]
-        mode = "python"
+        mode = "normal"
         bind = "/usr/share/yunohost/portal/customassets/{filename}{ext}"
 
         [feature.portal.portal_theme]
