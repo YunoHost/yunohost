@@ -733,12 +733,14 @@ class BaseInputOption(BaseOption):
         # In case of TypeAdapter, field's attrs 'validate_default' and 'frozen' are ignored but warn about it
         field.validate_default = None
         field.frozen = None
+
         adapter: TypeAdapter = TypeAdapter(Annotated[anno, field])
+
         try:
             return adapter.dump_python(adapter.validate_python(v))
         except ValidationError as e:
-            # FIXME should handle properly errors and i18n
-            raise YunohostValidationError(e.errors()[0]["msg"], raw_msg=True)
+            err_text = get_validation_error_text(e)
+            raise YunohostValidationError(err_text, raw_msg=True)
 
     def _get_prompt_message(self, value: Any) -> str:
         message = super()._get_prompt_message(value)
@@ -1763,6 +1765,26 @@ def options_dict_to_list(
     return options_list
 
 
+def get_validation_error_text(e: ValidationError) -> str:
+    # TODO: handle multiple errors
+    err = e.errors()[0]
+
+    if err["type"].startswith("error_ynh_"):
+        # Error has already been translated
+        err_text = err["msg"]
+    else:
+        err_type = f"error_pydantic_{err["type"]}"
+
+        if m18n.key_exists(err_type):
+            err_text = m18n.n(err_type, **err.get("ctx", {}))
+        else:
+            # FIXME raise YunoHost error instead?
+            logger.error(f"Missing translation for error key '{err_type}'")
+            err_text = err["msg"] or err_type
+
+    return err_text
+
+
 class FormModel(BaseModel):
     """
     Base form on which dynamic forms are built upon Options.
@@ -1969,21 +1991,7 @@ def prompt_or_validate_form(
                     context[option.id] = form[option.id] == option.yes
 
             except ValidationError as e:
-                # TODO: handle multiple errors
-                err = e.errors()[0]
-
-                if err["type"].startswith("error_ynh_"):
-                    # Error has already been translated
-                    err_text = err["msg"]
-                else:
-                    err_type = f"error_pydantic_{err["type"]}"
-
-                    if m18n.key_exists(err_type):
-                        err_text = m18n.n(err_type, **err.get("ctx", {}))
-                    else:
-                        # FIXME raise YunoHost error instead?
-                        logger.error(f"Missing translation for error key '{err_type}'")
-                        err_text = err["msg"] or err_type
+                err_text = get_validation_error_text(e)
 
                 # If in interactive cli, re-ask the current question
                 if i < MAX_RETRIES and interactive:
