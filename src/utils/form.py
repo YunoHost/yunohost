@@ -979,11 +979,21 @@ class BooleanOption(BaseInputOption):
 
     type: Literal[OptionType.boolean] = OptionType.boolean
     redact: Literal[False] = False
-    default: bool | int | str | list[bool | int | str] | None = False
+    default: Annotated[
+        bool | int | str | list[bool | int | str] | None, Field(validate_default=True)
+    ] = False
     yes: Any = 1
     no: Any = 0
     _yes_answers: ClassVar[set[str]] = {"1", "yes", "y", "true", "t", "on"}
     _no_answers: ClassVar[set[str]] = {"0", "no", "n", "false", "f", "off"}
+
+    @field_validator("default")
+    @classmethod
+    def set_default(cls, v: Any, info: "ValidationInfo") -> Any:
+        if info.data.get("multiple", False) and not isinstance(v, list):
+            return None
+
+        return v
 
     @field_validator("yes")
     @classmethod
@@ -1613,11 +1623,12 @@ class GroupOption(BaseSelectOption):
     """
 
     type: Literal[OptionType.group] = OptionType.group
-    default: (
+    default: Annotated[
         Literal["visitors", "all_users", "admins"]
         | list[Literal["visitors", "all_users", "admins"]]
-        | None
-    ) = None
+        | None,
+        Field(validate_default=True),
+    ] = None
     choices: dict[str, str]
 
     @model_validator(mode="before")
@@ -1642,11 +1653,19 @@ class GroupOption(BaseSelectOption):
             groupname: _human_readable_group(groupname) for groupname in groups
         }
 
-        # FIXME do we really want to default to something all the time when not multiple?
-        if not values.get("default") and not values.get("multiple"):
-            values["default"] = "all_users"
-
         return values
+
+    @field_validator("default")
+    @classmethod
+    def set_default(cls, v: Any, info: "ValidationInfo") -> Any:
+        if info.data.get("multiple", False) and not isinstance(v, list):
+            return None
+
+        if not v:
+            # FIXME do we really want to default to something all the time when not multiple?
+            return "all_users"
+
+        return v
 
 
 OPTIONS = {
