@@ -51,7 +51,7 @@ _update_key() {
     target=$2
 
     if [[ ! -s "$target" ]]; then
-        curl --connect-timeout 900 -s -o - "$url" | gpg --dearmor > "$target"
+        curl --connect-timeout 900 -s -o - "$url" | gpg --dearmor -o "$target"
     fi
 }
 
