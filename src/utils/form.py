@@ -450,9 +450,12 @@ class BaseOption(BaseModel):
         return evaluate_simple_js_expression(self.visible, context=context)  # type: ignore
 
     def _get_prompt_message(self, value: None) -> str:
-        # force type to str
-        # `OptionsModel.translate_options()` should have been called before calling this method
-        return cast(str, self.ask)
+        if not isinstance(self.ask, str):
+            raise YunohostError(
+                "Trying to get Option's prompt but 'ask' is not defined.", raw_msg=True
+            )
+
+        return self.ask
 
 
 # ╭───────────────────────────────────────────────────────╮
