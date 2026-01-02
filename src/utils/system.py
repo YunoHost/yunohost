@@ -48,8 +48,7 @@ YUNOHOST_PACKAGES = [
 def os_release() -> dict[str, str]:
     """Please do NOT cache this function: this is the backend that always returns up to date info"""
     return dict(
-        line.split("=")
-        for line in Path("/etc/os-release").read_text().splitlines()
+        line.split("=") for line in Path("/etc/os-release").read_text().splitlines()
     )
 
 
