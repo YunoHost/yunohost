@@ -91,6 +91,10 @@ class ContainerModel(BaseModel):
     services: list[str] = []
     help: Translation | None = None
 
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
     def translate(self, i18n_key: str | None = None) -> None:
         """
         Translate `ask` and `name` attributes of panels and section.
@@ -226,24 +230,18 @@ class PanelModel(ContainerModel):
     bind: str | None = None
     sections: list[SectionModel]
 
-    model_config = ConfigDict(
-        extra="allow",
-    )
+    @model_validator(mode="before")
+    @classmethod
+    def extra_fields_as_sections(cls, data: Any) -> Any:
+        extra_fields_keys_set = set(data.keys()) - set(cls.model_fields.keys())
+        # Consider all extra data keys as Panels
+        data["sections"] = [
+            data.pop(key) | {"id": key}
+            for key in list(data.keys())
+            if key in extra_fields_keys_set
+        ]
 
-    # Don't forget to pass arguments to super init
-    def __init__(
-        self,
-        id: str,
-        name: Translation | None = None,
-        services: list[str] = [],
-        help: Translation | None = None,
-        bind: str | None = None,
-        **kwargs: dict[str, Any],
-    ) -> None:
-        sections = [data | {"id": name} for name, data in kwargs.items()]
-        super().__init__(  # type: ignore
-            id=id, name=name, services=services, help=help, bind=bind, sections=sections
-        )
+        return data
 
     @classmethod
     def __get_pydantic_json_schema__(
@@ -293,19 +291,8 @@ class ConfigPanelModel(BaseModel):
     panels: list[PanelModel]
 
     model_config = ConfigDict(
-        arbitrary_types_allowed=True,
-        extra="allow",
+        extra="forbid",
     )
-
-    # Don't forget to pass arguments to super init
-    def __init__(
-        self,
-        version: float,
-        i18n: str | None = None,
-        **kwargs: dict[str, Any],
-    ) -> None:
-        panels = [data | {"id": name} for name, data in kwargs.items()]
-        super().__init__(version=version, i18n=i18n, panels=panels)
 
     @classmethod
     def __get_pydantic_json_schema__(
@@ -395,12 +382,18 @@ class ConfigPanelModel(BaseModel):
                     for option in section.options:
                         yield (panel, section, option)
 
-    def translate(self) -> None:
-        """
-        Recursivly mutate translatable attributes to their translation
-        """
-        for panel in self.panels:
-            panel.translate(self.i18n)
+    @model_validator(mode="before")
+    @classmethod
+    def extra_fields_as_panels(cls, data: Any) -> Any:
+        extra_fields_keys_set = set(data.keys()) - set(cls.model_fields.keys())
+        # Consider all extra data keys as Panels
+        data["panels"] = [
+            data.pop(key) | {"id": key}
+            for key in list(data.keys())
+            if key in extra_fields_keys_set
+        ]
+
+        return data
 
     @field_validator("version")
     @classmethod
