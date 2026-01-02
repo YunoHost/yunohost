@@ -927,7 +927,7 @@ def domain_dns_push(
         for action in ["delete", "update"]:  # type: ignore[assignment]
             changes[action] = [r for r in changes[action] if r["managed_by_yunohost"]]
 
-    class Progress():
+    class Progress:
         def __init__(self, total: int) -> None:
             self.total: int = total
             self.nb: int = 0
