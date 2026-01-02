@@ -401,6 +401,7 @@ class BaseOption(BaseModel):
         use_enum_values=True,
         validate_assignment=True,
         extra="forbid",
+        frozen=True,
     )
 
     @classmethod
