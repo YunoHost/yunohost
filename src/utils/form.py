@@ -2029,7 +2029,6 @@ def prompt_or_validate_form(
 def ask_questions_and_parse_answers(
     raw_options: dict[str, Any],
     prefilled_answers: str | Mapping[str, Any] | None = {},
-    current_values: Mapping[str, Any] = {},
     hooks: Hooks = {},
 ) -> tuple[list[AnyOption], Type[FormModel]]:
     """Parse arguments store in either manifest.json or actions.json or from a
@@ -2055,14 +2054,12 @@ def ask_questions_and_parse_answers(
     else:
         answers = {}
 
-    context = {**current_values, **answers}
-
     model_options = parse_raw_options(raw_options, serialize=False)
     # Build the form from those questions and instantiate it without
     # parsing/validation (construct) since it may contains required questions.
     form = build_form(model_options).model_construct()
     form = prompt_or_validate_form(
-        model_options, form, prefilled_answers=answers, context=context, hooks=hooks
+        model_options, form, prefilled_answers=answers, context={**answers}, hooks=hooks
     )
     return (model_options, form)
 
