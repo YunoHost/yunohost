@@ -23,10 +23,18 @@ import os
 import re
 from collections import OrderedDict
 from collections.abc import Generator
+from functools import cached_property
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union, cast
 
-from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    ValidationError,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
@@ -39,11 +47,13 @@ from .form import (
     BaseOption,
     BaseReadonlyOption,
     FileOption,
+    OptionList,
     OptionsModel,
     OptionType,
     Translation,
     build_form,
     evaluate_simple_js_expression,
+    options_dict_to_list,
     parse_prefilled_values,
     prompt_or_validate_form,
 )
@@ -133,38 +143,30 @@ class SectionModel(ContainerModel, OptionsModel):
     visible: bool | str = True
     optional: bool = True
     collapsed: bool = False
-    is_action_section: bool = False
     bind: str | None = None
+    options: OptionList = []
 
-    # Don't forget to pass arguments to super init
-    def __init__(
-        self,
-        id: str,
-        name: Translation | None = None,
-        services: list[str] = [],
-        help: Translation | None = None,
-        visible: bool | str = True,
-        optional: bool = True,
-        collapsed: bool = False,
-        bind: str | None = None,
-        **kwargs: dict[str, Any],
-    ) -> None:
-        options = self.options_dict_to_list(kwargs, optional=optional)
-        is_action_section = any(
-            [option["type"] == OptionType.button for option in options]
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def is_action_section(self) -> bool:
+        return any([option.type == OptionType.button for option in self.options])
+
+    @model_validator(mode="before")
+    @classmethod
+    def extra_fields_as_options(cls, data: Any) -> Any:
+        extra_fields_keys_set = set(data.keys()) - set(cls.model_fields.keys())
+        # Consider all extra data keys as Options
+        options = {
+            key: data.pop(key)
+            for key in list(data.keys())  # Preserve keys order
+            if key in extra_fields_keys_set
+        }
+        data["options"] = options_dict_to_list(
+            options,
+            optional=data.get("optional", cls.model_fields["optional"].default),
         )
-        ContainerModel.__init__(  # type: ignore
-            self,
-            id=id,
-            name=name,
-            services=services,
-            help=help,
-            visible=visible,
-            collapsed=collapsed,
-            bind=bind,
-            options=options,
-            is_action_section=is_action_section,
-        )
+
+        return data
 
     @classmethod
     def __get_pydantic_json_schema__(

@@ -1724,35 +1724,38 @@ AnyOption = (
 # │  ╵  ╰─╯╵ ╰╵╵╵                                         │
 # ╰───────────────────────────────────────────────────────╯
 
+OptionList = list[Annotated[AnyOption, Field(discriminator="type")]]
+
+
+def options_dict_to_list(
+    options: dict[str, Any], optional: bool = False
+) -> list[dict[str, Any]]:
+    options_list = []
+
+    for id_, data in options.items():
+        option = data | {
+            "id": data.get("id", id_),
+            "type": data.get(
+                "type",
+                # FIXME legacy, remove? Set to OptionType.string only
+                OptionType.select if "choices" in data else OptionType.string,
+            ),
+        }
+
+        if option["type"] not in READONLY_TYPES:
+            option["optional"] = option.get("optional", optional)
+
+        options_list.append(option)
+
+    return options_list
+
 
 class OptionsModel(BaseModel):
     # Pydantic will match option types to their models class based on the "type" attribute
-    options: list[Annotated[AnyOption, Field(discriminator="type")]]
-
-    @staticmethod
-    def options_dict_to_list(
-        options: dict[str, Any], optional: bool = False
-    ) -> list[dict[str, Any]]:
-        options_list = []
-
-        for id_, data in options.items():
-            option = data | {
-                "id": data.get("id", id_),
-                "type": data.get(
-                    "type",
-                    OptionType.select if "choices" in data else OptionType.string,
-                ),
-            }
-
-            if option["type"] not in READONLY_TYPES:
-                option["optional"] = option.get("optional", optional)
-
-            options_list.append(option)
-
-        return options_list
+    options: OptionList
 
     def __init__(self, **kwargs: Any) -> None:
-        super().__init__(options=self.options_dict_to_list(kwargs))
+        super().__init__(options=options_dict_to_list(kwargs))
 
     def translate_options(self, i18n_key: str | None = None) -> None:
         """
@@ -2080,15 +2083,13 @@ def parse_raw_options(
     raw_options: dict[str, Any], serialize: bool = False
 ) -> list[dict[str, Any]] | list[AnyOption]:
     # Validate/parse the options attributes
+    adapter = TypeAdapter(OptionList)
+
     try:
-        model = OptionsModel(**raw_options)
+        options: list[AnyOption] = adapter.validate_python(
+            options_dict_to_list(raw_options)
+        )
     except ValidationError as e:
         raise YunohostError("While parsing manifest: " + str(e), raw_msg=True)
 
-    model.translate_options()
-
-    if serialize:
-        result: list[dict[str, Any]] | list[AnyOption] = model.model_dump()["options"]
-        return result
-
-    return model.options
+    return adapter.dump_python(options) if serialize else options
