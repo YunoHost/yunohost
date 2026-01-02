@@ -40,8 +40,6 @@ from typing import (
     Self,
     Sequence,
     Type,
-    Union,
-    cast,
     overload,
 )
 
@@ -1467,7 +1465,7 @@ class DomainOption(BaseSelectOption):
         return values
 
     @staticmethod
-    def normalize(value: str, option: Union["BaseOption", dict[Any, Any]] = {}) -> str:
+    def normalize(value: str) -> str:
         if value.startswith("https://"):
             value = value[len("https://") :]
         elif value.startswith("http://"):
@@ -1825,13 +1823,10 @@ def build_form(
         if isinstance(option, BaseInputOption)
     }
 
-    return cast(
-        Type[FormModel],
-        create_model(
-            name,
-            __base__=FormModel,
-            **options_as_fields,
-        ),
+    return create_model(
+        name,
+        __base__=FormModel,
+        **options_as_fields,
     )
 
 
