@@ -1806,7 +1806,7 @@ def build_form(
     To avoid validation at instanciation, use `my_form.model_construct(**values)`
     """
     options_as_fields: Any = {
-        option.id: option.get_annotation(mode="string")  # FIXME hardcoded mode
+        option.id: option.get_annotation(mode=option.mode)
         for option in options
         if isinstance(option, BaseInputOption)
     }
