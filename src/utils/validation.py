@@ -6,7 +6,7 @@ from logging import getLogger
 from pathlib import Path
 
 import email_validator
-from pydantic import AnyUrl, ValidationError
+from pydantic import AnyUrl, BeforeValidator, ValidationError
 from pydantic_core import PydanticCustomError, PydanticUseDefault
 from pydantic_core import core_schema as cs
 
@@ -112,6 +112,8 @@ def serialize_none_to_empty_str(v: t.Any) -> t.Any:
 
 
 # VALIDATORS
+
+Translator = BeforeValidator(_value_for_locale)
 
 
 def redact(v: t.Any) -> t.Any:

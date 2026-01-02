@@ -61,7 +61,6 @@ from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
 
 from ..utils.error import YunohostError, YunohostValidationError
-from ..utils.i18n import _value_for_locale
 from ..utils.validation import (
     FORBIDDEN_PASSWORD_CHARS,
     UPLOAD_DIRS,
@@ -77,6 +76,7 @@ from ..utils.validation import (
     Pattern,
     StringConstraints,
     Translation,
+    Translator,
     coerce_comalist_to_list,
     coerce_nonish_to_none,
 )
@@ -390,7 +390,7 @@ class BaseOption(BaseModel):
     mode: Mode = (
         "string"  # TODO use "normal" as default mode with AppConfigPanel setuping it to "string"
     )
-    ask: Translation | None = None
+    ask: Annotated[Translation | None, Translator] = None
     readonly: bool = False
     visible: JSExpression | bool = True
     bind: str | None = None
@@ -585,7 +585,7 @@ class ButtonOption(BaseReadonlyOption):
 
     type: Literal[OptionType.button] = OptionType.button
     bind: Literal["null"] = "null"
-    help: Translation | None = None
+    help: Annotated[Translation | None, Translator] = None
     style: State = State.success
     icon: str | None = None
     enabled: JSExpression | bool = True
@@ -632,7 +632,7 @@ class BaseInputOption(BaseOption):
     - `placeholder` (optional): `str`, shown in the web-admin fields only
     """
 
-    help: Translation | None = None
+    help: Annotated[Translation | None, Translator] = None
     example: str | None = None
     placeholder: str | None = None
     redact: bool = False
@@ -1728,7 +1728,7 @@ OptionList = list[Annotated[AnyOption, Field(discriminator="type")]]
 
 
 def options_dict_to_list(
-    options: dict[str, Any], optional: bool = False
+    options: dict[str, Any], optional: bool = False, i18n_key: str | None = None
 ) -> list[dict[str, Any]]:
     options_list = []
 
@@ -1745,37 +1745,21 @@ def options_dict_to_list(
         if option["type"] not in READONLY_TYPES:
             option["optional"] = option.get("optional", optional)
 
+        if not option.get("ask"):
+            if i18n_key and m18n.key_exists(f"{i18n_key}_{id_}"):
+                option["ask"] = m18n.n(f"{i18n_key}_{id_}")
+            else:
+                option["ask"] = option["id"]
+        if (
+            not option.get("help")
+            and i18n_key
+            and m18n.key_exists(f"{i18n_key}_{id_}_help")
+        ):
+            option["help"] = m18n.n(f"{i18n_key}_{id_}_help")
+
         options_list.append(option)
 
     return options_list
-
-
-class OptionsModel(BaseModel):
-    # Pydantic will match option types to their models class based on the "type" attribute
-    options: OptionList
-
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(options=options_dict_to_list(kwargs))
-
-    def translate_options(self, i18n_key: str | None = None) -> None:
-        """
-        Mutate in place translatable attributes of options to their translations
-        """
-        for option in self.options:
-            for key in ("ask", "help"):
-                if not hasattr(option, key):
-                    continue
-
-                value = getattr(option, key)
-                if value:
-                    setattr(option, key, _value_for_locale(value))
-                elif key == "ask" and m18n.key_exists(f"{i18n_key}_{option.id}"):
-                    setattr(option, key, m18n.n(f"{i18n_key}_{option.id}"))
-                elif key == "help" and m18n.key_exists(f"{i18n_key}_{option.id}_help"):
-                    setattr(option, key, m18n.n(f"{i18n_key}_{option.id}_help"))
-                elif key == "ask":
-                    # FIXME warn?
-                    option.ask = option.id
 
 
 class FormModel(BaseModel):

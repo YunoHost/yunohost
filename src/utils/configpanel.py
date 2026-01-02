@@ -25,11 +25,22 @@ from collections import OrderedDict
 from collections.abc import Generator
 from functools import cached_property
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Iterator,
+    Literal,
+    Sequence,
+    Type,
+    Union,
+    cast,
+)
 
 from pydantic import (
     BaseModel,
     ConfigDict,
+    Field,
     ValidationError,
     computed_field,
     field_validator,
@@ -51,6 +62,7 @@ from .form import (
     OptionsModel,
     OptionType,
     Translation,
+    Translator,
     build_form,
     evaluate_simple_js_expression,
     options_dict_to_list,
@@ -87,29 +99,33 @@ CONFIG_PANEL_VERSION_SUPPORTED = 1.0
 
 class ContainerModel(BaseModel):
     id: str
-    name: Translation | None = None
+    name: Annotated[Translation | None, Translator] = None
     services: list[str] = []
-    help: Translation | None = None
+    help: Annotated[Translation | None, Translator] = None
+    i18n: Annotated[str | None, Field(exclude=True)] = None
 
     model_config = ConfigDict(
         extra="forbid",
     )
 
-    def translate(self, i18n_key: str | None = None) -> None:
+    @model_validator(mode="before")
+    @classmethod
+    def name_and_help_if_i18n_key(cls, data: Any) -> Any:
         """
-        Translate `ask` and `name` attributes of panels and section.
-        This is in place mutation.
+        Get `name` and `help` available translations if i18n key is defined
         """
+        i18n_key = data.get("i18n")
+        if i18n_key:
+            for key in ("help", "name"):
+                if not data.get(key) and m18n.key_exists(
+                    f"{i18n_key}_{data["id"]}_{key}"
+                ):
+                    data[key] = m18n.n(f"{i18n_key}_{data["id"]}_{key}")
 
-        for key in ("help", "name"):
-            value = getattr(self, key)
-            if value:
-                setattr(self, key, _value_for_locale(value))
-            elif m18n.key_exists(f"{i18n_key}_{self.id}_{key}"):
-                setattr(self, key, m18n.n(f"{i18n_key}_{self.id}_{key}"))
+        return data
 
 
-class SectionModel(ContainerModel, OptionsModel):
+class SectionModel(ContainerModel):
     """
     Sections are, basically, options grouped together. Sections are `dict`s defined inside a Panel and require a unique id (in the below example, the id is `customization` prepended by the panel's id `main`). Keep in mind that this combined id will be used in CLI to refer to the section, so choose something short and meaningfull. Also make sure to not make a typo in the panel id, which would implicitly create an other entire panel.
 
@@ -168,6 +184,7 @@ class SectionModel(ContainerModel, OptionsModel):
         data["options"] = options_dict_to_list(
             options,
             optional=data.get("optional", cls.model_fields["optional"].default),
+            i18n_key=data.get("i18n"),
         )
 
         return data
@@ -189,14 +206,6 @@ class SectionModel(ContainerModel, OptionsModel):
             return self.visible
 
         return evaluate_simple_js_expression(self.visible, context=context)  # type: ignore
-
-    def translate(self, i18n_key: str | None = None) -> None:
-        """
-        Call to `Container`'s `translate` for self translation
-        + Call to `OptionsContainer`'s `translate_options` for options translation
-        """
-        super().translate(i18n_key)
-        self.translate_options(i18n_key)
 
 
 class PanelModel(ContainerModel):
@@ -236,7 +245,7 @@ class PanelModel(ContainerModel):
         extra_fields_keys_set = set(data.keys()) - set(cls.model_fields.keys())
         # Consider all extra data keys as Panels
         data["sections"] = [
-            data.pop(key) | {"id": key}
+            data.pop(key) | {"id": key, "i18n": data.get("i18n")}
             for key in list(data.keys())
             if key in extra_fields_keys_set
         ]
@@ -254,15 +263,6 @@ class PanelModel(ContainerModel):
         schema["additionalProperties"] = sections["items"]
 
         return schema
-
-    def translate(self, i18n_key: str | None = None) -> None:
-        """
-        Recursivly mutate translatable attributes to their translation
-        """
-        super().translate(i18n_key)
-
-        for section in self.sections:
-            section.translate(i18n_key)
 
 
 class ConfigPanelModel(BaseModel):
@@ -287,7 +287,7 @@ class ConfigPanelModel(BaseModel):
     """
 
     version: float = CONFIG_PANEL_VERSION_SUPPORTED
-    i18n: str | None = None
+    i18n: Annotated[str | None, Field(exclude=True)] = None
     panels: list[PanelModel]
 
     model_config = ConfigDict(
@@ -388,7 +388,7 @@ class ConfigPanelModel(BaseModel):
         extra_fields_keys_set = set(data.keys()) - set(cls.model_fields.keys())
         # Consider all extra data keys as Panels
         data["panels"] = [
-            data.pop(key) | {"id": key}
+            data.pop(key) | {"id": key, "i18n": data.get("i18n")}
             for key in list(data.keys())
             if key in extra_fields_keys_set
         ]
@@ -529,7 +529,6 @@ class ConfigPanel:
             return option.normalize(self.form[option_id])
 
         # Format result in 'classic' or 'export' mode
-        self.config.translate()
         logger.debug(f"Formating result in '{mode}' mode")
 
         if mode == "full":
@@ -844,7 +843,6 @@ class ConfigPanel:
                 raw_msg=True,
             )
         config, raw_settings = self._get_partial_raw_settings_and_mutate_config(config)
-        config.translate()
         Settings = build_form(config.options)
         settings = (
             Settings(**raw_settings)
@@ -874,9 +872,6 @@ class ConfigPanel:
 
         interactive = Moulinette.interface.type == "cli" and os.isatty(1)
         verbose = action_id is None or len(list(config.options)) > 1
-
-        if interactive:
-            config.translate()
 
         for panel in config.panels:
             if interactive and verbose:
