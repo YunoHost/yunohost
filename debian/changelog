@@ -67,7 +67,20 @@ yunohost (13.0.0) testing; urgency=low
   Thanks to all contributors <3 ! Mostly Salamandar and axolotle ! (also alexAubin, Florent, Thomas, tituspijean)
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 31 Oct 2025 18:38:56 +0100
- 
+
+yunohost (12.1.38) stable; urgency=low
+
+  - certificates: add timeout for acme_tiny.py, to prevent requests from hanging on forever ... cf https://github.com/diafygi/acme-tiny/pull/293 (c6d91b893)
+  - nginx/proxy_params: add proxy_http_version 1.1 + Upgrade and Connection headers, explicitly set (or unset) the Authorization header (d089395ba, 4bb1ab797)
+  - nginx/fastcgi_params: add 'fastcgi_index index.php' and the classic fastcgi_split_path_info statement (9ccf76455)
+  - app/helpers: in ynh_local_curl, only print response to HTTP request ([#2247](http://github.com/YunoHost/yunohost/pull/2247))
+  - mail/dianogis: fix non-blocklist return code from Hostkarma ([#2245](http://github.com/YunoHost/yunohost/pull/2245))
+  - i18n: Translations updated for Basque, Catalan, French, Galician, Kabyle, Portuguese (Brazil), Russian, Ukrainian
+
+  Thanks to all contributors <3 ! (Alekseï, ButterflyOfFire, Eduardo Mozart de Oliveira, Florent, Francescc, José M, otm33, ppr, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 31 Dec 2025 14:35:36 +0100
+
 yunohost (12.1.37) stable; urgency=low
 
   - security: introduce a new security issue list that is fetched alongside the catalog, such that the diagnosis reports a warning/error for older versions of apps (or system packagers) vulnerable to known security issues ([#2077](http://github.com/YunoHost/yunohost/pull/2077))

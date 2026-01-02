@@ -832,7 +832,7 @@
     "app_config_permission_description": "Description",
     "app_config_permission_extraperm_section_name": "Autorisation '{perm}'",
     "app_config_permission_label": "Libellé",
-    "app_config_permission_location": "Corresponds à [{absolute_url}]({absolute_url})",
+    "app_config_permission_location": "Correspond à [{absolute_url}]({absolute_url})",
     "app_config_permission_logo": "Utilisation d'un logo personnalisé",
     "app_config_permission_show_tile": "Afficher la tuile dans le portail",
     "app_config_permission_description_help": "Cette fonctionnalité n'est vraiment utile que si vous utilisez le mode 'descriptif' du portail",

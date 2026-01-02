@@ -219,7 +219,7 @@ class MyMigration(Migration):
         # Add new apt .deb signing key
         download_gpg_key(
             "https://repo.yunohost.org/keys/yunohost_trixie.asc",
-            Path("/etc/apt/trusted.gpg.d/yunohost-trixie.gpg"),
+            Path("/usr/share/keyrings/yunohost-trixie.gpg"),
         )
 
         # Add Sury key even if extra_php_version.list was already there,
@@ -227,7 +227,7 @@ class MyMigration(Migration):
         # and that'll block the migration
         download_gpg_key(
             "https://packages.sury.org/php/apt.gpg",
-            Path("/etc/apt/trusted.gpg.d/extra_php_version.gpg"),
+            Path("/usr/share/keyrings/sury_php.gpg"),
         )
 
         self.patch_apt_sources_list()
@@ -259,7 +259,7 @@ class MyMigration(Migration):
         aptitude_with_progress_bar(
             f"full-upgrade {' '.join(self.apt_t64_packages_list())} --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'"
         )
-        
+
         # For some reason aptitude is derping about python3 / python3-venv so try to explicitly tell to install python3.11 to replace 3.9...
         # Note the '+M' prefix which is here to mark the packages as automatically installed
         # FIXME: This is from bookworm migration, might not be needed for Trixie ... not sure ... keeping this code commented for now
@@ -527,7 +527,7 @@ sideway (typically by SSHing from the local network, or through rescue access on
             line = (
                 line.replace(
                     "/usr/share/keyrings/yunohost-bookworm.gpg",
-                    "/etc/apt/trusted.gpg.d/yunohost-trixie.gpg",
+                    "/usr/share/keyrings/yunohost-trixie.gpg",
                 )
                 .replace(
                     "http://forge.yunohost.org/debian/ bookworm stable",
@@ -556,9 +556,7 @@ sideway (typically by SSHing from the local network, or through rescue access on
                     r"^https?://(repo|forge)\.yunohost\.org.*", paragraph["URIs"]
                 ):
                     paragraph["URIs"] = "https://repo.yunohost.org/debian/"
-                    paragraph["Signed-By"] = (
-                        "/etc/apt/trusted.gpg.d/yunohost-trixie.gpg"
-                    )
+                    paragraph["Signed-By"] = "/usr/share/keyrings/yunohost-trixie.gpg"
 
                 new_file_pars.append(str(paragraph))
 
