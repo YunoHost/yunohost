@@ -729,7 +729,11 @@ class BaseInputOption(BaseOption):
         """
         Validate a single value with the option's constraints
         """
+        # FIXME raise error if one attempt to validate a value on a readonly Option?
         anno, field = self.get_annotation(mode=mode)
+        # In case of TypeAdapter, field's attrs 'validate_default' and 'frozen' are ignored but warn about it
+        field.validate_default = None
+        field.frozen = None
         adapter: TypeAdapter = TypeAdapter(Annotated[anno, field])
         try:
             return adapter.dump_python(adapter.validate_python(v))
