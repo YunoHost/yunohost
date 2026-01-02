@@ -26,9 +26,10 @@ from collections.abc import Generator
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union, cast
 
+from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
+
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
-from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 
 from .error import YunohostError, YunohostValidationError
 from .file_utils import mkdir, read_toml, read_yaml, write_to_yaml
@@ -458,7 +459,9 @@ class ConfigPanel:
             entities = [
                 re.match(
                     "^" + cls.save_path_tpl.format(entity="(?p<entity>)") + "$", f
-                ).group("entity")  # type: ignore
+                ).group(  # type: ignore
+                    "entity"
+                )
                 for f in glob.glob(cls.save_path_tpl.format(entity="*"))
                 if os.path.isfile(f)
             ]
@@ -568,9 +571,9 @@ class ConfigPanel:
                         if isinstance(option, BaseInputOption):
                             result[key]["value"] = option.humanize(self.form[option.id])
                             if option.type is OptionType.password:
-                                result[key]["value"] = (
-                                    "**************"  # Prevent displaying password in `config get`
-                                )
+                                result[key][
+                                    "value"
+                                ] = "**************"  # Prevent displaying password in `config get`
 
         return result
 

@@ -29,6 +29,7 @@ from typing import Any, Literal, Sequence, TypedDict, Union
 import pytest
 from _pytest.mark.structures import ParameterSet
 from mock import patch
+
 from moulinette import Moulinette
 from yunohost import app, domain, user
 from yunohost.utils import form
@@ -51,7 +52,6 @@ from yunohost.utils.validation import (
     NONISH_VALUES,
     coerce_nonish_to_none,
 )
-
 
 MULTIPLE_NONISH: Any = (*NONISH_VALUES, ",", ", , ", [])
 

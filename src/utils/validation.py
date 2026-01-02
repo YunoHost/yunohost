@@ -1,24 +1,27 @@
 import datetime
-import email_validator
 import typing as t
 import urllib.parse
 from dataclasses import dataclass
 from logging import getLogger
 from pathlib import Path
+
+import email_validator
 from pydantic import AnyUrl, ValidationError
-from pydantic_core import PydanticCustomError, PydanticUseDefault, core_schema as cs
+from pydantic_core import PydanticCustomError, PydanticUseDefault
+from pydantic_core import core_schema as cs
 
 from moulinette import Moulinette
-from .error import YunohostError
+
 from ..log import OperationLogger
-from .i18n import m18n, _value_for_locale
+from .error import YunohostError
+from .i18n import _value_for_locale, m18n
 
 if t.TYPE_CHECKING:
     from pydantic import (
         GetCoreSchemaHandler,
         SerializerFunctionWrapHandler,
-        ValidatorFunctionWrapHandler,
         ValidationInfo,
+        ValidatorFunctionWrapHandler,
     )
     from pydantic_core import CoreSchema
 
@@ -619,6 +622,7 @@ class ListConstraints:
             return None
 
         return v
+
     def serialize(
         self, v: list[t.Any] | None, handler: "SerializerFunctionWrapHandler"
     ) -> str:

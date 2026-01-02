@@ -24,7 +24,6 @@ import operator as op
 import os
 import re
 import shutil
-import tempfile
 import urllib.parse
 from enum import Enum
 from logging import getLogger
@@ -45,10 +44,7 @@ from typing import (
     overload,
 )
 
-from moulinette import Moulinette, m18n
-from moulinette.interfaces.cli import colorize
 from pydantic import (
-    AfterValidator,
     BaseModel,
     BeforeValidator,
     ConfigDict,
@@ -60,10 +56,11 @@ from pydantic import (
 )
 from pydantic.fields import Field
 from pydantic.networks import EmailStr, HttpUrl
-from pydantic.types import constr
 from pydantic_extra_types.color import Color
 
-from ..log import OperationLogger
+from moulinette import Moulinette, m18n
+from moulinette.interfaces.cli import colorize
+
 from ..utils.error import YunohostError, YunohostValidationError
 from ..utils.i18n import _value_for_locale
 from ..utils.validation import (
@@ -83,9 +80,8 @@ from ..utils.validation import (
     Translation,
     coerce_comalist_to_list,
     coerce_nonish_to_none,
-    redact,
 )
-from .file_utils import read_yaml, write_to_file
+from .file_utils import read_yaml
 
 if TYPE_CHECKING:
     from pydantic import FieldInfo, GetJsonSchemaHandler, ValidationInfo
