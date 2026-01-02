@@ -59,7 +59,6 @@ from .form import (
     BaseReadonlyOption,
     FileOption,
     OptionList,
-    OptionsModel,
     OptionType,
     Translation,
     Translator,
