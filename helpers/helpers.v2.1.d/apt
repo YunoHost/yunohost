@@ -236,14 +236,31 @@ ynh_apt_install_dependencies_from_extra_repository() {
     fi
 
     if [[ "$key" == "trusted=yes" ]]; then
-        trust="[trusted=yes]"
+        signature="Trusted: yes"
+    elif [[ -n "$key" ]]; then
+        # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
+        wget --timeout 900 --quiet "$key" --output-document=- | gpg --dearmor -o "/usr/share/keyrings/ynh_$app.gpg"
+        signature="Signed-By: /usr/share/keyrings/ynh_$app.gpg"
+
+        # Remove possibly legacy key
+        rm -f "/etc/apt/trusted.gpg.d/$app.gpg"
     else
-        trust=""
+        signature=""
     fi
 
     # Add the new repo in sources.list.d
     mkdir --parents "/etc/apt/sources.list.d"
-    echo "deb $trust $uri $suite $component" > "/etc/apt/sources.list.d/$app.list"
+
+    # Remove legacy .list file if it exists
+    rm -f "/etc/apt/sources.list.d/$app.list"
+
+    cat << EOF > "/etc/apt/sources.list.d/ynh_$app.sources"
+Types: deb
+URIs: $uri
+Suites: $suite
+Components: $component
+$signature
+EOF
 
     # Pin the new repo with the default priority, so it won't be used for upgrades.
     # Build $pin from the uri without http and any sub path
@@ -252,30 +269,24 @@ ynh_apt_install_dependencies_from_extra_repository() {
 
     # Pin repository
     mkdir --parents "/etc/apt/preferences.d"
-    cat << EOF > "/etc/apt/preferences.d/$app"
+    cat << EOF > "/etc/apt/preferences.d/ynh_$app"
 Package: *
 Pin: origin $pin
 Pin-Priority: 995
 EOF
-
-    if [ -n "$key" ] && [[ "$key" != "trusted=yes" ]]; then
-        mkdir --parents "/etc/apt/trusted.gpg.d"
-        # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
-        wget --timeout 900 --quiet "$key" --output-document=- | gpg --dearmor > "/etc/apt/trusted.gpg.d/$app.gpg"
-    fi
 
     # Update the list of package with the new repo NB: we use -o
     # Dir::Etc::sourcelist to only refresh this repo, because
     # ynh_apt_install_dependencies will also call an ynh_apt update on its own
     # and it's good to limit unecessary requests ...  Here we mainly want to
     # validate that the url+key is correct before going further
-    _ynh_apt update -o Dir::Etc::sourcelist="/etc/apt/sources.list.d/$app.list"
+    _ynh_apt update -o Dir::Etc::sourcelist="/etc/apt/sources.list.d/ynh_$app.sources"
 
     # Force the cache to be reupdated on the next "apt update" (in
     # ynh_apt_install_dependencies) because the previous command with
     # ::sourcelist option makes apt forget about every other package for other,
     # so we want to force the cache to be reupdated entirely
-    touch "/etc/apt/sources.list.d/$app.list"
+    touch "/etc/apt/sources.list.d/ynh_$app.sources"
 
     # Install requested dependencies from this extra repository.
     # NB: because of the mechanism with $ynh_apt_install_DEPENDENCIES_REPLACE,
@@ -293,9 +304,9 @@ EOF
     fi
 
     # Remove this extra repository after packages are installed
-    ynh_safe_rm "/etc/apt/sources.list.d/$app.list"
-    ynh_safe_rm "/etc/apt/preferences.d/$app"
-    ynh_safe_rm "/etc/apt/trusted.gpg.d/$app.gpg"
+    ynh_safe_rm "/etc/apt/sources.list.d/ynh_$app.sources"
+    ynh_safe_rm "/etc/apt/preferences.d/ynh_$app"
+    ynh_safe_rm "/usr/share/keyrings/ynh_$app.gpg"
     _ynh_apt update
 }
 
