@@ -37,6 +37,7 @@ from typing import (
     Iterable,
     Literal,
     Mapping,
+    Self,
     Sequence,
     Type,
     Union,
@@ -643,6 +644,20 @@ class BaseInputOption(BaseOption):
     def coerce_empty_str_default(cls, v: Any, info: "ValidationInfo") -> Any:
         multiple = info.data.get("multiple", False)
         return coerce_comalist_to_list(v) if multiple else coerce_nonish_to_none(v)
+
+    @model_validator(mode="after")
+    def validate_default(self: Self) -> Self:
+        if self.default is None:
+            return self
+
+        try:
+            self.parse_and_validate(self.default, mode=self.mode)
+        except YunohostValidationError as e:
+            raise ValueError(
+                f"Default value doesn't satisfy the Option constraints: {str(e)}"
+            )
+
+        return self
 
     def humanize(self, v: Any) -> str:
         return self.parse_and_validate(v, mode="human")
