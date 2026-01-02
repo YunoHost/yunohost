@@ -2,4 +2,4 @@ Types: deb
 URIs: https://repo.yunohost.org/debian/
 Suites: trixie
 Components: stable
-Signed-By: /etc/apt/trusted.gpg.d/yunohost-trixie.gpg
+Signed-By: /usr/share/keyrings/yunohost-trixie.gpg

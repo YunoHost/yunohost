@@ -76,11 +76,14 @@ do_post_regen() {
     # We do this only at the post regen and if the key doesn't already exists,
     # because we don't want the regenconf to fuck everything up if the regenconf
     # runs while the network is down
-    _update_key "https://packages.sury.org/php/apt.gpg" "/etc/apt/trusted.gpg.d/extra_php_version.gpg"
-    _update_key "https://repo.yunohost.org/keys/yunohost_trixie.asc" "/etc/apt/trusted.gpg.d/yunohost-trixie.gpg"
+    _update_key "https://packages.sury.org/php/apt.gpg" "/usr/share/keyrings/sury_php.gpg"
+    _update_key "https://repo.yunohost.org/keys/yunohost_trixie.asc" "/usr/share/keyrings/yunohost-trixie.gpg"
 
-    # Delete legacy Yarn repository key
+    # Delete legacy repository keys
     rm -f "/etc/apt/trusted.gpg.d/yarn.gpg"
+    # GPG keys were moved to /usr/share/keyrings
+    rm -f "/etc/apt/trusted.gpg.d/extra_php_version.gpg"
+    rm -f "/etc/apt/trusted.gpg.d/yunohost-trixie.gpg"
 
     # Make sure php7.4 is the default version when using php in cli
     if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION; then
