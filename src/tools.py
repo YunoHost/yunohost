@@ -968,7 +968,7 @@ def _get_migrations_list() -> list["Migration"]:
 
     migrations = []
     for module in pkgutil.iter_modules(migrations_module.__path__):
-        if re.match(r"^\d+_[a-zA-Z0-9_]+$", module.name):
+        if re.match(r"^m\d+_[a-zA-Z0-9_]+$", module.name):
             migration = _load_migration(module.name)
             migration.state = states.get(migration.id, "pending")
             migrations.append(migration)
@@ -984,7 +984,7 @@ def _get_migration_by_name(migration_name: str) -> "Migration":
     migrations_found = [
         module.name
         for module in pkgutil.iter_modules(migrations_module.__path__)
-        if re.match(rf"^\d+_{migration_name}$", module.name)
+        if re.match(rf"^m\d+_{migration_name}$", module.name)
     ]
 
     assert len(migrations_found) == 1, (
@@ -1002,7 +1002,8 @@ def _load_migration(module_name: str) -> "Migration":
         # use that to import the migration as a python object so we'll be
         # able to run it in the next loop
         module = import_module(f"yunohost.migrations.{module_name}")
-        return module.MyMigration(module_name)
+        # The module has its name prefixed with "m"
+        return module.MyMigration(module_name.removeprefix("m"))
     except Exception as e:
         import traceback
 
