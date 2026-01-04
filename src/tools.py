@@ -19,6 +19,7 @@
 #
 
 import os
+import pkgutil
 import pwd
 import re
 import subprocess
@@ -31,6 +32,7 @@ from moulinette import Moulinette, m18n
 from packaging import version
 from typing_extensions import TypedDict
 
+from . import migrations as migrations_module
 from .log import OperationLogger, is_unit_operation
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import chown, cp, mkdir, read_yaml, rm, write_to_yaml
@@ -965,34 +967,24 @@ def _get_migrations_list() -> list["Migration"]:
     states = tools_migrations_state()["migrations"]
 
     migrations = []
-    migrations_folder = os.path.dirname(__file__) + "/migrations/"
-    for migration_file in [
-        x
-        for x in os.listdir(migrations_folder)
-        if re.match(r"^\d+_[a-zA-Z0-9_]+\.py$", x)
-    ]:
-        m = _load_migration(migration_file)
-        m.state = states.get(m.id, "pending")
-        migrations.append(m)
+    for module in pkgutil.iter_modules(migrations_module.__path__):
+        if re.match(r"^\d+_[a-zA-Z0-9_]+$", module.name):
+            migration = _load_migration(module.name)
+            migration.state = states.get(migration.id, "pending")
+            migrations.append(migration)
 
     return sorted(migrations, key=lambda m: m.id)
 
 
-def _get_migration_by_name(migration_name):
+def _get_migration_by_name(migration_name: str) -> "Migration":
     """
     Low-level / "private" function to find a migration by its name
     """
 
-    try:
-        from . import migrations
-    except ImportError:
-        raise AssertionError(f"Unable to find migration with name {migration_name}")
-
-    migrations_path = migrations.__path__[0]
     migrations_found = [
-        x
-        for x in os.listdir(migrations_path)
-        if re.match(r"^\d+_%s\.py$" % migration_name, x)
+        module.name
+        for module in pkgutil.iter_modules(migrations_module.__path__)
+        if re.match(rf"^\d+_{migration_name}$", module.name)
     ]
 
     assert len(migrations_found) == 1, (
@@ -1002,24 +994,22 @@ def _get_migration_by_name(migration_name):
     return _load_migration(migrations_found[0])
 
 
-def _load_migration(migration_file: str) -> "Migration":
-    migration_id = migration_file[: -len(".py")]
-
-    logger.debug(m18n.n("migrations_loading_migration", id=migration_id))
+def _load_migration(module_name: str) -> "Migration":
+    logger.debug(m18n.n("migrations_loading_migration", id=module_name))
 
     try:
         # this is python builtin method to import a module using a name, we
         # use that to import the migration as a python object so we'll be
         # able to run it in the next loop
-        module = import_module("yunohost.migrations.{}".format(migration_id))
-        return module.MyMigration(migration_id)
+        module = import_module(f"yunohost.migrations.{module_name}")
+        return module.MyMigration(module_name)
     except Exception as e:
         import traceback
 
         traceback.print_exc()
 
         raise YunohostError(
-            "migrations_failed_to_load_migration", id=migration_id, error=e
+            "migrations_failed_to_load_migration", id=module_name, error=e
         )
 
 
