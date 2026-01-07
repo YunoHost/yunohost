@@ -321,7 +321,7 @@ def test_resource_apt():
         "extras": {
             "influxdb": {
                 "repo": "deb https://repos.influxdata.com/debian stable main",
-                "key": "https://repos.influxdata.com/influxdata-archive_compat.key",
+                "key": "https://repos.influxdata.com/influxdata-archive.key",
                 "packages": "influxdb2",
             }
         },
