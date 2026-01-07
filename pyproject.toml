@@ -50,6 +50,7 @@ tests = [
     "types-requests",
     "types-toml",
     "pytest",
+    "mock",
 ]
 
 [tool.mypy]

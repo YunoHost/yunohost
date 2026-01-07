@@ -1,3 +1,42 @@
+yunohost (12.1.38) stable; urgency=low
+
+  - certificates: add timeout for acme_tiny.py, to prevent requests from hanging on forever ... cf https://github.com/diafygi/acme-tiny/pull/293 (c6d91b893)
+  - nginx/proxy_params: add proxy_http_version 1.1 + Upgrade and Connection headers, explicitly set (or unset) the Authorization header (d089395ba, 4bb1ab797)
+  - nginx/fastcgi_params: add 'fastcgi_index index.php' and the classic fastcgi_split_path_info statement (9ccf76455)
+  - app/helpers: in ynh_local_curl, only print response to HTTP request ([#2247](http://github.com/YunoHost/yunohost/pull/2247))
+  - mail/dianogis: fix non-blocklist return code from Hostkarma ([#2245](http://github.com/YunoHost/yunohost/pull/2245))
+  - i18n: Translations updated for Basque, Catalan, French, Galician, Kabyle, Portuguese (Brazil), Russian, Ukrainian
+
+  Thanks to all contributors <3 ! (Alekseï, ButterflyOfFire, Eduardo Mozart de Oliveira, Florent, Francescc, José M, otm33, ppr, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 31 Dec 2025 14:35:36 +0100
+
+yunohost (12.1.37) stable; urgency=low
+
+  - security: introduce a new security issue list that is fetched alongside the catalog, such that the diagnosis reports a warning/error for older versions of apps (or system packagers) vulnerable to known security issues ([#2077](http://github.com/YunoHost/yunohost/pull/2077))
+  - regenconf: properly check that categories to regen exists, to remove confusion when people try to regenconf stuff that dont exist like 'ssowat' or whatever... (1285fb7ff)
+  - apps: improve app restore debugging with a new no-remove-on-failure option, similar to the one for install ([#2184](http://github.com/YunoHost/yunohost/pull/2184))
+  - apps/nginx: add include snippets for fastcgi params and proxy param with and without authentication headers ([#2163](http://github.com/YunoHost/yunohost/pull/2163))
+
+  Thanks to all contributors <3 ! (Josue-T)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 18 Dec 2025 17:39:45 +0100
+
+yunohost (12.1.36) stable; urgency=low
+
+  - bookworm->trixie: fix some issues encountered during migration ([#2227](http://github.com/YunoHost/yunohost/pull/2227))
+  - sse: Improve heartbeat handling and error logging in sse_stream ([#2238](http://github.com/YunoHost/yunohost/pull/2238))
+  - logs: fix redacting mechanism not redacting secrets in some cases because of the way set -x display if comparisons in some cases ([#2234](http://github.com/YunoHost/yunohost/pull/2234))
+  - logs: improve yunopaste to also redact email-like patterns ([#2232](http://github.com/YunoHost/yunohost/pull/2232))
+  - logs/helpers: remove debug logs in some part of configpanel's ynh_app_config_validate to reduce noise, and as an additional layer to prevent from leaking secrets ([#2233](http://github.com/YunoHost/yunohost/pull/2233))
+  - backup: add interactive terminal check for backup confirmation prompt ([#2229](http://github.com/YunoHost/yunohost/pull/2229))
+  - postinstall: improve resilience and logging when no internet connectivity is available during postinstall (14248db34)
+  - i18n: Translations updated for Basque, Catalan, French, Galician, Occitan, Polish, Portuguese (Brazil), Russian
+
+  Thanks to all contributors <3 ! (Alekseï, Eduardo Mozart de Oliveira, Eryk Michalak, Francescc, HgO, José M, Kayou, ljf, orhtej2, ppr, Quentí, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 27 Nov 2025 01:29:22 +0100
+
 yunohost (12.1.35) stable; urgency=low
 
   - i18n/doc: update yunohost.org urls such that they point directly to the new doc on doc.yunohost.org etc (4ca736130)
@@ -460,7 +499,7 @@ yunohost (12.1.3) testing; urgency=low
   Thanks to all contributors <3 ! (Alexandre Aubin, Christophe Henry, Félix Piédallu, Josué Tille, Kayou, OniriCorpe, Quiwy, ljf (zamentur), ppr, sachaz, Éric Gaspar)
 
  -- tituspijean <tituspijean@yunohost.org>  Sun, 23 Mar 2025 09:32:14 +0100
- 
+
 yunohost (12.1.2) testing; urgency=low
 
   - storage: Fix YAML indent for storage.disk.list.arguments in actionsmap.yml ([#2058](http://github.com/YunoHost/yunohost/pull/2058))
@@ -545,7 +584,7 @@ yunohost (12.0.12) stable; urgency=low
 
  -- tituspijean <tituspijean@yunohost.org>  Sun, 16 Mar 2025 12:41:55 +0100
 
- yunohost (12.0.11) stable; urgency=low
+yunohost (12.0.11) stable; urgency=low
 
   - users: Prevent to remove the last user from admins ([#2029](http://github.com/YunoHost/yunohost/pull/2029), [#2030](http://github.com/YunoHost/yunohost/pull/2030), [#2031](http://github.com/YunoHost/yunohost/pull/2031), a18928475, d7b57a87a, fc2596d04, 8d6fd9c32)
   - apps: incorrect warning about amount of RAM during upgrade ([#1971](http://github.com/YunoHost/yunohost/pull/1971))
@@ -1135,7 +1174,7 @@ yunohost (11.2.11.3) stable; urgency=low
 
  -- tituspijean <titus+yunohost@pijean.ovh>  Sun, 21 Apr 2024 19:10:02 +0200
 
- yunohost (11.2.11.2) stable; urgency=low
+yunohost (11.2.11.2) stable; urgency=low
 
   - More oopsies (22b30c79)
 
@@ -3945,7 +3984,7 @@ yunohost (3.4.2) stable; urgency=low
   - [fix] Postgresql-9.4 was being detected as installed whereas it was in fact not (969577b)
   - [fix] Restoring system failed because of temporary dumb password being refused (51712f9)
 
- Thanks to all contributors (Aleks, frju365, JimboJoe, kay0u, Maniack, opi) ! <3
+  Thanks to all contributors (Aleks, frju365, JimboJoe, kay0u, Maniack, opi) ! <3
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 29 Jan 2019 16:42:00 +0000
 
@@ -3964,7 +4003,7 @@ yunohost (3.4.1) testing; urgency=low
   * [i18n] Improve translations for Hungarian, Esperanto, German
   * Misc minor fixes and improvements.
 
- Thanks to all contributors (Aleks, Bram, J. Meggyeshazi, Jibec, Josué, M. Martin, P. Bourré, anubis) ! <3
+  Thanks to all contributors (Aleks, Bram, J. Meggyeshazi, Jibec, Josué, M. Martin, P. Bourré, anubis) ! <3
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 17 Jan 2019 22:16:00 +0000
 
@@ -3990,7 +4029,7 @@ yunohost (3.4.0) testing; urgency=low
   * [fix] DKIM keys for new domains werent generated (0445aed)
   * [i18n] Improve translations for Arabic, Italian and Spanish
 
- Thanks to all contributors (Aleks, A. Pierré, ButterflyOfFire, Bram, irina11y, Josué, Maniack Crudelis, Sylkevicious, T. Hill, chateau, frju365, gdayon, liberodark, ljf, nqb, wilPoly) ! <3
+  Thanks to all contributors (Aleks, A. Pierré, ButterflyOfFire, Bram, irina11y, Josué, Maniack Crudelis, Sylkevicious, T. Hill, chateau, frju365, gdayon, liberodark, ljf, nqb, wilPoly) ! <3
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 20 Dec 2018 22:13:00 +0000
 
@@ -4027,7 +4066,7 @@ yunohost (3.3.1) stable; urgency=low
   * [fix] Generate a random serial for local certification auth (followup of #557)
   * [i18n] Update Italian, Occitan, French translations
 
- Thanks to all contributors (Maniack, airwoodix, Aleks, ljf, silkevicious, Quent-in, Jibec) <3 !
+  Thanks to all contributors (Maniack, airwoodix, Aleks, ljf, silkevicious, Quent-in, Jibec) <3 !
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 23 Nov 2018 15:58:00 +0000
 
@@ -4060,7 +4099,7 @@ yunohost (3.3.0) testing; urgency=low
   * [enh] Sort backup list according to their date (#562)
   * [fix] Improve UX when admin tries to allocate reserved email alias (#553)
 
- Thanks to all contributors (ljf, irinia11y, Maniack, xaloc33, Bram, flashemade, Maranda, Josue, frju365, Aleks, randomstuff, jershon, Genma, Quent-in, MyNameIsTroll, ButterflyOfFire, Jibec, silkevicious) ! <3
+  Thanks to all contributors (ljf, irinia11y, Maniack, xaloc33, Bram, flashemade, Maranda, Josue, frju365, Aleks, randomstuff, jershon, Genma, Quent-in, MyNameIsTroll, ButterflyOfFire, Jibec, silkevicious) ! <3
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 08 Nov 2018 17:09:00 +0000
 
@@ -4069,7 +4108,7 @@ yunohost (3.2.2) stable; urgency=low
   * [hotfix] mod_auth_ldap: reflect SASL API changes in latest Metronome (#546)
   * [enh] Add the internal helper ynh_handle_getopts_args (#520)
 
- Thanks to all contributors (Maranda, Maniack) ! <3
+  Thanks to all contributors (Maranda, Maniack) ! <3
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 28 Sep 2018 23:04:00 +0000
 
@@ -4081,7 +4120,7 @@ yunohost (3.2.1) stable; urgency=low
   * Tell the user about post-install available in browser in bootprompt (#544)
   * Improve Arabic translation
 
- Thanks to all contributors (BoF, ljf, Aleks) ! <3
+  Thanks to all contributors (BoF, ljf, Aleks) ! <3
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 17 Sep 2018 18:06:00 +0000
 
@@ -4096,7 +4135,7 @@ yunohost (3.2.0) stable; urgency=low
   * Add a script to automatically generate helpers documentation (#538)
   * [i18n] Improve Arabic translation
 
- Thanks to all contributors (Bram, Maniack, irina11y, Josue, BoF, ljf, Aleks) ! <3
+  Thanks to all contributors (Bram, Maniack, irina11y, Josue, BoF, ljf, Aleks) ! <3
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 11 Sep 2018 16:30:00 +0000
 
@@ -4107,7 +4146,7 @@ yunohost (3.2.0~testing1) testing; urgency=low
   * Fix the Sender Rewriting Scheme (#331)
   * Add `ynh_render_template` to be able to render Jinja 2 templates (#463)
 
- Thanks to all contributors : Bram, ljf, Aleks !
+  Thanks to all contributors : Bram, ljf, Aleks !
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 23 Aug 2018 21:45:00 +0000
 
@@ -4135,7 +4174,7 @@ yunohost (3.1.0) stable; urgency=low
   * Better UX in case of url conflicts when installing app (#512)
   * Misc fixes / improvements
 
- Thanks to all contributors : pitchum, ljf, Bram, Josue, Aleks !
+  Thanks to all contributors : pitchum, ljf, Bram, Josue, Aleks !
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 15 Aug 2018 21:34:00 +0000
 
@@ -4362,7 +4401,7 @@ yunohost (2.7.8) testing; urgency=low
   * [fix] Fix ynh_restore_upgradebackup
   * [i18n] Improve french translation
 
- Thanks to all contributors (Bram, Maniack, jibec, Aleks) ! <3
+  Thanks to all contributors (Bram, Maniack, jibec, Aleks) ! <3
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 24 Jan 2018 12:15:12 -0500
 
@@ -4403,7 +4442,7 @@ yunohost (2.7.6) testing; urgency=low
   * [mod] Use systemctl for all service operations
   * [i18n] Improved Spanish and French translations
 
- Thanks to all contributors (Maniack, Josue, Bram, ljf, Aleks, Jocelyn, JimboeJoe, David B, Lapineige, ...) ! <3
+  Thanks to all contributors (Maniack, Josue, Bram, ljf, Aleks, Jocelyn, JimboeJoe, David B, Lapineige, ...) ! <3
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 16 Jan 2018 17:17:34 -0500
 
@@ -4420,7 +4459,7 @@ yunohost (2.7.4) testing; urgency=low
   * [mod] Remove port 53 from UPnP (but keep it open on local network) (#362)
   * [i18n] Improve French translation
 
-Thanks to all contributors <3 ! (jibec, Moul, Maniack, Aleks)
+  Thanks to all contributors <3 ! (jibec, Moul, Maniack, Aleks)
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 28 Nov 2017 19:01:41 -0500
 
@@ -4448,7 +4487,7 @@ yunohost (2.7.3) testing; urgency=low
   * [fix] Fix unicode error in backup/restore (#375)
   * [fix] Fix an error in ynh_replace_string (#379)
 
-Thanks to all contributors <3 ! (Bram, Maniack C, ljf, JimboJoe, ariasuni, Jibec, Aleks)
+  Thanks to all contributors <3 ! (Bram, Maniack C, ljf, JimboJoe, ariasuni, Jibec, Aleks)
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 12 Oct 2017 16:18:51 -0400
 
@@ -4458,7 +4497,7 @@ yunohost (2.7.2) stable; urgency=low
   * [fix] Explicitly require moulinette and ssowat >= 2.7.1
   * [fix] Set firewall start as background task (to be done right after postinstall) to avoid lock issues
 
-Thanks to all contributors <3 ! (Bram, Alex)
+  Thanks to all contributors <3 ! (Bram, Alex)
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 22 Aug 2017 21:25:17 -0400
 
@@ -4502,18 +4541,18 @@ yunohost (2.7.1) testing; urgency=low
 
 yunohost (2.7.0) testing; urgency=low
 
-Thanks to all contributors <3 ! (Bram, Maniack C, ljf, Aleks, JimboJoe, anmol26s, e-lie, Ozhiganov)
+  Thanks to all contributors <3 ! (Bram, Maniack C, ljf, Aleks, JimboJoe, anmol26s, e-lie, Ozhiganov)
 
-Major fixes / improvements
-==========================
+  Major fixes / improvements
+  ==========================
 
   * [enh] Add a migration framework (#195)
   * [enh] Remove m18n (and other globals) black magic (#336)
   * [fix] Refactor DNS conf management for domains (#299)
   * [enh] Support custom backup methods (#326)
 
-App helpers
-===========
+  App helpers
+  ===========
 
   * New helper autopurge (#321)
   * New helpers ynh_add_fpm_config and ynh_remove_fpm_config (#284)
@@ -4521,8 +4560,8 @@ App helpers
   * New helpers ynh_add_nginx_config and ynh_remove_nginx_config (#285)
   * New helpers ynh_add_systemd_config and ynh_remove_systemd_config (#287)
 
-Smaller fixes / improvements
-============================
+  Smaller fixes / improvements
+  ============================
 
   * [fix] Run change_url scripts as root as a matter of homogeneity (#329)
   * [fix] Don't verify SSL during changeurl tests :/ (#332)

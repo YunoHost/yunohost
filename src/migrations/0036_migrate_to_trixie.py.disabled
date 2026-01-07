@@ -111,6 +111,9 @@ def _backup_pip_freeze_for_python_app_venvs():
         # Generate a requirements file from venv
         # Remove pkg resources from the freeze to avoid an error during the python venv https://stackoverflow.com/a/40167445
         pip = venv / "bin" / "pip"
+        if not pip.is_file():
+            logger.warning(f"Skipping venv {venv} because no 'pip' bin found")
+            continue
         pip_freeze = subprocess.check_output([pip, "freeze"]).decode(encoding="utf-8")
         pip_freeze = re.sub(r"^pkg(-|_)resources==.*$", "", pip_freeze)
         (venv / VENV_REQUIREMENTS_SUFFIX).write_text(pip_freeze)
@@ -216,7 +219,7 @@ class MyMigration(Migration):
         # Add new apt .deb signing key
         download_gpg_key(
             "https://repo.yunohost.org/keys/yunohost_trixie.asc",
-            Path("/etc/apt/trusted.gpg.d/yunohost-trixie.gpg"),
+            Path("/usr/share/keyrings/yunohost-trixie.gpg"),
         )
 
         # Add Sury key even if extra_php_version.list was already there,
@@ -224,7 +227,7 @@ class MyMigration(Migration):
         # and that'll block the migration
         download_gpg_key(
             "https://packages.sury.org/php/apt.gpg",
-            Path("/etc/apt/trusted.gpg.d/extra_php_version.gpg"),
+            Path("/usr/share/keyrings/sury_php.gpg"),
         )
 
         self.patch_apt_sources_list()
@@ -242,14 +245,19 @@ class MyMigration(Migration):
 
         # Specific trick because libluajit changed name **again**
         # And also the t64 apocalypse that makes aptitude derp
-        packages_problematic = [
-            "libluajit2-5.1-2- libluajit2-5.1-common- libluajit-5.1-2+M libluajit-5.1-common+M",
-        ] + self.apt_t64_packages_list()
+        # For some unknown reason, we need to run the upgrade in two separate steps
+        # First upgrade the luajit packages, then the t64 packages
+        # Running them together in a single full-upgrade doesn't work properly
 
-        packages_problematic_str = " ".join(packages_problematic)
-
+        # Upgrade problematic libluajit packages
+        libluajit_pkgs = "libluajit2-5.1-2- libluajit2-5.1-common- libluajit-5.1-2+M libluajit-5.1-common+M"
         aptitude_with_progress_bar(
-            f"full-upgrade {packages_problematic_str} --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'"
+            f"full-upgrade {libluajit_pkgs} --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'"
+        )
+
+        # Upgrade the t64-related packages
+        aptitude_with_progress_bar(
+            f"full-upgrade {' '.join(self.apt_t64_packages_list())} --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'"
         )
 
         # For some reason aptitude is derping about python3 / python3-venv so try to explicitly tell to install python3.11 to replace 3.9...
@@ -519,7 +527,7 @@ sideway (typically by SSHing from the local network, or through rescue access on
             line = (
                 line.replace(
                     "/usr/share/keyrings/yunohost-bookworm.gpg",
-                    "/etc/apt/trusted.gpg.d/yunohost-trixie.gpg",
+                    "/usr/share/keyrings/yunohost-trixie.gpg",
                 )
                 .replace(
                     "http://forge.yunohost.org/debian/ bookworm stable",
@@ -548,9 +556,7 @@ sideway (typically by SSHing from the local network, or through rescue access on
                     r"^https?://(repo|forge)\.yunohost\.org.*", paragraph["URIs"]
                 ):
                     paragraph["URIs"] = "https://repo.yunohost.org/debian/"
-                    paragraph["Signed-By"] = (
-                        "/etc/apt/trusted.gpg.d/yunohost-trixie.gpg"
-                    )
+                    paragraph["Signed-By"] = "/usr/share/keyrings/yunohost-trixie.gpg"
 
                 new_file_pars.append(str(paragraph))
 

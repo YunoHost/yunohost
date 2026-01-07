@@ -64,7 +64,8 @@ def get_crt(
                         "Content-Type": "application/jose+json",
                         "User-Agent": "acme-tiny",
                     },
-                )
+                ),
+                timeout=5,
             )
             resp_data, code, headers = (
                 resp.read().decode("utf8"),

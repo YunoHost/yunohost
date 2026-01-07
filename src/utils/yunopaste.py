@@ -72,12 +72,90 @@ def yunopaste(data: str) -> str:
     return f"{paste_server}/raw/{url}"
 
 
+MAIL_EXT_TO_IGNORE = [
+    ".tar.gz",
+    ".tar",
+    ".svg",
+    ".png",
+    ".conf",
+    ".log",
+    ".service",
+    ".path",
+    ".listen",
+    ".init",
+    ".patch",
+    ".admin",
+    ".access",
+    ".github.com",
+    ".gitlab.com",
+]
+MAIL_PATTERNS_TO_IGNORE = [
+    "@github.com",
+    "@framagit.org",
+    "@codeberg.org",
+    "@sury.org",
+    "@Bonfire.",
+    "@example.",
+    "@localhost",
+    "DEBUG@",
+    "INFO@",
+    "WARNING@",
+    "ERROR@",
+]
+MAIL_REGEX_TO_REDACT = re.compile(
+    r"(\b([a-zA-Z0-9\.\-\+])+@((xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\.)*(xn--)?[a-z0-9-]{1,61}\.(xn--)?[a-z]{2,})"
+)
+
+
 def anonymize(data: str) -> str:
     def anonymize_domain(data: str, domain: str, redact: str) -> str:
         data = data.replace(domain, redact)
         # This stuff appears sometimes because some folder in
         # /var/lib/metronome/ have some folders named this way
         data = data.replace(domain.replace(".", "%2e"), redact.replace(".", "%2e"))
+        return data
+
+    def redact_emails(data: str) -> str:
+        mail_matches = set([m[0] for m in MAIL_REGEX_TO_REDACT.findall(data)])
+
+        for match in mail_matches:
+            if any(match.endswith(ext) for ext in MAIL_EXT_TO_IGNORE) or any(
+                pattern in match for pattern in MAIL_PATTERNS_TO_IGNORE
+            ):
+                continue
+            split = match.split("@")
+            if len(split) != 2:
+                logger.error(
+                    "Eeeeeh, while anonymizing the file to be pasted with Yunopaste, found an email pattern with more than one @ but it shouldnt happen because of the regex definition...?"
+                )
+                continue
+            user_part, domain_part = split
+
+            # Redact the email, but try to be smart about it to not over-redact stuff making debug/support unecessarily harder...
+
+            # For the user part: redact alice@ or any "real-world" user name, but not root/admin/... and stuff that is actually template patterns (__FOOBAR__)
+            redact_user_part = not (
+                user_part
+                in {"root", "admin", "admins", "postmaster", "webmaster", "abuse"}
+                or user_part.startswith("__")
+                or user_part.endswith("__")
+            )
+            # For the domain part: redact...
+            # - except ".tld" (typically maindomain.tld) which does carry some info (ie anonymization rather than redaction)
+            # - and keep stuff that is actually template patterns (__FOOBAR__)
+            redact_domain_part = not (
+                domain_part.endswith(".tld")
+                or domain_part.startswith("__")
+                or domain_part.endswith("__")
+            )
+
+            redacted = (
+                ("*****" if redact_user_part else user_part)
+                + "@"
+                + ("*****.***" if redact_domain_part else domain_part)
+            )
+            data = data.replace(match, redacted)
+
         return data
 
     data = re.sub("\nstarted_by: .*\n", "\nstarted_by: ******\n", data)
@@ -101,7 +179,9 @@ def anonymize(data: str) -> str:
             continue
         data = anonymize_domain(data, domain, f"domain{count}.tld")
 
-    # We also want to anonymize the ips
+    data = redact_emails(data)
+
+    # We also want to anonymize IPs
     ipv4 = get_public_ip()
     ipv6 = get_public_ip(6)
 
