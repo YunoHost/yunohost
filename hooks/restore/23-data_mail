@@ -26,7 +26,7 @@ YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
-if [ -d "mail" ] || [ -d "/var/mail" ]
+if [ -d "./mail" ] || [ -d "./var/mail" ]
 then
     ynh_restore /var/mail
 fi
