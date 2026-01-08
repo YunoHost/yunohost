@@ -1,3 +1,20 @@
+yunohost (13.0.4) testing; urgency=low
+
+  - system: debian_version_id, return type to Literal ([#2242](http://github.com/YunoHost/yunohost/pull/2242))
+  - conf_regen: yunohost: Fix file touched in /etc instead of pending_dir (201ba39ea)
+  - conf_regen: dnsmasq: Replace hand-written file with jinja template (7dd10cadb)
+  - helpers: apt: Use deb822, install keys in /usr/share/keyrings, rename configuration files to prevent conflicts (2c567bc91)
+  - helpers: apt: sury php repository was renamed. Also, use if then instead of || (9d309ea90)
+  - conf: apt: Install repo GPG keys in /usr/share/keyrings (3ea63f9a3)
+  - conf_regen: apt: gpg dearmor directly to file without pipe (bb0d0ef76)
+  - tests: expired influxdata repo key ([#2253](http://github.com/YunoHost/yunohost/pull/2253)
+  - code: formatting and typing (8da80762d, e9f7ba489, 078e74741, 550c32e57)
+  - i18n: Translations updated for French, Kabyle
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, ButterflyOfFire, Félix Piédallu, Florent, Kayou, otm33, tituspijean)
+
+ -- tituspijean <tituspijean@yunohost.org>  Thu, 08 Jan 2026 22:14:36 +0100
+
 yunohost (13.0.3) testing; urgency=low
 
   - debian: Add an explicit dependency on sudo: libsss-sudo doesn't actually depend on sudo... (cbf9af29c)
