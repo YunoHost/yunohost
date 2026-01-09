@@ -14,7 +14,9 @@ proxy_set_header   Upgrade              $http_upgrade;
 proxy_set_header   Connection           $connection_upgrade;
 
 # Clean auth headers to ensure that the client can't inject any header for authentication
-proxy_set_header   Authorization        "";
+# If following line is uncommented, it forces the Authorization header to be empty even in cases where the app has other auth mechanism than just the YunoHost SSO
+# The login to the app would then fail.
+# proxy_set_header   Authorization        "";
 proxy_set_header   Ynh-User             "";
 proxy_set_header   Ynh-User-Email       "";
 proxy_set_header   Ynh-User-Fullname    "";
