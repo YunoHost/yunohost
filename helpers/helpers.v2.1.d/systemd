@@ -46,8 +46,8 @@ ynh_config_add_systemd() {
         ynh_config_add --template="$template" --destination="/etc/systemd/system/$mount.mount"
         systemctl enable "$mount" --quiet
     else
-    ynh_config_add --template="$template" --destination="/etc/systemd/system/$service.service"
-    systemctl enable "$service" --quiet
+        ynh_config_add --template="$template" --destination="/etc/systemd/system/$service.service"
+        systemctl enable "$service" --quiet
     fi
     systemctl daemon-reload
 }
