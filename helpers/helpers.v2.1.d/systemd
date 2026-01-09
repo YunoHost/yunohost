@@ -21,7 +21,7 @@
 # Create a dedicated systemd config
 #
 # usage: ynh_config_add_systemd [--mount=mount] [--service=service] [--template=template]
-# | arg: --mount=       - Mount name (optionnal, `replace_me` by default)
+# | arg: --mount=       - Mount name (optionnal)
 # | arg: --service=     - Service name (optionnal, `$app` by default)
 # | arg: --template=    - Name of template file (optionnal, this is 'systemd.service' by default, meaning `../conf/systemd.service` will be used as template)
 #
@@ -62,6 +62,11 @@ ynh_config_remove_systemd() {
         ynh_systemctl --service="$service" --action=stop
         systemctl disable "$service" --quiet
         ynh_safe_rm "/etc/systemd/system/$service.service"
+        systemctl daemon-reload
+    elif [ -e "/etc/systemd/system/$service.mount" ]; then
+        ynh_systemctl --service="$service" --action=stop
+        systemctl disable "$service" --quiet
+        ynh_safe_rm "/etc/systemd/system/$service.mount"
         systemctl daemon-reload
     fi
 }
