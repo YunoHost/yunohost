@@ -554,12 +554,15 @@ ynh_add_swap() {
     fi
 }
 
+# Delete swap
+#
+# usage: ynh_del_swap 
 ynh_del_swap() {
     # If there a swap at this place
     if [ -e "/swap_$app" ]; then
         # Clean the fstab
         sed -i "/#Swap added by $app/d" /etc/fstab
-        # Desactive the swap file
+        # Deactive the swap file
         swapoff "/swap_$app"
         # And remove it
         rm "/swap_$app"
