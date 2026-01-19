@@ -1701,10 +1701,9 @@ class DomainOption(BaseChoicesOption):
 
     @validator("default", pre=True, always=True)
     def inject_default(cls, value: str | None, values: Values) -> str | None:
-        # If the option is optional and no default was explicitly set,
-        # don't force the main domain as default
-        if values.get("optional") and value in (None, ""):
-            return None
+        # If the option is optional, don't force the main domain as default
+        if values.get("optional"):
+            return ""
 
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from ..domain import _get_maindomain
