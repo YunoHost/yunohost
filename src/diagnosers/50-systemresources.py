@@ -192,7 +192,7 @@ class MyDiagnoser(Diagnoser):
             out = check_output(cmd)
             lines = out.split("\n") if out else []
 
-            now = datetime.datetime.now()
+            now = datetime.datetime.now(datetime.timezone.utc)
 
             for line in reversed(lines):
                 # Lines look like :
