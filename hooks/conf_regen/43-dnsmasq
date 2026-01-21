@@ -78,7 +78,7 @@ do_pre_regen() {
 
     # add resolver pool
     if jq -re '.dns_custom_resolvers_enabled' <<< "$YNH_SETTINGS"; then
-        read -ra nameservers <<< "$(jq -r '.dns_custom_resolvers_list' <<< "$YNH_SETTINGS")"
+        read -ra nameservers <<< "$(jq -r '.dns_custom_resolvers_list' <<< "$YNH_SETTINGS" | sed 's/,/ /g')"
         for nameserver in "${nameservers[@]}"; do
             echo "nameserver $nameserver" >> "${pending_dir}/etc/resolv.dnsmasq.conf"
         done
