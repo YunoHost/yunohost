@@ -18,8 +18,26 @@
 #
 import binascii
 import os
+import textwrap
 
 
 def random_ascii(length: int = 40) -> str:
     """Return a random ascii string"""
     return binascii.hexlify(os.urandom(length)).decode("ascii")[:length]
+
+
+def send_admin_email(from_addr: str, subject: str, content: str) -> None:
+    to_addr = "root"
+    message = textwrap.dedent(f"""\
+        From: {from_addr}
+        To: {to_addr}
+        Subject: {subject}
+
+        {content}
+    """)
+
+    import smtplib
+
+    smtp = smtplib.SMTP("localhost")
+    smtp.sendmail(from_addr, [to_addr], message.encode("utf-8"))
+    smtp.quit()

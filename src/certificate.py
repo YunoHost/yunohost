@@ -22,6 +22,7 @@ import os
 import shutil
 import subprocess
 import sys
+import textwrap
 from datetime import datetime, timezone
 from glob import glob
 from logging import getLogger
@@ -35,6 +36,7 @@ from .regenconf import regen_conf
 from .service import _run_service_command
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import chmod, chown, read_file
+from .utils.misc import send_admin_email
 from .utils.network import get_public_ip
 from .utils.process import check_output
 from .vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
@@ -398,11 +400,11 @@ def certificate_renew(
         if not no_checks:
             try:
                 _check_domain_is_ready_for_ACME(domain)
-            except Exception as e:
-                logger.error(e)
+            except Exception as err:
+                logger.error(err)
                 if email:
                     logger.error("Sending email with details to root ...")
-                    _email_renewing_failed(domain, e)
+                    _email_renewing_failed(domain, err)
                 continue
 
         logger.info("Now attempting renewing of certificate for domain %s !", domain)
@@ -454,38 +456,30 @@ def certificate_renew(
 #
 
 
-def _email_renewing_failed(domain, exception_message, stack=""):
-    from_ = f"certmanager@{domain} (Certificate Manager)"
-    to_ = "root"
-    subject_ = f"Certificate renewing attempt for {domain} failed!"
+def _email_renewing_failed(
+    domain: str, exception_message: str | Exception, stack: str = ""
+) -> None:
+    from_addr = f"certmanager@{domain} (Certificate Manager)"
+    subject = f"Certificate renewing attempt for {domain} failed!"
 
     logs = _tail(50, "/var/log/yunohost/yunohost-cli.log")
-    message = f"""\
-From: {from_}
-To: {to_}
-Subject: {subject_}
+    message = textwrap.dedent(f"""\
+        An attempt for renewing the certificate for domain {domain} failed with the following
+        error :
 
+        {exception_message}
+        {stack}
 
-An attempt for renewing the certificate for domain {domain} failed with the following
-error :
+        Here's the tail of /var/log/yunohost/yunohost-cli.log, which might help to
+        investigate :
 
-{exception_message}
-{stack}
+        {logs}
 
-Here's the tail of /var/log/yunohost/yunohost-cli.log, which might help to
-investigate :
-
-{logs}
-
--- Certificate Manager
-"""
+        -- Certificate Manager
+    """)
 
     try:
-        import smtplib
-
-        smtp = smtplib.SMTP("localhost")
-        smtp.sendmail(from_, [to_], message.encode("utf-8"))
-        smtp.quit()
+        send_admin_email(from_addr, subject, message)
     except Exception as e:
         # Dont miserably crash the whole auto renew cert when one renewal fails ...
         # cf boring cases like https://github.com/YunoHost/issues/issues/2102

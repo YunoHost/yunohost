@@ -35,6 +35,7 @@ from .utils.file_utils import (
     write_to_json,
     write_to_yaml,
 )
+from .utils.misc import send_admin_email
 
 logger = getLogger("yunohost.diagnosis")
 
@@ -684,36 +685,19 @@ def _load_diagnoser(diagnoser_name):
         )
 
 
-def _email_diagnosis_issues():
-    from .domain import _get_maindomain
-
-    maindomain = _get_maindomain()
-    from_ = f"diagnosis@{maindomain} (Automatic diagnosis on {maindomain})"
-    to_ = "root"
-    subject_ = f"Issues found by automatic diagnosis on {maindomain}"
-
-    disclaimer = "The automatic diagnosis on your YunoHost server identified some issues on your server. You will find a description of the issues below. You can manage those issues in the 'Diagnosis' section in your webadmin."
-
+def _email_diagnosis_issues() -> None:
     issues = diagnosis_show(issues=True)["reports"]
     if not issues:
         return
 
+    from .domain import _get_maindomain
+
+    maindomain = _get_maindomain()
+    from_addr = f"diagnosis@{maindomain} (Automatic diagnosis on {maindomain})"
+    subject = f"Issues found by automatic diagnosis on {maindomain}"
+
+    disclaimer = "The automatic diagnosis on your YunoHost server identified some issues on your server. You will find a description of the issues below. You can manage those issues in the 'Diagnosis' section in your webadmin."
     content = _dump_human_readable_reports(issues)
+    message = f"{disclaimer}\n\n---\n\n{content}"
 
-    message = f"""\
-From: {from_}
-To: {to_}
-Subject: {subject_}
-
-{disclaimer}
-
----
-
-{content}
-"""
-
-    import smtplib
-
-    smtp = smtplib.SMTP("localhost")
-    smtp.sendmail(from_, [to_], message.encode("utf-8"))
-    smtp.quit()
+    send_admin_email(from_addr, subject, message)
