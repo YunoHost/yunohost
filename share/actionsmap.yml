@@ -1835,6 +1835,9 @@ dyndns:
                     full: --dry-run
                     help: Only display the generated zone
                     action: store_true
+                --email:
+                    help: Send an email to root with logs if some updating fails
+                    action: store_true
 
 #############################
 #           Tools           #
@@ -1925,7 +1928,7 @@ tools:
 
 
         update_norefresh:
-            # This exists mainly for the API, such that there's an explicit read-only (GET) route 
+            # This exists mainly for the API, such that there's an explicit read-only (GET) route
             # vs the old/regular/legacy(?)/ambiguous PUT /update route ...
             hide_in_help: True
             action_help: List available system/apps updates (without refreshing caches)
