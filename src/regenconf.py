@@ -74,17 +74,17 @@ def regen_conf(
 
     from .settings import settings_get
 
-    all_available_conf_regen_categories = hook_list(
-        "conf_regen", list_by="name", show_info=False
+    all_available_regen_conf_categories = hook_list(
+        "regen_conf", list_by="name", show_info=False
     )["hooks"]
 
     if names is None:
         names = []
     elif names and isinstance(names, list):
         unknowns = [
-            name for name in names if name not in all_available_conf_regen_categories
+            name for name in names if name not in all_available_regen_conf_categories
         ]
-        names = [name for name in names if name in all_available_conf_regen_categories]
+        names = [name for name in names if name in all_available_regen_conf_categories]
         if not names:
             raise YunohostError(
                 f"No regen-conf categories named '{', '.join(unknowns)}'", raw_msg=True
@@ -149,9 +149,9 @@ def regen_conf(
 
     # By default, we regen everything
     if not names:
-        names = all_available_conf_regen_categories
+        names = all_available_regen_conf_categories
 
-    # [Optimization] We compute and feed the domain list to the conf regen
+    # [Optimization] We compute and feed the domain list to the regen_conf
     # hooks to avoid having to call "yunohost domain list" so many times which
     # ends up in wasted time (about 3~5 seconds per call on a RPi2)
     from .domain import domain_list
@@ -181,7 +181,7 @@ def regen_conf(
     env["YNH_SETTINGS"] = json.dumps(settings_get("", export=True))
     env["FORCE"] = "true" if force else "false"
 
-    pre_result = hook_callback("conf_regen", names, pre_callback=_pre_call, env=env)
+    pre_result = hook_callback("regen_conf", names, pre_callback=_pre_call, env=env)
 
     # Keep only the hook names with at least one success
     names = [
@@ -459,7 +459,7 @@ def regen_conf(
             regen_conf_files,
         ]
 
-    hook_callback("conf_regen", names, pre_callback=_pre_call2, env=env)
+    hook_callback("regen_conf", names, pre_callback=_pre_call2, env=env)
 
     operation_logger.success()
 

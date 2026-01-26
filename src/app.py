@@ -1046,7 +1046,7 @@ def app_upgrade(
             ) - set(manually_modified_files_before_install)
             if manually_modified_files_by_app:
                 logger.error(
-                    "Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper conf_regen hook. Those configuration were affected:\n    - "
+                    "Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper regen_conf hook. Those configuration were affected:\n    - "
                     + "\n     - ".join(manually_modified_files_by_app)
                 )
 
@@ -1520,7 +1520,7 @@ def app_install(
         ) - set(manually_modified_files_before_install)
         if manually_modified_files_by_app:
             logger.error(
-                "Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper conf_regen hook. Those configuration were affected:\n    - "
+                "Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper regen_conf hook. Those configuration were affected:\n    - "
                 + "\n     - ".join(manually_modified_files_by_app)
             )
             broke_the_system = True
