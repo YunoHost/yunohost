@@ -30,6 +30,7 @@ import toml
 import yaml
 
 from .error import YunohostError
+from .process import check_output
 
 Jsonable = (
     str | int | float | bool | None | dict["Jsonable", "Jsonable"] | list["Jsonable"]
@@ -460,3 +461,7 @@ def download_json(
         raise YunohostError("corrupted_json", ressource=url, error=str(e))
 
     return loaded_json
+
+
+def tail(file: Path | str, lines: int) -> str:
+    return check_output(f"tail --lines {lines} '{str(file)}'")

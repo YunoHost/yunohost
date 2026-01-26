@@ -35,10 +35,9 @@ from .log import OperationLogger
 from .regenconf import regen_conf
 from .service import _run_service_command
 from .utils.error import YunohostError, YunohostValidationError
-from .utils.file_utils import chmod, chown, read_file
+from .utils.file_utils import chmod, chown, read_file, tail
 from .utils.misc import send_admin_email
 from .utils.network import get_public_ip
-from .utils.process import check_output
 from .vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 
 if TYPE_CHECKING:
@@ -462,7 +461,7 @@ def _email_renewing_failed(
     from_addr = f"certmanager@{domain} (Certificate Manager)"
     subject = f"Certificate renewing attempt for {domain} failed!"
 
-    logs = _tail(50, "/var/log/yunohost/yunohost-cli.log")
+    logs = tail("/var/log/yunohost/yunohost-cli.log", 50)
     message = textwrap.dedent(f"""\
         An attempt for renewing the certificate for domain {domain} failed with the following
         error :
@@ -910,7 +909,3 @@ def _name_self_CA():
 
     logger.warning(m18n.n("certmanager_unable_to_parse_self_CA_name", file=ca_conf))
     return ""
-
-
-def _tail(n, file_path):
-    return check_output(f"tail -n {n} '{file_path}'")
