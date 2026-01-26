@@ -1124,7 +1124,7 @@ def user_group_create(
                 m18n.n("group_already_exist_on_system_but_removing_it", group=groupname)
             )
             subprocess.check_call(
-                f"sed --in-place '/^{groupname}:/d' /etc/group", shell=True
+                ["sed", "--in-place", f"/^{groupname}:/d", "/etc/group"]
             )
         else:
             raise YunohostValidationError(
