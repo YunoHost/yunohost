@@ -1040,20 +1040,23 @@ def _tools_migrations_run_after_system_restore(backup_version: str) -> None:
     all_migrations = _get_migrations_list()
 
     current_version = version.parse(ynh_packages_version()["yunohost"]["version"])
-    backup_version = version.parse(backup_version)
+    backup_version_v = version.parse(backup_version)
 
-    if backup_version == current_version:
+    if backup_version_v == current_version:
         return
 
     for migration in all_migrations:
+        migration_version = getattr(migration, "introduced_in_version", None)
+        migration_method = getattr(migration, "run_after_system_restore", None)
+
         if (
-            hasattr(migration, "introduced_in_version")
-            and version.parse(migration.introduced_in_version) > backup_version
-            and hasattr(migration, "run_after_system_restore")
+            migration_version is not None
+            and version.parse(migration_version) > backup_version_v
+            and migration_method is not None
         ):
             try:
                 logger.info(m18n.n("migrations_running_forward", id=migration.id))
-                migration.run_after_system_restore()
+                migration_method()
             except Exception as e:
                 msg = m18n.n(
                     "migrations_migration_has_failed", exception=e, id=migration.id
@@ -1074,14 +1077,17 @@ def _tools_migrations_run_before_app_restore(
         return
 
     for migration in all_migrations:
+        migration_version = getattr(migration, "introduced_in_version", None)
+        migration_method = getattr(migration, "run_before_app_restore", None)
+
         if (
-            hasattr(migration, "introduced_in_version")
-            and version.parse(migration.introduced_in_version) > backup_version
-            and hasattr(migration, "run_before_app_restore")
+            migration_version is not None
+            and version.parse(migration_version) > backup_version
+            and migration_method is not None
         ):
             try:
                 logger.info(m18n.n("migrations_running_forward", id=migration.id))
-                migration.run_before_app_restore(app_id, app_backup_in_archive)
+                migration_method(app_id, app_backup_in_archive)
             except Exception as e:
                 msg = m18n.n(
                     "migrations_migration_has_failed", exception=e, id=migration.id

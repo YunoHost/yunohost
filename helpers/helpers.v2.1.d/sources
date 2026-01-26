@@ -54,7 +54,7 @@
 #           = false   # default if file 'format' is not set and the file is not to be extracted because it is not an archive but a script or binary or whatever asset.
 #                     #    in which case the file will only be `mv`ed to the location possibly renamed using the `rename` value
 #
-# rename    = "whatever_your_want"   # to be used for convenience when `extract` is false and the default name of the file is not practical
+# rename    = "whatever_your_want"   # to be used for convenience when `extract` is false and the default name of the file is not practical (the default filename being the value of `source_id` arg and not the upstream basename).
 # platform  = "linux/amd64"          # (defaults to "linux/$YNH_ARCH") to be used in conjonction with `format = "docker"` to specify which architecture to extract for
 # ```
 #

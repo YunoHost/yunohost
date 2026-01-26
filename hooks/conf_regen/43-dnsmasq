@@ -29,15 +29,22 @@ do_init_regen() {
 
     cd /usr/share/yunohost/conf/dnsmasq
 
-    # Use a seed derived from the machine id and current month
-    # This way, the shuffle is random but should be stable accross the same month
-    # and make sure the regenconf is idempotent (at least during the same month)
-    # i.e. that it doesn't re-shuffle the file everytime we run the regenconf
-    SEED=$( (
-        cat /etc/machine-id || true
-        date +%m%Y
-    ) | md5sum)
-    cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf --random-source=<(echo "$SEED") > /etc/resolv.dnsmasq.conf
+    if jq -re '.dns_custom_resolvers_enabled' <<< "$YNH_SETTINGS"; then
+        read -ra nameservers <<< "$(jq -r '.dns_custom_resolvers_list' <<< "$YNH_SETTINGS")"
+        for nameserver in "${nameservers[@]}"; do
+            echo "nameserver $nameserver" >> /etc/resolv.dnsmasq.conf
+        done
+    else
+        # Use a seed derived from the machine id and current month
+        # This way, the shuffle is random but should be stable accross the same month
+        # and make sure the regenconf is idempotent (at least during the same month)
+        # i.e. that it doesn't re-shuffle the file everytime we run the regenconf
+        SEED=$( (
+            cat /etc/machine-id || true
+            date +%m%Y
+        ) | md5sum)
+        cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf --random-source=<(echo "$SEED") > /etc/resolv.dnsmasq.conf
+    fi
     chown root /etc/resolv.dnsmasq.conf
     chmod 644 /etc/resolv.dnsmasq.conf
 
@@ -70,16 +77,22 @@ do_pre_regen() {
     cp plain/etcdefault "${pending_dir}/etc/default/dnsmasq"
 
     # add resolver pool
-
-    # Use a seed derived from the machine id and current month
-    # This way, the shuffle is random but should be stable accross the same month
-    # and make sure the regenconf is idempotent (at least during the same month)
-    # i.e. that it doesn't re-shuffle the file everytime we run the regenconf
-    SEED=$( (
-        cat /etc/machine-id || true
-        date +%m%Y
-    ) | md5sum)
-    cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf --random-source=<(echo "$SEED") > "${pending_dir}/etc/resolv.dnsmasq.conf"
+    if jq -re '.dns_custom_resolvers_enabled' <<< "$YNH_SETTINGS"; then
+        read -ra nameservers <<< "$(jq -r '.dns_custom_resolvers_list' <<< "$YNH_SETTINGS" | sed 's/,/ /g')"
+        for nameserver in "${nameservers[@]}"; do
+            echo "nameserver $nameserver" >> "${pending_dir}/etc/resolv.dnsmasq.conf"
+        done
+    else
+        # Use a seed derived from the machine id and current month
+        # This way, the shuffle is random but should be stable accross the same month
+        # and make sure the regenconf is idempotent (at least during the same month)
+        # i.e. that it doesn't re-shuffle the file everytime we run the regenconf
+        SEED=$( (
+            cat /etc/machine-id || true
+            date +%m%Y
+        ) | md5sum)
+        cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf --random-source=<(echo "$SEED") > "${pending_dir}/etc/resolv.dnsmasq.conf"
+    fi
 
     # retrieve variables
     ipv4=$(curl --max-time 10 -s -4 https://ipv4.yunohost.org 2> /dev/null || true)

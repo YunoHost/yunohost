@@ -172,7 +172,7 @@ class SSELogStreamingHandler(logging.Handler):
         self._encode_and_pub(event)
 
     def emit_error_toast(self, error: str) -> None:
-        event: SSEEvent = {
+        event: SSEEventMessage = {
             "type": "toast",
             "timestamp": time.time(),
             "level": "error",
