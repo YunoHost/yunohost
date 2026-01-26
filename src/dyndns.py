@@ -25,6 +25,7 @@ import json
 import os
 import subprocess
 from logging import getLogger
+from typing import TYPE_CHECKING, cast
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
@@ -37,7 +38,12 @@ from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import chmod, chown, rm, write_to_file
 from .utils.network import get_public_ip
 
-logger = getLogger("yunohost.dyndns")
+if TYPE_CHECKING:
+    from .utils.logging import YunohostLogger
+
+    logger = cast(YunohostLogger, getLogger("yunohost.app"))
+else:
+    logger = getLogger("yunohost.dyndns")
 
 DYNDNS_PROVIDER = "dyndns.yunohost.org"
 DYNDNS_DNS_AUTH = ["ns0.yunohost.org", "ns1.yunohost.org"]
@@ -356,9 +362,9 @@ def dyndns_list() -> dict[str, list[str]]:
 @is_unit_operation()
 def dyndns_update(
     operation_logger,
-    domain=None,
-    force=False,
-    dry_run=False,
+    domain: str | None = None,
+    force: bool = False,
+    dry_run: bool = False,
 ):
     """
     Update IP on DynDNS platform
@@ -405,8 +411,7 @@ def dyndns_update(
         return
 
     # Extract 'host', e.g. 'nohost.me' from 'foo.nohost.me'
-    zone = domain.split(".")[1:]
-    zone = ".".join(zone)
+    zone = ".".join(domain.split(".")[1:])
 
     logger.debug("Building zone update ...")
 
@@ -498,7 +503,8 @@ def dyndns_update(
             # should be muc.the.domain.tld. or the.domain.tld
             if record["content"] == "@":
                 record["content"] = domain
-            record["content"] = record["content"].replace(";", r"\;")
+            if record["content"]:
+                record["content"] = record["content"].replace(";", r"\;")
             name = (
                 f"{record['name']}.{domain}." if record["name"] != "@" else f"{domain}."
             )
