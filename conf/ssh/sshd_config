@@ -18,6 +18,8 @@ HostKey {{ key }}{% endfor %}
 # ##############################################
 
 {% if compatibility == "paranoid" %}
+  # The 'paranoid' ssh mode has been selected.
+  #
   # Paranoid mode select the 2 algorithms (available in the current version)
   # with the highest priority in the latest version of OpenSSH, favoring the
   # largest keys. 
@@ -31,12 +33,15 @@ HostKey {{ key }}{% endfor %}
   # (encrypt-then-mac). These are considered safer and their use recommended.
   MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com
 {% elif compatibility == "intermediate" %}
-  # The intermediate ssh mode has been selected, so we use default debian
-  # openssh version.
+  # The 'intermediate' ssh mode has been selected.
+  #
+  # Intermediate mode is equivalent to the default debian openssh version.
   # See KexAlgorithms, Ciphers and MACs in 
   # https://manpages.debian.org/bookworm/openssh-server/sshd_config.5.en.html
 
 {% else %}
+  # The 'modern' ssh mode has been selected.
+  #
   # As Yunohost is sometimes on Debian oldstable, we want to improve algorithms
   # list for a more modern near the latest openssh version.
   #
