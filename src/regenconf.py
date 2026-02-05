@@ -478,6 +478,8 @@ def _get_regenconf_infos():
             del data["metronome"]
         if "rspamd" in data:
             del data["rspamd"]
+        if "nsswitch" in data:
+            del data["nsswitch"]
         return data
     except Exception:
         return {}
