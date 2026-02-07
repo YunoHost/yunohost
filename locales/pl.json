@@ -501,5 +501,15 @@
     "domain_config_cert_no_checks": "Zignoruj kontrole diagnostyczne",
     "domain_config_cert_renew_help": "Certyfikat zostanie automatycznie odnowiony w ciągu ostatnich 15 dni ważności. Możesz go odnowić ręcznie, jeśli chcesz. (Niezalecane).",
     "domain_config_cert_summary_abouttoexpire": "Obecny certyfikat wkrótce wygaśnie. Wkrótce powinien zostać automatycznie odnowiony.",
-    "domain_config_cert_summary_expired": "KRYTYCZNE: Obecny certyfikat jest nieprawidłowy! HTTPS w ogóle nie będzie działać!"
+    "domain_config_cert_summary_expired": "KRYTYCZNE: Obecny certyfikat jest nieprawidłowy! HTTPS w ogóle nie będzie działać!",
+    "domain_dns_pushing": "Przesyłanie rekordów DNS…",
+    "domain_dns_registrar_experimental": "Jak dotąd interfejs API **{registrar}** nie został odpowiednio przetestowany i zweryfikowany przez społeczność YunoHost. Wsparcie jest **bardzo eksperymentalne** – bądź ostrożny!",
+    "domain_dns_registrar_managed_in_parent_domain": "Ta domena jest subdomeną od {parent_domain_link}. Konfiguracją rejestratora DNS należy zarządzać w panelu konfiguracyjnym domeny {parent_domain}.",
+    "domain_dns_registrar_not_supported": "YunoHost nie mógł automatycznie wykryć rejestratora obsługującego tę domenę. Należy ręcznie skonfigurować rekordy DNS postępując zgodnie z dokumentacją dostępną pod adresem https://doc.yunohost.org/dns_config.",
+    "domain_dns_registrar_use_auto": "Użyj funkcji automatycznego DNS",
+    "domain_dns_registrar_yunohost": "Ta domena to nohost.me / nohost.st / ynh.fr i dlatego jej konfiguracja DNS jest automatycznie obsługiwana przez YunoHost bez konieczności dalszej konfiguracji. (patrz polecenie 'yunohost dyndns update')",
+    "domain_dyndns_already_subscribed": "Już zasubskrybowałeś do domenę DynDNS",
+    "domain_exists": "Domena już istnieje",
+    "domain_hostname_failed": "Nie można ustawić nowej nazwy hosta. Może to później spowodować problem (ale może wszystko będzie w porządku).",
+    "domain_registrar_is_not_configured": "Rejestrator nie został jeszcze skonfigurowany dla domeny {domain}."
 }
