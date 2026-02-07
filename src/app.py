@@ -753,10 +753,12 @@ def app_upgrade(
     # "app" is a bad name for this arg but meh that's legacy and possibly can't easily be changed
     # (and actually a bit relevant in terms of what's shown in --help)
     raw_requested_targets = app
+    single_app_to_upgrade = None
     if not raw_requested_targets:
         requested_targets = _installed_apps()
     elif isinstance(raw_requested_targets, str):
         requested_targets = [raw_requested_targets]
+        single_app_to_upgrade = raw_requested_targets
     else:
         requested_targets = raw_requested_targets.copy()
         # Remove possible duplicates
@@ -775,6 +777,7 @@ def app_upgrade(
 
     def _check_upgrade_targets(
         requested_targets: list[str],
+        single_app_to_upgrade: str | None,
     ) -> Iterator[tuple[str, str, str]]:
         if (url or file) and len(requested_targets) > 1 and not isinstance(file, dict):
             raise YunohostValidationError(
@@ -835,9 +838,11 @@ def app_upgrade(
                 )
                 yield (app_, msg, new_app_src)
             elif status == "up_to_date" or status == "bad_quality":
+                force_this_app = force
                 if status == "bad_quality":
                     logger.warning(m18n.n("app_upgrade_cli_bad_quality", app=app_))
-                if force:
+                    force_this_app = force and app_ == single_app_to_upgrade
+                if force_this_app:
                     msg = m18n.n(
                         "app_upgrade_cli_will_force_upgrade",
                         app=app_,
@@ -1150,7 +1155,7 @@ def app_upgrade(
     #
     #
 
-    actual_targets = list(_check_upgrade_targets(requested_targets))
+    actual_targets = list(_check_upgrade_targets(requested_targets, single_app_to_upgrade))
     actual_targets_with_manifests_and_workdir = []
 
     # Fetch app dirs and check requirements before actually launching upgrades
