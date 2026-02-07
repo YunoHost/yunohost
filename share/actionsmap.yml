@@ -1004,10 +1004,10 @@ app:
                 -u:
                     full: --url
                     help: Git url to fetch for upgrade
-                -f:
+                -F:
                     full: --file
                     help: Folder or tarball for upgrade
-                -F:
+                -f:
                     full: --force
                     help: Force the update, even though the app is up to date
                     action: store_true
