@@ -834,7 +834,9 @@ def app_upgrade(
                     new_version=new_version,
                 )
                 yield (app_, msg, new_app_src)
-            elif status == "up_to_date":
+            elif status == "up_to_date" or status == "bad_quality":
+                if status == "bad_quality":
+                    logger.warning(m18n.n("app_upgrade_cli_bad_quality", app=app_))
                 if force:
                     msg = m18n.n(
                         "app_upgrade_cli_will_force_upgrade",
@@ -850,8 +852,6 @@ def app_upgrade(
                             current_version=current_version,
                         )
                     )
-            elif status == "bad_quality":
-                logger.warning(m18n.n("app_upgrade_cli_bad_quality", app=app_))
             else:
                 logger.error(f"Unknown upgrade status '{status}' for {app_} !?")
 
