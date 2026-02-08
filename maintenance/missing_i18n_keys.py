@@ -95,7 +95,7 @@ def find_expected_string_keys():
     for path in glob.glob(ROOT + "src/migrations/*.py"):
         if "__init__" in path:
             continue
-        yield "migration_description_" + os.path.basename(path)[:-3]
+        yield "migration_description_" + os.path.basename(path)[:-3].removeprefix("m")
 
     # For each default service, expect to find "service_description_<name>"
     for service, info in yaml.safe_load(
