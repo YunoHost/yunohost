@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+import os
+from logging import getLogger
+
+from moulinette import m18n
+
+from ..tools import Migration, tools_migrations_state
+from ..utils.file_utils import rm
+from ..utils.process import call_async_output
+
+logger = getLogger("yunohost.migration")
+
+
+class PythonMigration(Migration):
+    """
+    After the update, recreate a python virtual env based on the previously
+    generated requirements file
+    """
+
+    ignored_python_apps = [
+        "diacamma",  # Does an ugly sed in the sites-packages/django_auth_ldap3_ad
+        "homeassistant",  # uses a custom version of Python
+        "immich",  # uses a custom version of Python
+        "kresus",  # uses virtualenv instead of venv, with --system-site-packages (?)
+        "librephotos",  # runs a setup.py ? not sure pip freeze / pip install -r requirements.txt is gonna be equivalent ..
+        "mautrix",  # install stuff from a .tar.gz
+        "microblogpub",  # uses poetry ? x_x
+        "mopidy",  # applies a custom patch?
+        "motioneye",  # install stuff from a .tar.gz
+        "pgadmin",  # bunch of manual patches
+        "searxng",  # uses --system-site-packages ?
+        "synapse",  # specific stuff for ARM to prevent local compiling etc
+        "matrix-synapse",  # synapse is actually installed in /opt/yunohost/matrix-synapse because ... yeah ...
+        "tracim",  # pip install -e .
+        "weblate",  # weblate settings are .. inside the venv T_T
+    ]
+
+    debian_version: str
+    migration_id: str
+
+    state = None
+
+    def venv_requirements_suffix(self) -> str:
+        return f".requirements_backup_for_{self.debian_version}_upgrade.txt"
+
+    def extract_app_from_venv_path(self, venv_path: str) -> str:
+        venv_path = venv_path.replace("/var/www/", "")
+        venv_path = venv_path.replace("/opt/yunohost/", "")
+        venv_path = venv_path.replace("/opt/", "")
+        return venv_path.split("/")[0]
+
+    def _get_all_venvs(self, dir: str, level: int = 0, maxlevel: int = 3) -> list[str]:
+        """
+        Returns the list of all python virtual env directories recursively
+
+        Arguments:
+            dir - the directory to scan in
+            maxlevel - the depth of the recursion
+            level - do not edit this, used as an iterator
+        """
+        if not os.path.exists(dir):
+            return []
+
+        # Using os functions instead of glob, because glob doesn't support hidden
+        # folders, and we need recursion with a fixed depth
+        result: list[str] = []
+        for file in os.listdir(dir):
+            path = os.path.join(dir, file)
+            if os.path.isdir(path):
+                activatepath = os.path.join(path, "bin", "activate")
+                if os.path.isfile(activatepath) and os.path.isfile(
+                    path + self.venv_requirements_suffix()
+                ):
+                    result.append(path)
+                    continue
+                if level < maxlevel:
+                    result += self._get_all_venvs(path, level=level + 1)
+        return result
+
+    def is_pending(self):
+        if not self.state:
+            self.state = tools_migrations_state()["migrations"].get(
+                self.migration_id, "pending"
+            )
+        return self.state == "pending"
+
+    @property
+    def mode(self):
+        if not self.is_pending():
+            return "auto"
+
+        if self._get_all_venvs("/opt/") + self._get_all_venvs("/var/www/"):
+            return "manual"
+        else:
+            return "auto"
+
+    @property
+    def disclaimer(self):
+        # Avoid having a super long disclaimer to generate if migrations has
+        # been done
+        if not self.is_pending():
+            return None
+
+        # Disclaimer should be empty if in auto, otherwise it excepts the --accept-disclaimer option during debian postinst
+        if self.mode == "auto":
+            return None
+
+        ignored_apps = []
+        rebuild_apps = []
+
+        venvs = self._get_all_venvs("/opt/") + self._get_all_venvs("/var/www/")
+        for venv in venvs:
+            if not os.path.isfile(venv + self.venv_requirements_suffix()):
+                continue
+
+            app_corresponding_to_venv = self.extract_app_from_venv_path(venv)
+
+            # Search for ignore apps
+            if any(
+                app_corresponding_to_venv.startswith(app)
+                for app in self.ignored_python_apps
+            ):
+                ignored_apps.append(app_corresponding_to_venv)
+            else:
+                rebuild_apps.append(app_corresponding_to_venv)
+
+        msg = m18n.n(f"migration_{self.migration_id}_disclaimer_base")
+        if rebuild_apps:
+            msg += "\n\n" + m18n.n(
+                f"migration_{self.migration_id}_disclaimer_rebuild",
+                rebuild_apps="\n    - " + "\n    - ".join(rebuild_apps),
+            )
+        if ignored_apps:
+            msg += "\n\n" + m18n.n(
+                f"migration_{self.migration_id}_disclaimer_ignored",
+                ignored_apps="\n    - " + "\n    - ".join(ignored_apps),
+            )
+
+        return msg
+
+    def run(self):
+        if self.mode == "auto":
+            return
+
+        venvs = self._get_all_venvs("/opt/") + self._get_all_venvs("/var/www/")
+        for venv in venvs:
+            app_corresponding_to_venv = self.extract_app_from_venv_path(venv)
+
+            # Search for ignore apps
+            if any(
+                app_corresponding_to_venv.startswith(app)
+                for app in self.ignored_python_apps
+            ):
+                rm(venv + self.venv_requirements_suffix())
+                logger.info(
+                    m18n.n(
+                        f"migration_{self.migration_id}_broken_app",
+                        app=app_corresponding_to_venv,
+                    )
+                )
+                continue
+
+            logger.info(
+                m18n.n(
+                    f"migration_{self.migration_id}_in_progress",
+                    app=app_corresponding_to_venv,
+                )
+            )
+
+            # Recreate the venv
+            rm(venv, recursive=True)
+            callbacks = (
+                lambda l: logger.debug("+ " + l.rstrip() + "\r"),
+                lambda l: logger.warning(l.rstrip()),
+            )
+            call_async_output(["python", "-m", "venv", venv], callbacks)
+            status = call_async_output(
+                [
+                    f"{venv}/bin/pip",
+                    "install",
+                    "-r",
+                    venv + self.venv_requirements_suffix(),
+                ],
+                callbacks,
+            )
+            if status != 0:
+                logger.error(
+                    m18n.n(
+                        f"migration_{self.migration_id}_failed",
+                        app=app_corresponding_to_venv,
+                    )
+                )
+            else:
+                rm(venv + self.venv_requirements_suffix())
