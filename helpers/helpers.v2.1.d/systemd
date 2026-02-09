@@ -100,7 +100,7 @@ ynh_systemctl() {
     log_path="${log_path:-/var/log/$service/$service.log}"
     # ===========================================
 
-    if [ -e "$mount" ]; then
+    if [ -n "$mount" ]; then
         service="$mount.mount"
     fi
 
