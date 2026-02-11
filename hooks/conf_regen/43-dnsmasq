@@ -30,7 +30,7 @@ do_init_regen() {
     cd /usr/share/yunohost/conf/dnsmasq
 
     echo "creating dnsmasq.conf" >&2
-    echo "$YNH_SETTINGS" >&2
+    echo "settings: '$YNH_SETTINGS'" >&2
 
     if jq -re '.dns_custom_resolvers_enabled' <<< "$YNH_SETTINGS"; then
         echo "custom resolvers" >&2
