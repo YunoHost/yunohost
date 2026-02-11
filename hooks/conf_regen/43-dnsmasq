@@ -29,12 +29,17 @@ do_init_regen() {
 
     cd /usr/share/yunohost/conf/dnsmasq
 
+    echo "creating dnsmasq.conf" >&2
+
     if jq -re '.dns_custom_resolvers_enabled' <<< "$YNH_SETTINGS"; then
+        echo "custom resolvers" >&2
         read -ra nameservers <<< "$(jq -r '.dns_custom_resolvers_list' <<< "$YNH_SETTINGS")"
         for nameserver in "${nameservers[@]}"; do
             echo "nameserver $nameserver" >> /etc/resolv.dnsmasq.conf
+            echo "nameserver $nameserver" >&2
         done
     else
+        echo "NOT custom resolvers" >&2
         # Use a seed derived from the machine id and current month
         # This way, the shuffle is random but should be stable accross the same month
         # and make sure the regenconf is idempotent (at least during the same month)
@@ -44,6 +49,7 @@ do_init_regen() {
             date +%m%Y
         ) | md5sum)
         cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf --random-source=<(echo "$SEED") > /etc/resolv.dnsmasq.conf
+        ls -lah /etc/resolv.dnsmasq.conf >&2
     fi
     chown root /etc/resolv.dnsmasq.conf
     chmod 644 /etc/resolv.dnsmasq.conf
