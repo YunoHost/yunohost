@@ -247,6 +247,10 @@ do_pre_regen() {
     cp yunohost-dyndns.timer "$pending_dir/etc/systemd/system/yunohost-dyndns.timer"
     cp yunohost-dyndns.service "$pending_dir/etc/systemd/system/yunohost-dyndns.service"
 
+    # Every 10 minutes job to update UPnP (if enabled)
+    cp yunohost-firewall-upnp.timer "$pending_dir/etc/systemd/system/yunohost-firewall-upnp.timer"
+    cp yunohost-firewall-upnp.service "$pending_dir/etc/systemd/system/yunohost-firewall-upnp.service"
+
     # Skip ntp if inside a container (inspired from the conf of systemd-timesyncd)
     if systemctl | grep -q 'ntp.service'; then
         mkdir -p "$pending_dir/etc/systemd/system/ntp.service.d/"
@@ -373,6 +377,12 @@ do_post_regen() {
 
     systemctl enable yunohost-portal-api.service --quiet
     systemctl is-active yunohost-portal-api --quiet || systemctl start yunohost-portal-api.service
+
+    # If the legacy UPnP cron was installed, enable the systemd timer
+    if [[ -f "/etc/cron.d/yunohost-firewall-upnp" ]]; then
+        rm "/etc/cron.d/yunohost-firewall-upnp"
+        systemctl enable yunohost-firewall-upnp.timer --quiet --now
+    fi
 
     # Change dpkg vendor
     # see https://wiki.debian.org/Derivatives/Guidelines#Vendor
