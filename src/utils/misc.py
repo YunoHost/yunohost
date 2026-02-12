@@ -28,13 +28,15 @@ def random_ascii(length: int = 40) -> str:
 
 def send_admin_email(from_addr: str, subject: str, content: str) -> None:
     to_addr = "root"
-    message = textwrap.dedent(f"""\
-        From: {from_addr}
-        To: {to_addr}
-        Subject: {subject}
+    message = (
+        textwrap.dedent(f"""\
+            From: {from_addr}
+            To: {to_addr}
+            Subject: {subject}
 
-        {content}
-    """)
+        """)
+        + content
+    )
 
     import smtplib
 

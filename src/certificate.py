@@ -462,20 +462,25 @@ def _email_renewing_failed(
     subject = f"Certificate renewing attempt for {domain} failed!"
 
     logs = tail("/var/log/yunohost/yunohost-cli.log", 50)
-    message = textwrap.dedent(f"""\
-        An attempt for renewing the certificate for domain {domain} failed with the following
-        error :
+    message = (
+        textwrap.dedent(f"""\
+            An attempt for renewing the certificate for domain {domain} failed with the
+            following error:
 
-        {exception_message}
-        {stack}
+        """)
+        + f"{exception_message}\n{stack}"
+        + textwrap.dedent("""
 
-        Here's the tail of /var/log/yunohost/yunohost-cli.log, which might help to
-        investigate :
+            Here's the tail of /var/log/yunohost/yunohost-cli.log, which might help to
+            investigate :
 
-        {logs}
+        """)
+        + logs
+        + textwrap.dedent("""
 
-        -- Certificate Manager
-    """)
+            -- Certificate Manager
+        """)
+    )
 
     try:
         send_admin_email(from_addr, subject, message)
