@@ -315,10 +315,6 @@ do_post_regen() {
         chmod 644 /etc/php/*/fpm/pool.d/*.conf
     fi
 
-    find /etc/cron.*/yunohost-* -type f -exec chmod 755 {} \;
-    find /etc/cron.d/yunohost-* -type f -exec chmod 644 {} \;
-    find /etc/cron.*/yunohost-* -type f -exec chown root:root {} \;
-
     for USER in $(yunohost user list --quiet --output-as json | jq -r '.users | .[] | .username'); do
         [ ! -e "/home/$USER" ] || setfacl -m g:all_users:--- "/home/$USER"
     done
