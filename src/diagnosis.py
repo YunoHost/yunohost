@@ -17,10 +17,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-
 import glob
 import os
 import re
+import textwrap
 import time
 from importlib import import_module
 from logging import getLogger
@@ -696,8 +696,21 @@ def _email_diagnosis_issues() -> None:
     from_addr = f"diagnosis@{maindomain} (Automatic diagnosis on {maindomain})"
     subject = f"Issues found by automatic diagnosis on {maindomain}"
 
-    disclaimer = "The automatic diagnosis on your YunoHost server identified some issues on your server. You will find a description of the issues below. You can manage those issues in the 'Diagnosis' section in your webadmin."
-    content = _dump_human_readable_reports(issues)
-    message = f"{disclaimer}\n\n---\n\n{content}"
+    message = (
+        textwrap.dedent("""\
+            The automatic diagnosis on your YunoHost server identified some issues on
+            your server.
+            You will find a description of the issues below.
+            You can manage those issues in the 'Diagnosis' section in your webadmin.
+
+            --
+
+        """)
+        + _dump_human_readable_reports(issues)
+        + textwrap.dedent("""
+
+            -- YunoHost Diagnosis
+        """)
+    )
 
     send_admin_email(from_addr, subject, message)
