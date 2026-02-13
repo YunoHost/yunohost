@@ -601,10 +601,10 @@ def app_change_url(
 
     # Normalize path and domain format
 
-    domain = DomainOption.normalize(domain)
-    old_domain = DomainOption.normalize(old_domain)
-    path = WebPathOption.normalize(path)
-    old_path = WebPathOption.normalize(old_path)
+    domain = DomainOption().normalize(domain)
+    old_domain = DomainOption().normalize(old_domain)
+    path = WebPathOption(default="/").normalize(path)
+    old_path = WebPathOption(default="/").normalize(old_path)
 
     if (domain, path) == (old_domain, old_path):
         raise YunohostValidationError(
@@ -1391,12 +1391,12 @@ def app_install(
     # Retrieve arguments list for install script
     raw_options = manifest["install"]
     options, form = ask_questions_and_parse_answers(raw_options, prefilled_answers=args)
-    parsedargs = form.model_dump(exclude_none=True)
+    install_answers = form.model_dump(exclude_none=True)
 
     # Validate domain / path availability for webapps
     # (ideally this should be handled by the resource system for manifest v >= 2
     path_requirement = _guess_webapp_path_requirement(extracted_app_folder)
-    _validate_webpath_requirement(parsedargs, path_requirement)
+    _validate_webpath_requirement(install_answers, path_requirement)
 
     # We'll check that the app didn't brutally edit some system configuration
     manually_modified_files_before_install = manually_modified_files()
@@ -1430,6 +1430,10 @@ def app_install(
 
     # Save all install options as settings
     for option in options:
+        # FIXME check if needed
+        if option.id not in install_answers:
+            continue
+
         # Except readonly "questions" that don't even have a value
         if option.readonly:
             continue
@@ -1438,7 +1442,7 @@ def app_install(
         if option.type == "password":
             continue
 
-        app_settings[option.id] = form[option.id]
+        app_settings[option.id] = install_answers[option.id]
 
     _set_app_settings(app_instance_name, app_settings)
 
@@ -1464,26 +1468,16 @@ def app_install(
     # Prepare env. var. to pass to script
     env_dict = _make_environment_for_app_script(
         app_instance_name,
-        args=parsedargs,
         workdir=extracted_app_folder,
         action="install",
     )
 
+    env_dict_for_logging = env_dict.copy()
     # Make sure the env contains user-provided password which are not saved as settings
     # (cf a few lines before)
     for option in options:
         if option.type == "password":
-            env_dict[option.id] = form[option.id]
-
-    # We want to hav the env_dict in the log ... but not password values
-    env_dict_for_logging = env_dict.copy()
-    for option in options:
-        # Or should it be more generally option.redact ?
-        if option.type == "password":
-            if f"YNH_APP_ARG_{option.id.upper()}" in env_dict_for_logging:
-                del env_dict_for_logging[f"YNH_APP_ARG_{option.id.upper()}"]
-            if option.id in env_dict_for_logging:
-                del env_dict_for_logging[option.id]
+            env_dict[option.id] = install_answers[option.id]
 
     operation_logger.extra.update({"env": env_dict_for_logging})
 
@@ -1836,8 +1830,8 @@ def app_register_url(app: str, domain: str, path: str) -> None:
     )
     from .utils.form import DomainOption, WebPathOption
 
-    domain = DomainOption.normalize(domain)
-    path = WebPathOption.normalize(path)
+    domain = DomainOption().normalize(domain)
+    path = WebPathOption(default="/").normalize(path)
 
     # We cannot change the url of an app already installed simply by changing
     # the settings...

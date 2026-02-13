@@ -1025,8 +1025,8 @@ def _get_conflicting_apps(
     from ..domain import _assert_domain_exists
     from .form import DomainOption, WebPathOption
 
-    domain = DomainOption.normalize(domain)
-    path = WebPathOption.normalize(path)
+    domain = DomainOption().normalize(domain)
+    path = WebPathOption(default="/").normalize(path)
 
     # Abort if domain is unknown
     _assert_domain_exists(domain)
@@ -1068,9 +1068,7 @@ def _assert_no_conflicting_apps(
             )
 
 
-def _make_environment_for_app_script(
-    app, args={}, args_prefix="APP_ARG_", workdir=None, action=None
-) -> dict[str, str]:
+def _make_environment_for_app_script(app, workdir=None, action=None) -> dict[str, str]:
     from ..log import OperationLogger
 
     manifest = _get_manifest_of_app(workdir if workdir else app)
@@ -1097,10 +1095,6 @@ def _make_environment_for_app_script(
 
     if action:
         env_dict["YNH_APP_ACTION"] = action
-
-    for arg_name, arg_value in args.items():
-        arg_name_upper = arg_name.upper()
-        env_dict[f"YNH_{args_prefix}{arg_name_upper}"] = str(arg_value)
 
     # Load all settings
     env_dict["app"] = app
