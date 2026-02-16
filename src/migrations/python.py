@@ -26,6 +26,7 @@ from moulinette import m18n
 from ..tools import Migration, tools_migrations_state
 from ..utils.file_utils import rm
 from ..utils.process import call_async_output
+from ..utils.system import debian_version
 
 logger = getLogger("yunohost.migration")
 
@@ -143,15 +144,18 @@ class PythonMigration(Migration):
             else:
                 rebuild_apps.append(app_corresponding_to_venv)
 
-        msg = m18n.n(f"migration_{self.migration_id}_disclaimer_base")
+        msg = m18n.n(
+            "migration_python_venv_rebuild_disclaimer_base",
+            debian_pretty=debian_version().title(),
+        )
         if rebuild_apps:
             msg += "\n\n" + m18n.n(
-                f"migration_{self.migration_id}_disclaimer_rebuild",
+                "migration_python_venv_rebuild_disclaimer_rebuild",
                 rebuild_apps="\n    - " + "\n    - ".join(rebuild_apps),
             )
         if ignored_apps:
             msg += "\n\n" + m18n.n(
-                f"migration_{self.migration_id}_disclaimer_ignored",
+                "migration_python_venv_rebuild_disclaimer_ignored",
                 ignored_apps="\n    - " + "\n    - ".join(ignored_apps),
             )
 
@@ -173,7 +177,7 @@ class PythonMigration(Migration):
                 rm(venv + self.venv_requirements_suffix())
                 logger.info(
                     m18n.n(
-                        f"migration_{self.migration_id}_broken_app",
+                        "migration_python_venv_rebuild_broken_app",
                         app=app_corresponding_to_venv,
                     )
                 )
@@ -181,7 +185,7 @@ class PythonMigration(Migration):
 
             logger.info(
                 m18n.n(
-                    f"migration_{self.migration_id}_in_progress",
+                    "migration_python_venv_rebuild_in_progress",
                     app=app_corresponding_to_venv,
                 )
             )
@@ -205,7 +209,7 @@ class PythonMigration(Migration):
             if status != 0:
                 logger.error(
                     m18n.n(
-                        f"migration_{self.migration_id}_failed",
+                        "migration_python_venv_rebuild_failed",
                         app=app_corresponding_to_venv,
                     )
                 )
