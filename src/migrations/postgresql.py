@@ -52,11 +52,15 @@ class PostgreSQLMigration(Migration):
             return
 
         if not self.package_is_installed(f"postgresql-{self.previous_version}"):
-            logger.warning(m18n.n(f"migration_{self.migration_number:04d}_postgresql_{self.previous_version}_not_installed"))
+            logger.warning(m18n.n("migration_postgresql_previous_not_installed"))
             return
 
         if not self.package_is_installed(f"postgresql-{self.target_version}"):
-            raise YunohostValidationError(f"migration_{self.migration_number:04d}_postgresql_{self.target_version}_not_installed")
+            raise YunohostValidationError(
+                "migration_postgresql_target_not_installed",
+                previous=self.previous_version,
+                target=self.target_version,
+            )
 
         # Make sure there's a 15 cluster
         try:
@@ -71,7 +75,7 @@ class PostgreSQLMigration(Migration):
             f"/var/lib/postgresql/{self.previous_version}"
         ) > free_space_in_directory("/var/lib/postgresql"):
             raise YunohostValidationError(
-                f"migration_{self.migration_number:04d}_not_enough_space", path="/var/lib/postgresql/"
+                "migration_not_enough_space", path="/var/lib/postgresql/"
             )
 
         self.runcmd("systemctl stop postgresql")
