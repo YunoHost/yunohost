@@ -31,7 +31,7 @@ jobs:
 
     - name: Check i18n keys
       if: success() || failure()
-      run: python3 maintenance/missing_i18n_keys.py --check
+      run: python3 maintenance/missing_i18n_keys.py check
 
 
   bash-lint:

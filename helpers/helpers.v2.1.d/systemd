@@ -20,10 +20,10 @@
 
 # Create a dedicated systemd config
 #
-# usage: ynh_config_add_systemd [--mount=mount] [--service=service] [--template=template]
-# | arg: --mount=       - Mount name (optionnal)
-# | arg: --service=     - Service name (optionnal, `$app` by default)
-# | arg: --template=    - Name of template file (optionnal, this is 'systemd.service' by default, meaning `../conf/systemd.service` will be used as template)
+# usage: ynh_config_add_systemd [--mount=mount] [--service=service] [--template=templatename]
+# | arg: --mount=       - Mount name (optional)
+# | arg: --service=     - Service name (optional, `$app` by default)
+# | arg: --template=    - Name of template file (optional, 'systemd.service' by default, meaning `../conf/systemd.service` will be used as template)
 #
 # This will use the template `../conf/<templatename>`.
 #
@@ -43,10 +43,10 @@ ynh_config_add_systemd() {
 
     if [[ -n "$mount" ]]; then
         ynh_config_add --template="$template" --destination="/etc/systemd/system/$mount.mount"
-        systemctl enable "$mount" --quiet
+        systemctl enable "$mount.mount" --quiet
     else
         ynh_config_add --template="$template" --destination="/etc/systemd/system/$service.service"
-        systemctl enable "$service" --quiet
+        systemctl enable "$service.service" --quiet
     fi
     systemctl daemon-reload
 }
@@ -54,24 +54,24 @@ ynh_config_add_systemd() {
 # Remove the dedicated systemd config
 #
 # usage: ynh_config_remove_systemd service
-# | arg: service   - Service name (optionnal, $app by default)
+# | arg: service   - Service name (optional, $app by default)
 ynh_config_remove_systemd() {
     local service="${1:-$app}"
     if [ -e "/etc/systemd/system/$service.service" ]; then
         ynh_systemctl --service="$service" --action=stop
-        systemctl disable "$service" --quiet
+        systemctl disable "$service.service" --quiet
         ynh_safe_rm "/etc/systemd/system/$service.service"
         systemctl daemon-reload
     fi
     if [ -e "/etc/systemd/system/$service.mount" ]; then
         ynh_systemctl --service="$service" --action=stop
-        systemctl disable "$service" --quiet
+        systemctl disable "$service.mount" --quiet
         ynh_safe_rm "/etc/systemd/system/$service.mount"
         systemctl daemon-reload
     fi
 }
 
-# Start (or other actions) a service,  print a log in case of failure and optionnaly wait until the service is completely started
+# Start (or other actions) a service,  print a log in case of failure and optionaly wait until the service is completely started
 #
 # usage: ynh_systemctl [--service=service] [--action=action] [ [--wait_until="line to match"] [--log_path=log_path] [--timeout=300] [--length=20] ]
 # | arg: --service=      - Name of the service to start. Default : `$app`
