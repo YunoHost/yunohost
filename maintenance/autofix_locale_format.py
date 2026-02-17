@@ -59,7 +59,8 @@ def autofix_i18n_placeholders(
         ):
             for i, subkey in enumerate(subkeys_in_ref):
                 locale[key] = locale[key].replace(
-                    "{%s}" % subkeys_in_this_locale[i], "{%s}" % subkey
+                    f"{{{subkeys_in_this_locale[i]}}}",
+                    f"{{{subkey}}}",
                 )
 
         # Validate that now it's okay ?
@@ -101,7 +102,7 @@ def autofix_orthotypography_and_standardized_words(
         # "\u202F",
         "\u3000",
     ]
-    transformations_space = {s: " " for s in godamn_spaces_of_hell}
+    transformations_space = dict.fromkeys(godamn_spaces_of_hell, " ")
 
     transformations_misc = {
         r"\.\.\.": "…",
@@ -117,8 +118,8 @@ def autofix_orthotypography_and_standardized_words(
         "«": "'",
         " »": "'",
         "»": "'",
-        "’": "'",
-        # r"$(\w{1,2})'|( \w{1,2})'": r"\1\2’",
+        "’": "'",  # noqa: RUF001
+        # r"$(\w{1,2})'|( \w{1,2})'": r"\1\2’",  # noqa: RUF003
     }
 
     match filename:

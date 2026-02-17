@@ -23,8 +23,8 @@ import json
 import re
 import sys
 import tomllib
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 import yaml
 
@@ -33,7 +33,7 @@ import yaml
 ###############################################################################
 
 
-def find_expected_string_keys(project: Path) -> Generator[str, None, None]:
+def find_expected_string_keys(project: Path) -> Generator[str]:
     # Try to find :
     #    m18n.n(   "foo"
     #    YunohostError("foo"
@@ -60,7 +60,8 @@ def find_expected_string_keys(project: Path) -> Generator[str, None, None]:
                 if not match.endswith("_"):
                     yield match
 
-    # For each diagnosis, try to find strings like "diagnosis_stuff_foo" (c.f. diagnosis summaries)
+    # For each diagnosis, try to find strings like "diagnosis_stuff_foo"
+    # (c.f. diagnosis summaries)
     # Also we expect to have "diagnosis_description_<name>" for each diagnosis
     regex_diagnosis = re.compile(r"[\"\'](diagnosis_[a-z]+_\w+)[\"\']")
 
@@ -74,7 +75,8 @@ def find_expected_string_keys(project: Path) -> Generator[str, None, None]:
         content = file.read_text()
         for match in regex_diagnosis.findall(content):
             if match.endswith("_"):
-                # Ignore some name fragments which are actually concatenated with other stuff..
+                # Ignore some name fragments which are actually concatenated
+                # with other stuff..
                 continue
             yield match
 
@@ -104,23 +106,23 @@ def find_expected_string_keys(project: Path) -> Generator[str, None, None]:
         lines = iter(file.read_text().splitlines())
         for line in lines:
             if line.startswith("@is_unit_operation(") and "flash=True" not in line:
-                line = next(lines)
-                funcname = line.removeprefix("def ").split("(")[0]
+                nextline = next(lines)
+                funcname = nextline.removeprefix("def ").split("(")[0]
                 yield f"log_{funcname}"
 
     regex_logger = re.compile(r"OperationLogger\(\n*\s*[\"\'](\w+)[\"\']")
     for python_file in python_files:
-        content = open(python_file).read()
+        content = python_file.read_text()
         for match in regex_logger.findall(content):
             yield f"log_{match}"
 
     # Keys for the actionmap ...
     actionsmap_yml = project / "share" / "actionsmap.yml"
     for category in yaml.safe_load(actionsmap_yml.open("r")).values():
-        if "actions" not in category.keys():
+        if "actions" not in category:
             continue
         for action in category["actions"].values():
-            if "arguments" not in action.keys():
+            if "arguments" not in action:
                 continue
             for argument in action["arguments"].values():
                 extra = argument.get("extra")
@@ -141,14 +143,14 @@ def find_expected_string_keys(project: Path) -> Generator[str, None, None]:
     yield "admin_password"  # Not sure that's actually used nowadays...
 
     for method in ["tar", "copy", "custom"]:
-        yield "backup_applying_method_%s" % method
-        yield "backup_method_%s_finished" % method
+        yield f"backup_applying_method_{method}"
+        yield f"backup_method_{method}_finished"
 
     registrar_list = project / "share" / "registrar_list.toml"
     registrars = tomllib.load(registrar_list.open("rb"))
     supported_registrars = ["ovh", "gandi", "godaddy"]
     for registrar in supported_registrars:
-        for key in registrars[registrar].keys():
+        for key in registrars[registrar]:
             yield f"domain_config_{key}"
 
     # Domain config panel
@@ -199,10 +201,7 @@ def find_expected_string_keys(project: Path) -> Generator[str, None, None]:
             for key, values in section.items():
                 if not isinstance(values, dict) or values.get("visible") is False:
                     continue
-                if section_key == "permissions":
-                    key_ = f"permission_{key}"
-                else:
-                    key_ = key
+                key_ = f"permission_{key}" if section_key == "permissions" else key
                 yield f"app_config_{key_}"
                 if key in app_settings_with_help_key:
                     yield f"app_config_{key_}_help"
