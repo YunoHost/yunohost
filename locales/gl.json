@@ -596,7 +596,7 @@
     "invalid_password": "Contrasinal non válido",
     "invalid_regex": "Regex non válido: '{regex}'",
     "invalid_shell": "Intérprete de ordes non válido: {shell}",
-    "invalid_url": "Fallou a conexión con {url}... pode que o servizo estea caído, ou que non teñas conexión a Internet con IPv4/IPv6.",
+    "invalid_url": "Fallou a conexión con {url}… pode que o servizo estea caído, ou que non teñas conexión a Internet con IPv4/IPv6.",
     "ldap_attribute_already_exists": "Xa existe o atributo LDAP '{attribute}' con valor '{value}'",
     "ldap_server_down": "Non se chegou ao servidor LDAP",
     "ldap_server_is_down_restart_it": "O servidor LDAP está caído, intenta reinicialo…",
