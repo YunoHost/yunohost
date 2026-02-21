@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 ynh_config_add_reaction() {
     # ============ Argument parsing =============
     local -A args_array=([l]=logpath= [r]=failregex=)
