@@ -11,11 +11,11 @@ ynh_config_add_reaction() {
         test -n "$logpath" || ynh_die "ynh_config_add_reaction expects a logfile path as first argument and received nothing."
 
         echo "
-local banFor(time) = import'banfor.jsonnet';
+local ban = import '_ban.jsonnet';
 {
   streams: {
     __APP__: {
-      cmd: ['tail', '-f', '__LOGPATH__'],
+      cmd: ['tail', '-Fn0', '__LOGPATH__'],
       filters: {
         failedlogin: {
           regex: [
@@ -23,7 +23,7 @@ local banFor(time) = import'banfor.jsonnet';
           ],
           retry: 5,
           retryperiod: '6h',
-          actions: banFor('12h'),
+          actions: ban(time='12h', service='http,https'),
         },
       },
     },
@@ -35,8 +35,13 @@ local banFor(time) = import'banfor.jsonnet';
 
     ynh_config_add --template="reaction.jsonnet" --destination="/etc/reaction/app-$app.jsonnet"
 
-    # Create the folder and logfile if they doesn't exist,
-    # as reaction require an existing logfile before configuration
+    if ! reaction test-config -c /etc/reaction; then
+      ynh_print_error "reaction failed to load the filter for $app"
+      rm "/etc/reaction/app-$app.jsonnet"
+      exit 1
+    fi
+
+    # Create the folder and logfile if they don't exist
     local logdir=$(dirname "$logpath")
     if [ ! -d "$logdir" ]; then
         mkdir -p "$logdir"
@@ -52,11 +57,11 @@ local banFor(time) = import'banfor.jsonnet';
         chmod u=rwX,g=rX,o= "$logpath"
     fi
 
-    ynh_systemctl --service=reaction --action=reload --wait_until="(Started|Reloaded) reaction.service" --log_path=systemd
+    ynh_systemctl --service=reaction --action=restart --wait_until="(Started|Reloaded) reaction.service" --log_path=systemd
 
-    local reaction_error="$(journalctl --no-hostname --unit=reaction | tail --lines=50 | grep "WARNING.*$app.*")"
+    local reaction_error="$(journalctl --no-hostname --unit=reaction | tail --lines=50 | grep -E "(ERROR[WARN).*$app.*")"
     if [[ -n "$reaction_error" ]]; then
-        ynh_print_warn "reaction failed to load the jail for $app"
+        ynh_print_warn "reaction failed to load the filter for $app"
         ynh_print_warn "${reaction_error#*WARNING}"
     fi
 }
