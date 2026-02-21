@@ -7,7 +7,13 @@ local recidive = import '_recidive.jsonnet';
       filters: {
         failedlogin: {
           regex: [
-            // TODO
+            // Auth fail
+            @'authentication failure;.*rhost=<ip>',
+            // More specific auth fail
+            @'Failed password for .* from <ip>',
+            // Other auth failures
+            @'Connection from <ip> port [0-9]*: invalid format',
+            @'Invalid user .* from <ip>',
           ],
           retry: 3,
           retryperiod: '1h',
