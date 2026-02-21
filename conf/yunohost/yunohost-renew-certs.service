@@ -13,7 +13,7 @@ ExecStart=yunohost domain cert renew --email
 # Depending on specificities of your service/app, you may need to tweak these
 # .. but this should be a good baseline
 # Details for these options: https://www.freedesktop.org/software/systemd/man/systemd.exec.html
-NoNewPrivileges=yes
+# NoNewPrivileges=yes
 PrivateTmp=yes
 PrivateDevices=yes
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
@@ -23,13 +23,13 @@ DevicePolicy=closed
 ProtectClock=yes
 ProtectHostname=yes
 ProtectProc=invisible
-ProtectSystem=full
+# ProtectSystem=full
 ProtectControlGroups=yes
 ProtectKernelModules=yes
 ProtectKernelTunables=yes
-LockPersonality=yes
+# LockPersonality=yes
 SystemCallArchitectures=native
-SystemCallFilter=~@clock @debug @module @mount @obsolete @reboot @setuid @swap @cpu-emulation
+SystemCallFilter=~@clock @debug @module @mount @obsolete @reboot @swap @cpu-emulation
 # @privileged # (not sure why this need to be removed...)
 
 # Denying access to capabilities that should not be relevant for webapps
