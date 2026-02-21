@@ -11,7 +11,7 @@ local recidive = import '_recidive.jsonnet';
           ],
           retry: 5,
           retryperiod: '10m',
-          actions: ban(time='10m', port='smtp') + recidive,
+          actions: ban(time='10m', service='smtp') + recidive,
         },
       },
     },
