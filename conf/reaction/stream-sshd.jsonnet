@@ -21,5 +21,18 @@ local recidive = import '_recidive.jsonnet';
         },
       },
     },
+    pam: {
+      cmd: ['tail', '-Fn0', '/var/log/auth.log'],
+      filters: {
+        failedlogin: {
+          regex: [
+            @' authentication failure; .* ruser=\S* rhost=<ip> ',
+          ],
+          retry: 3,
+          retryperiod: '1h',
+          actions: ban('3h') + recidive,
+        },
+      },
+    },
   },
 }
