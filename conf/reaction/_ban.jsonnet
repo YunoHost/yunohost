@@ -6,7 +6,8 @@ local ban(time='10m', service='http,https') = {
 
   // function that generates an nft command
   // example output:
-  // nft add element inet reaction banport4 { <ip> . dport { http, https } }
+  // nft add element inet reaction ban6 { <ip> }
+  // nft del element inet reaction banport4 { <ip> . dport { http, https } }
   local command(command, iptype) = [
     'nft',
     command,
