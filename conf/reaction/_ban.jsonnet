@@ -1,18 +1,20 @@
 // ports can be 'all' or any port (list) understood by nftables
 local ban(time='10m', service='http,https') = {
 
+  local set = if service == 'all' then 'ban' else 'banport',
+  local port = if service == 'all' then '' else '. dport { %s }' % service,
+
   // function that generates an nft command
   // example output:
   // nft add element inet reaction banport4 { <ip> . dport { http, https } }
   local command(command, iptype) = [
     'nft',
-    '%(command) element inet reaction %(set)%(iptype) { <ip> %(port) }'
-    % {
-      command: command,
-      iptype: iptype,
-      set: if service == 'all' then 'ban' else 'banport',
-      port: if service == 'all' then '' else '. dport { %s }' % service,
-    },
+    command,
+    'element',
+    'inet',
+    'reaction',
+    set + iptype,
+    '{ <ip> %s }' % port,
   ],
 
   ban4: {
