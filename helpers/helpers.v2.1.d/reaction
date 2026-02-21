@@ -1,0 +1,62 @@
+ynh_config_add_reaction() {
+    # ============ Argument parsing =============
+    local -A args_array=([l]=logpath= [r]=failregex=)
+    local logpath
+    local failregex
+    ynh_handle_getopts_args "$@"
+    # ===========================================
+
+    # If failregex is provided, Build a config file on-the-fly using $logpath and $failregex
+    if [[ -n "${failregex:-}" ]]; then
+        test -n "$logpath" || ynh_die "ynh_config_add_reaction expects a logfile path as first argument and received nothing."
+
+        echo "
+local banFor(time) = import'banfor.jsonnet';
+{
+  streams: {
+    __APP__: {
+      cmd: ['tail', '-f', '__LOGPATH__'],
+      filters: {
+        failedlogin: {
+          regex: [
+            @'__FAILREGEX__',
+          ],
+          retry: 5,
+          retryperiod: '6h',
+          actions: banFor('12h'),
+        },
+      },
+    },
+  },
+}
+" > "$YNH_APP_BASEDIR/conf/reaction.jsonnet"
+
+    fi
+
+    ynh_config_add --template="reaction.jsonnet" --destination="/etc/reaction/app-$app.jsonnet"
+
+    # Create the folder and logfile if they doesn't exist,
+    # as reaction require an existing logfile before configuration
+    local logdir=$(dirname "$logpath")
+    if [ ! -d "$logdir" ]; then
+        mkdir -p "$logdir"
+        # Make sure log folder's permissions are correct
+        chown "$app:$app" "$logdir"
+        chmod u=rwX,g=rX,o= "$logdir"
+    fi
+
+    if [ ! -f "$logpath" ]; then
+        touch "$logpath"
+        # Make sure log file's permissions are correct
+        chown "$app:$app" "$logpath"
+        chmod u=rwX,g=rX,o= "$logpath"
+    fi
+
+    ynh_systemctl --service=reaction --action=reload --wait_until="(Started|Reloaded) reaction.service" --log_path=systemd
+
+    local reaction_error="$(journalctl --no-hostname --unit=reaction | tail --lines=50 | grep "WARNING.*$app.*")"
+    if [[ -n "$reaction_error" ]]; then
+        ynh_print_warn "reaction failed to load the jail for $app"
+        ynh_print_warn "${reaction_error#*WARNING}"
+    fi
+}
