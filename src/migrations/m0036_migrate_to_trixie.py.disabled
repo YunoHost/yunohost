@@ -550,7 +550,7 @@ sideway (typically by SSHing from the local network, or through rescue access on
             new_file_pars = []
             paragraphs = Deb822.iter_paragraphs(file.read_text())
             for paragraph in paragraphs:
-                paragraph["Suites"] = "trixie"
+                paragraph["Suites"] = paragraph["Suites"].replace("bookworm", "trixie")
 
                 if re.match(
                     r"^https?://(repo|forge)\.yunohost\.org.*", paragraph["URIs"]
