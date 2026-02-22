@@ -86,6 +86,10 @@ class PostgreSQLMigration(Migration):
             f"LC_ALL=C pg_upgradecluster -m upgrade {self.previous_version} main -v {self.target_version}"
         )
         self.runcmd(f"LC_ALL=C pg_dropcluster --stop {self.previous_version} main")
+
+        # Fix possibly borked postgresql default config when Immich is installed
+        self.runcmd("sed -i '/^\* \* 15 main postgres$/d' /etc/postgresql-common/user_clusters")
+
         self.runcmd("systemctl start postgresql")
 
     def package_is_installed(self, package_name):
