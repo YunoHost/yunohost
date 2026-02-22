@@ -22,6 +22,7 @@ import os
 import subprocess
 import time
 from logging import getLogger
+from pathlib import Path
 
 from moulinette import m18n
 
@@ -40,12 +41,8 @@ class PostgreSQLMigration(Migration):
     target_version: str
 
     def run(self):
-        if (
-            os.system(
-                'grep -A10 "ynh-deps" /var/lib/dpkg/status | grep -E "Package:|Depends:" | grep -B1 postgresql'
-            )
-            != 0
-        ):
+        ynh_deps_cmd = 'grep -A10 "ynh-deps" /var/lib/dpkg/status | grep -E "Package:|Depends:" | grep -B1 postgresql'
+        if os.system(ynh_deps_cmd) != 0:
             logger.info("No YunoHost app seem to require postgresql... Skipping!")
             return
 
@@ -91,6 +88,19 @@ class PostgreSQLMigration(Migration):
         self.runcmd("sed -i '/^\* \* 15 main postgres$/d' /etc/postgresql-common/user_clusters")
 
         self.runcmd("systemctl start postgresql")
+
+        logger.warning(m18n.n("migration_postgresql_reindexing_databases"))
+
+        password = Path("/etc/yunohost/psql").read_text().strip()
+        sudocmd = f"LC_ALL=C sudo --login -u postgres PGUSER=postgres PGPASSWORD='{password}'"
+        psqlcmd = "psql --tuples-only --no-align --dbname=postgres --command='SELECT datname FROM pg_database WHERE datistemplate = false OR datname = 'template1';'"
+        _, out, _ = self.runcmd(f"{sudocmd} {psqlcmd}")
+        databases = [line.strip() for line in out]
+        for database in databases:
+            # See https://www.postgresql.org/docs/17/sql-altercollation.html#SQL-ALTERCOLLATION-NOTES
+            self.runcmd(f"{sudocmd} psql --dbname='{database}' --command='REINDEX DATABASE {database};'")
+            self.runcmd(f"{sudocmd} psql --dbname='{database}' --command='ALTER DATABASE {database} REFRESH COLLATION VERSION;'")
+
 
     def package_is_installed(self, package_name):
         (returncode, out, err) = self.runcmd(
