@@ -56,9 +56,11 @@ def test_call_async_output(test_file):
     mock_callback_stderr.reset_mock()
 
     def callback_stdout(a):
+        print(f"has stdout {a}")
         mock_callback_stdout(a)
 
     def callback_stderr(a):
+        print(f"has stderr {a}")
         mock_callback_stderr(a)
 
     callback = (callback_stdout, callback_stderr)
