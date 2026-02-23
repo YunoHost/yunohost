@@ -64,7 +64,7 @@ ynh_config_remove_systemd() {
         systemctl daemon-reload
     fi
     if [ -e "/etc/systemd/system/$service.mount" ]; then
-        ynh_systemctl --service="$service" --action=stop
+        ynh_systemctl --mount="$service" --action=stop
         systemctl disable "$service.mount" --quiet
         ynh_safe_rm "/etc/systemd/system/$service.mount"
         systemctl daemon-reload
