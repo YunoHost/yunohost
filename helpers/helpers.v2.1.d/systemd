@@ -101,7 +101,7 @@ ynh_systemctl() {
     # ===========================================
 
     if [ -n "$mount" ]; then
-        if [ "$log_path$" == "/var/log/$service/$service.log" ]; then
+        if [ "$log_path" == "/var/log/$service/$service.log" ]; then
             log_path="systemd"
         fi
         service="$mount.mount"
