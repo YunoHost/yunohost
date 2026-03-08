@@ -183,6 +183,7 @@ def dyndns_subscribe(operation_logger, domain, recovery_password=None):
 
     # Send subscription
     try:
+        # TODO: Use the newer, simpler dynette API format (just base64 the secret)
         # Yeah the secret is already a base64-encoded but we double-bas64-encode it, whatever...
         b64encoded_key = base64.b64encode(secret.encode()).decode()
         data = {"subdomain": domain}
