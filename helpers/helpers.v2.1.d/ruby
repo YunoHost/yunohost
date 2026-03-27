@@ -18,13 +18,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-readonly RBENV_ROOT="/opt/rbenv"
-export RBENV_ROOT
+export MISE_RUBY_COMPILE=false
 
 _ynh_load_ruby_in_path_and_other_tweaks() {
 
-    # Get the absolute path of this version of Ruby
-    ruby_dir="$RBENV_ROOT/versions/$app/bin"
+    # Get the absolute path of this version of ruby
+    ruby_dir=$(MISE_DATA_DIR="$MISE_DATA_DIR" MISE_CACHE_DIR="$MISE_CACHE_DIR" MISE_STATE_DIR="$MISE_STATE_DIR" "$MISE_BIN_DIR/mise" bin-paths "ruby@$ruby_version")
 
     if [ ! -e "$ruby_dir" ]; then
         echo "Skipping loading ruby, because it doesn't seem to be provisioned yet. This is likely to happen during restore and other specific contexts."
@@ -35,18 +34,14 @@ _ynh_load_ruby_in_path_and_other_tweaks() {
     if [[ :$PATH: != *":$ruby_dir"* ]]; then
         PATH="$ruby_dir:$PATH"
     fi
+        # Export PATH such that it's available through sudo -E / ynh_exec_as_app
+        export PATH
 
-    # Export PATH such that it's available through sudo -E / ynh_exec_as $app
-    export PATH
-
-    # This is in full lowercase such that it gets replaced in templates
-    path_with_ruby="$PATH"
-    PATH_with_ruby="$PATH"
-
-    # Sets the local application-specific Ruby version
-    pushd "${install_dir}"
-        "$RBENV_ROOT/bin/rbenv" local "$ruby_version"
-    popd
+        # This is in full lowercase such that it gets replaced in templates
+        # shellcheck disable=SC2034
+        path_with_ruby="$PATH"
+        # shellcheck disable=SC2034
+        PATH_with_ruby="$PATH"
 }
 
 # Auto-load Ruby path tweaks if this app uses the ruby resource in the manifest
@@ -54,7 +49,7 @@ if [ -n "${ruby_version:-}" ] && (cat "$YNH_APP_BASEDIR/manifest.toml" | toml_to
     _ynh_load_ruby_in_path_and_other_tweaks
 fi
 
-# Install a specific version of Ruby using rbenv
+# Install a specific version of Ruby using mise
 #
 # The installed version is defined by `$ruby_version` which should be defined as global prior to calling this helper
 #
@@ -63,55 +58,35 @@ fi
 # The helper adds the appropriate, specific version of ruby to the `$PATH` variable (which
 # is preserved when calling ynh_exec_as_app). Also defines:
 #
-# - `$path_with_ruby` to be used in the systemd config (`Environment="PATH=__PATH_WITH_RUBY__"`)
-# - `$ruby_dir`, the directory containing the specific version of ruby, which may be used in the systemd config too (e.g. `ExecStart=__RUBY_DIR__/ruby foo bar`)
+# - `$path_with_ruby` to be used in the systemd config (`Environment="PATH=__PATH_WITH_ruby__"`)
+# - `$ruby_dir`, the directory containing the specific version of ruby, which may be used in the systemd config too (e.g. `ExecStart=__ruby_DIR__/ruby foo bar`)
 ynh_ruby_install() {
 
     [[ -n "${ruby_version:-}" ]] || ynh_die "\$ruby_version should be defined prior to calling ynh_ruby_install"
 
-    # Install or update rbenv
-    _ynh_git_clone "https://github.com/rbenv/rbenv" "${RBENV_ROOT}"
-    _ynh_git_clone "https://github.com/rbenv/ruby-build" "${RBENV_ROOT}/plugins/ruby-build"
-    _ynh_git_clone "https://github.com/tpope/rbenv-aliases" "${RBENV_ROOT}/plugins/rbenv-aliase"
-    _ynh_git_clone "https://github.com/momo-lab/xxenv-latest" "${RBENV_ROOT}/plugins/xxenv-latest"
-
-    mkdir -p "${RBENV_ROOT}/cache"
-    mkdir -p "${RBENV_ROOT}/shims"
-
-    # Install the requested version of Ruby
-    local final_ruby_version=$("${RBENV_ROOT}/bin/rbenv" latest --print "$ruby_version")
+    ynh_mise_install
+    
+    # Install the requested version of ruby
+    local final_ruby_version=$("${MISE_BIN_DIR}"/mise ls-remote ruby@"$ruby_version" --json | jq -r '.[].version' | tail -n1 )
     ruby_version=${final_ruby_version:-$ruby_version}
     ynh_app_setting_set --key=ruby_version --value="$ruby_version"
 
-    for PACKAGE in gcc make libjemalloc-dev libffi-dev libyaml-dev zlib1g-dev; do
-        _ynh_apt_package_is_installed "$PACKAGE" || ynh_die "$PACKAGE is required to install Ruby"
-    done
-
-    echo "Installing Ruby $final_ruby_version"
-    RUBY_CONFIGURE_OPTS="--disable-install-doc --with-jemalloc" MAKE_OPTS="-j2" "${RBENV_ROOT}/bin/rbenv" install --skip-existing "$ruby_version" 2>&1
-
-    # Recreate rbenv alias for this version
-    if "${RBENV_ROOT}/bin/rbenv" alias --list | grep --quiet "$app "; then
-        "${RBENV_ROOT}/bin/rbenv" alias "$app" --remove
-    fi
-    ${RBENV_ROOT}/bin/rbenv alias "$app" "$ruby_version"
-
-    # Cleanup Ruby versions
-    _ynh_ruby_cleanup
+    # Installing precompiled ruby from the $install_dir so the created mise.toml will be at the right place
+    pushd "$install_dir" || ynh_die
+        ynh_hide_warnings env MISE_RUBY_COMPILE=false MISE_DATA_DIR="$MISE_DATA_DIR" MISE_CACHE_DIR="$MISE_CACHE_DIR" MISE_STATE_DIR="$MISE_STATE_DIR" "$MISE_BIN_DIR"/mise use ruby@"$ruby_version"
+    popd || ynh_die
 
     _ynh_load_ruby_in_path_and_other_tweaks
 }
 
-# Remove the version of Ruby used by the app.
+# Remove the version of ruby used by the app.
 #
-# This helper will also cleanup unused Ruby versions
+# This helper will also cleanup unused ruby versions
 #
 # usage: ynh_ruby_remove
 ynh_ruby_remove() {
 
     [[ -n "${ruby_version:-}" ]] || ynh_die "\$ruby_version should be defined prior to calling ynh_ruby_remove"
-
-    "${RBENV_ROOT}/bin/rbenv" alias "$app" --remove
 
     # Remove the line for this app
     ynh_app_setting_delete --key="ruby_version"
@@ -120,29 +95,40 @@ ynh_ruby_remove() {
     _ynh_ruby_cleanup
 }
 
-# Remove no more needed versions of Ruby used by the app.
-#
-# [internal]
-#
-# This helper will check what Ruby version are no more required,
-# and uninstall them
-# If no app uses Ruby, rbenv will be also removed.
 _ynh_ruby_cleanup() {
 
-    # Remove no more needed Ruby versions
-    local installed_ruby_versions=$("${RBENV_ROOT}/bin/rbenv" versions --bare --skip-aliases | grep -Ev '/')
+    # Remove no more needed versions of ruby used by the app.
+    # This helper will check what ruby version are no more required,
+    # and uninstall them
+    local installed_ruby_versions=$(MISE_DATA_DIR="$MISE_DATA_DIR" MISE_CACHE_DIR="$MISE_CACHE_DIR" MISE_STATE_DIR="$MISE_STATE_DIR" "${MISE_BIN_DIR}/mise" ls ruby --json | jq -r '.[].version')
     for installed_ruby_version in $installed_ruby_versions; do
-        if ! grep -qE "^ruby_version: '?$installed_ruby_version'?" /etc/yunohost/apps/*/settings.yml; then
-            ynh_print_info "Removing Ruby-$installed_ruby_version"
-            "$RBENV_ROOT/bin/rbenv" uninstall --force "$installed_ruby_version"
+        if [[ -n "$installed_ruby_version" ]] && ! grep -qE "^ruby_version: '?$installed_ruby_version'?" /etc/yunohost/apps/*/settings.yml; then
+            ynh_print_info "Removing ruby@$installed_ruby_version"
+            ynh_hide_warnings "$MISE_BIN_DIR/mise" unuse ruby@"$installed_ruby_version"
+            ynh_hide_warnings "$MISE_BIN_DIR/mise" uninstall ruby@"$installed_ruby_version"
         fi
     done
 
-    # If no app uses Ruby anymore
-    if ! grep -q "^ruby_version:" /etc/yunohost/apps/*/settings.yml; then
-        # Remove rbenv environment configuration
-        ynh_print_info "Removing rbenv"
-        ynh_safe_rm "$RBENV_ROOT"
-        ynh_safe_rm "/etc/profile.d/rbenv.sh"
+    ## LEGACY but still there until all ruby apps have migrated to mise
+    # Remove no more needed Ruby versions
+    export RBENV_ROOT="/opt/rbenv"
+    
+    if -e "$RBENV_ROOT"; then
+
+        local installed_ruby_versions=$("${RBENV_ROOT}/bin/rbenv" versions --bare --skip-aliases | grep -Ev '/')
+        for installed_ruby_version in $installed_ruby_versions; do
+            if ! grep -qE "^ruby_version: '?$installed_ruby_version'?" /etc/yunohost/apps/*/settings.yml; then
+                ynh_print_info "Removing Ruby-$installed_ruby_version"
+                "$RBENV_ROOT/bin/rbenv" uninstall --force "$installed_ruby_version"
+            fi
+        done
+
+        # If no app uses Ruby anymore
+        if ! grep -q "^ruby_version:" /etc/yunohost/apps/*/settings.yml; then
+            # Remove rbenv environment configuration
+            ynh_print_info "Removing rbenv"
+            ynh_safe_rm "$RBENV_ROOT"
+            ynh_safe_rm "/etc/profile.d/rbenv.sh"
+        fi
     fi
 }

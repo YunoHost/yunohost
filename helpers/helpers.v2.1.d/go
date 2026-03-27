@@ -18,13 +18,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-readonly GOENV_ROOT="/opt/goenv"
-export GOENV_ROOT
-
+# [internal]
 _ynh_load_go_in_path_and_other_tweaks() {
 
     # Get the absolute path of this version of go
-    go_dir="$GOENV_ROOT/versions/$go_version/bin"
+    go_dir=$(MISE_DATA_DIR=$MISE_DATA_DIR MISE_CACHE_DIR=$MISE_CACHE_DIR "$MISE_BIN_DIR/mise" bin-paths "go@$go_version")
 
     if [ ! -e "$go_dir" ]; then
         echo "Skipping loading go, because it doesn't seem to be provisioned yet. This is likely to happen during restore and other specific contexts."
@@ -40,13 +38,10 @@ _ynh_load_go_in_path_and_other_tweaks() {
     export PATH
 
     # This is in full lowercase such that it gets replaced in templates
+    # shellcheck disable=SC2034
     path_with_go="$PATH"
+    # shellcheck disable=SC2034
     PATH_with_go="$PATH"
-
-    # Sets the local application-specific go version
-    pushd "${install_dir}"
-        "$GOENV_ROOT/bin/goenv" local "$go_version"
-    popd
 }
 
 # Auto-load Go path tweaks if this app uses the Go resource in the manifest
@@ -54,7 +49,7 @@ if [ -n "${go_version:-}" ] && (cat "$YNH_APP_BASEDIR/manifest.toml" | toml_to_j
     _ynh_load_go_in_path_and_other_tweaks
 fi
 
-# Install a specific version of Go using goenv
+# Install a specific version of Go, using mise
 #
 # The installed version is defined by `$go_version` which should be defined as global prior to calling this helper
 #
@@ -63,41 +58,36 @@ fi
 # The helper adds the appropriate, specific version of go to the `$PATH` variable (which
 # is preserved when calling `ynh_exec_as_app`). Also defines:
 #
-# - `$path_with_go` (the value of the modified `$PATH`, but you dont really need it?)
-# - `$go_dir` (the directory containing the specific go version)
+# - `$path_with_go` to be used in the systemd config (`Environment="PATH=__PATH_WITH_GO__"`)
+# - `$go_dir`, the directory containing the specific version of go, which may be used in the systemd config too (e.g. `ExecStart=__go_DIR__/node foo bar`)
 ynh_go_install() {
 
     [[ -n "${go_version:-}" ]] || ynh_die "\$go_version should be defined prior to calling ynh_go_install"
 
-    _ynh_git_clone "https://github.com/syndbg/goenv" "$GOENV_ROOT"
-    _ynh_git_clone "https://github.com/momo-lab/xxenv-latest" "$GOENV_ROOT/plugins/xxenv-latest"
-
-    # Enable caching
-    mkdir -p "${GOENV_ROOT}/cache"
-    # Create shims directory if needed
-    mkdir -p "${GOENV_ROOT}/shims"
+    ynh_mise_install
 
     # Install the requested version of Go
-    local final_go_version=$(PATH=$GOENV_ROOT/bin:$PATH "$GOENV_ROOT/plugins/xxenv-latest/bin/goenv-latest" --print "$go_version")
-    go_version=$final_go_version
-    ynh_app_setting_set --app="$app" --key="go_version" --value="$go_version"
+    local final_go_version=$("${MISE_BIN_DIR}"/mise ls-remote go@"$go_version" --json | jq -r '.[].version' | tail -n1 )
+    go_version=${final_go_version:-$go_version}
+    ynh_app_setting_set --key=go_version --value="$go_version"
 
-    ynh_print_info "Installing Go $go_version"
-    $GOENV_ROOT/bin/goenv install --quiet --skip-existing "$go_version" 2>&1
-
-    # Cleanup Go versions
-    _ynh_go_cleanup
+    # Installing precompiled go from the $install_dir so the created mise.toml will be at the right place
+    pushd "$install_dir" || ynh_die
+        ynh_hide_warnings env MISE_DATA_DIR="$MISE_DATA_DIR" MISE_CACHE_DIR="$MISE_CACHE_DIR" "$MISE_BIN_DIR"/mise use go@"$go_version"
+    popd || ynh_die
 
     _ynh_load_go_in_path_and_other_tweaks
 }
 
 # Remove the version of Go used by the app.
 #
-# This helper will also cleanup Go versions
+# This helper will also cleanup unused Go versions
 #
 # usage: ynh_go_remove
 ynh_go_remove() {
-    # Remove the line for this app
+
+    [[ -n "${go_version:-}" ]] || ynh_die "\$go_version should be defined prior to calling ynh_go_remove"
+
     ynh_app_setting_delete --key="go_version"
 
     # Cleanup Go versions
@@ -110,25 +100,31 @@ ynh_go_remove() {
 #
 # This helper will check what Go version are no more required,
 # and uninstall them
-# If no app uses Go, goenv will be also removed.
 #
 # usage: _ynh_go_cleanup
 _ynh_go_cleanup() {
 
-    # Remove no more needed Go versions
-    local installed_go_versions=$($GOENV_ROOT/bin/goenv versions --bare --skip-aliases | grep -Ev '/')
+    # This helper will check what Go version are no more required,
+    # and uninstall them
+    local installed_go_versions=$(MISE_DATA_DIR=$MISE_DATA_DIR MISE_CACHE_DIR=$MISE_CACHE_DIR "${MISE_BIN_DIR}/mise" ls go --json | jq -r '.[].version')
     for installed_go_version in $installed_go_versions; do
-        if ! grep -qE "^go_version: '?$installed_go_version'?" /etc/yunohost/apps/*/settings.yml; then
-            # ynh_print_info "Removing Go-$installed_go_version"
-            $GOENV_ROOT/bin/goenv uninstall --force "$installed_go_version"
+        if [[ -n "$installed_go_version" ]] && ! grep -qE "^go_version: '?$installed_go_version'?" /etc/yunohost/apps/*/settings.yml; then
+            ynh_print_info "Removing go@$installed_go_version"
+            ynh_hide_warnings "$MISE_BIN_DIR/mise" unuse go@"$installed_go_version"
+            ynh_hide_warnings "$MISE_BIN_DIR/mise" uninstall go@"$installed_go_version"
         fi
     done
 
-    # If no app uses Go anymore
-    if ! grep -q "^go_version:" /etc/yunohost/apps/*/settings.yml; then
-        # Remove goenv environment configuration
-        # ynh_print_info "Removing goenv"
-        ynh_safe_rm "$GOENV_ROOT"
-        ynh_safe_rm "/etc/profile.d/goenv.sh"
+    # LEGACY but still here for transition
+    export GOENV_ROOT="/opt/goenv"
+    if -e "$GOENV_ROOT"; then
+    
+        # If no app uses Go anymore
+        if ! grep -q "^go_version:" /etc/yunohost/apps/*/settings.yml; then
+            # Remove goenv environment configuration
+            # ynh_print_info "Removing goenv"
+            ynh_safe_rm "$GOENV_ROOT"
+            ynh_safe_rm "/etc/profile.d/goenv.sh"
+        fi
     fi
 }

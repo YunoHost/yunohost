@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+#
+# Copyright (c) 2026 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+export MISE_VERSION=2026.3.17
+
+readonly MISE_INSTALL_DIR="/opt/mise-global"
+export MISE_INSTALL_DIR
+export MISE_BIN_DIR="$MISE_INSTALL_DIR/mise/bin"
+
+export MISE_DATA_DIR="$MISE_INSTALL_DIR/binaries/"
+export MISE_CACHE_DIR="$MISE_INSTALL_DIR/mise/cache"
+export MISE_STATE_DIR="$MISE_INSTALL_DIR/mise/state"
+
+ynh_mise_install() {
+
+    mkdir -p "${MISE_INSTALL_DIR}/mise"
+    mkdir -p "${MISE_DATA_DIR}"
+
+    if [[ ! -f "$MISE_BIN_DIR"/mise ]] || [[ "$($MISE_BIN_DIR/mise version --json | jq -r '.version' | awk '{print $1}')" != "$MISE_VERSION" ]]; then
+
+        pushd "$MISE_INSTALL_DIR"/mise || ynh_die
+        # Install the requested version of mise 
+        if [[ $YNH_ARCH == "amd64" ]]; then
+            ynh_hide_warnings wget --tries 3 --no-dns-cache --timeout 900 --no-verbose https://github.com/jdx/mise/releases/download/v$MISE_VERSION/mise-v$MISE_VERSION-linux-x64.tar.xz || ynh_die
+            tar -xf mise-v$MISE_VERSION-linux-x64.tar.xz --strip-components 1
+            rm mise-v$MISE_VERSION-linux-x64.tar.xz
+        elif [[ $YNH_ARCH == "arm64" ]]; then
+            ynh_hide_warnings wget --tries 3 --no-dns-cache --timeout 900 --no-verbose https://github.com/jdx/mise/releases/download/v$MISE_VERSION/mise-v$MISE_VERSION-linux-arm64.tar.xz || ynh_die
+            tar -xf mise-v$MISE_VERSION-linux-arm64.tar.xz --strip-components 1
+            rm mise-v$MISE_VERSION-linux-arm64.tar.xz
+        elif [[ $YNH_ARCH == "armv7" ]]; then
+            ynh_hide_warnings wget --tries 3 --no-dns-cache --timeout 900 --no-verbose https://github.com/jdx/mise/releases/download/v$MISE_VERSION/mise-v$MISE_VERSION-linux-armv7.tar.xz || ynh_die
+            tar -xf mise-v$MISE_VERSION-linux-armv7.tar.xz --strip-components 1
+            rm mise-v$MISE_VERSION-linux-armv7.tar.xz
+        else
+            echo "No available mise version for this architecture. Please raise an issue so we can have a look."
+        fi
+        popd || ynh_die
+    fi
+
+    _ynh_load_mise_in_path_and_other_tweaks
+}
+
+_ynh_load_mise_in_path_and_other_tweaks() {
+    # Load the path of this version of mise in $PATH
+    if [[ :$PATH: != *":$MISE_BIN_DIR"* ]]; then
+        PATH="$MISE_BIN_DIR:$PATH"
+    fi
+
+    # Export PATH such that it's available through sudo -E / ynh_exec_as $app
+    export PATH
+
+    # This is in full lowercase such that it gets replaced in templates
+    # shellcheck disable=SC2034
+    path_with_mise="$PATH"
+    # shellcheck disable=SC2034
+    PATH_with_mise="$PATH"
+}
