@@ -113,7 +113,7 @@ _ynh_ruby_cleanup() {
     # Remove no more needed Ruby versions
     export RBENV_ROOT="/opt/rbenv"
     
-    if -e "$RBENV_ROOT"; then
+    if [ -e "$RBENV_ROOT" ]; then
 
         local installed_ruby_versions=$("${RBENV_ROOT}/bin/rbenv" versions --bare --skip-aliases | grep -Ev '/')
         for installed_ruby_version in $installed_ruby_versions; do

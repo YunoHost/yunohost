@@ -117,7 +117,7 @@ _ynh_go_cleanup() {
 
     # LEGACY but still here for transition
     export GOENV_ROOT="/opt/goenv"
-    if -e "$GOENV_ROOT"; then
+    if [ -e "$GOENV_ROOT" ]; then
     
         # If no app uses Go anymore
         if ! grep -q "^go_version:" /etc/yunohost/apps/*/settings.yml; then
