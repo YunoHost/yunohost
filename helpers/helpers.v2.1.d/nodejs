@@ -116,7 +116,7 @@ _ynh_nodejs_cleanup() {
     # LEGACY but still here for transition
     export N_PREFIX="/opt/node_n"
 
-    if -e "$N_PREFIX"; then
+    if [ -e "$N_PREFIX" ]; then
         # If no other app uses n, remove n
         if ! grep -q "^nodejs_version:" /etc/yunohost/apps/*/settings.yml; then
             ynh_safe_rm "$N_PREFIX"
