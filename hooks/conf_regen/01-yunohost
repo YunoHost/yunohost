@@ -303,7 +303,7 @@ EOF
     cp dpkg-origins "$pending_dir/etc/dpkg/origins/yunohost"
 
     # Remove legacy hackish/clumsy nodejs autoupdate which ends up filling up space with ambiguous upgrades >_>
-    touch "/etc/cron.daily/node_update"
+    touch "$pending_dir/etc/cron.daily/node_update"
 }
 
 do_post_regen() {

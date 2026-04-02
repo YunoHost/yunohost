@@ -90,7 +90,7 @@ if TYPE_CHECKING:
 
     logger = cast(YunohostLogger, getLogger("yunohost.backup"))
 else:
-    logger = getLogger("yunohost.baclup")
+    logger = getLogger("yunohost.backup")
 
 
 class BackupRestoreTargetsManager:

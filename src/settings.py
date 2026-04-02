@@ -314,6 +314,13 @@ def regen_ssowatconf(setting_name, old_value, new_value):
         app_ssowatconf()
 
 
+@post_change_hook("dns_custom_resolvers_enabled")
+@post_change_hook("dns_custom_resolvers_list")
+def reconfigure_dnsmasq(setting_name, old_value, new_value):
+    if old_value != new_value:
+        regen_conf(names=["dnsmasq"])
+
+
 @post_change_hook("tls_passthrough_enabled")
 @post_change_hook("tls_passthrough_list")
 @post_change_hook("nginx_redirect_to_https")

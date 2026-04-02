@@ -287,7 +287,7 @@ _ynh_apply_default_permissions() {
             chmod -R u=rwX,g=rX,o=--- "$target"
             chown -R "$app:$group" "$target"
             return
-        elif [ "$target" == "${data_dir:-}" ]; then
+        elif [ "$target" == "${data_dir:-}" ] || [ "$target" == "/var/log/$app" ]; then
             # Read the group from the data manifest resource
             local group="$(ynh_read_manifest 'resources.data_dir.group' | sed 's/null//g' | sed "s/__APP__/$app/g" | cut -f1 -d:)"
             chmod 750 "$target"
@@ -554,12 +554,15 @@ ynh_add_swap() {
     fi
 }
 
+# Delete swap
+#
+# usage: ynh_del_swap
 ynh_del_swap() {
     # If there a swap at this place
     if [ -e "/swap_$app" ]; then
         # Clean the fstab
         sed -i "/#Swap added by $app/d" /etc/fstab
-        # Desactive the swap file
+        # Deactive the swap file
         swapoff "/swap_$app"
         # And remove it
         rm "/swap_$app"
