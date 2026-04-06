@@ -126,7 +126,7 @@ ynh_apt() {
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_package_update() {
-    ynh_apt update
+    ynh_apt update --error-on=any
 }
 
 # Install package(s)

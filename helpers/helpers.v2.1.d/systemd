@@ -75,6 +75,7 @@ ynh_config_remove_systemd() {
 #
 # usage: ynh_systemctl [--service=service] [--action=action] [ [--wait_until="line to match"] [--log_path=log_path] [--timeout=300] [--length=20] ]
 # | arg: --service=      - Name of the service to start. Default : `$app`
+# | arg: --mount=        - Name of the mount. If set, service="$mount.mount"
 # | arg: --action=       - Action to perform with systemctl. Default: start
 # | arg: --wait_until=   - The pattern to find in the log to attest the service is effectively fully started.
 # | arg: --log_path=     - Log file - Path to the log file. Default : `/var/log/$app/$app.log`; `systemd` to listen on `journalctl --unit=$service`
@@ -82,8 +83,9 @@ ynh_config_remove_systemd() {
 # | arg: --length=       - Length of the error log displayed for debugging : Default : 20
 ynh_systemctl() {
     # ============ Argument parsing =============
-    local -A args_array=([n]=service= [a]=action= [w]=wait_until= [p]=log_path= [t]=timeout= [e]=length=)
+    local -A args_array=([n]=service= [m]=mount= [a]=action= [w]=wait_until= [p]=log_path= [t]=timeout= [e]=length=)
     local service
+    local mount
     local action
     local wait_until
     local length
@@ -91,11 +93,16 @@ ynh_systemctl() {
     local timeout
     ynh_handle_getopts_args "$@"
     service="${service:-$app}"
+    mount="${mount:-}"
     action=${action:-start}
     wait_until=${wait_until:-}
     length=${length:-20}
     log_path="${log_path:-/var/log/$service/$service.log}"
     # ===========================================
+
+    if [ -n "$mount" ]; then
+        service="$mount.mount"
+    fi
 
     if ynh_in_ci_tests && [ "$length" -le 20 ]; then
         # Use a shorter timeout than in production to save CI time (services should rarely take up more than 2 minutes to start with the CI hardware)
