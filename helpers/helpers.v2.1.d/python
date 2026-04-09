@@ -29,23 +29,11 @@ _ynh_load_python_in_path_and_other_tweaks() {
         return
     fi
 
-    # Load the path of this version of uv in $PATH
-    # DO NOT load the path of the python version, as it will break the use of other helpers
-    if [[ -v uv_version ]]; then
-        uv_dir=$(MISE_DATA_DIR="$MISE_DATA_DIR" MISE_CACHE_DIR="$MISE_CACHE_DIR" MISE_STATE_DIR="$MISE_STATE_DIR" "$MISE_BIN_DIR/mise" bin-paths "uv@$uv_version")
-        if [[ :$PATH: != *":$uv_dir"* ]]; then
-            PATH="$uv_dir:$PATH"
-        fi
-        # Export PATH such that it's available through sudo -E / ynh_exec_as_app
-        export PATH
+    # At the difference of what’s done for other tools, DO NOT load the path of the Python version, as it will break the use of other helpers
 
-        # This is in full lowercase such that it gets replaced in templates
-        # shellcheck disable=SC2034
-        path_with_uv="$PATH"
-        # shellcheck disable=SC2034
-        PATH_with_uv="$PATH"
-    fi
-
+    # Cleanup Python versions
+    # Calling it here will remove unused versions on install/upgrade as well
+    _ynh_python_cleanup
 }
 
 # Auto-load Python path tweaks if this app uses the python resource in the manifest
@@ -75,20 +63,10 @@ ynh_python_install() {
     python_version=${final_python_version:-$python_version}
     ynh_app_setting_set --key=python_version --value="$python_version"
 
-    # If uv_version exist, then check it and install it too
-    if [[ -n "${uv_version:-}" ]]; then
-    # Install the requested version of Python
-    local final_uv_version=$("${MISE_BIN_DIR}"/mise ls-remote uv@"$uv_version" --json | jq -r '.[].version' | tail -n1 )
-    uv_version=${final_uv_version:-$uv_version}
-    ynh_app_setting_set --key=uv_version --value="$uv_version"
-    fi
-
     # Installing precompiled python from the $install_dir so the created mise.toml will be at the right place
     pushd "$install_dir" || ynh_die
+        ynh_print_info "Installing python@$python_version"
         ynh_hide_warnings env MISE_DATA_DIR="$MISE_DATA_DIR" MISE_CACHE_DIR="$MISE_CACHE_DIR" MISE_STATE_DIR="$MISE_STATE_DIR" "$MISE_BIN_DIR"/mise use python@"$python_version"
-        if [[ -v uv_version ]]; then
-            ynh_hide_warnings env MISE_DATA_DIR="$MISE_DATA_DIR" MISE_CACHE_DIR="$MISE_CACHE_DIR" MISE_STATE_DIR="$MISE_STATE_DIR" "$MISE_BIN_DIR"/mise use uv@"$uv_version"
-        fi
     popd || ynh_die
 
     _ynh_load_python_in_path_and_other_tweaks
@@ -110,27 +88,22 @@ ynh_python_remove() {
     _ynh_python_cleanup
 }
 
+# Remove no more needed versions of Python used by the app.
+#
+# [internal]
+#
+# This helper will check what Python version are no more required,
+# and uninstall them
+#
+# usage: _ynh_python_cleanup
 _ynh_python_cleanup() {
 
-    # Remove no more needed versions of Python used by the app.
-    # This helper will check what Python version are no more required,
-    # and uninstall them
     local installed_python_versions=$(MISE_DATA_DIR="$MISE_DATA_DIR" MISE_CACHE_DIR="$MISE_CACHE_DIR" MISE_STATE_DIR="$MISE_STATE_DIR" "${MISE_BIN_DIR}/mise" ls python --json | jq -r '.[].version')
     for installed_python_version in $installed_python_versions; do
-        if [[ -n "$installed_python_version" ]] && ! grep -qE "^python_version: '?$installed_python_version'?" /etc/yunohost/apps/*/settings.yml; then
+        if [[ -n "$installed_python_version" ]] && [[ "$installed_python_version" != "$python_version" ]] && ! grep -qE "^python_version: '?$installed_python_version'?" /etc/yunohost/apps/*/settings.yml; then
             ynh_print_info "Removing python@$installed_python_version"
             ynh_hide_warnings "$MISE_BIN_DIR/mise" unuse python@"$installed_python_version"
             ynh_hide_warnings "$MISE_BIN_DIR/mise" uninstall python@"$installed_python_version"
-        fi
-    done
-
-    # Same for uv
-    local installed_uv_versions=$(MISE_DATA_DIR="$MISE_DATA_DIR" MISE_CACHE_DIR="$MISE_CACHE_DIR" MISE_STATE_DIR="$MISE_STATE_DIR" "${MISE_BIN_DIR}/mise" ls uv --json | jq -r '.[].version')
-    for installed_uv_version in $installed_uv_versions; do
-        if [[ -n "$installed_uv_version" ]] && ! grep -qE "^uv_version: '?$installed_uv_version'?" /etc/yunohost/apps/*/settings.yml; then
-            ynh_print_info "Removing uv@$installed_python_version"
-            ynh_hide_warnings "$MISE_BIN_DIR/mise" unuse uv@"$installed_uv_version"
-            ynh_hide_warnings "$MISE_BIN_DIR/mise" uninstall uv@"$installed_uv_version"
         fi
     done
 }

@@ -48,6 +48,10 @@ _ynh_load_nodejs_in_path_and_other_tweaks() {
     # Prevent yet another Node and Corepack madness, with Corepack wanting the user to confirm download of Yarn
     export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
     export NPM_CONFIG_UPDATE_NOTIFIER=false
+
+    # Cleanup Node versions
+    # Calling it here will remove unused versions on install/upgrade as well
+    _ynh_nodejs_cleanup
 }
 
 # Auto-load Nodejs path tweaks if this app uses the nodejs resource in the manifest
@@ -79,6 +83,7 @@ ynh_nodejs_install() {
 
     # Installing precompiled nodejs from the $install_dir so the created mise.toml will be at the right place
     pushd "$install_dir" || ynh_die
+        ynh_print_info "Installing nodejs@$nodejs_version"
         # The path has to be set for npm to now where to find node
         PATH="$MISE_DATA_DIR/installs/node/$nodejs_version/bin:$PATH"
         ynh_hide_warnings env MISE_DATA_DIR="$MISE_DATA_DIR" MISE_CACHE_DIR="$MISE_CACHE_DIR" "$MISE_BIN_DIR"/mise use nodejs@"$nodejs_version"
@@ -87,26 +92,34 @@ ynh_nodejs_install() {
     _ynh_load_nodejs_in_path_and_other_tweaks
 }
 
-# Remove the version of node used by the app.
+# Remove the version of Node used by the app.
 #
-# This helper will also cleanup unused nodejs versions
+# This helper will also cleanup unused Nodejs versions
 #
 # usage: ynh_nodejs_remove
 ynh_nodejs_remove() {
-    _ynh_nodejs_cleanup
-}
 
-_ynh_nodejs_cleanup() {
     [[ -n "${nodejs_version:-}" ]] || ynh_die "\$nodejs_version should be defined prior to calling ynh_nodejs_remove"
 
     ynh_app_setting_delete --key="nodejs_version"
 
-    # Remove no more needed versions of nodejs used by the app.
-    # This helper will check what nodejs version are no more required,
-    # and uninstall them
+    # Cleanup Node versions
+    _ynh_nodejs_cleanup
+}
+
+# Remove no more needed versions of Node used by the app.
+#
+# [internal]
+#
+# This helper will check what Nodejs version are no more required,
+# and uninstall them
+#
+# usage: _ynh_nodejs_cleanup
+_ynh_nodejs_cleanup() {
+    
     local installed_nodejs_versions=$(MISE_DATA_DIR=$MISE_DATA_DIR MISE_CACHE_DIR=$MISE_CACHE_DIR "${MISE_BIN_DIR}/mise" ls nodejs --json | jq -r '.[].version')
     for installed_nodejs_version in $installed_nodejs_versions; do
-        if [[ -n "$installed_nodejs_version" ]] && ! grep -qE "^nodejs_version: '?$installed_nodejs_version'?" /etc/yunohost/apps/*/settings.yml; then
+        if [[ -n "$installed_nodejs_version" ]] && [[ "$installed_nodejs_version" != "$nodejs_version" ]] && ! grep -qE "^nodejs_version: '?$installed_nodejs_version'?" /etc/yunohost/apps/*/settings.yml; then
             ynh_print_info "Removing nodejs@$installed_nodejs_version"
             ynh_hide_warnings "$MISE_BIN_DIR/mise" unuse nodejs@"$installed_nodejs_version"
             ynh_hide_warnings "$MISE_BIN_DIR/mise" uninstall nodejs@"$installed_nodejs_version"
@@ -115,7 +128,7 @@ _ynh_nodejs_cleanup() {
 
     # LEGACY but still here for transition
     export N_PREFIX="/opt/node_n"
-
+    
     if [ -e "$N_PREFIX" ]; then
         # If no other app uses n, remove n
         if ! grep -q "^nodejs_version:" /etc/yunohost/apps/*/settings.yml; then

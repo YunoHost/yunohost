@@ -18,13 +18,13 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-export MISE_VERSION=2026.3.17
+export MISE_VERSION=2026.4.7
 
 readonly MISE_INSTALL_DIR="/opt/mise-global"
 export MISE_INSTALL_DIR
 export MISE_BIN_DIR="$MISE_INSTALL_DIR/mise/bin"
 
-export MISE_DATA_DIR="$MISE_INSTALL_DIR/binaries/"
+export MISE_DATA_DIR="$MISE_INSTALL_DIR/binaries"
 export MISE_CACHE_DIR="$MISE_INSTALL_DIR/mise/cache"
 export MISE_STATE_DIR="$MISE_INSTALL_DIR/mise/state"
 
