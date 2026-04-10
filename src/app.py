@@ -907,223 +907,234 @@ def app_upgrade(
                 else:
                     upgrade_type = "UPGRADE_APP"
 
-        if no_safety_backup:
-            # FIXME: i18n
-            logger.warning("Skipping the creation of a backup prior to the upgrade.")
-        else:
-            # FIXME: i18n
-            logger.info("Creating a safety backup prior to the upgrade")
-
-            # Switch between pre-upgrade1 or pre-upgrade2
-            safety_backup_name = f"{app_}-pre-upgrade1"
-            other_safety_backup_name = f"{app_}-pre-upgrade2"
-            if safety_backup_name in backup_list()["archives"]:
-                safety_backup_name = f"{app_}-pre-upgrade2"
-                other_safety_backup_name = f"{app_}-pre-upgrade1"
-
-            tweaked_backup_core_only = False
-            if "BACKUP_CORE_ONLY" not in os.environ:
-                tweaked_backup_core_only = True
-                os.environ["BACKUP_CORE_ONLY"] = "1"
-            try:
-                backup_create(name=safety_backup_name, apps=[app_], system=None)
-            except Exception as e:
-                raise YunohostError(
-                    f"Aborting the upgrade, because a safety backup could not be created ({e})",
-                    raw_msg=True,
-                )
-            finally:
-                if tweaked_backup_core_only:
-                    del os.environ["BACKUP_CORE_ONLY"]
-
-            if safety_backup_name in backup_list()["archives"]:
-                # if the backup suceeded, delete old safety backup to save space
-                if other_safety_backup_name in backup_list()["archives"]:
-                    backup_delete(other_safety_backup_name, display_success=False)
-                    logger.info(
-                        m18n.n(
-                            "backup_before_upgrade_deleted_because_replaced_by_newer_backup",
-                            name=other_safety_backup_name,
-                            newname=safety_backup_name,
-                        )
-                    )
-            else:
-                # Is this needed ? Shouldn't backup_create report an expcetion if backup failed ?
-                raise YunohostError(
-                    "Uhoh the safety backup failed ?! Aborting the upgrade process.",
-                    raw_msg=True,
-                )
-
-        _assert_system_is_sane_for_app(new_manifest, "pre")
-
-        # We'll check that the app didn't brutally edit some system configuration
-        manually_modified_files_before_install = manually_modified_files()
-
-        # Prepare env. var. to pass to script
-        env_dict = _make_environment_for_app_script(
-            app_, workdir=workdir, action="upgrade"
-        )
-
-        env_dict_more = {
-            "YNH_APP_UPGRADE_TYPE": upgrade_type,
-            "YNH_APP_MANIFEST_VERSION": str(app_new_version_raw),
-            "YNH_APP_CURRENT_VERSION": str(app_current_version_raw),
-        }
-
-        env_dict.update(env_dict_more)
-
-        # Start register change on system
+        # Start the operation logger early so that the safety backup becomes a child operation sharing the same SSE stream.
+        # This avoids recreating a ZMQ socket between backup and upgrade, which could lose messages.
         related_to = [("app", app_)]
-        operation_logger = OperationLogger("app_upgrade", related_to, env=env_dict)
+        operation_logger = OperationLogger("app_upgrade", related_to)
         operation_logger.start()
 
-        hook_callback("pre_app_upgrade", env=env_dict)
-
-        AppResourceManager(
-            app_,
-            wanted=new_manifest,
-            current=current_manifest,
-            workdir=workdir,
-        ).apply(
-            rollback_and_raise_exception_if_failure=True,
-            operation_logger=operation_logger,
-            action="upgrade",
-        )
-
-        # Boring stuff : the resource upgrade may have added/remove/updated setting
-        # so we need to reflect this in the env_dict used to call the actual upgrade script x_x
-        # Or: the old manifest may be in v1 and the new in v2, so force to add the setting in env
-        env_dict = _make_environment_for_app_script(
-            app_,
-            workdir=workdir,
-            action="upgrade",
-        )
-        env_dict.update(env_dict_more)
-
-        # Execute the app upgrade script
-        upgrade_failed = True
         try:
-            (
-                upgrade_failed,
-                failure_message_with_debug_instructions,
-            ) = hook_exec_with_script_debug_if_failure(
-                workdir + "/scripts/upgrade",
-                env=env_dict,
-                operation_logger=operation_logger,
-                error_message_if_script_failed=m18n.n("app_upgrade_script_failed"),
-                error_message_if_failed=lambda e: m18n.n(
-                    "app_upgrade_failed", app=app_, error=e
-                ),
-            )
-        finally:
-            # If upgrade failed, try to restore the safety backup
-            if upgrade_failed and not no_safety_backup:
-                logger.warning(
-                    "Upgrade failed ... attempting to restore the safety backup (Yunohost first need to remove the app for this) ..."
-                )
+            if no_safety_backup:
+                # FIXME: i18n
+                logger.warning("Skipping the creation of a backup prior to the upgrade.")
+            else:
+                # FIXME: i18n
+                logger.info("Creating a safety backup prior to the upgrade")
 
-                app_remove(app_, force_workdir=workdir)
-                backup_restore(name=safety_backup_name, apps=[app_], force=True)
-                if not _is_installed(app_):
-                    logger.error(
-                        "Uhoh ... Yunohost failed to restore the app to the way it was before the failed upgrade :|"
+                # Switch between pre-upgrade1 or pre-upgrade2
+                safety_backup_name = f"{app_}-pre-upgrade1"
+                other_safety_backup_name = f"{app_}-pre-upgrade2"
+                if safety_backup_name in backup_list()["archives"]:
+                    safety_backup_name = f"{app_}-pre-upgrade2"
+                    other_safety_backup_name = f"{app_}-pre-upgrade1"
+
+                tweaked_backup_core_only = False
+                if "BACKUP_CORE_ONLY" not in os.environ:
+                    tweaked_backup_core_only = True
+                    os.environ["BACKUP_CORE_ONLY"] = "1"
+                try:
+                    backup_create(name=safety_backup_name, apps=[app_], system=None)
+                except Exception as e:
+                    raise YunohostError(
+                        f"Aborting the upgrade, because a safety backup could not be created ({e})",
+                        raw_msg=True,
+                    )
+                finally:
+                    if tweaked_backup_core_only:
+                        del os.environ["BACKUP_CORE_ONLY"]
+
+                if safety_backup_name in backup_list()["archives"]:
+                    # if the backup suceeded, delete old safety backup to save space
+                    if other_safety_backup_name in backup_list()["archives"]:
+                        backup_delete(other_safety_backup_name, display_success=False)
+                        logger.info(
+                            m18n.n(
+                                "backup_before_upgrade_deleted_because_replaced_by_newer_backup",
+                                name=other_safety_backup_name,
+                                newname=safety_backup_name,
+                            )
+                        )
+                else:
+                    # Is this needed ? Shouldn't backup_create report an expcetion if backup failed ?
+                    raise YunohostError(
+                        "Uhoh the safety backup failed ?! Aborting the upgrade process.",
+                        raw_msg=True,
                     )
 
-            # Whatever happened (install success or failure) we check if it broke the system
-            # and warn the user about it
-            try:
-                broke_the_system = False
-                _assert_system_is_sane_for_app(new_manifest, "post")
-            except Exception as e:
-                broke_the_system = True
-                logger.error(m18n.n("app_upgrade_failed", app=app_, error=str(e)))
-                failure_message_with_debug_instructions = operation_logger.error(str(e))
+            _assert_system_is_sane_for_app(new_manifest, "pre")
 
             # We'll check that the app didn't brutally edit some system configuration
-            manually_modified_files_after_install = manually_modified_files()
-            manually_modified_files_by_app = set(
-                manually_modified_files_after_install
-            ) - set(manually_modified_files_before_install)
-            if manually_modified_files_by_app:
-                logger.error(
-                    "Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper conf_regen hook. Those configuration were affected:\n    - "
-                    + "\n     - ".join(manually_modified_files_by_app)
+            manually_modified_files_before_install = manually_modified_files()
+
+            # Prepare env. var. to pass to script
+            env_dict = _make_environment_for_app_script(
+                app_, workdir=workdir, action="upgrade"
+            )
+
+            env_dict_more = {
+                "YNH_APP_UPGRADE_TYPE": upgrade_type,
+                "YNH_APP_MANIFEST_VERSION": str(app_new_version_raw),
+                "YNH_APP_CURRENT_VERSION": str(app_current_version_raw),
+            }
+
+            env_dict.update(env_dict_more)
+
+            # Now that env_dict is ready, update the operation logger metadata
+            operation_logger.extra["env"] = env_dict
+            operation_logger.flush()
+
+            hook_callback("pre_app_upgrade", env=env_dict)
+
+            AppResourceManager(
+                app_,
+                wanted=new_manifest,
+                current=current_manifest,
+                workdir=workdir,
+            ).apply(
+                rollback_and_raise_exception_if_failure=True,
+                operation_logger=operation_logger,
+                action="upgrade",
+            )
+
+            # Boring stuff : the resource upgrade may have added/remove/updated setting
+            # so we need to reflect this in the env_dict used to call the actual upgrade script x_x
+            # Or: the old manifest may be in v1 and the new in v2, so force to add the setting in env
+            env_dict = _make_environment_for_app_script(
+                app_,
+                workdir=workdir,
+                action="upgrade",
+            )
+            env_dict.update(env_dict_more)
+
+            # Execute the app upgrade script
+            upgrade_failed = True
+            try:
+                (
+                    upgrade_failed,
+                    failure_message_with_debug_instructions,
+                ) = hook_exec_with_script_debug_if_failure(
+                    workdir + "/scripts/upgrade",
+                    env=env_dict,
+                    operation_logger=operation_logger,
+                    error_message_if_script_failed=m18n.n("app_upgrade_script_failed"),
+                    error_message_if_failed=lambda e: m18n.n(
+                        "app_upgrade_failed", app=app_, error=e
+                    ),
                 )
+            finally:
+                # If upgrade failed, try to restore the safety backup
+                if upgrade_failed and not no_safety_backup:
+                    logger.warning(
+                        "Upgrade failed ... attempting to restore the safety backup (Yunohost first need to remove the app for this) ..."
+                    )
 
-            # If the upgrade didnt fail, update the revision and app files
-            # (even if it broke the system, otherwise we end up in a funky intermediate state
-            # where the app files don't match the installed version or settings,
-            # for example for v1->v2 upgrade marked as "broke the system" for some reason)
-            if not upgrade_failed:
-                now = int(time.time())
-                app_setting(app_, "update_time", now)
-                app_setting(
-                    app_,
-                    "current_revision",
-                    new_manifest.get("remote", {}).get("revision", "?"),
-                )
-
-                # Clean hooks and add new ones
-                hook_remove(app_)
-                if "hooks" in os.listdir(workdir):
-                    for hook in os.listdir(workdir + "/hooks"):
-                        hook_add(app_, workdir + "/hooks/" + hook)
-
-                app_setting_path = os.path.join(APPS_SETTING_PATH, app_)
-
-                # Replace scripts and manifest and conf (if exists)
-                # Move scripts and manifest to the right place
-                for file_to_copy in APP_FILES_TO_COPY:
-                    rm(f"{app_setting_path}/{file_to_copy}", recursive=True, force=True)
-                    if os.path.exists(os.path.join(workdir, file_to_copy)):
-                        cp(
-                            f"{workdir}/{file_to_copy}",
-                            f"{app_setting_path}/{file_to_copy}",
-                            recursive=True,
+                    app_remove(app_, force_workdir=workdir)
+                    backup_restore(name=safety_backup_name, apps=[app_], force=True)
+                    if not _is_installed(app_):
+                        logger.error(
+                            "Uhoh ... Yunohost failed to restore the app to the way it was before the failed upgrade :|"
                         )
 
-                # Clean and set permissions
-                rmtree(workdir)
-                chmod(app_setting_path, 0o600)
-                chmod(f"{app_setting_path}/settings.yml", 0o400)
-                chown(app_setting_path, "root", recursive=True)
+                # Whatever happened (install success or failure) we check if it broke the system
+                # and warn the user about it
+                try:
+                    broke_the_system = False
+                    _assert_system_is_sane_for_app(new_manifest, "post")
+                except Exception as e:
+                    broke_the_system = True
+                    logger.error(m18n.n("app_upgrade_failed", app=app_, error=str(e)))
+                    failure_message_with_debug_instructions = operation_logger.error(str(e))
 
-            if upgrade_failed and broke_the_system:
-                raise YunohostError("app_upgrade_failed_and_broke_the_system", app=app_)
-            elif broke_the_system:
-                raise YunohostError("app_upgrade_broke_the_system", app=app_)
-            elif upgrade_failed:
-                raise YunohostError(
-                    failure_message_with_debug_instructions, raw_msg=True
-                )
+                # We'll check that the app didn't brutally edit some system configuration
+                manually_modified_files_after_install = manually_modified_files()
+                manually_modified_files_by_app = set(
+                    manually_modified_files_after_install
+                ) - set(manually_modified_files_before_install)
+                if manually_modified_files_by_app:
+                    logger.error(
+                        "Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper conf_regen hook. Those configuration were affected:\n    - "
+                        + "\n     - ".join(manually_modified_files_by_app)
+                    )
 
-            # So much win
-            logger.success(m18n.n("app_upgraded", app=app_))
+                # If the upgrade didnt fail, update the revision and app files
+                # (even if it broke the system, otherwise we end up in a funky intermediate state
+                # where the app files don't match the installed version or settings,
+                # for example for v1->v2 upgrade marked as "broke the system" for some reason)
+                if not upgrade_failed:
+                    now = int(time.time())
+                    app_setting(app_, "update_time", now)
+                    app_setting(
+                        app_,
+                        "current_revision",
+                        new_manifest.get("remote", {}).get("revision", "?"),
+                    )
 
-            # Format post-upgrade notifications
-            if new_manifest["notifications"]["POST_UPGRADE"]:
-                # Get updated settings to hydrate notifications
-                settings = _get_app_settings(app_)
-                post_upgrade_notifications = _filter_and_hydrate_notifications(
-                    new_manifest["notifications"]["POST_UPGRADE"],
-                    current_version=app_current_version_raw,
-                    data=settings,
-                )
-                if Moulinette.interface.type == "cli":
-                    # ask for simple confirm
-                    _display_notifications(post_upgrade_notifications, force=force)
-            else:
-                post_upgrade_notifications = {}
+                    # Clean hooks and add new ones
+                    hook_remove(app_)
+                    if "hooks" in os.listdir(workdir):
+                        for hook in os.listdir(workdir + "/hooks"):
+                            hook_add(app_, workdir + "/hooks/" + hook)
 
-            # Reset the dismiss flag for post upgrade notification
-            app_setting(app_, "_dismiss_notification_post_upgrade", delete=True)
+                    app_setting_path = os.path.join(APPS_SETTING_PATH, app_)
 
-            hook_callback("post_app_upgrade", env=env_dict)
-            operation_logger.success()
+                    # Replace scripts and manifest and conf (if exists)
+                    # Move scripts and manifest to the right place
+                    for file_to_copy in APP_FILES_TO_COPY:
+                        rm(f"{app_setting_path}/{file_to_copy}", recursive=True, force=True)
+                        if os.path.exists(os.path.join(workdir, file_to_copy)):
+                            cp(
+                                f"{workdir}/{file_to_copy}",
+                                f"{app_setting_path}/{file_to_copy}",
+                                recursive=True,
+                            )
 
-            _sync_permissions_with_ldap()
+                    # Clean and set permissions
+                    rmtree(workdir)
+                    chmod(app_setting_path, 0o600)
+                    chmod(f"{app_setting_path}/settings.yml", 0o400)
+                    chown(app_setting_path, "root", recursive=True)
 
-            return post_upgrade_notifications
+                if upgrade_failed and broke_the_system:
+                    raise YunohostError("app_upgrade_failed_and_broke_the_system", app=app_)
+                elif broke_the_system:
+                    raise YunohostError("app_upgrade_broke_the_system", app=app_)
+                elif upgrade_failed:
+                    raise YunohostError(
+                        failure_message_with_debug_instructions, raw_msg=True
+                    )
+
+                # So much win
+                logger.success(m18n.n("app_upgraded", app=app_))
+
+                # Format post-upgrade notifications
+                if new_manifest["notifications"]["POST_UPGRADE"]:
+                    # Get updated settings to hydrate notifications
+                    settings = _get_app_settings(app_)
+                    post_upgrade_notifications = _filter_and_hydrate_notifications(
+                        new_manifest["notifications"]["POST_UPGRADE"],
+                        current_version=app_current_version_raw,
+                        data=settings,
+                    )
+                    if Moulinette.interface.type == "cli":
+                        # ask for simple confirm
+                        _display_notifications(post_upgrade_notifications, force=force)
+                else:
+                    post_upgrade_notifications = {}
+
+                # Reset the dismiss flag for post upgrade notification
+                app_setting(app_, "_dismiss_notification_post_upgrade", delete=True)
+
+                hook_callback("post_app_upgrade", env=env_dict)
+                operation_logger.success()
+
+                _sync_permissions_with_ldap()
+
+                return post_upgrade_notifications
+        except BaseException as e:
+            # Ensure the operation logger is always properly closed, even for errors happening before the upgrade script
+            if operation_logger.ended_at is None:
+                operation_logger.error(str(e))
+            raise
 
     #
     #
