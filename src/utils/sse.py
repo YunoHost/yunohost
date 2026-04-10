@@ -67,6 +67,9 @@ def start_log_broker() -> None:
     p = Process(target=server)
     p.start()
 
+    # Connect the shared PUB socket now so it's ready when the first operation starts
+    _get_shared_pub_socket()
+
 
 class SSEEventBase(TypedDict):
     operation_id: NotRequired[str]
@@ -120,6 +123,20 @@ SSEEvent = (
 )
 
 
+_shared_pub_socket: Any = None
+
+
+def _get_shared_pub_socket() -> Any:
+    global _shared_pub_socket
+    if _shared_pub_socket is None:
+        import zmq
+
+        ctx = zmq.Context()  # type: ignore[attr-defined]
+        _shared_pub_socket = ctx.socket(zmq.PUB)  # type: ignore[attr-defined]
+        _shared_pub_socket.connect(LOG_BROKER_BACKEND_ENDPOINT)
+    return _shared_pub_socket
+
+
 class SSELogStreamingHandler(logging.Handler):
     def __init__(self, operation_id: str, flash: bool = False) -> None:
         super().__init__()
@@ -128,7 +145,6 @@ class SSELogStreamingHandler(logging.Handler):
         self.ref_id: str | None
         self.log_stream_cache: IO[str] | None
 
-        import zmq
         from moulinette import Moulinette
 
         from ..log import OPERATIONS_PATH
@@ -142,9 +158,7 @@ class SSELogStreamingHandler(logging.Handler):
 
             self.ref_id = str(uuid4())
 
-        self.context = zmq.Context()  # type: ignore[attr-defined]  # Mypy derping about zmq, might be fixed once on trixie ?
-        self.socket = self.context.socket(zmq.PUB)  # type: ignore[attr-defined]  # Mypy derping about zmq, might be fixed once on trixie ?
-        self.socket.connect(LOG_BROKER_BACKEND_ENDPOINT)
+        self.socket = _get_shared_pub_socket()
 
         if not flash:
             # Since we're starting this operation, garbage all the previous streamcache
@@ -157,10 +171,6 @@ class SSELogStreamingHandler(logging.Handler):
             self.log_stream_cache = stream_file.open("w")
         else:
             self.log_stream_cache = None
-
-        # FIXME ? ... Boring hack because otherwise it seems we lose messages emitted while
-        # the socket ain't properly connected to the other side
-        time.sleep(1)
 
     def emit(self, record: logging.LogRecord) -> None:
         event: SSEEventMessage = {
@@ -217,8 +227,6 @@ class SSELogStreamingHandler(logging.Handler):
 
     def close(self, *args: Any, **kwargs: Any) -> None:
         super().close(*args, **kwargs)
-        self.socket.close()
-        self.context.term()
         if self.log_stream_cache:
             self.log_stream_cache.close()
 
