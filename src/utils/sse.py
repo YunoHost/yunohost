@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+import functools
 import json
 import logging
 import os
@@ -123,18 +124,24 @@ SSEEvent = (
 )
 
 
-_shared_pub_socket: Any = None
-
-
+@functools.cache
 def _get_shared_pub_socket() -> Any:
-    global _shared_pub_socket
-    if _shared_pub_socket is None:
-        import zmq
+    import zmq
 
-        ctx = zmq.Context()  # type: ignore[attr-defined]
-        _shared_pub_socket = ctx.socket(zmq.PUB)  # type: ignore[attr-defined]
-        _shared_pub_socket.connect(LOG_BROKER_BACKEND_ENDPOINT)
-    return _shared_pub_socket
+    ctx = zmq.Context()  # type: ignore[attr-defined]
+    socket = ctx.socket(zmq.PUB)  # type: ignore[attr-defined]
+    socket.connect(LOG_BROKER_BACKEND_ENDPOINT)
+    return socket
+
+
+def _get_or_reconnect_shared_pub_socket() -> Any:
+    socket = _get_shared_pub_socket()
+    if socket.closed:
+        _get_shared_pub_socket.cache_clear()
+        socket = _get_shared_pub_socket()
+        # Wait for the new socket to connect to the broker
+        time.sleep(1)
+    return socket
 
 
 class SSELogStreamingHandler(logging.Handler):
@@ -158,7 +165,7 @@ class SSELogStreamingHandler(logging.Handler):
 
             self.ref_id = str(uuid4())
 
-        self.socket = _get_shared_pub_socket()
+        self.socket = _get_or_reconnect_shared_pub_socket()
 
         if not flash:
             # Since we're starting this operation, garbage all the previous streamcache
