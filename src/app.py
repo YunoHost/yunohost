@@ -35,7 +35,7 @@ from typing import (
     cast,
 )
 
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 
 from .app_catalog import (  # noqa
     APPS_CATALOG_LOGOS,
@@ -78,6 +78,7 @@ from .utils.file_utils import (
     rm,
     write_to_file,
 )
+from .utils.i18n import m18n
 
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny

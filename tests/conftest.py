@@ -23,12 +23,14 @@ import os
 from contextlib import contextmanager
 from unittest.mock import Mock
 
-import moulinette
 import pytest
 import toml
 import yaml
-from moulinette import Moulinette, m18n
 from yunohost.utils.error import YunohostError
+
+import moulinette
+from moulinette import Moulinette
+from yunohost.utils.i18n import m18n
 
 
 @pytest.fixture(scope="session", autouse=True)

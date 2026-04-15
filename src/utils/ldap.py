@@ -29,10 +29,10 @@ import ldap
 import ldap.modlist as modlist
 import ldap.sasl
 from ldap.ldapobject import LDAPObject, ReconnectLDAPObject
-from moulinette import m18n
 from moulinette.core import MoulinetteError
 
 from ..utils.error import YunohostError
+from ..utils.i18n import m18n
 
 logger = logging.getLogger("yunohost.utils.ldap")
 

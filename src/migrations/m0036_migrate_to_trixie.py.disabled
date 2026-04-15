@@ -39,7 +39,6 @@ incus exec migration-to-trixie -- yunohost tools migrations run 0036 --accept-di
 
 # Explicitly import packages to prevent an issue that may arise later because of python3.9 being replaced by 3.11 in the middle of the upgrade etc
 # TRIXIE? import _strptime  # noqa: F401
-import jinja2
 import logging
 import re
 import subprocess
@@ -48,16 +47,18 @@ from datetime import date
 from pathlib import Path
 from time import sleep
 
+import jinja2
 import requests
 from debian.deb822 import Deb822
 
 # TRIXIE? import _ldap  # noqa: F401
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 
 from ..app import app_list
 from ..regenconf import manually_modified_files
 from ..tools import Migration, _write_migration_state, tools_update
 from ..utils.error import YunohostError
+from ..utils.i18n import m18n
 from ..utils.process import call_async_output, check_output
 from ..utils.system import (
     _list_upgradable_apt_packages,

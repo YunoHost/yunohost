@@ -34,10 +34,9 @@ from typing import (
     cast,
 )
 
-from moulinette import m18n
-
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import read_yaml, write_to_yaml
+from .utils.i18n import m18n
 
 if TYPE_CHECKING:
     from .utils.logging import YunohostLogger

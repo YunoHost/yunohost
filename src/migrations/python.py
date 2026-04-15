@@ -21,10 +21,9 @@
 import os
 from logging import getLogger
 
-from moulinette import m18n
-
 from ..tools import Migration, tools_migrations_state
 from ..utils.file_utils import rm
+from ..utils.i18n import m18n
 from ..utils.process import call_async_output
 from ..utils.system import debian_version
 

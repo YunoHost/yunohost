@@ -35,8 +35,9 @@ from typing import (
     overload,
 )
 
-from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
+
+from moulinette import Moulinette
 
 from .log import OperationLogger, is_unit_operation
 from .regenconf import _force_clear_hashes, _process_regen_conf, regen_conf
@@ -50,6 +51,7 @@ from .utils.file_utils import (
     write_to_json,
     write_to_yaml,
 )
+from .utils.i18n import m18n
 
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny, cast

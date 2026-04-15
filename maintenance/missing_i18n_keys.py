@@ -22,10 +22,10 @@ import argparse
 import json
 import re
 import sys
-import tomllib
 from collections.abc import Generator
 from pathlib import Path
 
+import tomllib
 import yaml
 
 ###############################################################################

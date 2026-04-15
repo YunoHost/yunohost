@@ -27,9 +27,8 @@ import tempfile
 from logging import getLogger
 from typing import Any, Callable, Dict, List, Union
 
-from moulinette import m18n
-
 from ..utils.error import YunohostError, YunohostValidationError
+from ..utils.i18n import m18n
 from ..utils.system import debian_version, debian_version_id, system_arch
 from .file_utils import chmod, chown, mkdir, rm, write_to_file
 from .misc import random_ascii

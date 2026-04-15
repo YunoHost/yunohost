@@ -28,11 +28,11 @@ if TYPE_CHECKING:
     from moulinette.core import MoulinetteLock
 
 
-from moulinette.interfaces.cli import colorize, get_locale
+from moulinette.interfaces.cli import colorize
 
 import moulinette
-from moulinette import m18n
 
+from .utils.i18n import get_locale, m18n
 from .utils.logging import init_logging
 
 

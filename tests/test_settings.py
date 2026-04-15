@@ -20,7 +20,6 @@
 
 import os
 
-import moulinette
 import pytest
 import yaml
 from mock import patch
@@ -33,6 +32,8 @@ from yunohost.settings import (
     settings_set,
 )
 from yunohost.utils.error import YunohostError, YunohostValidationError
+
+import moulinette
 
 EXAMPLE_SETTINGS = """
 [example]

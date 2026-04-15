@@ -35,7 +35,7 @@ from glob import glob
 from logging import getLogger
 from typing import TYPE_CHECKING, cast
 
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 
 from .hook import (
     CUSTOM_HOOK_FOLDER,
@@ -69,6 +69,7 @@ from .utils.file_utils import (
     read_file,
     rm,
 )
+from .utils.i18n import m18n
 from .utils.misc import random_ascii
 from .utils.process import check_output
 from .utils.system import (

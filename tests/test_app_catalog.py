@@ -25,7 +25,6 @@ import shutil
 import pytest
 import requests
 import requests_mock
-from moulinette import m18n
 from yunohost import app_catalog as app_catalog_module
 from yunohost.app_catalog import (
     APPS_CATALOG_API_VERSION,
@@ -41,6 +40,7 @@ from yunohost.app_catalog import (
 )
 from yunohost.utils.error import YunohostError
 from yunohost.utils.file_utils import read_json, write_to_json, write_to_yaml
+from yunohost.utils.i18n import m18n
 
 from .conftest import message
 

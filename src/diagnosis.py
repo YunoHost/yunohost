@@ -25,7 +25,7 @@ import time
 from importlib import import_module
 from logging import getLogger
 
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 
 from .log import is_unit_operation
 from .utils.error import YunohostError, YunohostValidationError
@@ -35,6 +35,7 @@ from .utils.file_utils import (
     write_to_json,
     write_to_yaml,
 )
+from .utils.i18n import m18n
 from .utils.misc import send_admin_email
 
 logger = getLogger("yunohost.diagnosis")

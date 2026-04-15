@@ -20,9 +20,8 @@
 
 import logging
 
-from moulinette import m18n
-
 from ..tools import Migration
+from ..utils.i18n import m18n
 
 logger = logging.getLogger("yunohost.migration")
 

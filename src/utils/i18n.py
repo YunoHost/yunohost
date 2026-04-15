@@ -18,7 +18,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from moulinette import m18n
+from moulinette.interfaces.cli import moulinette_get_locale
+
+from moulinette import m18n as moulinette_m18n
+
+get_locale = moulinette_get_locale
+m18n = moulinette_m18n
 
 
 def _value_for_locale(values: str | dict[str, str]) -> str:

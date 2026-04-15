@@ -28,14 +28,16 @@ from importlib import import_module
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Callable, Literal, cast
 
-from moulinette import Moulinette, m18n
 from packaging import version
 from typing_extensions import TypedDict
+
+from moulinette import Moulinette
 
 from . import migrations as migrations_module
 from .log import OperationLogger, is_unit_operation
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import chown, cp, mkdir, read_yaml, rm, write_to_yaml
+from .utils.i18n import m18n
 from .utils.process import call_async_output
 from .utils.system import (
     _apt_log_line_is_relevant,

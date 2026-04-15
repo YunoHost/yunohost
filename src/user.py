@@ -41,11 +41,12 @@ from typing import (
     cast,
 )
 
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 
 from .log import is_flash_unit_operation, is_unit_operation
 from .service import service_status
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.i18n import m18n
 from .utils.process import check_output
 from .utils.system import binary_to_human
 

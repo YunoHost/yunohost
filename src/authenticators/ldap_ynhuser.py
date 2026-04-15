@@ -35,11 +35,11 @@ import ldap.sasl
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from moulinette import m18n
 from moulinette.authentication import BaseAuthenticator
 
 from ..utils.error import YunohostAuthenticationError, YunohostError
 from ..utils.file_utils import read_json
+from ..utils.i18n import m18n
 from ..utils.ldap import _get_ldap_interface
 from ..utils.misc import random_ascii
 

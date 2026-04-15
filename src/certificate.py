@@ -28,14 +28,13 @@ from glob import glob
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, cast
 
-from moulinette import m18n
-
 from .diagnosis import Diagnoser
 from .log import OperationLogger
 from .regenconf import regen_conf
 from .service import _run_service_command
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import chmod, chown, read_file, tail
+from .utils.i18n import m18n
 from .utils.misc import send_admin_email
 from .utils.network import get_public_ip
 from .vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
