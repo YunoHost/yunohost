@@ -18,39 +18,39 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import locale
+import gettext
 import os
 from pathlib import Path
 from typing import Any
+
+from moulinette.interfaces.cli import get_locale
 
 from moulinette import m18n as moulinette_m18n
 
 DEFAULT_LOCALE = "en"
 
 
-def get_locale() -> str:
-    """Return current user eocale"""
-    try:
-        lang = locale.getdefaultlocale()[0]
-    except Exception:
-        # In some edge case the locale lib fails ...
-        # c.f. https://forum.yunohost.org/t/error-when-trying-to-enter-user-information-in-admin-panel/11390/11
-        lang = os.getenv("LANG")
-    if not lang:
-        return ""
-    return lang[:2]
-
-
 class M18N:
     def __init__(self) -> None:
         self.default_locale = DEFAULT_LOCALE
-        self.locale = get_locale()
-
         moulinette_m18n.default_locale = self.default_locale
-        moulinette_m18n.set_locale(self.locale)
+        moulinette_m18n.n = self.n
 
     def set_locales_dir(self, path: Path | str) -> None:
         self.locales_dir = Path(path)
+        gettext.bindtextdomain(domain="yunohost", localedir=self.locales_dir)
+        gettext.textdomain(domain="yunohost")
+        moulinette_m18n.set_locales_dir(str(path))
+        moulinette_m18n.set_locale(get_locale())
+
+    def _set_locale(self) -> None:
+        # For now, Moulinette sets the locale, we need to ensure it's set in
+        # our context too. gettext uses the environment variable LANGUAGE.
+        locale = moulinette_m18n.locale
+        if locale in ["C", "", None]:
+            locale = self.default_locale
+        self.locale = locale
+        os.environ["LANGUAGE"] = self.locale
 
     def g(self, key: str, *args: str, **kwargs: str) -> str:
         """
@@ -59,10 +59,14 @@ class M18N:
         return moulinette_m18n.g(key, *args, **kwargs)
 
     def n(self, key: str, *args: Any, **kwargs: Any) -> str:
-        return moulinette_m18n.n(key, *args, noformat=False, **kwargs)
+        self._set_locale()
+        message = gettext.gettext(key)
+        # TODO: try except formatting
+        formatted = message.format(*args, **kwargs)
+        return formatted
 
     def key_exists(self, key: str) -> bool:
-        return moulinette_m18n.key_exists(key)
+        return gettext.gettext(key) != key
 
 
 m18n = M18N()
