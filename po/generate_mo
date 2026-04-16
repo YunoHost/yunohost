@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+
+import argparse
+import subprocess
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+DOMAIN = "yunohost"
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-i", "--input", type=Path, default=SCRIPT_DIR, help="Input po directory"
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        default=SCRIPT_DIR / "generated",
+        help="Output mo directory",
+    )
+    args = parser.parse_args()
+
+    linguas: Path = args.input / "LINGUAS"
+    for locale in linguas.read_text().split():
+        po = args.input / f"{locale}.po"
+        mo = args.output / locale / "LC_MESSAGES" / f"{DOMAIN}.mo"
+        mo.parent.mkdir(exist_ok=True, parents=True)
+        subprocess.check_call(["msgfmt", po, "-o", mo])
+
+
+if __name__ == "__main__":
+    main()

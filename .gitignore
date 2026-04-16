@@ -26,6 +26,7 @@ pip-log.txt
 .tox
 
 # Translations
+po/generated
 *.mo
 
 # Mr Developer
