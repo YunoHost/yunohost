@@ -39,4 +39,4 @@ autofix-translated-strings:
     variables:
       - $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
     changes:
-      - locales/*
+      - po/*
