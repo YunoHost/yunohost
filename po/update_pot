@@ -1,0 +1,307 @@
+#!/usr/bin/env python3
+
+import argparse
+import json
+import re
+import textwrap
+import tomllib
+from collections.abc import Generator
+from pathlib import Path
+
+import yaml
+from babel.messages.catalog import Catalog
+from babel.messages.extract import extract_from_dir
+from babel.messages.pofile import write_po
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent
+
+
+def gen_catalog(project: Path) -> Catalog:
+    header = textwrap.dedent("""\
+        # SOME DESCRIPTIVE TITLE.
+        # Copyright (C) 2014-YEAR YunoHost
+        # ssh <ssh@yunohost.org>, YEAR.
+        #
+    """)
+    catalog = Catalog(
+        domain="yunohost",
+        header_comment=header,
+        project="yunohost",
+        version="13.0.1",
+        copyright_holder="ssh <ssh@yunohost.org>",
+        msgid_bugs_address="ssh@yunohost.org",
+        fuzzy=False,
+    )
+
+    for key, file in translations_datafiles(project):
+        catalog.add(key, locations=[(str(file), 0)])
+
+    for key, file, lineno in translations_src(project):
+        catalog.add(key, locations=[(str(file), lineno)])
+
+    return catalog
+
+
+def translations_datafiles(project: Path) -> Generator[tuple[str, str | Path]]:
+
+    # For each default service, expect to find "service_description_<name>"
+    services_yml = project / "conf" / "yunohost" / "services.yml"
+    services_path = services_yml.relative_to(project)
+    for service, info in yaml.safe_load(services_yml.open("r")).items():
+        if info is None:
+            continue
+        yield f"service_description_{service}", services_path
+
+    # Keys for the actionmap ...
+    actionsmap_yml = project / "share" / "actionsmap.yml"
+    actionsmap_path = actionsmap_yml.relative_to(project)
+    for category in yaml.safe_load(actionsmap_yml.open("r")).values():
+        if "actions" not in category:
+            continue
+        for action in category["actions"].values():
+            if "arguments" not in action:
+                continue
+            for argument in action["arguments"].values():
+                extra = argument.get("extra")
+                if not extra:
+                    continue
+                if "password" in extra:
+                    yield extra["password"], actionsmap_path
+                if "ask" in extra:
+                    yield extra["ask"], actionsmap_path
+                if "comment" in extra:
+                    yield extra["comment"], actionsmap_path
+                if "pattern" in extra:
+                    yield extra["pattern"][1], actionsmap_path
+                if "help" in extra:
+                    yield extra["help"], actionsmap_path
+
+    registrar_list = project / "share" / "registrar_list.toml"
+    registrar_path = registrar_list.relative_to(project)
+    registrars = tomllib.load(registrar_list.open("rb"))
+    supported_registrars = ["ovh", "gandi", "godaddy"]
+    for registrar in supported_registrars:
+        for key in registrars[registrar]:
+            yield f"domain_config_{key}", registrar_path
+
+    # Domain config panel
+    domain_settings_with_help_key = [
+        "portal_logo",
+        "portal_public_intro",
+        "portal_theme",
+        "portal_user_intro",
+        "search_engine",
+        "custom_css",
+        "dns",
+        "enable_public_apps_page",
+    ]
+    domain_section_with_no_name = ["app", "cert_", "mail", "registrar"]
+    config_domain_toml = project / "share" / "config_domain.toml"
+    config_domain_toml_path = config_domain_toml.relative_to(project)
+    for panel_key, panel in tomllib.load(config_domain_toml.open("rb")).items():
+        if not isinstance(panel, dict):
+            continue
+        yield f"domain_config_{panel_key}_name", config_domain_toml_path
+        for section_key, section in panel.items():
+            if not isinstance(section, dict):
+                continue
+            if section_key not in domain_section_with_no_name:
+                yield f"domain_config_{section_key}_name", config_domain_toml_path
+            for key, values in section.items():
+                if not isinstance(values, dict):
+                    continue
+                yield f"domain_config_{key}", config_domain_toml_path
+                if key in domain_settings_with_help_key:
+                    yield f"domain_config_{key}_help", config_domain_toml_path
+
+    # App config panel
+    app_settings_with_help_key = [
+        "logo",
+        "description",
+        "force_upgrade",
+    ]
+    config_app_toml = project / "share" / "config_app.toml"
+    config_app_toml_path = config_app_toml.relative_to(project)
+    for panel_key, panel in tomllib.load(config_app_toml.open("rb")).items():
+        if not isinstance(panel, dict):
+            continue
+        yield f"app_config_{panel_key}_name", config_app_toml_path
+        for section_key, section in panel.items():
+            if not isinstance(section, dict):
+                continue
+            if section_key != "permissions":
+                yield f"app_config_{section_key}_name", config_app_toml_path
+            for key, values in section.items():
+                if not isinstance(values, dict) or values.get("visible") is False:
+                    continue
+                key_ = f"permission_{key}" if section_key == "permissions" else key
+                yield f"app_config_{key_}", config_app_toml_path
+                if key in app_settings_with_help_key:
+                    yield f"app_config_{key_}_help", config_app_toml_path
+
+    # Global settings
+    # Boring hard-coding because there's no simple other way idk
+    settings_without_help_key = [
+        "passwordless_sudo",
+        "smtp_relay_host",
+        "smtp_relay_password",
+        "smtp_relay_port",
+        "smtp_relay_user",
+        "ssowat_panel_overlay_enabled",
+        "root_password",
+        "root_access_explain",
+        "root_password_confirm",
+        "tls_passthrough_explain",
+        "allow_edit_email",
+        "allow_edit_email_alias",
+        "allow_edit_email_forward",
+    ]
+
+    config_global_toml_path = "share/config_global.toml"
+    config_global_toml = project / config_global_toml_path
+    for panel_key, panel in tomllib.load(config_global_toml.open("rb")).items():
+        if not isinstance(panel, dict):
+            continue
+        yield f"global_settings_setting_{panel_key}_name", config_global_toml_path
+        for section_key, section in panel.items():
+            if not isinstance(section, dict):
+                continue
+            yield f"global_settings_setting_{section_key}_name", config_global_toml_path
+            for key, values in section.items():
+                if not isinstance(values, dict):
+                    continue
+                yield f"global_settings_setting_{key}", config_global_toml_path
+                if key not in settings_without_help_key:
+                    yield f"global_settings_setting_{key}_help", config_global_toml_path
+
+
+def translations_src(project_dir: Path) -> Generator[tuple[str, str | Path, int]]:
+    method_map = [
+        ("**.py", "python"),
+        ("**.py.disabled", "python"),
+    ]
+    keywords = {
+        "n": None,
+        "YunohostError": None,
+        "YunohostValidationError": None,
+        "YunohostAuthenticationError": None,
+    }
+
+    srcdir = project_dir / "src"
+
+    false_positives = [
+        "backup_applying_method_",
+        "backup_method__finished",
+        "error",
+        "id",
+        "packaging_format",
+        "summary",
+    ]
+
+    for result in extract_from_dir(srcdir, method_map=method_map, keywords=keywords):
+        filename, lineno, messages, _, _ = result
+        messages = [messages] if isinstance(messages, str) else messages
+        for message in messages:
+            if " " not in message and message not in false_positives:
+                yield message, f"src/{filename}", lineno
+
+    for file in srcdir.rglob("*.py"):
+        lines = enumerate(file.read_text().splitlines())
+        for lineno, line in lines:
+            # Documented i18n strings
+            if match := re.match(r".*# i18n: (.*)$", line):
+                yield match.group(1), file.relative_to(project_dir), lineno
+
+            # For all unit operations, expect to find "log_<name>"
+            # A unit operation is created either using the @is_unit_operation decorator
+            # or using OperationLogger(
+            if line.startswith("@is_unit_operation(") and "flash=True" not in line:
+                nextlineno, nextline = next(lines)
+                funcname = nextline.removeprefix("def ").split("(")[0]
+                yield f"log_{funcname}", file.relative_to(project_dir), nextlineno
+
+        regex_logger = re.compile(r"OperationLogger\(\n*\s*[\"\'](\w+)[\"\']")
+        content = file.read_text()
+        for match in regex_logger.finditer(content):
+            lineno = content[0 : match.start()].count("\n") + 1
+            yield f"log_{match.group(1)}", file.relative_to(project_dir), lineno
+
+    # For each diagnosis, try to find strings like "diagnosis_stuff_foo" (c.f. diagnosis summaries)
+    # Also we expect to have "diagnosis_description_<name>" for each diagnosis
+    regex_diagnosis = re.compile(r"[\"\'](diagnosis_[a-z]+_\w+)[\"\']")
+
+    diagnoser_files: list[Path] = [
+        *(srcdir / "diagnosers").glob("*.py"),
+        *(srcdir / "diagnosers").glob("*.py.disabled"),
+    ]
+    for file in diagnoser_files:
+        if file.name == "__init__.py":
+            continue
+        for lineno, line in enumerate(file.read_text().splitlines()):
+            for match in regex_diagnosis.findall(line):
+                if match.endswith("_"):
+                    # Ignore some name fragments which are actually concatenated
+                    # with other stuff..
+                    continue
+                yield match, file.relative_to(project_dir), lineno
+
+        name = file.name.removesuffix(".disabled").removesuffix(".py")
+        yield (
+            f"diagnosis_description_{name.split('-')[-1]}",
+            file.relative_to(project_dir),
+            0,
+        )
+
+    # For each migration, expect to find "migration_description_<name>"
+    migration_files: list[Path] = [
+        *(srcdir / "migrations").glob("m0*.py"),
+        *(srcdir / "migrations").glob("m0*.py.disabled"),
+    ]
+    for file in migration_files:
+        name = file.name.removesuffix(".disabled").removesuffix(".py").removeprefix("m")
+        yield f"migration_description_{name}", file.relative_to(project_dir), 0
+
+
+def check_from_legacy(project_dir: Path, catalog: Catalog) -> None:
+    en_json = project_dir / "locales" / "en.json"
+    legacy = json.load(en_json.open())
+
+    new_keys = [message.id for message in catalog]
+
+    for key in legacy:
+        if key not in new_keys:
+            print(f"missing key '{key}'")
+
+    for key in new_keys:
+        if key == "":
+            continue
+        if key not in legacy:
+            print(f"unknown key '{key}'")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-i", "--input", type=Path, default=PROJECT_ROOT, help="Project directory"
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        default=None,
+        help="Output pot file, default = <input>/po/yunohost.pot",
+    )
+    args = parser.parse_args()
+
+    project_root = args.input
+    potfile = args.output or project_root / "po" / "yunohost.pot"
+
+    print(f"Writing catalog to {potfile}")
+    catalog = gen_catalog(project_root)
+    check_from_legacy(project_root, catalog)
+    write_po(potfile.open("wb"), catalog)
+
+
+if __name__ == "__main__":
+    main()
