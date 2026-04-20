@@ -21,7 +21,6 @@
 import gettext
 import os
 from pathlib import Path
-from typing import Any
 
 from moulinette.interfaces.cli import get_locale
 
@@ -58,7 +57,7 @@ class M18N:
         """
         return moulinette_m18n.g(key, *args, **kwargs)
 
-    def n(self, key: str, *args: Any, **kwargs: Any) -> str:
+    def n(self, key: str, *args: str, **kwargs: str | int | None | Exception) -> str:
         self._set_locale()
         message = gettext.gettext(key)
         # TODO: try except formatting
