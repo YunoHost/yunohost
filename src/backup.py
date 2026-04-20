@@ -769,6 +769,9 @@ class BackupManager:
             method_name = (
                 method.method if hasattr(method, "method") else method.method_name
             )
+            # i18n: backup_applying_method_copy
+            # i18n: backup_applying_method_custom
+            # i18n: backup_applying_method_tar
             logger.debug(
                 m18n.n(
                     "backup_applying_method_" + method.method_name,
@@ -776,6 +779,9 @@ class BackupManager:
                 )
             )
             method.mount_and_backup()
+            # i18n: backup_method_copy_finished
+            # i18n: backup_method_custom_finished
+            # i18n: backup_method_tar_finished
             logger.debug(
                 m18n.n(
                     "backup_method_" + method.method_name + "_finished",
