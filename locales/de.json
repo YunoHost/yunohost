@@ -567,7 +567,6 @@
     "mailbox_used_space_dovecot_down": "Der Dovecot-Mailbox-Dienst muss aktiv sein, wenn du den von der Mailbox belegten Speicher abrufen willst",
     "main_domain_change_failed": "Die Hauptdomain konnte nicht geändert werden",
     "main_domain_changed": "Die Hauptdomain wurde geändert",
-    "migration_0027_patch_yunohost_conflicts": "Patch anwenden, um das Konfliktproblem zu umgehen…",
     "migration_ldap_backup_before_migration": "Vor der eigentlichen Migration ein Backup der LDAP-Datenbank und der Applikations-Einstellungen erstellen.",
     "migration_ldap_can_not_backup_before_migration": "Die Sicherung des Systems konnte nicht abgeschlossen werden, bevor die Migration fehlschlug. Fehler: {error}",
     "migration_ldap_migration_failed_trying_to_rollback": "Migrieren war nicht möglich… Versuch, ein Rollback des Systems durchzuführen.",

@@ -91,7 +91,6 @@
     "group_updated": "Skupina '{group}' upravena",
     "group_user_already_in_group": "Uživatel {user} je již ve skupině {group}",
     "invalid_url": "Nedá se připojit k {url}... možná je služba mimo provoz nebo nejste správně připojeni k internetu přes IPv4/IPv6.",
-    "migration_0027_yunohost_upgrade": "Spouštění aktualizace jádra YunoHost…",
     "operation_interrupted": "Operace byla manuálně přerušena?",
     "password_listed": "Toto heslo je jedním z nejpoužívanějších na světě. Zvolte si prosím něco jedinečnějšího.",
     "password_too_simple_1": "Heslo musí být aspoň 8 znaků dlouhé",
