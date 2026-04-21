@@ -1,0 +1,37 @@
+#!/usr/bin/env python3
+
+import argparse
+import subprocess
+from pathlib import Path
+
+from babel.messages.pofile import read_po, write_po
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+DOMAIN = "yunohost"
+
+
+def babel_msgcat(po: Path) -> None:
+    catalog = read_po(po.open("r"))
+    write_po(po.open("wb"), catalog)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-i", "--input", type=Path, default=SCRIPT_DIR, help="Input po directory"
+    )
+    args = parser.parse_args()
+
+    linguas: Path = args.input / "LINGUAS"
+    pot = args.input / f"{DOMAIN}.pot"
+    for locale in linguas.read_text().split():
+        po = args.input / f"{locale}.po"
+        subprocess.check_call(["msgmerge", "-U", po, pot, "--width", "76"])
+        # Delete temporary file from msgmerge
+        (args.input / f"{locale}.po~").unlink(missing_ok=True)
+        # Ensure pybabel format
+        babel_msgcat(po)
+
+
+if __name__ == "__main__":
+    main()
