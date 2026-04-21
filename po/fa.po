@@ -1,0 +1,4138 @@
+# Persian translations for yunohost package.
+# Copyright (C) 2014-2026 YunoHost
+# ssh <ssh@yunohost.org>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: yunohost 13.0.1\n"
+"Report-Msgid-Bugs-To: ssh@yunohost.org\n"
+"POT-Creation-Date: 2026-04-21 21:34+0200\n"
+"PO-Revision-Date: 2026-04-21 21:34+0200\n"
+"Last-Translator: Automatically generated\n"
+"Language: fa\n"
+"Language-Team: none\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: conf/yunohost/services.yml
+msgid "service_description_dnsmasq"
+msgstr "کنترل تفکیک پذیری نام دامنه (DNS)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_dovecot"
+msgstr ""
+"به کلاینت های ایمیل اجازه می دهد تا به ایمیل دسترسی/واکشی داشته باشند (از"
+" طریق IMAP و POP3)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_fail2ban"
+msgstr "در برابر حملات وحشیانه و انواع دیگر حملات از طریق اینترنت محافظت می کند"
+
+#: conf/yunohost/services.yml
+msgid "service_description_mysql"
+msgstr "ذخیره داده های کاره (پایگاه داده SQL)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_nginx"
+msgstr ""
+"به همه وب سایت هایی که روی سرور شما میزبانی شده اند سرویس می دهد یا "
+"دسترسی به آنها را فراهم می کند"
+
+#: conf/yunohost/services.yml
+msgid "service_description_opendkim"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_postfix"
+msgstr "برای ارسال و دریافت ایمیل استفاده می شود"
+
+#: conf/yunohost/services.yml
+msgid "service_description_postgresql"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_redis-server"
+msgstr ""
+"یک پایگاه داده تخصصی برای دسترسی سریع به داده‌ها ، صف وظیفه و ارتباط بین "
+"کاره‌ها استفاده می شود"
+
+#: conf/yunohost/services.yml
+msgid "service_description_slapd"
+msgstr "کاربران ، دامنه ها و اطلاعات مرتبط را ذخیره می کند"
+
+#: conf/yunohost/services.yml
+msgid "service_description_ssh"
+msgstr ""
+"به شما امکان می دهد از راه دور از طریق ترمینال (پروتکل SSH) به سرور خود "
+"متصل شوید"
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunohost-portal-api"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunohost-api"
+msgstr "تعاملات بین رابط وب YunoHost و سیستم را مدیریت می کند"
+
+#: conf/yunohost/services.yml
+msgid "service_description_nftables"
+msgstr "باز و بسته شدن پورت های اتصال به سرویس ها را مدیریت می کند"
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunomdns"
+msgstr ""
+"به شما امکان می دهد با استفاده از 'yunohost.local' در شبکه محلی به سرور "
+"خود برسید"
+
+#: share/actionsmap.yml
+msgid "pattern_username"
+msgstr "باید فقط حروف الفبایی کوچک و خط زیر باشد"
+
+#: share/actionsmap.yml
+msgid "ask_fullname"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "pattern_fullname"
+msgstr ""
+
+#: share/actionsmap.yml src/user.py:496
+msgid "ask_password"
+msgstr "گذرواژه"
+
+#: share/actionsmap.yml
+msgid "good_practices_about_user_password"
+msgstr ""
+"گذرواژه باید حداقل 8 کاراکتر باشد - اگرچه استفاده از گذرواژه طولانی تر "
+"تمرین خوبی است (به عنوان مثال عبارت عبور) و/یا استفاده از تنوع کاراکترها "
+"(بزرگ ، کوچک ، رقم و کاراکتر های خاص)."
+
+#: share/actionsmap.yml
+msgid "pattern_password"
+msgstr "باید حداقل 3 کاراکتر داشته باشد"
+
+#: share/actionsmap.yml
+msgid "pattern_domain"
+msgstr "باید یک نام دامنه معتبر باشد (به عنوان مثال my-domain.org)"
+
+#: share/actionsmap.yml
+msgid "pattern_mailbox_quota"
+msgstr ""
+"باید اندازه ای با پسوند b / k / M / G / T یا 0 داشته باشد تا سهمیه نداشته"
+" باشد"
+
+#: share/actionsmap.yml
+msgid "pattern_email"
+msgstr ""
+"باید یک آدرس ایمیل معتبر باشد ، بدون نماد '+' (به عنوان مثال "
+"someone@example.com)"
+
+#: share/actionsmap.yml
+msgid "pattern_email_forward"
+msgstr ""
+"باید یک آدرس ایمیل معتبر باشد ، نماد '+' پذیرفته شده است (به عنوان مثال "
+"someone+tag@example.com)"
+
+#: share/actionsmap.yml
+msgid "ask_new_domain"
+msgstr "دامنه جدید"
+
+#: share/actionsmap.yml
+msgid "ask_new_path"
+msgstr "مسیر جدید"
+
+#: share/actionsmap.yml
+msgid "pattern_backup_archive_name"
+msgstr ""
+"باید یک نام فایل معتبر با حداکثر 30 کاراکتر حرف و عدد و -_ باشد. فقط "
+"کاراکترها"
+
+#: share/actionsmap.yml
+msgid "pattern_port_or_range"
+msgstr ""
+"باید یک شماره پورت معتبر (یعنی 0-65535) یا محدوده پورت (به عنوان مثال "
+"100: 200) باشد"
+
+#: share/actionsmap.yml
+msgid "ask_new_admin_password"
+msgstr "گذرواژهٔ جدید مدیریت"
+
+#: share/actionsmap.yml
+msgid "good_practices_about_admin_password"
+msgstr ""
+"اکنون می خواهید گذرواژه جدیدی برای مدیریت تعریف کنید. گذرواژه باید حداقل "
+"8 کاراکتر باشد - اگرچه استفاده از گذرواژه طولانی تر تمرین خوبی است (به "
+"عنوان مثال عبارت عبور) و/یا استفاده از تنوع کاراکترها (بزرگ ، کوچک ، رقم "
+"و کاراکتر های خاص)."
+
+#: share/actionsmap.yml
+msgid "ask_main_domain"
+msgstr "دامنه اصلی"
+
+#: share/actionsmap.yml
+msgid "ask_admin_username"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "ask_admin_fullname"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_entrypoint"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_application_key"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_application_secret"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_consumer_key"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_token"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_api_protocol"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_key"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_secret"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_feature_name"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_mail_out"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_mail_in"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_default_app"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_name"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_enable_public_apps_page"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_enable_public_apps_page_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_show_other_domains_apps"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_title"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_logo"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_logo_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_theme"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_theme_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_tile_theme"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine_name"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_user_intro"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_user_intro_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_public_intro"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_public_intro_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_custom_css"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_custom_css_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_dns_name"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_name"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_summary"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_validity"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_issuer"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_acme_eligible"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_acme_eligible_explain"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_no_checks"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_install"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_renew"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config__core_name"
+msgstr ""
+
+#: share/config_app.toml src/app.py:2448
+msgid "app_config_permission_location"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_label"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_description"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_description_help"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_show_tile"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_logo"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_logo_help"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_allowed"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_password_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_admin_strength"
+msgstr "الزامات گذرواژه رمز عبور مدیر"
+
+#: share/config_global.toml
+msgid "global_settings_setting_admin_strength_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_user_strength"
+msgstr "الزامات قدرت گذرواژه کاربر"
+
+#: share/config_global.toml
+msgid "global_settings_setting_user_strength_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_passwordless_sudo"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_compatibility"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_compatibility_help"
+msgstr ""
+"سازگاری در مقابل مبادله امنیتی برای کارساز SSH. روی رمزها (و سایر جنبه "
+"های مرتبط با امنیت) تأثیر می گذارد"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_port"
+msgstr "درگاه SSH"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_port_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_password_authentication"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_password_authentication_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_redirect_to_https"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_redirect_to_https_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_compatibility"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_compatibility_help"
+msgstr ""
+"سازگاری در مقابل مبادله امنیتی برای وب‌کارساز انجینکس. روی رمزها (و سایر "
+"جنبه های مرتبط با امنیت) تأثیر می گذارد"
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_compatibility"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_compatibility_help"
+msgstr ""
+"سازگاری در مقابل مبادله امنیتی برای کارساز Postfix. روی رمزها (و سایر "
+"جنبه های مرتبط با امنیت) تأثیر می گذارد"
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_enabled_help"
+msgstr "فقط به برخی از IP ها اجازه دسترسی به مدیریت وب را بدهید."
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_help"
+msgstr "آدرس های IP که مجاز به دسترسی مدیر وب هستند. جدا شده با ویرگول."
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_alias"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_alias_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_forward"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_forward_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_access_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_access_explain"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_password"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_password_confirm"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_experimental_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_experimental_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_experimental_enabled_help"
+msgstr ""
+"فعال کردن ویژگی های امنیتی آزمایشی (اگر نمی دانید در حال انجام چه کاری "
+"هستید این کار را انجام ندهید!)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_email_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_enabled_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_allow_ipv6"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_allow_ipv6_help"
+msgstr "اجازه دهید از IPv6 برای دریافت و ارسال نامه استفاده شود"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_enabled_help"
+msgstr ""
+"میزبان رله SMTP برای ارسال نامه به جای این نمونه yunohost استفاده می شود."
+" اگر در یکی از این شرایط قرار دارید مفید است: پورت 25 شما توسط ارائه "
+"دهنده ISP یا VPS شما مسدود شده است، شما یک IP مسکونی دارید که در DUHL ذکر"
+" شده است، نمی توانید DNS معکوس را پیکربندی کنید یا این سرور مستقیماً در "
+"اینترنت نمایش داده نمی شود و می خواهید از یکی دیگر برای ارسال ایمیل "
+"استفاده کنید."
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_host"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_port"
+msgstr "پورت رله SMTP"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_user"
+msgstr "حساب کاربری رله SMTP"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_password"
+msgstr "گذرواژهٔ میزبان رله SMTP"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_domains"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_domains_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_emails_whitelisted"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_emails_whitelisted_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_antispam_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_enable_blocklists"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_enable_blocklists_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_misc_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_compress_tar_archives"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_compress_tar_archives_help"
+msgstr ""
+"هنگام ایجاد پشتیبان جدید ، بایگانی های فشرده (.tar.gz) را به جای بایگانی "
+"های فشرده نشده (.tar) انتخاب کنید. N.B. : فعال کردن این گزینه به معنای "
+"ایجاد آرشیوهای پشتیبان سبک تر است ، اما روش پشتیبان گیری اولیه به طور "
+"قابل توجهی طولانی تر و سنگین تر بر روی CPU خواهد بود."
+
+#: share/config_global.toml
+msgid "global_settings_setting_network_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_exposure"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_exposure_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_enabled_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_list"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_list_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_enabled_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_explain"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_list"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_list_help"
+msgstr ""
+
+#: src/__init__.py:142
+msgid "yunohost_not_installed"
+msgstr ""
+"YunoHost به درستی نصب نشده است. لطفا 'yunohost tools postinstall' را اجرا"
+" کنید"
+
+#: src/app.py:328
+msgid "app_upgrade_url_required"
+msgstr ""
+
+#: src/app.py:355
+msgid "app_upgrade_specific_channel_msg"
+msgstr ""
+
+#: src/app.py:382
+msgid "app_upgrade_bad_quality"
+msgstr ""
+
+#: src/app.py:398
+msgid "app_upgrade_up_to_date"
+msgstr ""
+
+#: src/app.py:595
+msgid "app_change_url_no_script"
+msgstr ""
+"برنامه '{app_name}' هنوز از تغییر URL پشتیبانی نمی کند. شاید باید آن را "
+"ارتقا دهید."
+
+#: src/app.py:612
+msgid "app_change_url_identical_domains"
+msgstr ""
+"دامنه /url_path قدیمی و جدیدیکسان هستند ('{domain}{path}') ، کاری برای "
+"انجام دادن نیست."
+
+#: src/app.py:621
+msgid "app_change_url_require_full_domain"
+msgstr ""
+
+#: src/app.py:672
+msgid "app_change_url_script_failed"
+msgstr ""
+
+#: src/app.py:674
+msgid "app_change_url_failed"
+msgstr ""
+
+#: src/app.py:705
+msgid "app_change_url_success"
+msgstr "{app} URL اکنون {domain} {path} است"
+
+#: src/app.py:772
+msgid "disk_space_not_sufficient_update"
+msgstr "برای به روزرسانی این برنامه فضای دیسک کافی باقی نمانده است"
+
+#: src/app.py:800
+msgid "app_upgrade_cli_url_required"
+msgstr ""
+
+#: src/app.py:820 src/app.py:830
+msgid "app_upgrade_cli_will_upgrade"
+msgstr ""
+
+#: src/app.py:839
+msgid "app_upgrade_cli_will_force_upgrade"
+msgstr ""
+
+#: src/app.py:847
+msgid "app_upgrade_cli_up_to_date"
+msgstr ""
+
+#: src/app.py:853
+msgid "app_upgrade_cli_bad_quality"
+msgstr ""
+
+#: src/app.py:880
+msgid "app_upgrade_app_name"
+msgstr "در حال ارتقاء {app}…"
+
+#: src/app.py:946
+msgid "backup_before_upgrade_deleted_because_replaced_by_newer_backup"
+msgstr ""
+
+#: src/app.py:1014
+msgid "app_upgrade_script_failed"
+msgstr "خطایی در داخل اسکریپت ارتقاء برنامه رخ داده است"
+
+#: src/app.py:1016 src/app.py:1040
+msgid "app_upgrade_failed"
+msgstr "{app} ارتقاء نیافت: {error}"
+
+#: src/app.py:1093
+msgid "app_upgrade_failed_and_broke_the_system"
+msgstr ""
+
+#: src/app.py:1095
+msgid "app_upgrade_broke_the_system"
+msgstr ""
+
+#: src/app.py:1102
+msgid "app_upgraded"
+msgstr "{app} ارتقا یافت"
+
+#: src/app.py:1151 src/tools.py:580
+msgid "apps_already_up_to_date"
+msgstr "همه کاره‌ها در حال حاضر به‌روز هستند"
+
+#: src/app.py:1160
+msgid "apps_no_target_can_be_upgraded"
+msgstr ""
+
+#: src/app.py:1170
+msgid "app_upgrade_several_apps"
+msgstr "کاره‌‌های زیر ارتقا می یابند: {apps}"
+
+#: src/app.py:1234
+msgid "app_upgrade_continuing_with_other_apps"
+msgstr ""
+
+#: src/app.py:1240
+msgid "apps_upgrade_cancelled"
+msgstr ""
+
+#: src/app.py:1340
+msgid "disk_space_not_sufficient_install"
+msgstr "فضای کافی برای نصب این برنامه در دیسک باقی نمانده است"
+
+#: src/app.py:1354
+msgid "app_id_invalid"
+msgstr "شناسه برنامه نامعتبر است"
+
+#: src/app.py:1411
+msgid "app_start_install"
+msgstr "در حال نصب {app}…"
+
+#: src/app.py:1501
+msgid "app_install_script_failed"
+msgstr "خطایی در درون اسکریپت نصب برنامه رخ داده است"
+
+#: src/app.py:1503 src/app.py:1514
+msgid "app_install_failed"
+msgstr "نصب {app} امکان پذیر نیست: {error}"
+
+#: src/app.py:1538
+msgid "app_remove_after_failed_install"
+msgstr "حذف برنامه در پی شکست نصب…"
+
+#: src/app.py:1570 src/app.py:1694 src/backup.py:1390 src/hook.py:576
+#: src/service.py:636 src/settings.py:193 src/utils/configpanel.py:641
+#: src/utils/configpanel.py:730
+msgid "unexpected_error"
+msgstr "مشکل غیر منتظره ای پیش آمده: {error}"
+
+#: src/app.py:1578 src/app.py:1720
+msgid "app_not_properly_removed"
+msgstr "{app} به درستی حذف نشده است"
+
+#: src/app.py:1610
+msgid "installation_complete"
+msgstr "عملیّات نصب کامل شد"
+
+#: src/app.py:1656
+msgid "app_start_remove"
+msgstr "در حال حذف {app}…"
+
+#: src/app.py:1717
+msgid "app_removed"
+msgstr "{app} حذف نصب شد"
+
+#: src/app.py:1849
+msgid "app_already_installed_cant_change_url"
+msgstr ""
+"این برنامه قبلاً نصب شده است. URL فقط با این عملکرد قابل تغییر نیست. در "
+"صورت موجود بودن برنامه `app changeurl` را بررسی کنید."
+
+#: src/app.py:2087
+msgid "ssowat_conf_generated"
+msgstr "پیکربندی SSOwat بازسازی شد"
+
+#: src/app.py:2223 src/utils/form.py:996 src/utils/form.py:1312
+#: src/utils/form.py:1325 src/utils/form.py:1700 src/utils/form.py:1878
+#: src/utils/form.py:2305
+msgid "app_argument_invalid"
+msgstr "یک مقدار معتبر انتخاب کنید برای استدلال '{name}':{error}"
+
+#: src/app.py:2268
+msgid "app_config_unable_to_read"
+msgstr ""
+
+#: src/app.py:2270
+msgid "app_config_unable_to_apply"
+msgstr ""
+
+#: src/app.py:2272
+msgid "app_action_failed"
+msgstr ""
+
+#: src/app.py:2468
+msgid "app_config_permission_allowed_warn_protected"
+msgstr ""
+
+#: src/app_catalog.py:194
+msgid "apps_catalog_updating"
+msgstr "در حال به روز رسانی کاتالوگ برنامه…"
+
+#: src/app_catalog.py:216
+msgid "apps_catalog_failed_to_download"
+msgstr "بارگیری کاتالوگ برنامه {apps_catalog} امکان پذیر نیست: {error}"
+
+#: src/app_catalog.py:275
+msgid "apps_catalog_update_success"
+msgstr "کاتالوگ برنامه به روز شد!"
+
+#: src/app_catalog.py:329
+msgid "apps_catalog_obsolete_cache"
+msgstr "حافظه پنهان کاتالوگ برنامه خالی یا منسوخ شده است."
+
+#: src/backup.py:363 src/backup.py:2159
+msgid "backup_output_directory_not_empty"
+msgstr "شما باید یک دایرکتوری خروجی خالی انتخاب کنید"
+
+#: src/backup.py:386
+msgid "backup_hook_unknown"
+msgstr "قلاب پشتیبان '{hook}' ناشناخته است"
+
+#: src/backup.py:403
+msgid "unbackup_app"
+msgstr "{app} ذخیره نمی شود"
+
+#: src/backup.py:418
+msgid "backup_with_no_backup_script_for_app"
+msgstr "برنامه '{app}' فاقد اسکریپت پشتیبان است. نادیده گرفتن."
+
+#: src/backup.py:422
+msgid "backup_with_no_restore_script_for_app"
+msgstr ""
+"{app} فاقد اسکریپت بازگردانی است ، نمی توانید پشتیبان گیری این برنامه را "
+"به طور خودکار بازیابی کنید."
+
+#: src/backup.py:502
+msgid "backup_csv_creation_failed"
+msgstr "فایل CSV مورد نیاز برای بازیابی ایجاد نشد"
+
+#: src/backup.py:508
+msgid "backup_csv_addition_failed"
+msgstr "فایلهای پشتیبان به فایل CSV اضافه نشد"
+
+#: src/backup.py:547
+msgid "backup_no_file_collected"
+msgstr ""
+
+#: src/backup.py:616
+msgid "backup_running_hooks"
+msgstr "درحال اجرای قلاب پشتیبان گیری…"
+
+#: src/backup.py:669 src/backup.py:1037
+msgid "restore_hook_unavailable"
+msgstr ""
+"اسکریپت ترمیم و بازسازی برای '{part}' در سیستم شما در دسترس نیست و همچنین"
+" در بایگانی نیز وجود ندارد"
+
+#: src/backup.py:673
+msgid "backup_system_part_failed"
+msgstr "از بخش سیستم '{part}' پشتیبان گیری نشد"
+
+#: src/backup.py:722
+msgid "app_start_backup"
+msgstr "در حال جمع آوری فایل ها برای پشتیبان گیری {app}…"
+
+#: src/backup.py:744
+msgid "backup_app_script_failed"
+msgstr ""
+
+#: src/backup.py:895
+msgid "restore_backup_too_old"
+msgstr ""
+"این بایگانی پشتیبان را نمی توان بازیابی کرد زیرا با نسخه خیلی قدیمی "
+"YunoHost تهیه شده است."
+
+#: src/backup.py:930 src/backup.py:1962 src/backup.py:2438 src/backup.py:2453
+msgid "backup_archive_cant_retrieve_info_json"
+msgstr ""
+"اطلاعات مربوط به بایگانی '{archive}' بارگیری نشد… info.json بازیابی نمی "
+"شود (یا json معتبری نیست)."
+
+#: src/backup.py:986
+msgid "restore_cleaning_failed"
+msgstr "فهرست بازسازی موقت پاک نشد"
+
+#: src/backup.py:1004
+msgid "backup_archive_system_part_not_available"
+msgstr "بخش سیستم '{part}' در این نسخه پشتیبان در دسترس نیست"
+
+#: src/backup.py:1066
+msgid "backup_archive_app_not_found"
+msgstr "در بایگانی پشتیبان {app} پیدا نشد"
+
+#: src/backup.py:1079 src/backup.py:1084
+msgid "restore_already_installed_apps"
+msgstr "کاره‌های زیر به دلیل نصب بودن قابل بازیابی نیستند: {apps}"
+
+#: src/backup.py:1111 src/backup.py:1120
+msgid "restore_removing_tmp_dir_failed"
+msgstr "پوشه موقت قدیمی حذف نشد"
+
+#: src/backup.py:1185
+msgid "restore_may_be_not_enough_disk_space"
+msgstr ""
+"به نظر می رسد سیستم شما فضای کافی ندارد (فضای آزاد: {free_space} B ، فضای"
+" مورد نیاز: {needed_space} B ، حاشیه امنیتی: {margin} B)"
+
+#: src/backup.py:1192
+msgid "restore_not_enough_disk_space"
+msgstr ""
+"فضای کافی موجود نیست (فضا: {free_space} B ، فضای مورد نیاز: "
+"{needed_space} B ، حاشیه امنیتی: {margin} B)"
+
+#: src/backup.py:1240
+msgid "restore_running_hooks"
+msgstr "در حال اجرای قلاب های ترمیم و بازیابی…"
+
+#: src/backup.py:1272 src/backup.py:1278
+msgid "restore_system_part_failed"
+msgstr "بخش سیستم '{part}' بازیابی و ترمیم نشد"
+
+#: src/backup.py:1338
+msgid "restore_already_installed_app"
+msgstr "کاره‌ای با شناسه '{app}' در حال حاضر نصب شده است"
+
+#: src/backup.py:1347
+msgid "app_start_restore"
+msgstr "درحال بازیابی {app}…"
+
+#: src/backup.py:1361
+msgid "unrestore_app"
+msgstr "{app} بازیابی نمی شود"
+
+#: src/backup.py:1391 src/backup.py:1445
+msgid "app_restore_failed"
+msgstr "{app} بازیابی نشد: {error}"
+
+#: src/backup.py:1403
+msgid "restore_running_app_script"
+msgstr "ترمیم و بازیابی کاره '{app}'…"
+
+#: src/backup.py:1443
+msgid "app_restore_script_failed"
+msgstr "خطایی در داخل اسکریپت بازیابی برنامه رخ داده است"
+
+#: src/backup.py:1568 src/backup.py:1572
+msgid "backup_abstract_method"
+msgstr "این روش پشتیبان گیری هنوز اجرا نشده است"
+
+#: src/backup.py:1641 src/backup.py:2589
+msgid "backup_cleaning_failed"
+msgstr "پوشه موقت پشتیبان گیری پاکسازی نشد"
+
+#: src/backup.py:1662
+msgid "not_enough_disk_space"
+msgstr "فضای آزاد کافی در '{path}' وجود ندارد"
+
+#: src/backup.py:1702
+msgid "backup_couldnt_bind"
+msgstr "نمی توان {src} را به {dest} متصل کرد."
+
+#: src/backup.py:1765
+msgid "backup_ask_for_copying_if_needed"
+msgstr ""
+"آیا می خواهید پشتیبان گیری را با استفاده از {size} مگابایت به طور موقت "
+"انجام دهید؟ (این روش استفاده می شود زیرا برخی از پرونده ها با استفاده از "
+"روش کارآمدتری تهیه نمی شوند.)"
+
+#: src/backup.py:1771
+msgid "backup_unable_to_organize_files"
+msgstr "نمی توان از روش سریع برای سازماندهی فایل ها در بایگانی استفاده کرد"
+
+#: src/backup.py:1779
+msgid "backup_copying_to_organize_the_archive"
+msgstr "در حال کپی {size} مگابایت برای سازماندهی بایگانی"
+
+#: src/backup.py:1826
+msgid "backup_no_uncompress_archive_dir"
+msgstr "چنین فهرست بایگانی فشرده نشده ایی وجود ندارد"
+
+#: src/backup.py:1840
+msgid "backup_cant_mount_uncompress_archive"
+msgstr "بایگانی فشرده سازی نشده را نمی توان به عنوان حفاظت از نوشتن مستقر کرد"
+
+#: src/backup.py:1890 src/backup.py:1941
+msgid "backup_archive_open_failed"
+msgstr "بایگانی پشتیبان باز نشد"
+
+#: src/backup.py:1901
+msgid "backup_archive_writing_error"
+msgstr ""
+"فایل های '{source}' (که در بایگانی '{dest}' نامگذاری شده اند) برای "
+"پشتیبان گیری به بایگانی فشرده '{archive}' اضافه نشد"
+
+#: src/backup.py:1908
+msgid "backup_creation_failed"
+msgstr "نسخه پشتیبان بایگانی ایجاد نشد"
+
+#: src/backup.py:1931
+msgid "restore_extracting"
+msgstr "استخراج فایل های مورد نیاز از بایگانی…"
+
+#: src/backup.py:1947 src/backup.py:2423
+msgid "backup_archive_corrupted"
+msgstr "به نظر می رسد بایگانی پشتیبان '{archive}' خراب است: {error}"
+
+#: src/backup.py:2070
+msgid "backup_custom_backup_error"
+msgstr "روش پشتیبان گیری سفارشی نمی تواند مرحله 'backup' را پشت سر بگذارد"
+
+#: src/backup.py:2087
+msgid "backup_custom_mount_error"
+msgstr "روش پشتیبان گیری سفارشی نمی تواند از مرحله 'mount' عبور کند"
+
+#: src/backup.py:2137
+msgid "backup_archive_name_exists"
+msgstr "بایگانی پشتیبان با این نام در حال حاضر وجود دارد."
+
+#: src/backup.py:2152
+msgid "backup_output_directory_forbidden"
+msgstr ""
+"دایرکتوری خروجی دیگری را انتخاب کنید. پشتیبان گیری نمی تواند در /bin، "
+"/boot، /dev ، /etc ، /lib ، /root ، /run ، /sbin ، /sys ، /usr ، /var یا "
+"/home/yunohost.backup/archives ایجاد شود"
+
+#: src/backup.py:2156
+msgid "backup_output_directory_required"
+msgstr "شما باید یک پوشه خروجی برای نسخه پشتیبان تهیه کنید"
+
+#: src/backup.py:2204
+msgid "backup_actually_backuping"
+msgstr "ایجاد آرشیو پشتیبان از پرونده های جمع آوری شده…"
+
+#: src/backup.py:2207
+msgid "backup_create_size_estimation"
+msgstr "بایگانی حاوی حدود {size} داده است."
+
+#: src/backup.py:2213
+msgid "backup_created"
+msgstr "نسخه پشتیبان ایجاد شد"
+
+#: src/backup.py:2265 src/tools.py:169
+msgid "yunohost_already_installed"
+msgstr "YunoHost قبلاً نصب شده است"
+
+#: src/backup.py:2270
+msgid "restore_confirm_yunohost_installed"
+msgstr ""
+"آیا واقعاً می خواهید سیستمی که هم اکنون نصب شده را بازیابی کنید؟ "
+"[{answers}]"
+
+#: src/backup.py:2278
+msgid "restore_failed"
+msgstr "سیستم بازیابی نشد"
+
+#: src/backup.py:2284
+msgid "backup_mount_archive_for_restore"
+msgstr "در حال آماده سازی بایگانی برای بازگردانی…"
+
+#: src/backup.py:2290
+msgid "restore_complete"
+msgstr "مرمت به پایان رسید"
+
+#: src/backup.py:2292
+msgid "restore_nothings_done"
+msgstr "هیچ چیز ترمیم و بازسازی نشد"
+
+#: src/backup.py:2353 src/backup.py:2399 src/backup.py:2508
+msgid "backup_archive_name_unknown"
+msgstr "بایگانی پشتیبان محلی ناشناخته با نام '{name}'"
+
+#: src/backup.py:2362 src/backup.py:2408
+msgid "backup_archive_broken_link"
+msgstr "دسترسی به بایگانی پشتیبان امکان پذیر نیست (پیوند خراب به {path})"
+
+#: src/backup.py:2531
+msgid "backup_delete_error"
+msgstr "'{path}' حذف نشد"
+
+#: src/backup.py:2540
+msgid "backup_deleted"
+msgstr "نسخه پشتیبان حذف شد"
+
+#: src/backup.py:2552
+msgid "backup_output_symlink_dir_broken"
+msgstr ""
+"فهرست بایگانی شما '{path}' یک پیوند symlink خراب است. شاید فراموش کرده "
+"اید که مجدداً محل ذخیره سازی که به آن اشاره می کند را دوباره نصب یا وصل "
+"کنید."
+
+#: src/certificate.py:179
+msgid "certmanager_attempt_to_replace_valid_cert"
+msgstr ""
+"شما در حال تلاش برای بازنویسی یک گواهی خوب و معتبر برای دامنه {domain} "
+"هستید! (استفاده از --force برای bypass)"
+
+#: src/certificate.py:211
+msgid "domain_cert_gen_failed"
+msgstr "گواهی تولید نشد"
+
+#: src/certificate.py:239
+msgid "certmanager_cert_install_success_selfsigned"
+msgstr "گواهی خود امضا شده اکنون برای دامنه '{domain}' نصب شده است"
+
+#: src/certificate.py:251
+msgid "certmanager_cert_install_failed_selfsigned"
+msgstr ""
+
+#: src/certificate.py:281
+msgid "certmanager_domain_cert_not_selfsigned"
+msgstr ""
+"گواهی دامنه {domain} خود امضا نشده است. آیا مطمئن هستید که می خواهید آن "
+"را جایگزین کنید؟ (برای این کار از '--force' استفاده کنید.)"
+
+#: src/certificate.py:315
+msgid "certmanager_cert_install_success"
+msgstr "هم اینک گواهی اجازه رمزگذاری برای دامنه '{domain}' نصب شده است"
+
+#: src/certificate.py:321 src/domain.py:439
+msgid "certmanager_cert_install_failed"
+msgstr ""
+
+#: src/certificate.py:360 src/certificate.py:392
+msgid "certmanager_acme_not_configured_for_domain"
+msgstr ""
+"در حال حاضر نمی توان چالش ACME را برای {domain} اجرا کرد زیرا nginx conf "
+"آن فاقد قطعه کد مربوطه است… لطفاً مطمئن شوید که پیکربندی nginx شما به روز"
+" است با استفاده از دستور `yunohost tools regen-conf nginx --dry-run "
+"--with-diff`."
+
+#: src/certificate.py:380
+msgid "certmanager_attempt_to_renew_valid_cert"
+msgstr ""
+"گواهی دامنه '{domain}' در حال انقضا نیست! (اگر می دانید چه کار می کنید می"
+" توانید از --force استفاده کنید)"
+
+#: src/certificate.py:386
+msgid "certmanager_attempt_to_renew_nonLE_cert"
+msgstr ""
+"گواهی دامنه '{domain}' توسط Let's Encrypt صادر نشده است. به طور خودکار "
+"تمدید نمی شود!"
+
+#: src/certificate.py:443
+msgid "certmanager_cert_renew_success"
+msgstr "گواهی اجازه رمزنگاری برای دامنه '{domain}' تمدید شد"
+
+#: src/certificate.py:448
+msgid "certmanager_cert_renew_failed"
+msgstr ""
+
+#: src/certificate.py:541
+msgid "certmanager_hit_rate_limit"
+msgstr ""
+"اخیراً تعداد زیادی گواهی برای این مجموعه دقیق از دامنه ها {domain} صادر "
+"شده است. لطفاً بعداً دوباره امتحان کنید. برای جزئیات بیشتر به "
+"https://letsencrypt.org/docs/rate-limits/ مراجعه کنید"
+
+#: src/certificate.py:544 src/certificate.py:549
+msgid "certmanager_cert_signing_failed"
+msgstr "گواهی جدید امضا نشده است"
+
+#: src/certificate.py:583
+msgid "certmanager_certificate_fetching_or_enabling_failed"
+msgstr "تلاش برای استفاده از گواهینامه جدید برای {domain} جواب نداد…"
+
+#: src/certificate.py:649
+msgid "certmanager_no_cert_file"
+msgstr "فایل گواهینامه برای دامنه {domain} خوانده نشد (فایل: {file})"
+
+#: src/certificate.py:663
+msgid "certmanager_cannot_read_cert"
+msgstr ""
+"هنگام باز کردن گواهینامه فعلی مشکلی پیش آمده است برای دامنه {domain} "
+"(فایل: {file}) ، علّت: {reason}"
+
+#: src/certificate.py:843
+msgid "certmanager_domain_not_diagnosed_yet"
+msgstr ""
+"هنوز هیچ نتیجه تشخیصی و عیب یابی دامنه {domain} وجود ندارد. لطفاً در بخش "
+"عیب یابی ، دسته های 'سوابق ساناد' و 'وب'مجدداً عیب یابی را اجرا کنید تا "
+"بررسی شود که آیا دامنه‌ای برای گواهی اجازه رمزنگاری آماده است. (یا اگر می"
+" دانید چه کار می کنید ، از '--no-checks' برای خاموش کردن این بررسی ها "
+"استفاده کنید.)"
+
+#: src/certificate.py:854
+msgid "certmanager_domain_dns_ip_differs_from_public_ip"
+msgstr ""
+"سوابق DNS برای دامنه '{domain}' با IP این سرور متفاوت است. لطفاً برای "
+"اطلاعات بیشتر ، دسته 'DNS records' (پایه) را در عیب یابی بررسی کنید. اگر "
+"اخیراً رکورد A خود را تغییر داده اید ، لطفاً منتظر انتشار آن باشید (برخی "
+"از چکرهای انتشار DNS بصورت آنلاین در دسترس هستند). (اگر می دانید چه کار "
+"می کنید ، از '--no-checks' برای خاموش کردن این چک ها استفاده کنید.)"
+
+#: src/certificate.py:860
+msgid "certmanager_domain_http_not_working"
+msgstr ""
+"به نظر می رسد دامنه {domain} از طریق HTTP قابل دسترسی نیست. لطفاً برای "
+"اطلاعات بیشتر ، دسته \"وب\" را در عیب یابی بررسی کنید. (اگر می دانید چه "
+"کار می کنید ، از '--no-checks' برای خاموش کردن این چک ها استفاده کنید.)"
+
+#: src/certificate.py:904
+msgid "certmanager_self_ca_conf_file_not_found"
+msgstr "فایل پیکربندی برای اجازه خود امضائی پیدا نشد (فایل: {file})"
+
+#: src/certificate.py:914
+msgid "certmanager_unable_to_parse_self_CA_name"
+msgstr "نتوانست نام مرجع خودامضائی را تجزیه و تحلیل کند (فایل: {file})"
+
+#: src/diagnosis.py:58 src/diagnosis.py:90 src/diagnosis.py:181
+msgid "diagnosis_unknown_categories"
+msgstr "دسته های زیر ناشناخته است: {categories}"
+
+#: src/diagnosis.py:77
+msgid "diagnosis_never_ran_yet"
+msgstr ""
+"به نظر می رسد این سرور به تازگی راه اندازی شده است و هنوز هیچ گزارش "
+"تشخیصی برای نمایش وجود ندارد. شما باید با اجرای یک عیب یابی و تشخیص کامل،"
+" از طریق رابط مدیریت تحت وب webadmin یا با استفاده از 'yunohost diagnosis"
+" run' از خط فرمان معاینه و تشخیص عیب یابی را شروع کنید."
+
+#: src/diagnosis.py:99
+msgid "diagnosis_failed"
+msgstr "نتیجه معاینه و عیب یابی برای دسته '{category}' واکشی نشد: {error}"
+
+#: src/diagnosis.py:132 src/log.py:357
+msgid "log_available_on_yunopaste"
+msgstr "این گزارش اکنون از طریق {url} در دسترس است"
+
+#: src/diagnosis.py:201
+msgid "diagnosis_failed_for_category"
+msgstr "عیب یابی برای دسته '{category}' ناموفق بود: {error}"
+
+#: src/diagnosis.py:220
+msgid "diagnosis_display_tip"
+msgstr ""
+"برای مشاهده مسائل پیدا شده ، می توانید به بخش تشخیص webadmin بروید یا از "
+"خط فرمان 'yunohost diagnosis show --issues --human-readable' را اجرا "
+"کنید."
+
+#: src/diagnosis.py:280
+msgid "diagnosis_ignore_missing_criteria"
+msgstr ""
+
+#: src/diagnosis.py:285
+msgid "diagnosis_ignore_criteria_error"
+msgstr ""
+
+#: src/diagnosis.py:308
+msgid "diagnosis_ignore_no_issue_found"
+msgstr ""
+
+#: src/diagnosis.py:318
+msgid "diagnosis_ignore_already_filtered"
+msgstr ""
+
+#: src/diagnosis.py:324
+msgid "diagnosis_ignore_filter_added"
+msgstr ""
+
+#: src/diagnosis.py:338
+msgid "diagnosis_ignore_no_filter_found"
+msgstr ""
+
+#: src/diagnosis.py:344
+msgid "diagnosis_ignore_filter_removed"
+msgstr ""
+
+#: src/diagnosis.py:421
+msgid "diagnosis_cache_still_valid"
+msgstr ""
+"(حافظه پنهان هنوز برای عیب یابی {category} معتبر است. هنوز دوباره تشخیص "
+"داده نمی شود!)"
+
+#: src/diagnosis.py:438
+msgid "diagnosis_cant_run_because_of_dep"
+msgstr ""
+"در حالی که مشکلات مهمی در ارتباط با {dep} وجود دارد ، نمی توان عیب یابی "
+"را برای {category} اجرا کرد."
+
+#: src/diagnosis.py:481
+msgid "diagnosis_ignored_issues"
+msgstr "(+ {nb_ignored} مسئله (ها) نادیده گرفته شده)"
+
+#: src/diagnosis.py:491
+msgid "diagnosis_found_errors_and_warnings"
+msgstr "{errors} مسائل مهم (و {warnings} هشدارها) مربوط به {category} پیدا شد!"
+
+#: src/diagnosis.py:501
+msgid "diagnosis_found_errors"
+msgstr "{errors} مشکلات مهم مربوط به {category} پیدا شد!"
+
+#: src/diagnosis.py:510
+msgid "diagnosis_found_warnings"
+msgstr "مورد (های) {warnings} یافت شده که می تواند دسته {category} را بهبود بخشد."
+
+#: src/diagnosis.py:518
+msgid "diagnosis_everything_ok"
+msgstr "همه چیز برای {category} خوب به نظر می رسد!"
+
+#: src/diagnosis.py:533
+msgid "diagnosis_no_cache"
+msgstr "هنوز هیچ حافظه نهانی معاینه و عیب یابی برای دسته '{category}' وجود ندارد"
+
+#: src/dns.py:67 src/dns.py:555 src/dns.py:643
+msgid "domain_dns_conf_special_use_tld"
+msgstr ""
+
+#: src/dns.py:102
+msgid "domain_dns_conf_is_just_a_recommendation"
+msgstr ""
+"این دستور پیکربندی * توصیه شده * را به شما نشان می دهد. این وظیفه شماست "
+"که مطابق این توصیه ، منطقه DNS خود را در ثبت کننده خود پیکربندی کنید. در "
+"واقع پیکربندی DNS را برای شما تنظیم نمی کند."
+
+#: src/dns.py:501
+msgid "registrar_infos"
+msgstr ""
+
+#: src/dns.py:531
+msgid "domain_dns_registrar_managed_in_parent_domain"
+msgstr ""
+
+#: src/dns.py:543
+msgid "domain_dns_registrar_yunohost"
+msgstr ""
+
+#: src/dns.py:547 src/dyndns.py:127 src/dyndns.py:141 src/dyndns.py:255
+msgid "ask_dyndns_recovery_password"
+msgstr ""
+
+#: src/dns.py:563
+msgid "domain_dns_registrar_not_supported"
+msgstr ""
+
+#: src/dns.py:567
+msgid "domain_dns_registrar_supported"
+msgstr ""
+
+#: src/dns.py:578
+msgid "domain_dns_registrar_experimental"
+msgstr ""
+
+#: src/dns.py:594
+msgid "domain_dns_registrar_use_auto"
+msgstr ""
+
+#: src/dns.py:646
+msgid "domain_dns_push_not_applicable"
+msgstr ""
+
+#: src/dns.py:661 src/dns.py:670
+msgid "domain_dns_push_managed_in_parent_domain"
+msgstr ""
+
+#: src/dns.py:676 src/dns.py:681
+msgid "domain_registrar_is_not_configured"
+msgstr ""
+
+#: src/dns.py:742
+msgid "domain_dns_push_failed_to_list"
+msgstr ""
+
+#: src/dns.py:952
+msgid "domain_dns_push_already_up_to_date"
+msgstr ""
+
+#: src/dns.py:960
+msgid "domain_dns_pushing"
+msgstr ""
+
+#: src/dns.py:1009 src/dns.py:1022
+msgid "domain_dns_push_record_failed"
+msgstr ""
+
+#: src/dns.py:1035
+msgid "domain_dns_push_success"
+msgstr ""
+
+#: src/dns.py:1039
+msgid "domain_dns_push_failed"
+msgstr ""
+
+#: src/dns.py:1041
+msgid "domain_dns_push_partial_failure"
+msgstr ""
+
+#: src/domain.py:254
+msgid "domain_unknown"
+msgstr ""
+
+#: src/domain.py:326
+msgid "domain_exists"
+msgstr "دامنه از قبل وجود دارد"
+
+#: src/domain.py:347 src/dyndns.py:119
+msgid "domain_dyndns_already_subscribed"
+msgstr "شما قبلاً در یک دامنه DynDNS مشترک شده اید"
+
+#: src/domain.py:350
+msgid "tos_dyndns_acknowledgement"
+msgstr ""
+
+#: src/domain.py:375
+msgid "domain_creation_failed"
+msgstr "ایجاد دامنه {domain} امکان پذیر نیست: {error}"
+
+#: src/domain.py:436
+msgid "domain_created"
+msgstr "دامنه ایجاد شد"
+
+#: src/domain.py:486
+msgid "domain_cannot_remove_main"
+msgstr ""
+"شما نمی توانید '{domain}' را حذف کنید زیرا دامنه اصلی است ، ابتدا باید با"
+" استفاده از 'yunohost domain main-domain -n <another-domain>' دامنه دیگری"
+" را به عنوان دامنه اصلی تعیین کنید. در اینجا لیست دامنه های کاندید وجود "
+"دارد: {other_domains}"
+
+#: src/domain.py:492
+msgid "domain_cannot_remove_main_add_new_one"
+msgstr ""
+"شما نمی توانید '{domain}' را حذف کنید زیرا دامنه اصلی و تنها دامنه شما "
+"است، ابتدا باید دامنه دیگری را با 'yunohost domain add <another-"
+"domain.com>' اضافه کنید، سپس با استفاده از 'yunohost domain main-domain "
+"-n <another-domain.com>' به عنوان دامنه اصلی تنظیم شده. و بعد از آن می "
+"توانید'{domain}' را حذف کنید با استفاده از'yunohost domain remove "
+"{domain}'."
+
+#: src/domain.py:518
+msgid "domain_remove_confirm_apps_removal"
+msgstr ""
+"حذف این دامنه برنامه های زیر را حذف می کند:\n"
+"{apps}\n"
+"\n"
+"آیا طمئن هستید که میخواهید انجام دهید؟ [{answers}]"
+
+#: src/domain.py:525 src/utils/app_utils.py:1399
+msgid "aborting"
+msgstr "رها کردن."
+
+#: src/domain.py:531
+msgid "domain_uninstall_app_first"
+msgstr ""
+"این برنامه ها هنوز روی دامنه شما نصب هستند:\n"
+"{apps}\n"
+"\n"
+"لطفاً قبل از اقدام به حذف دامنه ، آنها را با استفاده از 'برنامه yunohost "
+"remove the_app_id' حذف کرده یا با استفاده از 'yunohost app change-url "
+"the_app_id' به دامنه دیگری منتقل کنید"
+
+#: src/domain.py:548
+msgid "domain_deletion_failed"
+msgstr "حذف دامنه {domain} امکان پذیر نیست: {error}"
+
+#: src/domain.py:594
+msgid "domain_deleted"
+msgstr "دامنه حذف شد"
+
+#: src/domain.py:675
+msgid "main_domain_change_failed"
+msgstr "تغییر دامنه اصلی امکان پذیر نیست"
+
+#: src/domain.py:687
+msgid "main_domain_changed"
+msgstr "دامنه اصلی تغییر کرده است"
+
+#: src/domain.py:860
+msgid "app_make_default_location_already_used"
+msgstr ""
+"نمی توان '{app}' را برنامه پیش فرض در دامنه قرار داد ، '{domain}' قبلاً "
+"توسط '{other_app}' استفاده می شود"
+
+#: src/dyndns.py:86 src/dyndns.py:97
+msgid "dyndns_could_not_check_available"
+msgstr "بررسی نشد که آیا {domain} در {provider} در دسترس است یا خیر."
+
+#: src/dyndns.py:94 src/dyndns.py:292
+msgid "dyndns_too_many_requests"
+msgstr ""
+
+#: src/dyndns.py:114
+msgid "dyndns_domain_not_provided"
+msgstr "ارائه دهنده DynDNS {provider} نمی تواند دامنه {domain} را ارائه دهد."
+
+#: src/dyndns.py:125
+msgid "ask_dyndns_recovery_password_explain_unavailable"
+msgstr ""
+
+#: src/dyndns.py:135 src/tools.py:232
+msgid "dyndns_unavailable"
+msgstr "دامنه '{domain}' در دسترس نیست."
+
+#: src/dyndns.py:139
+msgid "ask_dyndns_recovery_password_explain"
+msgstr ""
+
+#: src/dyndns.py:145
+msgid "dyndns_no_recovery_password"
+msgstr ""
+
+#: src/dyndns.py:203 src/dyndns.py:210
+msgid "dyndns_subscribe_failed"
+msgstr ""
+
+#: src/dyndns.py:225
+msgid "dyndns_subscribed"
+msgstr ""
+
+#: src/dyndns.py:252
+msgid "ask_dyndns_recovery_password_explain_during_unsubscribe"
+msgstr ""
+
+#: src/dyndns.py:279 src/dyndns.py:295
+msgid "dyndns_unsubscribe_failed"
+msgstr ""
+
+#: src/dyndns.py:288
+msgid "dyndns_unsubscribe_denied"
+msgstr ""
+
+#: src/dyndns.py:290
+msgid "dyndns_unsubscribe_already_unsubscribed"
+msgstr ""
+
+#: src/dyndns.py:299
+msgid "dyndns_unsubscribed"
+msgstr ""
+
+#: src/dyndns.py:307 src/dyndns.py:431
+msgid "dyndns_key_not_found"
+msgstr "کلید DNS برای دامنه یافت نشد"
+
+#: src/dyndns.py:332 src/dyndns.py:344
+msgid "dyndns_set_recovery_password_failed"
+msgstr ""
+
+#: src/dyndns.py:335
+msgid "dyndns_set_recovery_password_success"
+msgstr ""
+
+#: src/dyndns.py:337
+msgid "dyndns_set_recovery_password_denied"
+msgstr ""
+
+#: src/dyndns.py:339
+msgid "dyndns_set_recovery_password_unknown_domain"
+msgstr ""
+
+#: src/dyndns.py:341
+msgid "dyndns_set_recovery_password_invalid_password"
+msgstr ""
+
+#: src/dyndns.py:390
+msgid "dyndns_no_domain_registered"
+msgstr "هیچ دامنه ای با DynDNS ثبت نشده است"
+
+#: src/dyndns.py:554 src/dyndns.py:558
+msgid "dyndns_ip_update_failed"
+msgstr "آدرس IP را به DynDNS به روز نکرد"
+
+#: src/dyndns.py:560
+msgid "dyndns_ip_updated"
+msgstr "IP خود را در DynDNS به روز کرد"
+
+#: src/firewall.py:256
+msgid "upnp_dev_not_found"
+msgstr "هیچ دستگاه UPnP یافت نشد"
+
+#: src/firewall.py:418
+msgid "port_already_opened"
+msgstr "پورت {port} قبلاً باز است"
+
+#: src/firewall.py:425 src/firewall.py:457 src/firewall.py:529
+#: src/firewall.py:563
+msgid "firewall_reloaded"
+msgstr "فایروال بارگیری مجدد شد"
+
+#: src/firewall.py:427 src/firewall.py:459 src/firewall.py:531
+#: src/firewall.py:565
+msgid "firewall_reload_failed"
+msgstr "بارگیری مجدد فایروال امکان پذیر نیست. اطلاعات بیشتر در گزارش."
+
+#: src/firewall.py:450 src/firewall.py:522
+msgid "port_already_closed"
+msgstr "درگاه {port} قبلاً بسته شده است"
+
+#: src/firewall.py:580
+msgid "action_invalid"
+msgstr "اقدام نامعتبر '{action}'"
+
+#: src/firewall.py:597
+msgid "upnp_enabled"
+msgstr "UPnP روشن شد"
+
+#: src/firewall.py:597
+msgid "upnp_disabled"
+msgstr "UPnP خاموش شد"
+
+#: src/firewall.py:601
+msgid "upnp_port_open_failed"
+msgstr "پورت از طریق UPnP باز نشد"
+
+#: src/firewall.py:611
+msgid "nftables_unavailable"
+msgstr ""
+"در اینجا نمی توانید با nftables بازی کنید. شما یا در ظرفی هستید یا هسته "
+"شما آن را پشتیبانی نمی کند"
+
+#: src/hook.py:117 src/hook.py:273
+msgid "hook_name_unknown"
+msgstr "نام قلاب ناشناخته '{name}'"
+
+#: src/hook.py:186
+msgid "hook_list_by_invalid"
+msgstr "از این ویژگی نمی توان برای فهرست قلاب ها استفاده کرد"
+
+#: src/hook.py:344
+msgid "file_does_not_exist"
+msgstr "فایل {path} وجود ندارد."
+
+#: src/hook.py:426 src/hook.py:428
+msgid "hook_exec_not_terminated"
+msgstr "اسکریپت به درستی به پایان نرسید: {path}"
+
+#: src/hook.py:431
+msgid "hook_exec_failed"
+msgstr "اسکریپت اجرا نشد: {path}"
+
+#: src/hook.py:503
+msgid "hook_json_return_error"
+msgstr "بازگشت از قلاب {path} خوانده نشد. خطا: {msg}. محتوای خام: {raw_content}"
+
+#: src/hook.py:569 src/settings.py:186 src/utils/configpanel.py:634
+#: src/utils/configpanel.py:723 src/utils/resources.py:75
+#: src/utils/resources.py:103
+msgid "operation_interrupted"
+msgstr "عملیات به صورت دستی قطع شد؟"
+
+#: src/log.py:111 src/log.py:222 src/log.py:368
+msgid "log_corrupted_md_file"
+msgstr ""
+"فایل فوق داده YAML مربوط به گزارش ها آسیب دیده است: '{md_file}\n"
+"خطا: {error} '"
+
+#: src/log.py:335
+msgid "log_does_exists"
+msgstr ""
+"هیچ گزارش عملیاتی با نام '{log}' وجود ندارد ، برای مشاهده همه گزارش "
+"عملیّات های موجود در خط فرمان از دستور 'yunohost log list' استفاده کنید"
+
+#: src/log.py:908
+msgid "log_link_to_log"
+msgstr ""
+"گزارش کامل این عملیات: <a href=\"#/tools/logs/{name}\" style=\"text-"
+"decoration:underline\">{desc}</a>'"
+
+#: src/log.py:910
+msgid "log_help_to_get_log"
+msgstr ""
+"برای مشاهده گزارش عملیات '{desc}'، از دستور 'yunohost log show {name}' "
+"استفاده کنید"
+
+#: src/log.py:916
+msgid "log_link_to_failed_log"
+msgstr ""
+"عملیّات '{desc}' کامل نشد. لطفاً گزارش کامل این عملیات را ارائه دهید "
+"بواسطه <a href=\"#/tools/logs/{name}\">اینجا را کلیک کنید</a> برای دریافت"
+" کمک"
+
+#: src/log.py:921
+msgid "log_help_to_get_failed_log"
+msgstr ""
+"عملیات '{desc}' کامل نشد. لطفاً برای دریافت راهنمایی و کمک ، گزارش کامل "
+"این عملیات را با استفاده از دستور 'yunohost log share {name}' به اشتراک "
+"بگذارید"
+
+#: src/log.py:938
+msgid "log_operation_unit_unclosed_properly"
+msgstr "واحد عملیّات به درستی بسته نشده است"
+
+#: src/log.py:1022
+msgid "automatic_task"
+msgstr ""
+
+#: src/log.py:1025
+msgid "yunohost_api"
+msgstr ""
+
+#: src/log.py:1028
+msgid "noninteractive_task"
+msgstr ""
+
+#: src/permission.py:235
+msgid "permission_require_account"
+msgstr ""
+"مجوز {permission} فقط برای کاربران دارای حساب کاربری منطقی است و بنابراین"
+" نمی تواند برای بازدیدکنندگان فعال شود."
+
+#: src/permission.py:240
+msgid "permission_cant_add_to_all_users"
+msgstr "مجوز {permission} را نمی توان به همه کاربران اضافه کرد."
+
+#: src/permission.py:255
+msgid "permission_protected"
+msgstr ""
+"مجوز {permission} محافظت می شود. شما نمی توانید گروه بازدیدکنندگان را "
+"از/به این مجوز اضافه یا حذف کنید."
+
+#: src/permission.py:268 src/permission.py:430 src/user.py:1193
+#: src/user.py:1270 src/user.py:1462
+msgid "group_unknown"
+msgstr "گروه '{group}' ناشناخته است"
+
+#: src/permission.py:272
+msgid "permission_already_allowed"
+msgstr "گروه '{group}' قبلاً مجوز '{permission}' را فعال کرده است"
+
+#: src/permission.py:284
+msgid "permission_already_disallowed"
+msgstr "گروه '{group}' قبلاً مجوز '{permission}' را غیرفعال کرده است"
+
+#: src/permission.py:301
+msgid "permission_currently_allowed_for_all_users"
+msgstr ""
+"این مجوز در حال حاضر به همه کاربران علاوه بر آن گروه های دیگر نیز اعطا "
+"شده. احتمالاً بخواهید مجوز 'all_users' را حذف کنید یا سایر گروه هایی را "
+"که در حال حاضر مجوز به آنها اعطا شده است را هم حذف کنید."
+
+#: src/permission.py:310 src/permission.py:516
+msgid "regex_incompatible_with_tile"
+msgstr ""
+"/!\\ بسته بندی کنندگان! مجوز '{permission}' show_tile را روی 'true' تنظیم"
+" کرده اند و بنابراین نمی توانید عبارت منظم آدرس اینترنتی را به عنوان URL "
+"اصلی تعریف کنید"
+
+#: src/permission.py:338 src/permission.py:340 src/permission.py:576
+#: src/user.py:1581
+msgid "permission_updated"
+msgstr "مجوز '{permission}' به روز شد"
+
+#: src/permission.py:365
+msgid "permission_not_found"
+msgstr "مجوز '{permission}' پیدا نشد"
+
+#: src/permission.py:455
+msgid "permission_created"
+msgstr "مجوز '{permission}' ایجاد شد"
+
+#: src/permission.py:496
+msgid "unknown_main_domain_path"
+msgstr ""
+"دامنه یا مسیر ناشناخته برای '{app}'. شما باید یک دامنه و یک مسیر را مشخص "
+"کنید تا بتوانید یک آدرس اینترنتی برای مجوز تعیین کنید."
+
+#: src/permission.py:528
+msgid "additional_urls_already_added"
+msgstr ""
+"نشانی اینترنتی اضافی '{url}' قبلاً در نشانی اینترنتی اضافی برای اجازه "
+"'{permission}' اضافه شده است"
+
+#: src/permission.py:540
+msgid "additional_urls_already_removed"
+msgstr ""
+"نشانی اینترنتی اضافی '{url}' قبلاً در نشانی اینترنتی اضافی برای اجازه "
+"'{permission}'حذف شده است"
+
+#: src/permission.py:570 src/permission.py:714
+msgid "permission_update_failed"
+msgstr "مجوز '{permission}' به روز نشد: {error}"
+
+#: src/permission.py:590
+msgid "permission_cannot_remove_main"
+msgstr "حذف مجوز اصلی مجاز نیست"
+
+#: src/permission.py:612
+msgid "permission_deleted"
+msgstr "مجوز '{permission}' حذف شد"
+
+#: src/permission.py:659
+msgid "permission_deletion_failed"
+msgstr "اجازه '{permission}' حذف نشد: {error}"
+
+#: src/permission.py:696
+msgid "permission_creation_failed"
+msgstr "مجوز '{permission}' را نمیتوان ایجاد کرد: {error}"
+
+#: src/permission.py:788
+msgid "show_tile_cant_be_enabled_for_url_not_defined"
+msgstr ""
+"شما نمی توانید \"show_tile\" را در حال حاضر فعال کنید ، زیرا ابتدا باید "
+"یک آدرس اینترنتی برای مجوز '{permission}' تعریف کنید"
+
+#: src/permission.py:795
+msgid "show_tile_cant_be_enabled_for_regex"
+msgstr ""
+"شما نمی توانید \"show_tile\" را درست فعال کنید ، چرا که آدرس اینترنتی "
+"مجوز '{permission}' یک عبارت منظم است"
+
+#: src/permission.py:973
+msgid "invalid_regex"
+msgstr "عبارت منظم نامعتبر: '{regex}'"
+
+#: src/permission.py:985
+msgid "regex_with_only_domain"
+msgstr ""
+"شما نمی توانید از عبارات منظم برای دامنه استفاده کنید، فقط برای مسیر قابل"
+" استفاده است"
+
+#: src/portal.py:51 src/ssh.py:43 src/ssh.py:80 src/ssh.py:121 src/user.py:357
+#: src/user.py:462 src/user.py:654 src/user.py:1293
+msgid "user_unknown"
+msgstr "کاربر ناشناس: {user}"
+
+#: src/portal.py:224 src/portal.py:249 src/portal.py:286
+msgid "mail_edit_operation_unauthorized"
+msgstr ""
+
+#: src/portal.py:229 src/portal.py:264 src/user.py:243 src/user.py:527
+#: src/user.py:537 src/user.py:1339
+msgid "mail_unavailable"
+msgstr ""
+"این آدرس ایمیل محفوظ است و باید به طور خودکار به اولین کاربر اختصاص داده "
+"شود"
+
+#: src/portal.py:234 src/portal.py:271
+msgid "mail_already_exists"
+msgstr ""
+
+#: src/portal.py:237 src/portal.py:275
+msgid "mail_alias_unauthorized"
+msgstr ""
+
+#: src/authenticators/ldap_ynhuser.py:225 src/portal.py:316
+msgid "invalid_password"
+msgstr ""
+
+#: src/portal.py:326 src/user.py:520 src/user.py:546 src/user.py:602
+msgid "user_update_failed"
+msgstr "کاربر {user} به روز نشد: {error}"
+
+#: src/regenconf.py:200
+msgid "regenconf_failed"
+msgstr "پیکربندی برای دسته (ها) بازسازی نشد: {categories}"
+
+#: src/regenconf.py:213
+msgid "regenconf_pending_applying"
+msgstr "در حال اعمال پیکربندی معلق برای دسته '{category}'…"
+
+#: src/regenconf.py:215
+msgid "regenconf_dry_pending_applying"
+msgstr "در حال بررسی پیکربندی معلق که برای دسته '{category}' اعمال می شد…"
+
+#: src/regenconf.py:320 src/regenconf.py:412
+msgid "regenconf_file_manually_modified"
+msgstr "فایل پیکربندی '{conf}' به صورت دستی اصلاح شده است و به روز نمی شود"
+
+#: src/regenconf.py:343
+msgid "regenconf_file_manually_removed"
+msgstr "فایل پیکربندی '{conf}' به صورت دستی حذف شد، و ایجاد نخواهد شد"
+
+#: src/regenconf.py:361
+msgid "regenconf_now_managed_by_yunohost"
+msgstr ""
+"فایل پیکربندی '{conf}' اکنون توسط YunoHost (دسته {category}) مدیریت می "
+"شود."
+
+#: src/regenconf.py:374
+msgid "regenconf_file_kept_back"
+msgstr ""
+"انتظار میرفت که فایل پیکربندی '{conf}' توسط regen-conf (دسته {category}) "
+"حذف شود ، اما پس گرفته شد."
+
+#: src/regenconf.py:405
+msgid "regenconf_need_to_explicitly_specify_ssh"
+msgstr ""
+"پیکربندی ssh به صورت دستی تغییر یافته است ، اما شما باید صراحتاً دسته "
+"\"ssh\" را با --force برای اعمال تغییرات در واقع مشخص کنید."
+
+#: src/regenconf.py:430
+msgid "regenconf_up_to_date"
+msgstr "پیکربندی در حال حاضر برای دسته '{category}' به روز است"
+
+#: src/regenconf.py:434
+msgid "regenconf_updated"
+msgstr "پیکربندی برای دسته '{category}' به روز شد"
+
+#: src/regenconf.py:436
+msgid "regenconf_would_be_updated"
+msgstr "پیکربندی برای دسته '{category}' به روز می شد"
+
+#: src/regenconf.py:679
+msgid "regenconf_file_backed_up"
+msgstr "فایل پیکربندی '{conf}' در '{backup}' پشتیبان گیری شد"
+
+#: src/regenconf.py:685
+msgid "regenconf_file_removed"
+msgstr "فایل پیکربندی '{conf}' حذف شد"
+
+#: src/regenconf.py:693
+msgid "regenconf_file_updated"
+msgstr "فایل پیکربندی '{conf}' به روز شد"
+
+#: src/regenconf.py:701
+msgid "regenconf_file_remove_failed"
+msgstr "فایل پیکربندی '{conf}' حذف نشد"
+
+#: src/regenconf.py:717
+msgid "regenconf_file_copy_failed"
+msgstr "فایل پیکربندی جدید '{new}' در '{conf}' کپی نشد"
+
+#: src/service.py:127
+msgid "service_add_failed"
+msgstr "سرویس '{service}' اضافه نشد"
+
+#: src/service.py:129
+msgid "service_added"
+msgstr "سرویس '{service}' اضافه شد"
+
+#: src/service.py:143 src/service.py:370 src/service.py:531 src/service.py:591
+msgid "service_unknown"
+msgstr "سرویس ناشناخته '{service}'"
+
+#: src/service.py:150
+msgid "service_remove_failed"
+msgstr "سرویس '{service}' حذف نشد"
+
+#: src/service.py:152
+msgid "service_removed"
+msgstr "سرویس '{service}' حذف شد"
+
+#: src/service.py:169
+msgid "service_started"
+msgstr "سرویس '{service}' شروع شد"
+
+#: src/service.py:176
+msgid "service_start_failed"
+msgstr "سرویس '{service}' شروع نشد"
+
+#: src/service.py:180
+msgid "service_already_started"
+msgstr "سرویس '{service}' در حال اجرا است"
+
+#: src/service.py:196
+msgid "service_stopped"
+msgstr "سرویس '{service}' متوقف شد"
+
+#: src/service.py:203
+msgid "service_stop_failed"
+msgstr "سرویس '{service}' متوقف نمی شود"
+
+#: src/service.py:207
+msgid "service_already_stopped"
+msgstr "سرویس '{service}' قبلاً متوقف شده است"
+
+#: src/service.py:222
+msgid "service_reloaded"
+msgstr "سرویس '{service}' بارگیری مجدد شد"
+
+#: src/service.py:229
+msgid "service_reload_failed"
+msgstr "سرویس '{service}' بارگیری نشد"
+
+#: src/service.py:248
+msgid "service_restarted"
+msgstr "سرویس '{service}' راه اندازی مجدد شد"
+
+#: src/service.py:255
+msgid "service_restart_failed"
+msgstr "سرویس \"{service}\" راه اندازی مجدد نشد"
+
+#: src/service.py:292
+msgid "service_not_reloading_because_conf_broken"
+msgstr ""
+
+#: src/service.py:300
+msgid "service_reloaded_or_restarted"
+msgstr "سرویس '{service}' بارگیری یا راه اندازی مجدد شد"
+
+#: src/service.py:307
+msgid "service_reload_or_restart_failed"
+msgstr "سرویس \"{service}\" بارگیری یا راه اندازی مجدد نشد"
+
+#: src/service.py:327
+msgid "service_enabled"
+msgstr ""
+"سرویس '{service}' اکنون بطور خودکار در هنگام بوت شدن سیستم راه اندازی می "
+"شود."
+
+#: src/service.py:329
+msgid "service_enable_failed"
+msgstr "انجام سرویس '{service}' به طور خودکار در هنگام راه اندازی امکان پذیر نیست."
+
+#: src/service.py:346
+msgid "service_disabled"
+msgstr "هنگام راه اندازی سیستم ، سرویس '{service}' دیگر راه اندازی نمی شود."
+
+#: src/service.py:348
+msgid "service_disable_failed"
+msgstr "نتوانست باعث شود سرویس '{service}' در هنگام راه اندازی شروع نشود."
+
+#: src/service.py:632
+msgid "service_cmd_exec_failed"
+msgstr "نمی توان دستور '{command}' را اجرا کرد"
+
+#: src/settings.py:187 src/settings.py:194 src/utils/configpanel.py:635
+#: src/utils/configpanel.py:642
+msgid "config_apply_failed"
+msgstr ""
+
+#: src/settings.py:197
+msgid "global_settings_reset_success"
+msgstr ""
+
+#: src/settings.py:236
+msgid "password_confirmation_not_the_same"
+msgstr ""
+
+#: src/tools.py:86
+msgid "root_password_changed"
+msgstr ""
+
+#: src/tools.py:90
+msgid "root_password_desynchronized"
+msgstr ""
+"گذرواژه مدیریت تغییر کرد ، اما یونو‌هاست نتوانست این را به رمز عبور ریشه "
+"منتقل کند!"
+
+#: src/tools.py:134
+msgid "domain_hostname_failed"
+msgstr ""
+"نام میزبان جدید قابل تنظیم نیست. این ممکن است بعداً مشکلی ایجاد کند (ممکن"
+" هم هست خوب باشد)."
+
+#: src/migrations/m0031_terms_of_services.py:42 src/tools.py:178
+msgid "tos_postinstall_acknowledgement"
+msgstr ""
+
+#: src/tools.py:187 src/user.py:240
+msgid "system_username_exists"
+msgstr "نام کاربری قبلاً در لیست کاربران سیستم وجود دارد"
+
+#: src/tools.py:204
+msgid "postinstall_low_rootfsspace"
+msgstr ""
+"فضای فایل سیستم اصلی کمتر از 10 گیگابایت است که بسیار نگران کننده است! به"
+" احتمال زیاد خیلی زود فضای دیسک شما تمام می شود! توصیه می شود حداقل 16 "
+"گیگابایت برای سیستم فایل ریشه داشته باشید. اگر می خواهید YunoHost را با "
+"وجود این هشدار نصب کنید ، فرمان نصب را مجدد با این آپشن --force-diskspace"
+" اجرا کنید"
+
+#: src/tools.py:221
+msgid "dyndns_provider_unreachable"
+msgstr ""
+"دسترسی به ارائه دهنده DynDNS {provider} امکان پذیر نیست: یا YunoHost شما "
+"به درستی به اینترنت متصل نیست یا سرور dynette خراب است."
+
+#: src/tools.py:260
+msgid "yunohost_installing"
+msgstr "در حال نصب YunoHost…"
+
+#: src/tools.py:323
+msgid "yunohost_configured"
+msgstr "YunoHost اکنون پیکربندی شده است"
+
+#: src/tools.py:325
+msgid "yunohost_postinstall_end_tip"
+msgstr ""
+"پس از نصب کامل شد! برای نهایی کردن تنظیمات خود ، لطفاً موارد زیر را در "
+"نظر بگیرید:\n"
+" - تشخیص مشکلات احتمالی از طریق بخش \"عیب یابی\" webadmin (یا 'yunohost "
+"diagnosis run' در خط فرمان) ؛\n"
+" - خواندن قسمت های \"نهایی کردن راه اندازی خود\" و \"آشنایی با YunoHost\""
+" در اسناد مدیریت: https://doc.yunohost.org/admin."
+
+#: src/tools.py:417
+msgid "updating_apt_cache"
+msgstr "در حال واکشی و دریافت ارتقاء موجود برای بسته های سیستم…"
+
+#: src/tools.py:423
+msgid "update_apt_cache_failed"
+msgstr ""
+"امکان بروزرسانی حافظه پنهان APT (مدیر بسته دبیان) وجود ندارد. در اینجا "
+"مجموعه ای از خطوط source.list هست که ممکن است به شناسایی خطوط مشکل ساز "
+"کمک کند:\n"
+"{sourceslist}"
+
+#: src/tools.py:429
+msgid "update_apt_cache_warning"
+msgstr ""
+"هنگام به روز رسانی حافظه پنهان APT (مدیر بسته دبیان) مشکلی پیش آمده. در "
+"اینجا مجموعه ای از خطوط source.list موجود میباشد که ممکن است به شناسایی "
+"خطوط مشکل ساز کمک کند:\n"
+"{sourceslist}"
+
+#: src/tools.py:434 src/utils/app_utils.py:654 src/utils/app_utils.py:743
+#: src/utils/app_utils.py:775
+msgid "done"
+msgstr "انجام شد"
+
+#: src/tools.py:455 src/tools.py:601
+msgid "already_up_to_date"
+msgstr "کاری برای انجام دادن نیست. همه چیز در حال حاضر به روز است."
+
+#: src/tools.py:552 src/utils/app_utils.py:1270
+msgid "dpkg_is_broken"
+msgstr ""
+"شما نمی توانید این کار را در حال حاضر انجام دهید زیرا dpkg/APT (اداره "
+"کنندگان سیستم بسته ها) به نظر می رسد در وضعیت خرابی است… می توانید با "
+"اتصال از طریق SSH و اجرا این فرمان `sudo apt install --fix-broken` and/or"
+" `sudo dpkg --configure -a` مشکل را حل کنید."
+
+#: src/tools.py:556
+msgid "dpkg_lock_not_available"
+msgstr ""
+"این دستور در حال حاضر قابل اجرا نیست زیرا به نظر می رسد برنامه دیگری از "
+"قفل dpkg (مدیر بسته سیستم) استفاده می کند"
+
+#: src/tools.py:589
+msgid "app_upgrade_some_app_failed"
+msgstr "برخی از کاره‌ها را نمی‌توان ارتقا داد"
+
+#: src/tools.py:603
+msgid "upgrading_packages"
+msgstr "در حال ارتقاء بسته ها…"
+
+#: src/tools.py:619
+msgid "tools_upgrade"
+msgstr ""
+
+#: src/tools.py:653
+msgid "tools_upgrade_failed"
+msgstr ""
+
+#: src/tools.py:658
+msgid "system_upgraded"
+msgstr "سیستم ارتقا یافت"
+
+#: src/tools.py:668
+msgid "server_shutdown_confirm"
+msgstr "آیا مطمئن هستید که سرور بلافاصله خاموش می شود؟ [{answers}]"
+
+#: src/tools.py:677
+msgid "server_shutdown"
+msgstr "سرور خاموش می شود"
+
+#: src/tools.py:687
+msgid "server_reboot_confirm"
+msgstr "سرور بلافاصله راه اندازی مجدد می شود، آیا مطمئن هستید؟ [{answers}]"
+
+#: src/tools.py:695
+msgid "server_reboot"
+msgstr "سرور راه اندازی مجدد می شود"
+
+#: src/tools.py:774
+msgid "migrations_list_conflict_pending_done"
+msgstr ""
+"شما نمیتوانید از هر دو انتخاب '--previous' و '--done' به طور همزمان "
+"استفاده کنید."
+
+#: src/tools.py:828
+msgid "migrations_no_such_migration"
+msgstr "مهاجرتی به نام '{id}' وجود ندارد"
+
+#: src/tools.py:832
+msgid "migrations_exclusive_options"
+msgstr "'--auto', '--skip'، و '--force-rerun' گزینه های متقابل هستند."
+
+#: src/tools.py:838
+msgid "migrations_must_provide_explicit_targets"
+msgstr "هنگام استفاده '--skip' یا '--force-rerun' باید اهداف مشخصی را ارائه دهید"
+
+#: src/tools.py:851
+msgid "migrations_not_pending_cant_skip"
+msgstr "این مهاجرت ها معلق نیستند ، بنابراین نمی توان آنها را رد کرد: {ids}"
+
+#: src/tools.py:855
+msgid "migrations_pending_cant_rerun"
+msgstr ""
+"این مهاجرت ها هنوز در انتظار هستند ، بنابراین نمی توان آنها را دوباره "
+"اجرا کرد: {ids}"
+
+#: src/tools.py:858
+msgid "migrations_already_ran"
+msgstr "این مهاجرت ها قبلاً انجام شده است: {ids}"
+
+#: src/tools.py:862
+msgid "migrations_no_migrations_to_run"
+msgstr "مهاجرتی برای اجرا وجود ندارد"
+
+#: src/tools.py:872
+msgid "migrations_to_be_ran_manually"
+msgstr ""
+"مهاجرت {id} باید به صورت دستی اجرا شود. لطفاً به صفحه Tools → Migrations "
+"در صفحه webadmin بروید، یا `yunohost tools migrations run` را اجرا کنید."
+
+#: src/tools.py:888
+msgid "migrations_dependencies_not_satisfied"
+msgstr "این مهاجرت ها را اجرا کنید: '{dependencies_id}' ، قبل از مهاجرت {id}."
+
+#: src/tools.py:902
+msgid "migrations_need_to_accept_disclaimer"
+msgstr ""
+"برای اجرای مهاجرت {id} ، باید سلب مسئولیت زیر را بپذیرید:\n"
+"---\n"
+"{disclaimer}\n"
+"---\n"
+"اگر می خواهید مهاجرت را اجرا کنید ، لطفاً فرمان را با گزینه '--accept-"
+"disclaimer' دوباره اجرا کنید."
+
+#: src/tools.py:917
+msgid "migrations_skip_migration"
+msgstr "رد کردن مهاجرت {id}…"
+
+#: src/tools.py:923 src/tools.py:1049 src/tools.py:1080
+msgid "migrations_running_forward"
+msgstr "مهاجرت در حال اجرا {id}»…"
+
+#: src/tools.py:929 src/tools.py:1053 src/tools.py:1084
+msgid "migrations_migration_has_failed"
+msgstr "مهاجرت {id} کامل نشد ، لغو شد. خطا: {exception}"
+
+#: src/tools.py:934
+msgid "migrations_success_forward"
+msgstr "مهاجرت {id} تکمیل شد"
+
+#: src/tools.py:998
+msgid "migrations_loading_migration"
+msgstr "بارگیری مهاجرت {id}…"
+
+#: src/tools.py:1013
+msgid "migrations_failed_to_load_migration"
+msgstr "مهاجرت بار نشد {id}: {error}"
+
+#: src/tools.py:1123
+msgid "migration_ldap_backup_before_migration"
+msgstr "ایجاد پشتیبان از پایگاه داده LDAP و تنظیمات کاره‌‌ها قبل از مهاجرت واقعی."
+
+#: src/tools.py:1139
+msgid "migration_ldap_can_not_backup_before_migration"
+msgstr "نمی توان پشتیبان گیری سیستم را قبل از شکست مهاجرت تکمیل کرد. خطا: {error}"
+
+#: src/tools.py:1149
+msgid "migration_ldap_migration_failed_trying_to_rollback"
+msgstr "نمی توان مهاجرت کرد… تلاش برای بازگرداندن سیستم."
+
+#: src/tools.py:1168
+msgid "migration_ldap_rollback_success"
+msgstr "سیستم برگردانده شد."
+
+#: src/user.py:129
+msgid "field_invalid"
+msgstr "فیلد نامعتبر '{field}'"
+
+#: src/user.py:211
+msgid "domains_available"
+msgstr "دامنه های موجود:"
+
+#: src/user.py:217
+msgid "ask_user_domain"
+msgstr "دامنه ای که برای آدرس ایمیل کاربر و حساب XMPP استفاده می شود"
+
+#: src/user.py:229
+msgid "user_already_exists"
+msgstr "کاربر '{user}' در حال حاضر وجود دارد"
+
+#: src/user.py:235 src/user.py:294
+msgid "user_creation_failed"
+msgstr "کاربر {user} ایجاد نشد: {error}"
+
+#: src/user.py:267 src/user.py:592
+msgid "invalid_shell"
+msgstr ""
+
+#: src/user.py:306
+msgid "user_home_creation_failed"
+msgstr "پوشه 'home' برای کاربر ایجاد نشد"
+
+#: src/user.py:334
+msgid "user_created"
+msgstr "کاربر ایجاد شد"
+
+#: src/user.py:359
+msgid "user_cannot_delete_last_admin"
+msgstr ""
+
+#: src/user.py:395
+msgid "user_deletion_failed"
+msgstr "کاربر {user} حذف نشد: {error}"
+
+#: src/user.py:413
+msgid "user_deleted"
+msgstr "کاربر حذف شد"
+
+#: src/user.py:523 src/user.py:549 src/user.py:1348
+msgid "mail_domain_unknown"
+msgstr ""
+"آدرس ایمیل نامعتبر برای دامنه '{domain}'. لطفاً از دامنه ای که توسط این "
+"سرور اداره می شود استفاده کنید."
+
+#: src/user.py:561 src/user.py:1375
+msgid "mail_alias_remove_failed"
+msgstr "نام مستعار ایمیل '{mail}' حذف نشد"
+
+#: src/user.py:581
+msgid "mail_forward_remove_failed"
+msgstr "ارسال ایمیل '{mail}' حذف نشد"
+
+#: src/user.py:618
+msgid "user_updated"
+msgstr "اطلاعات کاربر تغییر کرد"
+
+#: src/user.py:683
+msgid "mailbox_used_space_dovecot_down"
+msgstr ""
+"اگر می خواهید فضای صندوق پستی استفاده شده را واکشی کنید ، سرویس صندوق "
+"پستی Dovecot باید فعال باشد"
+
+#: src/user.py:685
+msgid "mailbox_disabled"
+msgstr "ایمیل برای کاربر {user} خاموش است"
+
+#: src/user.py:711
+msgid "unlimit"
+msgstr "بدون سهمیه"
+
+#: src/user.py:803
+msgid "user_import_missing_columns"
+msgstr ""
+
+#: src/user.py:851
+msgid "user_import_bad_line"
+msgstr ""
+
+#: src/user.py:885
+msgid "user_import_bad_file"
+msgstr ""
+
+#: src/user.py:890
+msgid "user_import_nothing_to_do"
+msgstr ""
+
+#: src/user.py:916
+msgid "user_import_cannot_edit_or_delete_admins"
+msgstr ""
+
+#: src/user.py:1024
+msgid "user_import_partial_failed"
+msgstr ""
+
+#: src/user.py:1026
+msgid "user_import_failed"
+msgstr ""
+
+#: src/user.py:1030
+msgid "user_import_success"
+msgstr ""
+
+#: src/user.py:1117
+msgid "group_already_exist"
+msgstr "گروه {group} از قبل وجود دارد"
+
+#: src/user.py:1124
+msgid "group_already_exist_on_system_but_removing_it"
+msgstr ""
+"گروه {group} از قبل در گروه های سیستم وجود دارد ، اما YunoHost آن را حذف "
+"می کند…"
+
+#: src/user.py:1131
+msgid "group_already_exist_on_system"
+msgstr "گروه {group} از قبل در گروه های سیستم وجود دارد"
+
+#: src/user.py:1161
+msgid "group_creation_failed"
+msgstr "گروه '{group}' ایجاد نشد: {error}"
+
+#: src/user.py:1167 src/user.py:1169
+msgid "group_created"
+msgstr "گروه '{group}' ایجاد شد"
+
+#: src/user.py:1202
+msgid "group_cannot_be_deleted"
+msgstr "گروه {group} را نمی توان به صورت دستی حذف کرد."
+
+#: src/user.py:1209
+msgid "group_deletion_failed"
+msgstr "گروه '{group}' حذف نشد: {error}"
+
+#: src/user.py:1215 src/user.py:1217
+msgid "group_deleted"
+msgstr "گروه '{group}' حذف شد"
+
+#: src/user.py:1244
+msgid "group_cannot_edit_all_users"
+msgstr ""
+"گروه 'all_users' را نمی توان به صورت دستی ویرایش کرد. این یک گروه ویژه "
+"است که شامل همه کاربران ثبت شده در YunoHost میباشد"
+
+#: src/user.py:1246
+msgid "group_cannot_edit_visitors"
+msgstr ""
+"ویرایش گروه 'visitors' بازدیدکنندگان به صورت دستی امکان پذیر نیست. این "
+"گروه ویژه، نمایانگر بازدیدکنندگان ناشناس است"
+
+#: src/user.py:1249
+msgid "group_cannot_edit_primary_group"
+msgstr ""
+"گروه '{group}' را نمی توان به صورت دستی ویرایش کرد. این گروه اصلی شامل "
+"تنها یک کاربر خاص است."
+
+#: src/user.py:1257
+msgid "group_cannot_remove_last_admin"
+msgstr ""
+
+#: src/user.py:1297
+msgid "group_user_already_in_group"
+msgstr "کاربر {user} در حال حاضر در گروه {group} است"
+
+#: src/user.py:1301
+msgid "group_user_add"
+msgstr ""
+
+#: src/user.py:1311
+msgid "group_user_not_in_group"
+msgstr "کاربر {user} در گروه {group} نیست"
+
+#: src/user.py:1315
+msgid "group_user_remove"
+msgstr ""
+
+#: src/user.py:1345 src/user.py:1396
+msgid "group_update_failed"
+msgstr "گروه '{group}' به روز نشد: {error}"
+
+#: src/user.py:1351
+msgid "group_mailalias_add"
+msgstr ""
+
+#: src/user.py:1372
+msgid "group_mailalias_remove"
+msgstr ""
+
+#: src/user.py:1378
+msgid "group_update_aliases"
+msgstr ""
+
+#: src/user.py:1430
+msgid "group_no_change"
+msgstr ""
+
+#: src/user.py:1432 src/user.py:1434
+msgid "group_updated"
+msgstr "گروه '{group}' به روز شد"
+
+#: src/authenticators/ldap_admin.py:81 src/authenticators/ldap_admin.py:127
+#: src/utils/ldap.py:159
+msgid "ldap_server_is_down_restart_it"
+msgstr "سرویس LDAP خاموش است ، سعی کنید آن را دوباره راه اندازی کنید…"
+
+#: src/authenticators/ldap_admin.py:97 src/authenticators/ldap_admin.py:134
+#: src/authenticators/ldap_ynhuser.py:227
+msgid "ldap_server_down"
+msgstr "دسترسی به سرور LDAP امکان پذیر نیست"
+
+#: src/authenticators/ldap_admin.py:100 src/authenticators/ldap_admin.py:105
+#: src/authenticators/ldap_admin.py:110 src/authenticators/ldap_admin.py:124
+#: src/authenticators/ldap_ynhuser.py:202
+#: src/authenticators/ldap_ynhuser.py:207
+msgid "invalid_credentials"
+msgstr ""
+
+#: src/authenticators/ldap_admin.py:196 src/authenticators/ldap_admin.py:202
+#: src/authenticators/ldap_ynhuser.py:252
+#: src/authenticators/ldap_ynhuser.py:307
+#: src/authenticators/ldap_ynhuser.py:310
+#: src/authenticators/ldap_ynhuser.py:313
+#: src/authenticators/ldap_ynhuser.py:316
+msgid "unable_authenticate"
+msgstr ""
+
+#: src/authenticators/ldap_admin.py:208 src/authenticators/ldap_ynhuser.py:322
+msgid "session_expired"
+msgstr ""
+
+#: src/migrations/m0031_terms_of_services.py:40
+msgid "migration_0031_terms_of_services"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:168
+msgid "migration_0036_start"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:213
+msgid "migration_0036_patch_yunohost_dpkg"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:218
+msgid "migration_0036_patching_sources_list"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:239
+msgid "migration_0036_main_upgrade"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:286
+msgid "migration_0036_still_on_bookworm_after_main_upgrade"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:289
+msgid "migration_0036_cleaning_up"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:300
+msgid "migration_0036_apt_lists_file_still_exists"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:316
+msgid "migration_0036_yunohost_upgrade"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:350
+msgid "migration_0036_delayed_api_restart"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:411
+msgid "migration_0036_not_bullseye"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:415
+msgid "migration_0036_not_enough_free_space"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:452
+msgid "migration_0036_system_not_fully_up_to_date"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:508
+msgid "migration_0036_general_warning"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:511
+msgid "migration_0036_problematic_apps_warning"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:514
+msgid "migration_0036_modified_files"
+msgstr ""
+
+#: src/migrations/postgresql.py:52
+msgid "migration_postgresql_previous_not_installed"
+msgstr ""
+
+#: src/migrations/postgresql.py:57
+msgid "migration_postgresql_target_not_installed"
+msgstr ""
+
+#: src/migrations/postgresql.py:75
+msgid "migration_not_enough_space"
+msgstr ""
+
+#: src/migrations/python.py:145
+msgid "migration_python_venv_rebuild_disclaimer_base"
+msgstr ""
+
+#: src/migrations/python.py:150
+msgid "migration_python_venv_rebuild_disclaimer_rebuild"
+msgstr ""
+
+#: src/migrations/python.py:155
+msgid "migration_python_venv_rebuild_disclaimer_ignored"
+msgstr ""
+
+#: src/migrations/python.py:177
+msgid "migration_python_venv_rebuild_broken_app"
+msgstr ""
+
+#: src/migrations/python.py:185
+msgid "migration_python_venv_rebuild_in_progress"
+msgstr ""
+
+#: src/migrations/python.py:209
+msgid "migration_python_venv_rebuild_failed"
+msgstr ""
+
+#: src/utils/app_utils.py:144 src/utils/app_utils.py:160
+msgid "app_not_correctly_installed"
+msgstr "به نظر می رسد {app} به اشتباه نصب شده است"
+
+#: src/utils/app_utils.py:569 src/utils/app_utils.py:613
+msgid "app_unknown"
+msgstr "کارهٔ ناشناخته"
+
+#: src/utils/app_utils.py:584
+msgid "app_unsupported_remote_type"
+msgstr "نوع راه دور پشتیبانی نشده برای برنامه استفاده می شود"
+
+#: src/utils/app_utils.py:623
+msgid "extracting"
+msgstr "استخراج…"
+
+#: src/utils/app_utils.py:642
+msgid "app_extraction_failed"
+msgstr "فایل های نصبی استخراج نشد"
+
+#: src/utils/app_utils.py:649
+msgid "app_install_files_invalid"
+msgstr "این فایل ها قابل نصب نیستند"
+
+#: src/utils/app_utils.py:723
+msgid "downloading"
+msgstr "در حال بارگیری…"
+
+#: src/utils/app_utils.py:773
+msgid "app_sources_fetch_failed"
+msgstr "نمی توان فایل های منبع را واکشی کرد ، آیا URL درست است؟"
+
+#: src/utils/app_utils.py:807
+msgid "app_not_installed"
+msgstr "{app} در لیست برنامه های نصب شده یافت نشد: {all_apps}"
+
+#: src/utils/app_utils.py:827
+msgid "app_requirements_checking"
+msgstr "در حال بررسی بسته های مورد نیاز برای {app}…"
+
+#: src/utils/app_utils.py:831
+msgid "app_packaging_format_not_supported"
+msgstr ""
+"این برنامه قابل نصب نیست زیرا قالب بسته بندی آن توسط نسخه YunoHost شما "
+"پشتیبانی نمی شود. احتمالاً باید ارتقاء سیستم خود را در نظر بگیرید."
+
+#: src/utils/app_utils.py:844
+msgid "app_yunohost_version_not_supported"
+msgstr ""
+
+#: src/utils/app_utils.py:858
+msgid "app_arch_not_supported"
+msgstr ""
+
+#: src/utils/app_utils.py:879
+msgid "app_already_installed"
+msgstr "{app} قبلاً نصب شده است"
+
+#: src/utils/app_utils.py:899
+msgid "app_not_enough_disk"
+msgstr ""
+
+#: src/utils/app_utils.py:953
+msgid "app_not_enough_ram"
+msgstr ""
+
+#: src/utils/app_utils.py:1065
+msgid "app_full_domain_unavailable"
+msgstr ""
+"متأسفیم ، این برنامه باید در دامنه خود نصب شود ، اما سایر برنامه ها قبلاً"
+" در دامنه '{domain}' نصب شده اند.شما به جای آن می توانید از یک زیر دامنه "
+"اختصاص داده شده به این برنامه استفاده کنید."
+
+#: src/utils/app_utils.py:1068
+msgid "app_location_unavailable"
+msgstr ""
+"این نشانی وب یا در دسترس نیست یا با برنامه (هایی) که قبلاً نصب شده در "
+"تعارض است:\n"
+"{apps}"
+
+#: src/utils/app_utils.py:1260
+msgid "app_action_cannot_be_ran_because_required_services_down"
+msgstr ""
+"برای اجرای این عملیات سرویس هایی که مورد نیازاند و باید اجرا شوند: "
+"{services}. سعی کنید آنها را مجدداً راه اندازی کنید (و علت خرابی احتمالی "
+"آنها را بررسی کنید)."
+
+#: src/utils/app_utils.py:1265
+msgid "app_action_broke_system"
+msgstr "این اقدام به نظر می رسد سرویس های مهمی را خراب کرده است: {services}"
+
+#: src/utils/app_utils.py:1272
+msgid "this_action_broke_dpkg"
+msgstr ""
+"این اقدام dpkg/APT (مدیران بسته های سیستم) را خراب کرد… می توانید با "
+"اتصال از طریق SSH و اجرای فرمان `sudo apt install --fix -break` و/یا` "
+"sudo dpkg --configure -a` این مشکل را حل کنید."
+
+#: src/utils/configpanel.py:601
+msgid "config_cant_set_value_on_section"
+msgstr ""
+
+#: src/utils/configpanel.py:724 src/utils/configpanel.py:731
+msgid "config_action_failed"
+msgstr ""
+
+#: src/utils/configpanel.py:749
+msgid "config_no_panel"
+msgstr ""
+
+#: src/utils/configpanel.py:789 src/utils/configpanel.py:867
+msgid "config_unknown_filter_key"
+msgstr ""
+
+#: src/utils/file_utils.py:54
+msgid "file_not_exist"
+msgstr "فایل وجود ندارد: '{path}'"
+
+#: src/utils/file_utils.py:60
+msgid "cannot_open_file"
+msgstr "فایل {file} باز نشد (دلیل: {error})"
+
+#: src/utils/file_utils.py:62
+msgid "unknown_error_reading_file"
+msgstr "خطای ناشناخته هنگام تلاش برای خواندن فایل {file} (دلیل: {error})"
+
+#: src/utils/file_utils.py:82 src/utils/file_utils.py:461
+msgid "corrupted_json"
+msgstr "جی سان خراب شده از {ressource} میخواند (دلیل: {error})"
+
+#: src/utils/file_utils.py:103
+msgid "corrupted_yaml"
+msgstr "YAML خراب از {ressource} (دلیل: {error})"
+
+#: src/utils/file_utils.py:123
+msgid "corrupted_toml"
+msgstr "TOML خراب از {ressource} (دلیل: {error})"
+
+#: src/utils/file_utils.py:171 src/utils/file_utils.py:217
+#: src/utils/file_utils.py:240
+msgid "cannot_write_file"
+msgstr "نمی توان فایل {file} را نوشت (دلیل: {error})"
+
+#: src/utils/file_utils.py:173 src/utils/file_utils.py:219
+#: src/utils/file_utils.py:242
+msgid "error_writing_file"
+msgstr "خطا هنگام نوشتن فایل {file}: {error}"
+
+#: src/utils/file_utils.py:322
+msgid "unknown_user"
+msgstr "کاربر'{user}' ناشناخته"
+
+#: src/utils/file_utils.py:329
+msgid "unknown_group"
+msgstr "گروه '{group}' ناشناخته"
+
+#: src/utils/file_utils.py:343 src/utils/file_utils.py:370
+msgid "error_changing_file_permissions"
+msgstr "خطا هنگام تغییر مجوزهای {path}: {error}"
+
+#: src/utils/file_utils.py:390
+msgid "error_removing"
+msgstr "خطا هنگام حذف {path}: {error}"
+
+#: src/utils/file_utils.py:424
+msgid "download_ssl_error"
+msgstr "خطای SSL هنگام اتصال به {url}"
+
+#: src/utils/file_utils.py:427
+msgid "invalid_url"
+msgstr ""
+"اتصال به {url} انجام نشد … شاید سرویس خاموش باشد یا در IPv4/IPv6 به درستی"
+" به اینترنت متصل نشده باشید."
+
+#: src/utils/file_utils.py:430
+msgid "download_timeout"
+msgstr "پاسخ {url} خیلی طول کشید ، منصرف شو."
+
+#: src/utils/file_utils.py:433
+msgid "download_unknown_error"
+msgstr "خطا هنگام بارگیری داده ها از {url}: {error}"
+
+#: src/utils/file_utils.py:437
+msgid "download_bad_status_code"
+msgstr "{url} کد وضعیّت بازگشتی {code}"
+
+#: src/utils/form.py:413
+msgid "config_forbidden_keyword"
+msgstr ""
+
+#: src/utils/form.py:430
+msgid "config_forbidden_readonly_type"
+msgstr ""
+
+#: src/utils/form.py:532
+msgid "danger"
+msgstr ""
+
+#: src/utils/form.py:880
+msgid "pattern_password_app"
+msgstr ""
+"متأسفیم ، گذرواژه ها نمی توانند شامل کاراکترهای زیر باشند: "
+"{forbidden_chars}"
+
+#: src/utils/form.py:998
+msgid "invalid_number"
+msgstr "باید یک عدد باشد"
+
+#: src/utils/form.py:1078 src/utils/form.py:1120 src/utils/form.py:1714
+msgid "app_argument_choice_invalid"
+msgstr "برای آرگومان '{name}' از یکی از این گزینه ها '{choices}' استفاده کنید"
+
+#: src/utils/form.py:1565
+msgid "other_available_options"
+msgstr ""
+
+#: src/utils/form.py:2196
+msgid "config_action_disabled"
+msgstr ""
+
+#: src/utils/ldap.py:390
+msgid "ldap_attribute_already_exists"
+msgstr ""
+
+#: src/utils/password.py:69
+msgid "password_too_long"
+msgstr ""
+
+#: src/utils/resources.py:110
+msgid "app_resource_failed"
+msgstr ""
+
+#: src/utils/resources.py:532
+msgid "app_failed_to_download_asset"
+msgstr ""
+
+#: src/utils/resources.py:548
+msgid "app_corrupt_source"
+msgstr ""
+
+#: src/app.py:438
+msgid "app_upgrade_upgradable"
+msgstr ""
+
+#: src/app.py:439
+msgid "app_upgrade_fail_requirements"
+msgstr ""
+
+#: src/app.py:573
+msgid "log_app_change_url"
+msgstr "نشانی وب برنامه '{}' را تغییر دهید"
+
+#: src/app.py:868
+msgid "confirm_app_insufficient_ram"
+msgstr ""
+
+#: src/app.py:1178
+msgid "apps_confirm_partial_upgrade"
+msgstr ""
+
+#: src/app.py:1301
+msgid "log_app_install"
+msgstr "برنامه '{}' را نصب کنید"
+
+#: src/app.py:1632
+msgid "log_app_remove"
+msgstr "برنامه '{}' را حذف کنید"
+
+#: src/app.py:1726
+msgid "log_app_makedefault"
+msgstr "\"{}\" را برنامه پیش فرض قرار دهید"
+
+#: src/app.py:2174
+msgid "log_app_config_set"
+msgstr ""
+
+#: src/app.py:2404
+msgid "app_config_permission_extraperm_section_name"
+msgstr ""
+
+#: src/app.py:978
+msgid "log_app_upgrade"
+msgstr "برنامه '{}' را ارتقاء دهید"
+
+#: src/app.py:1546
+msgid "log_remove_on_failed_install"
+msgstr "پس از نصب ناموفق '{}' را حذف کنید"
+
+#: src/app.py:2132
+msgid "log_app_action_run"
+msgstr "عملکرد برنامه '{}' را اجرا کنید"
+
+#: src/certificate.py:156
+msgid "log_selfsigned_cert_install"
+msgstr "گواهی خود امضا شده را در دامنه '{}' نصب کنید"
+
+#: src/certificate.py:296
+msgid "log_letsencrypt_cert_install"
+msgstr "گواهی اجازه رمزگذاری را در دامنه '{}' نصب کنید"
+
+#: src/certificate.py:410
+msgid "log_letsencrypt_cert_renew"
+msgstr "تمدید '{}' گواهی اجازه رمزگذاری"
+
+#: src/diagnosis.py:160
+msgid "log_diagnosis_run"
+msgstr ""
+
+#: src/domain.py:288
+msgid "log_domain_add"
+msgstr "دامنه '{}' را به پیکربندی سیستم اضافه کنید"
+
+#: src/domain.py:350 src/tools.py:179
+msgid "confirm_tos_acknowledgement"
+msgstr ""
+
+#: src/domain.py:442
+msgid "log_domain_remove"
+msgstr "دامنه '{}' را از پیکربندی سیستم حذف کنید"
+
+#: src/domain.py:642
+msgid "log_domain_main_domain"
+msgstr "'{}' را دامنه اصلی کنید"
+
+#: src/domain.py:744
+msgid "log_domain_config_set"
+msgstr ""
+
+#: src/domain.py:772 src/domain.py:826
+msgid "domain_config_cert_renew_help"
+msgstr ""
+
+#: src/domain.py:773
+msgid "domain_config_default_app_help"
+msgstr ""
+
+#: src/domain.py:805
+msgid "domain_config_cert_summary_expired"
+msgstr ""
+
+#: src/domain.py:806
+msgid "domain_config_cert_summary_selfsigned"
+msgstr ""
+
+#: src/domain.py:807
+msgid "domain_config_cert_summary_abouttoexpire"
+msgstr ""
+
+#: src/domain.py:808
+msgid "domain_config_cert_summary_ok"
+msgstr ""
+
+#: src/domain.py:809
+msgid "domain_config_cert_summary_letsencrypt"
+msgstr ""
+
+#: src/dyndns.py:101
+msgid "log_dyndns_subscribe"
+msgstr "مشترک شدن در زیر دامنه YunoHost '{}'"
+
+#: src/dyndns.py:228
+msgid "log_dyndns_unsubscribe"
+msgstr ""
+
+#: src/dyndns.py:367
+msgid "log_dyndns_update"
+msgstr "IP مرتبط با '{}' زیر دامنه YunoHost خود را به روز کنید"
+
+#: src/regenconf.py:54
+msgid "log_regen_conf"
+msgstr "بازسازی تنظیمات سیستم '{}'"
+
+#: src/settings.py:92
+msgid "log_settings_set"
+msgstr ""
+
+#: src/settings.py:107
+msgid "log_settings_reset"
+msgstr ""
+
+#: src/settings.py:121
+msgid "log_settings_reset_all"
+msgstr ""
+
+#: src/tools.py:139
+msgid "log_tools_postinstall"
+msgstr "اسکریپت پس از نصب سرور YunoHost خود را نصب کنید"
+
+#: src/tools.py:363
+msgid "log_tools_update"
+msgstr ""
+
+#: src/tools.py:539
+msgid "log_tools_upgrade"
+msgstr "بسته های سیستم را ارتقا دهید"
+
+#: src/tools.py:662
+msgid "log_tools_shutdown"
+msgstr "سرور خود را خاموش کنید"
+
+#: src/tools.py:681
+msgid "log_tools_reboot"
+msgstr "سرور خود را راه اندازی مجدد کنید"
+
+#: src/tools.py:913
+msgid "log_tools_migrations_migrate_forward"
+msgstr "اجرای مهاجرت ها"
+
+#: src/user.py:167
+msgid "log_user_create"
+msgstr "کاربر '{}' را اضافه کنید"
+
+#: src/user.py:339
+msgid "log_user_delete"
+msgstr "کاربر '{}' را حذف کنید"
+
+#: src/user.py:416
+msgid "log_user_update"
+msgstr "به روزرسانی اطلاعات کاربر '{}'"
+
+#: src/user.py:755
+msgid "log_user_import"
+msgstr ""
+
+#: src/user.py:1094
+msgid "log_user_group_create"
+msgstr "ایجاد گروه '{}'"
+
+#: src/user.py:1174
+msgid "log_user_group_delete"
+msgstr "حذف گروه '{}'"
+
+#: src/user.py:1220
+msgid "log_user_group_update"
+msgstr "به روزرسانی گروه '{}'"
+
+#: src/backup.py:771
+msgid "backup_applying_method_copy"
+msgstr "در حال کپی تمام فایل ها برای پشتیبان گیری…"
+
+#: src/backup.py:772
+msgid "backup_applying_method_custom"
+msgstr "فراخوانی روش پشتیبان گیری سفارشی '{method}'…"
+
+#: src/backup.py:773
+msgid "backup_applying_method_tar"
+msgstr "ایجاد آرشیو پشتیبان TAR…"
+
+#: src/backup.py:781
+msgid "backup_method_copy_finished"
+msgstr "نسخه پشتیبان نهایی شد"
+
+#: src/backup.py:782
+msgid "backup_method_custom_finished"
+msgstr "روش پشتیبان گیری سفارشی '{method}' به پایان رسید"
+
+#: src/backup.py:783
+msgid "backup_method_tar_finished"
+msgstr "بایگانی پشتیبان TAR ایجاد شد"
+
+#: src/backup.py:2106
+msgid "log_backup_create"
+msgstr "بایگانی پشتیبان ایجاد کنید"
+
+#: src/backup.py:1237
+msgid "log_backup_restore_system"
+msgstr "بازیابی سیستم بوسیله آرشیو پشتیبان"
+
+#: src/backup.py:1344
+msgid "log_backup_restore_app"
+msgstr "بازیابی '{}' از بایگانی پشتیبان"
+
+#: src/dns.py:618
+msgid "log_domain_dns_push"
+msgstr ""
+
+#: src/diagnosers/21-web.py:143
+msgid "diagnosis_http_bad_status_code"
+msgstr ""
+"به نظر می رسد دستگاه دیگری (شاید روتر اینترنتی شما) به جای سرور شما پاسخ "
+"داده است.<br>1. شایع ترین علت برای این مشکل ، پورت 80 است (و 443) <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>به"
+" درستی به سرور شما ارسال نمی شوند</a>.<br>2. در تنظیمات پیچیده تر: مطمئن "
+"شوید که هیچ فایروال یا پروکسی معکوسی تداخل نداشته باشد."
+
+#: src/diagnosers/21-web.py:144
+msgid "diagnosis_http_connection_error"
+msgstr ""
+"خطای اتصال: ارتباط با دامنه درخواست شده امکان پذیر نیست، به احتمال زیاد "
+"غیرقابل دسترسی است."
+
+#: src/diagnosers/21-web.py:145
+msgid "diagnosis_http_timeout"
+msgstr ""
+"زمان تلاش برای تماس با سرور از خارج به پایان رسید. به نظر می رسد غیرقابل "
+"دسترسی است.<br>1. شایع ترین علت برای این مشکل ، پورت 80 است (و 443) <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>به"
+" درستی به سرور شما ارسال نمی شوند</a>.<br>2. همچنین باید مطمئن شوید که "
+"سرویس nginx در حال اجرا است<br>3. در تنظیمات پیچیده تر: مطمئن شوید که هیچ"
+" فایروال یا پروکسی معکوسی تداخل نداشته باشد."
+
+#: src/diagnosers/24-mail.py:55
+msgid "diagnosis_mail_outgoing_port_25_ok"
+msgstr "سرور ایمیل SMTP قادر به ارسال ایمیل است (پورت خروجی 25 مسدود نشده است)."
+
+#: src/diagnosers/24-mail.py:56
+msgid "diagnosis_mail_ehlo_ok"
+msgstr ""
+"سرور ایمیل SMTP از خارج قابل دسترسی است و بنابراین می تواند ایمیل دریافت "
+"کند!"
+
+#: src/diagnosers/24-mail.py:57
+msgid "diagnosis_mail_fcrdns_ok"
+msgstr "DNS معکوس شما به درستی پیکربندی شده است!"
+
+#: src/diagnosers/24-mail.py:58
+msgid "diagnosis_mail_blocklist_ok"
+msgstr ""
+"به نظر می رسد IP ها و دامنه های مورد استفاده این سرور در لیست سیاه قرار "
+"ندارند"
+
+#: src/diagnosers/24-mail.py:59 src/diagnosers/24-mail.py:298
+msgid "diagnosis_mail_queue_ok"
+msgstr "{nb_pending} ایمیل های معلق در صف های ایمیل"
+
+#: src/diagnosers/24-mail.py:122
+msgid "diagnosis_mail_ehlo_bad_answer"
+msgstr "یک سرویس غیر SMTP در پورت 25 در IPv{ipversion} پاسخ داد"
+
+#: src/diagnosers/24-mail.py:123
+msgid "diagnosis_mail_ehlo_bad_answer_details"
+msgstr "ممکن است به دلیل پاسخ دادن دستگاه دیگری به جای سرور شما باشد."
+
+#: src/diagnosers/24-mail.py:124
+msgid "diagnosis_mail_ehlo_unreachable"
+msgstr ""
+"سرور ایمیل SMTP از خارج در IPv {ipversion} غیرقابل دسترسی است. قادر به "
+"دریافت ایمیل نخواهد بود."
+
+#: src/diagnosers/24-mail.py:125
+msgid "diagnosis_mail_ehlo_unreachable_details"
+msgstr ""
+"اتصال روی پورت 25 سرور شما در IPv{ipversion} باز نشد. به نظر می رسد "
+"غیرقابل دسترس است.<br>1. شایع ترین علت این مشکل ، پورت 25 است <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>به"
+" درستی به سرور شما ارسال نشده است</a>.<br>2. همچنین باید مطمئن شوید که "
+"سرویس postfix در حال اجرا است.<br>3. در تنظیمات پیچیده تر: مطمئن شوید که "
+"هیچ فایروال یا پروکسی معکوسی تداخل نداشته باشد."
+
+#: src/diagnosers/80-apps.py:113
+msgid "diagnosis_apps_security_issue_warning"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:114
+msgid "diagnosis_apps_security_issue_error"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:268
+msgid "diagnosis_domain_not_found_details"
+msgstr "دامنه {domain} در پایگاه داده WHOIS وجود ندارد یا منقضی شده است!"
+
+#: src/diagnosers/12-dnsrecords.py:304
+msgid "diagnosis_domain_expiration_not_found"
+msgstr "بررسی تاریخ انقضا برخی از دامنه ها امکان پذیر نیست"
+
+#: src/diagnosers/12-dnsrecords.py:305
+msgid "diagnosis_domain_expiration_error"
+msgstr "برخی از دامنه ها به زودی منقضی می شوند!"
+
+#: src/diagnosers/12-dnsrecords.py:306
+msgid "diagnosis_domain_expiration_warning"
+msgstr "برخی از دامنه ها به زودی منقضی می شوند!"
+
+#: src/diagnosers/12-dnsrecords.py:307
+msgid "diagnosis_domain_expiration_success"
+msgstr "دامنه های شما ثبت شده است و به این زودی منقضی نمی شود."
+
+#: src/diagnosers/12-dnsrecords.py:308
+msgid "diagnosis_domain_expiration_not_found_details"
+msgstr ""
+"به نظر می رسد اطلاعات WHOIS برای دامنه {domain} حاوی اطلاعات مربوط به "
+"تاریخ انقضا نیست؟"
+
+#: src/diagnosers/00-basesystem.py:380
+msgid "diagnosis_package_security_issue_warning"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:381
+msgid "diagnosis_package_security_issue_error"
+msgstr ""
+
+#: src/utils/password.py:144
+msgid "password_listed"
+msgstr ""
+"این رمز در بین پر استفاده ترین رمزهای عبور در جهان قرار دارد. لطفاً چیزی "
+"منحصر به فرد تر انتخاب کنید."
+
+#: src/utils/password.py:147
+msgid "password_too_simple_1"
+msgstr "گذرواژه باید حداقل 8 کاراکتر باشد"
+
+#: src/utils/password.py:148
+msgid "password_too_simple_2"
+msgstr ""
+"گذرواژه باید حداقل 8 کاراکتر طول داشته باشد و شامل عدد ، حروف الفبائی "
+"کوچک و بزرگ باشد"
+
+#: src/utils/password.py:149
+msgid "password_too_simple_3"
+msgstr ""
+"گذرواژه باید حداقل 8 کاراکتر طول داشته باشد و شامل عدد ، حروف الفبائی "
+"کوچک و بزرگ و کاراکترهای خاص باشد"
+
+#: src/utils/password.py:150
+msgid "password_too_simple_4"
+msgstr ""
+"گذرواژه باید حداقل 12 کاراکتر طول داشته باشد و شامل عدد ، حروف الفبائی "
+"کوچک و بزرگ و کاراکترهای خاص باشد"
+
+#: src/utils/app_utils.py:97
+msgid "confirm_app_install_warning"
+msgstr ""
+"هشدار: این کاره ممکن است کار کند ، اما در یونو‌هاست یکپارچه نشده است. "
+"برخی از ویژگی ها مانند ورود به سیستم و پشتیبان گیری/بازیابی ممکن است در "
+"دسترس نباشد. به هر حال نصب شود؟ [{answers}] "
+
+#: src/utils/app_utils.py:98
+msgid "confirm_app_install_danger"
+msgstr ""
+"خطرناک! این برنامه هنوز آزمایشی است (اگر صراحتاً کار نکند)! احتمالاً "
+"نباید آن را نصب کنید مگر این‌که بدانید در حال انجام چه کاری هستید. اگر "
+"این کاره‌ کار نکرد یا سیستم شما را خراب کرد، هیچ پشتیبانی ارائه نخواهد "
+"شد… اگر به هر حال مایل به پذیرش این خطر هستید ، '{answers}' را تایپ کنید"
+
+#: src/utils/app_utils.py:99
+msgid "confirm_app_install_thirdparty"
+msgstr ""
+"خطرناک! این برنامه بخشی از فهرست برنامه YunoHost نیست. نصب برنامه های شخص"
+" ثالث ممکن است یکپارچگی و امنیت سیستم شما را به خطر بیندازد. احتمالاً "
+"نباید آن را نصب کنید مگر اینکه بدانید در حال انجام چه کاری هستید. اگر این"
+" برنامه کار نکرد یا سیستم شما را خراب کرد ، هیچ پشتیبانی ارائه نخواهدشد… "
+"به هر حال اگر مایل به پذیرش این خطر هستید ، '{answers}' را تایپ کنید"
+
+#: src/utils/app_utils.py:483
+msgid "app_manifest_install_ask_domain"
+msgstr "دامنه ای را انتخاب کنید که این برنامه باید در آن نصب شود"
+
+#: src/utils/app_utils.py:484
+msgid "app_manifest_install_ask_path"
+msgstr "مسیر URL (بعد از دامنه) را انتخاب کنید که این برنامه باید در آن نصب شود"
+
+#: src/utils/app_utils.py:485
+msgid "app_manifest_install_ask_password"
+msgstr "گذرواژه مدیریتی را برای این برنامه انتخاب کنید"
+
+#: src/utils/app_utils.py:486
+msgid "app_manifest_install_ask_admin"
+msgstr "برای این برنامه یک کاربر سرپرست انتخاب کنید"
+
+#: src/utils/app_utils.py:487
+msgid "app_manifest_install_ask_is_public"
+msgstr "آیا این برنامه باید در معرض دید بازدیدکنندگان ناشناس قرار گیرد؟"
+
+#: src/utils/app_utils.py:491
+msgid "app_manifest_install_ask_init_main_permission"
+msgstr ""
+
+#: src/utils/app_utils.py:495
+msgid "app_manifest_install_ask_init_admin_permission"
+msgstr ""
+
+#: src/utils/app_utils.py:1326
+msgid "confirm_notifications_read"
+msgstr ""
+
+#: src/utils/form.py:1925
+msgid "visitors"
+msgstr ""
+
+#: src/utils/form.py:1926
+msgid "all_users"
+msgstr "همه کاربران یونوهاست"
+
+#: src/utils/form.py:1927
+msgid "admins"
+msgstr "مدیرها"
+
+#: src/utils/form.py:2161
+msgid "pydantic_type_error"
+msgstr ""
+
+#: src/utils/form.py:2162
+msgid "pydantic_type_error_none_not_allowed"
+msgstr ""
+
+#: src/utils/form.py:2163
+msgid "pydantic_type_error_str"
+msgstr ""
+
+#: src/utils/form.py:2164
+msgid "pydantic_value_error_color"
+msgstr ""
+
+#: src/utils/form.py:2165
+msgid "pydantic_value_error_const"
+msgstr ""
+
+#: src/utils/form.py:2166
+msgid "pydantic_value_error_date"
+msgstr ""
+
+#: src/utils/form.py:2167
+msgid "pydantic_value_error_email"
+msgstr ""
+
+#: src/utils/form.py:2168
+msgid "pydantic_value_error_number_not_ge"
+msgstr ""
+
+#: src/utils/form.py:2169
+msgid "pydantic_value_error_number_not_le"
+msgstr ""
+
+#: src/utils/form.py:2170
+msgid "pydantic_value_error_str_regex"
+msgstr ""
+
+#: src/utils/form.py:2171
+msgid "pydantic_value_error_time"
+msgstr ""
+
+#: src/utils/form.py:2172
+msgid "pydantic_value_error_url_extra"
+msgstr ""
+
+#: src/utils/form.py:2173
+msgid "pydantic_value_error_url_host"
+msgstr ""
+
+#: src/utils/form.py:2174
+msgid "pydantic_value_error_url_port"
+msgstr ""
+
+#: src/utils/form.py:2175
+msgid "pydantic_value_error_url_scheme"
+msgstr ""
+
+#: src/utils/resources.py:284
+msgid "log_resource_snippet"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:53
+msgid "diagnosis_ip_not_connected_at_all"
+msgstr "به نظر می رسد سرور اصلا به اینترنت متصل نیست !؟"
+
+#: src/diagnosers/10-ip.py:77
+msgid "diagnosis_ip_broken_dnsresolution"
+msgstr ""
+"به نظر می رسد تفکیک پذیری نام دامنه به دلایلی خراب شده است… آیا فایروال "
+"درخواست های DNS را مسدود می کند؟"
+
+#: src/diagnosers/10-ip.py:79
+msgid "diagnosis_ip_broken_resolvconf"
+msgstr ""
+"به نظر می رسد تفکیک پذیری نام دامنه در سرور شما شکسته شده است ، که به نظر"
+" می رسد مربوط به <code>/etc/resolv.conf</code> و اشاره نکردن به "
+"<code>127.0.0.1</code> میباشد."
+
+#: src/diagnosers/10-ip.py:89
+msgid "diagnosis_ip_weird_resolvconf"
+msgstr ""
+"اینطور که پیداست تفکیک پذیری DNS کار می کند ، اما به نظر می رسد از سفارشی"
+" استفاده می کنید <code>/etc/resolv.conf</code>."
+
+#: src/diagnosers/10-ip.py:90
+msgid "diagnosis_ip_weird_resolvconf_details"
+msgstr ""
+"پرونده <code>/etc/resolv.conf</code> باید یک پیوند همراه برای "
+"<code>/etc/resolvconf/run/resolv.conf</code> خود اشاره می کند به "
+"<code>127.0.0.1</code> (dnsmasq). اگر می خواهید راه حل های DNS را به صورت"
+" دستی پیکربندی کنید ، لطفاً ویرایش کنید "
+"<code>/etc/resolv.dnsmasq.conf</code>."
+
+#: src/diagnosers/10-ip.py:96
+msgid "diagnosis_ip_dnsresolution_working"
+msgstr "تفکیک پذیری نام دامنه کار می کند!"
+
+#: src/diagnosers/10-ip.py:131
+msgid "diagnosis_ip_connected_ipv4"
+msgstr "سرور از طریق IPv4 به اینترنت متصل است!"
+
+#: src/diagnosers/10-ip.py:131
+msgid "diagnosis_ip_no_ipv4"
+msgstr "سرور IPv4 کار نمی کند."
+
+#: src/diagnosers/10-ip.py:132 src/diagnosers/10-ip.py:149
+msgid "diagnosis_ip_global"
+msgstr "IP جهانی: <code>{global}</code>"
+
+#: src/diagnosers/10-ip.py:132 src/diagnosers/10-ip.py:149
+msgid "diagnosis_ip_local"
+msgstr "IP محلی: <code>{local}</code>"
+
+#: src/diagnosers/10-ip.py:147
+msgid "diagnosis_ip_connected_ipv6"
+msgstr "سرور از طریق IPv6 به اینترنت متصل است!"
+
+#: src/diagnosers/10-ip.py:147
+msgid "diagnosis_ip_no_ipv6"
+msgstr "سرور IPv6 کار نمی کند."
+
+#: src/diagnosers/10-ip.py:153
+msgid "diagnosis_ip_no_ipv6_tip_important"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:155
+msgid "diagnosis_ip_no_ipv6_tip"
+msgstr ""
+"داشتن یک IPv6 فعال برای کار سرور شما اجباری نیست ، اما برای سلامت اینترنت"
+" به طور کلی بهتر است. IPv6 معمولاً باید در صورت موجود بودن توسط سیستم یا "
+"ارائه دهنده اینترنت شما به طور خودکار پیکربندی شود. در غیر این صورت ، "
+"ممکن است لازم باشد چند مورد را به صورت دستی پیکربندی کنید ، همانطور که در"
+" اسناد اینجا توضیح داده شده است: <a "
+"href='https://doc.yunohost.org/ipv6'>https://doc.yunohost.org/ipv6</a>.اگر"
+" نمی توانید IPv6 را فعال کنید یا اگر برای شما بسیار فنی به نظر می رسد ، "
+"می توانید با خیال راحت این هشدار را نادیده بگیرید."
+
+#: src/diagnosers/10-ip.py
+msgid "diagnosis_description_ip"
+msgstr "اتصال به اینترنت"
+
+#: src/diagnosers/14-ports.py:75
+msgid "diagnosis_ports_could_not_diagnose"
+msgstr ""
+"نمی توان تشخیص داد پورت ها از خارج در IPv{ipversion} قابل دسترسی هستند یا"
+" خیر."
+
+#: src/diagnosers/14-ports.py:76
+msgid "diagnosis_ports_could_not_diagnose_details"
+msgstr "خطا: {error}"
+
+#: src/diagnosers/14-ports.py:94 src/diagnosers/14-ports.py:155
+msgid "diagnosis_ports_ok"
+msgstr "پورت {port} از خارج قابل دسترسی است."
+
+#: src/diagnosers/14-ports.py:95 src/diagnosers/14-ports.py:107
+#: src/diagnosers/14-ports.py:142 src/diagnosers/14-ports.py:156
+#: src/diagnosers/14-ports.py:169
+msgid "diagnosis_ports_needed_by"
+msgstr "افشای این پورت برای ویژگی های {category} (سرویس {service}) مورد نیاز است"
+
+#: src/diagnosers/14-ports.py:105
+msgid "diagnosis_ports_unreachable"
+msgstr "پورت {port} از خارج قابل دسترسی نیست."
+
+#: src/diagnosers/14-ports.py:108 src/diagnosers/14-ports.py:143
+#: src/diagnosers/14-ports.py:170
+msgid "diagnosis_ports_forwarding_tip"
+msgstr ""
+"برای رفع این مشکل، به احتمال زیاد باید انتقال پورت را در روتر اینترنت خود"
+" پیکربندی کنید همانطور که شرح داده شده در <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>https://doc.yunohost.org/admin/get_started/post_install/dns_config/</a>"
+
+#: src/diagnosers/14-ports.py:140 src/diagnosers/14-ports.py:167
+msgid "diagnosis_ports_partially_unreachable"
+msgstr "پورت {port} از خارج در {failed}IPv قابل دسترسی نیست."
+
+#: src/diagnosers/14-ports.py
+msgid "diagnosis_description_ports"
+msgstr "ارائه پورت ها"
+
+#: src/diagnosers/21-web.py:50
+msgid "diagnosis_http_nginx_conf_not_up_to_date"
+msgstr ""
+"به نظر می رسد که پیکربندی nginx این دامنه به صورت دستی تغییر کرده است و "
+"از تشخیص YunoHost در صورت دسترسی به HTTP جلوگیری می کند."
+
+#: src/diagnosers/21-web.py:51
+msgid "diagnosis_http_nginx_conf_not_up_to_date_details"
+msgstr ""
+"برای برطرف کردن وضعیّت ، تفاوت را با استفاده از خط فرمان بررسی "
+"کنید<cmd>yunohost tools regen-conf nginx --dry-run --with-diff</cmd> و "
+"اگر خوب است ، تغییرات را اعمال کنید با استفاده از فرمان <cmd>yunohost "
+"tools regen-conf nginx --force</cmd>."
+
+#: src/diagnosers/21-web.py:57
+msgid "diagnosis_http_special_use_tld"
+msgstr ""
+
+#: src/diagnosers/21-web.py:109
+msgid "diagnosis_http_hairpinning_issue"
+msgstr "به نظر می رسد در شبکه محلی شما hairpinning فعال نشده است."
+
+#: src/diagnosers/21-web.py:110
+msgid "diagnosis_http_hairpinning_issue_details"
+msgstr ""
+"این احتمالاً به دلیل جعبه / روتر ISP شما است. در نتیجه ، افراد خارج از "
+"شبکه محلی شما می توانند به سرور شما مطابق انتظار دسترسی پیدا کنند ، اما "
+"افراد داخل شبکه محلی (احتمالاً مثل شما؟) هنگام استفاده از نام دامنه یا IP"
+" جهانی. ممکن است بتوانید وضعیت را بهبود بخشید با نگاهی به <a "
+"href='https://doc.yunohost.org/dns_local_network'>https://doc.yunohost.org/dns_local_network</a>"
+
+#: src/diagnosers/21-web.py:133
+msgid "diagnosis_http_could_not_diagnose"
+msgstr ""
+"نمی توان تشخیص داد که در IPv{ipversion} دامنه ها از خارج قابل دسترسی "
+"هستند یا خیر."
+
+#: src/diagnosers/21-web.py:134
+msgid "diagnosis_http_could_not_diagnose_details"
+msgstr "خطا: {error}"
+
+#: src/diagnosers/21-web.py:159 src/diagnosers/21-web.py:215
+msgid "diagnosis_http_ok"
+msgstr "دامنه {domain} از طریق HTTP از خارج از شبکه محلی قابل دسترسی است."
+
+#: src/diagnosers/21-web.py:169
+msgid "diagnosis_http_unreachable"
+msgstr ""
+"به نظر می رسد دامنه {domain} از خارج از شبکه محلی از طریق HTTP قابل "
+"دسترسی نیست."
+
+#: src/diagnosers/21-web.py:201 src/diagnosers/21-web.py:221
+msgid "diagnosis_http_partially_unreachable"
+msgstr ""
+"به نظر می رسد که دامنه {domain} از طریق HTTP از خارج از شبکه محلی در "
+"IPv{failed} غیرقابل دسترسی است، اگرچه در IPv{passed} کار می کند."
+
+#: src/diagnosers/21-web.py
+msgid "diagnosis_description_web"
+msgstr "وب"
+
+#: src/diagnosers/24-mail.py:89
+msgid "diagnosis_mail_outgoing_port_25_blocked"
+msgstr ""
+"سرور ایمیل SMTP نمی تواند به سرورهای دیگر ایمیل ارسال کند زیرا درگاه "
+"خروجی 25 در IPv {ipversion} مسدود شده است."
+
+#: src/diagnosers/24-mail.py:91
+msgid "diagnosis_mail_outgoing_port_25_blocked_details"
+msgstr ""
+"ابتدا باید سعی کنید پورت خروجی 25 را در رابط اینترنت روتر یا رابط ارائه "
+"دهنده میزبانی خود باز کنید. (ممکن است برخی از ارائه دهندگان میزبانی از "
+"شما بخواهند که برای این کار تیکت پشتیبانی ارسال کنید)."
+
+#: src/diagnosers/24-mail.py:92
+msgid "diagnosis_mail_outgoing_port_25_blocked_relay_vpn"
+msgstr ""
+"برخی از ارائه دهندگان به شما اجازه نمی دهند پورت خروجی 25 را رفع انسداد "
+"کنید زیرا به بی طرفی شبکه اهمیتی نمی دهند.<br> - برخی از آنها جایگزین را "
+"ارائه می دهند <a href='https://doc.yunohost.org/email_configure_relay'>با"
+" استفاده از رله سرور ایمیل</a> اگرچه به این معنی است که رله می تواند از "
+"ترافیک ایمیل شما جاسوسی کند.<br> - یک جایگزین دوستدار حریم خصوصی استفاده "
+"از VPN * با IP عمومی اختصاصی * برای دور زدن این نوع محدودیت ها است. "
+"ببینید <a "
+"href='https://doc.yunohost.org/vpn_advantage'>https://doc.yunohost.org/vpn_advantage</a><br>-"
+" همچنین می توانید تغییر را در نظر بگیرید به <a "
+"href='https://doc.yunohost.org/providers/isp'>یک ارائه دهنده بی طرف خالص "
+"تر</a>"
+
+#: src/diagnosers/24-mail.py:116
+msgid "diagnosis_mail_ehlo_could_not_diagnose"
+msgstr ""
+"نمی توان تشخیص داد که آیا سرور ایمیل postfix از خارج در IPv{ipversion} "
+"قابل دسترسی است یا خیر."
+
+#: src/diagnosers/24-mail.py:117
+msgid "diagnosis_mail_ehlo_could_not_diagnose_details"
+msgstr "خطا: {error}"
+
+#: src/diagnosers/24-mail.py:139
+msgid "diagnosis_mail_ehlo_wrong"
+msgstr ""
+"یک سرور ایمیل SMTP متفاوت در IPv{ipversion} پاسخ می دهد. سرور شما "
+"احتمالاً نمی تواند ایمیل دریافت کند."
+
+#: src/diagnosers/24-mail.py:140
+msgid "diagnosis_mail_ehlo_wrong_details"
+msgstr ""
+"EHLO دریافت شده توسط تشخیص دهنده از راه دور در IPv{ipversion} با دامنه "
+"سرور شما متفاوت است.<br>EHLO دریافت شده: "
+"<code>{wrong_ehlo}</code><br>انتظار می رود: "
+"<code>{right_ehlo}</code><br>شایع ترین علت این مشکل ، پورت 25 است <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>به"
+" درستی به سرور شما ارسال نشده است</a>. از سوی دیگر اطمینان حاصل کنید که "
+"هیچ فایروال یا پروکسی معکوسی تداخل ایجاد نمی کند."
+
+#: src/diagnosers/24-mail.py:154 src/diagnosers/24-mail.py:160
+msgid "diagnosis_mail_fcrdns_nok_details"
+msgstr ""
+"ابتدا باید DNS معکوس را پیکربندی کنید با <code>{ehlo_domain}</code> در "
+"رابط روتر اینترنت یا رابط ارائه دهنده میزبانی تان. (ممکن است برخی از "
+"ارائه دهندگان میزبانی از شما بخواهند که برای این کار تیکت پشتیبانی ارسال "
+"کنید)."
+
+#: src/diagnosers/24-mail.py:155
+msgid "diagnosis_mail_fcrdns_nok_alternatives_6"
+msgstr ""
+"برخی از ارائه دهندگان به شما اجازه نمی دهند DNS معکوس خود را پیکربندی "
+"کنید (یا ممکن است ویژگی آنها شکسته شود…). اگر DNS معکوس شما به درستی برای"
+" IPv4 پیکربندی شده است، با استفاده از آن می توانید هنگام ارسال ایمیل، "
+"استفاده از IPv6 را غیرفعال کنید. <cmd>yunohost settings set "
+"email.smtp.smtp_allow_ipv6 -v off</cmd>. توجه: این راه حل آخری به این "
+"معنی است که شما نمی توانید از چند سرور IPv6 موجود ایمیل ارسال یا دریافت "
+"کنید."
+
+#: src/diagnosers/24-mail.py:161
+msgid "diagnosis_mail_fcrdns_nok_alternatives_4"
+msgstr ""
+"برخی از ارائه دهندگان به شما اجازه نمی دهند DNS معکوس خود را پیکربندی "
+"کنید (یا ممکن است ویژگی آنها شکسته شود…). اگر به همین دلیل مشکلاتی را "
+"تجربه می کنید ، راه حل های زیر را در نظر بگیرید:<b > - برخی از ISP ها "
+"جایگزین ارائه می دهند <a "
+"href='https://doc.yunohost.org/email_configure_relay'>با استفاده از رله "
+"سرور ایمیل</a> اگرچه به این معنی است که رله می تواند از ترافیک ایمیل شما "
+"جاسوسی کند.<br>- یک جایگزین دوستدار حریم خصوصی استفاده از VPN * با IP "
+"عمومی اختصاصی * برای دور زدن این نوع محدودیت ها است. ببینید <a "
+"href='https://doc.yunohost.org/vpn_advantage'>https://doc.yunohost.org/vpn_advantage</a><br>-"
+" یا ممکن است <a href='https://doc.yunohost.org/providers/isp'>به ارائه "
+"دهنده دیگری بروید</a>"
+
+#: src/diagnosers/24-mail.py:179
+msgid "diagnosis_mail_fcrdns_dns_missing"
+msgstr ""
+"در IPv{ipversion} هیچ DNS معکوسی تعریف نشده است. ممکن است برخی از ایمیل "
+"ها تحویل داده نشوند یا به عنوان هرزنامه پرچم گذاری شوند."
+
+#: src/diagnosers/24-mail.py:189
+msgid "diagnosis_mail_fcrdns_different_from_ehlo_domain_details"
+msgstr ""
+"DNS معکوس فعلی: <code>{rdns_domain}</code><br>مقدار مورد انتظار: "
+"<code>{ehlo_domain}</code>"
+
+#: src/diagnosers/24-mail.py:199
+msgid "diagnosis_mail_fcrdns_different_from_ehlo_domain"
+msgstr ""
+"DNS معکوس به درستی در IPv{ipversion} پیکربندی نشده است. ممکن است برخی از "
+"ایمیل ها تحویل داده نشوند یا به عنوان هرزنامه پرچم گذاری شوند."
+
+#: src/diagnosers/24-mail.py:243
+msgid "diagnosis_mail_blocklist_reason"
+msgstr "دلیل لیست سیاه: {reason}"
+
+#: src/diagnosers/24-mail.py:245
+msgid "diagnosis_mail_blocklist_reason_openresolver"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:248
+msgid "diagnosis_mail_blocklist_website"
+msgstr ""
+"پس از شناسایی دلیل لیست شدن و رفع آن، با خیال راحت درخواست کنید IP یا "
+"دامنه شما حذف شود از {blocklist_website}"
+
+#: src/diagnosers/24-mail.py:262
+msgid "diagnosis_mail_blocklist_listed_by"
+msgstr "IP یا دامنه شما <code>{item}</code>در لیست سیاه {blocklist_name} قرار دارد"
+
+#: src/diagnosers/24-mail.py:282
+msgid "diagnosis_mail_queue_unavailable"
+msgstr "نمی توان با تعدادی از ایمیل های معلق در صف مشورت کرد"
+
+#: src/diagnosers/24-mail.py:283
+msgid "diagnosis_mail_queue_unavailable_details"
+msgstr "خطا: {error}"
+
+#: src/diagnosers/24-mail.py:291
+msgid "diagnosis_mail_queue_too_big"
+msgstr "تعداد زیادی ایمیل معلق در صف پست ({nb_pending} ایمیل)"
+
+#: src/diagnosers/24-mail.py
+msgid "diagnosis_description_mail"
+msgstr "ایمیل"
+
+#: src/diagnosers/30-services.py:45
+msgid "diagnosis_services_bad_status"
+msgstr "سرویس {service} {status} است :("
+
+#: src/diagnosers/30-services.py:46
+msgid "diagnosis_services_bad_status_tip"
+msgstr ""
+"می توانید سعی کنید <a href='#/services/{service}'>سرویس را راه اندازی "
+"مجدد کنید</a>، و اگر کار نمی کند ، نگاهی داشته باشید به<a "
+"href='#/services/{service}'>سرویس در webadmin ثبت می شود</a> (از خط فرمان"
+" ، می توانید این کار را انجام دهید با <cmd>yunohost service restart "
+"{service}</cmd> و <cmd>yunohost service log {service}</cmd>)."
+
+#: src/diagnosers/30-services.py:50
+msgid "diagnosis_services_conf_broken"
+msgstr "پیکربندی سرویس {service} خراب است!"
+
+#: src/diagnosers/30-services.py:55
+msgid "diagnosis_services_running"
+msgstr "سرویس {service} در حال اجرا است!"
+
+#: src/diagnosers/30-services.py
+msgid "diagnosis_description_services"
+msgstr "بررسی وضعیّت سرویس ها"
+
+#: src/diagnosers/70-regenconf.py:41
+msgid "diagnosis_regenconf_allgood"
+msgstr "همه فایلهای پیکربندی مطابق با تنظیمات توصیه شده است!"
+
+#: src/diagnosers/70-regenconf.py:52
+msgid "diagnosis_regenconf_manually_modified"
+msgstr ""
+"به نظر می رسد فایل پیکربندی <code>{file}</code> به صورت دستی اصلاح شده "
+"است."
+
+#: src/diagnosers/70-regenconf.py:53
+msgid "diagnosis_regenconf_manually_modified_details"
+msgstr ""
+"اگر بدانید چه کار می کنید ، احتمالاً خوب است! YunoHost به روز رسانی "
+"خودکار این فایل را متوقف می کند… اما مراقب باشید که ارتقاء YunoHost می "
+"تواند شامل تغییرات مهم توصیه شده باشد. اگر می خواهید ، می توانید تفاوت ها"
+" را با <cmd>yunohost tools regen-conf {category} --dry-run --with-"
+"diff</cmd> و تنظیم مجدد پیکربندی توصیه شده به زور با فرمان <cmd>yunohost "
+"tools regen-conf {category} --force</cmd>"
+
+#: src/diagnosers/70-regenconf.py:66
+msgid "diagnosis_sshd_config_insecure"
+msgstr ""
+"به نظر می رسد که پیکربندی SSH به صورت دستی تغییر یافته است و مطمئن نیست "
+"زیرا هیچ دستورالعمل 'AllowGroups' یا 'AllowUsers' برای محدود کردن دسترسی "
+"به کاربران مجاز ندارد."
+
+#: src/diagnosers/70-regenconf.py:78
+msgid "diagnosis_sshd_config_inconsistent"
+msgstr ""
+"به نظر می رسد که پورت SSH به صورت دستی در/etc/ssh/sshd_config تغییر یافته"
+" است. از زمان YunoHost 4.2 ، یک تنظیم جهانی جدید 'security.ssh.port' برای"
+" جلوگیری از ویرایش دستی پیکربندی در دسترس است."
+
+#: src/diagnosers/70-regenconf.py:79
+msgid "diagnosis_sshd_config_inconsistent_details"
+msgstr ""
+"لطفاً اجراکنید <cmd>yunohost settings set security.ssh.port -v "
+"YOUR_SSH_PORT</cmd> برای تعریف پورت SSH و بررسی کنید <cmd>yunohost tools "
+"regen-conf ssh --dry-run --with-diff</cmd> و <cmd>yunohost tools regen-"
+"conf ssh --force</cmd> برای تنظیم مجدد تنظیمات خود به توصیه YunoHost."
+
+#: src/diagnosers/70-regenconf.py
+msgid "diagnosis_description_regenconf"
+msgstr "تنظیمات سیستم"
+
+#: src/diagnosers/50-systemresources.py:56
+msgid "diagnosis_ram_verylow"
+msgstr ""
+"این سیستم فقط {available} ({available_percent}٪) حافظه در دسترس دارد! (از"
+" {total})"
+
+#: src/diagnosers/50-systemresources.py:59
+msgid "diagnosis_ram_low"
+msgstr ""
+"این سیستم فقط {available} ({available_percent}٪) حافظه در دسترس دارد! (از"
+" {total}). مراقب باشید."
+
+#: src/diagnosers/50-systemresources.py:62
+msgid "diagnosis_ram_ok"
+msgstr ""
+"این سیستم هنوز {available} ({available_percent}٪) حافظه در دسترس دارد از "
+"مجموع {total}."
+
+#: src/diagnosers/50-systemresources.py:76
+msgid "diagnosis_swap_none"
+msgstr ""
+"این سیستم به هیچ وجه swap ندارد. برای جلوگیری از شرایطی که حافظه سیستم "
+"شما تمام می شود ، باید حداقل {recommended} swap را در نظر بگیرید."
+
+#: src/diagnosers/50-systemresources.py:79
+msgid "diagnosis_swap_notsomuch"
+msgstr ""
+"سیستم فقط {total} swap دارد. برای جلوگیری از شرایطی که حافظه سیستم شما "
+"تمام می شود ، باید حداقل {recommended} را در نظر بگیرید."
+
+#: src/diagnosers/50-systemresources.py:82
+msgid "diagnosis_swap_ok"
+msgstr "سیستم {total} swap دارد!"
+
+#: src/diagnosers/50-systemresources.py:83
+msgid "diagnosis_swap_tip"
+msgstr ""
+"لطفاً مراقب و آگاه باشید، اگر سرور میزبانی swap را روی کارت SD یا حافظه "
+"SSD انجام دهد ، ممکن است طول عمر دستگاه را به شدت کاهش دهد."
+
+#: src/diagnosers/50-systemresources.py:128
+msgid "diagnosis_diskusage_verylow"
+msgstr ""
+"‏ذخیره سازی <code>{mountpoint}</code> (روی دستگاه <code>{device}</code>) "
+"فقط {free} ({free_percent}%) فضا باقی مانده (از {total}). شما واقعاً باید"
+" پاکسازی فضای ذخیره ساز را در نظر بگیرید!"
+
+#: src/diagnosers/50-systemresources.py:133
+msgid "diagnosis_diskusage_low"
+msgstr ""
+"‏ذخیره سازی <code>{mountpoint}</code> (روی دستگاه <code>{device}</code>) "
+"فقط {free} ({free_percent}%) فضا باقی مانده(از {total}). مراقب باشید."
+
+#: src/diagnosers/50-systemresources.py:136
+msgid "diagnosis_diskusage_ok"
+msgstr ""
+"‏ذخیره سازی <code>{mountpoint}</code> (روی دستگاه <code>{device}</code>) "
+"هنوز {free} فضا در دسترس دارد ({free_percent}%) فضای باقی مانده (از "
+"{total})!"
+
+#: src/diagnosers/50-systemresources.py:158
+msgid "diagnosis_rootfstotalspace_critical"
+msgstr ""
+"کل سیستم فایل فقط دارای {space} است که بسیار نگران کننده است! احتمالاً "
+"خیلی زود فضای دیسک شما تمام می شود! توصیه می شود حداقل 16 گیگابایت و "
+"بیشتر فضا برای سیستم فایل ریشه داشته باشید."
+
+#: src/diagnosers/50-systemresources.py:165
+msgid "diagnosis_rootfstotalspace_warning"
+msgstr ""
+"سیستم فایل ریشه در مجموع فقط {space} دارد. ممکن است اشکالی نداشته باشد ، "
+"اما مراقب باشید زیرا در نهایت ممکن است فضای دیسک شما به سرعت تمام شود… "
+"توصیه می شود حداقل 16 گیگابایت و بیشتر فضا برای سیستم فایل ریشه داشته "
+"باشید."
+
+#: src/diagnosers/50-systemresources.py:181
+msgid "diagnosis_processes_killed_by_oom_reaper"
+msgstr ""
+"برخی از فرآیندها اخیراً توسط سیستم از بین رفته اند زیرا حافظه آن تمام شده"
+" است. این به طور معمول نشانه کمبود حافظه در سیستم یا فرآیندی است که حافظه"
+" زیادی را از بین می برد. خلاصه فرآیندهای کشته شده:\n"
+"{kills_summary}"
+
+#: src/diagnosers/50-systemresources.py
+msgid "diagnosis_description_systemresources"
+msgstr "منابع سیستم"
+
+#: src/diagnosers/80-apps.py:49
+msgid "diagnosis_apps_allgood"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:69
+msgid "diagnosis_apps_issue"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:130
+msgid "diagnosis_apps_not_in_app_catalog"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:135
+msgid "diagnosis_apps_broken"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:137
+msgid "diagnosis_apps_bad_quality"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:142
+msgid "diagnosis_apps_outdated_packaging_format"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:152
+msgid "diagnosis_apps_outdated_ynh_requirement"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:169 src/diagnosers/80-apps.py:176
+msgid "diagnosis_apps_deprecated_practices"
+msgstr ""
+
+#: src/diagnosers/80-apps.py
+msgid "diagnosis_description_apps"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:90
+msgid "diagnosis_dns_specialusedomain"
+msgstr ""
+"دامنه {domain} بر اساس یک دامنه سطح بالا (TLD) مخصوص استفاده است و "
+"بنابراین انتظار نمی رود که دارای سوابق DNS واقعی باشد."
+
+#: src/diagnosers/12-dnsrecords.py:133
+msgid "diagnosis_dns_missing_record"
+msgstr ""
+"با توجه به پیکربندی DNS توصیه شده ، باید یک رکورد DNS با اطلاعات زیر "
+"اضافه کنید.<br>نوع: <code>{type}</code><br> نام: "
+"<code>{name}</code><br>ارزش: <code>{content}</code>"
+
+#: src/diagnosers/12-dnsrecords.py:136
+msgid "diagnosis_dns_discrepancy"
+msgstr ""
+"به نظر می رسد پرونده DNS زیر از پیکربندی توصیه شده پیروی نمی کند:<br>نوع:"
+" <code>{type}</code><br>نام: <code>{name}</code><br>ارزش فعلی: "
+"<code>{current}</code><br>مقدار مورد انتظار: <code>{content}</code>"
+
+#: src/diagnosers/12-dnsrecords.py:156
+msgid "diagnosis_dns_bad_conf"
+msgstr ""
+"برخی از سوابق DNS برای دامنه {domain} (دسته {category}) وجود ندارد یا "
+"نادرست است"
+
+#: src/diagnosers/12-dnsrecords.py:159
+msgid "diagnosis_dns_good_conf"
+msgstr "سوابق DNS برای دامنه {domain} (دسته {category}) به درستی پیکربندی شده است"
+
+#: src/diagnosers/12-dnsrecords.py:177
+msgid "diagnosis_dns_try_dyndns_update_force"
+msgstr ""
+"پیکربندی DNS این دامنه باید به طور خودکار توسط YunoHost مدیریت شود. اگر "
+"اینطور نیست ، می توانید سعی کنید به زور یک به روز رسانی را با استفاده از "
+"<cmd>yunohost dyndns update --force</cmd>."
+
+#: src/diagnosers/12-dnsrecords.py:180
+msgid "diagnosis_dns_point_to_doc"
+msgstr ""
+"لطفاً اسناد را در <a "
+"href='https://doc.yunohost.org/dns_config'>https://doc.yunohost.org/dns_config</a>"
+" برسی و مطالعه کنید، اگر در مورد پیکربندی سوابق DNS به کمک نیاز دارید."
+
+#: src/diagnosers/12-dnsrecords.py:292
+msgid "diagnosis_domain_expires_in"
+msgstr "{domain} در {days} روز منقضی می شود."
+
+#: src/diagnosers/12-dnsrecords.py
+msgid "diagnosis_description_dnsrecords"
+msgstr "رکورد DNS"
+
+#: src/diagnosers/00-basesystem.py:62
+msgid "diagnosis_basesystem_hardware"
+msgstr "معماری سخت افزاری سرور {virt} {arch} است"
+
+#: src/diagnosers/00-basesystem.py:69 src/diagnosers/00-basesystem.py:78
+msgid "diagnosis_basesystem_hardware_model"
+msgstr "مدل سرور {model} میباشد"
+
+#: src/diagnosers/00-basesystem.py:88
+msgid "diagnosis_basesystem_kernel"
+msgstr "سرور نسخه {kernel_version} هسته لینوکس را اجرا می کند"
+
+#: src/diagnosers/00-basesystem.py:96
+msgid "diagnosis_basesystem_host"
+msgstr "سرور نسخه {debian_version} دبیان را اجرا می کند"
+
+#: src/diagnosers/00-basesystem.py:112
+msgid "diagnosis_basesystem_ynh_single_version"
+msgstr "{package} نسخه: {version} ({repo})"
+
+#: src/diagnosers/00-basesystem.py:130
+msgid "diagnosis_basesystem_ynh_main_version"
+msgstr "سرور نسخه YunoHost {main_version} ({repo}) را اجرا می کند"
+
+#: src/diagnosers/00-basesystem.py:132
+msgid "diagnosis_basesystem_ynh_inconsistent_versions"
+msgstr ""
+"شما نسخه های ناسازگار از بسته های YunoHost را اجرا می کنید… به احتمال "
+"زیاد به دلیل ارتقاء ناموفق یا جزئی است."
+
+#: src/diagnosers/00-basesystem.py:141
+msgid "diagnosis_security_vulnerable_to_meltdown"
+msgstr ""
+"به نظر می رسد شما در برابر آسیب پذیری امنیتی بحرانی Meltdown آسیب پذیر "
+"هستید"
+
+#: src/diagnosers/00-basesystem.py:142
+msgid "diagnosis_security_vulnerable_to_meltdown_details"
+msgstr ""
+"برای رفع این مشکل ، باید سیستم خود را ارتقا دهید و مجدداً راه اندازی کنید"
+" تا هسته لینوکس جدید بارگیری شود (یا در صورت عدم کارکرد با ارائه دهنده "
+"سرور خود تماس بگیرید). برای اطلاعات بیشتر به https://meltdownattack.com/ "
+"مراجعه کنید."
+
+#: src/diagnosers/00-basesystem.py:154
+msgid "diagnosis_package_installed_from_sury"
+msgstr "برخی از بسته های سیستمی باید کاهش یابد"
+
+#: src/diagnosers/00-basesystem.py:155
+msgid "diagnosis_package_installed_from_sury_details"
+msgstr ""
+"برخی از بسته ها ناخواسته از مخزن شخص ثالث به نام Sury نصب شده اند. تیم "
+"یونو‌هاست استراتژی مدیریت این بسته ها را بهبود بخشیده ، اما انتظار می رود"
+" برخی از تنظیماتی که برنامه های PHP7.3 را در حالی که هنوز بر روی Stretch "
+"نصب شده اند نصب کرده اند ، ناسازگاری های باقی مانده ای داشته باشند. برای "
+"رفع این وضعیت ، باید دستور زیر را اجرا کنید: <cmd>{cmd_to_fix}</cmd>"
+
+#: src/diagnosers/00-basesystem.py:162
+msgid "diagnosis_backports_in_sources_list"
+msgstr ""
+"به نظر می رسد apt (مدیریت بسته) برای استفاده از مخزن پشتیبان پیکربندی شده"
+" است. مگر اینکه واقعاً بدانید چه کار می کنید ، ما به شدت از نصب بسته های "
+"پشتیبان خودداری می کنیم، زیرا به احتمال زیاد باعث ایجاد ناپایداری یا "
+"تداخل در سیستم شما می شود."
+
+#: src/diagnosers/00-basesystem.py:189
+msgid "diagnosis_using_yunohost_testing"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:190
+msgid "diagnosis_using_yunohost_testing_details"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:206
+msgid "diagnosis_using_stable_codename"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:207
+msgid "diagnosis_using_stable_codename_details"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:214
+msgid "diagnosis_high_number_auth_failures"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:222
+msgid "diagnosis_rfkill_wifi"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:223
+msgid "diagnosis_rfkill_wifi_details"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py
+msgid "diagnosis_description_basesystem"
+msgstr "سیستم پایه"
+
+#: src/migrations/m0032_firewall_config.py
+msgid "migration_description_0032_firewall_config"
+msgstr ""
+
+#: src/migrations/m0033_rework_permission_infos.py
+msgid "migration_description_0033_rework_permission_infos"
+msgstr ""
+
+#: src/migrations/m0034_fix_missing_admins_aliases.py
+msgid "migration_description_0034_fix_missing_admins_aliases"
+msgstr ""
+
+#: src/migrations/m0035_fix_apps_nodejs_version.py
+msgid "migration_description_0035_fix_apps_nodejs_version"
+msgstr ""
+
+#: src/migrations/m0031_terms_of_services.py
+msgid "migration_description_0031_terms_of_services"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled
+msgid "migration_description_0036_migrate_to_trixie"
+msgstr ""
+

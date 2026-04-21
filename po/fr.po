@@ -1,0 +1,4738 @@
+# French translations for yunohost package.
+# Copyright (C) 2014-2026 YunoHost
+# ssh <ssh@yunohost.org>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: yunohost 13.0.1\n"
+"Report-Msgid-Bugs-To: ssh@yunohost.org\n"
+"POT-Creation-Date: 2026-04-21 21:34+0200\n"
+"PO-Revision-Date: 2026-04-21 21:34+0200\n"
+"Last-Translator: Automatically generated\n"
+"Language: fr\n"
+"Language-Team: none\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: conf/yunohost/services.yml
+msgid "service_description_dnsmasq"
+msgstr "Gère la résolution des noms de domaine (DNS)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_dovecot"
+msgstr ""
+"Permet aux clients de messagerie d'accéder/récupérer les emails (via IMAP"
+" et POP3)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_fail2ban"
+msgstr ""
+"Protège contre les attaques brute-force et autres types d'attaques venant"
+" d'Internet"
+
+#: conf/yunohost/services.yml
+msgid "service_description_mysql"
+msgstr "Stocke les données des applications (bases de données SQL)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_nginx"
+msgstr "Sert ou permet l'accès à tous les sites web hébergés sur votre serveur"
+
+#: conf/yunohost/services.yml
+msgid "service_description_opendkim"
+msgstr ""
+"Signe les emails sortants à l'aide de DKIM afin qu'ils soient moins "
+"susceptibles d'être signalés comme spam"
+
+#: conf/yunohost/services.yml
+msgid "service_description_postfix"
+msgstr "Utilisé pour envoyer et recevoir des emails"
+
+#: conf/yunohost/services.yml
+msgid "service_description_postgresql"
+msgstr "Stocke les données d'application (base de données SQL)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_redis-server"
+msgstr ""
+"Une base de données spécialisée utilisée pour l'accès rapide aux données,"
+" les files d'attentes et la communication entre les programmes"
+
+#: conf/yunohost/services.yml
+msgid "service_description_slapd"
+msgstr "Stocke les comptes, domaines et leurs informations liées"
+
+#: conf/yunohost/services.yml
+msgid "service_description_ssh"
+msgstr ""
+"Vous permet de vous connecter à distance à votre serveur via un terminal "
+"(protocole SSH)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunohost-portal-api"
+msgstr ""
+"Gère les interactions entre les différentes interfaces Web du portail et "
+"le système"
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunohost-api"
+msgstr "Permet les interactions entre l'interface web de YunoHost et le système"
+
+#: conf/yunohost/services.yml
+msgid "service_description_nftables"
+msgstr "Gère l'ouverture et la fermeture des ports de connexion aux services"
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunomdns"
+msgstr ""
+"Vous permet d'atteindre votre serveur en utilisant 'yunohost.local' sur "
+"votre réseau local"
+
+#: share/actionsmap.yml
+msgid "pattern_username"
+msgstr ""
+"Doit être composé uniquement de caractères alphanumériques minuscules et "
+"de tirets bas (aussi appelé tiret du 8 ou underscore)"
+
+#: share/actionsmap.yml
+msgid "ask_fullname"
+msgstr "Nom complet (Nom et Prénom)"
+
+#: share/actionsmap.yml
+msgid "pattern_fullname"
+msgstr "Doit être un nom complet valide (au moins 3 caractères)"
+
+#: share/actionsmap.yml src/user.py:496
+msgid "ask_password"
+msgstr "Mot de passe"
+
+#: share/actionsmap.yml
+msgid "good_practices_about_user_password"
+msgstr ""
+"Vous êtes sur le point de définir un nouveau mot de passe. Le mot de "
+"passe doit comporter au moins 8 caractères, bien qu'il soit recommandé "
+"d'utiliser un mot de passe plus long (c'est-à-dire une phrase secrète) "
+"et/ou une combinaison de caractères (majuscules, minuscules, chiffres et "
+"caractères spéciaux)."
+
+#: share/actionsmap.yml
+msgid "pattern_password"
+msgstr "Doit être composé d'au moins 3 caractères"
+
+#: share/actionsmap.yml
+msgid "pattern_domain"
+msgstr "Doit être un nom de domaine valide (ex : mon-domaine.fr)"
+
+#: share/actionsmap.yml
+msgid "pattern_mailbox_quota"
+msgstr ""
+"Doit avoir une taille suffixée avec b/k/M/G/T ou 0 pour désactiver le "
+"quota"
+
+#: share/actionsmap.yml
+msgid "pattern_email"
+msgstr ""
+"Il faut une adresse électronique valide, sans le symbole '+' (par exemple"
+" johndoe@exemple.com)"
+
+#: share/actionsmap.yml
+msgid "pattern_email_forward"
+msgstr ""
+"L'adresse électronique doit être valide, le symbole '+' étant accepté "
+"(par exemple : johndoe+yunohost@exemple.com)"
+
+#: share/actionsmap.yml
+msgid "ask_new_domain"
+msgstr "Nouveau domaine"
+
+#: share/actionsmap.yml
+msgid "ask_new_path"
+msgstr "Nouveau chemin"
+
+#: share/actionsmap.yml
+msgid "pattern_backup_archive_name"
+msgstr ""
+"Doit être un nom de fichier valide avec un maximum de 30 caractères, et "
+"composé de caractères alphanumériques et -_. uniquement"
+
+#: share/actionsmap.yml
+msgid "pattern_port_or_range"
+msgstr ""
+"Doit être un numéro de port valide compris entre 0 et 65535, ou une gamme"
+" de ports (exemple : 100 :200)"
+
+#: share/actionsmap.yml
+msgid "ask_new_admin_password"
+msgstr "Nouveau mot de passe d'administration"
+
+#: share/actionsmap.yml
+msgid "good_practices_about_admin_password"
+msgstr ""
+"Vous êtes sur le point de définir un nouveau mot de passe de compte "
+"d'administration. Le mot de passe doit comporter au moins 8 caractères, "
+"bien qu'il soit recommandé d'utiliser un mot de passe plus long "
+"(c'est-à-dire une phrase secrète) et/ou d'utiliser une combinaison de "
+"caractères (majuscules, minuscules, chiffres et caractères spéciaux)."
+
+#: share/actionsmap.yml
+msgid "ask_main_domain"
+msgstr "Domaine principal"
+
+#: share/actionsmap.yml
+msgid "ask_admin_username"
+msgstr "Nom du compte d'administration"
+
+#: share/actionsmap.yml
+msgid "ask_admin_fullname"
+msgstr "Nom complet du compte administrateur"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_entrypoint"
+msgstr "Point d'entrée API"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_application_key"
+msgstr "Clé d'application"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_application_secret"
+msgstr "Clé secrète de l'application"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_consumer_key"
+msgstr "Clé d'identification"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_token"
+msgstr "Jeton d'authentification"
+
+#: share/registrar_list.toml
+msgid "domain_config_api_protocol"
+msgstr "Protocole API"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_key"
+msgstr "Clé d'authentification"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_secret"
+msgstr "Secret d'authentification"
+
+#: share/config_domain.toml
+msgid "domain_config_feature_name"
+msgstr "Fonctionnalités"
+
+#: share/config_domain.toml
+msgid "domain_config_mail_out"
+msgstr "Emails sortants"
+
+#: share/config_domain.toml
+msgid "domain_config_mail_in"
+msgstr "Emails entrants"
+
+#: share/config_domain.toml
+msgid "domain_config_default_app"
+msgstr "Application par défaut"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_name"
+msgstr "Personnalisation du portail"
+
+#: share/config_domain.toml
+msgid "domain_config_enable_public_apps_page"
+msgstr "Afficher la liste des applications publiques aux visiteurs"
+
+#: share/config_domain.toml
+msgid "domain_config_enable_public_apps_page_help"
+msgstr ""
+"Les visiteurs verront une page 'applications publiques' lorsqu'ils "
+"arriveront sur le portail au lieu du simple formulaire de connexion."
+
+#: share/config_domain.toml
+msgid "domain_config_show_other_domains_apps"
+msgstr "Afficher les applications d'autres domaines"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_title"
+msgstr "Titre personnalisé"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_logo"
+msgstr "Logo personnalisé"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_logo_help"
+msgstr ""
+"Sont acceptés les formats .svg, .png et .jpeg. Préférez un .svg "
+"monochrome avec <code>fill: currentColor</code> pour que le logo s'adapte"
+" aux thèmes."
+
+#: share/config_domain.toml
+msgid "domain_config_portal_theme"
+msgstr "Thème de couleur par défaut"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_theme_help"
+msgstr ""
+"Les utilisateurs sont autorisés à en choisir un autre dans leurs "
+"paramètres."
+
+#: share/config_domain.toml
+msgid "domain_config_portal_tile_theme"
+msgstr "Thème d'affichage des tuiles d'application"
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine"
+msgstr "URL du moteur de recherche"
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine_help"
+msgstr ""
+"Il s'agit d'une fonctionnalité facultative, permettant d'afficher une "
+"barre de recherche dans le portail (par exemple si vous souhaitez "
+"utiliser votre portail YunoHost comme page d'accueil de votre "
+"navigateur). Il doit s'agir d'une URL avec une chaîne de requête vide "
+"telle que `https://duckduckgo.com/?q=`, avec `q=` comme paramètre de "
+"requête vide de duckduckgo"
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine_name"
+msgstr "Nom du moteur de recherche"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_user_intro"
+msgstr "Introduction personnalisée pour les utilisateur⋅ice⋅s"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_user_intro_help"
+msgstr ""
+"Vous pouvez utiliser HTML. Les styles de base seront appliqués aux "
+"éléments génériques."
+
+#: share/config_domain.toml
+msgid "domain_config_portal_public_intro"
+msgstr "Présentation publique personnalisée"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_public_intro_help"
+msgstr ""
+"Vous pouvez utiliser HTML. Les styles de base seront appliqués aux "
+"éléments génériques."
+
+#: share/config_domain.toml
+msgid "domain_config_custom_css"
+msgstr "Feuille de style CSS personnalisée"
+
+#: share/config_domain.toml
+msgid "domain_config_custom_css_help"
+msgstr ""
+"Réservé aux administrateur⋅ice⋅s avancé⋅e⋅s souhaitant personnaliser "
+"l'apparence du portail"
+
+#: share/config_domain.toml
+msgid "domain_config_dns_name"
+msgstr "DNS"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_name"
+msgstr "Certificat"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_summary"
+msgstr "État du certificat"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_validity"
+msgstr "Validité"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_issuer"
+msgstr "Autorité de certification"
+
+#: share/config_domain.toml
+msgid "domain_config_acme_eligible"
+msgstr ""
+"Éligibilité au protocole ACME (Automatic Certificate Management "
+"Environment, littéralement : environnement de gestion automatique de "
+"certificat)"
+
+#: share/config_domain.toml
+msgid "domain_config_acme_eligible_explain"
+msgstr ""
+"Ce domaine ne semble pas prêt pour installer un certificat Let's Encrypt."
+" Veuillez vérifier votre configuration DNS mais aussi que votre serveur "
+"est bien joignable en HTTP. Les sections 'Enregistrements DNS' et 'Web' "
+"de <a href='#/diagnosis'>la page Diagnostic</a> peuvent vous aider à "
+"comprendre ce qui est mal configuré."
+
+#: share/config_domain.toml
+msgid "domain_config_cert_no_checks"
+msgstr "Ignorer les tests et autres vérifications du diagnostic"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_install"
+msgstr "Installer un certificat Let's Encrypt"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_renew"
+msgstr "Renouvellement du certificat Let's Encrypt"
+
+#: share/config_app.toml
+msgid "app_config__core_name"
+msgstr "Tuiles et permissions"
+
+#: share/config_app.toml src/app.py:2448
+msgid "app_config_permission_location"
+msgstr "Correspond à [{absolute_url}]({absolute_url})"
+
+#: share/config_app.toml
+msgid "app_config_permission_label"
+msgstr "Libellé"
+
+#: share/config_app.toml
+msgid "app_config_permission_description"
+msgstr "Description"
+
+#: share/config_app.toml
+msgid "app_config_permission_description_help"
+msgstr ""
+"Cette fonctionnalité n'est vraiment utile que si vous utilisez le mode "
+"'descriptif' du portail"
+
+#: share/config_app.toml
+msgid "app_config_permission_show_tile"
+msgstr "Afficher la tuile dans le portail"
+
+#: share/config_app.toml
+msgid "app_config_permission_logo"
+msgstr "Utilisation d'un logo personnalisé"
+
+#: share/config_app.toml
+msgid "app_config_permission_logo_help"
+msgstr "Seuls les fichiers PNG sont pris en charge"
+
+#: share/config_app.toml
+msgid "app_config_permission_allowed"
+msgstr "Groupes/comptes autorisés"
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_name"
+msgstr "Sécurité"
+
+#: share/config_global.toml
+msgid "global_settings_setting_password_name"
+msgstr "Mots de passe"
+
+#: share/config_global.toml
+msgid "global_settings_setting_admin_strength"
+msgstr "Critères pour les mots de passe de comptes administrateurs"
+
+#: share/config_global.toml
+msgid "global_settings_setting_admin_strength_help"
+msgstr ""
+"Ces paramètres ne seront appliqués que lors de l'initialisation ou de la "
+"modification du mot de passe"
+
+#: share/config_global.toml
+msgid "global_settings_setting_user_strength"
+msgstr "Critères pour les mots de passe des comptes"
+
+#: share/config_global.toml
+msgid "global_settings_setting_user_strength_help"
+msgstr ""
+"Ces paramètres ne seront appliqués que lors de l'initialisation ou de la "
+"modification du mot de passe"
+
+#: share/config_global.toml
+msgid "global_settings_setting_passwordless_sudo"
+msgstr ""
+"Permettre aux comptes administrateurs d'utiliser 'sudo' sans retaper leur"
+" mot de passe"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_name"
+msgstr "SSH"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_compatibility"
+msgstr "Compatibilité SSH"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_compatibility_help"
+msgstr ""
+"Compromis 'compatibilité versus sécurité' pour le serveur SSH. Affecte "
+"les cryptogrammes utilisés (et d'autres aspects liés à la sécurité)."
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_port"
+msgstr "Port SSH"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_port_help"
+msgstr ""
+"Il est préférable d'utiliser un port inférieur à 1024 pour éviter les "
+"tentatives d'usurpation par des services non administrateurs sur la "
+"machine distante. Vous devez également éviter d'utiliser un port déjà "
+"utilisé tel que le 80 ou le 443."
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_password_authentication"
+msgstr "Authentification par mot de passe"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_password_authentication_help"
+msgstr "Autoriser l'authentification par mot de passe pour SSH"
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_name"
+msgstr "NGINX (serveur Web)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_redirect_to_https"
+msgstr "Forcer HTTPS"
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_redirect_to_https_help"
+msgstr ""
+"Rediriger les requêtes HTTP vers HTTPS par défaut (NE PAS DÉSACTIVER à "
+"moins de savoir vraiment ce que vous faites !)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_compatibility"
+msgstr "Compatibilité NGINX"
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_compatibility_help"
+msgstr ""
+"Compromis 'compatibilité versus sécurité' pour le serveur web NGINX. "
+"Affecte les cryptogrammes utilisés (et d'autres aspects liés à la "
+"sécurité)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_name"
+msgstr "Postfix (serveur de messagerie SMTP)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_compatibility"
+msgstr "Compatibilité Postfix"
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_compatibility_help"
+msgstr ""
+"Compromis 'compatibilité versus sécurité' pour le serveur Postfix. "
+"Affecte les cryptogrammes utilisés (et d'autres aspects liés à la "
+"sécurité)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_name"
+msgstr "Webadmin"
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_enabled"
+msgstr "Activer la liste des IP autorisées pour l'administration Web"
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_enabled_help"
+msgstr "Autoriser seulement certaines IP à accéder à la webadmin."
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist"
+msgstr "Liste des IP autorisées pour l'administration Web"
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_help"
+msgstr ""
+"Adresses IP autorisées à accéder à la webadmin. La notation CIDR est "
+"autorisée."
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_name"
+msgstr "Portail"
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email"
+msgstr "Autoriser les utilisateur·ice·s à modifier leur adresse mail principale"
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_help"
+msgstr ""
+"Si désactivé, les personnes souhaitant changer leur adresse mail devront "
+"demander aux administrateur·ice·s."
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_alias"
+msgstr ""
+"Autoriser les utilisateur·ice·s à ajouter, retirer et modifier leurs "
+"alias mails"
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_alias_help"
+msgstr ""
+"Si désactivé, les personnes souhaitant changer leurs alias mails devront "
+"demander aux administrateur·ice·s."
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_forward"
+msgstr ""
+"Autoriser les utilisateur·ice·s à ajouter, retirer et modifier leur "
+"adresse mail de transfert"
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_forward_help"
+msgstr ""
+"Si désactivé, les personnes souhaitant changer leurs adresses de "
+"transfert devront demander aux administrateur·ice·s."
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_access_name"
+msgstr "Changer le mot de passe root"
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_access_explain"
+msgstr ""
+"Sur les systèmes Linux, 'root' est le compte administrateur absolu du "
+"système : il possède tous les droits. Dans le contexte de YunoHost, la "
+"connexion SSH directe de 'root' est désactivée par défaut - sauf depuis "
+"le réseau local du serveur. Les membres du groupe 'admins' peuvent "
+"utiliser la commande sudo pour agir en tant que 'root' à partir de la "
+"ligne de commande. Cependant, il peut être utile de disposer d'un mot de "
+"passe root (robuste) pour déboguer le système si, pour une raison "
+"quelconque, les comptes administrateurs habituels ne peuvent plus se "
+"connecter."
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_password"
+msgstr "Nouveau mot de passe root"
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_password_confirm"
+msgstr "Nouveau mot de passe root (confirmer)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_experimental_name"
+msgstr "Expérimentale"
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_experimental_enabled"
+msgstr "Fonctionnalités de sécurité expérimentales"
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_experimental_enabled_help"
+msgstr ""
+"Activer les fonctionnalités de sécurité expérimentales (ne l'activez pas "
+"si vous ne savez pas ce que vous faites !)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_email_name"
+msgstr "Email"
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_name"
+msgstr "POP3"
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_enabled"
+msgstr "Activer POP3"
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_enabled_help"
+msgstr ""
+"Activer le protocole POP3 pour le serveur de messagerie. POP3 est un "
+"protocole plus ancien permettant d'accéder aux boîtes aux lettres à "
+"partir des clients de messagerie. Il est plus léger, mais possède moins "
+"de fonctionnalités que IMAP (activé par défaut)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_name"
+msgstr "SMTP"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_allow_ipv6"
+msgstr "Autoriser l'IPv6"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_allow_ipv6_help"
+msgstr "Autoriser l'utilisation d'IPv6 pour recevoir et envoyer du courrier"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_enabled"
+msgstr "Activer le relais SMTP"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_enabled_help"
+msgstr ""
+"Un relais SMTP permet d'envoyer du courrier à la place de cette instance "
+"YunoHost. Cela est utile si vous êtes dans l'une de ces situations : le "
+"port 25 est bloqué par votre FAI ou par votre fournisseur VPS ; vous avez"
+" une IP résidentielle répertoriée sur DUHL ; vous ne pouvez pas "
+"configurer le DNS inversé ; ou le serveur n'est pas directement "
+"accessible depuis Internet et vous voulez en utiliser un autre pour "
+"envoyer des mails."
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_host"
+msgstr "Adresse du relais SMTP"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_port"
+msgstr "Port du relais SMTP"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_user"
+msgstr "Compte du relais SMTP"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_password"
+msgstr "Mot de passe du relais SMTP"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_domains"
+msgstr "Domaines à utiliser comme MX secondaire pour"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_domains_help"
+msgstr ""
+"Autoriser ce serveur à agir en tant que domaine MX *secondaire* de "
+"secours pour le domaine listé. Cela signifie que si le MX principal pour "
+"le domaine n'est pas accessible (par exemple à cause d'une panne), les "
+"courriers électroniques seront quand même envoyés à ce serveur, qui les "
+"conservera pendant un maximum de 20 jours et essaiera de les relayer vers"
+" la destination réelle une fois qu'il sera rétabli. Plusieurs domaines "
+"peuvent être fournis, séparés par des virgules."
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_emails_whitelisted"
+msgstr "Sauvegarde SMTP des emails sur liste blanche du MX"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_emails_whitelisted_help"
+msgstr ""
+"Dans le cas d'un MX secondaire, la liste exhaustive des adresses "
+"électroniques des destinataires autorisés doit être fournie (sinon les "
+"courriers seront refusés et rejetés). Plusieurs entrées peuvent être "
+"fournies, séparées par des virgules."
+
+#: share/config_global.toml
+msgid "global_settings_setting_antispam_name"
+msgstr "Antispam"
+
+#: share/config_global.toml
+msgid "global_settings_setting_enable_blocklists"
+msgstr "Activer les listes de blocages pour le traffic entrant"
+
+#: share/config_global.toml
+msgid "global_settings_setting_enable_blocklists_help"
+msgstr ""
+"Bloque le traffic mail provenant des serveurs listés par spamcop.net, "
+"spamhaus.org et abuseat.org pour prévenir les spams. Cependant, ceci peut"
+" engendrer des problèmes de distributions pour certains serveurs de mails"
+" inoffensifs enregistré dans ces listes, et les mails qu'ils enverront ne"
+" seront pas reçu."
+
+#: share/config_global.toml
+msgid "global_settings_setting_misc_name"
+msgstr "Autre"
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_name"
+msgstr "Sauvegarde"
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_compress_tar_archives"
+msgstr "Compresser les sauvegardes"
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_compress_tar_archives_help"
+msgstr ""
+"Lors de la création de nouvelles sauvegardes, compresser automatiquement "
+"les archives (.tar.gz) au lieu des archives non compressées (.tar). N.B. "
+": activer cette option permet de créer des archives plus légères, mais la"
+" procédure de sauvegarde initiale sera significativement plus longues et "
+"plus gourmandes en CPU."
+
+#: share/config_global.toml
+msgid "global_settings_setting_network_name"
+msgstr "Réseau"
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_exposure"
+msgstr ""
+"Suites d'IP à prendre en compte pour la configuration et le diagnostic du"
+" DNS"
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_exposure_help"
+msgstr ""
+"NB : Ceci n'affecte que la configuration DNS recommandée et les "
+"vérifications de diagnostic. Cela n'affecte pas les configurations du "
+"système."
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_enabled"
+msgstr "Utiliser des résolveurs DNS personnalisés"
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_enabled_help"
+msgstr ""
+"Par défaut, YunoHost utilise une liste de résolveurs fiables situés en "
+"Europe. Les administrateurices avancées peuvent choisir de spécifier des "
+"résolveurs personnalisés à la place."
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_list"
+msgstr "Adresses des résolveurs personnalisés"
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_list_help"
+msgstr ""
+"Une liste d'au moins 2 résolveurs DNS par protocole IP utilisé "
+"(IPv4/IPv6). Exemple : 89.234.141.66 45.67.81.23 2a00:5881:8100:1000::3 "
+"2a0c:e300::1337"
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_name"
+msgstr "Transfert TLS/SNI"
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_enabled"
+msgstr "Activer le flux TLS-passthrough/transfert basé sur les SNI"
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_enabled_help"
+msgstr ""
+"Il s'agit d'une fonctionnalité avancée qui permet d'effectuer un reverse-"
+"proxy d'un domaine entier vers une autre machine *sans* avoir à "
+"déchiffrer le trafic. Elle est utile lorsque vous souhaitez exposer "
+"plusieurs machines derrière la même IP, tout en permettant à chaque "
+"machine de gérer la partie terminale de SSL."
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_explain"
+msgstr ""
+"Cette fonctionnalité est AVANCÉE et EXPÉRIMENTALE et entraînera des "
+"changements majeurs dans la configuration NGINX de votre serveur. "
+"Veuillez NE PAS l'utiliser si vous ne savez pas ce que vous faites ! En "
+"particulier, vous devez savoir que Fail2Ban ne peut pas être mis en œuvre"
+" sur le serveur proxy (nftables ne peut pas bannir le trafic malveillant "
+"car tous les paquets IP semblent provenir du serveur principal). De plus,"
+" pour l'instant, la configuration NGINX du serveur proxy doit être "
+"modifiée manuellement pour accepter le `proxy_protocol`."
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_list"
+msgstr "Liste des transferts"
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_list_help"
+msgstr ""
+"Doit être une liste de ce type DOMAIN;DESTINATION;PORT, telle que "
+"domaine.tld;192.168.1.42;443 ou domaine.tld;serveur.local;8123"
+
+#: src/__init__.py:142
+msgid "yunohost_not_installed"
+msgstr ""
+"YunoHost n'est pas correctement installé. Veuillez exécuter 'yunohost "
+"tools postinstall'"
+
+#: src/app.py:328
+msgid "app_upgrade_url_required"
+msgstr ""
+"Cette application n'existe pas (plus ?) dans le catalogue, vous devez "
+"donc vous occuper manuellement des mises à jour. <br/><small>Depuis la "
+"ligne de commande, vous pouvez utiliser `yunohost app upgrade <app>` et "
+"fournir l'URL du dépôt à l'aide de l'option `-u`.</small>"
+
+#: src/app.py:355
+msgid "app_upgrade_specific_channel_msg"
+msgstr ""
+"Veuillez noter que vous utilisez actuellement `{channel}` comme source "
+"pour les mises à jour. Assurez-vous de consulter la discussion en cours "
+"[ici]({pr_url})."
+
+#: src/app.py:382
+msgid "app_upgrade_bad_quality"
+msgstr ""
+"Cette application est actuellement signalée comme défectueuse dans le "
+"catalogue d'applications de YunoHost. Il peut s'agir d'un problème "
+"temporaire pendant que les mainteneur⋅euse⋅s tentent de le résoudre. En "
+"attendant, la mise à jour de cette application est désactivée."
+
+#: src/app.py:398
+msgid "app_upgrade_up_to_date"
+msgstr ""
+"La mise à jour forcée de l'application (vers la même version) peut "
+"parfois être utile pour reconstruire ou restaurer l'application et ses "
+"configurations."
+
+#: src/app.py:595
+msgid "app_change_url_no_script"
+msgstr ""
+"L'application '{app_name}' ne prend pas encore en charge le changement "
+"d'URL. Vous devriez peut-être la mettre à jour."
+
+#: src/app.py:612
+msgid "app_change_url_identical_domains"
+msgstr ""
+"L'ancien et le nouveau couple domaine/chemin_de_l'URL sont identiques "
+"pour ('{domain}{path}'), rien à faire."
+
+#: src/app.py:621
+msgid "app_change_url_require_full_domain"
+msgstr ""
+"{app} ne peut pas être déplacée vers cette nouvelle URL car elle "
+"nécessite un domaine complet (c'est-à-dire avec un chemin = /)"
+
+#: src/app.py:672
+msgid "app_change_url_script_failed"
+msgstr "Une erreur s'est produite dans le script de modification de l'url"
+
+#: src/app.py:674
+msgid "app_change_url_failed"
+msgstr "Impossible de modifier l'url de {app} : {error}"
+
+#: src/app.py:705
+msgid "app_change_url_success"
+msgstr "L'URL de l'application {app} a été changée en {domain}{path}"
+
+#: src/app.py:772
+msgid "disk_space_not_sufficient_update"
+msgstr "Il ne reste pas assez d'espace disque pour mettre à jour cette application"
+
+#: src/app.py:800
+msgid "app_upgrade_cli_url_required"
+msgstr ""
+"{app} ne figure pas (plus ?) dans le catalogue et ne peut donc pas être "
+"mis à jour automatiquement. Vous devez utiliser `yunohost app upgrade "
+"{app}` pour fournir l'URL du dépôt à l'aide de l'option `-u`."
+
+#: src/app.py:820 src/app.py:830
+msgid "app_upgrade_cli_will_upgrade"
+msgstr ""
+"{app} sera mis à jour de la version {current_version} à la version "
+"{new_version}"
+
+#: src/app.py:839
+msgid "app_upgrade_cli_will_force_upgrade"
+msgstr "{app} sera mise à jour de force ({current_version})"
+
+#: src/app.py:847
+msgid "app_upgrade_cli_up_to_date"
+msgstr "{app} est déjà à jour ({current_version})"
+
+#: src/app.py:853
+msgid "app_upgrade_cli_bad_quality"
+msgstr ""
+"La mise à jour pour {app} est ignorée car elle est actuellement signalée "
+"comme cassée dans le catalogue d'applications de YunoHost."
+
+#: src/app.py:880
+msgid "app_upgrade_app_name"
+msgstr "Mise à jour de {app}…"
+
+#: src/app.py:946
+msgid "backup_before_upgrade_deleted_because_replaced_by_newer_backup"
+msgstr ""
+"La sauvegarde {name} a été supprimée car elle a été remplacée par une "
+"sauvegarde plus récente {newname}"
+
+#: src/app.py:1014
+msgid "app_upgrade_script_failed"
+msgstr ""
+"Une erreur s'est produite durant l'exécution du script de mise à jour de "
+"l'application"
+
+#: src/app.py:1016 src/app.py:1040
+msgid "app_upgrade_failed"
+msgstr "Impossible de mettre à jour {app} : {error}"
+
+#: src/app.py:1093
+msgid "app_upgrade_failed_and_broke_the_system"
+msgstr ""
+"La mise à jour de l'application '{app}' a échoué, laissant le système "
+"dans un état cassé."
+
+#: src/app.py:1095
+msgid "app_upgrade_broke_the_system"
+msgstr ""
+"La mise à jour de l'application {app} semble avoir fonctionné, mais elle "
+"a laissé le système dans un état non fonctionnel et est donc considérée "
+"comme un échec."
+
+#: src/app.py:1102
+msgid "app_upgraded"
+msgstr "{app} mis à jour"
+
+#: src/app.py:1151 src/tools.py:580
+msgid "apps_already_up_to_date"
+msgstr "Toutes les applications sont déjà à jour"
+
+#: src/app.py:1160
+msgid "apps_no_target_can_be_upgraded"
+msgstr "Aucune application ne peut être mise à jour"
+
+#: src/app.py:1170
+msgid "app_upgrade_several_apps"
+msgstr "Les applications suivantes seront mises à jour : {apps}"
+
+#: src/app.py:1234
+msgid "app_upgrade_continuing_with_other_apps"
+msgstr ""
+"La mise à jour de {app} a échoué, mais poursuite de la mise à niveau des "
+"autres applications malgré tout (car l'option `--continue-on-failure` a "
+"été utilisée)"
+
+#: src/app.py:1240
+msgid "apps_upgrade_cancelled"
+msgstr ""
+"Les mises à jour étaient encore en attente pour plusieurs autres "
+"applications, mais leur mise à jour a été annulée (utilisez `--continue-"
+"on-failure` pour continuer quand même) : {apps}"
+
+#: src/app.py:1340
+msgid "disk_space_not_sufficient_install"
+msgstr "Il ne reste pas assez d'espace disque pour installer cette application"
+
+#: src/app.py:1354
+msgid "app_id_invalid"
+msgstr "Identifiant d'application invalide"
+
+#: src/app.py:1411
+msgid "app_start_install"
+msgstr "Installation de {app}…"
+
+#: src/app.py:1501
+msgid "app_install_script_failed"
+msgstr "Une erreur est survenue dans le script d'installation de l'application"
+
+#: src/app.py:1503 src/app.py:1514
+msgid "app_install_failed"
+msgstr "Impossible d'installer {app} : {error}"
+
+#: src/app.py:1538
+msgid "app_remove_after_failed_install"
+msgstr "Suppression de l'application après l'échec de l'installation…"
+
+#: src/app.py:1570 src/app.py:1694 src/backup.py:1390 src/hook.py:576
+#: src/service.py:636 src/settings.py:193 src/utils/configpanel.py:641
+#: src/utils/configpanel.py:730
+msgid "unexpected_error"
+msgstr "Une erreur inattendue est survenue : {error}"
+
+#: src/app.py:1578 src/app.py:1720
+msgid "app_not_properly_removed"
+msgstr "{app} n'a pas été supprimé correctement"
+
+#: src/app.py:1610
+msgid "installation_complete"
+msgstr "Installation terminée"
+
+#: src/app.py:1656
+msgid "app_start_remove"
+msgstr "Suppression de {app}…"
+
+#: src/app.py:1717
+msgid "app_removed"
+msgstr "{app} désinstallé"
+
+#: src/app.py:1849
+msgid "app_already_installed_cant_change_url"
+msgstr ""
+"Cette application est déjà installée. L'URL ne peut pas être changé "
+"simplement par cette fonction. Vérifiez si cela est disponible avec `app "
+"changeurl`."
+
+#: src/app.py:2087
+msgid "ssowat_conf_generated"
+msgstr "La configuration de SSOwat a été regénérée"
+
+#: src/app.py:2223 src/utils/form.py:996 src/utils/form.py:1312
+#: src/utils/form.py:1325 src/utils/form.py:1700 src/utils/form.py:1878
+#: src/utils/form.py:2305
+msgid "app_argument_invalid"
+msgstr "Valeur invalide pour le paramètre '{name}' : {error}"
+
+#: src/app.py:2268
+msgid "app_config_unable_to_read"
+msgstr "Échec de la lecture des valeurs du panneau de configuration."
+
+#: src/app.py:2270
+msgid "app_config_unable_to_apply"
+msgstr "Échec de l'application des valeurs du panneau de configuration."
+
+#: src/app.py:2272
+msgid "app_action_failed"
+msgstr "Échec de la commande {action} de l'application {app}"
+
+#: src/app.py:2468
+msgid "app_config_permission_allowed_warn_protected"
+msgstr ""
+"NB : cette autorisation est 'protégée' et le groupe 'visiteurs' ne peut "
+"donc pas être ajouté/supprimé des groupes autorisés."
+
+#: src/app_catalog.py:194
+msgid "apps_catalog_updating"
+msgstr "Mise à jour du catalogue des applications…"
+
+#: src/app_catalog.py:216
+msgid "apps_catalog_failed_to_download"
+msgstr ""
+"Impossible de télécharger le catalogue des applications {apps_catalog} : "
+"{error}"
+
+#: src/app_catalog.py:275
+msgid "apps_catalog_update_success"
+msgstr "Le catalogue des applications a été mis à jour !"
+
+#: src/app_catalog.py:329
+msgid "apps_catalog_obsolete_cache"
+msgstr "Le cache du catalogue d'applications est vide ou obsolète."
+
+#: src/backup.py:363 src/backup.py:2159
+msgid "backup_output_directory_not_empty"
+msgstr "Le répertoire de destination n'est pas vide"
+
+#: src/backup.py:386
+msgid "backup_hook_unknown"
+msgstr "Script de sauvegarde '{hook}' inconnu"
+
+#: src/backup.py:403
+msgid "unbackup_app"
+msgstr "'{app}' ne sera pas sauvegardée"
+
+#: src/backup.py:418
+msgid "backup_with_no_backup_script_for_app"
+msgstr "L'application {app} n'a pas de script de sauvegarde. Ignorer."
+
+#: src/backup.py:422
+msgid "backup_with_no_restore_script_for_app"
+msgstr ""
+"{app} n'a pas de script de restauration, vous ne pourrez pas restaurer "
+"automatiquement la sauvegarde de cette application."
+
+#: src/backup.py:502
+msgid "backup_csv_creation_failed"
+msgstr "Impossible de créer le fichier CSV nécessaire à la restauration"
+
+#: src/backup.py:508
+msgid "backup_csv_addition_failed"
+msgstr "Impossible d'ajouter des fichiers à sauvegarder dans le fichier CSV"
+
+#: src/backup.py:547
+msgid "backup_no_file_collected"
+msgstr "Échec de la collecte des fichiers à sauvegarder"
+
+#: src/backup.py:616
+msgid "backup_running_hooks"
+msgstr "Exécution des scripts de sauvegarde…"
+
+#: src/backup.py:669 src/backup.py:1037
+msgid "restore_hook_unavailable"
+msgstr ""
+"Le script de restauration '{part}' n'est pas disponible sur votre "
+"système, et ne l'est pas non plus dans l'archive"
+
+#: src/backup.py:673
+msgid "backup_system_part_failed"
+msgstr "Impossible de sauvegarder la partie '{part}' du système"
+
+#: src/backup.py:722
+msgid "app_start_backup"
+msgstr "Collecte des fichiers devant être sauvegardés pour {app}…"
+
+#: src/backup.py:744
+msgid "backup_app_script_failed"
+msgstr "Échec de la collecte des fichiers à sauvegarder pour {app}."
+
+#: src/backup.py:895
+msgid "restore_backup_too_old"
+msgstr ""
+"Cette sauvegarde ne peut pas être restaurée car elle provient d'une "
+"version de YunoHost trop ancienne."
+
+#: src/backup.py:930 src/backup.py:1962 src/backup.py:2438 src/backup.py:2453
+msgid "backup_archive_cant_retrieve_info_json"
+msgstr ""
+"Impossible d'avoir des informations sur l'archive '{archive}'… Le fichier"
+" info.json ne peut pas être trouvé (ou n'est pas un fichier json valide)."
+
+#: src/backup.py:986
+msgid "restore_cleaning_failed"
+msgstr "Impossible de nettoyer le dossier temporaire de restauration"
+
+#: src/backup.py:1004
+msgid "backup_archive_system_part_not_available"
+msgstr "La partie '{part}' du système n'est pas disponible dans cette sauvegarde"
+
+#: src/backup.py:1066
+msgid "backup_archive_app_not_found"
+msgstr "{app} n'a pas été trouvée dans l'archive de la sauvegarde"
+
+#: src/backup.py:1079 src/backup.py:1084
+msgid "restore_already_installed_apps"
+msgstr ""
+"Les applications suivantes ne peuvent pas être restaurées car elles sont "
+"déjà installées : {apps}"
+
+#: src/backup.py:1111 src/backup.py:1120
+msgid "restore_removing_tmp_dir_failed"
+msgstr "Impossible de sauvegarder un ancien dossier temporaire"
+
+#: src/backup.py:1185
+msgid "restore_may_be_not_enough_disk_space"
+msgstr ""
+"Votre système ne semble pas avoir suffisamment d'espace (libre : "
+"{free_space} B, espace nécessaire : {needed_space} B, marge de sécurité :"
+" {margin} B)"
+
+#: src/backup.py:1192
+msgid "restore_not_enough_disk_space"
+msgstr ""
+"Espace disponible insuffisant (L'espace libre est de {free_space} octets."
+" Le besoin d'espace nécessaire est de {needed_space} octets. En "
+"appliquant une marge de sécurité, la quantité d'espace nécessaire est de "
+"{margin} octets)"
+
+#: src/backup.py:1240
+msgid "restore_running_hooks"
+msgstr "Exécution des scripts de restauration…"
+
+#: src/backup.py:1272 src/backup.py:1278
+msgid "restore_system_part_failed"
+msgstr "Impossible de restaurer la partie '{part}' du système"
+
+#: src/backup.py:1338
+msgid "restore_already_installed_app"
+msgstr "Une application est déjà installée avec l'identifiant '{app}'"
+
+#: src/backup.py:1347
+msgid "app_start_restore"
+msgstr "Restauration de {app}…"
+
+#: src/backup.py:1361
+msgid "unrestore_app"
+msgstr "'{app}' ne sera pas restaurée"
+
+#: src/backup.py:1391 src/backup.py:1445
+msgid "app_restore_failed"
+msgstr "Impossible de restaurer {app} : {error}"
+
+#: src/backup.py:1403
+msgid "restore_running_app_script"
+msgstr "Exécution du script de restauration de l'application '{app}'…"
+
+#: src/backup.py:1443
+msgid "app_restore_script_failed"
+msgstr "Une erreur s'est produite dans le script de restauration de l'application"
+
+#: src/backup.py:1568 src/backup.py:1572
+msgid "backup_abstract_method"
+msgstr "Cette méthode de sauvegarde reste à implémenter"
+
+#: src/backup.py:1641 src/backup.py:2589
+msgid "backup_cleaning_failed"
+msgstr "Impossible de nettoyer le dossier temporaire de sauvegarde"
+
+#: src/backup.py:1662
+msgid "not_enough_disk_space"
+msgstr "L'espace disque est insuffisant sur '{path}'"
+
+#: src/backup.py:1702
+msgid "backup_couldnt_bind"
+msgstr "Impossible de lier {src} avec {dest}."
+
+#: src/backup.py:1765
+msgid "backup_ask_for_copying_if_needed"
+msgstr ""
+"Voulez-vous effectuer la sauvegarde en utilisant {size}Mo temporairement "
+"? (Cette méthode est utilisée car certains fichiers n'ont pas pu être "
+"préparés avec une méthode plus efficace.)"
+
+#: src/backup.py:1771
+msgid "backup_unable_to_organize_files"
+msgstr ""
+"Impossible d'utiliser la méthode rapide pour organiser les fichiers dans "
+"l'archive"
+
+#: src/backup.py:1779
+msgid "backup_copying_to_organize_the_archive"
+msgstr "Copie de {size} Mo pour organiser l'archive"
+
+#: src/backup.py:1826
+msgid "backup_no_uncompress_archive_dir"
+msgstr "Ce dossier d'archive décompressée n'existe pas"
+
+#: src/backup.py:1840
+msgid "backup_cant_mount_uncompress_archive"
+msgstr "Impossible de monter en lecture seule le dossier de l'archive décompressée"
+
+#: src/backup.py:1890 src/backup.py:1941
+msgid "backup_archive_open_failed"
+msgstr "Impossible d'ouvrir l'archive de la sauvegarde"
+
+#: src/backup.py:1901
+msgid "backup_archive_writing_error"
+msgstr ""
+"Impossible d'ajouter des fichiers '{source}' (nommés dans l'archive : "
+"'{dest}') à sauvegarder dans l'archive compressée '{archive}'"
+
+#: src/backup.py:1908
+msgid "backup_creation_failed"
+msgstr "Impossible de créer l'archive de la sauvegarde"
+
+#: src/backup.py:1931
+msgid "restore_extracting"
+msgstr "Extraction des fichiers nécessaires depuis l'archive…"
+
+#: src/backup.py:1947 src/backup.py:2423
+msgid "backup_archive_corrupted"
+msgstr ""
+"Il semble que l'archive de la sauvegarde '{archive}' est corrompue : "
+"{error}"
+
+#: src/backup.py:2070
+msgid "backup_custom_backup_error"
+msgstr "Échec de la méthode de sauvegarde personnalisée à l'étape 'backup'"
+
+#: src/backup.py:2087
+msgid "backup_custom_mount_error"
+msgstr "Échec de la méthode de sauvegarde personnalisée à l'étape 'mount'"
+
+#: src/backup.py:2137
+msgid "backup_archive_name_exists"
+msgstr "Une archive de sauvegarde avec le nom '{name}' existe déjà."
+
+#: src/backup.py:2152
+msgid "backup_output_directory_forbidden"
+msgstr ""
+"Choisissez un répertoire de destination différent. Les sauvegardes ne "
+"peuvent pas être créées dans les sous-dossiers /bin, /boot, /dev, /etc, "
+"/lib, /root, /run, /sbin, /sys, /usr, /var ou "
+"/home/yunohost.backup/archives"
+
+#: src/backup.py:2156
+msgid "backup_output_directory_required"
+msgstr "Vous devez spécifier un dossier de destination pour la sauvegarde"
+
+#: src/backup.py:2204
+msgid "backup_actually_backuping"
+msgstr "Création d'une archive de sauvegarde à partir des fichiers collectés…"
+
+#: src/backup.py:2207
+msgid "backup_create_size_estimation"
+msgstr "L'archive contiendra environ {size} de données."
+
+#: src/backup.py:2213
+msgid "backup_created"
+msgstr "Sauvegarde créée : {name}"
+
+#: src/backup.py:2265 src/tools.py:169
+msgid "yunohost_already_installed"
+msgstr "YunoHost est déjà installé"
+
+#: src/backup.py:2270
+msgid "restore_confirm_yunohost_installed"
+msgstr "Voulez-vous vraiment restaurer un système déjà installé ? [{answers}]"
+
+#: src/backup.py:2278
+msgid "restore_failed"
+msgstr "Impossible de restaurer le système"
+
+#: src/backup.py:2284
+msgid "backup_mount_archive_for_restore"
+msgstr "Préparation de l'archive pour restauration…"
+
+#: src/backup.py:2290
+msgid "restore_complete"
+msgstr "Restauration terminée"
+
+#: src/backup.py:2292
+msgid "restore_nothings_done"
+msgstr "Rien n'a été restauré"
+
+#: src/backup.py:2353 src/backup.py:2399 src/backup.py:2508
+msgid "backup_archive_name_unknown"
+msgstr "L'archive locale de sauvegarde nommée '{name}' est inconnue"
+
+#: src/backup.py:2362 src/backup.py:2408
+msgid "backup_archive_broken_link"
+msgstr "Impossible d'accéder à l'archive de sauvegarde (lien invalide vers {path})"
+
+#: src/backup.py:2531
+msgid "backup_delete_error"
+msgstr "Impossible de supprimer '{path}'"
+
+#: src/backup.py:2540
+msgid "backup_deleted"
+msgstr "Sauvegarde supprimée : {name}"
+
+#: src/backup.py:2552
+msgid "backup_output_symlink_dir_broken"
+msgstr ""
+"Votre répertoire d'archivage '{path}' est un lien symbolique brisé. Peut-"
+"être avez-vous oublié de re/monter ou de brancher le support de stockage "
+"sur lequel il pointe."
+
+#: src/certificate.py:179
+msgid "certmanager_attempt_to_replace_valid_cert"
+msgstr ""
+"Vous êtes en train de vouloir remplacer un certificat correct et valide "
+"pour le domaine {domain} ! (Utilisez --force pour contourner cela)"
+
+#: src/certificate.py:211
+msgid "domain_cert_gen_failed"
+msgstr "Impossible de générer le certificat"
+
+#: src/certificate.py:239
+msgid "certmanager_cert_install_success_selfsigned"
+msgstr ""
+"Le certificat auto-signé est maintenant installé pour le domaine "
+"'{domain}'"
+
+#: src/certificate.py:251
+msgid "certmanager_cert_install_failed_selfsigned"
+msgstr "L'installation du certificat auto-signé a échoué pour {domains}"
+
+#: src/certificate.py:281
+msgid "certmanager_domain_cert_not_selfsigned"
+msgstr ""
+"Le certificat du domaine {domain} n'est pas auto-signé. Voulez-vous "
+"vraiment le remplacer ? (Utilisez --force pour cela)"
+
+#: src/certificate.py:315
+msgid "certmanager_cert_install_success"
+msgstr ""
+"Le certificat Let's Encrypt est maintenant installé pour le domaine "
+"'{domain}'"
+
+#: src/certificate.py:321 src/domain.py:439
+msgid "certmanager_cert_install_failed"
+msgstr "L'installation du certificat Let's Encrypt a échoué pour {domains}"
+
+#: src/certificate.py:360 src/certificate.py:392
+msgid "certmanager_acme_not_configured_for_domain"
+msgstr ""
+"Pour le moment le protocole de communication ACME n'a pas pu être validé "
+"pour le domaine {domain} car le code correspondant de la configuration "
+"NGINX est manquant… Merci de vérifier que votre configuration NGINX est à"
+" jour avec la commande : `yunohost tools regen-conf nginx --dry-run "
+"--with-diff`."
+
+#: src/certificate.py:380
+msgid "certmanager_attempt_to_renew_valid_cert"
+msgstr ""
+"Le certificat pour le domaine {domain} n'est pas sur le point d'expirer !"
+" (Vous pouvez utiliser --force si vous savez ce que vous faites)"
+
+#: src/certificate.py:386
+msgid "certmanager_attempt_to_renew_nonLE_cert"
+msgstr ""
+"Le certificat pour le domaine {domain} n'est pas émis par Let's Encrypt. "
+"Impossible de le renouveler automatiquement !"
+
+#: src/certificate.py:443
+msgid "certmanager_cert_renew_success"
+msgstr "Certificat Let's Encrypt renouvelé pour le domaine '{domain}'"
+
+#: src/certificate.py:448
+msgid "certmanager_cert_renew_failed"
+msgstr "Le renouvellement du certificat Let's Encrypt a échoué pour {domains}"
+
+#: src/certificate.py:541
+msgid "certmanager_hit_rate_limit"
+msgstr ""
+"Trop de certificats ont déjà été émis récemment pour ce même ensemble de "
+"domaines {domain}. Veuillez réessayer plus tard. Lisez "
+"https://letsencrypt.org/docs/rate-limits/ pour obtenir plus de détails "
+"sur les ratios et limitations"
+
+#: src/certificate.py:544 src/certificate.py:549
+msgid "certmanager_cert_signing_failed"
+msgstr "Impossible de signer le nouveau certificat"
+
+#: src/certificate.py:583
+msgid "certmanager_certificate_fetching_or_enabling_failed"
+msgstr "Il semble que l'activation du nouveau certificat pour {domain} a échoué…"
+
+#: src/certificate.py:649
+msgid "certmanager_no_cert_file"
+msgstr ""
+"Impossible de lire le fichier du certificat pour le domaine {domain} "
+"(fichier : {file})"
+
+#: src/certificate.py:663
+msgid "certmanager_cannot_read_cert"
+msgstr ""
+"Quelque chose s'est mal passé lors de la tentative d'ouverture du "
+"certificat actuel pour le domaine {domain} (fichier : {file}), la cause "
+"est : {reason}"
+
+#: src/certificate.py:843
+msgid "certmanager_domain_not_diagnosed_yet"
+msgstr ""
+"Il n'y a pas encore de résultat de diagnostic pour le domaine {domain}. "
+"Merci de relancer un diagnostic pour les catégories 'Enregistrements DNS'"
+" et 'Web' dans la section Diagnostic pour vérifier si le domaine est prêt"
+" pour Let's Encrypt. (Ou si vous savez ce que vous faites, utilisez "
+"'--no-checks' pour désactiver la vérification.)"
+
+#: src/certificate.py:854
+msgid "certmanager_domain_dns_ip_differs_from_public_ip"
+msgstr ""
+"Les enregistrements DNS du domaine '{domain}' sont différents de "
+"l'adresse IP de ce serveur. Pour plus d'informations, veuillez consulter "
+"la catégorie \"Enregistrements DNS\" dans la section Diagnostic. Si vous "
+"avez récemment modifié votre enregistrement A, veuillez attendre sa "
+"propagation (des vérificateurs de propagation DNS sont disponibles en "
+"ligne). (Si vous savez ce que vous faites, utilisez '--no-checks' pour "
+"désactiver ces contrôles.)"
+
+#: src/certificate.py:860
+msgid "certmanager_domain_http_not_working"
+msgstr ""
+"Le domaine {domain} ne semble pas être accessible via HTTP. Merci de "
+"vérifier la catégorie 'Web' dans le diagnostic pour plus d'informations. "
+"(Ou si vous savez ce que vous faites, utilisez '--no-checks' pour "
+"désactiver la vérification.)"
+
+#: src/certificate.py:904
+msgid "certmanager_self_ca_conf_file_not_found"
+msgstr ""
+"Le fichier de configuration pour l'autorité du certificat auto-signé est "
+"introuvable (fichier : {file})"
+
+#: src/certificate.py:914
+msgid "certmanager_unable_to_parse_self_CA_name"
+msgstr ""
+"Impossible d'analyser le nom de l'autorité du certificat auto-signé "
+"(fichier : {file})"
+
+#: src/diagnosis.py:58 src/diagnosis.py:90 src/diagnosis.py:181
+msgid "diagnosis_unknown_categories"
+msgstr "Les catégories suivantes sont inconnues : {categories}"
+
+#: src/diagnosis.py:77
+msgid "diagnosis_never_ran_yet"
+msgstr ""
+"Il apparaît que le serveur a été installé récemment et qu'il n'y a pas "
+"encore eu de diagnostic. Vous devriez en lancer un depuis la webadmin ou "
+"en utilisant 'yunohost diagnosis run' depuis la ligne de commande."
+
+#: src/diagnosis.py:99
+msgid "diagnosis_failed"
+msgstr ""
+"Échec de la récupération du résultat du diagnostic pour la catégorie "
+"'{category}' : {error}"
+
+#: src/diagnosis.py:132 src/log.py:357
+msgid "log_available_on_yunopaste"
+msgstr "Le journal est désormais disponible via {url}"
+
+#: src/diagnosis.py:201
+msgid "diagnosis_failed_for_category"
+msgstr "Échec du diagnostic pour la catégorie '{category}' : {error}"
+
+#: src/diagnosis.py:220
+msgid "diagnosis_display_tip"
+msgstr ""
+"Pour voir les problèmes détectés, vous pouvez accéder à la section "
+"Diagnostic du webadmin ou exécuter 'yunohost diagnosis show --issues "
+"--human-readable' à partir de la ligne de commande."
+
+#: src/diagnosis.py:280
+msgid "diagnosis_ignore_missing_criteria"
+msgstr ""
+"Vous devez fournir au moins un critère qui est une catégorie de "
+"diagnostic à ignorer"
+
+#: src/diagnosis.py:285
+msgid "diagnosis_ignore_criteria_error"
+msgstr ""
+"Les critères doivent être sous la forme de clé=valeur (ex. "
+"domain=yolo.test)"
+
+#: src/diagnosis.py:308
+msgid "diagnosis_ignore_no_issue_found"
+msgstr "Aucun problème correspondant au critère donné n'a été trouvé."
+
+#: src/diagnosis.py:318
+msgid "diagnosis_ignore_already_filtered"
+msgstr ""
+"(Il y a déjà un filtre de diagnostic {category} qui correspond à ces "
+"critères)"
+
+#: src/diagnosis.py:324
+msgid "diagnosis_ignore_filter_added"
+msgstr "Filtre de diagnostic pour {category} ajouté"
+
+#: src/diagnosis.py:338
+msgid "diagnosis_ignore_no_filter_found"
+msgstr ""
+"(Il n'y pas de filtre de diagnostic pour la catégorie {category} qui "
+"correspond à ces critères)"
+
+#: src/diagnosis.py:344
+msgid "diagnosis_ignore_filter_removed"
+msgstr "Filtre de diagnostic pour {category} supprimé"
+
+#: src/diagnosis.py:421
+msgid "diagnosis_cache_still_valid"
+msgstr ""
+"(Le cache est encore valide pour le diagnostic {category}. Il ne sera pas"
+" re-diagnostiqué pour le moment !)"
+
+#: src/diagnosis.py:438
+msgid "diagnosis_cant_run_because_of_dep"
+msgstr ""
+"Impossible d'exécuter le diagnostic pour {category} alors qu'il existe "
+"des problèmes importants liés à {dep}."
+
+#: src/diagnosis.py:481
+msgid "diagnosis_ignored_issues"
+msgstr "(+ {nb_ignored} problème(s) ignoré(s))"
+
+#: src/diagnosis.py:491
+msgid "diagnosis_found_errors_and_warnings"
+msgstr ""
+"Trouvé {errors} problème(s) significatif(s) (et {warnings} "
+"(avertissement(s)) en relation avec {category} !"
+
+#: src/diagnosis.py:501
+msgid "diagnosis_found_errors"
+msgstr "Trouvé {errors} problème(s) significatif(s) lié(s) à {category} !"
+
+#: src/diagnosis.py:510
+msgid "diagnosis_found_warnings"
+msgstr "Trouvé {warnings} objet(s) pouvant être amélioré(s) pour {category}."
+
+#: src/diagnosis.py:518
+msgid "diagnosis_everything_ok"
+msgstr "Tout semble OK pour {category} !"
+
+#: src/diagnosis.py:533
+msgid "diagnosis_no_cache"
+msgstr "Pas encore de cache de diagnostique pour la catégorie '{category}'"
+
+#: src/dns.py:67 src/dns.py:555 src/dns.py:643
+msgid "domain_dns_conf_special_use_tld"
+msgstr ""
+"Ce domaine est basé sur un domaine de premier niveau (TLD) à usage "
+"spécial tel que .local ou .test et ne devrait donc pas avoir "
+"d'enregistrements DNS réels."
+
+#: src/dns.py:102
+msgid "domain_dns_conf_is_just_a_recommendation"
+msgstr ""
+"Cette section montre la configuration *recommandée*. Elle ne configure "
+"pas le DNS pour vous. Il est de votre ressort de configurer votre zone "
+"DNS chez votre fournisseur de nom de domaine (registrar) conformément à "
+"cette recommandation."
+
+#: src/dns.py:501
+msgid "registrar_infos"
+msgstr "Infos du Registrar (fournisseur du nom de domaine)"
+
+#: src/dns.py:531
+msgid "domain_dns_registrar_managed_in_parent_domain"
+msgstr ""
+"Ce domaine est un sous-domaine de {parent_domain_link}. La configuration "
+"du registrar DNS doit être gérée dans le panneau de configuration de "
+"{parent_domain}."
+
+#: src/dns.py:543
+msgid "domain_dns_registrar_yunohost"
+msgstr ""
+"Ce domaine est de type nohost.me / nohost.st / ynh.fr et sa configuration"
+" DNS est donc automatiquement gérée par YunoHost sans qu'il n'y ait "
+"d'autre configuration à faire. (voir la commande 'yunohost dyndns "
+"update')"
+
+#: src/dns.py:547 src/dyndns.py:127 src/dyndns.py:141 src/dyndns.py:255
+msgid "ask_dyndns_recovery_password"
+msgstr "Mot de passe de récupération pour DynDNS"
+
+#: src/dns.py:563
+msgid "domain_dns_registrar_not_supported"
+msgstr ""
+"YunoHost n'a pas pu détecter automatiquement le bureau d'enregistrement "
+"gérant ce domaine. Vous devez configurer manuellement vos enregistrements"
+" DNS en suivant la documentation sur https://doc.yunohost.org/dns_config."
+
+#: src/dns.py:567
+msgid "domain_dns_registrar_supported"
+msgstr ""
+"YunoHost a détecté automatiquement que ce domaine est géré par le "
+"registrar **{registrar}**. Si vous le souhaitez, YunoHost configurera "
+"automatiquement cette zone DNS, si vous lui fournissez les identifiants "
+"API appropriés. Vous pouvez trouver de la documentation sur la façon "
+"d'obtenir vos identifiants API sur cette page : "
+"https://doc.yunohost.org/admin/get_started/providers/registrar/{registrar}/."
+" (Vous pouvez également configurer manuellement vos enregistrements DNS "
+"en suivant la documentation sur https://doc.yunohost.org/dns_config )"
+
+#: src/dns.py:578
+msgid "domain_dns_registrar_experimental"
+msgstr ""
+"Pour l'instant, l'interface avec l'API de **{registrar}** n'a pas été "
+"correctement testée et revue par la communauté YunoHost. Son support est "
+"**très expérimentale** - faites preuve de prudence !"
+
+#: src/dns.py:594
+msgid "domain_dns_registrar_use_auto"
+msgstr "Utiliser la fonction DNS automatique"
+
+#: src/dns.py:646
+msgid "domain_dns_push_not_applicable"
+msgstr ""
+"La fonction de configuration DNS automatique n'est pas applicable au "
+"domaine {domain}. Vous devez configurer manuellement vos enregistrements "
+"DNS en suivant la documentation sur https://doc.yunohost.org/dns_config."
+
+#: src/dns.py:661 src/dns.py:670
+msgid "domain_dns_push_managed_in_parent_domain"
+msgstr ""
+"La fonctionnalité de configuration DNS automatique est gérée dans le "
+"domaine parent {parent_domain}."
+
+#: src/dns.py:676 src/dns.py:681
+msgid "domain_registrar_is_not_configured"
+msgstr "Le registrar n'est pas encore configuré pour le domaine {domain}."
+
+#: src/dns.py:742
+msgid "domain_dns_push_failed_to_list"
+msgstr ""
+"Échec de la liste des enregistrements actuels à l'aide de l'API du "
+"registraire : {error}"
+
+#: src/dns.py:952
+msgid "domain_dns_push_already_up_to_date"
+msgstr "Dossiers déjà à jour."
+
+#: src/dns.py:960
+msgid "domain_dns_pushing"
+msgstr "Transmission des enregistrements DNS…"
+
+#: src/dns.py:1009 src/dns.py:1022
+msgid "domain_dns_push_record_failed"
+msgstr "Échec de l'enregistrement {action} {type}/{name} : {error}"
+
+#: src/dns.py:1035
+msgid "domain_dns_push_success"
+msgstr "Enregistrements DNS mis à jour !"
+
+#: src/dns.py:1039
+msgid "domain_dns_push_failed"
+msgstr "La mise à jour des enregistrements DNS a échoué."
+
+#: src/dns.py:1041
+msgid "domain_dns_push_partial_failure"
+msgstr ""
+"Enregistrements DNS partiellement mis à jour : certains "
+"avertissements/erreurs ont été signalés."
+
+#: src/domain.py:254
+msgid "domain_unknown"
+msgstr "Domaine '{domain}' inconnu"
+
+#: src/domain.py:326
+msgid "domain_exists"
+msgstr "Le domaine existe déjà"
+
+#: src/domain.py:347 src/dyndns.py:119
+msgid "domain_dyndns_already_subscribed"
+msgstr "Vous avez déjà souscris à un domaine DynDNS"
+
+#: src/domain.py:350
+msgid "tos_dyndns_acknowledgement"
+msgstr ""
+"Vous avez choisi d'enregistrer un domaine DynDNS qui est un service "
+"fourni par le projet YunoHost. Considérant que les noms de domaine sont "
+"un aspect important des services numériques à long terme, nous vous "
+"rappelons de lire attentivement les Conditions Générales d'Utilisation, "
+"en particulier la section concernant ces noms de domaine gratuits : "
+"<https://doc.yunohost.org/terms_of_services>."
+
+#: src/domain.py:375
+msgid "domain_creation_failed"
+msgstr "Impossible de créer le domaine {domain} : {error}"
+
+#: src/domain.py:436
+msgid "domain_created"
+msgstr "Le domaine a été créé"
+
+#: src/domain.py:486
+msgid "domain_cannot_remove_main"
+msgstr ""
+"Vous ne pouvez pas supprimer '{domain}' car il s'agit du domaine "
+"principal. Vous devez d'abord définir un autre domaine comme domaine "
+"principal à l'aide de 'yunohost domain main-domain -n <another-domain>', "
+"voici la liste des domaines candidats : {other_domains}"
+
+#: src/domain.py:492
+msgid "domain_cannot_remove_main_add_new_one"
+msgstr ""
+"Vous ne pouvez pas supprimer '{domain}' car il s'agit du domaine "
+"principal et de votre seul domaine. Vous devez d'abord ajouter un autre "
+"domaine à l'aide de 'yunohost domain add <another-domain.com>', puis "
+"définir comme domaine principal à l'aide de 'yunohost domain main-domain "
+"-n <nom-d'un-autre-domaine.com>' et vous pouvez ensuite supprimer le "
+"domaine '{domain}' à l'aide de 'yunohost domain remove {domain}'."
+
+#: src/domain.py:518
+msgid "domain_remove_confirm_apps_removal"
+msgstr ""
+"Le retrait de ce domaine retirera aussi ces applications :\n"
+"{apps}\n"
+"\n"
+"Voulez-vous vraiment faire cela ? [{answers}]"
+
+#: src/domain.py:525 src/utils/app_utils.py:1399
+msgid "aborting"
+msgstr "Annulation en cours."
+
+#: src/domain.py:531
+msgid "domain_uninstall_app_first"
+msgstr ""
+"Ces applications sont toujours installées sur votre domaine :\n"
+"{apps}\n"
+"\n"
+"Veuillez les désinstaller avec la commande 'yunohost app remove nom-"
+"de-l-application' ou les déplacer vers un autre domaine avec la commande "
+"'yunohost app change-url nom-de-l-application' avant de procéder à la "
+"suppression du domaine"
+
+#: src/domain.py:548
+msgid "domain_deletion_failed"
+msgstr "Impossible de supprimer le domaine {domain} : {error}"
+
+#: src/domain.py:594
+msgid "domain_deleted"
+msgstr "Le domaine a été supprimé"
+
+#: src/domain.py:675
+msgid "main_domain_change_failed"
+msgstr "Impossible de modifier le domaine principal"
+
+#: src/domain.py:687
+msgid "main_domain_changed"
+msgstr "Le domaine principal a été modifié"
+
+#: src/domain.py:860
+msgid "app_make_default_location_already_used"
+msgstr ""
+"Impossible de configurer l'application '{app}' par défaut pour le domaine"
+" '{domain}' car il est déjà utilisé par l'application '{other_app}'"
+
+#: src/dyndns.py:86 src/dyndns.py:97
+msgid "dyndns_could_not_check_available"
+msgstr "Impossible de vérifier si {domain} est disponible chez {provider}."
+
+#: src/dyndns.py:94 src/dyndns.py:292
+msgid "dyndns_too_many_requests"
+msgstr ""
+"Le service dyndns de YunoHost a reçu trop de requêtes/demandes de votre "
+"part, attendez environ 1 heure avant de réessayer."
+
+#: src/dyndns.py:114
+msgid "dyndns_domain_not_provided"
+msgstr "Le fournisseur DynDNS {provider} ne peut pas fournir le domaine {domain}."
+
+#: src/dyndns.py:125
+msgid "ask_dyndns_recovery_password_explain_unavailable"
+msgstr ""
+"Ce domaine DynDNS est déjà enregistré. Si vous êtes la personne qui a "
+"enregistré ce domaine lors de sa création, vous pouvez entrer le mot de "
+"passe de récupération pour récupérer ce domaine."
+
+#: src/dyndns.py:135 src/tools.py:232
+msgid "dyndns_unavailable"
+msgstr "Le domaine {domain} est indisponible."
+
+#: src/dyndns.py:139
+msgid "ask_dyndns_recovery_password_explain"
+msgstr ""
+"Veuillez choisir un mot de passe de récupération pour votre domaine "
+"DynDNS, au cas où vous devriez le réinitialiser plus tard."
+
+#: src/dyndns.py:145
+msgid "dyndns_no_recovery_password"
+msgstr ""
+"Aucun mot de passe de récupération n'a été spécifié ! Si vous perdez le "
+"contrôle de ce domaine, vous devrez contacter une des personnes gérant "
+"l'administration dans l'équipe YunoHost !"
+
+#: src/dyndns.py:203 src/dyndns.py:210
+msgid "dyndns_subscribe_failed"
+msgstr "Le nom de domaine DynDNS n'a pas pu être enregistré : {error}"
+
+#: src/dyndns.py:225
+msgid "dyndns_subscribed"
+msgstr "Domaine DynDNS enregistré"
+
+#: src/dyndns.py:252
+msgid "ask_dyndns_recovery_password_explain_during_unsubscribe"
+msgstr "Veuillez saisir le mot de passe de récupération pour ce domaine DynDNS."
+
+#: src/dyndns.py:279 src/dyndns.py:295
+msgid "dyndns_unsubscribe_failed"
+msgstr "Le nom de domaine DynDNS n'a pas pu être résilié : {error}"
+
+#: src/dyndns.py:288
+msgid "dyndns_unsubscribe_denied"
+msgstr ""
+"Échec de la résiliation du domaine : informations d'identification non "
+"valides"
+
+#: src/dyndns.py:290
+msgid "dyndns_unsubscribe_already_unsubscribed"
+msgstr "Le domaine a déjà été résilié"
+
+#: src/dyndns.py:299
+msgid "dyndns_unsubscribed"
+msgstr "Domaine DynDNS résilié"
+
+#: src/dyndns.py:307 src/dyndns.py:431
+msgid "dyndns_key_not_found"
+msgstr "Clé DNS introuvable pour le domaine"
+
+#: src/dyndns.py:332 src/dyndns.py:344
+msgid "dyndns_set_recovery_password_failed"
+msgstr "Échec de la mise en place du mot de passe de récupération : {error}"
+
+#: src/dyndns.py:335
+msgid "dyndns_set_recovery_password_success"
+msgstr "Mot de passe de récupération changé !"
+
+#: src/dyndns.py:337
+msgid "dyndns_set_recovery_password_denied"
+msgstr ""
+"Échec de la mise en place du mot de passe de récupération : mot de passe "
+"non valide"
+
+#: src/dyndns.py:339
+msgid "dyndns_set_recovery_password_unknown_domain"
+msgstr ""
+"Échec de la définition du mot de passe de récupération : le domaine n'est"
+" pas enregistré"
+
+#: src/dyndns.py:341
+msgid "dyndns_set_recovery_password_invalid_password"
+msgstr ""
+"Échec de la mise en place du mot de passe de récupération : le mot de "
+"passe n'est pas assez fort/solide"
+
+#: src/dyndns.py:390
+msgid "dyndns_no_domain_registered"
+msgstr "Aucun domaine n'a été enregistré avec DynDNS"
+
+#: src/dyndns.py:554 src/dyndns.py:558
+msgid "dyndns_ip_update_failed"
+msgstr "Impossible de mettre à jour l'adresse IP sur le domaine DynDNS"
+
+#: src/dyndns.py:560
+msgid "dyndns_ip_updated"
+msgstr "Mise à jour de votre IP pour le domaine DynDNS"
+
+#: src/firewall.py:256
+msgid "upnp_dev_not_found"
+msgstr "Aucun périphérique compatible UPnP n'a été trouvé"
+
+#: src/firewall.py:418
+msgid "port_already_opened"
+msgstr "Le port {port} est déjà ouvert"
+
+#: src/firewall.py:425 src/firewall.py:457 src/firewall.py:529
+#: src/firewall.py:563
+msgid "firewall_reloaded"
+msgstr "Pare-feu rechargé"
+
+#: src/firewall.py:427 src/firewall.py:459 src/firewall.py:531
+#: src/firewall.py:565
+msgid "firewall_reload_failed"
+msgstr "Impossible de recharger le pare-feu. Plus d'informations dans le journal."
+
+#: src/firewall.py:450 src/firewall.py:522
+msgid "port_already_closed"
+msgstr "Le port {port} est déjà fermé"
+
+#: src/firewall.py:580
+msgid "action_invalid"
+msgstr "Action '{action}' incorrecte"
+
+#: src/firewall.py:597
+msgid "upnp_enabled"
+msgstr "L'UPnP est activé"
+
+#: src/firewall.py:597
+msgid "upnp_disabled"
+msgstr "L'UPnP est désactivé"
+
+#: src/firewall.py:601
+msgid "upnp_port_open_failed"
+msgstr "Impossible d'ouvrir les ports UPnP"
+
+#: src/firewall.py:611
+msgid "nftables_unavailable"
+msgstr ""
+"Vous ne pouvez pas jouer avec nftables ici. Vous êtes soit dans un "
+"conteneur, soit votre noyau ne le prend pas en charge"
+
+#: src/hook.py:117 src/hook.py:273
+msgid "hook_name_unknown"
+msgstr "Nom de l'action '{name}' inconnu"
+
+#: src/hook.py:186
+msgid "hook_list_by_invalid"
+msgstr "Propriété invalide pour lister les actions par celle-ci"
+
+#: src/hook.py:344
+msgid "file_does_not_exist"
+msgstr "Le fichier dont le chemin est {path} n'existe pas."
+
+#: src/hook.py:426 src/hook.py:428
+msgid "hook_exec_not_terminated"
+msgstr "L'exécution du script {path} ne s'est pas terminée correctement"
+
+#: src/hook.py:431
+msgid "hook_exec_failed"
+msgstr "Échec de l'exécution du script : {path}"
+
+#: src/hook.py:503
+msgid "hook_json_return_error"
+msgstr ""
+"Échec de la lecture au retour du script {path}. Erreur : {msg}. Contenu "
+"brut : {raw_content}"
+
+#: src/hook.py:569 src/settings.py:186 src/utils/configpanel.py:634
+#: src/utils/configpanel.py:723 src/utils/resources.py:75
+#: src/utils/resources.py:103
+msgid "operation_interrupted"
+msgstr "L'opération a-t-elle été interrompue manuellement ?"
+
+#: src/log.py:111 src/log.py:222 src/log.py:368
+msgid "log_corrupted_md_file"
+msgstr ""
+"Le fichier YAML de métadonnées associé aux logs est corrompu : "
+"'{md_file}'\n"
+"Erreur : {error}"
+
+#: src/log.py:335
+msgid "log_does_exists"
+msgstr ""
+"Il n'y a pas de journal des opérations avec le nom '{log}', utilisez "
+"'yunohost log list' pour voir tous les journaux d'opérations disponibles"
+
+#: src/log.py:908
+msgid "log_link_to_log"
+msgstr ""
+"Journal complet de cette opération : '<a href=\"#/tools/logs/{name}\" "
+"style=\"text-decoration :underline\"> {desc} </a>'"
+
+#: src/log.py:910
+msgid "log_help_to_get_log"
+msgstr ""
+"Pour voir le journal de cette opération '{desc}', utilisez la commande "
+"'yunohost log show {name}'"
+
+#: src/log.py:916
+msgid "log_link_to_failed_log"
+msgstr ""
+"L'opération '{desc}' a échoué ! Pour obtenir de l'aide, merci de partager"
+" le journal de l'opération en <a href=\"#/tools/logs/{name}\">cliquant "
+"ici</a>"
+
+#: src/log.py:921
+msgid "log_help_to_get_failed_log"
+msgstr ""
+"L'opération '{desc}' a échoué ! Pour obtenir de l'aide, merci de partager"
+" le journal de l'opération en utilisant la commande 'yunohost log share "
+"{name}'"
+
+#: src/log.py:938
+msgid "log_operation_unit_unclosed_properly"
+msgstr "L'opération ne s'est pas terminée correctement"
+
+#: src/log.py:1022
+msgid "automatic_task"
+msgstr "Tâche automatique"
+
+#: src/log.py:1025
+msgid "yunohost_api"
+msgstr "API YunoHost"
+
+#: src/log.py:1028
+msgid "noninteractive_task"
+msgstr "Tâche non interactive"
+
+#: src/permission.py:235
+msgid "permission_require_account"
+msgstr ""
+"Permission {permission} n'a de sens que pour les personnes ayant un "
+"compte et ne peut donc pas être activé pour les visiteurs."
+
+#: src/permission.py:240
+msgid "permission_cant_add_to_all_users"
+msgstr "L'autorisation {permission} ne peut pas être ajoutée à tous les comptes."
+
+#: src/permission.py:255
+msgid "permission_protected"
+msgstr ""
+"L'autorisation {permission} est protégée. Vous ne pouvez pas ajouter ou "
+"supprimer le groupe visiteurs à/de cette autorisation."
+
+#: src/permission.py:268 src/permission.py:430 src/user.py:1193
+#: src/user.py:1270 src/user.py:1462
+msgid "group_unknown"
+msgstr "Le groupe {group} est inconnu"
+
+#: src/permission.py:272
+msgid "permission_already_allowed"
+msgstr "Le groupe '{group}' a déjà l'autorisation '{permission}' activée"
+
+#: src/permission.py:284
+msgid "permission_already_disallowed"
+msgstr "Le groupe '{group}' a déjà l'autorisation '{permission}' désactivé"
+
+#: src/permission.py:301
+msgid "permission_currently_allowed_for_all_users"
+msgstr ""
+"Cette autorisation est actuellement accordée à tous les comptes en plus "
+"des autres groupes. Vous voudrez probablement soit supprimer "
+"l'autorisation 'all_users', soit supprimer les autres groupes auxquels il"
+" est actuellement autorisé."
+
+#: src/permission.py:310 src/permission.py:516
+msgid "regex_incompatible_with_tile"
+msgstr ""
+"/ !\\ Packagers ! La permission '{permission}' a 'show_tile' définie sur "
+"'true' et vous ne pouvez donc pas définir une URL regex comme URL "
+"principale"
+
+#: src/permission.py:338 src/permission.py:340 src/permission.py:576
+#: src/user.py:1581
+msgid "permission_updated"
+msgstr "Permission '{permission}' mise à jour"
+
+#: src/permission.py:365
+msgid "permission_not_found"
+msgstr "Permission '{permission}' introuvable"
+
+#: src/permission.py:455
+msgid "permission_created"
+msgstr "Permission '{permission}' créée"
+
+#: src/permission.py:496
+msgid "unknown_main_domain_path"
+msgstr ""
+"Domaine ou chemin inconnu pour '{app}'. Vous devez spécifier un domaine "
+"et un chemin pour pouvoir spécifier une URL pour l'autorisation."
+
+#: src/permission.py:528
+msgid "additional_urls_already_added"
+msgstr ""
+"L'URL supplémentaire '{url}' a déjà été ajoutée pour la permission "
+"'{permission}'"
+
+#: src/permission.py:540
+msgid "additional_urls_already_removed"
+msgstr ""
+"L'URL supplémentaire '{url}' a déjà été supprimée pour la permission "
+"'{permission}'"
+
+#: src/permission.py:570 src/permission.py:714
+msgid "permission_update_failed"
+msgstr "Impossible de mettre à jour la permission '{permission}' : {error}"
+
+#: src/permission.py:590
+msgid "permission_cannot_remove_main"
+msgstr "Supprimer une autorisation principale n'est pas autorisé"
+
+#: src/permission.py:612
+msgid "permission_deleted"
+msgstr "Permission '{permission}' supprimée"
+
+#: src/permission.py:659
+msgid "permission_deletion_failed"
+msgstr "Impossible de supprimer la permission '{permission}' : {error}"
+
+#: src/permission.py:696
+msgid "permission_creation_failed"
+msgstr "Impossible de créer l'autorisation '{permission}' : {error}"
+
+#: src/permission.py:788
+msgid "show_tile_cant_be_enabled_for_url_not_defined"
+msgstr ""
+"Vous ne pouvez pas activer 'show_tile' pour le moment, car vous devez "
+"d'abord définir une URL pour l'autorisation '{permission}'"
+
+#: src/permission.py:795
+msgid "show_tile_cant_be_enabled_for_regex"
+msgstr ""
+"Vous ne pouvez pas activer 'show_tile' pour le moment, cela car l'URL de "
+"l'autorisation '{permission}' est une expression régulière"
+
+#: src/permission.py:973
+msgid "invalid_regex"
+msgstr "Regex non valide : '{regex}'"
+
+#: src/permission.py:985
+msgid "regex_with_only_domain"
+msgstr ""
+"Vous ne pouvez pas utiliser une expression régulière pour le domaine, "
+"uniquement pour le chemin"
+
+#: src/portal.py:51 src/ssh.py:43 src/ssh.py:80 src/ssh.py:121 src/user.py:357
+#: src/user.py:462 src/user.py:654 src/user.py:1293
+msgid "user_unknown"
+msgstr "Le compte {user} est inconnu"
+
+#: src/portal.py:224 src/portal.py:249 src/portal.py:286
+msgid "mail_edit_operation_unauthorized"
+msgstr ""
+"Vous n'êtes pas autorisé·e à effectuer cette modification pour votre "
+"propre compte."
+
+#: src/portal.py:229 src/portal.py:264 src/user.py:243 src/user.py:527
+#: src/user.py:537 src/user.py:1339
+msgid "mail_unavailable"
+msgstr "Cette adresse email est réservée au groupe des comptes d'administration"
+
+#: src/portal.py:234 src/portal.py:271
+msgid "mail_already_exists"
+msgstr "L'adresse mail '{mail}' existe déjà"
+
+#: src/portal.py:237 src/portal.py:275
+msgid "mail_alias_unauthorized"
+msgstr "Vous n'êtes pas autorisé à ajouter des alias liés au domaine '{domain}'"
+
+#: src/authenticators/ldap_ynhuser.py:225 src/portal.py:316
+msgid "invalid_password"
+msgstr "Mot de passe invalide"
+
+#: src/portal.py:326 src/user.py:520 src/user.py:546 src/user.py:602
+msgid "user_update_failed"
+msgstr "Impossible de mettre à jour le compte {user} : {error}"
+
+#: src/regenconf.py:200
+msgid "regenconf_failed"
+msgstr ""
+"Impossible de régénérer la configuration pour la ou les catégorie(s) : "
+"'{categories}'"
+
+#: src/regenconf.py:213
+msgid "regenconf_pending_applying"
+msgstr "Applique la configuration en attente pour la catégorie '{category}'…"
+
+#: src/regenconf.py:215
+msgid "regenconf_dry_pending_applying"
+msgstr ""
+"Vérification de la configuration en attente qui aurait été appliquée pour"
+" la catégorie '{category}'…"
+
+#: src/regenconf.py:320 src/regenconf.py:412
+msgid "regenconf_file_manually_modified"
+msgstr ""
+"Le fichier de configuration '{conf}' a été modifié manuellement et ne "
+"sera pas mis à jour"
+
+#: src/regenconf.py:343
+msgid "regenconf_file_manually_removed"
+msgstr ""
+"Le fichier de configuration '{conf}' a été supprimé manuellement et ne "
+"sera pas créé"
+
+#: src/regenconf.py:361
+msgid "regenconf_now_managed_by_yunohost"
+msgstr ""
+"Le fichier de configuration '{conf}' est maintenant géré par YunoHost "
+"(catégorie {category})."
+
+#: src/regenconf.py:374
+msgid "regenconf_file_kept_back"
+msgstr ""
+"Le fichier de configuration '{conf}' devait être supprimé par 'regen-"
+"conf' (catégorie {category}) mais a été conservé."
+
+#: src/regenconf.py:405
+msgid "regenconf_need_to_explicitly_specify_ssh"
+msgstr ""
+"La configuration de ssh a été modifiée manuellement. Vous devez "
+"explicitement indiquer la mention --force à \"ssh\" pour appliquer les "
+"changements."
+
+#: src/regenconf.py:430
+msgid "regenconf_up_to_date"
+msgstr "La configuration est déjà à jour pour la catégorie '{category}'"
+
+#: src/regenconf.py:434
+msgid "regenconf_updated"
+msgstr "La configuration a été mise à jour pour '{category}'"
+
+#: src/regenconf.py:436
+msgid "regenconf_would_be_updated"
+msgstr "La configuration aurait dû être mise à jour pour la catégorie '{category}'"
+
+#: src/regenconf.py:679
+msgid "regenconf_file_backed_up"
+msgstr "Le fichier de configuration '{conf}' a été sauvegardé sous '{backup}'"
+
+#: src/regenconf.py:685
+msgid "regenconf_file_removed"
+msgstr "Le fichier de configuration '{conf}' a été supprimé"
+
+#: src/regenconf.py:693
+msgid "regenconf_file_updated"
+msgstr "Le fichier de configuration '{conf}' a été mis à jour"
+
+#: src/regenconf.py:701
+msgid "regenconf_file_remove_failed"
+msgstr "Impossible de supprimer le fichier de configuration '{conf}'"
+
+#: src/regenconf.py:717
+msgid "regenconf_file_copy_failed"
+msgstr ""
+"Impossible de copier le nouveau fichier de configuration '{new}' vers "
+"'{conf}'"
+
+#: src/service.py:127
+msgid "service_add_failed"
+msgstr "Impossible d'ajouter le service '{service}'"
+
+#: src/service.py:129
+msgid "service_added"
+msgstr "Le service '{service}' a été ajouté"
+
+#: src/service.py:143 src/service.py:370 src/service.py:531 src/service.py:591
+msgid "service_unknown"
+msgstr "Le service '{service}' est inconnu"
+
+#: src/service.py:150
+msgid "service_remove_failed"
+msgstr "Impossible de supprimer le service '{service}'"
+
+#: src/service.py:152
+msgid "service_removed"
+msgstr "Le service '{service}' a été supprimé"
+
+#: src/service.py:169
+msgid "service_started"
+msgstr "Le service '{service}' a été démarré"
+
+#: src/service.py:176
+msgid "service_start_failed"
+msgstr "Impossible de démarrer le service '{service}'"
+
+#: src/service.py:180
+msgid "service_already_started"
+msgstr "Le service '{service}' est déjà en cours d'exécution"
+
+#: src/service.py:196
+msgid "service_stopped"
+msgstr "Le service '{service}' a été arrêté"
+
+#: src/service.py:203
+msgid "service_stop_failed"
+msgstr "Impossible d'arrêter le service '{service}'"
+
+#: src/service.py:207
+msgid "service_already_stopped"
+msgstr "Le service '{service}' est déjà arrêté"
+
+#: src/service.py:222
+msgid "service_reloaded"
+msgstr "Le service '{service}' a été rechargé"
+
+#: src/service.py:229
+msgid "service_reload_failed"
+msgstr "Impossible de recharger le service '{service}'"
+
+#: src/service.py:248
+msgid "service_restarted"
+msgstr "Le service '{service}' a été redémarré"
+
+#: src/service.py:255
+msgid "service_restart_failed"
+msgstr "Impossible de redémarrer le service '{service}'"
+
+#: src/service.py:292
+msgid "service_not_reloading_because_conf_broken"
+msgstr ""
+"Le service '{name}' n'a pas été rechargé/redémarré car sa configuration "
+"est cassée : {errors}"
+
+#: src/service.py:300
+msgid "service_reloaded_or_restarted"
+msgstr "Le service '{service}' a été rechargé ou redémarré"
+
+#: src/service.py:307
+msgid "service_reload_or_restart_failed"
+msgstr "Impossible de recharger ou de redémarrer le service '{service}'"
+
+#: src/service.py:327
+msgid "service_enabled"
+msgstr ""
+"Le service '{service}' sera désormais lancé automatiquement au démarrage "
+"du système."
+
+#: src/service.py:329
+msgid "service_enable_failed"
+msgstr "Impossible de lancer automatiquement le service '{service}' au démarrage."
+
+#: src/service.py:346
+msgid "service_disabled"
+msgstr "Le service '{service}' ne sera plus lancé au démarrage du système."
+
+#: src/service.py:348
+msgid "service_disable_failed"
+msgstr "Impossible de ne pas lancer le service '{service}' au démarrage."
+
+#: src/service.py:632
+msgid "service_cmd_exec_failed"
+msgstr "Impossible d'exécuter la commande '{command}'"
+
+#: src/settings.py:187 src/settings.py:194 src/utils/configpanel.py:635
+#: src/utils/configpanel.py:642
+msgid "config_apply_failed"
+msgstr "Échec de l'application de la nouvelle configuration : {error}"
+
+#: src/settings.py:197
+msgid "global_settings_reset_success"
+msgstr "Réinitialisation des paramètres généraux"
+
+#: src/settings.py:236
+msgid "password_confirmation_not_the_same"
+msgstr "Le mot de passe et la confirmation de ce dernier ne correspondent pas"
+
+#: src/tools.py:86
+msgid "root_password_changed"
+msgstr "Le mot de passe de root a été changé"
+
+#: src/tools.py:90
+msgid "root_password_desynchronized"
+msgstr ""
+"Le mot de passe du compte administrateur a été changé, mais YunoHost n'a "
+"pas pu le propager au mot de passe root !"
+
+#: src/tools.py:134
+msgid "domain_hostname_failed"
+msgstr ""
+"Échec de l'utilisation d'un nouveau nom d'hôte. Cela pourrait causer des "
+"soucis plus tard (cela n'en causera peut-être pas)."
+
+#: src/migrations/m0031_terms_of_services.py:42 src/tools.py:178
+msgid "tos_postinstall_acknowledgement"
+msgstr ""
+"Le projet YunoHost est une équipe de bénévoles qui ont fait cause commune"
+" pour créer un système d'exploitation libre pour serveurs, appelé "
+"YunoHost. Le logiciel YunoHost est publié sous la licence AGPLv3 "
+"(<https://www.gnu.org/licenses/agpl-3.0.txt>). En relation avec ce "
+"logiciel, le projet administre et met à disposition plusieurs services "
+"techniques et communautaires à des fins diverses. En utilisant ces "
+"services, vous acceptez d'être lié par les conditions d'utilisation "
+"suivantes : <https://doc.yunohost.org/terms_of_services>."
+
+#: src/tools.py:187 src/user.py:240
+msgid "system_username_exists"
+msgstr "Ce nom de compte existe déjà dans les comptes système"
+
+#: src/tools.py:204
+msgid "postinstall_low_rootfsspace"
+msgstr ""
+"Le système de fichiers a une taille totale inférieure à 10 Go, ce qui est"
+" préoccupant et devrait attirer votre attention ! Vous allez certainement"
+" arriver à court d'espace disque (très) rapidement ! Il est recommandé "
+"d'avoir une racine de système de fichier d'au moins 16 Go. Si vous voulez"
+" installer YunoHost malgré cet avertissement, relancez la post-"
+"installation avec --force-diskspace"
+
+#: src/tools.py:221
+msgid "dyndns_provider_unreachable"
+msgstr ""
+"Impossible d'atteindre le fournisseur DynDNS {provider} : votre YunoHost "
+"n'est pas correctement connecté à Internet ou le serveur Dynette est en "
+"panne."
+
+#: src/tools.py:260
+msgid "yunohost_installing"
+msgstr "L'installation de YunoHost est en cours…"
+
+#: src/tools.py:323
+msgid "yunohost_configured"
+msgstr "YunoHost est maintenant configuré"
+
+#: src/tools.py:325
+msgid "yunohost_postinstall_end_tip"
+msgstr ""
+"La post-installation est terminée ! Pour finaliser votre installation, il"
+" est recommandé de :\n"
+"    - diagnostiquer les potentiels problèmes dans la section 'Diagnostic'"
+" de l'interface web (ou 'yunohost diagnosis run' en ligne de commande) ;"
+"\n"
+"    - lire les parties 'Lancer la configuration initiale' et 'Découvrez l"
+"'auto-hébergement, comment installer et utiliser YunoHost' dans le guide "
+"d'administration : https://doc.yunohost.org/admin."
+
+#: src/tools.py:417
+msgid "updating_apt_cache"
+msgstr "Récupération des mises à jour disponibles pour les paquets du système…"
+
+#: src/tools.py:423
+msgid "update_apt_cache_failed"
+msgstr ""
+"Impossible de mettre à jour le cache APT (gestionnaire de paquets "
+"Debian). Voici un extrait du fichier sources.list qui pourrait vous aider"
+" à identifier les lignes problématiques :\n"
+"{sourceslist}"
+
+#: src/tools.py:429
+msgid "update_apt_cache_warning"
+msgstr ""
+"Des erreurs se sont produites lors de la mise à jour du cache APT "
+"(gestionnaire de paquets Debian). Voici un extrait des lignes du fichier "
+"sources.list qui pourrait vous aider à identifier les lignes "
+"problématiques :\n"
+"{sourceslist}"
+
+#: src/tools.py:434 src/utils/app_utils.py:654 src/utils/app_utils.py:743
+#: src/utils/app_utils.py:775
+msgid "done"
+msgstr "Terminé"
+
+#: src/tools.py:455 src/tools.py:601
+msgid "already_up_to_date"
+msgstr "Il n'y a rien à faire. Tout est déjà à jour."
+
+#: src/tools.py:552 src/utils/app_utils.py:1270
+msgid "dpkg_is_broken"
+msgstr ""
+"Vous ne pouvez pas faire ça maintenant car dpkg/apt (le gestionnaire de "
+"paquets du système) semble avoir laissé des choses non configurées… Vous "
+"pouvez essayer de résoudre ce problème en vous connectant via SSH et en "
+"exécutant `sudo apt install --fix-broken` et/ou `sudo dpkg --configure "
+"-a` et/ou `sudo dpkg --audit`."
+
+#: src/tools.py:556
+msgid "dpkg_lock_not_available"
+msgstr ""
+"Cette commande ne peut pas être exécutée pour le moment car un autre "
+"programme semble utiliser le verrou de dpkg (le gestionnaire de package "
+"système)"
+
+#: src/tools.py:589
+msgid "app_upgrade_some_app_failed"
+msgstr "Certaines applications n'ont pas été mises à jour"
+
+#: src/tools.py:603
+msgid "upgrading_packages"
+msgstr "Mise à jour des paquets en cours…"
+
+#: src/tools.py:619
+msgid "tools_upgrade"
+msgstr "Mise à jour des paquets du système"
+
+#: src/tools.py:653
+msgid "tools_upgrade_failed"
+msgstr "Impossible de mettre à jour les paquets : {packages_list}"
+
+#: src/tools.py:658
+msgid "system_upgraded"
+msgstr "Système mis à jour"
+
+#: src/tools.py:668
+msgid "server_shutdown_confirm"
+msgstr ""
+"Le serveur va être éteint immédiatement, le voulez-vous vraiment ? "
+"[{answers}]"
+
+#: src/tools.py:677
+msgid "server_shutdown"
+msgstr "Le serveur va s'éteindre"
+
+#: src/tools.py:687
+msgid "server_reboot_confirm"
+msgstr ""
+"Le serveur va redémarrer immédiatement, le voulez-vous vraiment ? "
+"[{answers}]"
+
+#: src/tools.py:695
+msgid "server_reboot"
+msgstr "Le serveur va redémarrer"
+
+#: src/tools.py:774
+msgid "migrations_list_conflict_pending_done"
+msgstr "Vous ne pouvez pas utiliser --previous et --done simultanément."
+
+#: src/tools.py:828
+msgid "migrations_no_such_migration"
+msgstr "Il n'y a pas de migration appelée '{id}'"
+
+#: src/tools.py:832
+msgid "migrations_exclusive_options"
+msgstr ""
+"'auto', '--skip' et '--force-rerun' sont des options mutuellement "
+"exclusives."
+
+#: src/tools.py:838
+msgid "migrations_must_provide_explicit_targets"
+msgstr ""
+"Vous devez fournir des cibles explicites lorsque vous utilisez '--skip' "
+"ou '--force-rerun'"
+
+#: src/tools.py:851
+msgid "migrations_not_pending_cant_skip"
+msgstr ""
+"Ces migrations ne sont pas en attente et ne peuvent donc pas être "
+"ignorées : {ids}"
+
+#: src/tools.py:855
+msgid "migrations_pending_cant_rerun"
+msgstr ""
+"Ces migrations étant toujours en attente, vous ne pouvez pas les exécuter"
+" à nouveau : {ids}"
+
+#: src/tools.py:858
+msgid "migrations_already_ran"
+msgstr "Ces migrations sont déjà effectuées : {ids}"
+
+#: src/tools.py:862
+msgid "migrations_no_migrations_to_run"
+msgstr "Aucune migration à lancer"
+
+#: src/tools.py:872
+msgid "migrations_to_be_ran_manually"
+msgstr ""
+"La migration {id} doit être lancée manuellement. Veuillez aller dans "
+"Outils > Migrations dans la webadmin, ou lancer `yunohost tools "
+"migrations run`."
+
+#: src/tools.py:888
+msgid "migrations_dependencies_not_satisfied"
+msgstr "Exécutez ces migrations : '{dependencies_id}', avant migration {id}."
+
+#: src/tools.py:902
+msgid "migrations_need_to_accept_disclaimer"
+msgstr ""
+"Pour lancer la migration {id}, vous devez accepter cet avertissement :\n"
+"---\n"
+"{disclaimer}\n"
+"---\n"
+"Si vous acceptez de lancer la migration, veuillez relancer la commande "
+"avec l'option --accept-disclaimer."
+
+#: src/tools.py:917
+msgid "migrations_skip_migration"
+msgstr "Ignorer et passer la migration {id}…"
+
+#: src/tools.py:923 src/tools.py:1049 src/tools.py:1080
+msgid "migrations_running_forward"
+msgstr "Exécution de la migration {id}…"
+
+#: src/tools.py:929 src/tools.py:1053 src/tools.py:1084
+msgid "migrations_migration_has_failed"
+msgstr "La migration {id} a échoué, abandon. Erreur : {exception}"
+
+#: src/tools.py:934
+msgid "migrations_success_forward"
+msgstr "Migration {id} terminée"
+
+#: src/tools.py:998
+msgid "migrations_loading_migration"
+msgstr "Chargement de la migration {id}…"
+
+#: src/tools.py:1013
+msgid "migrations_failed_to_load_migration"
+msgstr "Impossible de charger la migration {id} : {error}"
+
+#: src/tools.py:1123
+msgid "migration_ldap_backup_before_migration"
+msgstr ""
+"Création d'une sauvegarde de la base de données LDAP et des paramètres "
+"des applications avant la migration proprement dite."
+
+#: src/tools.py:1139
+msgid "migration_ldap_can_not_backup_before_migration"
+msgstr ""
+"La sauvegarde du système n'a pas pu être terminée avant l'échec de la "
+"migration. Erreur : {error}"
+
+#: src/tools.py:1149
+msgid "migration_ldap_migration_failed_trying_to_rollback"
+msgstr "Impossible de migrer… tentative de restauration du système."
+
+#: src/tools.py:1168
+msgid "migration_ldap_rollback_success"
+msgstr "Système rétabli dans son état initial."
+
+#: src/user.py:129
+msgid "field_invalid"
+msgstr "Champ incorrect : '{field}'"
+
+#: src/user.py:211
+msgid "domains_available"
+msgstr "Domaines disponibles :"
+
+#: src/user.py:217
+msgid "ask_user_domain"
+msgstr "Domaine à utiliser pour l'adresse email"
+
+#: src/user.py:229
+msgid "user_already_exists"
+msgstr "Le compte '{user}' existe déjà"
+
+#: src/user.py:235 src/user.py:294
+msgid "user_creation_failed"
+msgstr "Impossible de créer le compte {user} : {error}"
+
+#: src/user.py:267 src/user.py:592
+msgid "invalid_shell"
+msgstr "Shell invalide : {shell}"
+
+#: src/user.py:306
+msgid "user_home_creation_failed"
+msgstr "Impossible de créer le dossier personnel '{home}' pour ce compte"
+
+#: src/user.py:334
+msgid "user_created"
+msgstr "Le compte a été créé"
+
+#: src/user.py:359
+msgid "user_cannot_delete_last_admin"
+msgstr "Le compte '{user}' est le seul 'admins' et ne sera donc pas supprimé."
+
+#: src/user.py:395
+msgid "user_deletion_failed"
+msgstr "Impossible de supprimer le compte {user} : {error}"
+
+#: src/user.py:413
+msgid "user_deleted"
+msgstr "Le compte a été supprimé"
+
+#: src/user.py:523 src/user.py:549 src/user.py:1348
+msgid "mail_domain_unknown"
+msgstr ""
+"Le domaine '{domain}' de cette adresse email n'est pas valide. Merci "
+"d'utiliser un domaine administré par ce serveur."
+
+#: src/user.py:561 src/user.py:1375
+msgid "mail_alias_remove_failed"
+msgstr "Impossible de supprimer l'alias mail '{mail}'"
+
+#: src/user.py:581
+msgid "mail_forward_remove_failed"
+msgstr "Impossible de supprimer l'email de transfert '{mail}'"
+
+#: src/user.py:618
+msgid "user_updated"
+msgstr "Le compte a été modifié"
+
+#: src/user.py:683
+msgid "mailbox_used_space_dovecot_down"
+msgstr ""
+"Le service Dovecot doit être démarré si vous souhaitez voir l'espace "
+"disque occupé par la messagerie"
+
+#: src/user.py:685
+msgid "mailbox_disabled"
+msgstr "La boîte aux lettres est désactivée pour le compte {user}"
+
+#: src/user.py:711
+msgid "unlimit"
+msgstr "Pas de quota"
+
+#: src/user.py:803
+msgid "user_import_missing_columns"
+msgstr "Les colonnes suivantes sont manquantes : {columns}"
+
+#: src/user.py:851
+msgid "user_import_bad_line"
+msgstr "Ligne incorrecte {line} : {details}"
+
+#: src/user.py:885
+msgid "user_import_bad_file"
+msgstr ""
+"Votre fichier CSV n'est pas correctement formaté, il sera ignoré afin "
+"d'éviter une potentielle perte de données"
+
+#: src/user.py:890
+msgid "user_import_nothing_to_do"
+msgstr "Aucun compte n'a besoin d'être importé"
+
+#: src/user.py:916
+msgid "user_import_cannot_edit_or_delete_admins"
+msgstr ""
+"Impossible de modifier ou de supprimer '{user}' via la fonction "
+"d'importation car il s'agit d'un compte admin"
+
+#: src/user.py:1024
+msgid "user_import_partial_failed"
+msgstr "L'opération d'importation des comptes a partiellement échoué"
+
+#: src/user.py:1026
+msgid "user_import_failed"
+msgstr "L'opération d'importation des comptes a totalement échoué"
+
+#: src/user.py:1030
+msgid "user_import_success"
+msgstr "Comptes importés avec succès"
+
+#: src/user.py:1117
+msgid "group_already_exist"
+msgstr "Le groupe {group} existe déjà"
+
+#: src/user.py:1124
+msgid "group_already_exist_on_system_but_removing_it"
+msgstr ""
+"Le groupe {group} est déjà présent dans les groupes du système, mais "
+"YunoHost va le supprimer…"
+
+#: src/user.py:1131
+msgid "group_already_exist_on_system"
+msgstr "Le groupe {group} existe déjà dans les groupes système"
+
+#: src/user.py:1161
+msgid "group_creation_failed"
+msgstr "Échec de la création du groupe '{group}' : {error}"
+
+#: src/user.py:1167 src/user.py:1169
+msgid "group_created"
+msgstr "Le groupe '{group}' a été créé"
+
+#: src/user.py:1202
+msgid "group_cannot_be_deleted"
+msgstr "Le groupe {group} ne peut pas être supprimé manuellement."
+
+#: src/user.py:1209
+msgid "group_deletion_failed"
+msgstr "Échec de la suppression du groupe '{group}' : {error}"
+
+#: src/user.py:1215 src/user.py:1217
+msgid "group_deleted"
+msgstr "Suppression du groupe '{group}'"
+
+#: src/user.py:1244
+msgid "group_cannot_edit_all_users"
+msgstr ""
+"Le groupe 'all_users' ne peut pas être édité manuellement. C'est un "
+"groupe spécial destiné à contenir tous les comptes enregistrés dans "
+"YunoHost"
+
+#: src/user.py:1246
+msgid "group_cannot_edit_visitors"
+msgstr ""
+"Le groupe 'visiteurs' ne peut pas être édité manuellement. C'est un "
+"groupe spécial représentant les visiteurs anonymes"
+
+#: src/user.py:1249
+msgid "group_cannot_edit_primary_group"
+msgstr ""
+"Le groupe '{group}' ne peut pas être édité manuellement. C'est le groupe "
+"principal destiné à ne contenir qu'un compte spécifique."
+
+#: src/user.py:1257
+msgid "group_cannot_remove_last_admin"
+msgstr ""
+"Le compte '{user}' est le dernier membre du groupe 'admins' et ne sera "
+"donc pas supprimé de celui-ci."
+
+#: src/user.py:1297
+msgid "group_user_already_in_group"
+msgstr "Le compte {user} est déjà dans le groupe {group}"
+
+#: src/user.py:1301
+msgid "group_user_add"
+msgstr "Le compte '{user}' sera ajouté au groupe '{group}'"
+
+#: src/user.py:1311
+msgid "group_user_not_in_group"
+msgstr "Le compte {user} n'est pas dans le groupe {group}"
+
+#: src/user.py:1315
+msgid "group_user_remove"
+msgstr "Le compte '{user}' sera retiré du groupe '{group}'"
+
+#: src/user.py:1345 src/user.py:1396
+msgid "group_update_failed"
+msgstr "La mise à jour du groupe '{group}' a échoué : {error}"
+
+#: src/user.py:1351
+msgid "group_mailalias_add"
+msgstr "L'alias de courrier électronique '{mail}' sera ajouté au groupe '{group}'"
+
+#: src/user.py:1372
+msgid "group_mailalias_remove"
+msgstr ""
+"L'alias de courrier électronique '{mail}' sera supprimé du groupe "
+"'{group}'"
+
+#: src/user.py:1378
+msgid "group_update_aliases"
+msgstr "Mise à jour des alias du groupe '{group}'"
+
+#: src/user.py:1430
+msgid "group_no_change"
+msgstr "Rien à mettre à jour pour le groupe '{group}'"
+
+#: src/user.py:1432 src/user.py:1434
+msgid "group_updated"
+msgstr "Le groupe '{group}' a été mis à jour"
+
+#: src/authenticators/ldap_admin.py:81 src/authenticators/ldap_admin.py:127
+#: src/utils/ldap.py:159
+msgid "ldap_server_is_down_restart_it"
+msgstr "Le service LDAP est arrêté, tentative de redémarrage…"
+
+#: src/authenticators/ldap_admin.py:97 src/authenticators/ldap_admin.py:134
+#: src/authenticators/ldap_ynhuser.py:227
+msgid "ldap_server_down"
+msgstr "Impossible d'atteindre le serveur LDAP"
+
+#: src/authenticators/ldap_admin.py:100 src/authenticators/ldap_admin.py:105
+#: src/authenticators/ldap_admin.py:110 src/authenticators/ldap_admin.py:124
+#: src/authenticators/ldap_ynhuser.py:202
+#: src/authenticators/ldap_ynhuser.py:207
+msgid "invalid_credentials"
+msgstr "Mot de passe ou nom de compte incorrect"
+
+#: src/authenticators/ldap_admin.py:196 src/authenticators/ldap_admin.py:202
+#: src/authenticators/ldap_ynhuser.py:252
+#: src/authenticators/ldap_ynhuser.py:307
+#: src/authenticators/ldap_ynhuser.py:310
+#: src/authenticators/ldap_ynhuser.py:313
+#: src/authenticators/ldap_ynhuser.py:316
+msgid "unable_authenticate"
+msgstr "Échec de l'authentification de la session"
+
+#: src/authenticators/ldap_admin.py:208 src/authenticators/ldap_ynhuser.py:322
+msgid "session_expired"
+msgstr "Session expirée"
+
+#: src/migrations/m0031_terms_of_services.py:40
+msgid "migration_0031_terms_of_services"
+msgstr ""
+"Cette migration est un message purement informatif sur le fait que le "
+"projet YunoHost publie désormais des conditions d'utilisation liées aux "
+"services techniques et communautaires."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:168
+msgid "migration_0036_start"
+msgstr "Début de la migration vers Trixie …"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:213
+msgid "migration_0036_patch_yunohost_dpkg"
+msgstr ""
+"Application d'un correctif à la base de données dpkg pour contourner les "
+"problèmes de conflit …"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:218
+msgid "migration_0036_patching_sources_list"
+msgstr "Patch des fichiers sources.lists …"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:239
+msgid "migration_0036_main_upgrade"
+msgstr "Démarrage de la mise à niveau principale …"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:286
+msgid "migration_0036_still_on_bookworm_after_main_upgrade"
+msgstr ""
+"Une chose s'est mal passée pendant la mise à niveau principale, le "
+"système semble toujours être sur Debian Bookworm."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:289
+msgid "migration_0036_cleaning_up"
+msgstr "Nettoyage du cache et des paquets qui ne sont plus utiles …"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:300
+msgid "migration_0036_apt_lists_file_still_exists"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:316
+msgid "migration_0036_yunohost_upgrade"
+msgstr "Lancement de la mise à niveau du système/cœur de YunoHost …"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:350
+msgid "migration_0036_delayed_api_restart"
+msgstr ""
+"L'API YunoHost redémarrera automatiquement dans 15 secondes. Elle "
+"pourrait être indisponible pendant quelques secondes, après quoi vous "
+"devrez vous reconnecter."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:411
+msgid "migration_0036_not_bullseye"
+msgstr ""
+"La distribution Debian actuelle n'est pas Bookworm ! Si vous avez déjà "
+"effectué la migration Bookworm -> Trixie, cette erreur indique que la "
+"procédure de migration n'a pas été entièrement réussie (sinon, YunoHost "
+"l'aurait signalée comme terminée). Il est recommandé d'examiner ce qui "
+"s'est passé avec l'équipe du support, qui aura besoin du journal "
+"**complet** de la migration (log), disponible dans Outils > Journaux dans"
+" l'interface d'administration web."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:415
+msgid "migration_0036_not_enough_free_space"
+msgstr ""
+"L'espace libre est très faible dans /var/ ! Vous devez disposer d'au "
+"moins 1 Go d'espace libre pour effectuer cette migration."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:452
+msgid "migration_0036_system_not_fully_up_to_date"
+msgstr ""
+"Votre système n'est pas entièrement à jour. Veuillez effectuer une mise à"
+" jour standard avant de lancer la migration vers Trixie."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:508
+msgid "migration_0036_general_warning"
+msgstr ""
+"Enfin, veuillez noter que cette migration est **une opération délicate**."
+" L'équipe YunoHost a fait de son mieux pour la vérifier et la tester, "
+"mais la migration pourrait tout de même endommager certaines parties du "
+"système ou de ses applications.\n"
+"\n"
+"Il est donc recommandé de :\n"
+"    - **Effectuer des sauvegardes** de toutes les données ou applications"
+" critiques. Plus d'informations sur "
+"https://doc.yunohost.org/admin/backups/ ;\n"
+"    - **Faire preuve de patience** après le lancement de la migration : "
+"en fonction de votre connexion Internet et de votre matériel, la mise à "
+"niveau complète peut prendre jusqu'à une heure ;\n"
+"    - **Contacter la communauté** sur le forum si vous avez besoin d'aide"
+" pour résoudre des problèmes."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:511
+msgid "migration_0036_problematic_apps_warning"
+msgstr ""
+"Veuillez noter que les applications installées suivantes, potentiellement"
+" problématiques, ont été détectées. Il semble qu'elles n'aient pas été "
+"installées à partir du catalogue d'applications YunoHost ou qu'elles ne "
+"soient pas signalées comme 'fonctionnelles'. Par conséquent, leur "
+"fonctionnement après la mise à niveau ne peut être garanti :"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:514
+msgid "migration_0036_modified_files"
+msgstr ""
+"Veuillez noter que les fichiers suivants ont été modifiés manuellement et"
+" pourraient être écrasés après la mise à niveau :"
+
+#: src/migrations/postgresql.py:52
+msgid "migration_postgresql_previous_not_installed"
+msgstr "PostgreSQL n'a pas été installé sur votre système. Rien à faire."
+
+#: src/migrations/postgresql.py:57
+msgid "migration_postgresql_target_not_installed"
+msgstr ""
+"PostgreSQL 13 est installé, mais pas PostgreSQL 15 !? Quelque chose "
+"d'étrange s'est peut-être produit sur votre système :(…"
+
+#: src/migrations/postgresql.py:75
+msgid "migration_not_enough_space"
+msgstr "Libérez suffisamment d'espace dans {path} pour exécuter la migration."
+
+#: src/migrations/python.py:145
+msgid "migration_python_venv_rebuild_disclaimer_base"
+msgstr ""
+"Suite à la mise à jour vers Debian Bookworm, certaines applications "
+"Python doivent être partiellement reconstruites pour être converties vers"
+" la nouvelle version Python livrée avec Debian (en termes techniques : ce"
+" qu'on appelle le virtualenv doit être recréé). En attendant, ces "
+"applications Python peuvent ne pas fonctionner. YunoHost peut tenter de "
+"reconstruire le virtualenv pour certaines d'entre elles, comme indiqué "
+"ci-dessous. Pour d'autres applications, ou si la tentative de "
+"reconstruction échoue, vous devrez forcer manuellement une mise à jour "
+"pour ces applications."
+
+#: src/migrations/python.py:150
+msgid "migration_python_venv_rebuild_disclaimer_rebuild"
+msgstr ""
+"La reconstruction du virtualenv sera tentée pour les applications "
+"suivantes (NB : l'opération peut prendre un certain temps !) : "
+"{rebuild_apps}"
+
+#: src/migrations/python.py:155
+msgid "migration_python_venv_rebuild_disclaimer_ignored"
+msgstr ""
+"Les environnements virtuels ne peuvent pas être reconstruits "
+"automatiquement pour ces applications. Vous devez forcer une mise à jour "
+"pour celles-ci, ce qui peut être fait à partir de la ligne de commande "
+"avec : `yunohost app upgrade --force APP` : {ignored_apps}"
+
+#: src/migrations/python.py:177
+msgid "migration_python_venv_rebuild_broken_app"
+msgstr ""
+"{app} est ignoré car virtualenv ne peut pas être facilement reconstruit "
+"pour cette application. Vous devriez résoudre la situation en forçant la "
+"mise à jour de cette application à l'aide de `yunohost app upgrade "
+"--force {app}`."
+
+#: src/migrations/python.py:185
+msgid "migration_python_venv_rebuild_in_progress"
+msgstr "Nous essayons maintenant de reconstruire le virtualenv Python pour `{app}`"
+
+#: src/migrations/python.py:209
+msgid "migration_python_venv_rebuild_failed"
+msgstr ""
+"Impossible de reconstruire l'environnement virtuel Python pour {app}. "
+"L'application risque de ne pas fonctionner tant que ce problème n'est pas"
+" résolu. Vous devez résoudre le problème en forçant la mise à jour de "
+"cette application à l'aide de 'yunohost app upgrade --force {app}'."
+
+#: src/utils/app_utils.py:144 src/utils/app_utils.py:160
+msgid "app_not_correctly_installed"
+msgstr "{app} semble être mal installé"
+
+#: src/utils/app_utils.py:569 src/utils/app_utils.py:613
+msgid "app_unknown"
+msgstr "Application inconnue"
+
+#: src/utils/app_utils.py:584
+msgid "app_unsupported_remote_type"
+msgstr ""
+"Ce type de commande à distance utilisé pour cette application n'est pas "
+"supporté"
+
+#: src/utils/app_utils.py:623
+msgid "extracting"
+msgstr "Extraction en cours…"
+
+#: src/utils/app_utils.py:642
+msgid "app_extraction_failed"
+msgstr "Impossible d'extraire les fichiers d'installation"
+
+#: src/utils/app_utils.py:649
+msgid "app_install_files_invalid"
+msgstr "Fichiers d'installation incorrects"
+
+#: src/utils/app_utils.py:723
+msgid "downloading"
+msgstr "Téléchargement en cours…"
+
+#: src/utils/app_utils.py:773
+msgid "app_sources_fetch_failed"
+msgstr "Impossible de récupérer les fichiers sources, l'URL est-elle correcte ?"
+
+#: src/utils/app_utils.py:807
+msgid "app_not_installed"
+msgstr ""
+"Nous n'avons pas trouvé {app} dans la liste des applications installées :"
+" {all_apps}"
+
+#: src/utils/app_utils.py:827
+msgid "app_requirements_checking"
+msgstr "Vérification des prérequis pour {app}…"
+
+#: src/utils/app_utils.py:831
+msgid "app_packaging_format_not_supported"
+msgstr ""
+"Cette application ne peut pas être installée car son format n'est pas "
+"pris en charge par votre version de YunoHost. Vous devriez probablement "
+"envisager de mettre à jour votre système."
+
+#: src/utils/app_utils.py:844
+msgid "app_yunohost_version_not_supported"
+msgstr ""
+"Cette application nécessite une version de YunoHost >= {required}. La "
+"version installée est {current}."
+
+#: src/utils/app_utils.py:858
+msgid "app_arch_not_supported"
+msgstr ""
+"Cette application ne peut être installée que sur les architectures "
+"{required}. L'architecture de votre serveur est {current}"
+
+#: src/utils/app_utils.py:879
+msgid "app_already_installed"
+msgstr "{app} est déjà installé"
+
+#: src/utils/app_utils.py:899
+msgid "app_not_enough_disk"
+msgstr "Cette application nécessite {required} d'espace libre."
+
+#: src/utils/app_utils.py:953
+msgid "app_not_enough_ram"
+msgstr ""
+"Cette application nécessite {required} de mémoire vive (RAM) pour être "
+"installée/mise à jour mais seule {current} de mémoire est disponible "
+"actuellement."
+
+#: src/utils/app_utils.py:1065
+msgid "app_full_domain_unavailable"
+msgstr ""
+"Désolé, cette application doit être installée sur un domaine qui lui est "
+"propre, mais d'autres applications sont déjà installées sur le domaine "
+"'{domain}'. Vous pouvez utiliser un sous-domaine dédié à cette "
+"application à la place."
+
+#: src/utils/app_utils.py:1068
+msgid "app_location_unavailable"
+msgstr ""
+"Cette URL n'est pas disponible ou est en conflit avec une application "
+"existante :\n"
+"{apps}"
+
+#: src/utils/app_utils.py:1260
+msgid "app_action_cannot_be_ran_because_required_services_down"
+msgstr ""
+"Ces services requis doivent être en cours d'exécution pour exécuter cette"
+" action : {services}. Essayez de les redémarrer pour continuer (et "
+"éventuellement rechercher pourquoi ils sont en panne)."
+
+#: src/utils/app_utils.py:1265
+msgid "app_action_broke_system"
+msgstr "Cette action semble avoir cassé des services importants : {services}"
+
+#: src/utils/app_utils.py:1272
+msgid "this_action_broke_dpkg"
+msgstr ""
+"Cette action a laissé des paquets non configurés par dpkg/apt (les "
+"gestionnaires de paquets du système)… Vous pouvez essayer de résoudre ce "
+"problème en vous connectant via SSH et en exécutant `sudo apt install "
+"--fix-broken` et/ou `sudo dpkg --configure -a`."
+
+#: src/utils/configpanel.py:601
+msgid "config_cant_set_value_on_section"
+msgstr ""
+"Vous ne pouvez pas définir une seule valeur sur une section de "
+"configuration entière."
+
+#: src/utils/configpanel.py:724 src/utils/configpanel.py:731
+msgid "config_action_failed"
+msgstr "Échec de l'exécution de l'action '{action}' : {error}"
+
+#: src/utils/configpanel.py:749
+msgid "config_no_panel"
+msgstr "Aucun panneau de configuration trouvé."
+
+#: src/utils/configpanel.py:789 src/utils/configpanel.py:867
+msgid "config_unknown_filter_key"
+msgstr "La clé de filtre '{filter_key}' est incorrecte."
+
+#: src/utils/file_utils.py:54
+msgid "file_not_exist"
+msgstr "Le fichier '{path}' n'existe pas"
+
+#: src/utils/file_utils.py:60
+msgid "cannot_open_file"
+msgstr "Impossible d'ouvrir le fichier {file} (raison : {error})"
+
+#: src/utils/file_utils.py:62
+msgid "unknown_error_reading_file"
+msgstr "Erreur inconnue en essayant de lire le fichier {file} (raison :{error})"
+
+#: src/utils/file_utils.py:82 src/utils/file_utils.py:461
+msgid "corrupted_json"
+msgstr "Fichier JSON corrompu en lecture depuis {ressource} (raison : {error})"
+
+#: src/utils/file_utils.py:103
+msgid "corrupted_yaml"
+msgstr "Fichier YAML corrompu en lecture depuis {ressource} (raison : {error})"
+
+#: src/utils/file_utils.py:123
+msgid "corrupted_toml"
+msgstr "Fichier TOML corrompu en lecture depuis {ressource} (raison : {error})"
+
+#: src/utils/file_utils.py:171 src/utils/file_utils.py:217
+#: src/utils/file_utils.py:240
+msgid "cannot_write_file"
+msgstr "Ne peut pas écrire le fichier {file} (raison : {error})"
+
+#: src/utils/file_utils.py:173 src/utils/file_utils.py:219
+#: src/utils/file_utils.py:242
+msgid "error_writing_file"
+msgstr "Erreur en écrivant le fichier {file} : {error}"
+
+#: src/utils/file_utils.py:322
+msgid "unknown_user"
+msgstr "Le compte '{user}' est inconnu"
+
+#: src/utils/file_utils.py:329
+msgid "unknown_group"
+msgstr "Le groupe '{group}' est inconnu"
+
+#: src/utils/file_utils.py:343 src/utils/file_utils.py:370
+msgid "error_changing_file_permissions"
+msgstr "Erreur lors de la modification des autorisations pour {path} : {error}"
+
+#: src/utils/file_utils.py:390
+msgid "error_removing"
+msgstr "Erreur lors de la suppression {path} : {error}"
+
+#: src/utils/file_utils.py:424
+msgid "download_ssl_error"
+msgstr "Erreur SSL lors de la connexion à {url}"
+
+#: src/utils/file_utils.py:427
+msgid "invalid_url"
+msgstr ""
+"Impossible de se connecter à {url}… peut-être que le service est en panne"
+" ou que vous n'êtes pas correctement connecté à Internet en IPv4/IPv6."
+
+#: src/utils/file_utils.py:430
+msgid "download_timeout"
+msgstr "{url} a pris trop de temps pour répondre : abandon."
+
+#: src/utils/file_utils.py:433
+msgid "download_unknown_error"
+msgstr "Erreur lors du téléchargement des données à partir de {url} : {error}"
+
+#: src/utils/file_utils.py:437
+msgid "download_bad_status_code"
+msgstr "{url} renvoie le code d'état {code}"
+
+#: src/utils/form.py:413
+msgid "config_forbidden_keyword"
+msgstr ""
+"Le mot-clé '{keyword}' est réservé, vous ne pouvez pas créer ou utiliser "
+"un panneau de configuration avec une question avec cet identifiant."
+
+#: src/utils/form.py:430
+msgid "config_forbidden_readonly_type"
+msgstr ""
+"Le type '{type}' ne peut pas être défini comme étant en lecture seule, "
+"utilisez un autre type pour obtenir cette valeur (identifiant de "
+"l'argument : '{id}')."
+
+#: src/utils/form.py:532
+msgid "danger"
+msgstr "Danger :"
+
+#: src/utils/form.py:880
+msgid "pattern_password_app"
+msgstr ""
+"Désolé, les mots de passe ne peuvent pas contenir les caractères suivants"
+" : {forbidden_chars}"
+
+#: src/utils/form.py:998
+msgid "invalid_number"
+msgstr "Doit être un nombre"
+
+#: src/utils/form.py:1078 src/utils/form.py:1120 src/utils/form.py:1714
+msgid "app_argument_choice_invalid"
+msgstr ""
+"Choisissez une valeur valide pour l'argument '{name}' : '{value}' ne fait"
+" pas partie des choix disponibles ({choices})"
+
+#: src/utils/form.py:1565
+msgid "other_available_options"
+msgstr "… et {n} autres options disponibles non affichées"
+
+#: src/utils/form.py:2196
+msgid "config_action_disabled"
+msgstr ""
+"Impossible d'exécuter l'action '{action}' car elle est désactivée, "
+"assurez-vous de respecter ses paramètres et contraintes. Aide : {help}"
+
+#: src/utils/ldap.py:390
+msgid "ldap_attribute_already_exists"
+msgstr "L'attribut LDAP '{attribute}' existe déjà avec la valeur '{value}'"
+
+#: src/utils/password.py:69
+msgid "password_too_long"
+msgstr "Veuillez choisir un mot de passe de moins de 127 caractères"
+
+#: src/utils/resources.py:110
+msgid "app_resource_failed"
+msgstr ""
+"L'allocation automatique des ressources (provisioning), la suppression "
+"d'accès à ces ressources (déprovisioning) ou la mise à jour des "
+"ressources pour {app} a échoué : {error}"
+
+#: src/utils/resources.py:532
+msgid "app_failed_to_download_asset"
+msgstr ""
+"Échec du téléchargement de la ressource '{source_id}' ({url}) pour {app} "
+": {out}"
+
+#: src/utils/resources.py:548
+msgid "app_corrupt_source"
+msgstr ""
+"YunoHost a pu télécharger la ressource '{source_id}' ({url}) pour {app}, "
+"malheureusement celle-ci ne correspond pas à la somme des contrôles "
+"attendue. Cela peut signifier qu'une défaillance temporaire du réseau "
+"s'est produite sur votre serveur, OU que la ressource a été modifiée par "
+"le mainteneur de l'application en amont (ou un acteur malveillant ?) et "
+"que les responsables du paquet de cette application pour YunoHost doivent"
+" investiguer et mettre à jour le manifeste de l'application pour indiquer"
+" ce changement.\n"
+"    Somme de contrôle sha256 attendue : {expected_sha256}\n"
+"    Somme de contrôle sha256 téléchargée : {computed_sha256}\n"
+"    Taille du fichier téléchargé : {size}"
+
+#: src/app.py:438
+msgid "app_upgrade_upgradable"
+msgstr ""
+"L'application peut être mise à jour de la version {current_version} à la "
+"version {new_version}"
+
+#: src/app.py:439
+msgid "app_upgrade_fail_requirements"
+msgstr ""
+"Une nouvelle version est disponible pour cette application "
+"({new_version}), mais certaines conditions ne sont pas remplies :\n"
+"{failed_requirements}"
+
+#: src/app.py:573
+msgid "log_app_change_url"
+msgstr "Changer l'URL de l'application '{}'"
+
+#: src/app.py:868
+msgid "confirm_app_insufficient_ram"
+msgstr ""
+"ATTENTION ! Cette application requiert plus de RAM que disponible "
+"actuellement. Même si cette application pouvait fonctionner, son "
+"processus d'installation/mise à jour nécessite une grande quantité de "
+"RAM. Votre serveur pourrait donc geler et planter lamentablement. Si vous"
+" voulez prendre ce risque, tapez '{answers}'"
+
+#: src/app.py:1178
+msgid "apps_confirm_partial_upgrade"
+msgstr ""
+"Certaines applications pour lesquelles une mise à jour a été demandée ne "
+"peuvent pas être mises à jour. Voulez-vous quand même continuer avec les "
+"autres ?"
+
+#: src/app.py:1301
+msgid "log_app_install"
+msgstr "Installer l'application '{}'"
+
+#: src/app.py:1632
+msgid "log_app_remove"
+msgstr "Désinstaller l'application '{}'"
+
+#: src/app.py:1726
+msgid "log_app_makedefault"
+msgstr "Faire de '{}' l'application par défaut"
+
+#: src/app.py:2174
+msgid "log_app_config_set"
+msgstr "Appliquer la configuration à l'application '{}'"
+
+#: src/app.py:2404
+msgid "app_config_permission_extraperm_section_name"
+msgstr "Autorisation '{perm}'"
+
+#: src/app.py:978
+msgid "log_app_upgrade"
+msgstr "Mettre à jour l'application '{}'"
+
+#: src/app.py:1546
+msgid "log_remove_on_failed_install"
+msgstr "Enlever '{}' après une installation échouée"
+
+#: src/app.py:2132
+msgid "log_app_action_run"
+msgstr "Lancer l'action de l'application '{}'"
+
+#: src/certificate.py:156
+msgid "log_selfsigned_cert_install"
+msgstr "Installer un certificat auto-signé sur le domaine '{}'"
+
+#: src/certificate.py:296
+msgid "log_letsencrypt_cert_install"
+msgstr "Installer le certificat Let's Encrypt sur le domaine '{}'"
+
+#: src/certificate.py:410
+msgid "log_letsencrypt_cert_renew"
+msgstr "Renouveler le certificat Let's Encrypt de '{}'"
+
+#: src/diagnosis.py:160
+msgid "log_diagnosis_run"
+msgstr "Exécuter le diagnostic"
+
+#: src/domain.py:288
+msgid "log_domain_add"
+msgstr "Ajouter le domaine '{}'"
+
+#: src/domain.py:350 src/tools.py:179
+msgid "confirm_tos_acknowledgement"
+msgstr "J'ai lu et compris les conditions d'utilisation [{answers}]"
+
+#: src/domain.py:442
+msgid "log_domain_remove"
+msgstr "Supprimer le domaine '{}'"
+
+#: src/domain.py:642
+msgid "log_domain_main_domain"
+msgstr "Faire de '{}' le domaine principal"
+
+#: src/domain.py:744
+msgid "log_domain_config_set"
+msgstr "Mettre à jour la configuration du domaine '{}'"
+
+#: src/domain.py:772 src/domain.py:826
+msgid "domain_config_cert_renew_help"
+msgstr ""
+"Le certificat sera automatiquement renouvelé dans les 15 derniers jours "
+"précédant sa fin de validité. Vous pouvez le renouveler manuellement si "
+"vous le souhaitez (non recommandé)."
+
+#: src/domain.py:773
+msgid "domain_config_default_app_help"
+msgstr ""
+"Les personnes seront automatiquement redirigées vers cette application "
+"lorsqu'elles ouvriront ce domaine. Si aucune application n'est spécifiée,"
+" les personnes sont redirigées vers le formulaire de connexion au portail"
+" YunoHost."
+
+#: src/domain.py:805
+msgid "domain_config_cert_summary_expired"
+msgstr ""
+"ATTENTION : Le certificat actuel n'est pas valide ! HTTPS ne fonctionnera"
+" pas du tout !"
+
+#: src/domain.py:806
+msgid "domain_config_cert_summary_selfsigned"
+msgstr ""
+"AVERTISSEMENT : Le certificat actuel est auto-signé. Les navigateurs "
+"afficheront un avertissement alarmiste aux nouveaux visiteurs !"
+
+#: src/domain.py:807
+msgid "domain_config_cert_summary_abouttoexpire"
+msgstr ""
+"Le certificat actuel est sur le point d'expirer. Il devrait bientôt être "
+"renouvelé automatiquement."
+
+#: src/domain.py:808
+msgid "domain_config_cert_summary_ok"
+msgstr "Bien, le certificat actuel semble bon !"
+
+#: src/domain.py:809
+msgid "domain_config_cert_summary_letsencrypt"
+msgstr "Bravo ! Vous utilisez un certificat Let's Encrypt valide !"
+
+#: src/dyndns.py:101
+msgid "log_dyndns_subscribe"
+msgstr "Enregistrer un sous-domaine YunoHost '{}'"
+
+#: src/dyndns.py:228
+msgid "log_dyndns_unsubscribe"
+msgstr "Supprimer un sous-domaine YunoHost '{}'"
+
+#: src/dyndns.py:367
+msgid "log_dyndns_update"
+msgstr "Mettre à jour l'adresse IP associée à votre sous-domaine YunoHost '{}'"
+
+#: src/regenconf.py:54
+msgid "log_regen_conf"
+msgstr "Régénérer les configurations du système '{}'"
+
+#: src/settings.py:92
+msgid "log_settings_set"
+msgstr "Application des paramètres"
+
+#: src/settings.py:107
+msgid "log_settings_reset"
+msgstr "Réinitialisation des paramètres"
+
+#: src/settings.py:121
+msgid "log_settings_reset_all"
+msgstr "Réinitialisation de tous les paramètres"
+
+#: src/tools.py:139
+msgid "log_tools_postinstall"
+msgstr "Faire la post-installation de votre serveur YunoHost"
+
+#: src/tools.py:363
+msgid "log_tools_update"
+msgstr "Recherche des mises à jour système et du catalogue d'applications en cours"
+
+#: src/tools.py:539
+msgid "log_tools_upgrade"
+msgstr "Mettre à jour les paquets du système"
+
+#: src/tools.py:662
+msgid "log_tools_shutdown"
+msgstr "Éteindre votre serveur"
+
+#: src/tools.py:681
+msgid "log_tools_reboot"
+msgstr "Redémarrer votre serveur"
+
+#: src/tools.py:913
+msgid "log_tools_migrations_migrate_forward"
+msgstr "Exécuter les migrations"
+
+#: src/user.py:167
+msgid "log_user_create"
+msgstr "Ajouter le compte '{}'"
+
+#: src/user.py:339
+msgid "log_user_delete"
+msgstr "Supprimer le compte '{}'"
+
+#: src/user.py:416
+msgid "log_user_update"
+msgstr "Mettre à jour les informations du compte '{}'"
+
+#: src/user.py:755
+msgid "log_user_import"
+msgstr "Importer des comptes"
+
+#: src/user.py:1094
+msgid "log_user_group_create"
+msgstr "Créer le groupe '{}'"
+
+#: src/user.py:1174
+msgid "log_user_group_delete"
+msgstr "Supprimer le groupe '{}'"
+
+#: src/user.py:1220
+msgid "log_user_group_update"
+msgstr "Mettre à jour '{}' pour le groupe"
+
+#: src/backup.py:771
+msgid "backup_applying_method_copy"
+msgstr "Copie de tous les fichiers à sauvegarder…"
+
+#: src/backup.py:772
+msgid "backup_applying_method_custom"
+msgstr "Appel de la méthode de sauvegarde personnalisée '{method}'…"
+
+#: src/backup.py:773
+msgid "backup_applying_method_tar"
+msgstr "Création de l'archive TAR de la sauvegarde…"
+
+#: src/backup.py:781
+msgid "backup_method_copy_finished"
+msgstr "La copie de la sauvegarde est terminée"
+
+#: src/backup.py:782
+msgid "backup_method_custom_finished"
+msgstr "La méthode de sauvegarde personnalisée '{method}' est terminée"
+
+#: src/backup.py:783
+msgid "backup_method_tar_finished"
+msgstr "L'archive TAR de la sauvegarde a été créée"
+
+#: src/backup.py:2106
+msgid "log_backup_create"
+msgstr "Créer une archive de sauvegarde"
+
+#: src/backup.py:1237
+msgid "log_backup_restore_system"
+msgstr "Restaurer le système depuis une archive de sauvegarde"
+
+#: src/backup.py:1344
+msgid "log_backup_restore_app"
+msgstr "Restaurer '{}' depuis une sauvegarde"
+
+#: src/dns.py:618
+msgid "log_domain_dns_push"
+msgstr "Pousser les enregistrements DNS pour le domaine '{}'"
+
+#: src/diagnosers/21-web.py:143
+msgid "diagnosis_http_bad_status_code"
+msgstr ""
+"Il semble qu'une autre machine (peut-être votre routeur Internet) ait "
+"répondu à la place de votre serveur.<br>1. La cause la plus courante de "
+"ce problème est que les ports 80 (et 443) <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>ne"
+" sont pas correctement redirigés vers votre serveur</a>.<br>2. Dans les "
+"configurations plus complexes : assurez-vous qu'aucun pare-feu ou proxy "
+"inverse n'interfère."
+
+#: src/diagnosers/21-web.py:144
+msgid "diagnosis_http_connection_error"
+msgstr ""
+"Erreur de connexion : impossible de se connecter au domaine demandé, il "
+"est probablement injoignable."
+
+#: src/diagnosers/21-web.py:145
+msgid "diagnosis_http_timeout"
+msgstr ""
+"Expiration du délai en essayant de contacter votre serveur depuis "
+"l'extérieur. Il semble être inaccessible.<br>1. La cause la plus "
+"fréquente pour ce problème est que les ports 80 et 443 <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>"
+" ne sont pas correctement redirigés vers votre serveur</a>.<br>2. Vous "
+"devriez également vérifier que le service NGINX est en cours "
+"d'exécution<br>3. Pour les installations plus complexes, assurez-vous "
+"qu'aucun pare-feu ou reverse-proxy n'interfère."
+
+#: src/diagnosers/24-mail.py:55
+msgid "diagnosis_mail_outgoing_port_25_ok"
+msgstr ""
+"Le serveur de messagerie SMTP peut envoyer des emails (le port sortant 25"
+" n'est pas bloqué)."
+
+#: src/diagnosers/24-mail.py:56
+msgid "diagnosis_mail_ehlo_ok"
+msgstr ""
+"Le serveur de messagerie SMTP est accessible de l'extérieur et peut donc "
+"recevoir des emails !"
+
+#: src/diagnosers/24-mail.py:57
+msgid "diagnosis_mail_fcrdns_ok"
+msgstr "Votre DNS inverse est correctement configuré !"
+
+#: src/diagnosers/24-mail.py:58
+msgid "diagnosis_mail_blocklist_ok"
+msgstr ""
+"Les adresses IP et les domaines utilisés par ce serveur ne semblent pas "
+"être sur liste noire"
+
+#: src/diagnosers/24-mail.py:59 src/diagnosers/24-mail.py:298
+msgid "diagnosis_mail_queue_ok"
+msgstr "{nb_pending} emails en attente dans les files d'attente de messagerie"
+
+#: src/diagnosers/24-mail.py:122
+msgid "diagnosis_mail_ehlo_bad_answer"
+msgstr "Un service non SMTP a répondu sur le port 25 en IPv{ipversion}"
+
+#: src/diagnosers/24-mail.py:123
+msgid "diagnosis_mail_ehlo_bad_answer_details"
+msgstr ""
+"Cela peut être dû à une autre machine qui répond à la place de votre "
+"serveur."
+
+#: src/diagnosers/24-mail.py:124
+msgid "diagnosis_mail_ehlo_unreachable"
+msgstr ""
+"Le serveur de messagerie SMTP est inaccessible de l'extérieur en "
+"IPv{ipversion}. Il ne pourra pas recevoir des emails."
+
+#: src/diagnosers/24-mail.py:125
+msgid "diagnosis_mail_ehlo_unreachable_details"
+msgstr ""
+"Impossible d'ouvrir une connexion sur le port 25 à votre serveur en "
+"IPv{ipversion}. Il semble inaccessible. <br> 1. La cause la plus courante"
+" de ce problème est que le port 25 <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>n'est"
+" pas correctement redirigé vers votre serveur</a>. <br> 2. Vous devez "
+"également vous assurer que le service postfix est en cours d'exécution. "
+"<br> 3. Sur les configurations plus complexes : assurez-vous qu'aucun "
+"pare-feu ou proxy inversé n'interfère."
+
+#: src/diagnosers/80-apps.py:113
+msgid "diagnosis_apps_security_issue_warning"
+msgstr ""
+"L'application {app} est actuellement dans la version '{current_version}',"
+" qui présente une vulnérabilité modérée : {title}. Il est recommandé de "
+"la mettre à jour vers la version '{fixed_in_version}'. Plus "
+"d'informations : {more_infos_list}"
+
+#: src/diagnosers/80-apps.py:114
+msgid "diagnosis_apps_security_issue_error"
+msgstr ""
+"L'application {app} est actuellement dans la version '{current_version}',"
+" qui est vulnérable à un problème de sécurité MAJEUR : {title}. Il est "
+"recommandé de la mettre à jour DÈS QUE POSSIBLE vers la version "
+"'{fixed_in_version}'. Plus d'informations : {more_infos_list}"
+
+#: src/diagnosers/12-dnsrecords.py:268
+msgid "diagnosis_domain_not_found_details"
+msgstr ""
+"Le domaine {domain} n'existe pas dans la base de donnée WHOIS ou est "
+"expiré !"
+
+#: src/diagnosers/12-dnsrecords.py:304
+msgid "diagnosis_domain_expiration_not_found"
+msgstr "Impossible de vérifier la date d'expiration de certains domaines"
+
+#: src/diagnosers/12-dnsrecords.py:305
+msgid "diagnosis_domain_expiration_error"
+msgstr "Certains domaines vont expirer TRÈS PROCHAINEMENT !"
+
+#: src/diagnosers/12-dnsrecords.py:306
+msgid "diagnosis_domain_expiration_warning"
+msgstr "Certains domaines vont expirer prochainement !"
+
+#: src/diagnosers/12-dnsrecords.py:307
+msgid "diagnosis_domain_expiration_success"
+msgstr "Vos domaines sont enregistrés et ne vont pas expirer prochainement."
+
+#: src/diagnosers/12-dnsrecords.py:308
+msgid "diagnosis_domain_expiration_not_found_details"
+msgstr ""
+"Les informations WHOIS pour le domaine {domain} ne semblent pas contenir "
+"les informations concernant la date d'expiration ?"
+
+#: src/diagnosers/00-basesystem.py:380
+msgid "diagnosis_package_security_issue_warning"
+msgstr ""
+"Le package système '{package}' est actuellement dans la version "
+"'{current_version}', qui est vulnérable à un problème de sécurité modéré "
+": {title}. Il est recommandé de le mettre à niveau vers "
+"'{fixed_in_version}'. Plus d'informations : {more_infos_list}"
+
+#: src/diagnosers/00-basesystem.py:381
+msgid "diagnosis_package_security_issue_error"
+msgstr ""
+"Le paquet système '{package}' est actuellement dans la version "
+"'{current_version}', qui est vulnérable à un problème de sécurité MAJEUR "
+": {title}. Il est recommandé de passer dès que possible à la version "
+"'{fixed_in_version}'. Plus d'informations : {more_infos_list}"
+
+#: src/utils/password.py:144
+msgid "password_listed"
+msgstr ""
+"Ce mot de passe fait partie des mots de passe les plus utilisés dans le "
+"monde. Veuillez en choisir un autre moins commun et plus robuste."
+
+#: src/utils/password.py:147
+msgid "password_too_simple_1"
+msgstr "Le mot de passe doit comporter au moins 8 caractères"
+
+#: src/utils/password.py:148
+msgid "password_too_simple_2"
+msgstr ""
+"Le mot de passe doit comporter au moins 8 caractères et contenir des "
+"chiffres, des majuscules et des minuscules"
+
+#: src/utils/password.py:149
+msgid "password_too_simple_3"
+msgstr ""
+"Le mot de passe doit comporter au moins 8 caractères et contenir des "
+"chiffres, des majuscules, des minuscules et des caractères spéciaux"
+
+#: src/utils/password.py:150
+msgid "password_too_simple_4"
+msgstr ""
+"Le mot de passe doit comporter au moins 12 caractères et contenir des "
+"chiffres, des majuscules, des minuscules et des caractères spéciaux"
+
+#: src/utils/app_utils.py:97
+msgid "confirm_app_install_warning"
+msgstr ""
+"Avertissement : cette application peut fonctionner mais n'est pas bien "
+"intégrée dans YunoHost. Certaines fonctionnalités telles que "
+"l'authentification unique SSO et la sauvegarde/restauration peuvent ne "
+"pas être disponibles. L'installer quand même ? [{answers}] "
+
+#: src/utils/app_utils.py:98
+msgid "confirm_app_install_danger"
+msgstr ""
+"DANGER ! Cette application est connue pour être encore expérimentale (et "
+"peut-être dysfonctionnelle) ! Vous ne devriez certainement PAS "
+"l'installer à moins de savoir ce que vous faites. AUCUN SUPPORT ne sera "
+"fourni si cette application ne fonctionne pas ou casse votre système… Si "
+"vous voulez prendre ce risque malgré tout, tapez '{answers}'"
+
+#: src/utils/app_utils.py:99
+msgid "confirm_app_install_thirdparty"
+msgstr ""
+"DANGER ! Cette application ne fait pas partie du catalogue d'applications"
+" de YunoHost. L'installation d'applications tierces peut compromettre "
+"l'intégrité et la sécurité de votre système. Vous ne devriez certainement"
+" PAS l'installer à moins de savoir ce que vous faites. AUCUN SUPPORT ne "
+"sera fourni si cette application ne fonctionne pas ou casse votre "
+"système… Si vous voulez prendre ce risque malgré tout, tapez '{answers}'"
+
+#: src/utils/app_utils.py:483
+msgid "app_manifest_install_ask_domain"
+msgstr ""
+"Choisissez le domaine sur lequel vous souhaitez installer cette "
+"application"
+
+#: src/utils/app_utils.py:484
+msgid "app_manifest_install_ask_path"
+msgstr ""
+"Choisissez le chemin d'URL (après le domaine) où cette application doit "
+"être installée"
+
+#: src/utils/app_utils.py:485
+msgid "app_manifest_install_ask_password"
+msgstr "Choisissez un mot de passe d'administration pour cette application"
+
+#: src/utils/app_utils.py:486
+msgid "app_manifest_install_ask_admin"
+msgstr "Choisissez un compte administrateur pour cette application"
+
+#: src/utils/app_utils.py:487
+msgid "app_manifest_install_ask_is_public"
+msgstr "Cette application devrait-elle être visible par les visiteurs anonymes ?"
+
+#: src/utils/app_utils.py:491
+msgid "app_manifest_install_ask_init_main_permission"
+msgstr ""
+"Qui doit avoir accès à cette application ? (Ceci peut être modifié "
+"ultérieurement)"
+
+#: src/utils/app_utils.py:495
+msgid "app_manifest_install_ask_init_admin_permission"
+msgstr ""
+"Qui doit avoir accès aux fonctions d'administration de cette application "
+"? (Ceci peut être modifié ultérieurement)"
+
+#: src/utils/app_utils.py:1326
+msgid "confirm_notifications_read"
+msgstr ""
+"AVERTISSEMENT : Vous devriez vérifier les notifications de l'application "
+"susmentionnée avant de continuer, il pourrait y avoir des informations "
+"importantes à connaître. [{answers}]"
+
+#: src/utils/form.py:1925
+msgid "visitors"
+msgstr "Visiteurs"
+
+#: src/utils/form.py:1926
+msgid "all_users"
+msgstr "Tous les comptes YunoHost"
+
+#: src/utils/form.py:1927
+msgid "admins"
+msgstr "Comptes administrateurs"
+
+#: src/utils/form.py:2161
+msgid "pydantic_type_error"
+msgstr "Type non valide."
+
+#: src/utils/form.py:2162
+msgid "pydantic_type_error_none_not_allowed"
+msgstr "La valeur est requise."
+
+#: src/utils/form.py:2163
+msgid "pydantic_type_error_str"
+msgstr "Type non valide, chaîne attendue."
+
+#: src/utils/form.py:2164
+msgid "pydantic_value_error_color"
+msgstr ""
+"Ce n'est pas une couleur valide, la valeur doit être une couleur nommée "
+"ou hexadécimale."
+
+#: src/utils/form.py:2165
+msgid "pydantic_value_error_const"
+msgstr "Valeur inattendue ; choisissez entre {permitted}"
+
+#: src/utils/form.py:2166
+msgid "pydantic_value_error_date"
+msgstr "Format de date non valide"
+
+#: src/utils/form.py:2167
+msgid "pydantic_value_error_email"
+msgstr "La valeur n'est pas une adresse email valide"
+
+#: src/utils/form.py:2168
+msgid "pydantic_value_error_number_not_ge"
+msgstr "La valeur doit être supérieure ou égale à {limit_value}."
+
+#: src/utils/form.py:2169
+msgid "pydantic_value_error_number_not_le"
+msgstr "La valeur doit être inférieure ou égale à {limit_value}."
+
+#: src/utils/form.py:2170
+msgid "pydantic_value_error_str_regex"
+msgstr "Chaîne non valide ; la valeur ne respecte pas le modèle '{pattern}'"
+
+#: src/utils/form.py:2171
+msgid "pydantic_value_error_time"
+msgstr "Format d'heure invalide"
+
+#: src/utils/form.py:2172
+msgid "pydantic_value_error_url_extra"
+msgstr ""
+"URL non valide, caractères supplémentaires trouvés après une URL valide :"
+" '{extra}'"
+
+#: src/utils/form.py:2173
+msgid "pydantic_value_error_url_host"
+msgstr "URL hôte invalide"
+
+#: src/utils/form.py:2174
+msgid "pydantic_value_error_url_port"
+msgstr "Port URL non valide, le port ne peut pas dépasser 65535"
+
+#: src/utils/form.py:2175
+msgid "pydantic_value_error_url_scheme"
+msgstr "Schéma d'URL non invalide ou manquant"
+
+#: src/utils/resources.py:284
+msgid "log_resource_snippet"
+msgstr "Allocation/retrait/mise à jour d'une ressource"
+
+#: src/diagnosers/10-ip.py:53
+msgid "diagnosis_ip_not_connected_at_all"
+msgstr "Le serveur ne semble pas du tout connecté à Internet ! ?"
+
+#: src/diagnosers/10-ip.py:77
+msgid "diagnosis_ip_broken_dnsresolution"
+msgstr ""
+"La résolution du nom de domaine semble cassée, bloquée ou interrompue "
+"pour une raison quelconque… Un pare-feu bloque-t-il les requêtes DNS ?"
+
+#: src/diagnosers/10-ip.py:79
+msgid "diagnosis_ip_broken_resolvconf"
+msgstr ""
+"La résolution du nom de domaine semble être cassée sur votre serveur, ce "
+"qui semble lié au fait que <code>/etc/resolv.conf</code> ne pointe pas "
+"vers <code>127.0.0.1</code>."
+
+#: src/diagnosers/10-ip.py:89
+msgid "diagnosis_ip_weird_resolvconf"
+msgstr ""
+"La résolution DNS semble fonctionner, mais il semble que vous utilisez un"
+" <code>/etc/resolv.conf</code> personnalisé."
+
+#: src/diagnosers/10-ip.py:90
+msgid "diagnosis_ip_weird_resolvconf_details"
+msgstr ""
+"Le fichier <code>/etc/resolv.conf</code> doit être un lien symbolique "
+"vers <code>/etc/resolvconf/run/resolv.conf</code> lui-même pointant vers "
+"<code>127.0.0.1</code> (dnsmasq). Si vous souhaitez configurer "
+"manuellement les résolveurs DNS, veuillez modifier "
+"<code>/etc/resolv.dnsmasq.conf</code>."
+
+#: src/diagnosers/10-ip.py:96
+msgid "diagnosis_ip_dnsresolution_working"
+msgstr "La résolution de nom de domaine fonctionne !"
+
+#: src/diagnosers/10-ip.py:131
+msgid "diagnosis_ip_connected_ipv4"
+msgstr "Le serveur est connecté à Internet en IPv4 !"
+
+#: src/diagnosers/10-ip.py:131
+msgid "diagnosis_ip_no_ipv4"
+msgstr "Le serveur ne dispose pas d'une adresse IPv4."
+
+#: src/diagnosers/10-ip.py:132 src/diagnosers/10-ip.py:149
+msgid "diagnosis_ip_global"
+msgstr "IP globale : <code>{global}</code>"
+
+#: src/diagnosers/10-ip.py:132 src/diagnosers/10-ip.py:149
+msgid "diagnosis_ip_local"
+msgstr "IP locale : <code>{local}</code>"
+
+#: src/diagnosers/10-ip.py:147
+msgid "diagnosis_ip_connected_ipv6"
+msgstr "Le serveur est connecté à Internet en IPv6 !"
+
+#: src/diagnosers/10-ip.py:147
+msgid "diagnosis_ip_no_ipv6"
+msgstr "Le serveur ne dispose pas d'une adresse IPv6."
+
+#: src/diagnosers/10-ip.py:153
+msgid "diagnosis_ip_no_ipv6_tip_important"
+msgstr ""
+"IPv6 devrait généralement être configuré automatiquement par le système "
+"ou par votre fournisseur d'accès à internet (FAI) s'il est disponible. "
+"Sinon, vous devrez peut-être configurer quelques éléments manuellement, "
+"comme expliqué dans la documentation ici : <a "
+"href='https://doc.yunohost.org/ipv6'>https://doc.yunohost.org/ipv6</a>."
+
+#: src/diagnosers/10-ip.py:155
+msgid "diagnosis_ip_no_ipv6_tip"
+msgstr ""
+"L'utilisation de IPv6 n'est pas obligatoire pour le fonctionnement de "
+"votre serveur, mais cela contribue à la santé d'Internet dans son "
+"ensemble. IPv6 généralement configuré automatiquement par votre système "
+"ou votre FAI s'il est disponible. Autrement, vous devrez prendre quelque "
+"minutes pour le configurer manuellement à l'aide de cette documentation :"
+" <a "
+"href='https://doc.yunohost.org/ipv6'>https://doc.yunohost.org/ipv6</a>. "
+"Si vous ne pouvez pas activer IPv6 ou si c'est trop technique pour vous, "
+"vous pouvez aussi ignorer cet avertissement sans que cela pose problème."
+
+#: src/diagnosers/10-ip.py
+msgid "diagnosis_description_ip"
+msgstr "Connectivité Internet"
+
+#: src/diagnosers/14-ports.py:75
+msgid "diagnosis_ports_could_not_diagnose"
+msgstr ""
+"Impossible de diagnostiquer si les ports sont accessibles de l'extérieur "
+"dans IPv{ipversion}."
+
+#: src/diagnosers/14-ports.py:76
+msgid "diagnosis_ports_could_not_diagnose_details"
+msgstr "Erreur : {error}"
+
+#: src/diagnosers/14-ports.py:94 src/diagnosers/14-ports.py:155
+msgid "diagnosis_ports_ok"
+msgstr "Le port {port} est accessible depuis l'extérieur."
+
+#: src/diagnosers/14-ports.py:95 src/diagnosers/14-ports.py:107
+#: src/diagnosers/14-ports.py:142 src/diagnosers/14-ports.py:156
+#: src/diagnosers/14-ports.py:169
+msgid "diagnosis_ports_needed_by"
+msgstr ""
+"Rendre ce port accessible est nécessaire pour les fonctionnalités de type"
+" {category} (service {service})"
+
+#: src/diagnosers/14-ports.py:105
+msgid "diagnosis_ports_unreachable"
+msgstr "Le port {port} n'est pas accessible depuis l'extérieur."
+
+#: src/diagnosers/14-ports.py:108 src/diagnosers/14-ports.py:143
+#: src/diagnosers/14-ports.py:170
+msgid "diagnosis_ports_forwarding_tip"
+msgstr ""
+"Pour résoudre ce problème, vous devez probablement configurer la "
+"redirection de port sur votre routeur Internet comme décrit dans <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>https://doc.yunohost.org/admin/get_started/post_install/dns_config/</a>"
+
+#: src/diagnosers/14-ports.py:140 src/diagnosers/14-ports.py:167
+msgid "diagnosis_ports_partially_unreachable"
+msgstr "Le port {port} n'est pas accessible depuis l'extérieur en IPv{failed}."
+
+#: src/diagnosers/14-ports.py
+msgid "diagnosis_description_ports"
+msgstr "Exposition des ports"
+
+#: src/diagnosers/21-web.py:50
+msgid "diagnosis_http_nginx_conf_not_up_to_date"
+msgstr ""
+"La configuration Nginx de ce domaine semble avoir été modifiée "
+"manuellement et empêche YunoHost de diagnostiquer si elle est accessible "
+"en HTTP."
+
+#: src/diagnosers/21-web.py:51
+msgid "diagnosis_http_nginx_conf_not_up_to_date_details"
+msgstr ""
+"Pour corriger la situation, vérifier les différences avec la ligne de "
+"commande en utilisant les outils <cmd>yunohost tools regen-conf nginx "
+"--dry-run --with-diff</cmd> et si vous êtes d'accord avec le résultat, "
+"appliquez les modifications avec <cmd>yunohost tools regen-conf nginx "
+"--force</cmd>."
+
+#: src/diagnosers/21-web.py:57
+msgid "diagnosis_http_special_use_tld"
+msgstr ""
+"Le domaine {domain} est basé sur un domaine de premier niveau (TLD) à "
+"usage spécial tel que .local ou .test et n'est donc pas censé être exposé"
+" en dehors du réseau local."
+
+#: src/diagnosers/21-web.py:109
+msgid "diagnosis_http_hairpinning_issue"
+msgstr "Votre réseau local ne semble pas supporter l'hairpinning."
+
+#: src/diagnosers/21-web.py:110
+msgid "diagnosis_http_hairpinning_issue_details"
+msgstr ""
+"C'est probablement à cause de la box/routeur de votre fournisseur d'accès"
+" internet. Par conséquent, les personnes extérieures à votre réseau local"
+" pourront accéder à votre serveur comme prévu, mais pas les personnes "
+"internes qui se trouvent sur le réseau local (comme vous, probablement ?)"
+" si elles utilisent le nom de domaine ou l'IP globale. Vous pourrez peut-"
+"être améliorer la situation en consultant <a "
+"href='https://doc.yunohost.org/dns_local_network'>https://doc.yunohost.org/dns_local_network</a>"
+
+#: src/diagnosers/21-web.py:133
+msgid "diagnosis_http_could_not_diagnose"
+msgstr ""
+"Impossible de diagnostiquer si les domaines sont accessibles de "
+"l'extérieur dans IPv{ipversion}."
+
+#: src/diagnosers/21-web.py:134
+msgid "diagnosis_http_could_not_diagnose_details"
+msgstr "Erreur : {error}"
+
+#: src/diagnosers/21-web.py:159 src/diagnosers/21-web.py:215
+msgid "diagnosis_http_ok"
+msgstr "Le domaine {domain} est accessible en HTTP depuis l'extérieur."
+
+#: src/diagnosers/21-web.py:169
+msgid "diagnosis_http_unreachable"
+msgstr "Le domaine {domain} est inaccessible en HTTP depuis l'extérieur."
+
+#: src/diagnosers/21-web.py:201 src/diagnosers/21-web.py:221
+msgid "diagnosis_http_partially_unreachable"
+msgstr ""
+"Le domaine {domain} semble inaccessible en HTTP depuis l'extérieur du "
+"réseau local en IPv{failed}, bien qu'il fonctionne en IPv{passed}."
+
+#: src/diagnosers/21-web.py
+msgid "diagnosis_description_web"
+msgstr "Web"
+
+#: src/diagnosers/24-mail.py:89
+msgid "diagnosis_mail_outgoing_port_25_blocked"
+msgstr ""
+"Le serveur SMTP n'est pas capable d'envoyer de email à d'autres serveurs "
+"car le port sortant 25 semble être bloqué en IPv{ipversion}."
+
+#: src/diagnosers/24-mail.py:91
+msgid "diagnosis_mail_outgoing_port_25_blocked_details"
+msgstr ""
+"Vous devriez d'abord essayer d'ouvrir le port 25 dans l'interface de "
+"votre routeur, box Internet ou interface d'hébergement. (Certains "
+"hébergeurs peuvent vous demander d'ouvrir un ticket sur leur support "
+"d'assistance pour cela)."
+
+#: src/diagnosers/24-mail.py:92
+msgid "diagnosis_mail_outgoing_port_25_blocked_relay_vpn"
+msgstr ""
+"Certains opérateurs ne vous laisseront pas débloquer le port 25 parce "
+"qu'ils ne se soucient pas de la neutralité du Net.<br> - Certains d'entre"
+" eux offrent la possibilité d'<a "
+"href='https://doc.yunohost.org/email_configure_relay'>utiliser un serveur"
+" de messagerie relai</a> bien que cela implique que celui-ci sera en "
+"mesure d'espionner le trafic de votre messagerie.<br> - Une alternative "
+"respectueuse de la vie privée consiste à utiliser un VPN *avec une IP "
+"publique dédiée* pour contourner ce type de limites. Voir <a "
+"href='https://doc.yunohost.org/vpn_advantage'>https://doc.yunohost.org/vpn_advantage</a><br>"
+" - Vous pouvez également envisager de passer à <a "
+"href='https://doc.yunohost.org/admin/get_started/providers/isp'>un "
+"fournisseur plus respectueux de la neutralité du net</a>"
+
+#: src/diagnosers/24-mail.py:116
+msgid "diagnosis_mail_ehlo_could_not_diagnose"
+msgstr ""
+"Impossible de diagnostiquer si le serveur de messagerie postfix est "
+"accessible de l'extérieur en IPv{ipversion}."
+
+#: src/diagnosers/24-mail.py:117
+msgid "diagnosis_mail_ehlo_could_not_diagnose_details"
+msgstr "Erreur : {error}"
+
+#: src/diagnosers/24-mail.py:139
+msgid "diagnosis_mail_ehlo_wrong"
+msgstr ""
+"Un autre serveur de messagerie SMTP répond sur IPv{ipversion}. Votre "
+"serveur ne sera probablement pas en mesure de recevoir des email."
+
+#: src/diagnosers/24-mail.py:140
+msgid "diagnosis_mail_ehlo_wrong_details"
+msgstr ""
+"Le EHLO reçu par le serveur de diagnostique distant en IPv{ipversion} est"
+" différent du domaine de votre serveur.<br>EHLO reçu : "
+"<code>{wrong_ehlo}</code><br>Attendu : <code>{right_ehlo}</code><br>La "
+"cause la plus courante à ce problème est que le port 25 <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>n'est"
+" pas correctement redirigé vers votre serveur</a>. Vous pouvez également "
+"vous assurer qu'aucun pare-feu ou reverse-proxy n'interfère."
+
+#: src/diagnosers/24-mail.py:154 src/diagnosers/24-mail.py:160
+msgid "diagnosis_mail_fcrdns_nok_details"
+msgstr ""
+"Vous devez d'abord essayer de configurer le reverse-DNS avec "
+"<code>{ehlo_domain}</code> dans l'interface de votre routeur, box "
+"Internet ou votre interface d'hébergement. (Certains hébergeurs peuvent "
+"vous demander d'ouvrir un ticket sur leur support d'assistance pour "
+"cela)."
+
+#: src/diagnosers/24-mail.py:155
+msgid "diagnosis_mail_fcrdns_nok_alternatives_6"
+msgstr ""
+"Certains fournisseurs ne vous laisseront pas configurer votre DNS inversé"
+" (ou leur fonctionnalité pourrait être cassée…). Si votre DNS inversé est"
+" correctement configuré en IPv4, vous pouvez essayer de désactiver "
+"l'utilisation d'IPv6 lors de l'envoi d'emails en exécutant <cmd>yunohost "
+"settings set email.smtp.smtp_allow_ipv6 -v off</cmd>. Remarque : cette "
+"dernière solution signifie que vous ne pourrez pas envoyer ou recevoir "
+"d'emails avec les quelques serveurs qui ont uniquement de l'IPv6."
+
+#: src/diagnosers/24-mail.py:161
+msgid "diagnosis_mail_fcrdns_nok_alternatives_4"
+msgstr ""
+"Certains opérateurs ne vous laisseront pas configurer votre reverse-DNS "
+"(ou leur fonctionnalité pourrait être cassée…). Si vous rencontrez des "
+"problèmes à cause de cela, envisagez les solutions suivantes :<br> - "
+"Certains FAI offre cette possibilité <a "
+"href='https://doc.yunohost.org/email_configure_relay'>à l'aide d'un "
+"relais de serveur de messagerie</a> bien que cela implique que le relais "
+"pourra espionner votre trafic de messagerie.<br> - Une alternative "
+"respectueuse de la vie privée consiste à utiliser un VPN *avec une IP "
+"publique dédiée* pour contourner ce type de mesures. Voir <a "
+"href='https://doc.yunohost.org/vpn_advantage'>https://doc.yunohost.org/vpn_advantage</a><br>"
+" - Enfin, il est également possible de <a "
+"href='https://doc.yunohost.org/providers/isp'>changer d'opérateur</a>"
+
+#: src/diagnosers/24-mail.py:179
+msgid "diagnosis_mail_fcrdns_dns_missing"
+msgstr ""
+"Aucun reverse-DNS n'est défini pour IPv{ipversion}. Il se peut que "
+"certains emails ne soient pas acheminés ou soient considérés comme du "
+"spam."
+
+#: src/diagnosers/24-mail.py:189
+msgid "diagnosis_mail_fcrdns_different_from_ehlo_domain_details"
+msgstr ""
+"DNS inverse actuel : <code>{rdns_domain}</code> <br> Valeur attendue : "
+"<code>{ehlo_domain}</code>"
+
+#: src/diagnosers/24-mail.py:199
+msgid "diagnosis_mail_fcrdns_different_from_ehlo_domain"
+msgstr ""
+"Le reverse-DNS n'est pas correctement configuré en IPv{ipversion}. Il se "
+"peut que certains emails ne soient pas acheminés ou soient considérés "
+"comme du spam."
+
+#: src/diagnosers/24-mail.py:243
+msgid "diagnosis_mail_blocklist_reason"
+msgstr "La raison de la liste noire est : {reason}"
+
+#: src/diagnosers/24-mail.py:245
+msgid "diagnosis_mail_blocklist_reason_openresolver"
+msgstr ""
+"Il semble que la raison mentionne 'open resolver'.<br/>Cela signifie "
+"généralement que votre serveur n'utilise pas son DNS local, mais un DNS "
+"public et ouvert.<br/> Vérifiez le contenu de "
+"<code>/etc/resolv.conf</code>, il devrait contenir <code>nameserver "
+"127.0.0.1</code>.<br/>Comme ce fichier est généralement généré "
+"automatiquement, ne le modifiez pas manuellement. Vérifiez vos paramètres"
+" DHCP ou vos paramètres VPN si vous en utilisez un, ou si vous avez "
+"utilisé une image Debian créée, par exemple, par un fournisseur de VPS, "
+"recherchez une configuration <code>cloudinit</code>.<br/> N'hésitez pas à"
+" vous rendre sur les canaux d'assistance YunoHost pour obtenir de l'aide "
+"sur ce problème.<br/> La raison exacte de la liste noire est : {reason}"
+
+#: src/diagnosers/24-mail.py:248
+msgid "diagnosis_mail_blocklist_website"
+msgstr ""
+"Après avoir identifié la raison pour laquelle vous êtes répertorié sur "
+"cette liste et l'avoir corrigée, n'hésitez pas à demander le retrait de "
+"votre IP ou de votre domaine sur {blocklist_website}"
+
+#: src/diagnosers/24-mail.py:262
+msgid "diagnosis_mail_blocklist_listed_by"
+msgstr ""
+"Votre IP ou domaine <code>{item}</code> est sur liste noire sur "
+"{blocklist_name}"
+
+#: src/diagnosers/24-mail.py:282
+msgid "diagnosis_mail_queue_unavailable"
+msgstr ""
+"Impossible de consulter le nombre d'emails en attente dans la file "
+"d'attente"
+
+#: src/diagnosers/24-mail.py:283
+msgid "diagnosis_mail_queue_unavailable_details"
+msgstr "Erreur : {error}"
+
+#: src/diagnosers/24-mail.py:291
+msgid "diagnosis_mail_queue_too_big"
+msgstr "Trop d'emails en attente dans la file d'attente ({nb_pending} emails)"
+
+#: src/diagnosers/24-mail.py
+msgid "diagnosis_description_mail"
+msgstr "Email"
+
+#: src/diagnosers/30-services.py:45
+msgid "diagnosis_services_bad_status"
+msgstr "Le service {service} est {status} :-("
+
+#: src/diagnosers/30-services.py:46
+msgid "diagnosis_services_bad_status_tip"
+msgstr ""
+"Vous pouvez essayer de <a href='#/services/{service}'>redémarrer le "
+"service</a>, et si cela ne fonctionne pas, consultez <a "
+"href='#/services/{service}'>les journaux de service dans le webadmin</a> "
+"(à partir de la ligne de commande, vous pouvez le faire avec "
+"<cmd>yunohost service restart {service}</cmd> et <cmd>yunohost service "
+"log {service}</cmd> )."
+
+#: src/diagnosers/30-services.py:50
+msgid "diagnosis_services_conf_broken"
+msgstr "La configuration est cassée pour le service {service} !"
+
+#: src/diagnosers/30-services.py:55
+msgid "diagnosis_services_running"
+msgstr "Le service {service} est en cours de fonctionnement !"
+
+#: src/diagnosers/30-services.py
+msgid "diagnosis_description_services"
+msgstr "État des services"
+
+#: src/diagnosers/70-regenconf.py:41
+msgid "diagnosis_regenconf_allgood"
+msgstr "Tous les fichiers de configuration sont conformes aux préconisations !"
+
+#: src/diagnosers/70-regenconf.py:52
+msgid "diagnosis_regenconf_manually_modified"
+msgstr ""
+"Le fichier de configuration <code>{file}</code> semble avoir été modifié "
+"manuellement."
+
+#: src/diagnosers/70-regenconf.py:53
+msgid "diagnosis_regenconf_manually_modified_details"
+msgstr ""
+"C'est probablement OK si vous savez ce que vous faites ! YunoHost cessera"
+" de mettre à jour ce fichier automatiquement… Mais attention, les mises à"
+" jour de YunoHost pourraient contenir d'importantes modifications "
+"recommandées. Si vous le souhaitez, vous pouvez inspecter les différences"
+" avec <cmd>yunohost tools regen-conf {category} --dry-run --with-"
+"diff</cmd> et forcer la réinitialisation à la configuration recommandée "
+"avec <cmd>yunohost tools regen-conf {category} --force</cmd>"
+
+#: src/diagnosers/70-regenconf.py:66
+msgid "diagnosis_sshd_config_insecure"
+msgstr ""
+"La configuration SSH semble avoir été modifiée manuellement et n'est pas "
+"sécurisée car elle ne contient aucune directive 'AllowGroups' ou "
+"'AllowUsers' pour limiter l'accès aux comptes autorisés."
+
+#: src/diagnosers/70-regenconf.py:78
+msgid "diagnosis_sshd_config_inconsistent"
+msgstr ""
+"Il semble que le port SSH ait été modifié manuellement dans "
+"/etc/ssh/sshd_config. Depuis YunoHost 4.2, un nouveau paramètre global "
+"'security.ssh.ssh_port' est disponible pour éviter de modifier "
+"manuellement la configuration."
+
+#: src/diagnosers/70-regenconf.py:79
+msgid "diagnosis_sshd_config_inconsistent_details"
+msgstr ""
+"Veuillez exécuter <cmd>yunohost settings set security.ssh.ssh_port -v "
+"VOTRE_PORT_SSH</cmd> pour définir le port SSH, et vérifiez <cmd>yunohost "
+"tools regen-conf ssh --dry-run --with-diff</cmd> et <cmd>yunohost tools "
+"regen-conf ssh --force</cmd> pour réinitialiser votre configuration aux "
+"recommandations YunoHost."
+
+#: src/diagnosers/70-regenconf.py
+msgid "diagnosis_description_regenconf"
+msgstr "Configurations système"
+
+#: src/diagnosers/50-systemresources.py:56
+msgid "diagnosis_ram_verylow"
+msgstr ""
+"Le système ne dispose plus que de {available} ({available_percent}%) de "
+"RAM ! (sur {total})"
+
+#: src/diagnosers/50-systemresources.py:59
+msgid "diagnosis_ram_low"
+msgstr ""
+"Le système n'a plus de {available} ({available_percent}%) RAM sur "
+"{total}. Faites attention."
+
+#: src/diagnosers/50-systemresources.py:62
+msgid "diagnosis_ram_ok"
+msgstr ""
+"Le système dispose encore de {available} ({available_percent}%) de RAM "
+"sur {total}."
+
+#: src/diagnosers/50-systemresources.py:76
+msgid "diagnosis_swap_none"
+msgstr ""
+"Le système n'a aucun espace de swap. Vous devriez envisager d'ajouter au "
+"moins {recommended} de swap pour éviter les situations où le système "
+"manque de mémoire."
+
+#: src/diagnosers/50-systemresources.py:79
+msgid "diagnosis_swap_notsomuch"
+msgstr ""
+"Le système ne dispose que de {total} de swap. Vous devez envisager "
+"d'avoir au moins {recommended} pour éviter les situations de manque de "
+"mémoire."
+
+#: src/diagnosers/50-systemresources.py:82
+msgid "diagnosis_swap_ok"
+msgstr "Le système dispose de {total} de swap !"
+
+#: src/diagnosers/50-systemresources.py:83
+msgid "diagnosis_swap_tip"
+msgstr ""
+"Soyez averti et conscient que si vous hébergez une partition SWAP sur une"
+" carte SD ou un disque SSD, cela risque de réduire considérablement "
+"l'espérance de vie de celui-ci."
+
+#: src/diagnosers/50-systemresources.py:128
+msgid "diagnosis_diskusage_verylow"
+msgstr ""
+"L'espace de stockage <code>{mountpoint}</code> (sur l'appareil "
+"<code>{device}</code>) ne dispose que de {free} ({free_percent}%) "
+"d'espace restant (sur {total}). Vous devriez vraiment envisager de "
+"nettoyer de l'espace !"
+
+#: src/diagnosers/50-systemresources.py:133
+msgid "diagnosis_diskusage_low"
+msgstr ""
+"L'espace de stockage <code>{mountpoint}</code> (sur l'appareil "
+"<code>{device}</code>) ne dispose que de {free} ({free_percent}%) "
+"d'espace restant (sur {total}). Faites attention."
+
+#: src/diagnosers/50-systemresources.py:136
+msgid "diagnosis_diskusage_ok"
+msgstr ""
+"L'espace de stockage <code>{mountpoint}</code> (sur le périphérique "
+"<code>{device}</code>) a encore {free} ({free_percent}%) d'espace restant"
+" (sur {total}) !"
+
+#: src/diagnosers/50-systemresources.py:158
+msgid "diagnosis_rootfstotalspace_critical"
+msgstr ""
+"Le système de fichiers racine ne fait que {space} ! Vous allez "
+"certainement le remplir très rapidement ! Il est recommandé d'avoir une "
+"racine de système de fichier d'au moins 16 Go."
+
+#: src/diagnosers/50-systemresources.py:165
+msgid "diagnosis_rootfstotalspace_warning"
+msgstr ""
+"Le système de fichiers racine n'est que de {space}. Cela peut suffire, "
+"mais faites attention car vous risquez de les remplir rapidement… Il est "
+"recommandé d'avoir une racine de système de fichier d'au moins 16 Go."
+
+#: src/diagnosers/50-systemresources.py:181
+msgid "diagnosis_processes_killed_by_oom_reaper"
+msgstr ""
+"Certains processus ont été récemment arrêtés par le système car il "
+"manquait de mémoire. Ceci est typiquement symptomatique d'un manque de "
+"mémoire sur le système ou d'un processus consommant trop de mémoire. "
+"Liste des processus arrêtés :\n"
+"{kills_summary}"
+
+#: src/diagnosers/50-systemresources.py
+msgid "diagnosis_description_systemresources"
+msgstr "Ressources système"
+
+#: src/diagnosers/80-apps.py:49
+msgid "diagnosis_apps_allgood"
+msgstr ""
+"Toutes les applications installées respectent les pratiques de packaging "
+"de base"
+
+#: src/diagnosers/80-apps.py:69
+msgid "diagnosis_apps_issue"
+msgstr "Un problème a été détecté pour l'application {app}"
+
+#: src/diagnosers/80-apps.py:130
+msgid "diagnosis_apps_not_in_app_catalog"
+msgstr ""
+"Cette application ne figure pas dans le catalogue de YunoHost. Si elle "
+"l'était dans le passé et a été supprimée, vous devriez envisager de "
+"désinstaller cette application car elle ne recevra pas de mises à jour et"
+" peut compromettre l'intégrité et la sécurité de votre système."
+
+#: src/diagnosers/80-apps.py:135
+msgid "diagnosis_apps_broken"
+msgstr ""
+"Cette application est actuellement signalée comme cassée dans le "
+"catalogue d'applications de YunoHost. Cela peut être un problème "
+"temporaire. En attendant que les mainteneurs tentent de résoudre le "
+"problème, la mise à jour de cette application est désactivée."
+
+#: src/diagnosers/80-apps.py:137
+msgid "diagnosis_apps_bad_quality"
+msgstr ""
+"Cette application est actuellement signalée comme cassée dans le "
+"catalogue d'applications de YunoHost. Cela peut être un problème "
+"temporaire. En attendant que les mainteneurs tentent de résoudre le "
+"problème, la mise à jour de cette application est désactivée."
+
+#: src/diagnosers/80-apps.py:142
+msgid "diagnosis_apps_outdated_packaging_format"
+msgstr ""
+"Cette application utilise un format de packaging obsolète qui ne sera "
+"bientôt plus supportée par YunoHost. Vous devriez vraiment envisager de "
+"la mettre à jour."
+
+#: src/diagnosers/80-apps.py:152
+msgid "diagnosis_apps_outdated_ynh_requirement"
+msgstr ""
+"La version installée de cette application nécessite obligatoirement une "
+"version de YunoHost >= 2.x, 3.x ou 4.x, ce qui tend à indiquer qu'elle "
+"n'est pas à jour avec les pratiques recommandées de packaging et des "
+"helpers. Vous devriez vraiment envisager de la mettre à jour."
+
+#: src/diagnosers/80-apps.py:169 src/diagnosers/80-apps.py:176
+msgid "diagnosis_apps_deprecated_practices"
+msgstr ""
+"La version installée de cette application utilise encore de très "
+"anciennes pratiques de packaging obsolètes et dépassées. Vous devriez "
+"vraiment envisager de mettre à jour cette application."
+
+#: src/diagnosers/80-apps.py
+msgid "diagnosis_description_apps"
+msgstr "Applications"
+
+#: src/diagnosers/12-dnsrecords.py:90
+msgid "diagnosis_dns_specialusedomain"
+msgstr ""
+"Le domaine {domain} est basé sur un domaine de premier niveau (TLD) à "
+"usage spécial comme .local ou .test et ne devrait donc pas avoir "
+"d'enregistrements DNS réels."
+
+#: src/diagnosers/12-dnsrecords.py:133
+msgid "diagnosis_dns_missing_record"
+msgstr ""
+"Selon la configuration DNS recommandée, vous devez ajouter un "
+"enregistrement DNS<br>Type : <code>{type}</code><br>Nom : "
+"<code>{name}</code><br>Valeur : <code>{content}</code>"
+
+#: src/diagnosers/12-dnsrecords.py:136
+msgid "diagnosis_dns_discrepancy"
+msgstr ""
+"Cet enregistrement DNS ne semble pas correspondre à la configuration "
+"recommandée : <br>Type : <code>{type}</code><br>Nom : "
+"<code>{name}</code><br> La valeur actuelle est : "
+"<code>{current}</code><br> La valeur attendue est : "
+"<code>{content}</code>"
+
+#: src/diagnosers/12-dnsrecords.py:156
+msgid "diagnosis_dns_bad_conf"
+msgstr ""
+"Certains enregistrements DNS sont manquants ou incorrects pour le domaine"
+" {domain} (catégorie {category})"
+
+#: src/diagnosers/12-dnsrecords.py:159
+msgid "diagnosis_dns_good_conf"
+msgstr ""
+"Les enregistrements DNS sont correctement configurés pour le domaine "
+"{domain} (catégorie {category})"
+
+#: src/diagnosers/12-dnsrecords.py:177
+msgid "diagnosis_dns_try_dyndns_update_force"
+msgstr ""
+"La configuration DNS de ce domaine devrait être automatiquement gérée par"
+" YunoHost. Si ce n'est pas le cas, vous pouvez essayer de forcer une mise"
+" à jour en utilisant <cmd>yunohost dyndns update --force</cmd>."
+
+#: src/diagnosers/12-dnsrecords.py:180
+msgid "diagnosis_dns_point_to_doc"
+msgstr ""
+"Veuillez consulter la documentation disponible ici <a "
+"href='https://doc.yunohost.org/dns_config'>https://doc.yunohost.org/dns_config</a>"
+" si vous avez besoin d'aide pour configurer les enregistrements DNS."
+
+#: src/diagnosers/12-dnsrecords.py:292
+msgid "diagnosis_domain_expires_in"
+msgstr "{domain} expire dans {days} jours."
+
+#: src/diagnosers/12-dnsrecords.py
+msgid "diagnosis_description_dnsrecords"
+msgstr "Enregistrements DNS"
+
+#: src/diagnosers/00-basesystem.py:62
+msgid "diagnosis_basesystem_hardware"
+msgstr "L'architecture du serveur est {virt} {arch}"
+
+#: src/diagnosers/00-basesystem.py:69 src/diagnosers/00-basesystem.py:78
+msgid "diagnosis_basesystem_hardware_model"
+msgstr "Le modèle/architecture du serveur est {model}"
+
+#: src/diagnosers/00-basesystem.py:88
+msgid "diagnosis_basesystem_kernel"
+msgstr "Le serveur utilise le noyau Linux {kernel_version}"
+
+#: src/diagnosers/00-basesystem.py:96
+msgid "diagnosis_basesystem_host"
+msgstr "Le serveur utilise Debian {debian_version}"
+
+#: src/diagnosers/00-basesystem.py:112
+msgid "diagnosis_basesystem_ynh_single_version"
+msgstr "{package} version : {version} ({repo})"
+
+#: src/diagnosers/00-basesystem.py:130
+msgid "diagnosis_basesystem_ynh_main_version"
+msgstr "Le serveur utilise YunoHost {main_version} ({repo})"
+
+#: src/diagnosers/00-basesystem.py:132
+msgid "diagnosis_basesystem_ynh_inconsistent_versions"
+msgstr ""
+"Vous exécutez des versions incohérentes des packages YunoHost… très "
+"probablement en raison d'une mise à jour échouée ou partielle."
+
+#: src/diagnosers/00-basesystem.py:141
+msgid "diagnosis_security_vulnerable_to_meltdown"
+msgstr "Vous semblez vulnérable à la faille de sécurité majeure qu'est Meltdown"
+
+#: src/diagnosers/00-basesystem.py:142
+msgid "diagnosis_security_vulnerable_to_meltdown_details"
+msgstr ""
+"Pour résoudre ce problème, vous devez mettre à jour votre système et le "
+"redémarrer pour charger le nouveau noyau linux (ou contacter votre "
+"fournisseur de serveur si cela ne fonctionne pas). Voir "
+"https://meltdownattack.com/ pour plus d'informations."
+
+#: src/diagnosers/00-basesystem.py:154
+msgid "diagnosis_package_installed_from_sury"
+msgstr "Des paquets du système devraient être rétrogradé de version"
+
+#: src/diagnosers/00-basesystem.py:155
+msgid "diagnosis_package_installed_from_sury_details"
+msgstr ""
+"Certains paquets ont été installés par inadvertance à partir d'un dépôt "
+"tiers appelé Sury. L'équipe YunoHost a amélioré la stratégie de gestion "
+"de ces paquets, mais on s'attend à ce que certaines configurations qui "
+"ont installé des applications PHP7.3 tout en étant toujours sur Stretch "
+"présentent des incohérences. Pour résoudre cette situation, vous devez "
+"essayer d'exécuter la commande suivante : <cmd>{cmd_to_fix}</cmd>"
+
+#: src/diagnosers/00-basesystem.py:162
+msgid "diagnosis_backports_in_sources_list"
+msgstr ""
+"Il semble que le gestionnaire de paquet APT soit configuré pour utiliser "
+"le dépôt des rétro-portages (backports). A moins que vous ne sachiez "
+"vraiment ce que vous faites, nous vous déconseillons fortement "
+"d'installer des paquets provenant du dépôt 'backports', car cela risque "
+"de créer des instabilités ou des conflits sur votre système."
+
+#: src/diagnosers/00-basesystem.py:189
+msgid "diagnosis_using_yunohost_testing"
+msgstr ""
+"<cmd>apt</cmd> (le gestionnaire de paquets du système) est actuellement "
+"configuré pour installer toutes les mises à jour dites 'testing' de votre"
+" instance YunoHost."
+
+#: src/diagnosers/00-basesystem.py:190
+msgid "diagnosis_using_yunohost_testing_details"
+msgstr ""
+"C'est probablement normal si vous savez ce que vous faites, toutefois "
+"faites attention aux notes de version avant d'installer les mises à jour "
+"de YunoHost ! Si vous voulez désactiver les mises à jour 'testing', vous "
+"devez supprimer le mot-clé <cmd>testing</cmd> de "
+"<cmd>/etc/apt/sources.list.d/yunohost.list</cmd>."
+
+#: src/diagnosers/00-basesystem.py:206
+msgid "diagnosis_using_stable_codename"
+msgstr ""
+"<cmd>apt</cmd> (le gestionnaire de paquets du système) est actuellement "
+"configuré pour installer les paquets du nom de code 'stable', et cela au "
+"lieu du nom de code de la version actuelle de Debian (Bookworm)."
+
+#: src/diagnosers/00-basesystem.py:207
+msgid "diagnosis_using_stable_codename_details"
+msgstr ""
+"C'est généralement dû à une configuration incorrecte de votre fournisseur"
+" d'hébergement. C'est dangereux, car dès que la prochaine version de "
+"Debian deviendra la nouvelle 'stable', <cmd>apt</cmd> voudra mettre à "
+"jour tous les paquets système sans passer par une procédure de migration "
+"appropriée propre à YunoHost. Il est recommandé de corriger cela en "
+"éditant le source apt pour le dépôt Debian de base, et de remplacer le "
+"mot clé <cmd>stable</cmd> par <cmd>bookworm</cmd>. Le fichier de "
+"configuration correspondant doit être <cmd>/etc/apt/sources.list</cmd>, "
+"ou un fichier dans <cmd>/etc/apt/sources.list.d/</cmd>."
+
+#: src/diagnosers/00-basesystem.py:214
+msgid "diagnosis_high_number_auth_failures"
+msgstr ""
+"Il y a eu récemment un grand nombre d'échecs d'authentification. Assurez-"
+"vous que Fail2Ban est en cours d'exécution et est correctement configuré,"
+" ou utilisez un port personnalisé pour SSH comme expliqué dans "
+"https://doc.yunohost.org/security."
+
+#: src/diagnosers/00-basesystem.py:222
+msgid "diagnosis_rfkill_wifi"
+msgstr ""
+"La carte Wi-Fi est désactivée et un avertissement du système pourrait "
+"empêcher d'installer des applications"
+
+#: src/diagnosers/00-basesystem.py:223
+msgid "diagnosis_rfkill_wifi_details"
+msgstr ""
+"Cet avertissement se glisse dans beaucoup de retours de commandes, "
+"cassant certaines applications. Il s'agit généralement de spécifier votre"
+" code pays avec la commande <code>sudo raspi-config</code>. Voici "
+"l'erreur:<br>{rfkill_wifi_error}"
+
+#: src/diagnosers/00-basesystem.py
+msgid "diagnosis_description_basesystem"
+msgstr "Système de base"
+
+#: src/migrations/m0032_firewall_config.py
+msgid "migration_description_0032_firewall_config"
+msgstr "Migration du fichier de configuration du pare-feu interne"
+
+#: src/migrations/m0033_rework_permission_infos.py
+msgid "migration_description_0033_rework_permission_infos"
+msgstr ""
+"Retravailler la façon dont les autorisations des applications sont "
+"enregistrées"
+
+#: src/migrations/m0034_fix_missing_admins_aliases.py
+msgid "migration_description_0034_fix_missing_admins_aliases"
+msgstr "Correction des alias de messagerie manquants pour le groupe admins"
+
+#: src/migrations/m0035_fix_apps_nodejs_version.py
+msgid "migration_description_0035_fix_apps_nodejs_version"
+msgstr ""
+"Correction des versions nodejs dans les configurations systemd de "
+"l'application"
+
+#: src/migrations/m0031_terms_of_services.py
+msgid "migration_description_0031_terms_of_services"
+msgstr "Conditions d'utilisation"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled
+msgid "migration_description_0036_migrate_to_trixie"
+msgstr "Mise à niveau du système vers Debian Trixie et YunoHost 13"
+

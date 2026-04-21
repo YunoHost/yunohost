@@ -1,0 +1,4640 @@
+# Catalan translations for yunohost package.
+# Copyright (C) 2014-2026 YunoHost
+# ssh <ssh@yunohost.org>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: yunohost 13.0.1\n"
+"Report-Msgid-Bugs-To: ssh@yunohost.org\n"
+"POT-Creation-Date: 2026-04-21 21:34+0200\n"
+"PO-Revision-Date: 2026-04-21 21:34+0200\n"
+"Last-Translator: Automatically generated\n"
+"Language: ca\n"
+"Language-Team: none\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: conf/yunohost/services.yml
+msgid "service_description_dnsmasq"
+msgstr "Gestiona la resolució del nom de domini (DNS)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_dovecot"
+msgstr "Permet als clients de correu accedir/recuperar correus (via IMAP i POP3)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_fail2ban"
+msgstr ""
+"Protegeix contra els atacs de força bruta i a altres atacs provinents "
+"d'Internet"
+
+#: conf/yunohost/services.yml
+msgid "service_description_mysql"
+msgstr "Guarda les dades de les aplicacions (base de dades SQL)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_nginx"
+msgstr "Serveix o permet l'accés a totes les pàgines web allotjades en el servidor"
+
+#: conf/yunohost/services.yml
+msgid "service_description_opendkim"
+msgstr ""
+"Signa els correus electrònics de sortida mitjançant DKIM de manera que és"
+" menys probable que es marquin com a correu brossa"
+
+#: conf/yunohost/services.yml
+msgid "service_description_postfix"
+msgstr "Utilitzat per enviar i rebre correus"
+
+#: conf/yunohost/services.yml
+msgid "service_description_postgresql"
+msgstr "Emmagatzema dades de l'aplicació (base de dades SQL)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_redis-server"
+msgstr ""
+"Una base de dades especialitzada per l'accés ràpid a dades, files "
+"d'espera i comunicació entre programes"
+
+#: conf/yunohost/services.yml
+msgid "service_description_slapd"
+msgstr "Guarda el usuaris, dominis i informació relacionada"
+
+#: conf/yunohost/services.yml
+msgid "service_description_ssh"
+msgstr "Permet la connexió remota al servidor via terminal (protocol SSH)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunohost-portal-api"
+msgstr ""
+"Gestiona les interaccions entre les diferents interfícies web del portal "
+"i el sistema"
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunohost-api"
+msgstr "Gestiona les interaccions entre la interfície web de YunoHost i el sistema"
+
+#: conf/yunohost/services.yml
+msgid "service_description_nftables"
+msgstr "Gestiona els ports de connexió oberts i tancats als serveis"
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunomdns"
+msgstr ""
+"Us permet arribar al vostre servidor mitjançant 'yunohost.local' a la "
+"vostra xarxa local"
+
+#: share/actionsmap.yml
+msgid "pattern_username"
+msgstr ""
+"Ha d'estar compost per caràcters alfanumèrics en minúscula i guió baix "
+"exclusivament"
+
+#: share/actionsmap.yml
+msgid "ask_fullname"
+msgstr "Nom complet"
+
+#: share/actionsmap.yml
+msgid "pattern_fullname"
+msgstr "Ha de ser un nom complet vàlid (almenys tres caràcters)"
+
+#: share/actionsmap.yml src/user.py:496
+msgid "ask_password"
+msgstr "Contrasenya"
+
+#: share/actionsmap.yml
+msgid "good_practices_about_user_password"
+msgstr ""
+"Esteu a punt de definir una nova contrasenya d'usuari. La contrasenya ha "
+"de tenir un mínim de 8 caràcters; tot i que és de bona pràctica utilitzar"
+" una contrasenya més llarga (és a dir una frase de contrasenya) i/o "
+"utilitzar diferents tipus de caràcters (majúscules, minúscules, dígits i "
+"caràcters especials)."
+
+#: share/actionsmap.yml
+msgid "pattern_password"
+msgstr "Ha de tenir un mínim de 3 caràcters"
+
+#: share/actionsmap.yml
+msgid "pattern_domain"
+msgstr "Ha de ser un nom de domini vàlid (ex.: el-meu-domini.cat)"
+
+#: share/actionsmap.yml
+msgid "pattern_mailbox_quota"
+msgstr "Ha de ser una mida amb el sufix b/k/M/G/T o 0 per no tenir quota"
+
+#: share/actionsmap.yml
+msgid "pattern_email"
+msgstr ""
+"Ha de ser una adreça de correu vàlida, sense el símbol «+» (ex.: "
+"algu@domini.cat)"
+
+#: share/actionsmap.yml
+msgid "pattern_email_forward"
+msgstr ""
+"Ha de ser una adreça de correu vàlida, s'accepta el símbol «+» (per "
+"exemple, algu+etiqueta@exemple.cat)"
+
+#: share/actionsmap.yml
+msgid "ask_new_domain"
+msgstr "Nou domini"
+
+#: share/actionsmap.yml
+msgid "ask_new_path"
+msgstr "Nou camí"
+
+#: share/actionsmap.yml
+msgid "pattern_backup_archive_name"
+msgstr ""
+"Ha de ser un nom d'arxiu vàlid amb un màxim de 30 caràcters, compost per "
+"caràcters alfanumèrics i -_. exclusivament"
+
+#: share/actionsmap.yml
+msgid "pattern_port_or_range"
+msgstr ""
+"Ha de ser un número de port vàlid (i.e. 0-65535) o un interval de ports "
+"(ex. 100:200)"
+
+#: share/actionsmap.yml
+msgid "ask_new_admin_password"
+msgstr "Nova contrasenya d'administrador"
+
+#: share/actionsmap.yml
+msgid "good_practices_about_admin_password"
+msgstr ""
+"Esteu a punt de definir una nova contrasenya d'administrador. La "
+"contrasenya ha de tenir un mínim de 8 caràcters; tot i que és de bona "
+"pràctica utilitzar una contrasenya més llarga (és a dir una frase de "
+"contrasenya) i/o utilitzar diferents tipus de caràcters (majúscules, "
+"minúscules, dígits i caràcters especials)."
+
+#: share/actionsmap.yml
+msgid "ask_main_domain"
+msgstr "Domini principal"
+
+#: share/actionsmap.yml
+msgid "ask_admin_username"
+msgstr "Nom d'usuari de l'administrador"
+
+#: share/actionsmap.yml
+msgid "ask_admin_fullname"
+msgstr "Nom complet de l'administrador"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_entrypoint"
+msgstr "Punt d'entrada de l'API"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_application_key"
+msgstr "Clau d'aplicació"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_application_secret"
+msgstr "Clau secreta d'aplicació"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_consumer_key"
+msgstr "Clau del consumidor"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_token"
+msgstr "Token d'autenticació"
+
+#: share/registrar_list.toml
+msgid "domain_config_api_protocol"
+msgstr "Protocol API"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_key"
+msgstr "Clau d'autenticació"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_secret"
+msgstr "Secret d'autenticació"
+
+#: share/config_domain.toml
+msgid "domain_config_feature_name"
+msgstr "Característiques"
+
+#: share/config_domain.toml
+msgid "domain_config_mail_out"
+msgstr "Correus sortints"
+
+#: share/config_domain.toml
+msgid "domain_config_mail_in"
+msgstr "Correus entrants"
+
+#: share/config_domain.toml
+msgid "domain_config_default_app"
+msgstr "Aplicació per defecte"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_name"
+msgstr "Personalització del portal"
+
+#: share/config_domain.toml
+msgid "domain_config_enable_public_apps_page"
+msgstr "Mostra la llista d'aplicacions públiques als visitants"
+
+#: share/config_domain.toml
+msgid "domain_config_enable_public_apps_page_help"
+msgstr ""
+"Els visitants veuran una pàgina «aplicacions públiques» quan acabin al "
+"portal en lloc de només el formulari d'inici de sessió."
+
+#: share/config_domain.toml
+msgid "domain_config_show_other_domains_apps"
+msgstr "Mostra les aplicacions d'altres dominis"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_title"
+msgstr "Títol personalitzat"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_logo"
+msgstr "Logotip personalitzat"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_logo_help"
+msgstr ""
+"Accepta .svg, .png i .jpeg. Preferit un .svg monocrom amb <code>fill: "
+"currentColor</code> perquè el logotip s'adapti als temes."
+
+#: share/config_domain.toml
+msgid "domain_config_portal_theme"
+msgstr "Tema de color predeterminat"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_theme_help"
+msgstr "Els usuaris poden triar-ne un altre a la seva configuració."
+
+#: share/config_domain.toml
+msgid "domain_config_portal_tile_theme"
+msgstr "Tema de mostra de fitxes d'aplicació"
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine"
+msgstr "URL del motor de cerca"
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine_help"
+msgstr ""
+"Aquesta és una característica opcional, que permet mostrar una barra de "
+"cerca al portal (per exemple, si voleu utilitzar el vostre portal "
+"YunoHost com a pàgina d'inici del vostre navegador). Hauria de ser un URL"
+" amb una cadena de consulta buida com ara `https://duckduckgo.com/?q=`, "
+"amb `q=` com a paràmetre de consulta buida de duckduckgo"
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine_name"
+msgstr "Nom del motor de cerca"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_user_intro"
+msgstr "Introducció personalitzada de l'usuari"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_user_intro_help"
+msgstr "Podeu utilitzar HTML, els estils bàsics s'aplicaran als elements genèrics."
+
+#: share/config_domain.toml
+msgid "domain_config_portal_public_intro"
+msgstr "Introducció pública personalitzada"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_public_intro_help"
+msgstr "Podeu utilitzar HTML, els estils bàsics s'aplicaran als elements genèrics."
+
+#: share/config_domain.toml
+msgid "domain_config_custom_css"
+msgstr "Full d'estil CSS personalitzat"
+
+#: share/config_domain.toml
+msgid "domain_config_custom_css_help"
+msgstr ""
+"Això és per a administradors avançats que vulguin personalitzar "
+"l'aparença del portal"
+
+#: share/config_domain.toml
+msgid "domain_config_dns_name"
+msgstr "DNS"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_name"
+msgstr "Certificat"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_summary"
+msgstr "Estat del certificat"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_validity"
+msgstr "Validesa"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_issuer"
+msgstr "Autoritat de certificació"
+
+#: share/config_domain.toml
+msgid "domain_config_acme_eligible"
+msgstr "Elegibilitat (per a l') ACME"
+
+#: share/config_domain.toml
+msgid "domain_config_acme_eligible_explain"
+msgstr ""
+"Aquest domini no sembla preparat per a un certificat Let's Encrypt. "
+"Comproveu la vostra configuració de DNS i la visibilitat del servidor "
+"HTTP. La secció «Registres DNS» i «Web» a <a href='#/diagnosis'>la pàgina"
+" de diagnòstic</a> us poden ajudar a entendre què està mal configurat."
+
+#: share/config_domain.toml
+msgid "domain_config_cert_no_checks"
+msgstr "Ignorar les comprovacions de diagnòstic"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_install"
+msgstr "Instal·la el certificat Let's Encrypt"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_renew"
+msgstr "Renova el certificat Let's Encrypt"
+
+#: share/config_app.toml
+msgid "app_config__core_name"
+msgstr "Tessel·les i permisos"
+
+#: share/config_app.toml src/app.py:2448
+msgid "app_config_permission_location"
+msgstr "Correspon a [{absolute_url}]({absolute_url})"
+
+#: share/config_app.toml
+msgid "app_config_permission_label"
+msgstr "Etiqueta"
+
+#: share/config_app.toml
+msgid "app_config_permission_description"
+msgstr "Descripció"
+
+#: share/config_app.toml
+msgid "app_config_permission_description_help"
+msgstr "Això només és útil si esteu utilitzant el mode «descriptiu» del portal"
+
+#: share/config_app.toml
+msgid "app_config_permission_show_tile"
+msgstr "Mostrar la tessel·la al portal"
+
+#: share/config_app.toml
+msgid "app_config_permission_logo"
+msgstr "Logotip personalitzat per utilitzar"
+
+#: share/config_app.toml
+msgid "app_config_permission_logo_help"
+msgstr "Només s'admeten PNG"
+
+#: share/config_app.toml
+msgid "app_config_permission_allowed"
+msgstr "Grups/comptes amb accés permès"
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_name"
+msgstr "Seguretat"
+
+#: share/config_global.toml
+msgid "global_settings_setting_password_name"
+msgstr "Contrasenyes"
+
+#: share/config_global.toml
+msgid "global_settings_setting_admin_strength"
+msgstr "Robustesa de la contrasenya d'administrador"
+
+#: share/config_global.toml
+msgid "global_settings_setting_admin_strength_help"
+msgstr ""
+"Aquests requisits només s'apliquen en inicialitzar o canviar la "
+"contrasenya"
+
+#: share/config_global.toml
+msgid "global_settings_setting_user_strength"
+msgstr "Robustesa de la contrasenya de l'usuari"
+
+#: share/config_global.toml
+msgid "global_settings_setting_user_strength_help"
+msgstr ""
+"Aquests requisits només s'apliquen en inicialitzar o canviar la "
+"contrasenya"
+
+#: share/config_global.toml
+msgid "global_settings_setting_passwordless_sudo"
+msgstr ""
+"Permet als administradors utilitzar «sudo» sense tornar a escriure les "
+"seves contrasenyes"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_name"
+msgstr "SSH"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_compatibility"
+msgstr "Compatibilitat SSH"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_compatibility_help"
+msgstr ""
+"Solució de compromís entre compatibilitat i seguretat pel servidor SSH. "
+"Afecta els criptògrafs (i altres aspectes relacionats amb la seguretat). "
+"Visita https://infosec.mozilla.org/guidelines/openssh (anglés) per mes "
+"informació."
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_port"
+msgstr "Port SSH"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_port_help"
+msgstr ""
+"Es prefereix un port inferior a 1024 per evitar intents d'usurpació per "
+"part de serveis que no són administradors a la màquina remota. També "
+"hauríeu d'evitar utilitzar un port que ja s'utilitza, com ara 80 o 443."
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_password_authentication"
+msgstr "Autenticació de contrasenya"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_password_authentication_help"
+msgstr "Permet l'autenticació de contrasenya per a SSH"
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_name"
+msgstr "NGINX (servidor web)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_redirect_to_https"
+msgstr "Força HTTPS"
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_redirect_to_https_help"
+msgstr ""
+"Redirigeix les sol·licituds HTTP a HTTPs de manera predeterminada (NO HO "
+"DESACTIVEU tret que sapigueu realment què esteu fent!)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_compatibility"
+msgstr "Compatibilitat NGINX"
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_compatibility_help"
+msgstr ""
+"Solució de compromís entre compatibilitat i seguretat pel servidor web "
+"NGINX. Afecta els criptògrafs (i altres aspectes relacionats amb la "
+"seguretat)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_name"
+msgstr "Postfix (servidor de correu electrònic SMTP)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_compatibility"
+msgstr "Compatibilitat Postfix"
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_compatibility_help"
+msgstr ""
+"Solució de compromís entre compatibilitat i seguretat pel servidor "
+"Postfix. Afecta els criptògrafs (i altres aspectes relacionats amb la "
+"seguretat)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_name"
+msgstr "Webadmin"
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_enabled"
+msgstr "Activa la lista d'IPs permeses de Webadmin"
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_enabled_help"
+msgstr "Permet que només algunes IPs accedeixin a Webadmin."
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist"
+msgstr "Llista d'IPs permeses de Webadmin"
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_help"
+msgstr "Adreces IP permeses per accedir a Webadmin. La notació CIDR està permesa."
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_name"
+msgstr "Portal"
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email"
+msgstr "Permetre a les persones editar llur adreça de correu electrònic principal"
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_help"
+msgstr "Si està desactivat, han de demanar-ho a l'administració."
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_alias"
+msgstr "Permetre a les persones afegir, eliminar i editar àlies de correu"
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_alias_help"
+msgstr "Si està desactivat, han de demanar-ho a l'administració."
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_forward"
+msgstr "Permetre a les persones afegir, eliminar i editar el reenviament de correu"
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_forward_help"
+msgstr "Si està desactivat, han de demanar-ho a l'administració."
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_access_name"
+msgstr "Canvia la contrasenya de «root»"
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_access_explain"
+msgstr ""
+"Als sistemes Linux, «root» és l'administrador absolut. En el context de "
+"YunoHost, l'inici de sessió SSH «root» directe està desactivat per "
+"defecte, excepte des de la xarxa local del servidor. Els membres del grup"
+" «admins» poden utilitzar l'ordre sudo per actuar com a root des de la "
+"línia d'ordres. Tanmateix, pot ser útil tenir una contrasenya de root "
+"(robusta) per depurar el sistema si per algun motiu els administradors "
+"habituals ja no poden iniciar sessió."
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_password"
+msgstr "Nova contrasenya de root"
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_password_confirm"
+msgstr "Nova contrasenya de root (confirmeu)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_experimental_name"
+msgstr "Experimental"
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_experimental_enabled"
+msgstr "Característiques de seguretat experimentals"
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_experimental_enabled_help"
+msgstr ""
+"Activa les funcions de seguretat experimentals (no l'habilites si no saps"
+" què estàs fent!)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_email_name"
+msgstr "Correu electrònic"
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_name"
+msgstr "POP3"
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_enabled"
+msgstr "Activa POP3"
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_enabled_help"
+msgstr ""
+"Habiliteu el protocol POP3 per al servidor de correu. POP3 és un protocol"
+" més antic per accedir a bústies de correu des de clients de correu "
+"electrònic i és més lleuger, però té menys funcions que IMAP (activat per"
+" defecte)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_name"
+msgstr "SMTP"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_allow_ipv6"
+msgstr "Permet IPv6"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_allow_ipv6_help"
+msgstr "Permet l'ús de IPv6 per rebre i enviar correus electrònics"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_enabled"
+msgstr "Activa la retransmissió SMTP"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_enabled_help"
+msgstr ""
+"L'amfitrió de tramesa SMTP que s'ha d'utilitzar per enviar correus "
+"electrònics en lloc d'aquesta instància de YunoHost. És útil si esteu en "
+"una de les següents situacions: el port 25 està bloquejat per el vostre "
+"proveïdor d'accés a internet o proveïdor de servidor privat virtual, si "
+"teniu una IP residencial llistada a DUHL, si no podeu configurar el DNS "
+"invers o si el servidor no està directament exposat a internet i voleu "
+"utilitzar-ne un altre per enviar correus electrònics."
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_host"
+msgstr "Amfitrió de retransmissió SMTP"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_port"
+msgstr "Port de tramesa SMTP"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_user"
+msgstr "Usuari de retransmissió SMTP"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_password"
+msgstr "Contrasenya de retransmissió SMTP"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_domains"
+msgstr "Dominis per a actuar com a MX secundari"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_domains_help"
+msgstr ""
+"Permet que aquest servidor actuï com a domini MX *secundari* de "
+"recolzament per al domini indicat. Això vol dir que si no es pot accedir "
+"al MX principal del domini (per exemple a causa d'una interrupció), els "
+"correus s'enviaran a aquest servidor, que els conservarà durant un màxim "
+"de 20 dies i intentarà retransmetre'ls a la destinació real un cop torna "
+"a pujar. Es poden proporcionar diversos dominis, separats per comes."
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_emails_whitelisted"
+msgstr "Llista blanca de correus electrònics MX SMTP de recolzament"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_emails_whitelisted_help"
+msgstr ""
+"Quan s'actua com a MX secundari, s'ha de proporcionar la llista "
+"exhaustiva d'adreces de correu electrònic dels destinataris permesos (en "
+"cas contrari, els correus seran rebutjats i descartats). Es poden "
+"proporcionar diverses entrades, separades per comes."
+
+#: share/config_global.toml
+msgid "global_settings_setting_antispam_name"
+msgstr "Antispam"
+
+#: share/config_global.toml
+msgid "global_settings_setting_enable_blocklists"
+msgstr "Habilitar les llistes de bloqueig per al trànsit entrant"
+
+#: share/config_global.toml
+msgid "global_settings_setting_enable_blocklists_help"
+msgstr ""
+"Bloquejar els servidors llistats per spamcop.net, spamhaus.org i "
+"abuseat.org per evitar el correu brossa. Tanmateix, això pot causar "
+"problemes de lliurament per a alguns servidors de correu inofensius que "
+"poden ser llistats per aquests tercers, en aquest cas no es rebrà el "
+"correu enviat des d'aquests servidors."
+
+#: share/config_global.toml
+msgid "global_settings_setting_misc_name"
+msgstr "Altres"
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_name"
+msgstr "Còpia de seguretat"
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_compress_tar_archives"
+msgstr "Comprimir còpies de seguretat"
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_compress_tar_archives_help"
+msgstr ""
+"Comprimir els arxius (.tar.gz) en lloc d'arxius no comprimits (.tar) al "
+"crear noves còpies de seguretat. N.B.: activar aquesta opció permet fer "
+"arxius de còpia de seguretat més lleugers, però el procés inicial de "
+"còpia de seguretat serà significativament més llarg i més exigent a "
+"nivell de CPU."
+
+#: share/config_global.toml
+msgid "global_settings_setting_network_name"
+msgstr "Xarxa"
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_exposure"
+msgstr "Versions IP a tenir en compte per a la configuració i el diagnòstic de DNS"
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_exposure_help"
+msgstr ""
+"Nota: això només afecta la configuració de DNS recomanada i les "
+"comprovacions de diagnòstic. Això no afecta les configuracions del "
+"sistema."
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_enabled"
+msgstr "Utilitza resolutors DNS personalitzats"
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_enabled_help"
+msgstr ""
+"Per defecte, YunoHost utilitza una llista de resolutors fiables ubicats a"
+" Europa. Els usuaris avançats poden voler especificar resolutors "
+"personalitzats."
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_list"
+msgstr "Adreces dels resolutors personalitzats"
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_list_help"
+msgstr ""
+"Una llista d'almenys 2 servidors DNS per protocol IP en ús (IPv4/IPv6). "
+"Exemple: 89.234.141.66 45.67.81.23 2a00:5881:8100:1000::3 2a0c:e300::1337"
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_name"
+msgstr "Reenviament basat en SNI / TLS-passthrough"
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_enabled"
+msgstr "Habiliteu el reenviament basat en SNI / TLS-passthrough"
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_enabled_help"
+msgstr ""
+"Aquesta és una característica avançada de proxy invers d'un domini sencer"
+" a una altra màquina *sense* desxifrar el trànsit. Útil quan voleu "
+"exposar diverses màquines darrere de la mateixa IP, però encara permeteu "
+"que cada màquina gestioni la terminació SSL."
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_explain"
+msgstr ""
+"Aquesta característica és AVANÇADA i EXPERIMENTAL i provocarà canvis "
+"importants en la configuració nginx d'aquest servidor. Si us plau, NO "
+"l'utilitzeu si no saps què estàs fent! En particular, heu de tenir en "
+"compte que fail2ban no es pot implementar al servidor intermediari "
+"(nftables no pot prohibir el trànsit maliciós ja que tots els paquets IP "
+"semblen procedents del servidor frontal). A més, de moment, la "
+"configuració nginx del servidor intermediari s'ha d'ajustar manualment "
+"per acceptar el `proxy_protocol`."
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_list"
+msgstr "Llista de reenviaments"
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_list_help"
+msgstr ""
+"Hauria de ser una llista de DOMAIN;DESTINATION;PORT, com ara "
+"domain.tld;192.168.1.42;443 o domain.tld;server.local;8123"
+
+#: src/__init__.py:142
+msgid "yunohost_not_installed"
+msgstr ""
+"YunoHost no està instal·lat correctament. Executeu «yunohost tools "
+"postinstall»"
+
+#: src/app.py:328
+msgid "app_upgrade_url_required"
+msgstr ""
+"Aquesta aplicació (ja?) no existeix al catàleg, per tant, heu de "
+"gestionar les actualitzacions manualment. <br/><small>Des de la línia "
+"d'ordres, podeu utilitzar `yunohost app upgrade <app>` i proporcionar "
+"l'URL del repositori mitjançant l'opció `-u`.</small>"
+
+#: src/app.py:355
+msgid "app_upgrade_specific_channel_msg"
+msgstr ""
+"Tingueu en compte que actualment esteu utilitzant `{channel}` com a font "
+"per a les actualitzacions. Assegureu-vos de consultar la discussió en "
+"curs [aquí]({pr_url})."
+
+#: src/app.py:382
+msgid "app_upgrade_bad_quality"
+msgstr ""
+"Aquesta aplicació està actualment marcada com a incorrecta al catàleg "
+"d'aplicacions de YunoHost. Pot ser un problema temporal mentre els "
+"mantenidors intenten solucionar-lo. Mentrestant, l'actualització "
+"d'aquesta aplicació està desactivada."
+
+#: src/app.py:398
+msgid "app_upgrade_up_to_date"
+msgstr ""
+"L'actualització forçada de l'aplicació (a la mateixa versió) de vegades "
+"pot ser útil per reconstruir l'aplicació i les configuracions."
+
+#: src/app.py:595
+msgid "app_change_url_no_script"
+msgstr ""
+"L'aplicació '{app_name}' encara no permet modificar la URL. Potser s'ha "
+"d'actualitzar."
+
+#: src/app.py:612
+msgid "app_change_url_identical_domains"
+msgstr ""
+"L'antic i el nou domini/camí són idèntics ('{domain}{path}'), no hi ha "
+"res per fer."
+
+#: src/app.py:621
+msgid "app_change_url_require_full_domain"
+msgstr ""
+"{app} no es pot moure a aquest URL nou perquè requereix un domini complet"
+" (és a dir, amb el camí = /)"
+
+#: src/app.py:672
+msgid "app_change_url_script_failed"
+msgstr "S'ha produït un error a l'script de canvi d'URL"
+
+#: src/app.py:674
+msgid "app_change_url_failed"
+msgstr "No s'ha pogut canviar l'URL per a {app}: {error}"
+
+#: src/app.py:705
+msgid "app_change_url_success"
+msgstr "La URL de {app} ara és {domain}{path}"
+
+#: src/app.py:772
+msgid "disk_space_not_sufficient_update"
+msgstr "No queda prou espai al disc per actualitzar aquesta aplicació"
+
+#: src/app.py:800
+msgid "app_upgrade_cli_url_required"
+msgstr ""
+"{app} no és al catàleg (ja no?) i, per tant, no es pot actualitzar "
+"automàticament. Hauries d'utilitzar `yunohost app upgrade {app}` per "
+"proporcionar l'URL del repositori utilitzant l'opció `-u`."
+
+#: src/app.py:820 src/app.py:830
+msgid "app_upgrade_cli_will_upgrade"
+msgstr "{app} s'actualitzarà de {current_version} a {new_version}"
+
+#: src/app.py:839
+msgid "app_upgrade_cli_will_force_upgrade"
+msgstr "L'actualització de l'aplicació {app} serà forçada ({current_version})"
+
+#: src/app.py:847
+msgid "app_upgrade_cli_up_to_date"
+msgstr "{app} ja està actualitzada ({current_version})"
+
+#: src/app.py:853
+msgid "app_upgrade_cli_bad_quality"
+msgstr ""
+"S'estan ometent les actualitzacions per a {app} perquè actualment està "
+"marcada com a trencada al catàleg d'aplicacions de YunoHost."
+
+#: src/app.py:880
+msgid "app_upgrade_app_name"
+msgstr "Actualitzant {app}…"
+
+#: src/app.py:946
+msgid "backup_before_upgrade_deleted_because_replaced_by_newer_backup"
+msgstr ""
+"La còpia de seguretat {name} s'ha suprimit perquè s'ha substituït per una"
+" còpia de seguretat més nova de {newname}"
+
+#: src/app.py:1014
+msgid "app_upgrade_script_failed"
+msgstr "Hi ha hagut un error en el script d'actualització de l'aplicació"
+
+#: src/app.py:1016 src/app.py:1040
+msgid "app_upgrade_failed"
+msgstr "No s'ha pogut actualitzar {app}: {error}"
+
+#: src/app.py:1093
+msgid "app_upgrade_failed_and_broke_the_system"
+msgstr ""
+"No s'ha pogut actualitzar l'aplicació '{app}' i ha deixat el sistema en "
+"un estat defectuós."
+
+#: src/app.py:1095
+msgid "app_upgrade_broke_the_system"
+msgstr ""
+"L'actualització de {app} sembla haver funcionat, però ha deixat el "
+"sistema en un estat defectuós i, per tant, es considera un error."
+
+#: src/app.py:1102
+msgid "app_upgraded"
+msgstr "S'ha actualitzat {app}"
+
+#: src/app.py:1151 src/tools.py:580
+msgid "apps_already_up_to_date"
+msgstr "Ja estan actualitzades totes les aplicacions"
+
+#: src/app.py:1160
+msgid "apps_no_target_can_be_upgraded"
+msgstr "No es pot actualitzar cap aplicació"
+
+#: src/app.py:1170
+msgid "app_upgrade_several_apps"
+msgstr "S'actualitzaran les següents aplicacions: {apps}"
+
+#: src/app.py:1234
+msgid "app_upgrade_continuing_with_other_apps"
+msgstr ""
+"No s'ha pogut actualitzar {app}, però es continua amb l'actualització "
+"d'altres aplicacions igualment (perquè s'ha utilitzat `--continue-on-"
+"failure`)"
+
+#: src/app.py:1240
+msgid "apps_upgrade_cancelled"
+msgstr ""
+"Encara hi havia actualitzacions pendents per a diverses altres "
+"aplicacions, però la seva actualització s'ha cancel·lat (feu servir "
+"`--continue-on-failure` per continuar igualment): {apps}"
+
+#: src/app.py:1340
+msgid "disk_space_not_sufficient_install"
+msgstr "No queda prou espai al disc per instal·lar aquesta aplicació"
+
+#: src/app.py:1354
+msgid "app_id_invalid"
+msgstr "ID de l'aplicació incorrecte"
+
+#: src/app.py:1411
+msgid "app_start_install"
+msgstr "instal·lant {app}…"
+
+#: src/app.py:1501
+msgid "app_install_script_failed"
+msgstr "Hi ha hagut un error en el script d'instal·lació de l'aplicació"
+
+#: src/app.py:1503 src/app.py:1514
+msgid "app_install_failed"
+msgstr "No s'ha pogut instal·lar {app}: {error}"
+
+#: src/app.py:1538
+msgid "app_remove_after_failed_install"
+msgstr "Eliminant l'aplicació després que hagi fallat la instal·lació…"
+
+#: src/app.py:1570 src/app.py:1694 src/backup.py:1390 src/hook.py:576
+#: src/service.py:636 src/settings.py:193 src/utils/configpanel.py:641
+#: src/utils/configpanel.py:730
+msgid "unexpected_error"
+msgstr "Hi ha hagut un error inesperat: {error}"
+
+#: src/app.py:1578 src/app.py:1720
+msgid "app_not_properly_removed"
+msgstr "{app} no s'ha pogut suprimir correctament"
+
+#: src/app.py:1610
+msgid "installation_complete"
+msgstr "Instal·lació completada"
+
+#: src/app.py:1656
+msgid "app_start_remove"
+msgstr "Eliminant {app}…"
+
+#: src/app.py:1717
+msgid "app_removed"
+msgstr "{app} ha estat desinstal·lada"
+
+#: src/app.py:1849
+msgid "app_already_installed_cant_change_url"
+msgstr ""
+"Aquesta aplicació ja està instal·lada. La URL no és pot canviar únicament"
+" amb aquesta funció. Mireu a `app changeurl` si està disponible."
+
+#: src/app.py:2087
+msgid "ssowat_conf_generated"
+msgstr "S'han regenerat les configuracions del SSO i del portal"
+
+#: src/app.py:2223 src/utils/form.py:996 src/utils/form.py:1312
+#: src/utils/form.py:1325 src/utils/form.py:1700 src/utils/form.py:1878
+#: src/utils/form.py:2305
+msgid "app_argument_invalid"
+msgstr "Escolliu un valor vàlid per l'argument «{name}»: {error}"
+
+#: src/app.py:2268
+msgid "app_config_unable_to_read"
+msgstr "No s'han pogut llegir els valors del tauler de configuració."
+
+#: src/app.py:2270
+msgid "app_config_unable_to_apply"
+msgstr "No s'han pogut aplicar els valors del tauler de configuració."
+
+#: src/app.py:2272
+msgid "app_action_failed"
+msgstr "No s'ha pogut executar l'acció {action} per a l'aplicació {app}"
+
+#: src/app.py:2468
+msgid "app_config_permission_allowed_warn_protected"
+msgstr ""
+"Nota: aquest permís està «protegit» i, per tant, el grup «visitants» no "
+"es pot afegir/eliminar dels grups autoritzats."
+
+#: src/app_catalog.py:194
+msgid "apps_catalog_updating"
+msgstr "S'està actualitzant el catàleg d'aplicacions…"
+
+#: src/app_catalog.py:216
+msgid "apps_catalog_failed_to_download"
+msgstr "No s'ha pogut descarregar el catàleg d'aplicacions {apps_catalog}: {error}"
+
+#: src/app_catalog.py:275
+msgid "apps_catalog_update_success"
+msgstr "S'ha actualitzat el catàleg d'aplicacions!"
+
+#: src/app_catalog.py:329
+msgid "apps_catalog_obsolete_cache"
+msgstr "La memòria cau del catàleg d'aplicacions és buida o obsoleta."
+
+#: src/backup.py:363 src/backup.py:2159
+msgid "backup_output_directory_not_empty"
+msgstr "Heu d'escollir un directori de sortida buit"
+
+#: src/backup.py:386
+msgid "backup_hook_unknown"
+msgstr "Script de còpia de seguretat «{hook}» desconegut"
+
+#: src/backup.py:403
+msgid "unbackup_app"
+msgstr "{app} no es guardarà"
+
+#: src/backup.py:418
+msgid "backup_with_no_backup_script_for_app"
+msgstr "L'aplicació «{app}» no té un script de còpia de seguretat. Serà ignorat."
+
+#: src/backup.py:422
+msgid "backup_with_no_restore_script_for_app"
+msgstr ""
+"{app} no té un script de restauració, no podreu restaurar automàticament "
+"la còpia de seguretat d'aquesta aplicació."
+
+#: src/backup.py:502
+msgid "backup_csv_creation_failed"
+msgstr "No s'ha pogut crear el fitxer CSV necessari per a la restauració"
+
+#: src/backup.py:508
+msgid "backup_csv_addition_failed"
+msgstr ""
+"No s'han pogut afegir fitxers per a fer-ne la còpia de seguretat al "
+"fitxer CSV"
+
+#: src/backup.py:547
+msgid "backup_no_file_collected"
+msgstr "No s'han pogut recopilar els fitxers per fer una còpia de seguretat"
+
+#: src/backup.py:616
+msgid "backup_running_hooks"
+msgstr "Executant els scripts de la còpia de seguretat…"
+
+#: src/backup.py:669 src/backup.py:1037
+msgid "restore_hook_unavailable"
+msgstr ""
+"El script de restauració «{part}» no està disponible en el sistema i "
+"tampoc és en l'arxiu"
+
+#: src/backup.py:673
+msgid "backup_system_part_failed"
+msgstr "No s'ha pogut fer la còpia de seguretat de la part «{part}» del sistema"
+
+#: src/backup.py:722
+msgid "app_start_backup"
+msgstr ""
+"Recuperant els fitxers pels que s'ha de fer una còpia de seguretat per "
+"«{app}»…"
+
+#: src/backup.py:744
+msgid "backup_app_script_failed"
+msgstr ""
+"No s'han pogut recopilar els fitxers per fer una còpia de seguretat de "
+"l'aplicació {app}."
+
+#: src/backup.py:895
+msgid "restore_backup_too_old"
+msgstr ""
+"Aquest arxiu de còpia de seguretat no es pot restaurar perquè prové d'una"
+" versió de YunoHost massa antiga."
+
+#: src/backup.py:930 src/backup.py:1962 src/backup.py:2438 src/backup.py:2453
+msgid "backup_archive_cant_retrieve_info_json"
+msgstr ""
+"No s'ha pogut carregar la informació de l'arxiu «{archive}»… No s'ha "
+"pogut obtenir el fitxer info.json (o no és un fitxer json vàlid)."
+
+#: src/backup.py:986
+msgid "restore_cleaning_failed"
+msgstr "No s'ha pogut netejar el directori temporal de restauració"
+
+#: src/backup.py:1004
+msgid "backup_archive_system_part_not_available"
+msgstr ""
+"La part «{part}» del sistema no està disponible en aquesta copia de "
+"seguretat"
+
+#: src/backup.py:1066
+msgid "backup_archive_app_not_found"
+msgstr "No s'ha pogut trobar {app} en l'arxiu de la còpia de seguretat"
+
+#: src/backup.py:1079 src/backup.py:1084
+msgid "restore_already_installed_apps"
+msgstr ""
+"No s'han pogut restaurar les següents aplicacions perquè ja estan "
+"instal·lades: {apps}"
+
+#: src/backup.py:1111 src/backup.py:1120
+msgid "restore_removing_tmp_dir_failed"
+msgstr "No s'ha pogut eliminar un directori temporal antic"
+
+#: src/backup.py:1185
+msgid "restore_may_be_not_enough_disk_space"
+msgstr ""
+"Sembla que no hi ha prou espai disponible en el sistema (lliure: "
+"{free_space} B, espai necessari: {needed_space} B, marge de seguretat: "
+"{margin} B)"
+
+#: src/backup.py:1192
+msgid "restore_not_enough_disk_space"
+msgstr ""
+"No hi ha prou espai disponible (espai: {free_space} B, espai necessari: "
+"{needed_space} B, marge de seguretat: {margin} B)"
+
+#: src/backup.py:1240
+msgid "restore_running_hooks"
+msgstr "Execució dels hooks de restauració…"
+
+#: src/backup.py:1272 src/backup.py:1278
+msgid "restore_system_part_failed"
+msgstr "No s'ha pogut restaurar la part «{part}» del sistema"
+
+#: src/backup.py:1338
+msgid "restore_already_installed_app"
+msgstr "Una aplicació amb la ID «{app}» ja està instal·lada"
+
+#: src/backup.py:1347
+msgid "app_start_restore"
+msgstr "Recuperant {app}…"
+
+#: src/backup.py:1361
+msgid "unrestore_app"
+msgstr "{app} no es restaurarà"
+
+#: src/backup.py:1391 src/backup.py:1445
+msgid "app_restore_failed"
+msgstr "No s'ha pogut restaurar {app}: {error}"
+
+#: src/backup.py:1403
+msgid "restore_running_app_script"
+msgstr "Restaurant l'aplicació «{app}»…"
+
+#: src/backup.py:1443
+msgid "app_restore_script_failed"
+msgstr "S'ha produït un error en el script de restauració de l'aplicació"
+
+#: src/backup.py:1568 src/backup.py:1572
+msgid "backup_abstract_method"
+msgstr "Encara està per implementar aquest mètode de còpia de seguretat"
+
+#: src/backup.py:1641 src/backup.py:2589
+msgid "backup_cleaning_failed"
+msgstr "No s'ha pogut netejar el directori temporal de la còpia de seguretat"
+
+#: src/backup.py:1662
+msgid "not_enough_disk_space"
+msgstr "No hi ha prou espai en «{path}»"
+
+#: src/backup.py:1702
+msgid "backup_couldnt_bind"
+msgstr "No es pot lligar {src} amb {dest}."
+
+#: src/backup.py:1765
+msgid "backup_ask_for_copying_if_needed"
+msgstr ""
+"Voleu fer la còpia de seguretat utilitzant {size}MB temporalment? "
+"(S'utilitza aquest mètode ja que alguns dels fitxers no s'han pogut "
+"preparar utilitzar un mètode més eficient.)"
+
+#: src/backup.py:1771
+msgid "backup_unable_to_organize_files"
+msgstr ""
+"No s'ha pogut utilitzar el mètode ràpid per organitzar els fitxers dins "
+"de l'arxiu"
+
+#: src/backup.py:1779
+msgid "backup_copying_to_organize_the_archive"
+msgstr "Copiant {size}MB per organitzar l'arxiu"
+
+#: src/backup.py:1826
+msgid "backup_no_uncompress_archive_dir"
+msgstr "El directori de l'arxiu descomprimit no existeix"
+
+#: src/backup.py:1840
+msgid "backup_cant_mount_uncompress_archive"
+msgstr "No es pot carregar l'arxiu descomprimit com a protegit contra escriptura"
+
+#: src/backup.py:1890 src/backup.py:1941
+msgid "backup_archive_open_failed"
+msgstr "No s'ha pogut obrir l'arxiu de la còpia de seguretat"
+
+#: src/backup.py:1901
+msgid "backup_archive_writing_error"
+msgstr ""
+"No es poden afegir els arxius «{source}» (anomenats en l'arxiu «{dest}») "
+"a l'arxiu comprimit de la còpia de seguretat «{archive}»"
+
+#: src/backup.py:1908
+msgid "backup_creation_failed"
+msgstr "No s'ha pogut crear l'arxiu de la còpia de seguretat"
+
+#: src/backup.py:1931
+msgid "restore_extracting"
+msgstr "Extracció dels fitxers necessaris de l'arxiu…"
+
+#: src/backup.py:1947 src/backup.py:2423
+msgid "backup_archive_corrupted"
+msgstr ""
+"Sembla que l'arxiu de la còpia de seguretat «{archive}» està corromput : "
+"{error}"
+
+#: src/backup.py:2070
+msgid "backup_custom_backup_error"
+msgstr "El mètode de còpia de seguretat personalitzat ha fallat a l'etapa «backup»"
+
+#: src/backup.py:2087
+msgid "backup_custom_mount_error"
+msgstr "El mètode de còpia de seguretat personalitzat ha fallat a l'etapa «mount»"
+
+#: src/backup.py:2137
+msgid "backup_archive_name_exists"
+msgstr "Ja hi ha una còpia de seguretat amb el nom «{name}»."
+
+#: src/backup.py:2152
+msgid "backup_output_directory_forbidden"
+msgstr ""
+"Escolliu un directori de sortida different. Les còpies de seguretat no es"
+" poden crear ni dins els directoris /bin, /boot, /dev, /etc, /lib, /root,"
+" /run, /sbin, /sys, /usr, /var ni dins els subdirectoris "
+"/home/yunohost.backup/archives"
+
+#: src/backup.py:2156
+msgid "backup_output_directory_required"
+msgstr "Heu d'especificar un directori de sortida per la còpia de seguretat"
+
+#: src/backup.py:2204
+msgid "backup_actually_backuping"
+msgstr "Creant un arxiu de còpia de seguretat a partir dels fitxers recuperats…"
+
+#: src/backup.py:2207
+msgid "backup_create_size_estimation"
+msgstr "L'arxiu tindrà aproximadament {size} de dades."
+
+#: src/backup.py:2213
+msgid "backup_created"
+msgstr "S'ha creat la còpia de seguretat: {name}"
+
+#: src/backup.py:2265 src/tools.py:169
+msgid "yunohost_already_installed"
+msgstr "YunoHost ja està instal·lat"
+
+#: src/backup.py:2270
+msgid "restore_confirm_yunohost_installed"
+msgstr "Esteu segur de voler restaurar un sistema ja instal·lat? [{answers}]"
+
+#: src/backup.py:2278
+msgid "restore_failed"
+msgstr "No s'ha pogut restaurar el sistema"
+
+#: src/backup.py:2284
+msgid "backup_mount_archive_for_restore"
+msgstr "Preparant l'arxiu per la restauració…"
+
+#: src/backup.py:2290
+msgid "restore_complete"
+msgstr "Restauració completada"
+
+#: src/backup.py:2292
+msgid "restore_nothings_done"
+msgstr "No s'ha restaurat res"
+
+#: src/backup.py:2353 src/backup.py:2399 src/backup.py:2508
+msgid "backup_archive_name_unknown"
+msgstr "Còpia de seguretat local «{name}» desconeguda"
+
+#: src/backup.py:2362 src/backup.py:2408
+msgid "backup_archive_broken_link"
+msgstr ""
+"No s'ha pogut accedir a l'arxiu de la còpia de seguretat (enllaç invàlid "
+"cap a {path})"
+
+#: src/backup.py:2531
+msgid "backup_delete_error"
+msgstr "No s'ha pogut suprimir «{path}»"
+
+#: src/backup.py:2540
+msgid "backup_deleted"
+msgstr "S'ha suprimit la còpia de seguretat: {name}"
+
+#: src/backup.py:2552
+msgid "backup_output_symlink_dir_broken"
+msgstr ""
+"El directori del arxiu «{path}» es un enllaç simbòlic trencat. Pot ser "
+"heu oblidat muntar, tornar a muntar o connectar el mitja d'emmagatzematge"
+" al que apunta."
+
+#: src/certificate.py:179
+msgid "certmanager_attempt_to_replace_valid_cert"
+msgstr ""
+"Esteu intentant sobreescriure un certificat correcte i vàlid pel domini "
+"{domain}! (Utilitzeu --force per ometre)"
+
+#: src/certificate.py:211
+msgid "domain_cert_gen_failed"
+msgstr "No s'ha pogut generar el certificat"
+
+#: src/certificate.py:239
+msgid "certmanager_cert_install_success_selfsigned"
+msgstr ""
+"S'ha instal·lat correctament un certificat auto-signat pel domini "
+"«{domain}»"
+
+#: src/certificate.py:251
+msgid "certmanager_cert_install_failed_selfsigned"
+msgstr "La instal·lació del certificat autofirmat ha fallat per a {domains}"
+
+#: src/certificate.py:281
+msgid "certmanager_domain_cert_not_selfsigned"
+msgstr ""
+"El certificat pel domini {domain} no és auto-signat Esteu segur de voler "
+"canviar-lo? (Utilitzeu «--force» per fer-ho)"
+
+#: src/certificate.py:315
+msgid "certmanager_cert_install_success"
+msgstr ""
+"S'ha instal·lat correctament un certificat Let's Encrypt pel domini "
+"«{domain}»"
+
+#: src/certificate.py:321 src/domain.py:439
+msgid "certmanager_cert_install_failed"
+msgstr "La instal·lació del certificat de Let's Encrypt ha fallat per a {domains}"
+
+#: src/certificate.py:360 src/certificate.py:392
+msgid "certmanager_acme_not_configured_for_domain"
+msgstr ""
+"No s'ha pogut executar el ACME challenge pel domini {domain} en aquests "
+"moments ja que a la seva configuració de nginx li manca el codi "
+"corresponent… Assegureu-vos que la configuració nginx està actualitzada "
+"utilitzant «yunohost tools regen-conf nginx --dry-run --with-diff»."
+
+#: src/certificate.py:380
+msgid "certmanager_attempt_to_renew_valid_cert"
+msgstr ""
+"El certificat pel domini «{domain}» està a punt de caducar! (Utilitzeu "
+"--force si sabeu el que esteu fent)"
+
+#: src/certificate.py:386
+msgid "certmanager_attempt_to_renew_nonLE_cert"
+msgstr ""
+"El certificat pel domini «{domain}» no ha estat emès per Let's Encrypt. "
+"No es pot renovar automàticament!"
+
+#: src/certificate.py:443
+msgid "certmanager_cert_renew_success"
+msgstr ""
+"S'ha renovat correctament el certificat Let's Encrypt pel domini "
+"«{domain}»"
+
+#: src/certificate.py:448
+msgid "certmanager_cert_renew_failed"
+msgstr "La renovació del certificat de Let's Encrypt ha fallat per a {domains}"
+
+#: src/certificate.py:541
+msgid "certmanager_hit_rate_limit"
+msgstr ""
+"S'han emès massa certificats recentment per aquest mateix conjunt de "
+"dominis {domain}. Si us plau torneu-ho a intentar més tard. Consulteu "
+"https://letsencrypt.org/docs/rate-limits/ per obtenir més detalls"
+
+#: src/certificate.py:544 src/certificate.py:549
+msgid "certmanager_cert_signing_failed"
+msgstr "No s'ha pogut firmar el nou certificat"
+
+#: src/certificate.py:583
+msgid "certmanager_certificate_fetching_or_enabling_failed"
+msgstr "Sembla que utilitzar el nou certificat per {domain} ha fallat…"
+
+#: src/certificate.py:649
+msgid "certmanager_no_cert_file"
+msgstr ""
+"No s'ha pogut llegir l'arxiu del certificat pel domini {domain} (fitxer: "
+"{file})"
+
+#: src/certificate.py:663
+msgid "certmanager_cannot_read_cert"
+msgstr ""
+"S'ha produït un error al intentar obrir el certificat actual pel domini "
+"{domain} (arxiu: {file}), raó: {reason}"
+
+#: src/certificate.py:843
+msgid "certmanager_domain_not_diagnosed_yet"
+msgstr ""
+"Encara no hi ha cap resultat de diagnòstic per al domini {domain}. Torneu"
+" a executar el diagnòstic per a les categories «Registres DNS» i «Web» en"
+" la secció de diagnòstic per comprovar que el domini està preparat per a "
+"Let's Encrypt. (O si sabeu el que esteu fent, utilitzant «--no-checks» "
+"per deshabilitar aquestes comprovacions.)"
+
+#: src/certificate.py:854
+msgid "certmanager_domain_dns_ip_differs_from_public_ip"
+msgstr ""
+"Les entrades DNS pel domini «{domain}» són diferents a l'adreça IP "
+"d'aquest servidor. Mireu la categoria «registres DNS» (bàsic) al "
+"diagnòstic per a més informació. Si heu modificat recentment el registre "
+"A, si us plau espereu a que es propagui (hi ha eines per verificar la "
+"propagació disponibles a internet). (Si sabeu el que esteu fent, podeu "
+"utilitzar «--no-checks» per desactivar aquestes comprovacions.)"
+
+#: src/certificate.py:860
+msgid "certmanager_domain_http_not_working"
+msgstr ""
+"El domini {domain} sembla que no és accessible via HTTP. Verifiqueu la "
+"categoria «Web» en el diagnòstic per a més informació. (Si sabeu el que "
+"esteu fent, utilitzeu «--no-checks» per deshabilitar aquestes "
+"comprovacions.)"
+
+#: src/certificate.py:904
+msgid "certmanager_self_ca_conf_file_not_found"
+msgstr ""
+"No s'ha trobat el fitxer de configuració per l'autoritat del certificat "
+"auto-signat (fitxer: {file})"
+
+#: src/certificate.py:914
+msgid "certmanager_unable_to_parse_self_CA_name"
+msgstr ""
+"No s'ha pogut analitzar el nom de l'autoritat del certificat auto-signat "
+"(fitxer: {file})"
+
+#: src/diagnosis.py:58 src/diagnosis.py:90 src/diagnosis.py:181
+msgid "diagnosis_unknown_categories"
+msgstr "Les categories següents són desconegudes: {categories}"
+
+#: src/diagnosis.py:77
+msgid "diagnosis_never_ran_yet"
+msgstr ""
+"Sembla que el servidor s'ha configurat recentment i encara no hi cap "
+"informe de diagnòstic per mostrar. S'ha d'executar un diagnòstic complet "
+"primer, ja sigui des de la pàgina web d'administració o utilitzant la "
+"comanda «yunohost diagnosis run» al terminal."
+
+#: src/diagnosis.py:99
+msgid "diagnosis_failed"
+msgstr ""
+"No s'han pogut obtenir els resultats del diagnòstic per la categoria "
+"«{category}»: {error}"
+
+#: src/diagnosis.py:132 src/log.py:357
+msgid "log_available_on_yunopaste"
+msgstr "Aquest registre està disponible via {url}"
+
+#: src/diagnosis.py:201
+msgid "diagnosis_failed_for_category"
+msgstr "Ha fallat el diagnòstic per la categoria «{category}»: {error}"
+
+#: src/diagnosis.py:220
+msgid "diagnosis_display_tip"
+msgstr ""
+"Per veure els problemes que s'han trobat, podeu anar a la secció de "
+"Diagnòstic a la pàgina web d'administració, o utilitzar « yunohost "
+"diagnostic show --issues --human-readable» a la línia de comandes."
+
+#: src/diagnosis.py:280
+msgid "diagnosis_ignore_missing_criteria"
+msgstr ""
+"Heu de proporcionar almenys un criteri que sigui la categoria de "
+"diagnòstic a ignorar"
+
+#: src/diagnosis.py:285
+msgid "diagnosis_ignore_criteria_error"
+msgstr "Els criteris han de tenir la forma clau=valor (p. ex., domini=yolo.test)"
+
+#: src/diagnosis.py:308
+msgid "diagnosis_ignore_no_issue_found"
+msgstr "No s'ha trobat cap problema que coincideixi amb els criteris indicats."
+
+#: src/diagnosis.py:318
+msgid "diagnosis_ignore_already_filtered"
+msgstr "(Ja hi ha un filtre de diagnòstic {category} amb aquests criteris)"
+
+#: src/diagnosis.py:324
+msgid "diagnosis_ignore_filter_added"
+msgstr "S'ha afegit un filtre de diagnòstic {category}"
+
+#: src/diagnosis.py:338
+msgid "diagnosis_ignore_no_filter_found"
+msgstr ""
+"(No hi ha cap filtre de diagnòstic {category} amb aquests criteris per "
+"eliminar)"
+
+#: src/diagnosis.py:344
+msgid "diagnosis_ignore_filter_removed"
+msgstr "S'ha eliminat un filtre de diagnòstic {category}"
+
+#: src/diagnosis.py:421
+msgid "diagnosis_cache_still_valid"
+msgstr ""
+"(La memòria cau encara és vàlida pel diagnòstic de {category}. No es "
+"tornar a diagnosticar de moment!)"
+
+#: src/diagnosis.py:438
+msgid "diagnosis_cant_run_because_of_dep"
+msgstr ""
+"No es pot fer el diagnòstic per {category} mentre hi ha problemes "
+"importants relacionats amb {dep}."
+
+#: src/diagnosis.py:481
+msgid "diagnosis_ignored_issues"
+msgstr "(+ {nb_ignored} problema(es) ignorat(s))"
+
+#: src/diagnosis.py:491
+msgid "diagnosis_found_errors_and_warnings"
+msgstr ""
+"S'ha trobat problema(es) important(s) {errors} (i avis(os) {warnings}) "
+"relacionats amb {category}!"
+
+#: src/diagnosis.py:501
+msgid "diagnosis_found_errors"
+msgstr "S'ha trobat problema(es) important(s) {errors} relacionats amb {category}!"
+
+#: src/diagnosis.py:510
+msgid "diagnosis_found_warnings"
+msgstr "S'han trobat ítems {warnings} que es podrien millorar per {category}."
+
+#: src/diagnosis.py:518
+msgid "diagnosis_everything_ok"
+msgstr "Tot sembla correcte per {category}!"
+
+#: src/diagnosis.py:533
+msgid "diagnosis_no_cache"
+msgstr "Encara no hi ha memòria cau pel diagnòstic de la categoria «{category}»"
+
+#: src/dns.py:67 src/dns.py:555 src/dns.py:643
+msgid "domain_dns_conf_special_use_tld"
+msgstr ""
+"Aquest domini es basa en un domini de primer nivell (TLD) d'ús especial "
+"com ara .local o .test i, per tant, no s'espera que tingui registres DNS "
+"reals."
+
+#: src/dns.py:102
+msgid "domain_dns_conf_is_just_a_recommendation"
+msgstr ""
+"Aquesta ordre mostra la configuració *recomanada*. En cap cas fa la "
+"configuració del DNS. És la vostra responsabilitat configurar la zona DNS"
+" en el vostre registrar en acord amb aquesta recomanació."
+
+#: src/dns.py:501
+msgid "registrar_infos"
+msgstr "Informació del registrador"
+
+#: src/dns.py:531
+msgid "domain_dns_registrar_managed_in_parent_domain"
+msgstr ""
+"Aquest domini és un subdomini de {parent_domain_link}. La configuració "
+"del registrador de DNS s'ha de gestionar al tauler de configuració de "
+"{parent_domain}."
+
+#: src/dns.py:543
+msgid "domain_dns_registrar_yunohost"
+msgstr ""
+"Aquest domini és un nohost.me / nohost.st / ynh.fr i, per tant, la seva "
+"configuració DNS la gestiona automàticament YunoHost sense cap altra "
+"configuració. (vegeu l'ordre «yunohost dyndns update»)"
+
+#: src/dns.py:547 src/dyndns.py:127 src/dyndns.py:141 src/dyndns.py:255
+msgid "ask_dyndns_recovery_password"
+msgstr "Contrasenya de recuperació de DynDNS"
+
+#: src/dns.py:563
+msgid "domain_dns_registrar_not_supported"
+msgstr ""
+"YunoHost no ha pogut detectar automàticament el registrador que gestiona "
+"aquest domini. Hauríeu de configurar manualment les vostres entrades DNS "
+"seguint la documentació a https://doc.yunohost.org/dns_config ."
+
+#: src/dns.py:567
+msgid "domain_dns_registrar_supported"
+msgstr ""
+"YunoHost va detectar automàticament que aquest domini el gestiona el "
+"registrador **{registrar}**. Si voleu, YunoHost configurarà "
+"automàticament aquesta zona DNS, si li proporcioneu les credencials API "
+"adequades. Podeu trobar documentació sobre com obtenir les vostres "
+"credencials de l'API en aquesta pàgina: "
+"https://doc.yunohost.org/admin/get_started/providers/registrar/{registrar}/."
+" (També podeu configurar manualment les vostres entrades DNS seguint la "
+"documentació a https://doc.yunohost.org/dns_config )"
+
+#: src/dns.py:578
+msgid "domain_dns_registrar_experimental"
+msgstr ""
+"Fins ara, la interfície amb l'API de **{registrar}** no ha estat provada "
+"i revisada adequadament per la comunitat YunoHost. El suport és **molt "
+"experimental**: aneu amb compte!"
+
+#: src/dns.py:594
+msgid "domain_dns_registrar_use_auto"
+msgstr "Utilitzeu la funció DNS automàtica"
+
+#: src/dns.py:646
+msgid "domain_dns_push_not_applicable"
+msgstr ""
+"La funció de configuració automàtica de DNS no és aplicable al domini "
+"{domain}. Hauríeu de configurar manualment els vostres registres DNS "
+"seguint la documentació a https://doc.yunohost.org/dns_config."
+
+#: src/dns.py:661 src/dns.py:670
+msgid "domain_dns_push_managed_in_parent_domain"
+msgstr ""
+"La funció de configuració automàtica de DNS es gestiona al domini "
+"principal {parent_domain}."
+
+#: src/dns.py:676 src/dns.py:681
+msgid "domain_registrar_is_not_configured"
+msgstr "El registrador encara no està configurat per al domini {domain}."
+
+#: src/dns.py:742
+msgid "domain_dns_push_failed_to_list"
+msgstr ""
+"No s'han pogut llistar les entrades actuals mitjançant l'API del "
+"registrador: {error}"
+
+#: src/dns.py:952
+msgid "domain_dns_push_already_up_to_date"
+msgstr "Registres ja actualitzats, res a fer."
+
+#: src/dns.py:960
+msgid "domain_dns_pushing"
+msgstr "S'estan enviant els registres DNS…"
+
+#: src/dns.py:1009 src/dns.py:1022
+msgid "domain_dns_push_record_failed"
+msgstr "No s'ha pogut {action} el registre {type}/{name}: {error}"
+
+#: src/dns.py:1035
+msgid "domain_dns_push_success"
+msgstr "Registres DNS actualitzats!"
+
+#: src/dns.py:1039
+msgid "domain_dns_push_failed"
+msgstr "L'actualització dels registres DNS ha fallat estrepitosament."
+
+#: src/dns.py:1041
+msgid "domain_dns_push_partial_failure"
+msgstr ""
+"Registres DNS parcialment actualitzats: s'han notificat alguns "
+"avisos/errors."
+
+#: src/domain.py:254
+msgid "domain_unknown"
+msgstr "Domini «{domain}» desconegut"
+
+#: src/domain.py:326
+msgid "domain_exists"
+msgstr "El domini ja existeix"
+
+#: src/domain.py:347 src/dyndns.py:119
+msgid "domain_dyndns_already_subscribed"
+msgstr "Ja us heu subscrit a un domini DynDNS"
+
+#: src/domain.py:350
+msgid "tos_dyndns_acknowledgement"
+msgstr ""
+"Heu triat registrar un domini DynDNS que és un servei que ofereix el "
+"projecte YunoHost. Tenint en compte que els noms de domini són un aspecte"
+" important dels serveis digitals a llarg termini, us recordem que llegiu "
+"atentament les Condicions dels Serveis corresponents, en particular la "
+"secció relativa a aquests noms de domini gratuïts: "
+"<https://doc.yunohost.org/terms_of_services>."
+
+#: src/domain.py:375
+msgid "domain_creation_failed"
+msgstr "No s'ha pogut crear el domini {domain}: {error}"
+
+#: src/domain.py:436
+msgid "domain_created"
+msgstr "S'ha creat el domini"
+
+#: src/domain.py:486
+msgid "domain_cannot_remove_main"
+msgstr ""
+"No es pot eliminar «{domain}» ja que és el domini principal, primer s'ha "
+"d'establir un nou domini principal utilitzant «yunohost domain main-"
+"domain -n <un-altre-domini>»; aquí hi ha una llista dels possibles "
+"dominis: {other_domains}"
+
+#: src/domain.py:492
+msgid "domain_cannot_remove_main_add_new_one"
+msgstr ""
+"No es pot eliminar «{domain}» ja que és el domini principal i únic "
+"domini, primer s'ha d'afegir un altre domini utilitzant «yunohost domain "
+"add <un-altre-domini.com>», i després fer-lo el domini principal amb "
+"«yunohost domain main-domain -n <un-altre-domini.com>» i després es pot "
+"eliminar el domini «{domain}» utilitzant «yunohost domain remove "
+"{domain}»."
+
+#: src/domain.py:518
+msgid "domain_remove_confirm_apps_removal"
+msgstr ""
+"Si suprimiu aquest domini, s'eliminaran aquestes aplicacions:\n"
+" {apps}\n"
+"\n"
+" Estàs segur que vols fer-ho? [{answers}]"
+
+#: src/domain.py:525 src/utils/app_utils.py:1399
+msgid "aborting"
+msgstr "Avortant."
+
+#: src/domain.py:531
+msgid "domain_uninstall_app_first"
+msgstr ""
+"Aquestes aplicacions encara estan instal·lades en el vostre domini:\n"
+"{apps}\n"
+"\n"
+"Desinstal·leu-les utilitzant l'ordre «yunohost app remove "
+"id_de_lapplicació» o moveu-les a un altre domini amb «yunohost app "
+"change-url id_de_lapplicació» abans d'eliminar el domini"
+
+#: src/domain.py:548
+msgid "domain_deletion_failed"
+msgstr "No s'ha pogut eliminar el domini {domain}: {error}"
+
+#: src/domain.py:594
+msgid "domain_deleted"
+msgstr "S'ha eliminat el domini"
+
+#: src/domain.py:675
+msgid "main_domain_change_failed"
+msgstr "No s'ha pogut canviar el domini principal"
+
+#: src/domain.py:687
+msgid "main_domain_changed"
+msgstr "S'ha canviat el domini principal"
+
+#: src/domain.py:860
+msgid "app_make_default_location_already_used"
+msgstr ""
+"No es pot fer l'aplicació '{app}' l'aplicació per defecte en el domini "
+"«{domain}», ja que ja és utilitzat per '{other_app}'"
+
+#: src/dyndns.py:86 src/dyndns.py:97
+msgid "dyndns_could_not_check_available"
+msgstr "No s'ha pogut verificar la disponibilitat de {domain} a {provider}."
+
+#: src/dyndns.py:94 src/dyndns.py:292
+msgid "dyndns_too_many_requests"
+msgstr ""
+"El servei dyndns de YunoHost ha rebut massa sol·licituds de la vostra "
+"part, espereu una hora més o menys abans de tornar-ho a provar."
+
+#: src/dyndns.py:114
+msgid "dyndns_domain_not_provided"
+msgstr "El proveïdor de DynDNS {provider} no pot oferir el domini {domain}."
+
+#: src/dyndns.py:125
+msgid "ask_dyndns_recovery_password_explain_unavailable"
+msgstr ""
+"Aquest domini DynDNS ja està registrat. Si sou la persona que va "
+"registrar originalment aquest domini, podeu introduir la contrasenya de "
+"recuperació per recuperar aquest domini."
+
+#: src/dyndns.py:135 src/tools.py:232
+msgid "dyndns_unavailable"
+msgstr "El domini {domain} no està disponible."
+
+#: src/dyndns.py:139
+msgid "ask_dyndns_recovery_password_explain"
+msgstr ""
+"Si us plau, trieu una contrasenya de recuperació per al vostre domini "
+"DynDNS, en cas que hàgiu de restablir-la més tard."
+
+#: src/dyndns.py:145
+msgid "dyndns_no_recovery_password"
+msgstr ""
+"No s'ha especificat cap contrasenya de recuperació! En cas que perdeu el "
+"control d'aquest domini, haureu de contactar amb un administrador de "
+"l'equip de YunoHost!"
+
+#: src/dyndns.py:203 src/dyndns.py:210
+msgid "dyndns_subscribe_failed"
+msgstr "No s'ha pogut subscriure el domini DynDNS: {error}"
+
+#: src/dyndns.py:225
+msgid "dyndns_subscribed"
+msgstr "Domini DynDNS subscrit"
+
+#: src/dyndns.py:252
+msgid "ask_dyndns_recovery_password_explain_during_unsubscribe"
+msgstr "Introduïu la contrasenya de recuperació d'aquest domini DynDNS."
+
+#: src/dyndns.py:279 src/dyndns.py:295
+msgid "dyndns_unsubscribe_failed"
+msgstr "No s'ha pogut cancel·lar la subscripció al domini DynDNS: {error}"
+
+#: src/dyndns.py:288
+msgid "dyndns_unsubscribe_denied"
+msgstr "No s'ha pogut cancel·lar la subscripció del domini: credencials no vàlides"
+
+#: src/dyndns.py:290
+msgid "dyndns_unsubscribe_already_unsubscribed"
+msgstr "El domini ja està cancel·lat"
+
+#: src/dyndns.py:299
+msgid "dyndns_unsubscribed"
+msgstr "S'ha cancel·lat la subscripció al domini DynDNS"
+
+#: src/dyndns.py:307 src/dyndns.py:431
+msgid "dyndns_key_not_found"
+msgstr "No s'ha trobat la clau DNS pel domini"
+
+#: src/dyndns.py:332 src/dyndns.py:344
+msgid "dyndns_set_recovery_password_failed"
+msgstr "No s'ha pogut establir la contrasenya de recuperació: {error}"
+
+#: src/dyndns.py:335
+msgid "dyndns_set_recovery_password_success"
+msgstr "S'ha establert la contrasenya de recuperació!"
+
+#: src/dyndns.py:337
+msgid "dyndns_set_recovery_password_denied"
+msgstr "No s'ha pogut establir la contrasenya de recuperació: clau no vàlida"
+
+#: src/dyndns.py:339
+msgid "dyndns_set_recovery_password_unknown_domain"
+msgstr "No s'ha pogut establir la contrasenya de recuperació: domini no registrat"
+
+#: src/dyndns.py:341
+msgid "dyndns_set_recovery_password_invalid_password"
+msgstr ""
+"No s'ha pogut establir la contrasenya de recuperació: la contrasenya no "
+"és prou forta"
+
+#: src/dyndns.py:390
+msgid "dyndns_no_domain_registered"
+msgstr "No hi ha cap domini registrat amb DynDNS"
+
+#: src/dyndns.py:554 src/dyndns.py:558
+msgid "dyndns_ip_update_failed"
+msgstr "No s'ha pogut actualitzar l'adreça IP al DynDNS"
+
+#: src/dyndns.py:560
+msgid "dyndns_ip_updated"
+msgstr "S'ha actualitzat l'adreça IP al DynDNS"
+
+#: src/firewall.py:256
+msgid "upnp_dev_not_found"
+msgstr "No s'ha trobat cap dispositiu UPnP"
+
+#: src/firewall.py:418
+msgid "port_already_opened"
+msgstr "El port {port} ja està obert"
+
+#: src/firewall.py:425 src/firewall.py:457 src/firewall.py:529
+#: src/firewall.py:563
+msgid "firewall_reloaded"
+msgstr "S'ha tornat a carregar el tallafocs"
+
+#: src/firewall.py:427 src/firewall.py:459 src/firewall.py:531
+#: src/firewall.py:565
+msgid "firewall_reload_failed"
+msgstr ""
+"No s'ha pogut tornar a carregar el tallafocs. Més informació en el "
+"registre."
+
+#: src/firewall.py:450 src/firewall.py:522
+msgid "port_already_closed"
+msgstr "El port {port} ja està tancat"
+
+#: src/firewall.py:580
+msgid "action_invalid"
+msgstr "Acció '{action}' invàlida"
+
+#: src/firewall.py:597
+msgid "upnp_enabled"
+msgstr "S'ha activat UPnP"
+
+#: src/firewall.py:597
+msgid "upnp_disabled"
+msgstr "S'ha desactivat UPnP"
+
+#: src/firewall.py:601
+msgid "upnp_port_open_failed"
+msgstr "No s'ha pogut obrir el port UPnP"
+
+#: src/firewall.py:611
+msgid "nftables_unavailable"
+msgstr ""
+"No podeu modificar les nftables aquí. O bé sou en un contenidor o bé el "
+"vostre nucli no és compatible amb aquesta opció"
+
+#: src/hook.py:117 src/hook.py:273
+msgid "hook_name_unknown"
+msgstr "Nom de script « {name} » desconegut"
+
+#: src/hook.py:186
+msgid "hook_list_by_invalid"
+msgstr "Aquesta propietat no es pot utilitzar per llistar els hooks"
+
+#: src/hook.py:344
+msgid "file_does_not_exist"
+msgstr "El camí {path} no existeix."
+
+#: src/hook.py:426 src/hook.py:428
+msgid "hook_exec_not_terminated"
+msgstr "El script no s'ha acabat correctament: {path}"
+
+#: src/hook.py:431
+msgid "hook_exec_failed"
+msgstr "No s'ha pogut executar el script: {path}"
+
+#: src/hook.py:503
+msgid "hook_json_return_error"
+msgstr ""
+"No s'ha pogut llegir el retorn del script {path}. Error: {msg}. Contingut"
+" en brut: {raw_content}"
+
+#: src/hook.py:569 src/settings.py:186 src/utils/configpanel.py:634
+#: src/utils/configpanel.py:723 src/utils/resources.py:75
+#: src/utils/resources.py:103
+msgid "operation_interrupted"
+msgstr "S'ha interromput manualment l'operació?"
+
+#: src/log.py:111 src/log.py:222 src/log.py:368
+msgid "log_corrupted_md_file"
+msgstr ""
+"El fitxer de metadades YAML associat amb els registres està malmès: « "
+"{md_file} »\n"
+"Error: {error}"
+
+#: src/log.py:335
+msgid "log_does_exists"
+msgstr ""
+"No hi ha cap registre per l'operació amb el nom« {log} », utilitzeu « "
+"yunohost log list » per veure tots els registre d'operació disponibles"
+
+#: src/log.py:908
+msgid "log_link_to_log"
+msgstr ""
+"El registre complet d'aquesta operació: «<a href=\"#/tools/logs/{name}\" "
+"style=\"text-decoration:underline\">{desc}</a>»"
+
+#: src/log.py:910
+msgid "log_help_to_get_log"
+msgstr ""
+"Per veure el registre de l'operació « {desc} », utilitzeu l'ordre « "
+"yunohost log show {name} »"
+
+#: src/log.py:916
+msgid "log_link_to_failed_log"
+msgstr ""
+"No s'ha pogut completar l'operació «{desc}». Per obtenir ajuda, <a "
+"href=\"#/tools/logs/{name}\">proveïu el registre complete de l'operació "
+"clicant aquí</a>"
+
+#: src/log.py:921
+msgid "log_help_to_get_failed_log"
+msgstr ""
+"No s'ha pogut completar l'operació « {desc} ». Per obtenir ajuda, "
+"compartiu el registre complete de l'operació utilitzant l'ordre « "
+"yunohost log share {name} »"
+
+#: src/log.py:938
+msgid "log_operation_unit_unclosed_properly"
+msgstr "L'operació no s'ha tancat de forma correcta"
+
+#: src/log.py:1022
+msgid "automatic_task"
+msgstr "Tasca automàtica"
+
+#: src/log.py:1025
+msgid "yunohost_api"
+msgstr "API de YunoHost"
+
+#: src/log.py:1028
+msgid "noninteractive_task"
+msgstr "Tasca no interactiva"
+
+#: src/permission.py:235
+msgid "permission_require_account"
+msgstr ""
+"El permís {permission} només té sentit per als usuaris que tenen un "
+"compte, i per tant no es pot activar per als visitants."
+
+#: src/permission.py:240
+msgid "permission_cant_add_to_all_users"
+msgstr "El permís {permission} no es pot afegir a tots els usuaris."
+
+#: src/permission.py:255
+msgid "permission_protected"
+msgstr ""
+"El permís {permission} està protegit. No podeu afegir o eliminar el grup "
+"visitants a o d'aquest permís."
+
+#: src/permission.py:268 src/permission.py:430 src/user.py:1193
+#: src/user.py:1270 src/user.py:1462
+msgid "group_unknown"
+msgstr "Grup {group} desconegut"
+
+#: src/permission.py:272
+msgid "permission_already_allowed"
+msgstr "El grup «{group}» ja té el permís «{permission}» activat"
+
+#: src/permission.py:284
+msgid "permission_already_disallowed"
+msgstr "El grup «{group}» ja té el permís «{permission}» desactivat"
+
+#: src/permission.py:301
+msgid "permission_currently_allowed_for_all_users"
+msgstr ""
+"El permís ha el té el grup de tots els usuaris (all_users) a més d'altres"
+" grups. Segurament s'hauria de revocar el permís a «all_users» o eliminar"
+" els altres grups als que s'ha atribuït."
+
+#: src/permission.py:310 src/permission.py:516
+msgid "regex_incompatible_with_tile"
+msgstr ""
+"/!\\ Empaquetadors! El permís «{permission}» té «show_tile» definit a "
+"«true» i pertant no pot definir una URL regex com a URL principal"
+
+#: src/permission.py:338 src/permission.py:340 src/permission.py:576
+#: src/user.py:1581
+msgid "permission_updated"
+msgstr "S'ha actualitzat el permís «{permission}»"
+
+#: src/permission.py:365
+msgid "permission_not_found"
+msgstr "No s'ha trobat el permís «{permission}»"
+
+#: src/permission.py:455
+msgid "permission_created"
+msgstr "S'ha creat el permís «{permission}»"
+
+#: src/permission.py:496
+msgid "unknown_main_domain_path"
+msgstr ""
+"Domini o ruta desconeguda per a «{app}». Heu d'especificar un domini i "
+"una ruta per a poder especificar una URL per al permís."
+
+#: src/permission.py:528
+msgid "additional_urls_already_added"
+msgstr "URL addicional «{url}» ja ha estat afegida per al permís «{permission}»"
+
+#: src/permission.py:540
+msgid "additional_urls_already_removed"
+msgstr "URL addicional «{url}» ja ha estat eliminada per al permís «{permission}»"
+
+#: src/permission.py:570 src/permission.py:714
+msgid "permission_update_failed"
+msgstr "No s'ha pogut actualitzar el permís «{permission}»: {error}"
+
+#: src/permission.py:590
+msgid "permission_cannot_remove_main"
+msgstr "No es permet eliminar un permís principal"
+
+#: src/permission.py:612
+msgid "permission_deleted"
+msgstr "S'ha eliminat el permís «{permission}»"
+
+#: src/permission.py:659
+msgid "permission_deletion_failed"
+msgstr "No s'ha pogut eliminar el permís «{permission}»: {error}"
+
+#: src/permission.py:696
+msgid "permission_creation_failed"
+msgstr "No s'ha pogut crear el permís «{permission}»: {error}"
+
+#: src/permission.py:788
+msgid "show_tile_cant_be_enabled_for_url_not_defined"
+msgstr ""
+"No podeu activar «show_title» ara, perquè primer s'ha de definir una URL "
+"per al permís «{permission}»"
+
+#: src/permission.py:795
+msgid "show_tile_cant_be_enabled_for_regex"
+msgstr ""
+"No podeu activar «show_title» ara, perquè la URL per al permís "
+"«{permission}» és una expressió regular"
+
+#: src/permission.py:973
+msgid "invalid_regex"
+msgstr "Regex no vàlid: «{regex}»"
+
+#: src/permission.py:985
+msgid "regex_with_only_domain"
+msgstr "No podeu utilitzar una expressió regular com a domini, només com a ruta"
+
+#: src/portal.py:51 src/ssh.py:43 src/ssh.py:80 src/ssh.py:121 src/user.py:357
+#: src/user.py:462 src/user.py:654 src/user.py:1293
+msgid "user_unknown"
+msgstr "Usuari desconegut: {user}"
+
+#: src/portal.py:224 src/portal.py:249 src/portal.py:286
+msgid "mail_edit_operation_unauthorized"
+msgstr "No teniu permís per fer aquest canvi al vostre compte."
+
+#: src/portal.py:229 src/portal.py:264 src/user.py:243 src/user.py:527
+#: src/user.py:537 src/user.py:1339
+msgid "mail_unavailable"
+msgstr "Aquesta adreça de correu està reservada per al grup d'administradors"
+
+#: src/portal.py:234 src/portal.py:271
+msgid "mail_already_exists"
+msgstr "L'adreça de correu «{mail}» ja existeix"
+
+#: src/portal.py:237 src/portal.py:275
+msgid "mail_alias_unauthorized"
+msgstr "No esteu autoritzat per afegir àlies relacionats amb el domini '{domain}'"
+
+#: src/authenticators/ldap_ynhuser.py:225 src/portal.py:316
+msgid "invalid_password"
+msgstr "Contrasenya no vàlida"
+
+#: src/portal.py:326 src/user.py:520 src/user.py:546 src/user.py:602
+msgid "user_update_failed"
+msgstr "No s'ha pogut actualitzar l'usuari {user}: {error}"
+
+#: src/regenconf.py:200
+msgid "regenconf_failed"
+msgstr ""
+"No s'ha pogut regenerar la configuració per la/les categoria/es : "
+"{categories}"
+
+#: src/regenconf.py:213
+msgid "regenconf_pending_applying"
+msgstr "Aplicació de la configuració pendent per la categoria «{category}»…"
+
+#: src/regenconf.py:215
+msgid "regenconf_dry_pending_applying"
+msgstr ""
+"Verificació de la configuració pendent que s'hauria d'haver aplicat per "
+"la categoria «{category}»…"
+
+#: src/regenconf.py:320 src/regenconf.py:412
+msgid "regenconf_file_manually_modified"
+msgstr ""
+"El fitxer de configuració «{conf}» s'ha modificat manualment i no serà "
+"actualitzat"
+
+#: src/regenconf.py:343
+msgid "regenconf_file_manually_removed"
+msgstr ""
+"El fitxer de configuració «{conf}» s'ha suprimit manualment i no serà "
+"creat"
+
+#: src/regenconf.py:361
+msgid "regenconf_now_managed_by_yunohost"
+msgstr ""
+"El fitxer de configuració «{conf}» serà gestionat per YunoHost a partir "
+"d'ara (categoria {category})."
+
+#: src/regenconf.py:374
+msgid "regenconf_file_kept_back"
+msgstr ""
+"S'espera que el fitxer de configuració «{conf}» sigui suprimit per regen-"
+"conf (categoria {category}) però s'ha mantingut."
+
+#: src/regenconf.py:405
+msgid "regenconf_need_to_explicitly_specify_ssh"
+msgstr ""
+"La configuració ssh ha estat modificada manualment, però heu "
+"d'especificar explícitament la categoria «ssh» amb --force per fer "
+"realment els canvis."
+
+#: src/regenconf.py:430
+msgid "regenconf_up_to_date"
+msgstr "La configuració ja està al dia per la categoria «{category}»"
+
+#: src/regenconf.py:434
+msgid "regenconf_updated"
+msgstr "S'ha actualitzat la configuració per la categoria «{category}»"
+
+#: src/regenconf.py:436
+msgid "regenconf_would_be_updated"
+msgstr "La configuració hagués estat actualitzada per la categoria «{category}»"
+
+#: src/regenconf.py:679
+msgid "regenconf_file_backed_up"
+msgstr ""
+"S'ha guardat una còpia de seguretat del fitxer de configuració «{conf}» a"
+" «{backup}»"
+
+#: src/regenconf.py:685
+msgid "regenconf_file_removed"
+msgstr "El fitxer de configuració «{conf}» ha estat suprimit"
+
+#: src/regenconf.py:693
+msgid "regenconf_file_updated"
+msgstr "El fitxer de configuració «{conf}» ha estat actualitzat"
+
+#: src/regenconf.py:701
+msgid "regenconf_file_remove_failed"
+msgstr "No s'ha pogut eliminar el fitxer de configuració «{conf}»"
+
+#: src/regenconf.py:717
+msgid "regenconf_file_copy_failed"
+msgstr "No s'ha pogut copiar el nou fitxer de configuració «{new}» a «{conf}»"
+
+#: src/service.py:127
+msgid "service_add_failed"
+msgstr "No s'ha pogut afegir el servei «{service}»"
+
+#: src/service.py:129
+msgid "service_added"
+msgstr "S'ha afegit el servei «{service}»"
+
+#: src/service.py:143 src/service.py:370 src/service.py:531 src/service.py:591
+msgid "service_unknown"
+msgstr "Servei «{service}» desconegut"
+
+#: src/service.py:150
+msgid "service_remove_failed"
+msgstr "No s'ha pogut eliminar el servei «{service}»"
+
+#: src/service.py:152
+msgid "service_removed"
+msgstr "S'ha eliminat el servei «{service}»"
+
+#: src/service.py:169
+msgid "service_started"
+msgstr "S'ha iniciat el servei «{service}»"
+
+#: src/service.py:176
+msgid "service_start_failed"
+msgstr "No s'ha pogut iniciar el servei «{service}»"
+
+#: src/service.py:180
+msgid "service_already_started"
+msgstr "El servei «{service}» ja està funcionant"
+
+#: src/service.py:196
+msgid "service_stopped"
+msgstr "S'ha aturat el servei «{service}»"
+
+#: src/service.py:203
+msgid "service_stop_failed"
+msgstr "No s'ha pogut aturar el servei «{service}»"
+
+#: src/service.py:207
+msgid "service_already_stopped"
+msgstr "Ja s'ha aturat el servei «{service}»"
+
+#: src/service.py:222
+msgid "service_reloaded"
+msgstr "S'ha tornat a carregar el servei «{service}»"
+
+#: src/service.py:229
+msgid "service_reload_failed"
+msgstr "No s'ha pogut tornar a carregar el servei «{service}»"
+
+#: src/service.py:248
+msgid "service_restarted"
+msgstr "S'ha reiniciat el servei «{service}»"
+
+#: src/service.py:255
+msgid "service_restart_failed"
+msgstr "No s'ha pogut reiniciar el servei «{service}»"
+
+#: src/service.py:292
+msgid "service_not_reloading_because_conf_broken"
+msgstr ""
+"No s'està tornant a carregar/reiniciar el servei «{name}» perquè la seva "
+"configuració està trencada: {errors}"
+
+#: src/service.py:300
+msgid "service_reloaded_or_restarted"
+msgstr "S'ha tornat a carregar o s'ha reiniciat el servei «{service}»"
+
+#: src/service.py:307
+msgid "service_reload_or_restart_failed"
+msgstr "No s'ha pogut tornar a carregar o reiniciar el servei «{service}»"
+
+#: src/service.py:327
+msgid "service_enabled"
+msgstr ""
+"El servei «{service}» començarà automàticament durant l'arrancada del "
+"sistema."
+
+#: src/service.py:329
+msgid "service_enable_failed"
+msgstr ""
+"No s'ha pogut fer que el servei «{service}» comenci automàticament a "
+"l'arrancada."
+
+#: src/service.py:346
+msgid "service_disabled"
+msgstr "El servei «{service}» ja no començarà al arrancar el sistema."
+
+#: src/service.py:348
+msgid "service_disable_failed"
+msgstr "No s'han pogut fer que el servei «{service}» no comenci a l'arrancada."
+
+#: src/service.py:632
+msgid "service_cmd_exec_failed"
+msgstr "No s'ha pogut executar l'ordre «{command}»"
+
+#: src/settings.py:187 src/settings.py:194 src/utils/configpanel.py:635
+#: src/utils/configpanel.py:642
+msgid "config_apply_failed"
+msgstr "No s'ha pogut aplicar la configuració nova: {error}"
+
+#: src/settings.py:197
+msgid "global_settings_reset_success"
+msgstr "Restableix la configuració global"
+
+#: src/settings.py:236
+msgid "password_confirmation_not_the_same"
+msgstr "La contrasenya i la confirmació no coincideixen"
+
+#: src/tools.py:86
+msgid "root_password_changed"
+msgstr "la contrasenya de root s'ha canviat"
+
+#: src/tools.py:90
+msgid "root_password_desynchronized"
+msgstr ""
+"S'ha canviat la contrasenya d'administració, però YunoHost no ha pogut "
+"propagar-ho cap a la contrasenya root!"
+
+#: src/tools.py:134
+msgid "domain_hostname_failed"
+msgstr ""
+"No s'ha pogut establir un nou nom d'amfitrió. Això podria causar "
+"problemes més tard (podria no passar res)."
+
+#: src/migrations/m0031_terms_of_services.py:42 src/tools.py:178
+msgid "tos_postinstall_acknowledgement"
+msgstr ""
+"El projecte YunoHost és un equip de voluntaris que han fet una causa "
+"comuna per crear un sistema operatiu gratuït per a servidors, anomenat "
+"YunoHost. El programari YunoHost es publica sota la llicència AGPLv3 "
+"(<https://www.gnu.org/licenses/agpl-3.0.txt>). En relació amb aquest "
+"programari, el projecte administra i posa a la seva disposició diversos "
+"serveis tècnics i comunitaris amb diferents finalitats. En utilitzar "
+"aquests serveis, accepteu estar subjecte a les Condicions dels Serveis "
+"següents: <https://doc.yunohost.org/terms_of_services>."
+
+#: src/tools.py:187 src/user.py:240
+msgid "system_username_exists"
+msgstr "El nom d'usuari ja existeix en la llista d'usuaris de sistema"
+
+#: src/tools.py:204
+msgid "postinstall_low_rootfsspace"
+msgstr ""
+"El sistema de fitxers arrel té un total de menys de 10 GB d'espai, el que"
+" es preocupant! És molt probable que us quedeu sense espai ràpidament! Es"
+" recomana tenir un mínim de 16 GB per al sistema de fitxers arrel. Si "
+"voleu instal·lar YunoHost tot i aquest avís, torneu a executar la "
+"postinstal·lació amb --force-diskspace"
+
+#: src/tools.py:221
+msgid "dyndns_provider_unreachable"
+msgstr ""
+"No s'ha pogut connectar amb el proveïdor DynDNS {provider}: o el vostre "
+"YunoHost no està ben connectat a Internet o el servidor dynette està "
+"caigut."
+
+#: src/tools.py:260
+msgid "yunohost_installing"
+msgstr "Instal·lació de YunoHost…"
+
+#: src/tools.py:323
+msgid "yunohost_configured"
+msgstr "YunoHost està configurat"
+
+#: src/tools.py:325
+msgid "yunohost_postinstall_end_tip"
+msgstr ""
+"S'ha completat la post-instal·lació. Per acabar la configuració, "
+"considereu:\n"
+"    - diagnosticar possibles problemes a través de la secció "
+"«Diagnòstics» a la pàgina web d'administració (o emprant «yunohost "
+"diagnosis run» a la línia d'ordres);\n"
+"    - llegir les seccions «Finalizing your setup» i «Getting to know "
+"YunoHost» a la documentació per administradors: "
+"https://doc.yunohost.org/admin."
+
+#: src/tools.py:417
+msgid "updating_apt_cache"
+msgstr "Obtenció de les actualitzacions disponibles per als paquets del sistema…"
+
+#: src/tools.py:423
+msgid "update_apt_cache_failed"
+msgstr ""
+"No s'ha pogut actualitzar la memòria cau d'APT (el gestor de paquets de "
+"Debian). Aquí teniu les línies de sources.list, que poden ajudar-vos a "
+"identificar les línies problemàtiques:\n"
+"{sourceslist}"
+
+#: src/tools.py:429
+msgid "update_apt_cache_warning"
+msgstr ""
+"Hi ha hagut errors al actualitzar la memòria cau d'APT (el gestor de "
+"paquets de Debian). Aquí teniu les línies de sources.list que poden "
+"ajudar-vos a identificar les línies problemàtiques:\n"
+"{sourceslist}"
+
+#: src/tools.py:434 src/utils/app_utils.py:654 src/utils/app_utils.py:743
+#: src/utils/app_utils.py:775
+msgid "done"
+msgstr "Fet"
+
+#: src/tools.py:455 src/tools.py:601
+msgid "already_up_to_date"
+msgstr "No hi ha res a fer. Tot està actualitzat."
+
+#: src/tools.py:552 src/utils/app_utils.py:1270
+msgid "dpkg_is_broken"
+msgstr ""
+"No es pot fer això en aquest instant perquè dpkg/APT (els gestors de "
+"paquets del sistema) sembla estar mal configurat… Podeu intentar "
+"solucionar-ho connectant-vos per SSH i executant «sudo apt install --fix-"
+"broken» i/o «sudo dpkg --configure -a» i/o «sudo dpkg --audit»."
+
+#: src/tools.py:556
+msgid "dpkg_lock_not_available"
+msgstr ""
+"No es pot utilitzar aquesta comanda en aquest moment ja que sembla que un"
+" altre programa està utilitzant el lock de dpkg (el gestor de paquets del"
+" sistema)"
+
+#: src/tools.py:589
+msgid "app_upgrade_some_app_failed"
+msgstr "No s'han pogut actualitzar algunes aplicacions"
+
+#: src/tools.py:603
+msgid "upgrading_packages"
+msgstr "Actualitzant els paquets…"
+
+#: src/tools.py:619
+msgid "tools_upgrade"
+msgstr "Actualitzant paquets del sistema"
+
+#: src/tools.py:653
+msgid "tools_upgrade_failed"
+msgstr "No s'han pogut actualitzar els paquets: {packages_list}"
+
+#: src/tools.py:658
+msgid "system_upgraded"
+msgstr "S'ha actualitzat el sistema"
+
+#: src/tools.py:668
+msgid "server_shutdown_confirm"
+msgstr "S'aturarà el servidor immediatament, n'esteu segur? [{answers}]"
+
+#: src/tools.py:677
+msgid "server_shutdown"
+msgstr "S'aturarà el servidor"
+
+#: src/tools.py:687
+msgid "server_reboot_confirm"
+msgstr "Es reiniciarà el servidor immediatament, n'esteu segur? [{answers}]"
+
+#: src/tools.py:695
+msgid "server_reboot"
+msgstr "Es reiniciarà el servidor"
+
+#: src/tools.py:774
+msgid "migrations_list_conflict_pending_done"
+msgstr "No es pot utilitzar «--previous» i «--done» al mateix temps."
+
+#: src/tools.py:828
+msgid "migrations_no_such_migration"
+msgstr "No hi ha cap migració anomenada «{id}»"
+
+#: src/tools.py:832
+msgid "migrations_exclusive_options"
+msgstr "«--auto», «--skip», i «--force-rerun» són opcions mútuament excloents."
+
+#: src/tools.py:838
+msgid "migrations_must_provide_explicit_targets"
+msgstr ""
+"Heu de proporcionar objectius explícits al utilitzar «--skip» o «--force-"
+"rerun»"
+
+#: src/tools.py:851
+msgid "migrations_not_pending_cant_skip"
+msgstr "Aquestes migracions no estan pendents, així que no poden ser omeses: {ids}"
+
+#: src/tools.py:855
+msgid "migrations_pending_cant_rerun"
+msgstr ""
+"Aquestes migracions encara estan pendents, així que no es poden tornar a "
+"executar: {ids}"
+
+#: src/tools.py:858
+msgid "migrations_already_ran"
+msgstr "Aquestes migracions ja s'han fet: {ids}"
+
+#: src/tools.py:862
+msgid "migrations_no_migrations_to_run"
+msgstr "No hi ha cap migració a fer"
+
+#: src/tools.py:872
+msgid "migrations_to_be_ran_manually"
+msgstr ""
+"La migració {id} s'ha de fer manualment. Aneu a Eines → Migracions a la "
+"interfície admin, o executeu «yunohost tools migrations run»."
+
+#: src/tools.py:888
+msgid "migrations_dependencies_not_satisfied"
+msgstr "Executeu aquestes migracions: «{dependencies_id}», abans la migració {id}."
+
+#: src/tools.py:902
+msgid "migrations_need_to_accept_disclaimer"
+msgstr ""
+"Per fer la migració {id}, heu d'acceptar aquesta clàusula de no "
+"responsabilitat:\n"
+"---\n"
+"{disclaimer}\n"
+"---\n"
+"Si accepteu fer la migració, torneu a executar l'ordre amb l'opció "
+"«--accept-disclaimer»."
+
+#: src/tools.py:917
+msgid "migrations_skip_migration"
+msgstr "Saltant migració {id}…"
+
+#: src/tools.py:923 src/tools.py:1049 src/tools.py:1080
+msgid "migrations_running_forward"
+msgstr "Executant la migració {id}…"
+
+#: src/tools.py:929 src/tools.py:1053 src/tools.py:1084
+msgid "migrations_migration_has_failed"
+msgstr "La migració {id} ha fallat, cancel·lant. Error: {exception}"
+
+#: src/tools.py:934
+msgid "migrations_success_forward"
+msgstr "Migració {id} completada"
+
+#: src/tools.py:998
+msgid "migrations_loading_migration"
+msgstr "Carregant la migració {id}…"
+
+#: src/tools.py:1013
+msgid "migrations_failed_to_load_migration"
+msgstr "No s'ha pogut carregar la migració {id}: {error}"
+
+#: src/tools.py:1123
+msgid "migration_ldap_backup_before_migration"
+msgstr ""
+"Creant una còpia de seguretat de la configuració de les aplicacions i la "
+"base de dades LDAP abans de la migració real."
+
+#: src/tools.py:1139
+msgid "migration_ldap_can_not_backup_before_migration"
+msgstr ""
+"La còpia de seguretat del sistema no s'ha pogut completar abans que la "
+"migració fallés. Error: {error}"
+
+#: src/tools.py:1149
+msgid "migration_ldap_migration_failed_trying_to_rollback"
+msgstr "No s'ha pogut migrar… s'està intentant revertir el sistema."
+
+#: src/tools.py:1168
+msgid "migration_ldap_rollback_success"
+msgstr "El sistema s'ha revertit."
+
+#: src/user.py:129
+msgid "field_invalid"
+msgstr "Camp incorrecte « {field} »"
+
+#: src/user.py:211
+msgid "domains_available"
+msgstr "Dominis disponibles:"
+
+#: src/user.py:217
+msgid "ask_user_domain"
+msgstr "Domini a utilitzar per l'adreçar de correu electrònic"
+
+#: src/user.py:229
+msgid "user_already_exists"
+msgstr "L'usuari «{user}» ja existeix"
+
+#: src/user.py:235 src/user.py:294
+msgid "user_creation_failed"
+msgstr "No s'ha pogut crear l'usuari {user}: {error}"
+
+#: src/user.py:267 src/user.py:592
+msgid "invalid_shell"
+msgstr "Shell no vàlid: {shell}"
+
+#: src/user.py:306
+msgid "user_home_creation_failed"
+msgstr "No s'ha pogut crear la carpeta personal «{home}» per l'usuari"
+
+#: src/user.py:334
+msgid "user_created"
+msgstr "S'ha creat l'usuari"
+
+#: src/user.py:359
+msgid "user_cannot_delete_last_admin"
+msgstr "El compte '{user}' és l'últim del grup d'administració i no s'eliminarà."
+
+#: src/user.py:395
+msgid "user_deletion_failed"
+msgstr "No s'ha pogut suprimir l'usuari {user}: {error}"
+
+#: src/user.py:413
+msgid "user_deleted"
+msgstr "S'ha suprimit l'usuari"
+
+#: src/user.py:523 src/user.py:549 src/user.py:1348
+msgid "mail_domain_unknown"
+msgstr ""
+"El domini «{domain}» de l'adreça de correu no és vàlid. Utilitzeu un "
+"domini administrat per aquest servidor."
+
+#: src/user.py:561 src/user.py:1375
+msgid "mail_alias_remove_failed"
+msgstr "No s'han pogut eliminar els àlies del correu «{mail}»"
+
+#: src/user.py:581
+msgid "mail_forward_remove_failed"
+msgstr "No s'han pogut eliminar el reenviament de correu «{mail}»"
+
+#: src/user.py:618
+msgid "user_updated"
+msgstr "S'ha canviat la informació de l'usuari"
+
+#: src/user.py:683
+msgid "mailbox_used_space_dovecot_down"
+msgstr ""
+"S'ha d'engegar el servei de correu Dovecot, per poder obtenir l'espai "
+"utilitzat per la bústia de correu"
+
+#: src/user.py:685
+msgid "mailbox_disabled"
+msgstr "La bústia de correu està desactivada per al usuari {user}"
+
+#: src/user.py:711
+msgid "unlimit"
+msgstr "Sense quota"
+
+#: src/user.py:803
+msgid "user_import_missing_columns"
+msgstr "Falten les columnes següents: {columns}"
+
+#: src/user.py:851
+msgid "user_import_bad_line"
+msgstr "Línia {line} incorrecta: {details}"
+
+#: src/user.py:885
+msgid "user_import_bad_file"
+msgstr ""
+"El vostre fitxer CSV no té el format correcte, s'ignorarà per evitar "
+"possibles pèrdues de dades"
+
+#: src/user.py:890
+msgid "user_import_nothing_to_do"
+msgstr "No cal importar cap usuari"
+
+#: src/user.py:916
+msgid "user_import_cannot_edit_or_delete_admins"
+msgstr ""
+"No es pot editar o suprimir '{user}' mitjançant la importació perquè el "
+"compte és d'administració"
+
+#: src/user.py:1024
+msgid "user_import_partial_failed"
+msgstr "L'operació d'importació dels usuaris ha fallat parcialment"
+
+#: src/user.py:1026
+msgid "user_import_failed"
+msgstr "L'operació d'importació dels usuaris ha fallat completament"
+
+#: src/user.py:1030
+msgid "user_import_success"
+msgstr "Els usuaris s'han importat correctament"
+
+#: src/user.py:1117
+msgid "group_already_exist"
+msgstr "El grup {group} ja existeix"
+
+#: src/user.py:1124
+msgid "group_already_exist_on_system_but_removing_it"
+msgstr ""
+"El grup {group} ja existeix en els grups del sistema, però YunoHost "
+"l'eliminarà…"
+
+#: src/user.py:1131
+msgid "group_already_exist_on_system"
+msgstr "El grup {group} ja existeix en els grups del sistema"
+
+#: src/user.py:1161
+msgid "group_creation_failed"
+msgstr "No s'ha pogut crear el grup «{group}»: {error}"
+
+#: src/user.py:1167 src/user.py:1169
+msgid "group_created"
+msgstr "S'ha creat el grup «{group}»"
+
+#: src/user.py:1202
+msgid "group_cannot_be_deleted"
+msgstr "El grup {group} no es pot eliminar manualment."
+
+#: src/user.py:1209
+msgid "group_deletion_failed"
+msgstr "No s'ha pogut eliminar el grup «{group}»: {error}"
+
+#: src/user.py:1215 src/user.py:1217
+msgid "group_deleted"
+msgstr "S'ha eliminat el grup «{group}»"
+
+#: src/user.py:1244
+msgid "group_cannot_edit_all_users"
+msgstr ""
+"El grup «all_users» no es pot editar manualment. És un grup especial "
+"destinat a contenir els usuaris registrats a YunoHost"
+
+#: src/user.py:1246
+msgid "group_cannot_edit_visitors"
+msgstr ""
+"El grup «visitors» no es pot editar manualment. És un grup especial que "
+"representa els visitants anònims"
+
+#: src/user.py:1249
+msgid "group_cannot_edit_primary_group"
+msgstr ""
+"El grup «{group}» no es pot editar manualment. És el grup principal "
+"destinat a contenir un usuari específic."
+
+#: src/user.py:1257
+msgid "group_cannot_remove_last_admin"
+msgstr "L'usuari '{user}' és l'únic usuari del grup 'admins' i no serà eliminat."
+
+#: src/user.py:1297
+msgid "group_user_already_in_group"
+msgstr "L'usuari {user} ja està en el grup {group}"
+
+#: src/user.py:1301
+msgid "group_user_add"
+msgstr "L'usuari «{user}» s'afegirà al grup «{group}»"
+
+#: src/user.py:1311
+msgid "group_user_not_in_group"
+msgstr "L'usuari {user} no està en el grup {group}"
+
+#: src/user.py:1315
+msgid "group_user_remove"
+msgstr "L'usuari «{user}» s'eliminarà del grup «{group}»"
+
+#: src/user.py:1345 src/user.py:1396
+msgid "group_update_failed"
+msgstr "No s'ha pogut actualitzat el grup «{group}»: {error}"
+
+#: src/user.py:1351
+msgid "group_mailalias_add"
+msgstr "L'àlies de correu electrònic «{mail}» s'afegirà al grup «{group}»"
+
+#: src/user.py:1372
+msgid "group_mailalias_remove"
+msgstr "L'àlies de correu electrònic «{mail}» s'eliminarà del grup «{group}»"
+
+#: src/user.py:1378
+msgid "group_update_aliases"
+msgstr "S'estan actualitzant els àlies per al grup «{group}»"
+
+#: src/user.py:1430
+msgid "group_no_change"
+msgstr "No hi ha res a canviar per al grup «{group}»"
+
+#: src/user.py:1432 src/user.py:1434
+msgid "group_updated"
+msgstr "S'ha actualitzat el grup «{group}»"
+
+#: src/authenticators/ldap_admin.py:81 src/authenticators/ldap_admin.py:127
+#: src/utils/ldap.py:159
+msgid "ldap_server_is_down_restart_it"
+msgstr "El servei LDAP està inactiu, intenteu reiniciar-lo…"
+
+#: src/authenticators/ldap_admin.py:97 src/authenticators/ldap_admin.py:134
+#: src/authenticators/ldap_ynhuser.py:227
+msgid "ldap_server_down"
+msgstr "No es pot arribar al servidor LDAP"
+
+#: src/authenticators/ldap_admin.py:100 src/authenticators/ldap_admin.py:105
+#: src/authenticators/ldap_admin.py:110 src/authenticators/ldap_admin.py:124
+#: src/authenticators/ldap_ynhuser.py:202
+#: src/authenticators/ldap_ynhuser.py:207
+msgid "invalid_credentials"
+msgstr "La contrasenya o el nom d'usuari no són vàlids"
+
+#: src/authenticators/ldap_admin.py:196 src/authenticators/ldap_admin.py:202
+#: src/authenticators/ldap_ynhuser.py:252
+#: src/authenticators/ldap_ynhuser.py:307
+#: src/authenticators/ldap_ynhuser.py:310
+#: src/authenticators/ldap_ynhuser.py:313
+#: src/authenticators/ldap_ynhuser.py:316
+msgid "unable_authenticate"
+msgstr "No s'ha pogut autenticar la sessió"
+
+#: src/authenticators/ldap_admin.py:208 src/authenticators/ldap_ynhuser.py:322
+msgid "session_expired"
+msgstr "Sessió caducada"
+
+#: src/migrations/m0031_terms_of_services.py:40
+msgid "migration_0031_terms_of_services"
+msgstr ""
+"Aquesta migració és purament un missatge informatiu sobre el fet que el "
+"projecte YunoHost ara publica Condicions dels Serveis relacionades amb "
+"els serveis tècnics i comunitaris."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:168
+msgid "migration_0036_start"
+msgstr "Iniciant la migració a Trixie…"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:213
+msgid "migration_0036_patch_yunohost_dpkg"
+msgstr ""
+"Aplicant un pegat a la base de dades dpkg per solucionar els problemes de"
+" conflicte…"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:218
+msgid "migration_0036_patching_sources_list"
+msgstr "S'està pegat el fitxer sources.lists…"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:239
+msgid "migration_0036_main_upgrade"
+msgstr "Iniciant l'actualització principal…"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:286
+msgid "migration_0036_still_on_bookworm_after_main_upgrade"
+msgstr ""
+"Alguna cosa ha anat malament durant l'actualització principal, sembla que"
+" el sistema encara està a Debian Bookworm."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:289
+msgid "migration_0036_cleaning_up"
+msgstr "Netejant la memòria cau i els paquets que ja no són útils…"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:300
+msgid "migration_0036_apt_lists_file_still_exists"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:316
+msgid "migration_0036_yunohost_upgrade"
+msgstr "Iniciant l'actualització del nucli de YunoHost…"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:350
+msgid "migration_0036_delayed_api_restart"
+msgstr ""
+"L'API de YunoHost es reiniciarà automàticament en 15 segons. És possible "
+"que no estigui disponible durant uns segons i, aleshores, haureu de "
+"tornar a iniciar la sessió."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:411
+msgid "migration_0036_not_bullseye"
+msgstr ""
+"La distribució actual de Debian no és Bookworm! Si ja heu executat la "
+"migració de Bookworm a Trixie, aquest error és simptomàtic del fet que el"
+" procediment de migració no ha estat 100% satisfactori (en cas contrari, "
+"YunoHost l'hauria marcat com a completat). Es recomana investigar què ha "
+"passat amb l'equip de suport, que necessitarà el registre **complet** de "
+"la migració, que es pot trobar a Eines > Registres a l'administrador web."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:415
+msgid "migration_0036_not_enough_free_space"
+msgstr ""
+"L'espai lliure és força baix a /var/! Hauries de tenir com a mínim 1 GB "
+"lliure per executar aquesta migració."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:452
+msgid "migration_0036_system_not_fully_up_to_date"
+msgstr ""
+"El vostre sistema no està completament actualitzat. Si us plau, feu una "
+"actualització regular abans d'executar la migració a Trixie."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:508
+msgid "migration_0036_general_warning"
+msgstr ""
+"Finalment, tingueu en compte que aquesta migració és **una operació "
+"delicada**. L'equip de YunoHost ha fet tot el possible per revisar-la i "
+"provar-la, però la migració encara podria trencar parts del sistema o de "
+"les seves aplicacions.\n"
+"\n"
+"Per tant, us recomanem que:\n"
+"    - **Feu còpies de seguretat** de qualsevol dada o aplicació crítica. "
+"Més informació a https://doc.yunohost.org/backup;\n"
+"    - **Sigueu pacients** després d'iniciar la migració: depenent de la "
+"vostra connexió a Internet i del maquinari, pot trigar fins a una hora a "
+"actualitzar-se tot correctament;\n"
+"    - **Poseu-vos en contacte amb la comunitat** al fòrum si necessiteu "
+"ajuda per resoldre problemes."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:511
+msgid "migration_0036_problematic_apps_warning"
+msgstr ""
+"Tingueu en compte que s'han detectat les següents aplicacions "
+"instal·lades possiblement problemàtiques. Sembla que no s'han instal·lat "
+"des del catàleg d'aplicacions de YunoHost o no estan marcades com a «en "
+"funcionament». En conseqüència, no es pot garantir que continuïn "
+"funcionant després de l'actualització:"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:514
+msgid "migration_0036_modified_files"
+msgstr ""
+"Tingueu en compte que els fitxers següents s'han modificat manualment i "
+"que és possible que s'hagin sobreescrit després de l'actualització:"
+
+#: src/migrations/postgresql.py:52
+msgid "migration_postgresql_previous_not_installed"
+msgstr "PostgreSQL no s'ha instal·lat al vostre sistema. Res a fer."
+
+#: src/migrations/postgresql.py:57
+msgid "migration_postgresql_target_not_installed"
+msgstr ""
+"PostgreSQL 13 està instal·lat, però no PostgreSQL 15!? Alguna cosa "
+"estranya podria haver passat al vostre sistema :(…"
+
+#: src/migrations/postgresql.py:75
+msgid "migration_not_enough_space"
+msgstr "Feu que hi hagi prou espai disponible a {path} per executar la migració."
+
+#: src/migrations/python.py:145
+msgid "migration_python_venv_rebuild_disclaimer_base"
+msgstr ""
+"Després de l'actualització a Debian Bookworm, algunes aplicacions de "
+"Python s'han de reconstruir parcialment per convertir-se a la nova versió"
+" de Python distribuida amb Debian (en termes tècnics: cal recrear el que "
+"s'anomena 'virtualenv'). Mentrestant, és possible que aquestes "
+"aplicacions de Python no funcionin. YunoHost pot intentar reconstruir el "
+"virtualenv per a alguns d'ells, tal com es detalla a continuació. Per a "
+"altres aplicacions, o si l'intent de reconstrucció falla, haureu de "
+"forçar manualment una actualització d'aquestes aplicacions."
+
+#: src/migrations/python.py:150
+msgid "migration_python_venv_rebuild_disclaimer_rebuild"
+msgstr ""
+"S'intentarà reconstruir el virtualenv per a les aplicacions següents (NB:"
+" l'operació pot trigar una mica!): {rebuild_apps}"
+
+#: src/migrations/python.py:155
+msgid "migration_python_venv_rebuild_disclaimer_ignored"
+msgstr ""
+"Virtualenvs no es pot reconstruir automàticament per a aquestes "
+"aplicacions. Heu de forçar una actualització per a aquests, que es pot "
+"fer des de la línia d'ordres amb: `yunohost app upgrade --force APP`: "
+"{ignored_apps}"
+
+#: src/migrations/python.py:177
+msgid "migration_python_venv_rebuild_broken_app"
+msgstr ""
+"S'ha omès {app} perquè virtualenv no es pot reconstruir fàcilment per a "
+"aquesta aplicació. En comptes d'això, hauríeu de solucionar la situació "
+"forçant l'actualització d'aquesta aplicació mitjançant `yunohost app "
+"upgrade --force {app}`."
+
+#: src/migrations/python.py:185
+msgid "migration_python_venv_rebuild_in_progress"
+msgstr "Ara s'està intentant reconstruir el virtualenv de Python per a `{app}`"
+
+#: src/migrations/python.py:209
+msgid "migration_python_venv_rebuild_failed"
+msgstr ""
+"No s'ha pogut reconstruir el virtualenv de Python per a {app}. És "
+"possible que l'aplicació no funcioni mentre no es resolgui. Hauríeu "
+"d'arreglar la situació forçant l'actualització d'aquesta aplicació "
+"mitjançant `yunohost app upgrade --force {app}`."
+
+#: src/utils/app_utils.py:144 src/utils/app_utils.py:160
+msgid "app_not_correctly_installed"
+msgstr "{app} sembla estar mal instal·lada"
+
+#: src/utils/app_utils.py:569 src/utils/app_utils.py:613
+msgid "app_unknown"
+msgstr "Aplicació desconeguda"
+
+#: src/utils/app_utils.py:584
+msgid "app_unsupported_remote_type"
+msgstr "El tipus remot utilitzat per l'aplicació no està suportat"
+
+#: src/utils/app_utils.py:623
+msgid "extracting"
+msgstr "Extracció en curs…"
+
+#: src/utils/app_utils.py:642
+msgid "app_extraction_failed"
+msgstr "No s'han pogut extreure els fitxers d'instal·lació"
+
+#: src/utils/app_utils.py:649
+msgid "app_install_files_invalid"
+msgstr "Aquests fitxers no es poden instal·lar"
+
+#: src/utils/app_utils.py:723
+msgid "downloading"
+msgstr "Descarregant…"
+
+#: src/utils/app_utils.py:773
+msgid "app_sources_fetch_failed"
+msgstr "No s'han pogut carregar els fitxers font, l'URL és correcta?"
+
+#: src/utils/app_utils.py:807
+msgid "app_not_installed"
+msgstr "No s'ha trobat {app} en la llista d'aplicacions instal·lades: {all_apps}"
+
+#: src/utils/app_utils.py:827
+msgid "app_requirements_checking"
+msgstr "Verificació dels requisits per a {app}…"
+
+#: src/utils/app_utils.py:831
+msgid "app_packaging_format_not_supported"
+msgstr ""
+"No es pot instal·lar aquesta aplicació ja que el format del paquet no és "
+"compatible amb la versió de YunoHost del sistema. Hauríeu de considerar "
+"actualitzar el sistema."
+
+#: src/utils/app_utils.py:844
+msgid "app_yunohost_version_not_supported"
+msgstr ""
+"Aquesta aplicació requereix YunoHost >= {required} però la versió "
+"instal·lada actual és {current}."
+
+#: src/utils/app_utils.py:858
+msgid "app_arch_not_supported"
+msgstr ""
+"Aquesta aplicació només es pot instal·lar a les arquitectures {required},"
+" però l'arquitectura del vostre servidor és {current}"
+
+#: src/utils/app_utils.py:879
+msgid "app_already_installed"
+msgstr "{app} ja està instal·lada"
+
+#: src/utils/app_utils.py:899
+msgid "app_not_enough_disk"
+msgstr "Aquesta aplicació requereix {required} espai lliure."
+
+#: src/utils/app_utils.py:953
+msgid "app_not_enough_ram"
+msgstr ""
+"Aquesta aplicació requereix RAM {required} per instal·lar/actualitzar, "
+"però només {current} està disponible ara mateix."
+
+#: src/utils/app_utils.py:1065
+msgid "app_full_domain_unavailable"
+msgstr ""
+"Aquesta aplicació ha de ser instal·lada en el seu propi domini, però ja "
+"hi ha altres aplicacions instal·lades en el domini «{domain}». Podeu "
+"utilitzar un subdomini dedicat a aquesta aplicació."
+
+#: src/utils/app_utils.py:1068
+msgid "app_location_unavailable"
+msgstr ""
+"Aquesta URL no està disponible o entra en conflicte amb aplicacions ja "
+"instal·lades:\n"
+"{apps}"
+
+#: src/utils/app_utils.py:1260
+msgid "app_action_cannot_be_ran_because_required_services_down"
+msgstr ""
+"Aquests serveis necessaris haurien d'estar funcionant per poder executar "
+"aquesta acció: {services} Intenteu reiniciar-los per continuar (i "
+"possiblement investigar perquè estan aturats)."
+
+#: src/utils/app_utils.py:1265
+msgid "app_action_broke_system"
+msgstr ""
+"Aquesta acció sembla haver trencat els següents serveis importants: "
+"{services}"
+
+#: src/utils/app_utils.py:1272
+msgid "this_action_broke_dpkg"
+msgstr ""
+"Aquesta acció a trencat dpkg/APT (els gestors de paquets del sistema)… "
+"Podeu intentar resoldre el problema connectant-vos amb SSH i executant "
+"`sudo apt install --fix-broken` i/o `sudo dpkg --configure -a`."
+
+#: src/utils/configpanel.py:601
+msgid "config_cant_set_value_on_section"
+msgstr "No podeu establir un sol valor en una secció sencera de configuració."
+
+#: src/utils/configpanel.py:724 src/utils/configpanel.py:731
+msgid "config_action_failed"
+msgstr "No s'ha pogut executar l'acció «{action}»: {error}"
+
+#: src/utils/configpanel.py:749
+msgid "config_no_panel"
+msgstr "No s'ha trobat cap tauler de configuració."
+
+#: src/utils/configpanel.py:789 src/utils/configpanel.py:867
+msgid "config_unknown_filter_key"
+msgstr "La clau de filtre «{filter_key}» és incorrecta."
+
+#: src/utils/file_utils.py:54
+msgid "file_not_exist"
+msgstr "El fitxer no existeix: '{path}'"
+
+#: src/utils/file_utils.py:60
+msgid "cannot_open_file"
+msgstr "No s'ha pogut obrir el fitxer {file} (motiu: {error})"
+
+#: src/utils/file_utils.py:62
+msgid "unknown_error_reading_file"
+msgstr "Error desconegut al intentar llegir el fitxer {file} (motiu: {error})"
+
+#: src/utils/file_utils.py:82 src/utils/file_utils.py:461
+msgid "corrupted_json"
+msgstr "JSON corrupte llegit des de {ressource} (motiu: {error})"
+
+#: src/utils/file_utils.py:103
+msgid "corrupted_yaml"
+msgstr "YAML corrupte llegit des de {ressource} (motiu: {error})"
+
+#: src/utils/file_utils.py:123
+msgid "corrupted_toml"
+msgstr ""
+"El fitxer TOML ha estat corromput en la lectura des de {ressource} "
+"(motiu: {error})"
+
+#: src/utils/file_utils.py:171 src/utils/file_utils.py:217
+#: src/utils/file_utils.py:240
+msgid "cannot_write_file"
+msgstr "No s'ha pogut escriure el fitxer {file} (motiu: {error})"
+
+#: src/utils/file_utils.py:173 src/utils/file_utils.py:219
+#: src/utils/file_utils.py:242
+msgid "error_writing_file"
+msgstr "Error al escriure el fitxer {file}: {error}"
+
+#: src/utils/file_utils.py:322
+msgid "unknown_user"
+msgstr "Usuari '{user}' desconegut"
+
+#: src/utils/file_utils.py:329
+msgid "unknown_group"
+msgstr "Grup '{group}' desconegut"
+
+#: src/utils/file_utils.py:343 src/utils/file_utils.py:370
+msgid "error_changing_file_permissions"
+msgstr "Error al canviar els permisos per {path}: {error}"
+
+#: src/utils/file_utils.py:390
+msgid "error_removing"
+msgstr "Error al eliminar {path}: {error}"
+
+#: src/utils/file_utils.py:424
+msgid "download_ssl_error"
+msgstr "Error SSL al connectar amb {url}"
+
+#: src/utils/file_utils.py:427
+msgid "invalid_url"
+msgstr ""
+"No s'ha pogut connectar a {url}… pot ser que el servei estigui caigut, o "
+"que no hi hagi connexió a Internet amb IPv4/IPv6."
+
+#: src/utils/file_utils.py:430
+msgid "download_timeout"
+msgstr "{url} ha tardat massa en respondre, s'ha deixat d'esperar."
+
+#: src/utils/file_utils.py:433
+msgid "download_unknown_error"
+msgstr "Error al baixar dades des de {url}: {error}"
+
+#: src/utils/file_utils.py:437
+msgid "download_bad_status_code"
+msgstr "{url} ha retornat el codi d'estat {code}"
+
+#: src/utils/form.py:413
+msgid "config_forbidden_keyword"
+msgstr ""
+"La paraula clau «{keyword}» està reservada, no podeu crear ni utilitzar "
+"un tauler de configuració amb una pregunta amb aquest identificador."
+
+#: src/utils/form.py:430
+msgid "config_forbidden_readonly_type"
+msgstr ""
+"El tipus «{type}» no es pot establir com a només lectura; utilitzeu un "
+"altre tipus per representar aquest valor (identificador d'argument "
+"rellevant: «{id}»)."
+
+#: src/utils/form.py:532
+msgid "danger"
+msgstr "Perill:"
+
+#: src/utils/form.py:880
+msgid "pattern_password_app"
+msgstr ""
+"Les contrasenyes no poden de tenir els següents caràcters: "
+"{forbidden_chars}"
+
+#: src/utils/form.py:998
+msgid "invalid_number"
+msgstr "Ha de ser una xifra"
+
+#: src/utils/form.py:1078 src/utils/form.py:1120 src/utils/form.py:1714
+msgid "app_argument_choice_invalid"
+msgstr ""
+"Trieu un valor vàlid per a l'argument «{name}»: «{value}» no es troba "
+"entre les opcions disponibles ({choices})"
+
+#: src/utils/form.py:1565
+msgid "other_available_options"
+msgstr "… i {n} altres opcions disponibles no es mostren"
+
+#: src/utils/form.py:2196
+msgid "config_action_disabled"
+msgstr ""
+"No s'ha pogut executar l'acció «{action}» perquè està desactivada, "
+"assegureu-vos de complir les seves limitacions. ajuda: {help}"
+
+#: src/utils/ldap.py:390
+msgid "ldap_attribute_already_exists"
+msgstr "L'atribut LDAP «{attribute}» ja existeix amb el valor «{value}»"
+
+#: src/utils/password.py:69
+msgid "password_too_long"
+msgstr "Si us plau, trieu una contrasenya de menys de 127 caràcters"
+
+#: src/utils/resources.py:110
+msgid "app_resource_failed"
+msgstr ""
+"No s'ha pogut subministrar, desaprovisionar o actualitzar recursos per a "
+"{app}: {error}"
+
+#: src/utils/resources.py:532
+msgid "app_failed_to_download_asset"
+msgstr "No s'ha pogut baixar el recurs «{source_id}» ({url}) per a {app}: {out}"
+
+#: src/utils/resources.py:548
+msgid "app_corrupt_source"
+msgstr ""
+"YunoHost ha pogut baixar el recurs «{source_id}» ({url}) per a {app}, "
+"però el recurs no coincideix amb la suma de comprovació esperada. Això "
+"podria significar que s'ha produït una fallada temporal de la xarxa al "
+"vostre servidor, O el responsable de manteniment (o un actor maliciós?) "
+"ha canviat d'alguna manera l'actiu i els empaquetadors de YunoHost han "
+"d'investigar i actualitzar el manifest de l'aplicació per reflectir "
+"aquest canvi.\n"
+"     Suma de comprovació esperada de sha256: {expected_sha256}\n"
+"     Suma de comprovació sha256 baixada: {computed_sha256}\n"
+"     Mida del fitxer baixat: {size}"
+
+#: src/app.py:438
+msgid "app_upgrade_upgradable"
+msgstr ""
+"L'aplicació es pot actualitzar de la versió {current_version} a "
+"{new_version}"
+
+#: src/app.py:439
+msgid "app_upgrade_fail_requirements"
+msgstr ""
+"Hi ha una nova versió disponible per a aquesta aplicació ({new_version}),"
+" però no es compleixen alguns requisits:\n"
+"{failed_requirements}"
+
+#: src/app.py:573
+msgid "log_app_change_url"
+msgstr "Canvia l'URL de l'aplicació « {} »"
+
+#: src/app.py:868
+msgid "confirm_app_insufficient_ram"
+msgstr ""
+"Aquesta aplicació requereix més RAM per instal·lar-se de la que hi ha "
+"disponible actualment. Fins i tot si aquesta aplicació pogués executar-"
+"se, el seu procés d'instal·lació/actualització requereix una gran "
+"quantitat de RAM, de manera que el servidor es podria bloquejar i fallar "
+"estrepitosament. Si voleu assumir aquest risc de totes maneres, escriviu "
+"'{answers}'"
+
+#: src/app.py:1178
+msgid "apps_confirm_partial_upgrade"
+msgstr ""
+"Algunes aplicacions per a les quals s'ha sol·licitat una actualització no"
+" es poden actualitzar. Voleu continuar amb les altres igualment?"
+
+#: src/app.py:1301
+msgid "log_app_install"
+msgstr "Instal·la l'aplicació « {} »"
+
+#: src/app.py:1632
+msgid "log_app_remove"
+msgstr "Elimina l'aplicació « {} »"
+
+#: src/app.py:1726
+msgid "log_app_makedefault"
+msgstr "Fes « {} » l'aplicació per defecte"
+
+#: src/app.py:2174
+msgid "log_app_config_set"
+msgstr "Aplica la configuració a l'aplicació «{}»"
+
+#: src/app.py:2404
+msgid "app_config_permission_extraperm_section_name"
+msgstr "Permís '{perm}'"
+
+#: src/app.py:978
+msgid "log_app_upgrade"
+msgstr "Actualitza l'aplicació « {} »"
+
+#: src/app.py:1546
+msgid "log_remove_on_failed_install"
+msgstr "Elimina « {} » després de que la instal·lació hagi fallat"
+
+#: src/app.py:2132
+msgid "log_app_action_run"
+msgstr "Executa l'acció de l'aplicació «{}»"
+
+#: src/certificate.py:156
+msgid "log_selfsigned_cert_install"
+msgstr "Instal·la el certificat autosignat al domini « {} »"
+
+#: src/certificate.py:296
+msgid "log_letsencrypt_cert_install"
+msgstr "Instal·la un certificat Let's Encrypt al domini « {} »"
+
+#: src/certificate.py:410
+msgid "log_letsencrypt_cert_renew"
+msgstr "Renova el certificat Let's Encrypt de « {} »"
+
+#: src/diagnosis.py:160
+msgid "log_diagnosis_run"
+msgstr "Executa el diagnòstic"
+
+#: src/domain.py:288
+msgid "log_domain_add"
+msgstr "Afegeix el domini « {} »"
+
+#: src/domain.py:350 src/tools.py:179
+msgid "confirm_tos_acknowledgement"
+msgstr "He llegit i entenc les Condicions dels serveis [{answers}]"
+
+#: src/domain.py:442
+msgid "log_domain_remove"
+msgstr "Elimina el domini « {} »"
+
+#: src/domain.py:642
+msgid "log_domain_main_domain"
+msgstr "Fes de « {} » el domini principal"
+
+#: src/domain.py:744
+msgid "log_domain_config_set"
+msgstr "Actualitza la configuració del domini «{}»"
+
+#: src/domain.py:772 src/domain.py:826
+msgid "domain_config_cert_renew_help"
+msgstr ""
+"El certificat es renovarà automàticament durant els darrers 15 dies de "
+"validesa. Podeu renovar-lo manualment si voleu (no es recomana)."
+
+#: src/domain.py:773
+msgid "domain_config_default_app_help"
+msgstr ""
+"Es redirigirà automàticament a aquesta aplicació en obrir aquest domini. "
+"Si no s'especifica cap aplicació, es redirigeix al formulari d'inici de "
+"sessió del portal."
+
+#: src/domain.py:805
+msgid "domain_config_cert_summary_expired"
+msgstr "CRÍTIC: el certificat actual no és vàlid! HTTPS no funcionarà en absolut!"
+
+#: src/domain.py:806
+msgid "domain_config_cert_summary_selfsigned"
+msgstr ""
+"ADVERTIMENT: el certificat actual està signat per ell mateix. Els "
+"navegadors mostraran un avís esgarrifós als nous visitants!"
+
+#: src/domain.py:807
+msgid "domain_config_cert_summary_abouttoexpire"
+msgstr ""
+"El certificat actual està a punt de caducar. Aviat s'hauria de renovar "
+"automàticament."
+
+#: src/domain.py:808
+msgid "domain_config_cert_summary_ok"
+msgstr "D'acord, el certificat actual sembla bo!"
+
+#: src/domain.py:809
+msgid "domain_config_cert_summary_letsencrypt"
+msgstr "Genial! Esteu utilitzant un certificat de Let's Encrypt vàlid!"
+
+#: src/dyndns.py:101
+msgid "log_dyndns_subscribe"
+msgstr "Registra un subdomini YunoHost « {} »"
+
+#: src/dyndns.py:228
+msgid "log_dyndns_unsubscribe"
+msgstr "Cancel·lar el registre d'un subdomini de YunoHost «{}»"
+
+#: src/dyndns.py:367
+msgid "log_dyndns_update"
+msgstr "Actualitza la IP associada al subdomini YunoHost « {} »"
+
+#: src/regenconf.py:54
+msgid "log_regen_conf"
+msgstr "Regenera la configuració del sistema « {} »"
+
+#: src/settings.py:92
+msgid "log_settings_set"
+msgstr "Aplica la configuració"
+
+#: src/settings.py:107
+msgid "log_settings_reset"
+msgstr "Restableix la configuració"
+
+#: src/settings.py:121
+msgid "log_settings_reset_all"
+msgstr "Restableix tots els paràmetres"
+
+#: src/tools.py:139
+msgid "log_tools_postinstall"
+msgstr "Fer la post instal·lació del servidor YunoHost"
+
+#: src/tools.py:363
+msgid "log_tools_update"
+msgstr ""
+"S'estan obtenint les actualitzacions del sistema disponibles i "
+"actualitzant el catàleg d'aplicacions"
+
+#: src/tools.py:539
+msgid "log_tools_upgrade"
+msgstr "Actualitza els paquets del sistema"
+
+#: src/tools.py:662
+msgid "log_tools_shutdown"
+msgstr "Apaga el servidor"
+
+#: src/tools.py:681
+msgid "log_tools_reboot"
+msgstr "Reinicia el servidor"
+
+#: src/tools.py:913
+msgid "log_tools_migrations_migrate_forward"
+msgstr "Executa les migracions"
+
+#: src/user.py:167
+msgid "log_user_create"
+msgstr "Afegeix l'usuari « {} »"
+
+#: src/user.py:339
+msgid "log_user_delete"
+msgstr "Elimina l'usuari « {} »"
+
+#: src/user.py:416
+msgid "log_user_update"
+msgstr "Actualitza la informació de l'usuari « {} »"
+
+#: src/user.py:755
+msgid "log_user_import"
+msgstr "Importa usuaris"
+
+#: src/user.py:1094
+msgid "log_user_group_create"
+msgstr "Crear grup «{}»"
+
+#: src/user.py:1174
+msgid "log_user_group_delete"
+msgstr "Eliminar grup «{}»"
+
+#: src/user.py:1220
+msgid "log_user_group_update"
+msgstr "Actualitzar grup «{}»"
+
+#: src/backup.py:771
+msgid "backup_applying_method_copy"
+msgstr "Còpia de tots els fitxers a la còpia de seguretat…"
+
+#: src/backup.py:772
+msgid "backup_applying_method_custom"
+msgstr "Crida del mètode de còpia de seguretat personalitzat «{method}»…"
+
+#: src/backup.py:773
+msgid "backup_applying_method_tar"
+msgstr "Creació de l'arxiu TAR de la còpia de seguretat…"
+
+#: src/backup.py:781
+msgid "backup_method_copy_finished"
+msgstr "La còpia de la còpia de seguretat ha acabat"
+
+#: src/backup.py:782
+msgid "backup_method_custom_finished"
+msgstr "El mètode de còpia de seguretat personalitzat «{method}» ha acabat"
+
+#: src/backup.py:783
+msgid "backup_method_tar_finished"
+msgstr "S'ha creat l'arxiu de còpia de seguretat TAR"
+
+#: src/backup.py:2106
+msgid "log_backup_create"
+msgstr "Crea un arxiu de còpia de seguretat"
+
+#: src/backup.py:1237
+msgid "log_backup_restore_system"
+msgstr "Restaura el sistema a partir d'una còpia de seguretat"
+
+#: src/backup.py:1344
+msgid "log_backup_restore_app"
+msgstr "Restaura « {} » a partir d'una còpia de seguretat"
+
+#: src/dns.py:618
+msgid "log_domain_dns_push"
+msgstr "Envia registres DNS per al domini «{}»"
+
+#: src/diagnosers/21-web.py:143
+msgid "diagnosis_http_bad_status_code"
+msgstr ""
+"Sembla que una altra màquina (potser el router) a respost en lloc del "
+"vostre servidor.<br>1. La causa més probable per a aquest problema és que"
+" el port 80 (i 443) <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>no"
+" reenvien correctament cap al vostre servidor</a>.<br>2. En "
+"configuracions més complexes: assegureu-vos que no hi ha cap tallafoc o "
+"reverse-proxy interferint."
+
+#: src/diagnosers/21-web.py:144
+msgid "diagnosis_http_connection_error"
+msgstr ""
+"Error de connexió: no s'ha pogut connectar amb el domini demanat, "
+"segurament és inaccessible."
+
+#: src/diagnosers/21-web.py:145
+msgid "diagnosis_http_timeout"
+msgstr ""
+"S'ha exhaurit el temps d'esperar intentant connectar amb el servidor des "
+"de l'exterior.<br>1. La causa més probable per a aquest problema és que "
+"el port 80 (i 443) <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>no"
+" reenvien correctament cap al vostre servidor</a>.<br>2. També us hauríeu"
+" d'assegurar que el servei nginx estigui funcionant<br>3. En "
+"configuracions més complexes: assegureu-vos que no hi ha cap tallafoc o "
+"reverse-proxy interferint."
+
+#: src/diagnosers/24-mail.py:55
+msgid "diagnosis_mail_outgoing_port_25_ok"
+msgstr ""
+"El servidor de correu electrònic SMTP pot enviar correus electrònics (el "
+"port de sortida 25 no està bloquejat)."
+
+#: src/diagnosers/24-mail.py:56
+msgid "diagnosis_mail_ehlo_ok"
+msgstr ""
+"El servidor de correu electrònic SMTP és accessible des de l'exterior i "
+"per tant pot rebre correus electrònics!"
+
+#: src/diagnosers/24-mail.py:57
+msgid "diagnosis_mail_fcrdns_ok"
+msgstr "S'ha configurat correctament el servidor DNS invers!"
+
+#: src/diagnosers/24-mail.py:58
+msgid "diagnosis_mail_blocklist_ok"
+msgstr ""
+"Sembla que les IPs i el dominis d'aquest servidor no són en una llista "
+"negra"
+
+#: src/diagnosers/24-mail.py:59 src/diagnosers/24-mail.py:298
+msgid "diagnosis_mail_queue_ok"
+msgstr "{nb_pending} correus electrònics pendents en les cues de correu electrònic"
+
+#: src/diagnosers/24-mail.py:122
+msgid "diagnosis_mail_ehlo_bad_answer"
+msgstr "Un servei no SMTP a respost en el port 25 amb IPv{ipversion}"
+
+#: src/diagnosers/24-mail.py:123
+msgid "diagnosis_mail_ehlo_bad_answer_details"
+msgstr ""
+"Podria ser que sigui per culpa d'una altra màquina responent en lloc del "
+"servidor."
+
+#: src/diagnosers/24-mail.py:124
+msgid "diagnosis_mail_ehlo_unreachable"
+msgstr ""
+"El servidor de correu electrònic SMTP no és accessible des de l'exterior "
+"amb IPv{ipversion}. No podrà rebre correus electrònics."
+
+#: src/diagnosers/24-mail.py:125
+msgid "diagnosis_mail_ehlo_unreachable_details"
+msgstr ""
+"No s'ha pogut establir una connexió amb el vostre servidor en el port 25 "
+"amb IPv{ipversion}. Sembla que el servidor no és accessible.<br>1. La "
+"causa més comú per aquest problema és que el port 25 <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>no"
+" està correctament redireccionat cap al vostre servidor</a>.<br>2. També "
+"us hauríeu d'assegurar que el servei postfix estigui funcionant.<br>3. En"
+" configuracions més complexes: assegureu-vos que no hi hagi cap tallafoc "
+"ni reverse-proxy interferint."
+
+#: src/diagnosers/80-apps.py:113
+msgid "diagnosis_apps_security_issue_warning"
+msgstr ""
+"L'aplicació {app} es troba actualment a la versió «{current_version}», "
+"que és vulnerable a un problema de seguretat moderat: {title}. Es "
+"recomana actualitzar-la a «{fixed_in_version}». Més informació: "
+"{more_infos_list}"
+
+#: src/diagnosers/80-apps.py:114
+msgid "diagnosis_apps_security_issue_error"
+msgstr ""
+"L'aplicació {app} es troba actualment a la versió «{current_version}», "
+"que és vulnerable a un problema de seguretat IMPORTANT: {title}. Es "
+"recomana actualitzar-la COM MÉS AVIAT POSSIBLE a la versió "
+"«{fixed_in_version}». Més informació: {more_infos_list}"
+
+#: src/diagnosers/12-dnsrecords.py:268
+msgid "diagnosis_domain_not_found_details"
+msgstr "El domini {domain} no existeix en la base de dades WHOIS o ha expirat!"
+
+#: src/diagnosers/12-dnsrecords.py:304
+msgid "diagnosis_domain_expiration_not_found"
+msgstr "No s'ha pogut comprovar la data d'expiració d'alguns dominis"
+
+#: src/diagnosers/12-dnsrecords.py:305
+msgid "diagnosis_domain_expiration_error"
+msgstr "Alguns dominis expiraran EN BREUS!"
+
+#: src/diagnosers/12-dnsrecords.py:306
+msgid "diagnosis_domain_expiration_warning"
+msgstr "Alguns dominis expiraran properament!"
+
+#: src/diagnosers/12-dnsrecords.py:307
+msgid "diagnosis_domain_expiration_success"
+msgstr "Els vostres dominis estan registrats i no expiraran properament."
+
+#: src/diagnosers/12-dnsrecords.py:308
+msgid "diagnosis_domain_expiration_not_found_details"
+msgstr ""
+"La informació WHOIS pel domini {domain} sembla que no conté informació "
+"sobre la data d'expiració?"
+
+#: src/diagnosers/00-basesystem.py:380
+msgid "diagnosis_package_security_issue_warning"
+msgstr ""
+"El paquet de sistema «{package}»es troba actualment a la versió "
+"«{current_version}», que és vulnerable a un problema de seguretat "
+"moderat: {title}. Es recomana actualitzar-lo a «{fixed_in_version}». Més "
+"informació: {more_infos_list}"
+
+#: src/diagnosers/00-basesystem.py:381
+msgid "diagnosis_package_security_issue_error"
+msgstr ""
+"El paquet de sistema «{package}» es troba actualment a la versió "
+"«{current_version}», que és vulnerable a un problema de seguretat "
+"IMPORTANT: {title}. Es recomana actualitzar-lo COM MÉS AVIAT POSSIBLE a "
+"la versió «{fixed_in_version}». Més informació: {more_infos_list}"
+
+#: src/utils/password.py:144
+msgid "password_listed"
+msgstr ""
+"Aquesta contrasenya és una de les més utilitzades en el món. Si us plau "
+"utilitzeu-ne una més única."
+
+#: src/utils/password.py:147
+msgid "password_too_simple_1"
+msgstr "La contrasenya ha de tenir un mínim de 8 caràcters"
+
+#: src/utils/password.py:148
+msgid "password_too_simple_2"
+msgstr ""
+"La contrasenya ha de tenir un mínim de 8 caràcters i ha de contenir "
+"dígits, majúscules i minúscules"
+
+#: src/utils/password.py:149
+msgid "password_too_simple_3"
+msgstr ""
+"La contrasenya ha de tenir un mínim de 8 caràcters i tenir dígits, "
+"majúscules, minúscules i caràcters especials"
+
+#: src/utils/password.py:150
+msgid "password_too_simple_4"
+msgstr ""
+"La contrasenya ha de tenir un mínim de 12 caràcters i tenir dígits, "
+"majúscules, minúscules i caràcters especials"
+
+#: src/utils/app_utils.py:97
+msgid "confirm_app_install_warning"
+msgstr ""
+"Atenció: Aquesta aplicació funciona, però no està ben integrada a "
+"YunoHost. Algunes característiques com la autenticació única i la còpia "
+"de seguretat/restauració poden no estar disponibles. Voleu instal·lar-la "
+"de totes maneres? [{answers}] "
+
+#: src/utils/app_utils.py:98
+msgid "confirm_app_install_danger"
+msgstr ""
+"PERILL! Aquesta aplicació encara és experimental (si no és que no "
+"funciona directament)! No hauríeu d'instal·lar-la a no ser que sapigueu "
+"el que feu. No obtindreu CAP AJUDA si l'aplicació no funciona o trenca el"
+" sistema… Si accepteu el risc, escriviu «{answers}»"
+
+#: src/utils/app_utils.py:99
+msgid "confirm_app_install_thirdparty"
+msgstr ""
+"PERILL! Aquesta aplicació no es part del catàleg d'aplicacions de "
+"YunoHost. La instal·lació d'aplicacions de terceres parts pot comprometre"
+" la integritat i seguretat del seu sistema. NO hauríeu d'instal·lar-ne a "
+"no ser que sapigueu el que feu. No obtindreu CAP AJUDA si l'aplicació no "
+"funciona o trenca el sistema… Si accepteu el risc, escriviu «{answers}»"
+
+#: src/utils/app_utils.py:483
+msgid "app_manifest_install_ask_domain"
+msgstr "Escolliu el domini en el que s'hauria d'instal·lar aquesta aplicació"
+
+#: src/utils/app_utils.py:484
+msgid "app_manifest_install_ask_path"
+msgstr ""
+"Escolliu la ruta de l'URL (després del domini) on s'ha d'instal·lar "
+"aquesta aplicació"
+
+#: src/utils/app_utils.py:485
+msgid "app_manifest_install_ask_password"
+msgstr "Escolliu la contrasenya d'administració per aquesta aplicació"
+
+#: src/utils/app_utils.py:486
+msgid "app_manifest_install_ask_admin"
+msgstr "Escolliu l'usuari administrador per aquesta aplicació"
+
+#: src/utils/app_utils.py:487
+msgid "app_manifest_install_ask_is_public"
+msgstr "Aquesta aplicació hauria de ser visible per a visitants anònims?"
+
+#: src/utils/app_utils.py:491
+msgid "app_manifest_install_ask_init_main_permission"
+msgstr ""
+"Qui hauria de tenir accés a aquesta aplicació? (Això es pot canviar més "
+"endavant)"
+
+#: src/utils/app_utils.py:495
+msgid "app_manifest_install_ask_init_admin_permission"
+msgstr ""
+"Qui hauria de tenir accés a les funcions d'administració d'aquesta "
+"aplicació? (Això es pot canviar més endavant)"
+
+#: src/utils/app_utils.py:1326
+msgid "confirm_notifications_read"
+msgstr ""
+"ADVERTÈNCIA: hauríeu de comprovar les notificacions de l'aplicació "
+"anteriors abans de continuar, és possible que hi hagi coses importants a "
+"saber. [{answers}]"
+
+#: src/utils/form.py:1925
+msgid "visitors"
+msgstr "Visitants"
+
+#: src/utils/form.py:1926
+msgid "all_users"
+msgstr "Tots els usuaris de YunoHost"
+
+#: src/utils/form.py:1927
+msgid "admins"
+msgstr "Administradors"
+
+#: src/utils/form.py:2161
+msgid "pydantic_type_error"
+msgstr "Tipus no vàlid."
+
+#: src/utils/form.py:2162
+msgid "pydantic_type_error_none_not_allowed"
+msgstr "El valor és obligatori."
+
+#: src/utils/form.py:2163
+msgid "pydantic_type_error_str"
+msgstr "Tipus no vàlid, s'espera una cadena."
+
+#: src/utils/form.py:2164
+msgid "pydantic_value_error_color"
+msgstr "No és un color vàlid, el valor ha de ser un color amb nom o hexadecimal."
+
+#: src/utils/form.py:2165
+msgid "pydantic_value_error_const"
+msgstr "valor inesperat; triar entre {permitted}"
+
+#: src/utils/form.py:2166
+msgid "pydantic_value_error_date"
+msgstr "Format de data no vàlid"
+
+#: src/utils/form.py:2167
+msgid "pydantic_value_error_email"
+msgstr "El valor no és una adreça electrònica vàlida"
+
+#: src/utils/form.py:2168
+msgid "pydantic_value_error_number_not_ge"
+msgstr "El valor ha de ser superior o igual a {limit_value}."
+
+#: src/utils/form.py:2169
+msgid "pydantic_value_error_number_not_le"
+msgstr "El valor ha de ser inferior o igual a {limit_value}."
+
+#: src/utils/form.py:2170
+msgid "pydantic_value_error_str_regex"
+msgstr "Cadena no vàlida; el valor no respecta el patró «{pattern}»"
+
+#: src/utils/form.py:2171
+msgid "pydantic_value_error_time"
+msgstr "Format d'hora no vàlid"
+
+#: src/utils/form.py:2172
+msgid "pydantic_value_error_url_extra"
+msgstr ""
+"L'URL no és vàlid, s'han trobat caràcters addicionals després de l'URL "
+"vàlid: «{extra}»"
+
+#: src/utils/form.py:2173
+msgid "pydantic_value_error_url_host"
+msgstr "URL amfitrió no vàlid"
+
+#: src/utils/form.py:2174
+msgid "pydantic_value_error_url_port"
+msgstr "URL port no vàlid, el port no pot superar 65535"
+
+#: src/utils/form.py:2175
+msgid "pydantic_value_error_url_scheme"
+msgstr "L'esquema d'URL no és vàlid o falta"
+
+#: src/utils/resources.py:284
+msgid "log_resource_snippet"
+msgstr "Aprovisionament/desprovisionament/actualització d'un recurs"
+
+#: src/diagnosers/10-ip.py:53
+msgid "diagnosis_ip_not_connected_at_all"
+msgstr "Sembla que el servidor no està connectat a internet!?"
+
+#: src/diagnosers/10-ip.py:77
+msgid "diagnosis_ip_broken_dnsresolution"
+msgstr ""
+"La resolució de nom de domini falla per algun motiu… Està el tallafocs "
+"bloquejant les peticions DNS?"
+
+#: src/diagnosers/10-ip.py:79
+msgid "diagnosis_ip_broken_resolvconf"
+msgstr ""
+"La resolució de nom de domini sembla caiguda en el servidor, podria estar"
+" relacionat amb el fet que <code>/etc/resolv.conf</code> no apunta cap a "
+"<code>127.0.0.1</code>."
+
+#: src/diagnosers/10-ip.py:89
+msgid "diagnosis_ip_weird_resolvconf"
+msgstr ""
+"La resolució DNS sembla estar funcionant, però sembla que esteu "
+"utilitzant un versió personalitzada de <code>/etc/resolv.conf</code>."
+
+#: src/diagnosers/10-ip.py:90
+msgid "diagnosis_ip_weird_resolvconf_details"
+msgstr ""
+"El fitxer <code>etc/resolv.conf</code> hauria de ser un enllaç simbòlic "
+"cap a <code>/etc/resolvconf/run/resolv.conf</code> i que aquest apunti "
+"cap a <code>127.0.0.1</code> (dnsmasq). La configuració del «resolver» "
+"real s'hauria de fer a <code>/etc/resolv.dnsmaq.conf</code>."
+
+#: src/diagnosers/10-ip.py:96
+msgid "diagnosis_ip_dnsresolution_working"
+msgstr "La resolució de nom de domini està funcionant!"
+
+#: src/diagnosers/10-ip.py:131
+msgid "diagnosis_ip_connected_ipv4"
+msgstr "El servidor està connectat a Internet amb IPv4!"
+
+#: src/diagnosers/10-ip.py:131
+msgid "diagnosis_ip_no_ipv4"
+msgstr "El servidor no té una IPv4 que funcioni."
+
+#: src/diagnosers/10-ip.py:132 src/diagnosers/10-ip.py:149
+msgid "diagnosis_ip_global"
+msgstr "IP global: <code>{global}</code>"
+
+#: src/diagnosers/10-ip.py:132 src/diagnosers/10-ip.py:149
+msgid "diagnosis_ip_local"
+msgstr "IP local: <code>{local}</code>"
+
+#: src/diagnosers/10-ip.py:147
+msgid "diagnosis_ip_connected_ipv6"
+msgstr "El servidor està connectat a Internet amb IPv6!"
+
+#: src/diagnosers/10-ip.py:147
+msgid "diagnosis_ip_no_ipv6"
+msgstr "El servidor no té una IPv6 que funcioni."
+
+#: src/diagnosers/10-ip.py:153
+msgid "diagnosis_ip_no_ipv6_tip_important"
+msgstr ""
+"IPv6 normalment l'hauria de configurar automàticament el sistema o el "
+"vostre proveïdor si està disponible. En cas contrari, és possible que "
+"hàgiu de configurar algunes coses manualment tal com s'explica a la "
+"documentació aquí: <a "
+"href='https://doc.yunohost.org/ipv6'>https://doc.yunohost.org/ipv6</a>."
+
+#: src/diagnosers/10-ip.py:155
+msgid "diagnosis_ip_no_ipv6_tip"
+msgstr ""
+"Utilitzar una IPv6 no és obligatori per a que funcioni el servidor, però "
+"és millor per la salut d'Internet en conjunt. La IPv6 hauria d'estar "
+"configurada automàticament pel sistema o pel proveïdor si està "
+"disponible. Si no és el cas, pot ser necessari configurar alguns "
+"paràmetres més de forma manual tal i com s'explica en la documentació "
+"disponible aquí: <a "
+"href='https://doc.yunohost.org/ipv6'>https://doc.yunohost.org/ipv6</a>. "
+"Si no podeu habilitar IPv6 o us sembla massa tècnic, podeu ignorar aquest"
+" avís sense problemes."
+
+#: src/diagnosers/10-ip.py
+msgid "diagnosis_description_ip"
+msgstr "Connectivitat a Internet"
+
+#: src/diagnosers/14-ports.py:75
+msgid "diagnosis_ports_could_not_diagnose"
+msgstr ""
+"No s'ha pogut diagnosticar si els ports són accessibles des de l'exterior"
+" amb IPv{ipversion}."
+
+#: src/diagnosers/14-ports.py:76
+msgid "diagnosis_ports_could_not_diagnose_details"
+msgstr "Error: {error}"
+
+#: src/diagnosers/14-ports.py:94 src/diagnosers/14-ports.py:155
+msgid "diagnosis_ports_ok"
+msgstr "El port {port} és accessible des de l'exterior."
+
+#: src/diagnosers/14-ports.py:95 src/diagnosers/14-ports.py:107
+#: src/diagnosers/14-ports.py:142 src/diagnosers/14-ports.py:156
+#: src/diagnosers/14-ports.py:169
+msgid "diagnosis_ports_needed_by"
+msgstr ""
+"És necessari exposar aquest port per a les funcions {category} (servei "
+"{service})"
+
+#: src/diagnosers/14-ports.py:105
+msgid "diagnosis_ports_unreachable"
+msgstr "El port {port} no és accessible des de l'exterior."
+
+#: src/diagnosers/14-ports.py:108 src/diagnosers/14-ports.py:143
+#: src/diagnosers/14-ports.py:170
+msgid "diagnosis_ports_forwarding_tip"
+msgstr ""
+"Per arreglar aquest problema, segurament s'ha de configurar el "
+"reenviament de ports en el router tal i com s'explica a <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>https://doc.yunohost.org/admin/get_started/post_install/dns_config/</a>"
+
+#: src/diagnosers/14-ports.py:140 src/diagnosers/14-ports.py:167
+msgid "diagnosis_ports_partially_unreachable"
+msgstr "El port {port} no és accessible des de l'exterior amb IPv{failed}."
+
+#: src/diagnosers/14-ports.py
+msgid "diagnosis_description_ports"
+msgstr "Exposició dels ports"
+
+#: src/diagnosers/21-web.py:50
+msgid "diagnosis_http_nginx_conf_not_up_to_date"
+msgstr ""
+"La configuració NGINX d'aquest domini sembla que ha estat modificada "
+"manualment, i no deixa que YunoHost diagnostiqui si és accessible amb "
+"HTTP."
+
+#: src/diagnosers/21-web.py:51
+msgid "diagnosis_http_nginx_conf_not_up_to_date_details"
+msgstr ""
+"Per arreglar el problema, mireu les diferències amb la línia d'ordres "
+"utilitzant <cmd>yunohost tools regen-conf nginx --dry-run --with-"
+"diff</cmd> i si els canvis us semblen bé els podeu fer efectius "
+"utilitzant <cmd>yunohost tools regen-conf nginx --force</cmd>."
+
+#: src/diagnosers/21-web.py:57
+msgid "diagnosis_http_special_use_tld"
+msgstr ""
+"El domini {domain} es basa en un domini de primer nivell (TLD) d'ús "
+"especial com ara .local o .test i, per tant, no s'espera que estigui "
+"exposat fora de la xarxa local."
+
+#: src/diagnosers/21-web.py:109
+msgid "diagnosis_http_hairpinning_issue"
+msgstr "Sembla que la vostra xarxa no té el hairpinning activat."
+
+#: src/diagnosers/21-web.py:110
+msgid "diagnosis_http_hairpinning_issue_details"
+msgstr ""
+"Això és probablement a causa del router del vostre proveïdor d'accés a "
+"internet. El que fa, que gent de fora de la xarxa local pugui accedir al "
+"servidor sense problemes, però no la gent de dins la xarxa local (com "
+"vostè probablement) quan s'utilitza el nom de domini o la IP global. "
+"Podreu segurament millorar la situació fent una ullada a <a "
+"href='https://doc.yunohost.org/dns_local_network'>https://doc.yunohost.org/dns_local_network</a>"
+
+#: src/diagnosers/21-web.py:133
+msgid "diagnosis_http_could_not_diagnose"
+msgstr ""
+"No s'ha pogut diagnosticar si el domini és accessible des de l'exterior "
+"amb IPv{ipversion}."
+
+#: src/diagnosers/21-web.py:134
+msgid "diagnosis_http_could_not_diagnose_details"
+msgstr "Error: {error}"
+
+#: src/diagnosers/21-web.py:159 src/diagnosers/21-web.py:215
+msgid "diagnosis_http_ok"
+msgstr ""
+"El domini {domain} és accessible per mitjà de HTTP des de fora de la "
+"xarxa local."
+
+#: src/diagnosers/21-web.py:169
+msgid "diagnosis_http_unreachable"
+msgstr ""
+"Sembla que el domini {domain} no és accessible a través de HTTP des de "
+"fora de la xarxa local."
+
+#: src/diagnosers/21-web.py:201 src/diagnosers/21-web.py:221
+msgid "diagnosis_http_partially_unreachable"
+msgstr ""
+"El domini {domain} sembla que no és accessible utilitzant HTTP des de "
+"l'exterior de la xarxa local amb IPv{failed}, tot i que funciona amb "
+"IPv{passed}."
+
+#: src/diagnosers/21-web.py
+msgid "diagnosis_description_web"
+msgstr "Web"
+
+#: src/diagnosers/24-mail.py:89
+msgid "diagnosis_mail_outgoing_port_25_blocked"
+msgstr ""
+"El servidor de correu SMTP no pot enviar correus a altres servidor perquè"
+" el port 25 està bloquejat en IPv{ipversion}."
+
+#: src/diagnosers/24-mail.py:91
+msgid "diagnosis_mail_outgoing_port_25_blocked_details"
+msgstr ""
+"Primer heu d'intentar desbloquejar el port 25 en la interfície del vostre"
+" router o en la interfície del vostre allotjador. (Alguns proveïdors "
+"d'allotjament demanen enviar un tiquet de suport en aquests casos)."
+
+#: src/diagnosers/24-mail.py:92
+msgid "diagnosis_mail_outgoing_port_25_blocked_relay_vpn"
+msgstr ""
+"Alguns proveïdors no permeten desbloquejar el port de sortida 25 perquè "
+"no els hi importa la Neutralitat de la Xarxa.<br> - Alguns d'ells "
+"ofereixen l'alternativa d'<a "
+"href='https://doc.yunohost.org/email_configure_relay'>utilitzar un relay "
+"de servidor de correu electrònic</a> tot i que implica que el relay serà "
+"capaç d'espiar el tràfic de correus electrònics.<br>- Una alternativa "
+"respectuosa amb la privacitat és utilitzar una VPN *amb una IP pública "
+"dedicada* per sortejar aquestos tipus de limitacions. Vegeu <a "
+"href='https://doc.yunohost.org/vpn_advantage'>https://doc.yunohost.org/vpn_advantage</a><br>-"
+" També podeu considerar canviar-vos a <a "
+"href='https://doc.yunohost.org/providers/isp'>un proveïdor més respectuós"
+" de la neutralitat de la xarxa</a>"
+
+#: src/diagnosers/24-mail.py:116
+msgid "diagnosis_mail_ehlo_could_not_diagnose"
+msgstr ""
+"No s'ha pogut diagnosticar si el servidor de correu electrònic postfix és"
+" accessible des de l'exterior amb IPv{ipversion}."
+
+#: src/diagnosers/24-mail.py:117
+msgid "diagnosis_mail_ehlo_could_not_diagnose_details"
+msgstr "Error: {error}"
+
+#: src/diagnosers/24-mail.py:139
+msgid "diagnosis_mail_ehlo_wrong"
+msgstr ""
+"Un servidor de correu electrònic SMTP diferent respon amb IPv{ipversion}."
+" És probable que el vostre servidor no pugui rebre correus electrònics."
+
+#: src/diagnosers/24-mail.py:140
+msgid "diagnosis_mail_ehlo_wrong_details"
+msgstr ""
+"El EHLO rebut pel servidor de diagnòstic remot amb IPv{ipversion} és "
+"diferent al domini del vostre servidor.<br>EHLO rebut: "
+"<code>{wrong_ehlo}</code><br>Esperat: <code>{right_ehlo}</code><br>La "
+"causa més habitual d'aquest problema és que el port 25 <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>no"
+" està correctament reenviat cap al vostre servidor</a>. També podeu "
+"comprovar que no hi hagi un tallafocs o un reverse-proxy interferint."
+
+#: src/diagnosers/24-mail.py:154 src/diagnosers/24-mail.py:160
+msgid "diagnosis_mail_fcrdns_nok_details"
+msgstr ""
+"Hauríeu d'intentar primer configurar el DNS invers amb "
+"<code>{ehlo_domain}</code> en la interfície del router o en la interfície"
+" del vostre allotjador. (Alguns proveïdors d'allotjament requereixen que "
+"obris un informe de suport per això)."
+
+#: src/diagnosers/24-mail.py:155
+msgid "diagnosis_mail_fcrdns_nok_alternatives_6"
+msgstr ""
+"Alguns proveïdors no permeten configurar el vostre DNS invers (o la "
+"funció no els hi funciona…). Si el vostre DNS invers està correctament "
+"configurat per IPv4, podeu intentar deshabilitar l'ús de IPv6 per a "
+"enviar correus electrònics utilitzant <cmd>yunohost settings set "
+"email.smtp.smtp_allow_ipv6 -v off</cmd>. Nota: aquesta última solució "
+"implica que no podreu enviar o rebre correus electrònics cap a els pocs "
+"servidors que hi ha que només tenen IPv-6."
+
+#: src/diagnosers/24-mail.py:161
+msgid "diagnosis_mail_fcrdns_nok_alternatives_4"
+msgstr ""
+"Alguns proveïdors no permeten configurar el DNS invers (o aquesta funció "
+"pot no funcionar…). Si teniu problemes a causa d'això, considereu les "
+"solucions següents:<br> - Alguns proveïdors d'accés a internet (ISP) "
+"donen l'alternativa de <a "
+"href='https://doc.yunohost.org/email_configure_relay'> utilitzar un relay"
+" de servidor de correu electrònic</a> tot i que implica que el relay "
+"podrà espiar el trànsit de correus electrònics.<br>- Una alternativa "
+"respectuosa amb la privacitat és utilitzar una VPN *amb una IP pública "
+"dedicada* per sobrepassar aquest tipus de limitacions. Mireu <a "
+"href='https://doc.yunohost.org/vpn_advantage'>https://doc.yunohost.org/vpn_advantage</a><br>-"
+" O es pot <a href='https://doc.yunohost.org/providers/isp'>canviar a un "
+"proveïdor diferent</a>"
+
+#: src/diagnosers/24-mail.py:179
+msgid "diagnosis_mail_fcrdns_dns_missing"
+msgstr ""
+"No hi ha cap DNS invers definit per IPv{ipversion}. Alguns correus "
+"electrònics poden no entregar-se o ser marcats com a correu brossa."
+
+#: src/diagnosers/24-mail.py:189
+msgid "diagnosis_mail_fcrdns_different_from_ehlo_domain_details"
+msgstr ""
+"DNS invers actual: <code>{rdns_domain}</code><br>Valor esperat: "
+"<code>{ehlo_domain}</code>"
+
+#: src/diagnosers/24-mail.py:199
+msgid "diagnosis_mail_fcrdns_different_from_ehlo_domain"
+msgstr ""
+"El DNS invers no està correctament configurat amb IPv{ipversion}. Alguns "
+"correus electrònics poden no arribar al destinatari o ser marcats com "
+"correu brossa."
+
+#: src/diagnosers/24-mail.py:243
+msgid "diagnosis_mail_blocklist_reason"
+msgstr "El motiu de ser a la llista negra és: {reason}"
+
+#: src/diagnosers/24-mail.py:245
+msgid "diagnosis_mail_blocklist_reason_openresolver"
+msgstr ""
+"Sembla que el motiu esmenta «resolució oberta“.<br/>Això normalment "
+"significa que el vostre servidor no utilitza el seu DNS local, sinó un de"
+" públic i obert.<br/> Comproveu el contingut de "
+"<code>/etc/resolv.conf</code>, hauria de contenir <code>nameserver "
+"127.0.0.1</code>.<br/>Com que aquest fitxer normalment es genera "
+"automàticament, no l'editeu manualment. Comproveu la configuració de DHCP"
+" o la configuració de VPN si n'utilitzeu una, o si heu utilitzat una "
+"imatge de Debian feta per, per exemple, un proveïdor de VPS, busqueu una "
+"configuració de <code>cloudinit</code>.<br/> Us convidem als canals de "
+"suport de YunoHost per obtenir ajuda sobre aquest problema.<br/> El motiu"
+" literal de la llista negra és: {reason}"
+
+#: src/diagnosers/24-mail.py:248
+msgid "diagnosis_mail_blocklist_website"
+msgstr ""
+"Després d'haver identificat perquè estàveu llistats i arreglat el "
+"problema, no dubteu a demanar que la vostra IP o domini sigui eliminat de"
+" {blocklist_website}"
+
+#: src/diagnosers/24-mail.py:262
+msgid "diagnosis_mail_blocklist_listed_by"
+msgstr ""
+"La vostra IP o domini <code>{item}</code> està en una llista negra a "
+"{blocklist_name}"
+
+#: src/diagnosers/24-mail.py:282
+msgid "diagnosis_mail_queue_unavailable"
+msgstr ""
+"No s'ha pogut consultar el nombre de correus electrònics pendents en la "
+"cua"
+
+#: src/diagnosers/24-mail.py:283
+msgid "diagnosis_mail_queue_unavailable_details"
+msgstr "Error: {error}"
+
+#: src/diagnosers/24-mail.py:291
+msgid "diagnosis_mail_queue_too_big"
+msgstr ""
+"Hi ha massa correus electrònics pendents en la cua ({nb_pending} correus "
+"electrònics)"
+
+#: src/diagnosers/24-mail.py
+msgid "diagnosis_description_mail"
+msgstr "Correu electrònic"
+
+#: src/diagnosers/30-services.py:45
+msgid "diagnosis_services_bad_status"
+msgstr "El servei {service} està {status} :("
+
+#: src/diagnosers/30-services.py:46
+msgid "diagnosis_services_bad_status_tip"
+msgstr ""
+"Podeu intentar <a href='#/services/{service}'>reiniciar el servei</a>, i "
+"si no funciona, podeu mirar <a href='#/services/{service}'>els registres "
+"a la pàgina web d'administració</a> (des de la línia de comandes, ho "
+"podeu fer utilitzant <cmd>yunohost service restart {service}</cmd> i "
+"<cmd>yunohost service log {service}</cmd>)."
+
+#: src/diagnosers/30-services.py:50
+msgid "diagnosis_services_conf_broken"
+msgstr "La configuració pel servei {service} està trencada!"
+
+#: src/diagnosers/30-services.py:55
+msgid "diagnosis_services_running"
+msgstr "El servei {service} s'està executant!"
+
+#: src/diagnosers/30-services.py
+msgid "diagnosis_description_services"
+msgstr "Verificació de l'estat dels serveis"
+
+#: src/diagnosers/70-regenconf.py:41
+msgid "diagnosis_regenconf_allgood"
+msgstr ""
+"Tots els fitxers de configuració estan en acord amb la configuració "
+"recomanada!"
+
+#: src/diagnosers/70-regenconf.py:52
+msgid "diagnosis_regenconf_manually_modified"
+msgstr ""
+"El fitxer de configuració <code>{file}</code> sembla haver estat "
+"modificat manualment."
+
+#: src/diagnosers/70-regenconf.py:53
+msgid "diagnosis_regenconf_manually_modified_details"
+msgstr ""
+"No hauria de ser cap problema sempre i quan sapigueu el que esteu fent! "
+"YunoHost deixarà d'actualitzar aquest fitxer de manera automàtica… Però "
+"tingueu en compte que les actualitzacions de YunoHost podrien tenir "
+"canvis recomanats importants. Si voleu podeu mirar les diferències amb "
+"<cmd>yunohost tools regen-conf {category} --dry-run --with-diff</cmd> i "
+"forçar el restabliment de la configuració recomanada amb <cmd>yunohost "
+"tools regen-conf {category} --force</cmd>"
+
+#: src/diagnosers/70-regenconf.py:66
+msgid "diagnosis_sshd_config_insecure"
+msgstr ""
+"Sembla que la configuració SSH s'ha modificat manualment, i no es segura "
+"ha que no conté la directiva «AllowGroups» o «AllowUsers» per limitar "
+"l'accés a usuaris autoritzats."
+
+#: src/diagnosers/70-regenconf.py:78
+msgid "diagnosis_sshd_config_inconsistent"
+msgstr ""
+"Sembla que el port SSH s'ha modificat manualment a /etc/ssh/sshd_config. "
+"Des de YunoHost 4.2, hi ha un nou paràmetre global "
+"«security.ssh.ssh_port» per evitar modificar manualment la configuració."
+
+#: src/diagnosers/70-regenconf.py:79
+msgid "diagnosis_sshd_config_inconsistent_details"
+msgstr ""
+"Executeu <cmd>yunohost settings set security.ssh.port -v "
+"YOUR_SSH_PORT</cmd> per a definir el port SSH, i executeu <cmd>yunohost "
+"tools regen-conf ssh --dry-run --with-diff</cmd> i <cmd>yunohost tools "
+"regen-conf ssh --force</cmd> per a reinicialitzar la vostra configuració "
+"perquè s'ajusti a les recomanacions del Yunohost."
+
+#: src/diagnosers/70-regenconf.py
+msgid "diagnosis_description_regenconf"
+msgstr "Configuració del sistema"
+
+#: src/diagnosers/50-systemresources.py:56
+msgid "diagnosis_ram_verylow"
+msgstr ""
+"El sistema només té {available} ({available_percent}%) de memòria RAM "
+"disponibles! (d'un total de {total})"
+
+#: src/diagnosers/50-systemresources.py:59
+msgid "diagnosis_ram_low"
+msgstr ""
+"El sistema només té {available} ({available_percent}%) de memòria RAM "
+"disponibles d'un total de {total}. Aneu amb compte."
+
+#: src/diagnosers/50-systemresources.py:62
+msgid "diagnosis_ram_ok"
+msgstr ""
+"El sistema encara té {available} ({available_percent}%) de memòria RAM "
+"disponibles d'un total de {total}."
+
+#: src/diagnosers/50-systemresources.py:76
+msgid "diagnosis_swap_none"
+msgstr ""
+"El sistema no té swap. Hauríeu de considerar afegir un mínim de "
+"{recommended} de swap per evitar situacions en les que el sistema es "
+"queda sense memòria."
+
+#: src/diagnosers/50-systemresources.py:79
+msgid "diagnosis_swap_notsomuch"
+msgstr ""
+"El sistema només té {total} de swap. Hauríeu de considerar tenir un mínim"
+" de {recommended} per evitar situacions en les que el sistema es queda "
+"sense memòria."
+
+#: src/diagnosers/50-systemresources.py:82
+msgid "diagnosis_swap_ok"
+msgstr "El sistema té {total} de swap!"
+
+#: src/diagnosers/50-systemresources.py:83
+msgid "diagnosis_swap_tip"
+msgstr ""
+"Vigileu i tingueu en compte que els servidor està allotjant memòria "
+"d'intercanvi en una targeta SD o en l'emmagatzematge SSD, això pot reduir"
+" dràsticament l'esperança de vida del dispositiu."
+
+#: src/diagnosers/50-systemresources.py:128
+msgid "diagnosis_diskusage_verylow"
+msgstr ""
+"El lloc d'emmagatzematge <code>{mountpoint}</code> (en l'aparell "
+"<code>{device}</code>) només té {free} ({free_percent}%) d'espai "
+"disponible (d'un total de {total}). Hauríeu de considerar alliberar una "
+"mica d'espai!"
+
+#: src/diagnosers/50-systemresources.py:133
+msgid "diagnosis_diskusage_low"
+msgstr ""
+"El lloc d'emmagatzematge <code>{mountpoint}</code> (en l'aparell "
+"<code>{device}</code>) només té {free} ({free_percent}%) d'espai "
+"disponible (d'un total de {total}). Aneu amb compte."
+
+#: src/diagnosers/50-systemresources.py:136
+msgid "diagnosis_diskusage_ok"
+msgstr ""
+"El lloc d'emmagatzematge <code>{mountpoint}</code> (en l'aparell "
+"<code>{device}</code>) encara té {free} ({free_percent}%) lliures (d'un "
+"total de {total})!"
+
+#: src/diagnosers/50-systemresources.py:158
+msgid "diagnosis_rootfstotalspace_critical"
+msgstr ""
+"El sistema de fitxers arrel només té {space} en total i és preocupant! És"
+" molt probable que us quedeu sense espai ràpidament! Es recomanar tenir "
+"un mínim de 16 GB per al sistema de fitxers arrel."
+
+#: src/diagnosers/50-systemresources.py:165
+msgid "diagnosis_rootfstotalspace_warning"
+msgstr ""
+"El sistema de fitxers arrel només té {space} en total. Això no hauria de "
+"causar cap problema, però haureu de parar atenció ja que us podrieu "
+"quedar sense espai ràpidament… Es recomanar tenir un mínim de 16 GB per "
+"al sistema de fitxers arrel."
+
+#: src/diagnosers/50-systemresources.py:181
+msgid "diagnosis_processes_killed_by_oom_reaper"
+msgstr ""
+"El sistema ha matat alguns processos recentment perquè s'ha quedat sense "
+"memòria. Això acostuma a ser un símptoma de falta de memòria en el "
+"sistema o d'un procés que consumeix massa memòria. Llista dels processos "
+"que s'han matat:\n"
+"{kills_summary}"
+
+#: src/diagnosers/50-systemresources.py
+msgid "diagnosis_description_systemresources"
+msgstr "Recursos del sistema"
+
+#: src/diagnosers/80-apps.py:49
+msgid "diagnosis_apps_allgood"
+msgstr ""
+"Totes les aplicacions instal·lades respecten les pràctiques bàsiques "
+"d'empaquetament"
+
+#: src/diagnosers/80-apps.py:69
+msgid "diagnosis_apps_issue"
+msgstr "S'ha trobat un problema per a l'aplicació {app}"
+
+#: src/diagnosers/80-apps.py:130
+msgid "diagnosis_apps_not_in_app_catalog"
+msgstr ""
+"Aquesta aplicació no es troba al catàleg d'aplicacions de YunoHost. Si hi"
+" era en el passat i s'ha eliminat, hauríeu de considerar la "
+"desinstal·lació d'aquesta aplicació, ja que no rebrà actualitzacions i "
+"pot comprometre la integritat i la seguretat del vostre sistema."
+
+#: src/diagnosers/80-apps.py:135
+msgid "diagnosis_apps_broken"
+msgstr ""
+"Aquesta aplicació està actualment marcada com a trencada al catàleg "
+"d'aplicacions de YunoHost. Pot ser un problema temporal mentre els "
+"responsables intenten solucionar el problema. Mentrestant, "
+"l'actualització d'aquesta aplicació està desactivada."
+
+#: src/diagnosers/80-apps.py:137
+msgid "diagnosis_apps_bad_quality"
+msgstr ""
+"Aquesta aplicació està actualment marcada com a trencada al catàleg "
+"d'aplicacions de YunoHost. Pot ser un problema temporal mentre els "
+"responsables intenten solucionar el problema. Mentrestant, "
+"l'actualització d'aquesta aplicació està desactivada."
+
+#: src/diagnosers/80-apps.py:142
+msgid "diagnosis_apps_outdated_packaging_format"
+msgstr ""
+"Aquesta aplicació utilitza un format d'empaquetatge obsolet i aviat "
+"deixarà de ser compatible amb YunoHost. Hauries de considerar "
+"actualitzar-la."
+
+#: src/diagnosers/80-apps.py:152
+msgid "diagnosis_apps_outdated_ynh_requirement"
+msgstr ""
+"La versió instal·lada d'aquesta aplicació només requereix yunohost >= "
+"2.x, 3.x ó 4.x, la qual cosa acostuma a indicar que no està al dia amb "
+"les pràctiques d'empaquetament i els «ajudants» recomanats. Realment "
+"hauríeu de considerar actualitzar-la."
+
+#: src/diagnosers/80-apps.py:169 src/diagnosers/80-apps.py:176
+msgid "diagnosis_apps_deprecated_practices"
+msgstr ""
+"La versió instal·lada d'aquesta aplicació encara utilitza algunes "
+"pràctiques d'empaquetament molt antigues i obsoletes. Realment hauríeu de"
+" considerar actualitzar-lo."
+
+#: src/diagnosers/80-apps.py
+msgid "diagnosis_description_apps"
+msgstr "Aplicacions"
+
+#: src/diagnosers/12-dnsrecords.py:90
+msgid "diagnosis_dns_specialusedomain"
+msgstr ""
+"El domini {domain} es basa en un domini de primer nivell (TLD) d'ús "
+"especial com ara .local o .test i, per tant, no s'espera que tingui "
+"registres DNS reals."
+
+#: src/diagnosers/12-dnsrecords.py:133
+msgid "diagnosis_dns_missing_record"
+msgstr ""
+"Segons la configuració DNS recomanada, hauríeu d'afegir un registre DNS "
+"amb la següent informació.<br>Tipus: <code>{type}</code><br>Nom: "
+"<code>{name}</code><br>Valor: <code>{content}</code>"
+
+#: src/diagnosers/12-dnsrecords.py:136
+msgid "diagnosis_dns_discrepancy"
+msgstr ""
+"La configuració DNS següent sembla que no segueix la configuració "
+"recomanada: <br>Tipus: <code>{type}</code><br>Nom: "
+"<code>{name}</code><br>Valor actual: <code>{current}</code><br>Valor "
+"esperat: <code>{content}</code>"
+
+#: src/diagnosers/12-dnsrecords.py:156
+msgid "diagnosis_dns_bad_conf"
+msgstr ""
+"Alguns registres DNS són incorrectes o no existeixen pel domini {domain} "
+"(categoria {category})"
+
+#: src/diagnosers/12-dnsrecords.py:159
+msgid "diagnosis_dns_good_conf"
+msgstr ""
+"Els registres DNS han estat correctament configurats pel domini {domain} "
+"(categoria {category})"
+
+#: src/diagnosers/12-dnsrecords.py:177
+msgid "diagnosis_dns_try_dyndns_update_force"
+msgstr ""
+"La configuració DNS d'aquest domini hauria de ser gestionada "
+"automàticament per YunoHost. Si aquest no és el cas, podeu intentar "
+"forçar-ne l'actualització utilitzant <cmd>yunohost dyndns update "
+"--force</cmd>."
+
+#: src/diagnosers/12-dnsrecords.py:180
+msgid "diagnosis_dns_point_to_doc"
+msgstr ""
+"Consulteu la documentació a <a "
+"href='https://doc.yunohost.org/dns_config'>https://doc.yunohost.org/dns_config</a>"
+" si necessiteu ajuda per configurar els registres DNS."
+
+#: src/diagnosers/12-dnsrecords.py:292
+msgid "diagnosis_domain_expires_in"
+msgstr "{domain} expirarà en {days} dies."
+
+#: src/diagnosers/12-dnsrecords.py
+msgid "diagnosis_description_dnsrecords"
+msgstr "Registres DNS"
+
+#: src/diagnosers/00-basesystem.py:62
+msgid "diagnosis_basesystem_hardware"
+msgstr "L'arquitectura del maquinari del servidor és {virt} {arch}"
+
+#: src/diagnosers/00-basesystem.py:69 src/diagnosers/00-basesystem.py:78
+msgid "diagnosis_basesystem_hardware_model"
+msgstr "El model del servidor és {model}"
+
+#: src/diagnosers/00-basesystem.py:88
+msgid "diagnosis_basesystem_kernel"
+msgstr "El servidor funciona amb el nucli de Linux {kernel_version}"
+
+#: src/diagnosers/00-basesystem.py:96
+msgid "diagnosis_basesystem_host"
+msgstr "El servidor funciona amb Debian {debian_version}"
+
+#: src/diagnosers/00-basesystem.py:112
+msgid "diagnosis_basesystem_ynh_single_version"
+msgstr "{package} versió: {version}({repo})"
+
+#: src/diagnosers/00-basesystem.py:130
+msgid "diagnosis_basesystem_ynh_main_version"
+msgstr "El servidor funciona amb YunoHost {main_version} ({repo})"
+
+#: src/diagnosers/00-basesystem.py:132
+msgid "diagnosis_basesystem_ynh_inconsistent_versions"
+msgstr ""
+"Esteu utilitzant versions inconsistents dels paquets de YunoHost… "
+"probablement a causa d'una actualització fallida o parcial."
+
+#: src/diagnosers/00-basesystem.py:141
+msgid "diagnosis_security_vulnerable_to_meltdown"
+msgstr ""
+"Sembla que el sistema és vulnerable a la vulnerabilitat de seguretat "
+"crítica Meltdown"
+
+#: src/diagnosers/00-basesystem.py:142
+msgid "diagnosis_security_vulnerable_to_meltdown_details"
+msgstr ""
+"Per arreglar-ho, hauríeu d'actualitzar i reiniciar el sistema per tal de "
+"carregar el nou nucli de linux (o contactar amb el proveïdor del servidor"
+" si no funciona). Vegeu https://meltdownattack.com/ per a més informació."
+
+#: src/diagnosers/00-basesystem.py:154
+msgid "diagnosis_package_installed_from_sury"
+msgstr "Alguns paquets del sistema s'han de tornar a versions anteriors"
+
+#: src/diagnosers/00-basesystem.py:155
+msgid "diagnosis_package_installed_from_sury_details"
+msgstr ""
+"Alguns paquets s'han instal·lat per equivocació des d'un repositori de "
+"tercers anomenat Sury. L'equip de YunoHost a millorat l'estratègia per a "
+"gestionar aquests paquets, però s'espera que algunes configuracions que "
+"han instal·lat aplicacions PHP7.3 a Stretch puguin tenir algunes "
+"inconsistències. Per a resoldre aquesta situació, hauríeu d'intentar "
+"executar la següent ordre: <cmd>{cmd_to_fix}</cmd>"
+
+#: src/diagnosers/00-basesystem.py:162
+msgid "diagnosis_backports_in_sources_list"
+msgstr ""
+"Sembla que apt (el gestor de paquets) està configurat per utilitzar el "
+"repositori backports. A menys de saber el que esteu fent, recomanem "
+"fortament no instal·lar paquets de backports, ja que poder causar "
+"inestabilitats o conflictes en el sistema."
+
+#: src/diagnosers/00-basesystem.py:189
+msgid "diagnosis_using_yunohost_testing"
+msgstr ""
+"<cmd>apt</cmd> (el gestor de paquets del sistema) està configurat "
+"actualment per instal·lar qualsevol actualització de «prova» per al nucli"
+" de YunoHost."
+
+#: src/diagnosers/00-basesystem.py:190
+msgid "diagnosis_using_yunohost_testing_details"
+msgstr ""
+"Probablement això està bé si sabeu què feu, però presteu atenció a les "
+"notes de la versió abans d'instal·lar les actualitzacions de YunoHost! Si"
+" voleu desactivar les actualitzacions de «prova», hauríeu d'eliminar la "
+"paraula clau <cmd>testing</cmd> de "
+"<cmd>/etc/apt/sources.list.d/yunohost.list</cmd>."
+
+#: src/diagnosers/00-basesystem.py:206
+msgid "diagnosis_using_stable_codename"
+msgstr ""
+"<cmd>apt</cmd> (el gestor de paquets del sistema) està configurat "
+"actualment per instal·lar paquets des del nom en codi «stable», en lloc "
+"del nom en clau de la versió actual de Debian."
+
+#: src/diagnosers/00-basesystem.py:207
+msgid "diagnosis_using_stable_codename_details"
+msgstr ""
+"Això sol ser causat per una configuració incorrecta del vostre proveïdor "
+"d'allotjament. Això és perillós, perquè tan bon punt la propera versió de"
+" Debian es converteixi en la nova «stable», <cmd>apt</cmd> voldrà "
+"actualitzar tots els paquets del sistema sense passar per un procediment "
+"de migració adequat. Es recomana arreglar-ho editant la font d'apt per al"
+" dipòsit de Debian bàsic i substituir la paraula clau <cmd>stable</cmd> "
+"pel nom en clau de la versió <cmd>bookworm</cmd>. El fitxer de "
+"configuració corresponent hauria de ser <cmd>/etc/apt/sources.list</cmd>,"
+" o un fitxer a <cmd>/etc/apt/sources.list.d/</cmd>."
+
+#: src/diagnosers/00-basesystem.py:214
+msgid "diagnosis_high_number_auth_failures"
+msgstr ""
+"Recentment, hi ha hagut un nombre massa alt d'errors d'autenticació. És "
+"possible que vulgueu assegurar-vos que fail2ban s'està executant i està "
+"configurat correctament, o bé utilitzar un port personalitzat per a SSH "
+"tal com s'explica a https://doc.yunohost.org/security."
+
+#: src/diagnosers/00-basesystem.py:222
+msgid "diagnosis_rfkill_wifi"
+msgstr ""
+"La targeta Wi-Fi està desactivada i un avís del sistema pot impedir la "
+"instal·lació d'aplicacions"
+
+#: src/diagnosers/00-basesystem.py:223
+msgid "diagnosis_rfkill_wifi_details"
+msgstr ""
+"Aquest avís es col·la en moltes sortides d'ordres, trencant algunes "
+"aplicacions. Normalment cal especificar el vostre codi de país amb "
+"l'ordre <code>sudo raspi-config</code>. Aquest és "
+"l'error:<br>{rfkill_wifi_error}"
+
+#: src/diagnosers/00-basesystem.py
+msgid "diagnosis_description_basesystem"
+msgstr "Sistema de base"
+
+#: src/migrations/m0032_firewall_config.py
+msgid "migration_description_0032_firewall_config"
+msgstr "Migració del fitxer de configuració del tallafocs intern"
+
+#: src/migrations/m0033_rework_permission_infos.py
+msgid "migration_description_0033_rework_permission_infos"
+msgstr "Reelaborar la manera com s'emmagatzemen els permisos de les aplicacions"
+
+#: src/migrations/m0034_fix_missing_admins_aliases.py
+msgid "migration_description_0034_fix_missing_admins_aliases"
+msgstr "Corregir els àlies de correu que falten per al grup d'administració"
+
+#: src/migrations/m0035_fix_apps_nodejs_version.py
+msgid "migration_description_0035_fix_apps_nodejs_version"
+msgstr ""
+"Corregir les versions de nodejs a les configuracions de systemd de "
+"l'aplicació"
+
+#: src/migrations/m0031_terms_of_services.py
+msgid "migration_description_0031_terms_of_services"
+msgstr "Condicions dels serveis"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled
+msgid "migration_description_0036_migrate_to_trixie"
+msgstr "Actualitzar el sistema a Debian Trixie i YunoHost 13"
+

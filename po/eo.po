@@ -1,0 +1,4027 @@
+# Esperanto translations for yunohost package.
+# Copyright (C) 2014-2026 YunoHost
+# ssh <ssh@yunohost.org>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: yunohost 13.0.1\n"
+"Report-Msgid-Bugs-To: ssh@yunohost.org\n"
+"POT-Creation-Date: 2026-04-21 21:34+0200\n"
+"PO-Revision-Date: 2026-04-21 21:34+0200\n"
+"Last-Translator: Automatically generated\n"
+"Language: eo\n"
+"Language-Team: none\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: conf/yunohost/services.yml
+msgid "service_description_dnsmasq"
+msgstr "Traktas rezolucion de domajna nomo (DNS)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_dovecot"
+msgstr "Permesas al retpoŝtaj klientoj aliri / serĉi retpoŝton (per IMAP kaj POP3)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_fail2ban"
+msgstr "Protektas kontraŭ bruta forto kaj aliaj specoj de atakoj de la interreto"
+
+#: conf/yunohost/services.yml
+msgid "service_description_mysql"
+msgstr "Butikigas datumojn de programoj (SQL datumbazo)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_nginx"
+msgstr "Servas aŭ permesas atingi ĉiujn retejojn gastigita sur via servilo"
+
+#: conf/yunohost/services.yml
+msgid "service_description_opendkim"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_postfix"
+msgstr "Uzita por sendi kaj ricevi retpoŝtojn"
+
+#: conf/yunohost/services.yml
+msgid "service_description_postgresql"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_redis-server"
+msgstr ""
+"Specialita datumbazo uzita por rapida datumo atingo, atendovicoj kaj "
+"komunikadoj inter programoj"
+
+#: conf/yunohost/services.yml
+msgid "service_description_slapd"
+msgstr "Stokas uzantojn, domajnojn kaj rilatajn informojn"
+
+#: conf/yunohost/services.yml
+msgid "service_description_ssh"
+msgstr "Permesas al vi konekti al via servilo kun fora terminalo (SSH protokolo)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunohost-portal-api"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunohost-api"
+msgstr "Mastrumas interagojn inter la YunoHost retinterfaco kaj la sistemo"
+
+#: conf/yunohost/services.yml
+msgid "service_description_nftables"
+msgstr "Administras malfermajn kaj fermajn konektajn havenojn al servoj"
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunomdns"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "pattern_username"
+msgstr "Devas esti minuskulaj literoj kaj minuskloj nur"
+
+#: share/actionsmap.yml
+msgid "ask_fullname"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "pattern_fullname"
+msgstr ""
+
+#: share/actionsmap.yml src/user.py:496
+msgid "ask_password"
+msgstr "Pasvorto"
+
+#: share/actionsmap.yml
+msgid "good_practices_about_user_password"
+msgstr ""
+"Vi nun estas por difini novan uzantan pasvorton. La pasvorto devas esti "
+"almenaŭ 8 signojn - kvankam estas bone praktiki uzi pli longan pasvorton "
+"(t.e. pasfrazon) kaj/aŭ variaĵon de signoj (majuskloj, minuskloj, ciferoj"
+" kaj specialaj signoj)."
+
+#: share/actionsmap.yml
+msgid "pattern_password"
+msgstr "Devas esti almenaŭ 3 signoj longaj"
+
+#: share/actionsmap.yml
+msgid "pattern_domain"
+msgstr "Devas esti valida domajna nomo (t.e. mia-domino.org)"
+
+#: share/actionsmap.yml
+msgid "pattern_mailbox_quota"
+msgstr "Devas esti grandeco kun la sufikso b/k/M/G/T aŭ 0 por ne havi kvoton"
+
+#: share/actionsmap.yml
+msgid "pattern_email"
+msgstr "Devas esti valida retpoŝta adreso (t.e. iu@ekzemple.com)"
+
+#: share/actionsmap.yml
+msgid "pattern_email_forward"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "ask_new_domain"
+msgstr "Nova domajno"
+
+#: share/actionsmap.yml
+msgid "ask_new_path"
+msgstr "Nova vojo"
+
+#: share/actionsmap.yml
+msgid "pattern_backup_archive_name"
+msgstr ""
+"Devas esti valida dosiernomo kun maksimume 30 signoj, alfanombraj kaj -_."
+" signoj nur"
+
+#: share/actionsmap.yml
+msgid "pattern_port_or_range"
+msgstr ""
+"Devas esti valida haveno-nombro (t.e. 0-65535) aŭ gamo da havenoj (t.e. "
+"100:200)"
+
+#: share/actionsmap.yml
+msgid "ask_new_admin_password"
+msgstr "Nova administrada pasvorto"
+
+#: share/actionsmap.yml
+msgid "good_practices_about_admin_password"
+msgstr ""
+"Vi nun estas por difini novan administran pasvorton. La pasvorto devas "
+"esti almenaŭ 8 signojn - kvankam estas bone praktiki uzi pli longan "
+"pasvorton (t.e. pasfrazon) kaj/aŭ uzi variaĵon de signoj (majuskloj, "
+"minuskloj, ciferoj kaj specialaj signoj)."
+
+#: share/actionsmap.yml
+msgid "ask_main_domain"
+msgstr "Ĉefa domajno"
+
+#: share/actionsmap.yml
+msgid "ask_admin_username"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "ask_admin_fullname"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_entrypoint"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_application_key"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_application_secret"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_consumer_key"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_token"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_api_protocol"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_key"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_secret"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_feature_name"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_mail_out"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_mail_in"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_default_app"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_name"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_enable_public_apps_page"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_enable_public_apps_page_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_show_other_domains_apps"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_title"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_logo"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_logo_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_theme"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_theme_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_tile_theme"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine_name"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_user_intro"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_user_intro_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_public_intro"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_public_intro_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_custom_css"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_custom_css_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_dns_name"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_name"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_summary"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_validity"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_issuer"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_acme_eligible"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_acme_eligible_explain"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_no_checks"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_install"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_renew"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config__core_name"
+msgstr ""
+
+#: share/config_app.toml src/app.py:2448
+msgid "app_config_permission_location"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_label"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_description"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_description_help"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_show_tile"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_logo"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_logo_help"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_allowed"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_password_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_admin_strength"
+msgstr "Admin pasvorta forto"
+
+#: share/config_global.toml
+msgid "global_settings_setting_admin_strength_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_user_strength"
+msgstr "Uzanto pasvorta forto"
+
+#: share/config_global.toml
+msgid "global_settings_setting_user_strength_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_passwordless_sudo"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_compatibility"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_compatibility_help"
+msgstr ""
+"Kongruo vs sekureca kompromiso por la SSH-servilo. Afektas la ĉifradojn "
+"(kaj aliajn aspektojn pri sekureco)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_port"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_port_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_password_authentication"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_password_authentication_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_redirect_to_https"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_redirect_to_https_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_compatibility"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_compatibility_help"
+msgstr ""
+"Kongruo vs sekureca kompromiso por la TTT-servilo NGINX. Afektas la "
+"ĉifradojn (kaj aliajn aspektojn pri sekureco)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_compatibility"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_compatibility_help"
+msgstr ""
+"Kongruo vs sekureca kompromiso por la Postfix-servilo. Afektas la "
+"ĉifradojn (kaj aliajn aspektojn pri sekureco)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_enabled_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_alias"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_alias_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_forward"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_forward_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_access_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_access_explain"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_password"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_password_confirm"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_experimental_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_experimental_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_experimental_enabled_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_email_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_enabled_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_allow_ipv6"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_allow_ipv6_help"
+msgstr "Permesu la uzon de IPv6 por ricevi kaj sendi poŝton"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_enabled_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_host"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_port"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_user"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_password"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_domains"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_domains_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_emails_whitelisted"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_emails_whitelisted_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_antispam_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_enable_blocklists"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_enable_blocklists_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_misc_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_compress_tar_archives"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_compress_tar_archives_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_network_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_exposure"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_exposure_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_enabled_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_list"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_list_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_enabled_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_explain"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_list"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_list_help"
+msgstr ""
+
+#: src/__init__.py:142
+msgid "yunohost_not_installed"
+msgstr ""
+"YunoHost ne estas ĝuste instalita. Bonvolu prilabori 'yunohost tools "
+"postinstall'"
+
+#: src/app.py:328
+msgid "app_upgrade_url_required"
+msgstr ""
+
+#: src/app.py:355
+msgid "app_upgrade_specific_channel_msg"
+msgstr ""
+
+#: src/app.py:382
+msgid "app_upgrade_bad_quality"
+msgstr ""
+
+#: src/app.py:398
+msgid "app_upgrade_up_to_date"
+msgstr ""
+
+#: src/app.py:595
+msgid "app_change_url_no_script"
+msgstr ""
+"La app '{app_name}' ankoraŭ ne subtenas URL-modifon. Eble vi devus "
+"altgradigi ĝin."
+
+#: src/app.py:612
+msgid "app_change_url_identical_domains"
+msgstr ""
+"Malnovaj kaj novaj domajno/URL estas la sama ('{domain}{path}'), nenio "
+"fareblas."
+
+#: src/app.py:621
+msgid "app_change_url_require_full_domain"
+msgstr ""
+
+#: src/app.py:672
+msgid "app_change_url_script_failed"
+msgstr ""
+
+#: src/app.py:674
+msgid "app_change_url_failed"
+msgstr ""
+
+#: src/app.py:705
+msgid "app_change_url_success"
+msgstr "{app} URL nun estas {domain} {path}"
+
+#: src/app.py:772
+msgid "disk_space_not_sufficient_update"
+msgstr ""
+
+#: src/app.py:800
+msgid "app_upgrade_cli_url_required"
+msgstr ""
+
+#: src/app.py:820 src/app.py:830
+msgid "app_upgrade_cli_will_upgrade"
+msgstr ""
+
+#: src/app.py:839
+msgid "app_upgrade_cli_will_force_upgrade"
+msgstr ""
+
+#: src/app.py:847
+msgid "app_upgrade_cli_up_to_date"
+msgstr ""
+
+#: src/app.py:853
+msgid "app_upgrade_cli_bad_quality"
+msgstr ""
+
+#: src/app.py:880
+msgid "app_upgrade_app_name"
+msgstr "Nun ĝisdatigu {app}…"
+
+#: src/app.py:946
+msgid "backup_before_upgrade_deleted_because_replaced_by_newer_backup"
+msgstr ""
+
+#: src/app.py:1014
+msgid "app_upgrade_script_failed"
+msgstr "Eraro okazis en la skripto pri ĝisdatiga programo"
+
+#: src/app.py:1016 src/app.py:1040
+msgid "app_upgrade_failed"
+msgstr "Ne povis ĝisdatigi {app}: {error}"
+
+#: src/app.py:1093
+msgid "app_upgrade_failed_and_broke_the_system"
+msgstr ""
+
+#: src/app.py:1095
+msgid "app_upgrade_broke_the_system"
+msgstr ""
+
+#: src/app.py:1102
+msgid "app_upgraded"
+msgstr "{app} altgradigita"
+
+#: src/app.py:1151 src/tools.py:580
+msgid "apps_already_up_to_date"
+msgstr "Ĉiuj aplikoj estas jam ĝisdatigitaj"
+
+#: src/app.py:1160
+msgid "apps_no_target_can_be_upgraded"
+msgstr ""
+
+#: src/app.py:1170
+msgid "app_upgrade_several_apps"
+msgstr "La sekvaj apliko estos altgradigitaj: {apps}"
+
+#: src/app.py:1234
+msgid "app_upgrade_continuing_with_other_apps"
+msgstr ""
+
+#: src/app.py:1240
+msgid "apps_upgrade_cancelled"
+msgstr ""
+
+#: src/app.py:1340
+msgid "disk_space_not_sufficient_install"
+msgstr ""
+
+#: src/app.py:1354
+msgid "app_id_invalid"
+msgstr "Nevalida apo ID"
+
+#: src/app.py:1411
+msgid "app_start_install"
+msgstr "Instali {app}…"
+
+#: src/app.py:1501
+msgid "app_install_script_failed"
+msgstr "Eraro okazis en la skripto de instalado de la app"
+
+#: src/app.py:1503 src/app.py:1514
+msgid "app_install_failed"
+msgstr "Ne povis instali {app}: {error}"
+
+#: src/app.py:1538
+msgid "app_remove_after_failed_install"
+msgstr "Forigado de la programo post la instalado-fiasko…"
+
+#: src/app.py:1570 src/app.py:1694 src/backup.py:1390 src/hook.py:576
+#: src/service.py:636 src/settings.py:193 src/utils/configpanel.py:641
+#: src/utils/configpanel.py:730
+msgid "unexpected_error"
+msgstr "Io neatendita iris malbone: {error}"
+
+#: src/app.py:1578 src/app.py:1720
+msgid "app_not_properly_removed"
+msgstr "{app} ne estis ĝuste forigita"
+
+#: src/app.py:1610
+msgid "installation_complete"
+msgstr "Kompleta instalado"
+
+#: src/app.py:1656
+msgid "app_start_remove"
+msgstr "Forigado {app}…"
+
+#: src/app.py:1717
+msgid "app_removed"
+msgstr "{app} forigita"
+
+#: src/app.py:1849
+msgid "app_already_installed_cant_change_url"
+msgstr ""
+"Ĉi tiu app estas jam instalita. La URL ne povas esti ŝanĝita nur per ĉi "
+"tiu funkcio. Kontrolu en `app changeurl` se ĝi haveblas."
+
+#: src/app.py:2087
+msgid "ssowat_conf_generated"
+msgstr "SSOwat-agordo generita"
+
+#: src/app.py:2223 src/utils/form.py:996 src/utils/form.py:1312
+#: src/utils/form.py:1325 src/utils/form.py:1700 src/utils/form.py:1878
+#: src/utils/form.py:2305
+msgid "app_argument_invalid"
+msgstr "Elektu validan valoron por la argumento '{name}': {error}"
+
+#: src/app.py:2268
+msgid "app_config_unable_to_read"
+msgstr ""
+
+#: src/app.py:2270
+msgid "app_config_unable_to_apply"
+msgstr ""
+
+#: src/app.py:2272
+msgid "app_action_failed"
+msgstr ""
+
+#: src/app.py:2468
+msgid "app_config_permission_allowed_warn_protected"
+msgstr ""
+
+#: src/app_catalog.py:194
+msgid "apps_catalog_updating"
+msgstr "Ĝisdatigante katalogo de aplikoj…"
+
+#: src/app_catalog.py:216
+msgid "apps_catalog_failed_to_download"
+msgstr "Ne eblas elŝuti la katalogon de {apps_catalog}: {error}"
+
+#: src/app_catalog.py:275
+msgid "apps_catalog_update_success"
+msgstr "La aplika katalogo estis ĝisdatigita!"
+
+#: src/app_catalog.py:329
+msgid "apps_catalog_obsolete_cache"
+msgstr "La kaŝmemoro de la aplika katalogo estas malplena aŭ malaktuala."
+
+#: src/backup.py:363 src/backup.py:2159
+msgid "backup_output_directory_not_empty"
+msgstr "Vi devas elekti malplenan eligitan dosierujon"
+
+#: src/backup.py:386
+msgid "backup_hook_unknown"
+msgstr "La rezerva hoko '{hook}' estas nekonata"
+
+#: src/backup.py:403
+msgid "unbackup_app"
+msgstr "App '{app}' ne konserviĝos"
+
+#: src/backup.py:418
+msgid "backup_with_no_backup_script_for_app"
+msgstr "La app '{app}' ne havas sekretan skripton. Ignorante."
+
+#: src/backup.py:422
+msgid "backup_with_no_restore_script_for_app"
+msgstr ""
+"La apliko \"{app}\" ne havas restarigan skripton, vi ne povos aŭtomate "
+"restarigi la sekurkopion de ĉi tiu apliko."
+
+#: src/backup.py:502
+msgid "backup_csv_creation_failed"
+msgstr "Ne povis krei la CSV-dosieron bezonatan por restarigo"
+
+#: src/backup.py:508
+msgid "backup_csv_addition_failed"
+msgstr "Ne povis aldoni dosierojn al sekurkopio en la CSV-dosiero"
+
+#: src/backup.py:547
+msgid "backup_no_file_collected"
+msgstr ""
+
+#: src/backup.py:616
+msgid "backup_running_hooks"
+msgstr "Kurado de apogaj hokoj…"
+
+#: src/backup.py:669 src/backup.py:1037
+msgid "restore_hook_unavailable"
+msgstr ""
+"Restariga skripto por '{part}' ne haveblas en via sistemo kaj ankaŭ ne en"
+" la ar theivo"
+
+#: src/backup.py:673
+msgid "backup_system_part_failed"
+msgstr "Ne eblis sekurkopi la sistemon de '{part}'"
+
+#: src/backup.py:722
+msgid "app_start_backup"
+msgstr "Kolekti dosierojn por esti subtenata por {app}…"
+
+#: src/backup.py:744
+msgid "backup_app_script_failed"
+msgstr ""
+
+#: src/backup.py:895
+msgid "restore_backup_too_old"
+msgstr ""
+
+#: src/backup.py:930 src/backup.py:1962 src/backup.py:2438 src/backup.py:2453
+msgid "backup_archive_cant_retrieve_info_json"
+msgstr ""
+"Ne povis ŝarĝi infos por arkivo '{archive}'… la info.json ne povas esti "
+"reprenita (aŭ ne estas valida JSON)."
+
+#: src/backup.py:986
+msgid "restore_cleaning_failed"
+msgstr "Ne eblis purigi la adresaron de provizora restarigo"
+
+#: src/backup.py:1004
+msgid "backup_archive_system_part_not_available"
+msgstr "Sistemo parto '{part}' ne haveblas en ĉi tiu rezervo"
+
+#: src/backup.py:1066
+msgid "backup_archive_app_not_found"
+msgstr "Ne povis trovi {app} en la rezerva arkivo"
+
+#: src/backup.py:1079 src/backup.py:1084
+msgid "restore_already_installed_apps"
+msgstr ""
+
+#: src/backup.py:1111 src/backup.py:1120
+msgid "restore_removing_tmp_dir_failed"
+msgstr "Ne povis forigi malnovan provizoran dosierujon"
+
+#: src/backup.py:1185
+msgid "restore_may_be_not_enough_disk_space"
+msgstr ""
+"Via sistemo ne ŝajnas havi sufiĉe da spaco (libera: {free_space} B, "
+"necesa spaco: {needed_space} B, sekureca marĝeno: {margin} B)"
+
+#: src/backup.py:1192
+msgid "restore_not_enough_disk_space"
+msgstr ""
+"Ne sufiĉa spaco (spaco: {free_space} B, necesa spaco: {needed_space} B, "
+"sekureca marĝeno: {margin} B)"
+
+#: src/backup.py:1240
+msgid "restore_running_hooks"
+msgstr "Kurantaj restarigaj hokoj…"
+
+#: src/backup.py:1272 src/backup.py:1278
+msgid "restore_system_part_failed"
+msgstr "Ne povis restarigi la sisteman parton '{part}'"
+
+#: src/backup.py:1338
+msgid "restore_already_installed_app"
+msgstr "App kun la ID '{app}' estas jam instalita"
+
+#: src/backup.py:1347
+msgid "app_start_restore"
+msgstr "Restarigi {app}…"
+
+#: src/backup.py:1361
+msgid "unrestore_app"
+msgstr "App '{app}' ne restarigos"
+
+#: src/backup.py:1391 src/backup.py:1445
+msgid "app_restore_failed"
+msgstr "Ne povis restarigi la programon '{app}': {error}"
+
+#: src/backup.py:1403
+msgid "restore_running_app_script"
+msgstr "Restarigi la programon '{app}'…"
+
+#: src/backup.py:1443
+msgid "app_restore_script_failed"
+msgstr "Eraro okazis ene de la App Restarigu Skripton"
+
+#: src/backup.py:1568 src/backup.py:1572
+msgid "backup_abstract_method"
+msgstr "Ĉi tiu rezerva metodo ankoraŭ efektiviĝis"
+
+#: src/backup.py:1641 src/backup.py:2589
+msgid "backup_cleaning_failed"
+msgstr "Ne povis purigi la provizoran rezervan dosierujon"
+
+#: src/backup.py:1662
+msgid "not_enough_disk_space"
+msgstr "Ne sufiĉe libera spaco sur '{path}'"
+
+#: src/backup.py:1702
+msgid "backup_couldnt_bind"
+msgstr "Ne povis ligi {src} al {dest}."
+
+#: src/backup.py:1765
+msgid "backup_ask_for_copying_if_needed"
+msgstr ""
+"Ĉu vi volas realigi la sekurkopion uzante {size} MB provizore? (Ĉi tiu "
+"maniero estas uzata ĉar iuj dosieroj ne povus esti pretigitaj per pli "
+"efika metodo.)"
+
+#: src/backup.py:1771
+msgid "backup_unable_to_organize_files"
+msgstr "Ne povis uzi la rapidan metodon por organizi dosierojn en la ar archiveivo"
+
+#: src/backup.py:1779
+msgid "backup_copying_to_organize_the_archive"
+msgstr "Kopiante {size} MB por organizi la ar archiveivon"
+
+#: src/backup.py:1826
+msgid "backup_no_uncompress_archive_dir"
+msgstr "Ne ekzistas tia nekompremita arkiva dosierujo"
+
+#: src/backup.py:1840
+msgid "backup_cant_mount_uncompress_archive"
+msgstr ""
+"Ne povis munti la nekompresitan ar archiveivon kiel protektita kontraŭ "
+"skribo"
+
+#: src/backup.py:1890 src/backup.py:1941
+msgid "backup_archive_open_failed"
+msgstr "Ne povis malfermi la rezervan ar archiveivon"
+
+#: src/backup.py:1901
+msgid "backup_archive_writing_error"
+msgstr ""
+"Ne povis aldoni la dosierojn '{source}' (nomitaj en la ar theivo "
+"'{dest}') por esti rezervitaj en la kunpremita arkivo '{archive}'"
+
+#: src/backup.py:1908
+msgid "backup_creation_failed"
+msgstr "Ne povis krei la rezervan ar archiveivon"
+
+#: src/backup.py:1931
+msgid "restore_extracting"
+msgstr "Eltirante bezonatajn dosierojn el la ar theivo…"
+
+#: src/backup.py:1947 src/backup.py:2423
+msgid "backup_archive_corrupted"
+msgstr "I aspektas kiel la rezerva arkivo '{archive}' estas koruptita: {error}"
+
+#: src/backup.py:2070
+msgid "backup_custom_backup_error"
+msgstr "Propra rezerva metodo ne povis preterpasi la paŝon \"sekurkopio\""
+
+#: src/backup.py:2087
+msgid "backup_custom_mount_error"
+msgstr "Propra rezerva metodo ne povis preterpasi la paŝon 'monto'"
+
+#: src/backup.py:2137
+msgid "backup_archive_name_exists"
+msgstr "Rezerva arkivo kun ĉi tiu nomo jam ekzistas."
+
+#: src/backup.py:2152
+msgid "backup_output_directory_forbidden"
+msgstr ""
+"Elektu malsaman elirejan dosierujon. Sekurkopioj ne povas esti kreitaj en"
+" sub-dosierujoj /bin, /boot, /dev, /ktp, /lib, /root, /run, /sbin, /sys, "
+"/usr, /var aŭ /home/yunohost.backup/archives"
+
+#: src/backup.py:2156
+msgid "backup_output_directory_required"
+msgstr "Vi devas provizi elirejan dosierujon por la sekurkopio"
+
+#: src/backup.py:2204
+msgid "backup_actually_backuping"
+msgstr "Krei rezervan arkivon de la kolektitaj dosieroj…"
+
+#: src/backup.py:2207
+msgid "backup_create_size_estimation"
+msgstr ""
+
+#: src/backup.py:2213
+msgid "backup_created"
+msgstr "Sekurkopio kreita: {name}"
+
+#: src/backup.py:2265 src/tools.py:169
+msgid "yunohost_already_installed"
+msgstr "YunoHost estas jam instalita"
+
+#: src/backup.py:2270
+msgid "restore_confirm_yunohost_installed"
+msgstr "Ĉu vi vere volas restarigi jam instalitan sistemon? [{answers}]"
+
+#: src/backup.py:2278
+msgid "restore_failed"
+msgstr "Ne povis restarigi sistemon"
+
+#: src/backup.py:2284
+msgid "backup_mount_archive_for_restore"
+msgstr "Preparante arkivon por restarigo…"
+
+#: src/backup.py:2290
+msgid "restore_complete"
+msgstr "Restarigita"
+
+#: src/backup.py:2292
+msgid "restore_nothings_done"
+msgstr "Nenio estis restarigita"
+
+#: src/backup.py:2353 src/backup.py:2399 src/backup.py:2508
+msgid "backup_archive_name_unknown"
+msgstr "Nekonata loka rezerva ar archiveivo nomata '{name}'"
+
+#: src/backup.py:2362 src/backup.py:2408
+msgid "backup_archive_broken_link"
+msgstr "Ne povis aliri la rezervan ar archiveivon (rompita ligilo al {path})"
+
+#: src/backup.py:2531
+msgid "backup_delete_error"
+msgstr "Ne povis forigi '{path}'"
+
+#: src/backup.py:2540
+msgid "backup_deleted"
+msgstr "Rezerva forigita: {name}"
+
+#: src/backup.py:2552
+msgid "backup_output_symlink_dir_broken"
+msgstr ""
+"Via arkiva dosierujo '{path}' estas rompita ligilo. Eble vi forgesis "
+"restarigi aŭ munti aŭ enŝovi la stokadon, al kiu ĝi notas."
+
+#: src/certificate.py:179
+msgid "certmanager_attempt_to_replace_valid_cert"
+msgstr ""
+"Vi provas anstataŭigi bonan kaj validan atestilon por domajno {domain}! "
+"(Uzu --forte pretervidi)"
+
+#: src/certificate.py:211
+msgid "domain_cert_gen_failed"
+msgstr "Ne povis generi atestilon"
+
+#: src/certificate.py:239
+msgid "certmanager_cert_install_success_selfsigned"
+msgstr "Mem-subskribita atestilo nun instalita por la domajno '{domain}'"
+
+#: src/certificate.py:251
+msgid "certmanager_cert_install_failed_selfsigned"
+msgstr ""
+
+#: src/certificate.py:281
+msgid "certmanager_domain_cert_not_selfsigned"
+msgstr ""
+"La atestilo por domajno {domain} ne estas mem-subskribita. Ĉu vi certas, "
+"ke vi volas anstataŭigi ĝin? (Uzu '--force' por fari tion.)"
+
+#: src/certificate.py:315
+msgid "certmanager_cert_install_success"
+msgstr "Ni Ĉifru atestilon nun instalitan por la domajno '{domain}'"
+
+#: src/certificate.py:321 src/domain.py:439
+msgid "certmanager_cert_install_failed"
+msgstr ""
+
+#: src/certificate.py:360 src/certificate.py:392
+msgid "certmanager_acme_not_configured_for_domain"
+msgstr ""
+"Atestilo por la domajno '{domain}' ne ŝajnas esti ĝuste instalita. "
+"Bonvolu ekzekuti 'cert-instali' por ĉi tiu regado unue."
+
+#: src/certificate.py:380
+msgid "certmanager_attempt_to_renew_valid_cert"
+msgstr ""
+"La atestilo por la domajno '{domain}' ne finiĝos! (Vi eble uzos --force "
+"se vi scias kion vi faras)"
+
+#: src/certificate.py:386
+msgid "certmanager_attempt_to_renew_nonLE_cert"
+msgstr ""
+"La atestilo por la domajno '{domain}' ne estas elsendita de Let's "
+"Encrypt. Ne eblas renovigi ĝin aŭtomate!"
+
+#: src/certificate.py:443
+msgid "certmanager_cert_renew_success"
+msgstr "Ni Ĉifru atestilon renovigitan por la domajno '{domain}'"
+
+#: src/certificate.py:448
+msgid "certmanager_cert_renew_failed"
+msgstr ""
+
+#: src/certificate.py:541
+msgid "certmanager_hit_rate_limit"
+msgstr ""
+"Tro multaj atestiloj jam eldonitaj por ĉi tiu ĝusta aro de domajnoj "
+"{domain} antaŭ nelonge. Bonvolu reprovi poste. Vidu "
+"https://letsencrypt.org/docs/rate-limits/ por pliaj detaloj"
+
+#: src/certificate.py:544 src/certificate.py:549
+msgid "certmanager_cert_signing_failed"
+msgstr "Ne povis subskribi la novan atestilon"
+
+#: src/certificate.py:583
+msgid "certmanager_certificate_fetching_or_enabling_failed"
+msgstr "Provante uzi la novan atestilon por {domain} ne funkciis…"
+
+#: src/certificate.py:649
+msgid "certmanager_no_cert_file"
+msgstr ""
+"Ne povis legi la atestan dosieron por la domajno {domain} (dosiero: "
+"{file})"
+
+#: src/certificate.py:663
+msgid "certmanager_cannot_read_cert"
+msgstr ""
+"Io malbona okazis, kiam mi provis malfermi aktualan atestilon por domajno"
+" {domain} (dosiero: {file}), kialo: {reason}"
+
+#: src/certificate.py:843
+msgid "certmanager_domain_not_diagnosed_yet"
+msgstr ""
+
+#: src/certificate.py:854
+msgid "certmanager_domain_dns_ip_differs_from_public_ip"
+msgstr ""
+"La DNS 'A' rekordo por la domajno '{domain}' diferencas de la IP de ĉi "
+"tiu servilo. Se vi lastatempe modifis vian A-registron, bonvolu atendi "
+"ĝin propagandi (iuj DNS-disvastigaj kontroliloj estas disponeblaj "
+"interrete). (Se vi scias, kion vi faras, uzu '--no-checks' por malŝalti "
+"tiujn ĉekojn.)"
+
+#: src/certificate.py:860
+msgid "certmanager_domain_http_not_working"
+msgstr ""
+"Ŝajnas ke la domajno {domain} ne atingeblas per HTTP. Kontrolu, ke via "
+"DNS kaj NGINX-agordo ĝustas"
+
+#: src/certificate.py:904
+msgid "certmanager_self_ca_conf_file_not_found"
+msgstr ""
+"Ne povis trovi agorddosieron por mem-subskriba aŭtoritato (dosiero: "
+"{file})"
+
+#: src/certificate.py:914
+msgid "certmanager_unable_to_parse_self_CA_name"
+msgstr "Ne povis trapasi nomon de mem-subskribinta aŭtoritato (dosiero: {file})"
+
+#: src/diagnosis.py:58 src/diagnosis.py:90 src/diagnosis.py:181
+msgid "diagnosis_unknown_categories"
+msgstr "La jenaj kategorioj estas nekonataj: {categories}"
+
+#: src/diagnosis.py:77
+msgid "diagnosis_never_ran_yet"
+msgstr ""
+"Ŝajnas, ke ĉi tiu servilo estis instalita antaŭ nelonge kaj estas neniu "
+"diagnoza raporto por montri. Vi devas komenci kurante plenan diagnozon, "
+"ĉu de la retadministro aŭ uzante 'yunohost diagnosis run' el la "
+"komandlinio."
+
+#: src/diagnosis.py:99
+msgid "diagnosis_failed"
+msgstr ""
+"Malsukcesis preni la diagnozan rezulton por kategorio '{category}': "
+"{error}"
+
+#: src/diagnosis.py:132 src/log.py:357
+msgid "log_available_on_yunopaste"
+msgstr "Ĉi tiu protokolo nun haveblas per {url}"
+
+#: src/diagnosis.py:201
+msgid "diagnosis_failed_for_category"
+msgstr "Diagnozo malsukcesis por kategorio '{category}': {error}"
+
+#: src/diagnosis.py:220
+msgid "diagnosis_display_tip"
+msgstr ""
+"Por vidi la trovitajn problemojn, vi povas iri al la sekcio pri Diagnozo "
+"de la reteja administrado, aŭ funkcii \"yunohost diagnosis show --issues "
+"--human-readable\" el la komandlinio."
+
+#: src/diagnosis.py:280
+msgid "diagnosis_ignore_missing_criteria"
+msgstr ""
+
+#: src/diagnosis.py:285
+msgid "diagnosis_ignore_criteria_error"
+msgstr ""
+
+#: src/diagnosis.py:308
+msgid "diagnosis_ignore_no_issue_found"
+msgstr ""
+
+#: src/diagnosis.py:318
+msgid "diagnosis_ignore_already_filtered"
+msgstr ""
+
+#: src/diagnosis.py:324
+msgid "diagnosis_ignore_filter_added"
+msgstr ""
+
+#: src/diagnosis.py:338
+msgid "diagnosis_ignore_no_filter_found"
+msgstr ""
+
+#: src/diagnosis.py:344
+msgid "diagnosis_ignore_filter_removed"
+msgstr ""
+
+#: src/diagnosis.py:421
+msgid "diagnosis_cache_still_valid"
+msgstr ""
+"(La kaŝmemoro ankoraŭ validas por {category} diagnozo. Vi ankoraŭ ne "
+"diagnozas ĝin!)"
+
+#: src/diagnosis.py:438
+msgid "diagnosis_cant_run_because_of_dep"
+msgstr ""
+"Ne eblas fari diagnozon por {category} dum estas gravaj problemoj rilataj"
+" al {dep}."
+
+#: src/diagnosis.py:481
+msgid "diagnosis_ignored_issues"
+msgstr "(+ {nb_ignored} ignorataj aferoj))"
+
+#: src/diagnosis.py:491
+msgid "diagnosis_found_errors_and_warnings"
+msgstr ""
+"Trovis {errors} signifaj problemo (j) (kaj {warnings} averto) rilataj al "
+"{category}!"
+
+#: src/diagnosis.py:501
+msgid "diagnosis_found_errors"
+msgstr "Trovis {errors} signifa(j) afero(j) rilata al {category}!"
+
+#: src/diagnosis.py:510
+msgid "diagnosis_found_warnings"
+msgstr "Trovitaj {warnings} ero (j) kiuj povus esti plibonigitaj por {category}."
+
+#: src/diagnosis.py:518
+msgid "diagnosis_everything_ok"
+msgstr "Ĉio aspektas bone por {category}!"
+
+#: src/diagnosis.py:533
+msgid "diagnosis_no_cache"
+msgstr "Neniu diagnoza kaŝmemoro por kategorio '{category}'"
+
+#: src/dns.py:67 src/dns.py:555 src/dns.py:643
+msgid "domain_dns_conf_special_use_tld"
+msgstr ""
+
+#: src/dns.py:102
+msgid "domain_dns_conf_is_just_a_recommendation"
+msgstr ""
+"Ĉi tiu komando montras al vi la *rekomenditan* agordon. Ĝi efektive ne "
+"agordas la DNS-agordon por vi. Via respondeco agordi vian DNS-zonon en "
+"via registristo laŭ ĉi tiu rekomendo."
+
+#: src/dns.py:501
+msgid "registrar_infos"
+msgstr ""
+
+#: src/dns.py:531
+msgid "domain_dns_registrar_managed_in_parent_domain"
+msgstr ""
+
+#: src/dns.py:543
+msgid "domain_dns_registrar_yunohost"
+msgstr ""
+
+#: src/dns.py:547 src/dyndns.py:127 src/dyndns.py:141 src/dyndns.py:255
+msgid "ask_dyndns_recovery_password"
+msgstr ""
+
+#: src/dns.py:563
+msgid "domain_dns_registrar_not_supported"
+msgstr ""
+
+#: src/dns.py:567
+msgid "domain_dns_registrar_supported"
+msgstr ""
+
+#: src/dns.py:578
+msgid "domain_dns_registrar_experimental"
+msgstr ""
+
+#: src/dns.py:594
+msgid "domain_dns_registrar_use_auto"
+msgstr ""
+
+#: src/dns.py:646
+msgid "domain_dns_push_not_applicable"
+msgstr ""
+
+#: src/dns.py:661 src/dns.py:670
+msgid "domain_dns_push_managed_in_parent_domain"
+msgstr ""
+
+#: src/dns.py:676 src/dns.py:681
+msgid "domain_registrar_is_not_configured"
+msgstr ""
+
+#: src/dns.py:742
+msgid "domain_dns_push_failed_to_list"
+msgstr ""
+
+#: src/dns.py:952
+msgid "domain_dns_push_already_up_to_date"
+msgstr ""
+
+#: src/dns.py:960
+msgid "domain_dns_pushing"
+msgstr ""
+
+#: src/dns.py:1009 src/dns.py:1022
+msgid "domain_dns_push_record_failed"
+msgstr ""
+
+#: src/dns.py:1035
+msgid "domain_dns_push_success"
+msgstr ""
+
+#: src/dns.py:1039
+msgid "domain_dns_push_failed"
+msgstr ""
+
+#: src/dns.py:1041
+msgid "domain_dns_push_partial_failure"
+msgstr ""
+
+#: src/domain.py:254
+msgid "domain_unknown"
+msgstr ""
+
+#: src/domain.py:326
+msgid "domain_exists"
+msgstr "La domajno jam ekzistas"
+
+#: src/domain.py:347 src/dyndns.py:119
+msgid "domain_dyndns_already_subscribed"
+msgstr "Vi jam abonis DynDNS-domajnon"
+
+#: src/domain.py:350
+msgid "tos_dyndns_acknowledgement"
+msgstr ""
+
+#: src/domain.py:375
+msgid "domain_creation_failed"
+msgstr "Ne eblas krei domajnon {domain}: {error}"
+
+#: src/domain.py:436
+msgid "domain_created"
+msgstr "Domajno kreita"
+
+#: src/domain.py:486
+msgid "domain_cannot_remove_main"
+msgstr ""
+"Vi ne povas forigi '{domain}' ĉar ĝi estas la ĉefa domajno, vi bezonas "
+"unue agordi alian domajnon kiel la ĉefan domajnon per uzado de 'yunohost "
+"domain main-domain -n <another-domain>', jen la listo de kandidataj "
+"domajnoj. : {other_domains}"
+
+#: src/domain.py:492
+msgid "domain_cannot_remove_main_add_new_one"
+msgstr ""
+"Vi ne povas forigi '{domain}' ĉar ĝi estas la ĉefa domajno kaj via sola "
+"domajno, vi devas unue aldoni alian domajnon uzante ''yunohost domain add"
+" <another-domain.com>', tiam agordi kiel ĉefan domajnon uzante 'yunohost "
+"domain main-domain -n <another-domain.com>' kaj tiam vi povas forigi la "
+"domajnon' {domain} 'uzante' yunohost domain remove {domain} '."
+
+#: src/domain.py:518
+msgid "domain_remove_confirm_apps_removal"
+msgstr ""
+
+#: src/domain.py:525 src/utils/app_utils.py:1399
+msgid "aborting"
+msgstr "Aborti."
+
+#: src/domain.py:531
+msgid "domain_uninstall_app_first"
+msgstr ""
+"Unu aŭ pluraj programoj estas instalitaj en ĉi tiu domajno:\n"
+"{apps}\n"
+"\n"
+"Bonvolu malinstali ilin antaŭ ol daŭrigi la domajnan forigon"
+
+#: src/domain.py:548
+msgid "domain_deletion_failed"
+msgstr "Ne eblas forigi domajnon {domain}: {error}"
+
+#: src/domain.py:594
+msgid "domain_deleted"
+msgstr "Domajno forigita"
+
+#: src/domain.py:675
+msgid "main_domain_change_failed"
+msgstr "Ne eblas ŝanĝi la ĉefan domajnon"
+
+#: src/domain.py:687
+msgid "main_domain_changed"
+msgstr "La ĉefa domajno estis ŝanĝita"
+
+#: src/domain.py:860
+msgid "app_make_default_location_already_used"
+msgstr ""
+"Ne povis fari '{app}' la defaŭltan programon sur la domajno, '{domain}' "
+"estas jam uzata de '{other_app}'"
+
+#: src/dyndns.py:86 src/dyndns.py:97
+msgid "dyndns_could_not_check_available"
+msgstr "Ne povis kontroli ĉu {domain} haveblas sur {provider}."
+
+#: src/dyndns.py:94 src/dyndns.py:292
+msgid "dyndns_too_many_requests"
+msgstr ""
+
+#: src/dyndns.py:114
+msgid "dyndns_domain_not_provided"
+msgstr "Provizanto DynDNS {provider} ne povas provizi domajnon {domain}."
+
+#: src/dyndns.py:125
+msgid "ask_dyndns_recovery_password_explain_unavailable"
+msgstr ""
+
+#: src/dyndns.py:135 src/tools.py:232
+msgid "dyndns_unavailable"
+msgstr "La domajno '{domain}' ne haveblas."
+
+#: src/dyndns.py:139
+msgid "ask_dyndns_recovery_password_explain"
+msgstr ""
+
+#: src/dyndns.py:145
+msgid "dyndns_no_recovery_password"
+msgstr ""
+
+#: src/dyndns.py:203 src/dyndns.py:210
+msgid "dyndns_subscribe_failed"
+msgstr ""
+
+#: src/dyndns.py:225
+msgid "dyndns_subscribed"
+msgstr ""
+
+#: src/dyndns.py:252
+msgid "ask_dyndns_recovery_password_explain_during_unsubscribe"
+msgstr ""
+
+#: src/dyndns.py:279 src/dyndns.py:295
+msgid "dyndns_unsubscribe_failed"
+msgstr ""
+
+#: src/dyndns.py:288
+msgid "dyndns_unsubscribe_denied"
+msgstr ""
+
+#: src/dyndns.py:290
+msgid "dyndns_unsubscribe_already_unsubscribed"
+msgstr ""
+
+#: src/dyndns.py:299
+msgid "dyndns_unsubscribed"
+msgstr ""
+
+#: src/dyndns.py:307 src/dyndns.py:431
+msgid "dyndns_key_not_found"
+msgstr "DNS-ŝlosilo ne trovita por la domajno"
+
+#: src/dyndns.py:332 src/dyndns.py:344
+msgid "dyndns_set_recovery_password_failed"
+msgstr ""
+
+#: src/dyndns.py:335
+msgid "dyndns_set_recovery_password_success"
+msgstr ""
+
+#: src/dyndns.py:337
+msgid "dyndns_set_recovery_password_denied"
+msgstr ""
+
+#: src/dyndns.py:339
+msgid "dyndns_set_recovery_password_unknown_domain"
+msgstr ""
+
+#: src/dyndns.py:341
+msgid "dyndns_set_recovery_password_invalid_password"
+msgstr ""
+
+#: src/dyndns.py:390
+msgid "dyndns_no_domain_registered"
+msgstr "Neniu domajno registrita ĉe DynDNS"
+
+#: src/dyndns.py:554 src/dyndns.py:558
+msgid "dyndns_ip_update_failed"
+msgstr "Ne povis ĝisdatigi IP-adreson al DynDNS"
+
+#: src/dyndns.py:560
+msgid "dyndns_ip_updated"
+msgstr "Ĝisdatigis vian IP sur DynDNS"
+
+#: src/firewall.py:256
+msgid "upnp_dev_not_found"
+msgstr "Neniu UPnP-aparato trovita"
+
+#: src/firewall.py:418
+msgid "port_already_opened"
+msgstr "Haveno {port} estas jam malfermita"
+
+#: src/firewall.py:425 src/firewall.py:457 src/firewall.py:529
+#: src/firewall.py:563
+msgid "firewall_reloaded"
+msgstr "Fajroŝirmilo reŝarĝis"
+
+#: src/firewall.py:427 src/firewall.py:459 src/firewall.py:531
+#: src/firewall.py:565
+msgid "firewall_reload_failed"
+msgstr "Ne eblis reŝargi la firewall. Pliaj informoj en ensaluto."
+
+#: src/firewall.py:450 src/firewall.py:522
+msgid "port_already_closed"
+msgstr "Haveno {port} estas jam fermita"
+
+#: src/firewall.py:580
+msgid "action_invalid"
+msgstr "Nevalida ago « {action} »"
+
+#: src/firewall.py:597
+msgid "upnp_enabled"
+msgstr "UPnP ŝaltis"
+
+#: src/firewall.py:597
+msgid "upnp_disabled"
+msgstr "UPnP malŝaltis"
+
+#: src/firewall.py:601
+msgid "upnp_port_open_failed"
+msgstr "Ne povis malfermi havenon per UPnP"
+
+#: src/firewall.py:611
+msgid "nftables_unavailable"
+msgstr ""
+"Vi ne povas ludi kun nftables ĉi tie. Vi estas en ujo aŭ via kerno ne "
+"subtenas ĝin"
+
+#: src/hook.py:117 src/hook.py:273
+msgid "hook_name_unknown"
+msgstr "Nekonata hoko-nomo '{name}'"
+
+#: src/hook.py:186
+msgid "hook_list_by_invalid"
+msgstr "Ĉi tiu posedaĵo ne povas esti uzata por listigi hokojn"
+
+#: src/hook.py:344
+msgid "file_does_not_exist"
+msgstr "La dosiero {path} ne ekzistas."
+
+#: src/hook.py:426 src/hook.py:428
+msgid "hook_exec_not_terminated"
+msgstr "Skripto ne finiĝis ĝuste: {path}"
+
+#: src/hook.py:431
+msgid "hook_exec_failed"
+msgstr "Ne povis funkcii skripto: {path}"
+
+#: src/hook.py:503
+msgid "hook_json_return_error"
+msgstr ""
+"Ne povis legi revenon de hoko {path}. Eraro: {msg}. Kruda enhavo: "
+"{raw_content}"
+
+#: src/hook.py:569 src/settings.py:186 src/utils/configpanel.py:634
+#: src/utils/configpanel.py:723 src/utils/resources.py:75
+#: src/utils/resources.py:103
+msgid "operation_interrupted"
+msgstr "La operacio estis permane interrompita?"
+
+#: src/log.py:111 src/log.py:222 src/log.py:368
+msgid "log_corrupted_md_file"
+msgstr ""
+"La YAD-metadata dosiero asociita kun protokoloj estas damaĝita: "
+"'{md_file}\n"
+"Eraro: {error} '"
+
+#: src/log.py:335
+msgid "log_does_exists"
+msgstr ""
+"Ne estas operacio kun la nomo '{log}', uzu 'yunohost log list' por vidi "
+"ĉiujn disponeblajn operaciojn"
+
+#: src/log.py:908
+msgid "log_link_to_log"
+msgstr ""
+"Plena ŝtipo de ĉi tiu operacio: '<a href=\"#/tools/logs/{name}\" style"
+"=\"text-decoration:underline\">{desc} </a>'"
+
+#: src/log.py:910
+msgid "log_help_to_get_log"
+msgstr ""
+"Por vidi la protokolon de la operacio '{desc}', uzu la komandon 'yunohost"
+" log show {name}'"
+
+#: src/log.py:916
+msgid "log_link_to_failed_log"
+msgstr ""
+"Ne povis plenumi la operacion '{desc}'. Bonvolu provizi la plenan "
+"protokolon de ĉi tiu operacio per <a "
+"href=\"#/tools/logs/{name}\">alklakante ĉi tie </a> por akiri helpon"
+
+#: src/log.py:921
+msgid "log_help_to_get_failed_log"
+msgstr ""
+"La operacio '{desc}' ne povis finiĝi. Bonvolu dividi la plenan ŝtipon de "
+"ĉi tiu operacio per la komando 'yunohost log share {name}' por akiri "
+"helpon"
+
+#: src/log.py:938
+msgid "log_operation_unit_unclosed_properly"
+msgstr "Operaciumo ne estis fermita ĝuste"
+
+#: src/log.py:1022
+msgid "automatic_task"
+msgstr ""
+
+#: src/log.py:1025
+msgid "yunohost_api"
+msgstr ""
+
+#: src/log.py:1028
+msgid "noninteractive_task"
+msgstr ""
+
+#: src/permission.py:235
+msgid "permission_require_account"
+msgstr ""
+"Permesilo {permission} nur havas sencon por uzantoj, kiuj havas konton, "
+"kaj tial ne rajtas esti ebligitaj por vizitantoj."
+
+#: src/permission.py:240
+msgid "permission_cant_add_to_all_users"
+msgstr ""
+
+#: src/permission.py:255
+msgid "permission_protected"
+msgstr ""
+
+#: src/permission.py:268 src/permission.py:430 src/user.py:1193
+#: src/user.py:1270 src/user.py:1462
+msgid "group_unknown"
+msgstr "La grupo '{group}' estas nekonata"
+
+#: src/permission.py:272
+msgid "permission_already_allowed"
+msgstr "Grupo '{group}' jam havas rajtigitan permeson '{permission}'"
+
+#: src/permission.py:284
+msgid "permission_already_disallowed"
+msgstr "Grupo '{group}' jam havas permeson '{permission}' malebligita"
+
+#: src/permission.py:301
+msgid "permission_currently_allowed_for_all_users"
+msgstr ""
+"Ĉi tiu permeso estas nuntempe donita al ĉiuj uzantoj aldone al aliaj "
+"grupoj. Vi probable volas aŭ forigi la permeson \"all_users\" aŭ forigi "
+"la aliajn grupojn, kiujn ĝi nuntempe donas."
+
+#: src/permission.py:310 src/permission.py:516
+msgid "regex_incompatible_with_tile"
+msgstr ""
+
+#: src/permission.py:338 src/permission.py:340 src/permission.py:576
+#: src/user.py:1581
+msgid "permission_updated"
+msgstr "Ĝisdatigita \"{permission}\" rajtigita"
+
+#: src/permission.py:365
+msgid "permission_not_found"
+msgstr "Permesita \"{permission}\" ne trovita"
+
+#: src/permission.py:455
+msgid "permission_created"
+msgstr "Permesita '{permission}' kreita"
+
+#: src/permission.py:496
+msgid "unknown_main_domain_path"
+msgstr ""
+
+#: src/permission.py:528
+msgid "additional_urls_already_added"
+msgstr "Plia URL '{url}' jam aldonita en la aldona URL por permeso '{permission}'"
+
+#: src/permission.py:540
+msgid "additional_urls_already_removed"
+msgstr "Plia URL '{url}' jam forigita en la aldona URL por permeso '{permission}'"
+
+#: src/permission.py:570 src/permission.py:714
+msgid "permission_update_failed"
+msgstr "Ne povis ĝisdatigi permeson '{permission}': {error}"
+
+#: src/permission.py:590
+msgid "permission_cannot_remove_main"
+msgstr "Forigo de ĉefa permeso ne rajtas"
+
+#: src/permission.py:612
+msgid "permission_deleted"
+msgstr "Permesita \"{permission}\" forigita"
+
+#: src/permission.py:659
+msgid "permission_deletion_failed"
+msgstr "Ne povis forigi permeson '{permission}': {error}"
+
+#: src/permission.py:696
+msgid "permission_creation_failed"
+msgstr "Ne povis krei permeson '{permission}': {error}"
+
+#: src/permission.py:788
+msgid "show_tile_cant_be_enabled_for_url_not_defined"
+msgstr ""
+
+#: src/permission.py:795
+msgid "show_tile_cant_be_enabled_for_regex"
+msgstr ""
+
+#: src/permission.py:973
+msgid "invalid_regex"
+msgstr ""
+
+#: src/permission.py:985
+msgid "regex_with_only_domain"
+msgstr ""
+
+#: src/portal.py:51 src/ssh.py:43 src/ssh.py:80 src/ssh.py:121 src/user.py:357
+#: src/user.py:462 src/user.py:654 src/user.py:1293
+msgid "user_unknown"
+msgstr "Nekonata uzanto: {user}"
+
+#: src/portal.py:224 src/portal.py:249 src/portal.py:286
+msgid "mail_edit_operation_unauthorized"
+msgstr ""
+
+#: src/portal.py:229 src/portal.py:264 src/user.py:243 src/user.py:527
+#: src/user.py:537 src/user.py:1339
+msgid "mail_unavailable"
+msgstr ""
+"Ĉi tiu retpoŝta adreso estas rezervita kaj aŭtomate estos atribuita al la"
+" unua uzanto"
+
+#: src/portal.py:234 src/portal.py:271
+msgid "mail_already_exists"
+msgstr ""
+
+#: src/portal.py:237 src/portal.py:275
+msgid "mail_alias_unauthorized"
+msgstr ""
+
+#: src/authenticators/ldap_ynhuser.py:225 src/portal.py:316
+msgid "invalid_password"
+msgstr ""
+
+#: src/portal.py:326 src/user.py:520 src/user.py:546 src/user.py:602
+msgid "user_update_failed"
+msgstr "Ne povis ĝisdatigi uzanton {user}: {error}"
+
+#: src/regenconf.py:200
+msgid "regenconf_failed"
+msgstr "Ne povis regeneri la agordon por kategorio(j): {categories}"
+
+#: src/regenconf.py:213
+msgid "regenconf_pending_applying"
+msgstr "Aplikante pritraktata agordo por kategorio '{category}'…"
+
+#: src/regenconf.py:215
+msgid "regenconf_dry_pending_applying"
+msgstr ""
+"Kontrolado de pritraktata agordo, kiu estus aplikita por kategorio "
+"'{category}'…"
+
+#: src/regenconf.py:320 src/regenconf.py:412
+msgid "regenconf_file_manually_modified"
+msgstr "La agorddosiero '{conf}' estis modifita permane kaj ne estos ĝisdatigita"
+
+#: src/regenconf.py:343
+msgid "regenconf_file_manually_removed"
+msgstr "La dosiero de agordo '{conf}' estis forigita permane, kaj ne estos kreita"
+
+#: src/regenconf.py:361
+msgid "regenconf_now_managed_by_yunohost"
+msgstr ""
+"La agorda dosiero '{conf}' nun estas administrata de YunoHost (kategorio "
+"{category})."
+
+#: src/regenconf.py:374
+msgid "regenconf_file_kept_back"
+msgstr ""
+"La agorda dosiero '{conf}' estas atendita forigi per regen-conf "
+"(kategorio {category}), sed ĝi estis konservita."
+
+#: src/regenconf.py:405
+msgid "regenconf_need_to_explicitly_specify_ssh"
+msgstr ""
+
+#: src/regenconf.py:430
+msgid "regenconf_up_to_date"
+msgstr "La agordo jam estas ĝisdatigita por kategorio '{category}'"
+
+#: src/regenconf.py:434
+msgid "regenconf_updated"
+msgstr "Agordo ĝisdatigita por '{category}'"
+
+#: src/regenconf.py:436
+msgid "regenconf_would_be_updated"
+msgstr "La agordo estus aktualigita por la kategorio '{category}'"
+
+#: src/regenconf.py:679
+msgid "regenconf_file_backed_up"
+msgstr "Agordodosiero '{conf}' estis rezervita al '{backup}'"
+
+#: src/regenconf.py:685
+msgid "regenconf_file_removed"
+msgstr "Agordodosiero '{conf}' forigita"
+
+#: src/regenconf.py:693
+msgid "regenconf_file_updated"
+msgstr "Agordodosiero '{conf}' ĝisdatigita"
+
+#: src/regenconf.py:701
+msgid "regenconf_file_remove_failed"
+msgstr "Ne povis forigi la agordodosieron '{conf}'"
+
+#: src/regenconf.py:717
+msgid "regenconf_file_copy_failed"
+msgstr "Ne povis kopii la novan agordodosieron '{new}' al '{conf}'"
+
+#: src/service.py:127
+msgid "service_add_failed"
+msgstr "Ne povis aldoni la servon '{service}'"
+
+#: src/service.py:129
+msgid "service_added"
+msgstr "La servo '{service}' estis aldonita"
+
+#: src/service.py:143 src/service.py:370 src/service.py:531 src/service.py:591
+msgid "service_unknown"
+msgstr "Nekonata servo '{service}'"
+
+#: src/service.py:150
+msgid "service_remove_failed"
+msgstr "Ne povis forigi la servon '{service}'"
+
+#: src/service.py:152
+msgid "service_removed"
+msgstr "Servo '{service}' forigita"
+
+#: src/service.py:169
+msgid "service_started"
+msgstr "Servo '{service}' komenciĝis"
+
+#: src/service.py:176
+msgid "service_start_failed"
+msgstr "Ne povis komenci la servon '{service}'"
+
+#: src/service.py:180
+msgid "service_already_started"
+msgstr "La servo '{service}' jam funkcias"
+
+#: src/service.py:196
+msgid "service_stopped"
+msgstr "Servo '{service}' ĉesis"
+
+#: src/service.py:203
+msgid "service_stop_failed"
+msgstr "Ne povis maldaŭrigi la servon '{service}'"
+
+#: src/service.py:207
+msgid "service_already_stopped"
+msgstr "La servo '{service}' jam ĉesis"
+
+#: src/service.py:222
+msgid "service_reloaded"
+msgstr "Servo '{service}' reŝargita"
+
+#: src/service.py:229
+msgid "service_reload_failed"
+msgstr "Ne povis reŝargi la servon '{service}'"
+
+#: src/service.py:248
+msgid "service_restarted"
+msgstr "Servo '{service}' rekomencis"
+
+#: src/service.py:255
+msgid "service_restart_failed"
+msgstr "Ne povis rekomenci la servon '{service}'"
+
+#: src/service.py:292
+msgid "service_not_reloading_because_conf_broken"
+msgstr ""
+
+#: src/service.py:300
+msgid "service_reloaded_or_restarted"
+msgstr "La servo '{service}' estis reŝarĝita aŭ rekomencita"
+
+#: src/service.py:307
+msgid "service_reload_or_restart_failed"
+msgstr "Ne povis reŝargi aŭ rekomenci la servon '{service}'"
+
+#: src/service.py:327
+msgid "service_enabled"
+msgstr "La servo '{service}' nun aŭtomate komenciĝos dum sistemaj botoj."
+
+#: src/service.py:329
+msgid "service_enable_failed"
+msgstr "Ne povis fari la servon '{service}' aŭtomate komenci ĉe la ekkuro."
+
+#: src/service.py:346
+msgid "service_disabled"
+msgstr "La servo '{service}' ne plu komenciĝos kiam sistemo ekos."
+
+#: src/service.py:348
+msgid "service_disable_failed"
+msgstr "Ne povis fari la servon '{service}' ne komenci ĉe la ekkuro."
+
+#: src/service.py:632
+msgid "service_cmd_exec_failed"
+msgstr "Ne povis plenumi la komandon '{command}'"
+
+#: src/settings.py:187 src/settings.py:194 src/utils/configpanel.py:635
+#: src/utils/configpanel.py:642
+msgid "config_apply_failed"
+msgstr ""
+
+#: src/settings.py:197
+msgid "global_settings_reset_success"
+msgstr ""
+
+#: src/settings.py:236
+msgid "password_confirmation_not_the_same"
+msgstr ""
+
+#: src/tools.py:86
+msgid "root_password_changed"
+msgstr ""
+
+#: src/tools.py:90
+msgid "root_password_desynchronized"
+msgstr ""
+"La pasvorta administranto estis ŝanĝita, sed YunoHost ne povis propagandi"
+" ĉi tion al la radika pasvorto!"
+
+#: src/tools.py:134
+msgid "domain_hostname_failed"
+msgstr ""
+"Ne povis agordi novan gastigilon. Ĉi tio eble kaŭzos problemon poste "
+"(eble bone)."
+
+#: src/migrations/m0031_terms_of_services.py:42 src/tools.py:178
+msgid "tos_postinstall_acknowledgement"
+msgstr ""
+
+#: src/tools.py:187 src/user.py:240
+msgid "system_username_exists"
+msgstr "Uzantnomo jam ekzistas en la listo de uzantoj de sistemo"
+
+#: src/tools.py:204
+msgid "postinstall_low_rootfsspace"
+msgstr ""
+
+#: src/tools.py:221
+msgid "dyndns_provider_unreachable"
+msgstr ""
+"Ne povas atingi la provizanton DynDNS {provider}: ĉu via YunoHost ne "
+"estas ĝuste konektita al la interreto aŭ la dyneta servilo malŝaltiĝas."
+
+#: src/tools.py:260
+msgid "yunohost_installing"
+msgstr "Instalante YunoHost…"
+
+#: src/tools.py:323
+msgid "yunohost_configured"
+msgstr "YunoHost nun estas agordita"
+
+#: src/tools.py:325
+msgid "yunohost_postinstall_end_tip"
+msgstr ""
+"La post-instalado finiĝis! Por fini vian agordon, bonvolu konsideri:\n"
+"     - diagnozi eblajn problemojn per la sekcio 'Diagnozo' de la reteja "
+"administrado (aŭ 'diagnoza yunohost-ekzekuto' en komandlinio);\n"
+"     - legante la partojn 'Finigi vian agordon' kaj 'Ekkoni Yunohost' en "
+"la administra dokumentado: https://doc.yunohost.org/admin."
+
+#: src/tools.py:417
+msgid "updating_apt_cache"
+msgstr "Akirante haveblajn ĝisdatigojn por sistemaj pakoj…"
+
+#: src/tools.py:423
+msgid "update_apt_cache_failed"
+msgstr ""
+"Ne eblis ĝisdatigi la kaŝmemoron de APT (paka administranto de Debian). "
+"Jen rubujo de la sources.list-linioj, kiuj povus helpi identigi "
+"problemajn liniojn:\n"
+"{sourceslist}"
+
+#: src/tools.py:429
+msgid "update_apt_cache_warning"
+msgstr ""
+"Io iris malbone dum la ĝisdatigo de la kaŝmemoro de APT (paka "
+"administranto de Debian). Jen rubujo de la sources.list-linioj, kiuj "
+"povus helpi identigi problemajn liniojn:\n"
+"{sourceslist}"
+
+#: src/tools.py:434 src/utils/app_utils.py:654 src/utils/app_utils.py:743
+#: src/utils/app_utils.py:775
+msgid "done"
+msgstr "Farita"
+
+#: src/tools.py:455 src/tools.py:601
+msgid "already_up_to_date"
+msgstr "Nenio por fari. Ĉio estas jam ĝisdatigita."
+
+#: src/tools.py:552 src/utils/app_utils.py:1270
+msgid "dpkg_is_broken"
+msgstr ""
+"Vi ne povas fari ĉi tion nun ĉar dpkg/APT (la administrantoj pri pakaĵaj "
+"sistemoj) ŝajnas esti rompita stato… Vi povas provi solvi ĉi tiun "
+"problemon per konekto per SSH kaj funkcianta `sudo dpkg --configure -a`."
+
+#: src/tools.py:556
+msgid "dpkg_lock_not_available"
+msgstr ""
+"Ĉi tiu komando ne povas funkcii nun ĉar alia programo uzas la seruron de "
+"dpkg (la administrilo de paka sistemo)"
+
+#: src/tools.py:589
+msgid "app_upgrade_some_app_failed"
+msgstr "Iuj aplikoj ne povis esti altgradigitaj"
+
+#: src/tools.py:603
+msgid "upgrading_packages"
+msgstr "Ĝisdatigi pakojn…"
+
+#: src/tools.py:619
+msgid "tools_upgrade"
+msgstr ""
+
+#: src/tools.py:653
+msgid "tools_upgrade_failed"
+msgstr ""
+
+#: src/tools.py:658
+msgid "system_upgraded"
+msgstr "Sistemo ĝisdatigita"
+
+#: src/tools.py:668
+msgid "server_shutdown_confirm"
+msgstr "La servilo haltos tuj, ĉu vi certas? [{answers}]"
+
+#: src/tools.py:677
+msgid "server_shutdown"
+msgstr "La servilo haltos"
+
+#: src/tools.py:687
+msgid "server_reboot_confirm"
+msgstr "Ĉu la servilo rekomencos tuj, ĉu vi certas? [{answers}]"
+
+#: src/tools.py:695
+msgid "server_reboot"
+msgstr "La servilo rekomenciĝos"
+
+#: src/tools.py:774
+msgid "migrations_list_conflict_pending_done"
+msgstr "Vi ne povas uzi ambaŭ '--previous' kaj '--done' samtempe."
+
+#: src/tools.py:828
+msgid "migrations_no_such_migration"
+msgstr "Estas neniu migrado nomata '{id}'"
+
+#: src/tools.py:832
+msgid "migrations_exclusive_options"
+msgstr "'--auto', '--skip' kaj '--force-rerun' estas reciproke ekskluzivaj ebloj."
+
+#: src/tools.py:838
+msgid "migrations_must_provide_explicit_targets"
+msgstr ""
+"Vi devas provizi eksplicitajn celojn kiam vi uzas '--skip' aŭ '--force-"
+"rerun'"
+
+#: src/tools.py:851
+msgid "migrations_not_pending_cant_skip"
+msgstr "Tiuj migradoj ankoraŭ ne estas pritraktataj, do ne eblas preterlasi: {ids}"
+
+#: src/tools.py:855
+msgid "migrations_pending_cant_rerun"
+msgstr ""
+"Tiuj migradoj ankoraŭ estas pritraktataj, do ne plu rajtas esti "
+"ekzekutitaj: {ids}"
+
+#: src/tools.py:858
+msgid "migrations_already_ran"
+msgstr "Tiuj migradoj estas jam faritaj: {ids}"
+
+#: src/tools.py:862
+msgid "migrations_no_migrations_to_run"
+msgstr "Neniuj migradoj por funkcii"
+
+#: src/tools.py:872
+msgid "migrations_to_be_ran_manually"
+msgstr ""
+"Migrado {id} devas funkcii permane. Bonvolu iri al Iloj → Migradoj en la "
+"retpaĝa paĝo, aŭ kuri `yunohost tools migrations run`."
+
+#: src/tools.py:888
+msgid "migrations_dependencies_not_satisfied"
+msgstr "Rulu ĉi tiujn migradojn: '{dependencies_id}', antaŭ migrado {id}."
+
+#: src/tools.py:902
+msgid "migrations_need_to_accept_disclaimer"
+msgstr ""
+"Por funkciigi la migradon {id}, via devas akcepti la sekvan malakcepton:\n"
+"---\n"
+"{disclaimer}\n"
+"---\n"
+"Se vi akceptas funkcii la migradon, bonvolu rekonduki la komandon kun la "
+"opcio '--accept-disclaimer'."
+
+#: src/tools.py:917
+msgid "migrations_skip_migration"
+msgstr "Salti migradon {id}…"
+
+#: src/tools.py:923 src/tools.py:1049 src/tools.py:1080
+msgid "migrations_running_forward"
+msgstr "Kuranta migrado {id}…"
+
+#: src/tools.py:929 src/tools.py:1053 src/tools.py:1084
+msgid "migrations_migration_has_failed"
+msgstr "Migrado {id} ne kompletigis, abolis. Eraro: {exception}"
+
+#: src/tools.py:934
+msgid "migrations_success_forward"
+msgstr "Migrado {id} kompletigita"
+
+#: src/tools.py:998
+msgid "migrations_loading_migration"
+msgstr "Ŝarĝante migradon {id}…"
+
+#: src/tools.py:1013
+msgid "migrations_failed_to_load_migration"
+msgstr "Ne povis ŝarĝi migradon {id}: {error}"
+
+#: src/tools.py:1123
+msgid "migration_ldap_backup_before_migration"
+msgstr ""
+
+#: src/tools.py:1139
+msgid "migration_ldap_can_not_backup_before_migration"
+msgstr ""
+
+#: src/tools.py:1149
+msgid "migration_ldap_migration_failed_trying_to_rollback"
+msgstr ""
+
+#: src/tools.py:1168
+msgid "migration_ldap_rollback_success"
+msgstr ""
+
+#: src/user.py:129
+msgid "field_invalid"
+msgstr "Nevalida kampo '{field}'"
+
+#: src/user.py:211
+msgid "domains_available"
+msgstr "Haveblaj domajnoj:"
+
+#: src/user.py:217
+msgid "ask_user_domain"
+msgstr "Domajno uzi por la retpoŝta adreso de la uzanto kaj XMPP-konto"
+
+#: src/user.py:229
+msgid "user_already_exists"
+msgstr "La uzanto '{user}' jam ekzistas"
+
+#: src/user.py:235 src/user.py:294
+msgid "user_creation_failed"
+msgstr "Ne povis krei uzanton {user}: {error}"
+
+#: src/user.py:267 src/user.py:592
+msgid "invalid_shell"
+msgstr ""
+
+#: src/user.py:306
+msgid "user_home_creation_failed"
+msgstr "Ne povis krei dosierujon '{home}' por uzanto"
+
+#: src/user.py:334
+msgid "user_created"
+msgstr "Uzanto kreita"
+
+#: src/user.py:359
+msgid "user_cannot_delete_last_admin"
+msgstr ""
+
+#: src/user.py:395
+msgid "user_deletion_failed"
+msgstr "Ne povis forigi uzanton {user}: {error}"
+
+#: src/user.py:413
+msgid "user_deleted"
+msgstr "Uzanto forigita"
+
+#: src/user.py:523 src/user.py:549 src/user.py:1348
+msgid "mail_domain_unknown"
+msgstr ""
+"Nevalida retadreso por domajno '{domain}'. Bonvolu uzi domajnon "
+"administritan de ĉi tiu servilo."
+
+#: src/user.py:561 src/user.py:1375
+msgid "mail_alias_remove_failed"
+msgstr "Ne povis forigi retpoŝton alias '{mail}'"
+
+#: src/user.py:581
+msgid "mail_forward_remove_failed"
+msgstr "Ne povis forigi retpoŝton plusendante '{mail}'"
+
+#: src/user.py:618
+msgid "user_updated"
+msgstr "Uzantinformoj ŝanĝis"
+
+#: src/user.py:683
+msgid "mailbox_used_space_dovecot_down"
+msgstr ""
+"La poŝta servo de Dovecot devas funkcii, se vi volas akcepti uzitan "
+"poŝtan keston"
+
+#: src/user.py:685
+msgid "mailbox_disabled"
+msgstr "Retpoŝto malŝaltita por uzanto {user}"
+
+#: src/user.py:711
+msgid "unlimit"
+msgstr "Neniu kvoto"
+
+#: src/user.py:803
+msgid "user_import_missing_columns"
+msgstr ""
+
+#: src/user.py:851
+msgid "user_import_bad_line"
+msgstr ""
+
+#: src/user.py:885
+msgid "user_import_bad_file"
+msgstr ""
+
+#: src/user.py:890
+msgid "user_import_nothing_to_do"
+msgstr ""
+
+#: src/user.py:916
+msgid "user_import_cannot_edit_or_delete_admins"
+msgstr ""
+
+#: src/user.py:1024
+msgid "user_import_partial_failed"
+msgstr ""
+
+#: src/user.py:1026
+msgid "user_import_failed"
+msgstr ""
+
+#: src/user.py:1030
+msgid "user_import_success"
+msgstr ""
+
+#: src/user.py:1117
+msgid "group_already_exist"
+msgstr "Grupo {group} jam ekzistas"
+
+#: src/user.py:1124
+msgid "group_already_exist_on_system_but_removing_it"
+msgstr ""
+"Grupo {group} jam ekzistas en la sistemaj grupoj, sed YunoHost forigos "
+"ĝin…"
+
+#: src/user.py:1131
+msgid "group_already_exist_on_system"
+msgstr "Grupo {group} jam ekzistas en la sistemaj grupoj"
+
+#: src/user.py:1161
+msgid "group_creation_failed"
+msgstr "Ne povis krei la grupon '{group}': {error}"
+
+#: src/user.py:1167 src/user.py:1169
+msgid "group_created"
+msgstr "Grupo '{group}' kreita"
+
+#: src/user.py:1202
+msgid "group_cannot_be_deleted"
+msgstr "La grupo {group} ne povas esti forigita permane."
+
+#: src/user.py:1209
+msgid "group_deletion_failed"
+msgstr "Ne povis forigi la grupon '{group}': {error}"
+
+#: src/user.py:1215 src/user.py:1217
+msgid "group_deleted"
+msgstr "Grupo '{group}' forigita"
+
+#: src/user.py:1244
+msgid "group_cannot_edit_all_users"
+msgstr ""
+"La grupo 'all_users' ne povas esti redaktita permane. Ĝi estas speciala "
+"grupo celita enhavi ĉiujn uzantojn registritajn en YunoHost"
+
+#: src/user.py:1246
+msgid "group_cannot_edit_visitors"
+msgstr ""
+"La grupo 'vizitantoj' ne povas esti redaktita permane. Ĝi estas speciala "
+"grupo reprezentanta anonimajn vizitantojn"
+
+#: src/user.py:1249
+msgid "group_cannot_edit_primary_group"
+msgstr ""
+"La grupo '{group}' ne povas esti redaktita permane. Ĝi estas la primara "
+"grupo celita enhavi nur unu specifan uzanton."
+
+#: src/user.py:1257
+msgid "group_cannot_remove_last_admin"
+msgstr ""
+
+#: src/user.py:1297
+msgid "group_user_already_in_group"
+msgstr "Uzanto {user} jam estas en grupo {group}"
+
+#: src/user.py:1301
+msgid "group_user_add"
+msgstr ""
+
+#: src/user.py:1311
+msgid "group_user_not_in_group"
+msgstr "Uzanto {user} ne estas en grupo {group}"
+
+#: src/user.py:1315
+msgid "group_user_remove"
+msgstr ""
+
+#: src/user.py:1345 src/user.py:1396
+msgid "group_update_failed"
+msgstr "Ne povis ĝisdatigi la grupon '{group}': {error}"
+
+#: src/user.py:1351
+msgid "group_mailalias_add"
+msgstr ""
+
+#: src/user.py:1372
+msgid "group_mailalias_remove"
+msgstr ""
+
+#: src/user.py:1378
+msgid "group_update_aliases"
+msgstr ""
+
+#: src/user.py:1430
+msgid "group_no_change"
+msgstr ""
+
+#: src/user.py:1432 src/user.py:1434
+msgid "group_updated"
+msgstr "Ĝisdatigita \"{group}\" grupo"
+
+#: src/authenticators/ldap_admin.py:81 src/authenticators/ldap_admin.py:127
+#: src/utils/ldap.py:159
+msgid "ldap_server_is_down_restart_it"
+msgstr ""
+
+#: src/authenticators/ldap_admin.py:97 src/authenticators/ldap_admin.py:134
+#: src/authenticators/ldap_ynhuser.py:227
+msgid "ldap_server_down"
+msgstr ""
+
+#: src/authenticators/ldap_admin.py:100 src/authenticators/ldap_admin.py:105
+#: src/authenticators/ldap_admin.py:110 src/authenticators/ldap_admin.py:124
+#: src/authenticators/ldap_ynhuser.py:202
+#: src/authenticators/ldap_ynhuser.py:207
+msgid "invalid_credentials"
+msgstr ""
+
+#: src/authenticators/ldap_admin.py:196 src/authenticators/ldap_admin.py:202
+#: src/authenticators/ldap_ynhuser.py:252
+#: src/authenticators/ldap_ynhuser.py:307
+#: src/authenticators/ldap_ynhuser.py:310
+#: src/authenticators/ldap_ynhuser.py:313
+#: src/authenticators/ldap_ynhuser.py:316
+msgid "unable_authenticate"
+msgstr ""
+
+#: src/authenticators/ldap_admin.py:208 src/authenticators/ldap_ynhuser.py:322
+msgid "session_expired"
+msgstr ""
+
+#: src/migrations/m0031_terms_of_services.py:40
+msgid "migration_0031_terms_of_services"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:168
+msgid "migration_0036_start"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:213
+msgid "migration_0036_patch_yunohost_dpkg"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:218
+msgid "migration_0036_patching_sources_list"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:239
+msgid "migration_0036_main_upgrade"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:286
+msgid "migration_0036_still_on_bookworm_after_main_upgrade"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:289
+msgid "migration_0036_cleaning_up"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:300
+msgid "migration_0036_apt_lists_file_still_exists"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:316
+msgid "migration_0036_yunohost_upgrade"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:350
+msgid "migration_0036_delayed_api_restart"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:411
+msgid "migration_0036_not_bullseye"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:415
+msgid "migration_0036_not_enough_free_space"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:452
+msgid "migration_0036_system_not_fully_up_to_date"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:508
+msgid "migration_0036_general_warning"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:511
+msgid "migration_0036_problematic_apps_warning"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:514
+msgid "migration_0036_modified_files"
+msgstr ""
+
+#: src/migrations/postgresql.py:52
+msgid "migration_postgresql_previous_not_installed"
+msgstr ""
+
+#: src/migrations/postgresql.py:57
+msgid "migration_postgresql_target_not_installed"
+msgstr ""
+
+#: src/migrations/postgresql.py:75
+msgid "migration_not_enough_space"
+msgstr ""
+
+#: src/migrations/python.py:145
+msgid "migration_python_venv_rebuild_disclaimer_base"
+msgstr ""
+
+#: src/migrations/python.py:150
+msgid "migration_python_venv_rebuild_disclaimer_rebuild"
+msgstr ""
+
+#: src/migrations/python.py:155
+msgid "migration_python_venv_rebuild_disclaimer_ignored"
+msgstr ""
+
+#: src/migrations/python.py:177
+msgid "migration_python_venv_rebuild_broken_app"
+msgstr ""
+
+#: src/migrations/python.py:185
+msgid "migration_python_venv_rebuild_in_progress"
+msgstr ""
+
+#: src/migrations/python.py:209
+msgid "migration_python_venv_rebuild_failed"
+msgstr ""
+
+#: src/utils/app_utils.py:144 src/utils/app_utils.py:160
+msgid "app_not_correctly_installed"
+msgstr "{app} ŝajnas esti malĝuste instalita"
+
+#: src/utils/app_utils.py:569 src/utils/app_utils.py:613
+msgid "app_unknown"
+msgstr "Nekonata apliko"
+
+#: src/utils/app_utils.py:584
+msgid "app_unsupported_remote_type"
+msgstr "Malkontrolita fora speco uzita por la apliko"
+
+#: src/utils/app_utils.py:623
+msgid "extracting"
+msgstr "Eltirante…"
+
+#: src/utils/app_utils.py:642
+msgid "app_extraction_failed"
+msgstr "Ne povis ĉerpi la instalajn dosierojn"
+
+#: src/utils/app_utils.py:649
+msgid "app_install_files_invalid"
+msgstr "Ĉi tiuj dosieroj ne povas esti instalitaj"
+
+#: src/utils/app_utils.py:723
+msgid "downloading"
+msgstr "Elŝutante…"
+
+#: src/utils/app_utils.py:773
+msgid "app_sources_fetch_failed"
+msgstr "Ne povis akiri fontajn dosierojn, ĉu la URL estas ĝusta?"
+
+#: src/utils/app_utils.py:807
+msgid "app_not_installed"
+msgstr "Ne povis trovi {app} en la listo de instalitaj programoj: {all_apps}"
+
+#: src/utils/app_utils.py:827
+msgid "app_requirements_checking"
+msgstr "Kontrolante bezonatajn pakaĵojn por {app}…"
+
+#: src/utils/app_utils.py:831
+msgid "app_packaging_format_not_supported"
+msgstr ""
+"Ĉi tiu programo ne povas esti instalita ĉar ĝia pakita formato ne estas "
+"subtenata de via Yunohost-versio. Vi probable devas konsideri ĝisdatigi "
+"vian sistemon."
+
+#: src/utils/app_utils.py:844
+msgid "app_yunohost_version_not_supported"
+msgstr ""
+
+#: src/utils/app_utils.py:858
+msgid "app_arch_not_supported"
+msgstr ""
+
+#: src/utils/app_utils.py:879
+msgid "app_already_installed"
+msgstr "{app} estas jam instalita"
+
+#: src/utils/app_utils.py:899
+msgid "app_not_enough_disk"
+msgstr ""
+
+#: src/utils/app_utils.py:953
+msgid "app_not_enough_ram"
+msgstr ""
+
+#: src/utils/app_utils.py:1065
+msgid "app_full_domain_unavailable"
+msgstr ""
+"Bedaŭrinde, ĉi tiu app devas esti instalita sur propra domajno, sed aliaj"
+" programoj jam estas instalitaj sur la domajno '{domain}'. Vi povus uzi "
+"subdominon dediĉitan al ĉi tiu app anstataŭe."
+
+#: src/utils/app_utils.py:1068
+msgid "app_location_unavailable"
+msgstr ""
+"Ĉi tiu URL aŭ ne haveblas, aŭ konfliktas kun la jam instalita (j) apliko "
+"(j):\n"
+"{apps}"
+
+#: src/utils/app_utils.py:1260
+msgid "app_action_cannot_be_ran_because_required_services_down"
+msgstr ""
+"Ĉi tiuj postulataj servoj devas funkcii por funkciigi ĉi tiun agon: "
+"{services}. Provu rekomenci ilin por daŭrigi (kaj eble esploru, kial ili "
+"malsupreniras)."
+
+#: src/utils/app_utils.py:1265
+msgid "app_action_broke_system"
+msgstr "Ĉi tiu ago ŝajne rompis ĉi tiujn gravajn servojn: {services}"
+
+#: src/utils/app_utils.py:1272
+msgid "this_action_broke_dpkg"
+msgstr ""
+"Ĉi tiu ago rompis dpkg / APT (la administrantoj pri la paka sistemo)… Vi "
+"povas provi solvi ĉi tiun problemon per konekto per SSH kaj funkcianta "
+"`sudo dpkg --configure -a`."
+
+#: src/utils/configpanel.py:601
+msgid "config_cant_set_value_on_section"
+msgstr ""
+
+#: src/utils/configpanel.py:724 src/utils/configpanel.py:731
+msgid "config_action_failed"
+msgstr ""
+
+#: src/utils/configpanel.py:749
+msgid "config_no_panel"
+msgstr ""
+
+#: src/utils/configpanel.py:789 src/utils/configpanel.py:867
+msgid "config_unknown_filter_key"
+msgstr ""
+
+#: src/utils/file_utils.py:54
+msgid "file_not_exist"
+msgstr "Dosiero ne ekzistas: '{path}'"
+
+#: src/utils/file_utils.py:60
+msgid "cannot_open_file"
+msgstr "Ne povis malfermi dosieron {file} (kialo: {error})"
+
+#: src/utils/file_utils.py:62
+msgid "unknown_error_reading_file"
+msgstr "Nekonata eraro dum provi legi dosieron {file} (kialo: {error})"
+
+#: src/utils/file_utils.py:82 src/utils/file_utils.py:461
+msgid "corrupted_json"
+msgstr "Koruptita JSON legis de {ressource} (Kialo: {error})"
+
+#: src/utils/file_utils.py:103
+msgid "corrupted_yaml"
+msgstr "Korupta YAML legita de {ressource} (kialo: {error})"
+
+#: src/utils/file_utils.py:123
+msgid "corrupted_toml"
+msgstr "Korupta TOML legita el {ressource} (kialo: {error})"
+
+#: src/utils/file_utils.py:171 src/utils/file_utils.py:217
+#: src/utils/file_utils.py:240
+msgid "cannot_write_file"
+msgstr "Ne povis skribi dosieron {file} (kialo: {error})"
+
+#: src/utils/file_utils.py:173 src/utils/file_utils.py:219
+#: src/utils/file_utils.py:242
+msgid "error_writing_file"
+msgstr "Eraro skribinte dosieron {file}: {error}"
+
+#: src/utils/file_utils.py:322
+msgid "unknown_user"
+msgstr "Nekonata uzanto '{user}'"
+
+#: src/utils/file_utils.py:329
+msgid "unknown_group"
+msgstr "Nekonata grupo \"{group}\""
+
+#: src/utils/file_utils.py:343 src/utils/file_utils.py:370
+msgid "error_changing_file_permissions"
+msgstr "Eraro dum ŝanĝo de permesoj por {path}: {error}"
+
+#: src/utils/file_utils.py:390
+msgid "error_removing"
+msgstr "Eraro dum la forigo de {path}: {error}"
+
+#: src/utils/file_utils.py:424
+msgid "download_ssl_error"
+msgstr "SSL-eraro dum konekto al {url}"
+
+#: src/utils/file_utils.py:427
+msgid "invalid_url"
+msgstr "Nevalida URL{url} (ĉu ĉi tiu retejo ekzistas?)"
+
+#: src/utils/file_utils.py:430
+msgid "download_timeout"
+msgstr "{url} prenis tro da tempo por respondi, rezignis."
+
+#: src/utils/file_utils.py:433
+msgid "download_unknown_error"
+msgstr "Eraro dum elŝutado de datumoj de {url}: {error}"
+
+#: src/utils/file_utils.py:437
+msgid "download_bad_status_code"
+msgstr "{url} redonita statuskodo {code}"
+
+#: src/utils/form.py:413
+msgid "config_forbidden_keyword"
+msgstr ""
+
+#: src/utils/form.py:430
+msgid "config_forbidden_readonly_type"
+msgstr ""
+
+#: src/utils/form.py:532
+msgid "danger"
+msgstr ""
+
+#: src/utils/form.py:880
+msgid "pattern_password_app"
+msgstr "Bedaŭrinde, pasvortoj ne povas enhavi jenajn signojn: {forbidden_chars}"
+
+#: src/utils/form.py:998
+msgid "invalid_number"
+msgstr ""
+
+#: src/utils/form.py:1078 src/utils/form.py:1120 src/utils/form.py:1714
+msgid "app_argument_choice_invalid"
+msgstr ""
+"Uzu unu el ĉi tiuj elektoj '{choices}' por la argumento '{name}' anstataŭ"
+" '{value}'"
+
+#: src/utils/form.py:1565
+msgid "other_available_options"
+msgstr ""
+
+#: src/utils/form.py:2196
+msgid "config_action_disabled"
+msgstr ""
+
+#: src/utils/ldap.py:390
+msgid "ldap_attribute_already_exists"
+msgstr ""
+
+#: src/utils/password.py:69
+msgid "password_too_long"
+msgstr ""
+
+#: src/utils/resources.py:110
+msgid "app_resource_failed"
+msgstr ""
+
+#: src/utils/resources.py:532
+msgid "app_failed_to_download_asset"
+msgstr ""
+
+#: src/utils/resources.py:548
+msgid "app_corrupt_source"
+msgstr ""
+
+#: src/app.py:438
+msgid "app_upgrade_upgradable"
+msgstr ""
+
+#: src/app.py:439
+msgid "app_upgrade_fail_requirements"
+msgstr ""
+
+#: src/app.py:573
+msgid "log_app_change_url"
+msgstr "Ŝanĝu la URL de la apliko '{}'"
+
+#: src/app.py:868
+msgid "confirm_app_insufficient_ram"
+msgstr ""
+
+#: src/app.py:1178
+msgid "apps_confirm_partial_upgrade"
+msgstr ""
+
+#: src/app.py:1301
+msgid "log_app_install"
+msgstr "Instalu la aplikon '{}'"
+
+#: src/app.py:1632
+msgid "log_app_remove"
+msgstr "Forigu la aplikon '{}'"
+
+#: src/app.py:1726
+msgid "log_app_makedefault"
+msgstr "Faru '{}' la defaŭlta apliko"
+
+#: src/app.py:2174
+msgid "log_app_config_set"
+msgstr ""
+
+#: src/app.py:2404
+msgid "app_config_permission_extraperm_section_name"
+msgstr ""
+
+#: src/app.py:978
+msgid "log_app_upgrade"
+msgstr "Ĝisdatigu la aplikon '{}'"
+
+#: src/app.py:1546
+msgid "log_remove_on_failed_install"
+msgstr "Forigu '{}' post malsukcesa instalado"
+
+#: src/app.py:2132
+msgid "log_app_action_run"
+msgstr "Funkciigu agon de la apliko '{}'"
+
+#: src/certificate.py:156
+msgid "log_selfsigned_cert_install"
+msgstr "Instalu mem-subskribitan atestilon sur '{}' domajno"
+
+#: src/certificate.py:296
+msgid "log_letsencrypt_cert_install"
+msgstr "Instalu atestilon Let's Encrypt sur '{}' regado"
+
+#: src/certificate.py:410
+msgid "log_letsencrypt_cert_renew"
+msgstr "Renovigu '{}' Let's Encrypt atestilon"
+
+#: src/diagnosis.py:160
+msgid "log_diagnosis_run"
+msgstr ""
+
+#: src/domain.py:288
+msgid "log_domain_add"
+msgstr "Aldonu '{}' domajnon en sisteman agordon"
+
+#: src/domain.py:350 src/tools.py:179
+msgid "confirm_tos_acknowledgement"
+msgstr ""
+
+#: src/domain.py:442
+msgid "log_domain_remove"
+msgstr "Forigi domon '{}' de agordo de sistemo"
+
+#: src/domain.py:642
+msgid "log_domain_main_domain"
+msgstr "Faru de '{}' la ĉefa domajno"
+
+#: src/domain.py:744
+msgid "log_domain_config_set"
+msgstr ""
+
+#: src/domain.py:772 src/domain.py:826
+msgid "domain_config_cert_renew_help"
+msgstr ""
+
+#: src/domain.py:773
+msgid "domain_config_default_app_help"
+msgstr ""
+
+#: src/domain.py:805
+msgid "domain_config_cert_summary_expired"
+msgstr ""
+
+#: src/domain.py:806
+msgid "domain_config_cert_summary_selfsigned"
+msgstr ""
+
+#: src/domain.py:807
+msgid "domain_config_cert_summary_abouttoexpire"
+msgstr ""
+
+#: src/domain.py:808
+msgid "domain_config_cert_summary_ok"
+msgstr ""
+
+#: src/domain.py:809
+msgid "domain_config_cert_summary_letsencrypt"
+msgstr ""
+
+#: src/dyndns.py:101
+msgid "log_dyndns_subscribe"
+msgstr "Aboni al YunoHost-subdominio '{}'"
+
+#: src/dyndns.py:228
+msgid "log_dyndns_unsubscribe"
+msgstr ""
+
+#: src/dyndns.py:367
+msgid "log_dyndns_update"
+msgstr "Ĝisdatigu la IP asociita kun via subdominio YunoHost '{}'"
+
+#: src/regenconf.py:54
+msgid "log_regen_conf"
+msgstr "Regeneri sistemajn agordojn '{}'"
+
+#: src/settings.py:92
+msgid "log_settings_set"
+msgstr ""
+
+#: src/settings.py:107
+msgid "log_settings_reset"
+msgstr ""
+
+#: src/settings.py:121
+msgid "log_settings_reset_all"
+msgstr ""
+
+#: src/tools.py:139
+msgid "log_tools_postinstall"
+msgstr "Afiŝu vian servilon YunoHost"
+
+#: src/tools.py:363
+msgid "log_tools_update"
+msgstr ""
+
+#: src/tools.py:539
+msgid "log_tools_upgrade"
+msgstr "Ĝisdatigu sistemajn pakaĵojn"
+
+#: src/tools.py:662
+msgid "log_tools_shutdown"
+msgstr "Enŝaltu vian servilon"
+
+#: src/tools.py:681
+msgid "log_tools_reboot"
+msgstr "Reklamu vian servilon"
+
+#: src/tools.py:913
+msgid "log_tools_migrations_migrate_forward"
+msgstr "Kuru migradoj"
+
+#: src/user.py:167
+msgid "log_user_create"
+msgstr "Aldonu uzanton '{}'"
+
+#: src/user.py:339
+msgid "log_user_delete"
+msgstr "Forigi uzanton '{}'"
+
+#: src/user.py:416
+msgid "log_user_update"
+msgstr "Ĝisdatigu uzantinformojn de '{}'"
+
+#: src/user.py:755
+msgid "log_user_import"
+msgstr ""
+
+#: src/user.py:1094
+msgid "log_user_group_create"
+msgstr "Krei grupon '{}'"
+
+#: src/user.py:1174
+msgid "log_user_group_delete"
+msgstr "Forigi grupon '{}'"
+
+#: src/user.py:1220
+msgid "log_user_group_update"
+msgstr "Ĝisdatigi grupon '{}'"
+
+#: src/backup.py:771
+msgid "backup_applying_method_copy"
+msgstr "Kopii ĉiujn dosierojn por sekurigi…"
+
+#: src/backup.py:772
+msgid "backup_applying_method_custom"
+msgstr "Voki la laŭmendan rezervan metodon '{method}'…"
+
+#: src/backup.py:773
+msgid "backup_applying_method_tar"
+msgstr "Krei la rezervon TAR Arkivo…"
+
+#: src/backup.py:781
+msgid "backup_method_copy_finished"
+msgstr "Rezerva kopio finis"
+
+#: src/backup.py:782
+msgid "backup_method_custom_finished"
+msgstr "Propra rezerva metodo '{method}' finiĝis"
+
+#: src/backup.py:783
+msgid "backup_method_tar_finished"
+msgstr "TAR-rezerva ar archiveivo kreita"
+
+#: src/backup.py:2106
+msgid "log_backup_create"
+msgstr ""
+
+#: src/backup.py:1237
+msgid "log_backup_restore_system"
+msgstr "Restarigi sistemon de rezerva arkivo"
+
+#: src/backup.py:1344
+msgid "log_backup_restore_app"
+msgstr "Restarigu '{}' de rezerva ar archiveivo"
+
+#: src/dns.py:618
+msgid "log_domain_dns_push"
+msgstr ""
+
+#: src/diagnosers/21-web.py:143
+msgid "diagnosis_http_bad_status_code"
+msgstr ""
+"Ĝi aspektas kiel alia maŝino (eble via interreta enkursigilo) respondita "
+"anstataŭ via servilo.<br>1. La plej ofta kaŭzo por ĉi tiu afero estas, ke"
+" la haveno 80 (kaj 443) <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>"
+" ne estas ĝuste senditaj al via servilo </a>.<br>2. Pri pli kompleksaj "
+"agordoj: certigu, ke neniu fajroŝirmilo aŭ reverso-prokuro ne "
+"interbatalas."
+
+#: src/diagnosers/21-web.py:144
+msgid "diagnosis_http_connection_error"
+msgstr ""
+"Rilata eraro: ne povis konektiĝi al la petita domajno, tre probable ĝi "
+"estas neatingebla."
+
+#: src/diagnosers/21-web.py:145
+msgid "diagnosis_http_timeout"
+msgstr ""
+"Tempolimigita dum provado kontakti vian servilon de ekstere. Ĝi ŝajnas "
+"esti neatingebla.<br>1. La plej ofta kaŭzo por ĉi tiu afero estas, ke la "
+"haveno 80 (kaj 443) <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>ne"
+" estas ĝuste senditaj al via servilo</a>.<br>2. Vi ankaŭ devas certigi, "
+"ke la servo nginx funkcias<br>3. Pri pli kompleksaj agordoj: certigu, ke "
+"neniu fajroŝirmilo aŭ reverso-prokuro ne interbatalas."
+
+#: src/diagnosers/24-mail.py:55
+msgid "diagnosis_mail_outgoing_port_25_ok"
+msgstr ""
+"La SMTP-poŝta servilo kapablas sendi retpoŝtojn (eliranta haveno 25 ne "
+"estas blokita)."
+
+#: src/diagnosers/24-mail.py:56
+msgid "diagnosis_mail_ehlo_ok"
+msgstr ""
+"La SMTP-poŝta servilo atingeblas de ekstere kaj tial kapablas ricevi "
+"retpoŝtojn !"
+
+#: src/diagnosers/24-mail.py:57
+msgid "diagnosis_mail_fcrdns_ok"
+msgstr "Via inversa DNS estas ĝuste agordita!"
+
+#: src/diagnosers/24-mail.py:58
+msgid "diagnosis_mail_blocklist_ok"
+msgstr ""
+"La IP kaj domajnoj uzataj de ĉi tiu servilo ne ŝajnas esti listigitaj "
+"nigre"
+
+#: src/diagnosers/24-mail.py:59 src/diagnosers/24-mail.py:298
+msgid "diagnosis_mail_queue_ok"
+msgstr "{nb_pending} pritraktataj retpoŝtoj en la retpoŝtaj vostoj"
+
+#: src/diagnosers/24-mail.py:122
+msgid "diagnosis_mail_ehlo_bad_answer"
+msgstr "Ne-SMTP-servo respondita sur la haveno 25 sur IPv {ipversion}"
+
+#: src/diagnosers/24-mail.py:123
+msgid "diagnosis_mail_ehlo_bad_answer_details"
+msgstr "Povas esti ke alia maŝino respondas anstataŭ via servilo."
+
+#: src/diagnosers/24-mail.py:124
+msgid "diagnosis_mail_ehlo_unreachable"
+msgstr ""
+"La SMTP-poŝta servilo estas neatingebla de ekstere sur IPv {ipversion}. "
+"Ĝi ne povos ricevi retpoŝtojn."
+
+#: src/diagnosers/24-mail.py:125
+msgid "diagnosis_mail_ehlo_unreachable_details"
+msgstr ""
+"Ne povis malfermi rilaton sur la haveno 25 al via servilo en IPv "
+"{ipversion}. Ĝi ŝajnas esti neatingebla.<br>1. La plej ofta kaŭzo por ĉi "
+"tiu afero estas, ke la haveno 25 <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>ne"
+" estas ĝuste sendita al via servilo </a>.<br>2. Vi ankaŭ devas certigi, "
+"ke servo-prefikso funkcias.<br>3. Pri pli kompleksaj agordoj: certigu, ke"
+" neniu fajroŝirmilo aŭ reverso-prokuro ne interbatalas."
+
+#: src/diagnosers/80-apps.py:113
+msgid "diagnosis_apps_security_issue_warning"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:114
+msgid "diagnosis_apps_security_issue_error"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:268
+msgid "diagnosis_domain_not_found_details"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:304
+msgid "diagnosis_domain_expiration_not_found"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:305
+msgid "diagnosis_domain_expiration_error"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:306
+msgid "diagnosis_domain_expiration_warning"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:307
+msgid "diagnosis_domain_expiration_success"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:308
+msgid "diagnosis_domain_expiration_not_found_details"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:380
+msgid "diagnosis_package_security_issue_warning"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:381
+msgid "diagnosis_package_security_issue_error"
+msgstr ""
+
+#: src/utils/password.py:144
+msgid "password_listed"
+msgstr ""
+"Ĉi tiu pasvorto estas inter la plej uzataj pasvortoj en la mondo. Bonvolu"
+" elekti ion pli unikan."
+
+#: src/utils/password.py:147
+msgid "password_too_simple_1"
+msgstr "Pasvorto devas esti almenaŭ 8 signojn longa"
+
+#: src/utils/password.py:148
+msgid "password_too_simple_2"
+msgstr ""
+"La pasvorto bezonas almenaŭ 8 signojn kaj enhavas ciferon, majusklojn kaj"
+" minusklojn"
+
+#: src/utils/password.py:149
+msgid "password_too_simple_3"
+msgstr ""
+"La pasvorto bezonas almenaŭ 8 signojn kaj enhavas ciferon, majusklon, pli"
+" malaltan kaj specialajn signojn"
+
+#: src/utils/password.py:150
+msgid "password_too_simple_4"
+msgstr ""
+"La pasvorto bezonas almenaŭ 12 signojn kaj enhavas ciferon, majuskle, pli"
+" malaltan kaj specialajn signojn"
+
+#: src/utils/app_utils.py:97
+msgid "confirm_app_install_warning"
+msgstr ""
+"Averto: Ĉi tiu aplikaĵo povas funkcii, sed ne bone integras en YunoHost. "
+"Iuj funkcioj kiel ekzemple aliĝilo kaj sekurkopio / restarigo eble ne "
+"haveblos. Instali ĉiuokaze? [{answers}] "
+
+#: src/utils/app_utils.py:98
+msgid "confirm_app_install_danger"
+msgstr ""
+"Danĝero! Ĉi tiu apliko estas konata ankoraŭ eksperimenta (se ne "
+"eksplicite ne funkcias)! Vi probable ne devas instali ĝin krom se vi "
+"scias kion vi faras. NENIU SUBTENO estos provizita se ĉi tiu app ne "
+"funkcias aŭ rompas vian sistemon… Se vi pretas riski ĉiuokaze, tajpu "
+"'{answers}'"
+
+#: src/utils/app_utils.py:99
+msgid "confirm_app_install_thirdparty"
+msgstr ""
+"Danĝero! Ĉi tiu apliko ne estas parto de la aplika katalogo de Yunohost. "
+"Instali triajn aplikojn povas kompromiti la integrecon kaj sekurecon de "
+"via sistemo. Vi probable ne devas instali ĝin krom se vi scias kion vi "
+"faras. NENIU SUBTENO estos provizita se ĉi tiu app ne funkcias aŭ rompas "
+"vian sistemon… Se vi pretas riski ĉiuokaze, tajpu '{answers}'"
+
+#: src/utils/app_utils.py:483
+msgid "app_manifest_install_ask_domain"
+msgstr "Elektu la domajnon, kie ĉi tiu programo devas esti instalita"
+
+#: src/utils/app_utils.py:484
+msgid "app_manifest_install_ask_path"
+msgstr "Elektu la vojon, kie ĉi tiu programo devas esti instalita"
+
+#: src/utils/app_utils.py:485
+msgid "app_manifest_install_ask_password"
+msgstr "Elektu administradan pasvorton por ĉi tiu programo"
+
+#: src/utils/app_utils.py:486
+msgid "app_manifest_install_ask_admin"
+msgstr "Elektu administran uzanton por ĉi tiu programo"
+
+#: src/utils/app_utils.py:487
+msgid "app_manifest_install_ask_is_public"
+msgstr "Ĉu ĉi tiu programo devas esti eksponita al anonimaj vizitantoj?"
+
+#: src/utils/app_utils.py:491
+msgid "app_manifest_install_ask_init_main_permission"
+msgstr ""
+
+#: src/utils/app_utils.py:495
+msgid "app_manifest_install_ask_init_admin_permission"
+msgstr ""
+
+#: src/utils/app_utils.py:1326
+msgid "confirm_notifications_read"
+msgstr ""
+
+#: src/utils/form.py:1925
+msgid "visitors"
+msgstr ""
+
+#: src/utils/form.py:1926
+msgid "all_users"
+msgstr ""
+
+#: src/utils/form.py:1927
+msgid "admins"
+msgstr ""
+
+#: src/utils/form.py:2161
+msgid "pydantic_type_error"
+msgstr ""
+
+#: src/utils/form.py:2162
+msgid "pydantic_type_error_none_not_allowed"
+msgstr ""
+
+#: src/utils/form.py:2163
+msgid "pydantic_type_error_str"
+msgstr ""
+
+#: src/utils/form.py:2164
+msgid "pydantic_value_error_color"
+msgstr ""
+
+#: src/utils/form.py:2165
+msgid "pydantic_value_error_const"
+msgstr ""
+
+#: src/utils/form.py:2166
+msgid "pydantic_value_error_date"
+msgstr ""
+
+#: src/utils/form.py:2167
+msgid "pydantic_value_error_email"
+msgstr ""
+
+#: src/utils/form.py:2168
+msgid "pydantic_value_error_number_not_ge"
+msgstr ""
+
+#: src/utils/form.py:2169
+msgid "pydantic_value_error_number_not_le"
+msgstr ""
+
+#: src/utils/form.py:2170
+msgid "pydantic_value_error_str_regex"
+msgstr ""
+
+#: src/utils/form.py:2171
+msgid "pydantic_value_error_time"
+msgstr ""
+
+#: src/utils/form.py:2172
+msgid "pydantic_value_error_url_extra"
+msgstr ""
+
+#: src/utils/form.py:2173
+msgid "pydantic_value_error_url_host"
+msgstr ""
+
+#: src/utils/form.py:2174
+msgid "pydantic_value_error_url_port"
+msgstr ""
+
+#: src/utils/form.py:2175
+msgid "pydantic_value_error_url_scheme"
+msgstr ""
+
+#: src/utils/resources.py:284
+msgid "log_resource_snippet"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:53
+msgid "diagnosis_ip_not_connected_at_all"
+msgstr "La servilo tute ne ŝajnas esti konektita al la Interreto !?"
+
+#: src/diagnosers/10-ip.py:77
+msgid "diagnosis_ip_broken_dnsresolution"
+msgstr ""
+"Rezolucio pri domajna nomo rompiĝas pro iu kialo… Ĉu fajroŝirmilo blokas "
+"DNS-petojn ?"
+
+#: src/diagnosers/10-ip.py:79
+msgid "diagnosis_ip_broken_resolvconf"
+msgstr ""
+"Rezolucio pri domajna nomo estas rompita en via servilo, kiu ŝajnas "
+"rilata al <code>/etc/resolv.conf</code> ne montrante al <code>127.0.0.1 "
+"</code>."
+
+#: src/diagnosers/10-ip.py:89
+msgid "diagnosis_ip_weird_resolvconf"
+msgstr ""
+"DNS-rezolucio ŝajnas funkcii, sed ŝajnas ke vi uzas kutiman "
+"<code>/etc/resolv.conf </code>."
+
+#: src/diagnosers/10-ip.py:90
+msgid "diagnosis_ip_weird_resolvconf_details"
+msgstr ""
+"La dosiero <code>/etc/resolv.conf</code> devas esti ligilo al <code> "
+"/etc/resolvconf/run/resolv.conf </code> indikante <code> 127.0.0.1 "
+"</code> (dnsmasq). Se vi volas permane agordi DNS-solvilojn, bonvolu "
+"redakti <code> /etc/resolv.dnsmasq.conf </code>."
+
+#: src/diagnosers/10-ip.py:96
+msgid "diagnosis_ip_dnsresolution_working"
+msgstr "Rezolucio pri domajna nomo funkcias !"
+
+#: src/diagnosers/10-ip.py:131
+msgid "diagnosis_ip_connected_ipv4"
+msgstr "La servilo estas konektita al la interreto per IPv4 !"
+
+#: src/diagnosers/10-ip.py:131
+msgid "diagnosis_ip_no_ipv4"
+msgstr "La servilo ne havas funkciantan IPv4."
+
+#: src/diagnosers/10-ip.py:132 src/diagnosers/10-ip.py:149
+msgid "diagnosis_ip_global"
+msgstr "Tutmonda IP: <code>{global} </code>"
+
+#: src/diagnosers/10-ip.py:132 src/diagnosers/10-ip.py:149
+msgid "diagnosis_ip_local"
+msgstr "Loka IP: <code>{local} </code>"
+
+#: src/diagnosers/10-ip.py:147
+msgid "diagnosis_ip_connected_ipv6"
+msgstr "La servilo estas konektita al la interreto per IPv6 !"
+
+#: src/diagnosers/10-ip.py:147
+msgid "diagnosis_ip_no_ipv6"
+msgstr "La servilo ne havas funkciantan IPv6."
+
+#: src/diagnosers/10-ip.py:153
+msgid "diagnosis_ip_no_ipv6_tip_important"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:155
+msgid "diagnosis_ip_no_ipv6_tip"
+msgstr ""
+
+#: src/diagnosers/10-ip.py
+msgid "diagnosis_description_ip"
+msgstr "Interreta konektebleco"
+
+#: src/diagnosers/14-ports.py:75
+msgid "diagnosis_ports_could_not_diagnose"
+msgstr "Ne povis diagnozi, ĉu haveblaj havenoj de ekstere."
+
+#: src/diagnosers/14-ports.py:76
+msgid "diagnosis_ports_could_not_diagnose_details"
+msgstr "Eraro: {error}"
+
+#: src/diagnosers/14-ports.py:94 src/diagnosers/14-ports.py:155
+msgid "diagnosis_ports_ok"
+msgstr "Haveno {port} atingeblas de ekstere."
+
+#: src/diagnosers/14-ports.py:95 src/diagnosers/14-ports.py:107
+#: src/diagnosers/14-ports.py:142 src/diagnosers/14-ports.py:156
+#: src/diagnosers/14-ports.py:169
+msgid "diagnosis_ports_needed_by"
+msgstr "Eksponi ĉi tiun havenon necesas por {category} funkcioj (servo {service})"
+
+#: src/diagnosers/14-ports.py:105
+msgid "diagnosis_ports_unreachable"
+msgstr "Haveno {port} ne atingeblas de ekstere."
+
+#: src/diagnosers/14-ports.py:108 src/diagnosers/14-ports.py:143
+#: src/diagnosers/14-ports.py:170
+msgid "diagnosis_ports_forwarding_tip"
+msgstr ""
+"Por solvi ĉi tiun problemon, vi plej verŝajne devas agordi la plusendon "
+"de haveno en via interreta enkursigilo kiel priskribite en <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>https://doc.yunohost.org/admin/get_started/post_install/dns_config/</a>"
+
+#: src/diagnosers/14-ports.py:140 src/diagnosers/14-ports.py:167
+msgid "diagnosis_ports_partially_unreachable"
+msgstr "Haveno {port} ne atingebla de ekstere en IPv {failed}."
+
+#: src/diagnosers/14-ports.py
+msgid "diagnosis_description_ports"
+msgstr "Ekspoziciaj havenoj"
+
+#: src/diagnosers/21-web.py:50
+msgid "diagnosis_http_nginx_conf_not_up_to_date"
+msgstr ""
+"La nginx-agordo de ĉi tiu domajno ŝajnas esti modifita permane, kaj "
+"malhelpas YunoHost diagnozi ĉu ĝi atingeblas per HTTP."
+
+#: src/diagnosers/21-web.py:51
+msgid "diagnosis_http_nginx_conf_not_up_to_date_details"
+msgstr ""
+"Por solvi la situacion, inspektu la diferencon per la komandlinio per "
+"<cmd>yunohost tools regen-conf nginx --dry-run --with-diff</cmd> kaj se "
+"vi aranĝas, apliku la ŝanĝojn per <cmd>yunohost tools regen-conf nginx "
+"--force</cmd>."
+
+#: src/diagnosers/21-web.py:57
+msgid "diagnosis_http_special_use_tld"
+msgstr ""
+
+#: src/diagnosers/21-web.py:109
+msgid "diagnosis_http_hairpinning_issue"
+msgstr "Via loka reto ŝajne ne havas haŭtadon."
+
+#: src/diagnosers/21-web.py:110
+msgid "diagnosis_http_hairpinning_issue_details"
+msgstr ""
+"Ĉi tio probable estas pro via ISP-skatolo / enkursigilo. Rezulte, homoj "
+"de ekster via loka reto povos aliri vian servilon kiel atendite, sed ne "
+"homoj de interne de la loka reto (kiel vi, probable?) Kiam uzas la "
+"domajnan nomon aŭ tutmondan IP. Eble vi povas plibonigi la situacion per "
+"rigardado al <a "
+"href='https://doc.yunohost.org/dns_local_network'>https://doc.yunohost.org/dns_local_network</a>"
+
+#: src/diagnosers/21-web.py:133
+msgid "diagnosis_http_could_not_diagnose"
+msgstr "Ne povis diagnozi, ĉu atingeblas domajno de ekstere."
+
+#: src/diagnosers/21-web.py:134
+msgid "diagnosis_http_could_not_diagnose_details"
+msgstr "Eraro: {error}"
+
+#: src/diagnosers/21-web.py:159 src/diagnosers/21-web.py:215
+msgid "diagnosis_http_ok"
+msgstr "Domajno {domain} atingebla per HTTP de ekster la loka reto."
+
+#: src/diagnosers/21-web.py:169
+msgid "diagnosis_http_unreachable"
+msgstr "Domajno {domain} ŝajnas neatingebla per HTTP de ekster la loka reto."
+
+#: src/diagnosers/21-web.py:201 src/diagnosers/21-web.py:221
+msgid "diagnosis_http_partially_unreachable"
+msgstr ""
+"Domajno {domain} ŝajnas neatingebla per HTTP de ekster la loka reto en "
+"IPv {failed}, kvankam ĝi funkcias en IPv {passed}."
+
+#: src/diagnosers/21-web.py
+msgid "diagnosis_description_web"
+msgstr "Reta"
+
+#: src/diagnosers/24-mail.py:89
+msgid "diagnosis_mail_outgoing_port_25_blocked"
+msgstr ""
+"Eliranta haveno 25 ŝajnas esti blokita. Vi devas provi malŝlosi ĝin en "
+"via agorda panelo de provizanto (aŭ gastiganto). Dume la servilo ne povos"
+" sendi retpoŝtojn al aliaj serviloj."
+
+#: src/diagnosers/24-mail.py:91
+msgid "diagnosis_mail_outgoing_port_25_blocked_details"
+msgstr ""
+"Vi unue provu malŝlosi elirantan havenon 25 en via interreta enkursigilo "
+"aŭ en via retprovizanta interfaco. (Iuj gastigantaj provizantoj eble "
+"postulas, ke vi sendu al ili subtenan bileton por ĉi tio)."
+
+#: src/diagnosers/24-mail.py:92
+msgid "diagnosis_mail_outgoing_port_25_blocked_relay_vpn"
+msgstr ""
+"Iuj provizantoj ne lasos vin malŝlosi elirantan havenon 25 ĉar ili ne "
+"zorgas pri Neta Neŭtraleco.<br>- Iuj el ili provizas la alternativon de "
+"<a href='https://doc.yunohost.org/email_configure_relay'>uzante retpoŝtan"
+" servilon</a> kvankam ĝi implicas, ke la relajso povos spioni vian "
+"retpoŝtan trafikon.<br>- Amika privateco estas uzi VPN * kun dediĉita "
+"publika IP * por pretervidi ĉi tiun specon. de limoj. Vidu <a "
+"href='https://doc.yunohost.org/admin/get_started/providers/vpn/'>https://doc.yunohost.org/admin/get_started/providers/vpn/</a><br>-"
+" Vi ankaŭ povas konsideri ŝanĝi al <a "
+"href='https://doc.yunohost.org/providers/isp'>pli neta neŭtraleco-amika "
+"provizanto</a>"
+
+#: src/diagnosers/24-mail.py:116
+msgid "diagnosis_mail_ehlo_could_not_diagnose"
+msgstr ""
+"Ne povis diagnozi ĉu postfiksa poŝta servilo atingebla de ekstere en IPv "
+"{ipversion}."
+
+#: src/diagnosers/24-mail.py:117
+msgid "diagnosis_mail_ehlo_could_not_diagnose_details"
+msgstr "Eraro: {error}"
+
+#: src/diagnosers/24-mail.py:139
+msgid "diagnosis_mail_ehlo_wrong"
+msgstr ""
+"Malsama SMTP-poŝta servilo respondas pri IPv {ipversion}. Via servilo "
+"probable ne povos ricevi retpoŝtojn."
+
+#: src/diagnosers/24-mail.py:140
+msgid "diagnosis_mail_ehlo_wrong_details"
+msgstr ""
+"La EHLO ricevita de la fora diagnozilo en IPv {ipversion} diferencas de "
+"la domajno de via servilo.<br>Ricevita EHLO: <code>{wrong_ehlo} "
+"</code><br>Atendita: <code>{right_ehlo} </code><br>La plej ofta kaŭzo por"
+" ĉi tiu afero estas, ke la haveno 25 <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>ne"
+" estas ĝuste sendita al via servilo </a>. Alternative, certigu, ke neniu "
+"fajroŝirmilo aŭ reverso-prokuro ne interbatalas."
+
+#: src/diagnosers/24-mail.py:154 src/diagnosers/24-mail.py:160
+msgid "diagnosis_mail_fcrdns_nok_details"
+msgstr ""
+"Vi unue provu agordi la inversan DNS kun <code>{ehlo_domain}</code> en "
+"via interreta enkursigilo aŭ en via retprovizanta interfaco. (Iuj "
+"gastigantaj provizantoj eble postulas, ke vi sendu al ili subtenan "
+"bileton por ĉi tio)."
+
+#: src/diagnosers/24-mail.py:155
+msgid "diagnosis_mail_fcrdns_nok_alternatives_6"
+msgstr ""
+"Iuj provizantoj ne lasos vin agordi vian inversan DNS (aŭ ilia funkcio "
+"povus esti rompita…). Se via inversa DNS estas ĝuste agordita por IPv4, "
+"vi povas provi malebligi la uzon de IPv6 kiam vi sendas retpoŝtojn per "
+"funkciado <cmd>yunohost-agordoj set smtp.allow_ipv6 -v off </cmd>. Noto: "
+"ĉi tiu lasta solvo signifas, ke vi ne povos sendi aŭ ricevi retpoŝtojn de"
+" la malmultaj IPv6-nur serviloj tie."
+
+#: src/diagnosers/24-mail.py:161
+msgid "diagnosis_mail_fcrdns_nok_alternatives_4"
+msgstr ""
+"Iuj provizantoj ne lasos vin agordi vian inversan DNS (aŭ ilia funkcio "
+"povus esti rompita…). Se vi spertas problemojn pro tio, konsideru jenajn "
+"solvojn:<br>- Iuj ISP provizas la alternativon de <a "
+"href='https://doc.yunohost.org/email_configure_relay'>uzante retpoŝtan "
+"servilon</a> kvankam ĝi implicas, ke la relajso povos spioni vian "
+"retpoŝtan trafikon.<br>- Interreta privateco estas uzi VPN * kun dediĉita"
+" publika IP * por preterpasi ĉi tiajn limojn. Vidu <a "
+"href='https://doc.yunohost.org/admin/get_started/providers/vpn/'>https://doc.yunohost.org/admin/get_started/providers/vpn/</a><br>-"
+" Finfine eblas ankaŭ <a "
+"href='https://doc.yunohost.org/providers/isp'>ŝanĝo de provizanto</a>"
+
+#: src/diagnosers/24-mail.py:179
+msgid "diagnosis_mail_fcrdns_dns_missing"
+msgstr ""
+"Neniu inversa DNS estas difinita en IPv {ipversion}. Iuj retpoŝtoj povas "
+"malsukcesi liveri aŭ povus esti markitaj kiel spamo."
+
+#: src/diagnosers/24-mail.py:189
+msgid "diagnosis_mail_fcrdns_different_from_ehlo_domain_details"
+msgstr ""
+"Aktuala reverso DNS: <code>{rdns_domain}</code><br>Atendita valoro: "
+"<code>{ehlo_domain}</code>"
+
+#: src/diagnosers/24-mail.py:199
+msgid "diagnosis_mail_fcrdns_different_from_ehlo_domain"
+msgstr ""
+"La inversa DNS ne ĝuste agordis en IPv {ipversion}. Iuj retpoŝtoj povas "
+"malsukcesi liveri aŭ povus esti markitaj kiel spamo."
+
+#: src/diagnosers/24-mail.py:243
+msgid "diagnosis_mail_blocklist_reason"
+msgstr "La negra listo estas: {reason}"
+
+#: src/diagnosers/24-mail.py:245
+msgid "diagnosis_mail_blocklist_reason_openresolver"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:248
+msgid "diagnosis_mail_blocklist_website"
+msgstr ""
+"Post identigi kial vi listigas kaj riparis ĝin, bonvolu peti forigi vian "
+"IP aŭ domenion sur {blocklist_website}"
+
+#: src/diagnosers/24-mail.py:262
+msgid "diagnosis_mail_blocklist_listed_by"
+msgstr "Via IP aŭ domajno <code>{item}</code> estas listigita en {blocklist_name}"
+
+#: src/diagnosers/24-mail.py:282
+msgid "diagnosis_mail_queue_unavailable"
+msgstr "Ne povas konsulti multajn pritraktitajn retpoŝtojn en vosto"
+
+#: src/diagnosers/24-mail.py:283
+msgid "diagnosis_mail_queue_unavailable_details"
+msgstr "Eraro: {error}"
+
+#: src/diagnosers/24-mail.py:291
+msgid "diagnosis_mail_queue_too_big"
+msgstr "Tro multaj pritraktataj retpoŝtoj en retpoŝto ({nb_pending} retpoŝtoj)"
+
+#: src/diagnosers/24-mail.py
+msgid "diagnosis_description_mail"
+msgstr "Retpoŝto"
+
+#: src/diagnosers/30-services.py:45
+msgid "diagnosis_services_bad_status"
+msgstr "Servo {service} estas {status} :("
+
+#: src/diagnosers/30-services.py:46
+msgid "diagnosis_services_bad_status_tip"
+msgstr ""
+"Vi povas provi <a href='#/services/{service}'>rekomenci la servon </a>, "
+"kaj se ĝi ne funkcias, rigardu <a href='#/services/{service}'>La servaj "
+"registroj en reteja</a> (el la komandlinio, vi povas fari tion per "
+"<cmd>yunohost service restart {service}</cmd> kaj<cmd>yunohost service "
+"log {service}</cmd>)."
+
+#: src/diagnosers/30-services.py:50
+msgid "diagnosis_services_conf_broken"
+msgstr "Agordo estas rompita por servo {service} !"
+
+#: src/diagnosers/30-services.py:55
+msgid "diagnosis_services_running"
+msgstr "Servo {service} funkcias!"
+
+#: src/diagnosers/30-services.py
+msgid "diagnosis_description_services"
+msgstr "Servo kontrolas staton"
+
+#: src/diagnosers/70-regenconf.py:41
+msgid "diagnosis_regenconf_allgood"
+msgstr "Ĉiuj agordaj dosieroj kongruas kun la rekomendita agordo!"
+
+#: src/diagnosers/70-regenconf.py:52
+msgid "diagnosis_regenconf_manually_modified"
+msgstr "Agordodosiero <code>{file}</code> ŝajnas esti permane modifita."
+
+#: src/diagnosers/70-regenconf.py:53
+msgid "diagnosis_regenconf_manually_modified_details"
+msgstr ""
+"Ĉi tio probable estas bona, se vi scias, kion vi faras! YunoHost ĉesigos "
+"ĝisdatigi ĉi tiun dosieron aŭtomate… Sed atentu, ke YunoHost-ĝisdatigoj "
+"povus enhavi gravajn rekomendajn ŝanĝojn. Se vi volas, vi povas inspekti "
+"la diferencojn per <cmd>yyunohost tools regen-conf {category} --dry-run "
+"--with-diff</cmd> kaj devigi la reset al la rekomendita agordo per "
+"<cmd>yunohost tools regen-conf {category} --force</cmd>"
+
+#: src/diagnosers/70-regenconf.py:66
+msgid "diagnosis_sshd_config_insecure"
+msgstr ""
+
+#: src/diagnosers/70-regenconf.py:78
+msgid "diagnosis_sshd_config_inconsistent"
+msgstr ""
+
+#: src/diagnosers/70-regenconf.py:79
+msgid "diagnosis_sshd_config_inconsistent_details"
+msgstr ""
+
+#: src/diagnosers/70-regenconf.py
+msgid "diagnosis_description_regenconf"
+msgstr "Sistemaj agordoj"
+
+#: src/diagnosers/50-systemresources.py:56
+msgid "diagnosis_ram_verylow"
+msgstr "La sistemo nur restas {available} ({available_percent}%) RAM! (el {total})"
+
+#: src/diagnosers/50-systemresources.py:59
+msgid "diagnosis_ram_low"
+msgstr ""
+"La sistemo havas {available} ({available_percent}%) RAM forlasita de "
+"{total}. Estu zorgema."
+
+#: src/diagnosers/50-systemresources.py:62
+msgid "diagnosis_ram_ok"
+msgstr ""
+"La sistemo ankoraŭ havas {available} ({available_percent}%) RAM forlasita"
+" de {total}."
+
+#: src/diagnosers/50-systemresources.py:76
+msgid "diagnosis_swap_none"
+msgstr ""
+"La sistemo tute ne havas interŝanĝon. Vi devus pripensi aldoni almenaŭ "
+"{recommended} da interŝanĝo por eviti situaciojn en kiuj la sistemo "
+"restas sen memoro."
+
+#: src/diagnosers/50-systemresources.py:79
+msgid "diagnosis_swap_notsomuch"
+msgstr ""
+"La sistemo havas nur {total}-interŝanĝon. Vi konsideru havi almenaŭ "
+"{recommended} por eviti situaciojn en kiuj la sistemo restas sen memoro."
+
+#: src/diagnosers/50-systemresources.py:82
+msgid "diagnosis_swap_ok"
+msgstr "La sistemo havas {total} da interŝanĝoj!"
+
+#: src/diagnosers/50-systemresources.py:83
+msgid "diagnosis_swap_tip"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py:128
+msgid "diagnosis_diskusage_verylow"
+msgstr ""
+"Stokado <code>{mountpoint}</code> (sur aparato <code> {device} </code>) "
+"nur restas {free} ({free_percent}%) spaco restanta (el {total}). Vi vere "
+"konsideru purigi iom da spaco !"
+
+#: src/diagnosers/50-systemresources.py:133
+msgid "diagnosis_diskusage_low"
+msgstr ""
+"Stokado <code>{mountpoint}</code> (sur aparato <code>{device}</code>) nur"
+" restas {free} ({free_percent}%) spaco restanta (el {total}). Estu "
+"zorgema."
+
+#: src/diagnosers/50-systemresources.py:136
+msgid "diagnosis_diskusage_ok"
+msgstr ""
+"Stokado <code>{mountpoint}</code> (sur aparato <code>{device}</code>) "
+"ankoraŭ restas {free} ({free_percent}%) spaco (el {total})!"
+
+#: src/diagnosers/50-systemresources.py:158
+msgid "diagnosis_rootfstotalspace_critical"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py:165
+msgid "diagnosis_rootfstotalspace_warning"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py:181
+msgid "diagnosis_processes_killed_by_oom_reaper"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py
+msgid "diagnosis_description_systemresources"
+msgstr "Rimedaj sistemoj"
+
+#: src/diagnosers/80-apps.py:49
+msgid "diagnosis_apps_allgood"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:69
+msgid "diagnosis_apps_issue"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:130
+msgid "diagnosis_apps_not_in_app_catalog"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:135
+msgid "diagnosis_apps_broken"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:137
+msgid "diagnosis_apps_bad_quality"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:142
+msgid "diagnosis_apps_outdated_packaging_format"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:152
+msgid "diagnosis_apps_outdated_ynh_requirement"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:169 src/diagnosers/80-apps.py:176
+msgid "diagnosis_apps_deprecated_practices"
+msgstr ""
+
+#: src/diagnosers/80-apps.py
+msgid "diagnosis_description_apps"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:90
+msgid "diagnosis_dns_specialusedomain"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:133
+msgid "diagnosis_dns_missing_record"
+msgstr ""
+"Laŭ la rekomendita DNS-agordo, vi devas aldoni DNS-registron "
+"kun.<br>Tipo: <code>{type}</code><br>Nomo: <code>{name}</code><br>Valoro:"
+" <code>{content}</code>"
+
+#: src/diagnosers/12-dnsrecords.py:136
+msgid "diagnosis_dns_discrepancy"
+msgstr ""
+"La DNS-registro kun tipo <code>{type}</code> kaj nomo <code>{name}</code>"
+" ne kongruas kun la rekomendita agordo:<br>Nuna valoro: "
+"<code>{current}</code><br>Esceptita valoro: <code>{content}</code>"
+
+#: src/diagnosers/12-dnsrecords.py:156
+msgid "diagnosis_dns_bad_conf"
+msgstr ""
+"Iuj DNS-registroj mankas aŭ malĝustas por domajno {domain} (kategorio "
+"{category})"
+
+#: src/diagnosers/12-dnsrecords.py:159
+msgid "diagnosis_dns_good_conf"
+msgstr ""
+"DNS-registroj estas ĝuste agorditaj por domajno {domain} (kategorio "
+"{category})"
+
+#: src/diagnosers/12-dnsrecords.py:177
+msgid "diagnosis_dns_try_dyndns_update_force"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:180
+msgid "diagnosis_dns_point_to_doc"
+msgstr ""
+"Bonvolu kontroli la dokumentaron ĉe <a "
+"href='https://doc.yunohost.org/dns_config'>https://doc.yunohost.org/dns_config</a>"
+" se vi bezonas helpon pri agordo de DNS-registroj."
+
+#: src/diagnosers/12-dnsrecords.py:292
+msgid "diagnosis_domain_expires_in"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py
+msgid "diagnosis_description_dnsrecords"
+msgstr "Registroj DNS"
+
+#: src/diagnosers/00-basesystem.py:62
+msgid "diagnosis_basesystem_hardware"
+msgstr "Arkitekturo de servila aparataro estas {virt} {arch}"
+
+#: src/diagnosers/00-basesystem.py:69 src/diagnosers/00-basesystem.py:78
+msgid "diagnosis_basesystem_hardware_model"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:88
+msgid "diagnosis_basesystem_kernel"
+msgstr "Servilo funkcias Linuksan kernon {kernel_version}"
+
+#: src/diagnosers/00-basesystem.py:96
+msgid "diagnosis_basesystem_host"
+msgstr "Servilo funkcias Debian {debian_version}"
+
+#: src/diagnosers/00-basesystem.py:112
+msgid "diagnosis_basesystem_ynh_single_version"
+msgstr "{package} versio: {version} ({repo})"
+
+#: src/diagnosers/00-basesystem.py:130
+msgid "diagnosis_basesystem_ynh_main_version"
+msgstr "Servilo funkcias YunoHost {main_version} ({repo})"
+
+#: src/diagnosers/00-basesystem.py:132
+msgid "diagnosis_basesystem_ynh_inconsistent_versions"
+msgstr ""
+"Vi prizorgas malkonsekvencajn versiojn de la YunoHost-pakoj… plej "
+"probable pro malsukcesa aŭ parta ĝisdatigo."
+
+#: src/diagnosers/00-basesystem.py:141
+msgid "diagnosis_security_vulnerable_to_meltdown"
+msgstr "Vi ŝajnas vundebla al la kritiko-vundebleco de Meltdown"
+
+#: src/diagnosers/00-basesystem.py:142
+msgid "diagnosis_security_vulnerable_to_meltdown_details"
+msgstr ""
+"Por ripari tion, vi devas ĝisdatigi vian sistemon kaj rekomenci por ŝarĝi"
+" la novan linux-kernon (aŭ kontaktu vian servilan provizanton se ĉi tio "
+"ne funkcias). Vidu https://meltdownattack.com/ por pliaj informoj."
+
+#: src/diagnosers/00-basesystem.py:154
+msgid "diagnosis_package_installed_from_sury"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:155
+msgid "diagnosis_package_installed_from_sury_details"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:162
+msgid "diagnosis_backports_in_sources_list"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:189
+msgid "diagnosis_using_yunohost_testing"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:190
+msgid "diagnosis_using_yunohost_testing_details"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:206
+msgid "diagnosis_using_stable_codename"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:207
+msgid "diagnosis_using_stable_codename_details"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:214
+msgid "diagnosis_high_number_auth_failures"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:222
+msgid "diagnosis_rfkill_wifi"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:223
+msgid "diagnosis_rfkill_wifi_details"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py
+msgid "diagnosis_description_basesystem"
+msgstr "Baza sistemo"
+
+#: src/migrations/m0032_firewall_config.py
+msgid "migration_description_0032_firewall_config"
+msgstr ""
+
+#: src/migrations/m0033_rework_permission_infos.py
+msgid "migration_description_0033_rework_permission_infos"
+msgstr ""
+
+#: src/migrations/m0034_fix_missing_admins_aliases.py
+msgid "migration_description_0034_fix_missing_admins_aliases"
+msgstr ""
+
+#: src/migrations/m0035_fix_apps_nodejs_version.py
+msgid "migration_description_0035_fix_apps_nodejs_version"
+msgstr ""
+
+#: src/migrations/m0031_terms_of_services.py
+msgid "migration_description_0031_terms_of_services"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled
+msgid "migration_description_0036_migrate_to_trixie"
+msgstr ""
+

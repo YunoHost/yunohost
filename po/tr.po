@@ -1,0 +1,3682 @@
+# Turkish translations for yunohost package.
+# Copyright (C) 2014-2026 YunoHost
+# ssh <ssh@yunohost.org>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: yunohost 13.0.1\n"
+"Report-Msgid-Bugs-To: ssh@yunohost.org\n"
+"POT-Creation-Date: 2026-04-21 21:34+0200\n"
+"PO-Revision-Date: 2026-04-21 21:34+0200\n"
+"Last-Translator: Automatically generated\n"
+"Language: tr\n"
+"Language-Team: none\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: conf/yunohost/services.yml
+msgid "service_description_dnsmasq"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_dovecot"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_fail2ban"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_mysql"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_nginx"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_opendkim"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_postfix"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_postgresql"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_redis-server"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_slapd"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_ssh"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunohost-portal-api"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunohost-api"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_nftables"
+msgstr ""
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunomdns"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "pattern_username"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "ask_fullname"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "pattern_fullname"
+msgstr ""
+
+#: share/actionsmap.yml src/user.py:496
+msgid "ask_password"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "good_practices_about_user_password"
+msgstr ""
+"Şimdi yeni bir kullanıcı şifresi tanımlamak üzeresiniz. Parola en az 8 "
+"karakter uzunluğunda olmalıdır - ancak daha uzun bir parola (yani bir "
+"parola) ve/veya çeşitli karakterler (büyük harf, küçük harf, rakamlar ve "
+"özel karakterler) daha iyidir."
+
+#: share/actionsmap.yml
+msgid "pattern_password"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "pattern_domain"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "pattern_mailbox_quota"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "pattern_email"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "pattern_email_forward"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "ask_new_domain"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "ask_new_path"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "pattern_backup_archive_name"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "pattern_port_or_range"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "ask_new_admin_password"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "good_practices_about_admin_password"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "ask_main_domain"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "ask_admin_username"
+msgstr ""
+
+#: share/actionsmap.yml
+msgid "ask_admin_fullname"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_entrypoint"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_application_key"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_application_secret"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_consumer_key"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_token"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_api_protocol"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_key"
+msgstr ""
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_secret"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_feature_name"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_mail_out"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_mail_in"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_default_app"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_name"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_enable_public_apps_page"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_enable_public_apps_page_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_show_other_domains_apps"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_title"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_logo"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_logo_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_theme"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_theme_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_tile_theme"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine_name"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_user_intro"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_user_intro_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_public_intro"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_portal_public_intro_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_custom_css"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_custom_css_help"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_dns_name"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_name"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_summary"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_validity"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_issuer"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_acme_eligible"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_acme_eligible_explain"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_no_checks"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_install"
+msgstr ""
+
+#: share/config_domain.toml
+msgid "domain_config_cert_renew"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config__core_name"
+msgstr ""
+
+#: share/config_app.toml src/app.py:2448
+msgid "app_config_permission_location"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_label"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_description"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_description_help"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_show_tile"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_logo"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_logo_help"
+msgstr ""
+
+#: share/config_app.toml
+msgid "app_config_permission_allowed"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_password_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_admin_strength"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_admin_strength_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_user_strength"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_user_strength_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_passwordless_sudo"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_compatibility"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_compatibility_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_port"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_port_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_password_authentication"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_password_authentication_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_redirect_to_https"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_redirect_to_https_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_compatibility"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_compatibility_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_compatibility"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_compatibility_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_enabled_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_alias"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_alias_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_forward"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_forward_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_access_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_access_explain"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_password"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_password_confirm"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_experimental_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_experimental_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_experimental_enabled_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_email_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_enabled_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_allow_ipv6"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_allow_ipv6_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_enabled_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_host"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_port"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_user"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_password"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_domains"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_domains_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_emails_whitelisted"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_emails_whitelisted_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_antispam_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_enable_blocklists"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_enable_blocklists_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_misc_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_compress_tar_archives"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_compress_tar_archives_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_network_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_exposure"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_exposure_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_enabled_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_list"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_list_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_name"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_enabled"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_enabled_help"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_explain"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_list"
+msgstr ""
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_list_help"
+msgstr ""
+
+#: src/__init__.py:142
+msgid "yunohost_not_installed"
+msgstr ""
+
+#: src/app.py:328
+msgid "app_upgrade_url_required"
+msgstr ""
+
+#: src/app.py:355
+msgid "app_upgrade_specific_channel_msg"
+msgstr ""
+
+#: src/app.py:382
+msgid "app_upgrade_bad_quality"
+msgstr ""
+
+#: src/app.py:398
+msgid "app_upgrade_up_to_date"
+msgstr ""
+
+#: src/app.py:595
+msgid "app_change_url_no_script"
+msgstr ""
+"{app_name} uygulaması henüz URL değişikliğini desteklemiyor. Paket "
+"yükseltmeniz gerekebilir."
+
+#: src/app.py:612
+msgid "app_change_url_identical_domains"
+msgstr ""
+"('{domain}{path}') Eski ve yeni alan adının veya URL adresler aynı.Şu "
+"anda yapacak bir şey bulunmuyor."
+
+#: src/app.py:621
+msgid "app_change_url_require_full_domain"
+msgstr ""
+"{app} bu yeni URL'ye taşınamaz. Çünkü ana etki alanı gerekli (Yani path ="
+" / olmalı )"
+
+#: src/app.py:672
+msgid "app_change_url_script_failed"
+msgstr "URL değiştirme betiğinde bir hata oluştu"
+
+#: src/app.py:674
+msgid "app_change_url_failed"
+msgstr "{app}: {error} için url değiştirilemedi"
+
+#: src/app.py:705
+msgid "app_change_url_success"
+msgstr "{app} URL artık {domain}{path}"
+
+#: src/app.py:772
+msgid "disk_space_not_sufficient_update"
+msgstr ""
+
+#: src/app.py:800
+msgid "app_upgrade_cli_url_required"
+msgstr ""
+
+#: src/app.py:820 src/app.py:830
+msgid "app_upgrade_cli_will_upgrade"
+msgstr ""
+
+#: src/app.py:839
+msgid "app_upgrade_cli_will_force_upgrade"
+msgstr ""
+
+#: src/app.py:847
+msgid "app_upgrade_cli_up_to_date"
+msgstr ""
+
+#: src/app.py:853
+msgid "app_upgrade_cli_bad_quality"
+msgstr ""
+
+#: src/app.py:880
+msgid "app_upgrade_app_name"
+msgstr ""
+
+#: src/app.py:946
+msgid "backup_before_upgrade_deleted_because_replaced_by_newer_backup"
+msgstr ""
+
+#: src/app.py:1014
+msgid "app_upgrade_script_failed"
+msgstr ""
+
+#: src/app.py:1016 src/app.py:1040
+msgid "app_upgrade_failed"
+msgstr ""
+
+#: src/app.py:1093
+msgid "app_upgrade_failed_and_broke_the_system"
+msgstr ""
+
+#: src/app.py:1095
+msgid "app_upgrade_broke_the_system"
+msgstr ""
+
+#: src/app.py:1102
+msgid "app_upgraded"
+msgstr ""
+
+#: src/app.py:1151 src/tools.py:580
+msgid "apps_already_up_to_date"
+msgstr ""
+
+#: src/app.py:1160
+msgid "apps_no_target_can_be_upgraded"
+msgstr ""
+
+#: src/app.py:1170
+msgid "app_upgrade_several_apps"
+msgstr ""
+
+#: src/app.py:1234
+msgid "app_upgrade_continuing_with_other_apps"
+msgstr ""
+
+#: src/app.py:1240
+msgid "apps_upgrade_cancelled"
+msgstr ""
+
+#: src/app.py:1340
+msgid "disk_space_not_sufficient_install"
+msgstr ""
+
+#: src/app.py:1354
+msgid "app_id_invalid"
+msgstr "Geçersiz uygulama kimliği"
+
+#: src/app.py:1411
+msgid "app_start_install"
+msgstr ""
+
+#: src/app.py:1501
+msgid "app_install_script_failed"
+msgstr "Uygulama indirme script'inde (betikde) bir hata oluştu"
+
+#: src/app.py:1503 src/app.py:1514
+msgid "app_install_failed"
+msgstr "{app} indirilmedi: {error}"
+
+#: src/app.py:1538
+msgid "app_remove_after_failed_install"
+msgstr ""
+
+#: src/app.py:1570 src/app.py:1694 src/backup.py:1390 src/hook.py:576
+#: src/service.py:636 src/settings.py:193 src/utils/configpanel.py:641
+#: src/utils/configpanel.py:730
+msgid "unexpected_error"
+msgstr ""
+
+#: src/app.py:1578 src/app.py:1720
+msgid "app_not_properly_removed"
+msgstr ""
+
+#: src/app.py:1610
+msgid "installation_complete"
+msgstr ""
+
+#: src/app.py:1656
+msgid "app_start_remove"
+msgstr ""
+
+#: src/app.py:1717
+msgid "app_removed"
+msgstr ""
+
+#: src/app.py:1849
+msgid "app_already_installed_cant_change_url"
+msgstr ""
+"Bu uygulama zaten kurulu. URL yalnızca bu işlev kullanarak "
+"değiştirilemez. Eğer varsa `app changeurl`'i kontrol edin."
+
+#: src/app.py:2087
+msgid "ssowat_conf_generated"
+msgstr ""
+
+#: src/app.py:2223 src/utils/form.py:996 src/utils/form.py:1312
+#: src/utils/form.py:1325 src/utils/form.py:1700 src/utils/form.py:1878
+#: src/utils/form.py:2305
+msgid "app_argument_invalid"
+msgstr "'{name}': {error} için geçerli bir değer giriniz"
+
+#: src/app.py:2268
+msgid "app_config_unable_to_read"
+msgstr "Yapılandırma paneli değerleri okunamadı."
+
+#: src/app.py:2270
+msgid "app_config_unable_to_apply"
+msgstr "Yapılandırma paneli değerleri uygulanamadı."
+
+#: src/app.py:2272
+msgid "app_action_failed"
+msgstr "{app} uygulaması için {action} eylemini çalıştırma başarısız"
+
+#: src/app.py:2468
+msgid "app_config_permission_allowed_warn_protected"
+msgstr ""
+
+#: src/app_catalog.py:194
+msgid "apps_catalog_updating"
+msgstr ""
+
+#: src/app_catalog.py:216
+msgid "apps_catalog_failed_to_download"
+msgstr ""
+
+#: src/app_catalog.py:275
+msgid "apps_catalog_update_success"
+msgstr ""
+
+#: src/app_catalog.py:329
+msgid "apps_catalog_obsolete_cache"
+msgstr ""
+
+#: src/backup.py:363 src/backup.py:2159
+msgid "backup_output_directory_not_empty"
+msgstr ""
+
+#: src/backup.py:386
+msgid "backup_hook_unknown"
+msgstr ""
+
+#: src/backup.py:403
+msgid "unbackup_app"
+msgstr ""
+
+#: src/backup.py:418
+msgid "backup_with_no_backup_script_for_app"
+msgstr ""
+
+#: src/backup.py:422
+msgid "backup_with_no_restore_script_for_app"
+msgstr ""
+
+#: src/backup.py:502
+msgid "backup_csv_creation_failed"
+msgstr ""
+
+#: src/backup.py:508
+msgid "backup_csv_addition_failed"
+msgstr ""
+
+#: src/backup.py:547
+msgid "backup_no_file_collected"
+msgstr ""
+
+#: src/backup.py:616
+msgid "backup_running_hooks"
+msgstr ""
+
+#: src/backup.py:669 src/backup.py:1037
+msgid "restore_hook_unavailable"
+msgstr ""
+
+#: src/backup.py:673
+msgid "backup_system_part_failed"
+msgstr ""
+
+#: src/backup.py:722
+msgid "app_start_backup"
+msgstr ""
+
+#: src/backup.py:744
+msgid "backup_app_script_failed"
+msgstr ""
+
+#: src/backup.py:895
+msgid "restore_backup_too_old"
+msgstr ""
+
+#: src/backup.py:930 src/backup.py:1962 src/backup.py:2438 src/backup.py:2453
+msgid "backup_archive_cant_retrieve_info_json"
+msgstr ""
+
+#: src/backup.py:986
+msgid "restore_cleaning_failed"
+msgstr ""
+
+#: src/backup.py:1004
+msgid "backup_archive_system_part_not_available"
+msgstr ""
+
+#: src/backup.py:1066
+msgid "backup_archive_app_not_found"
+msgstr ""
+
+#: src/backup.py:1079 src/backup.py:1084
+msgid "restore_already_installed_apps"
+msgstr ""
+
+#: src/backup.py:1111 src/backup.py:1120
+msgid "restore_removing_tmp_dir_failed"
+msgstr ""
+
+#: src/backup.py:1185
+msgid "restore_may_be_not_enough_disk_space"
+msgstr ""
+
+#: src/backup.py:1192
+msgid "restore_not_enough_disk_space"
+msgstr ""
+
+#: src/backup.py:1240
+msgid "restore_running_hooks"
+msgstr ""
+
+#: src/backup.py:1272 src/backup.py:1278
+msgid "restore_system_part_failed"
+msgstr ""
+
+#: src/backup.py:1338
+msgid "restore_already_installed_app"
+msgstr ""
+
+#: src/backup.py:1347
+msgid "app_start_restore"
+msgstr ""
+
+#: src/backup.py:1361
+msgid "unrestore_app"
+msgstr ""
+
+#: src/backup.py:1391 src/backup.py:1445
+msgid "app_restore_failed"
+msgstr ""
+
+#: src/backup.py:1403
+msgid "restore_running_app_script"
+msgstr ""
+
+#: src/backup.py:1443
+msgid "app_restore_script_failed"
+msgstr ""
+
+#: src/backup.py:1568 src/backup.py:1572
+msgid "backup_abstract_method"
+msgstr ""
+
+#: src/backup.py:1641 src/backup.py:2589
+msgid "backup_cleaning_failed"
+msgstr ""
+
+#: src/backup.py:1662
+msgid "not_enough_disk_space"
+msgstr ""
+
+#: src/backup.py:1702
+msgid "backup_couldnt_bind"
+msgstr ""
+
+#: src/backup.py:1765
+msgid "backup_ask_for_copying_if_needed"
+msgstr ""
+
+#: src/backup.py:1771
+msgid "backup_unable_to_organize_files"
+msgstr ""
+
+#: src/backup.py:1779
+msgid "backup_copying_to_organize_the_archive"
+msgstr ""
+
+#: src/backup.py:1826
+msgid "backup_no_uncompress_archive_dir"
+msgstr ""
+
+#: src/backup.py:1840
+msgid "backup_cant_mount_uncompress_archive"
+msgstr ""
+
+#: src/backup.py:1890 src/backup.py:1941
+msgid "backup_archive_open_failed"
+msgstr ""
+
+#: src/backup.py:1901
+msgid "backup_archive_writing_error"
+msgstr ""
+
+#: src/backup.py:1908
+msgid "backup_creation_failed"
+msgstr ""
+
+#: src/backup.py:1931
+msgid "restore_extracting"
+msgstr ""
+
+#: src/backup.py:1947 src/backup.py:2423
+msgid "backup_archive_corrupted"
+msgstr ""
+
+#: src/backup.py:2070
+msgid "backup_custom_backup_error"
+msgstr ""
+
+#: src/backup.py:2087
+msgid "backup_custom_mount_error"
+msgstr ""
+
+#: src/backup.py:2137
+msgid "backup_archive_name_exists"
+msgstr ""
+
+#: src/backup.py:2152
+msgid "backup_output_directory_forbidden"
+msgstr ""
+
+#: src/backup.py:2156
+msgid "backup_output_directory_required"
+msgstr ""
+
+#: src/backup.py:2204
+msgid "backup_actually_backuping"
+msgstr ""
+
+#: src/backup.py:2207
+msgid "backup_create_size_estimation"
+msgstr ""
+
+#: src/backup.py:2213
+msgid "backup_created"
+msgstr ""
+
+#: src/backup.py:2265 src/tools.py:169
+msgid "yunohost_already_installed"
+msgstr ""
+
+#: src/backup.py:2270
+msgid "restore_confirm_yunohost_installed"
+msgstr ""
+
+#: src/backup.py:2278
+msgid "restore_failed"
+msgstr ""
+
+#: src/backup.py:2284
+msgid "backup_mount_archive_for_restore"
+msgstr ""
+
+#: src/backup.py:2290
+msgid "restore_complete"
+msgstr ""
+
+#: src/backup.py:2292
+msgid "restore_nothings_done"
+msgstr ""
+
+#: src/backup.py:2353 src/backup.py:2399 src/backup.py:2508
+msgid "backup_archive_name_unknown"
+msgstr ""
+
+#: src/backup.py:2362 src/backup.py:2408
+msgid "backup_archive_broken_link"
+msgstr ""
+
+#: src/backup.py:2531
+msgid "backup_delete_error"
+msgstr ""
+
+#: src/backup.py:2540
+msgid "backup_deleted"
+msgstr ""
+
+#: src/backup.py:2552
+msgid "backup_output_symlink_dir_broken"
+msgstr ""
+
+#: src/certificate.py:179
+msgid "certmanager_attempt_to_replace_valid_cert"
+msgstr ""
+
+#: src/certificate.py:211
+msgid "domain_cert_gen_failed"
+msgstr ""
+
+#: src/certificate.py:239
+msgid "certmanager_cert_install_success_selfsigned"
+msgstr ""
+
+#: src/certificate.py:251
+msgid "certmanager_cert_install_failed_selfsigned"
+msgstr ""
+
+#: src/certificate.py:281
+msgid "certmanager_domain_cert_not_selfsigned"
+msgstr ""
+
+#: src/certificate.py:315
+msgid "certmanager_cert_install_success"
+msgstr ""
+
+#: src/certificate.py:321 src/domain.py:439
+msgid "certmanager_cert_install_failed"
+msgstr ""
+
+#: src/certificate.py:360 src/certificate.py:392
+msgid "certmanager_acme_not_configured_for_domain"
+msgstr ""
+
+#: src/certificate.py:380
+msgid "certmanager_attempt_to_renew_valid_cert"
+msgstr ""
+
+#: src/certificate.py:386
+msgid "certmanager_attempt_to_renew_nonLE_cert"
+msgstr ""
+
+#: src/certificate.py:443
+msgid "certmanager_cert_renew_success"
+msgstr ""
+
+#: src/certificate.py:448
+msgid "certmanager_cert_renew_failed"
+msgstr ""
+
+#: src/certificate.py:541
+msgid "certmanager_hit_rate_limit"
+msgstr ""
+
+#: src/certificate.py:544 src/certificate.py:549
+msgid "certmanager_cert_signing_failed"
+msgstr ""
+
+#: src/certificate.py:583
+msgid "certmanager_certificate_fetching_or_enabling_failed"
+msgstr ""
+
+#: src/certificate.py:649
+msgid "certmanager_no_cert_file"
+msgstr ""
+
+#: src/certificate.py:663
+msgid "certmanager_cannot_read_cert"
+msgstr ""
+
+#: src/certificate.py:843
+msgid "certmanager_domain_not_diagnosed_yet"
+msgstr ""
+
+#: src/certificate.py:854
+msgid "certmanager_domain_dns_ip_differs_from_public_ip"
+msgstr ""
+
+#: src/certificate.py:860
+msgid "certmanager_domain_http_not_working"
+msgstr ""
+
+#: src/certificate.py:904
+msgid "certmanager_self_ca_conf_file_not_found"
+msgstr ""
+
+#: src/certificate.py:914
+msgid "certmanager_unable_to_parse_self_CA_name"
+msgstr ""
+
+#: src/diagnosis.py:58 src/diagnosis.py:90 src/diagnosis.py:181
+msgid "diagnosis_unknown_categories"
+msgstr ""
+
+#: src/diagnosis.py:77
+msgid "diagnosis_never_ran_yet"
+msgstr ""
+
+#: src/diagnosis.py:99
+msgid "diagnosis_failed"
+msgstr ""
+
+#: src/diagnosis.py:132 src/log.py:357
+msgid "log_available_on_yunopaste"
+msgstr ""
+
+#: src/diagnosis.py:201
+msgid "diagnosis_failed_for_category"
+msgstr ""
+
+#: src/diagnosis.py:220
+msgid "diagnosis_display_tip"
+msgstr ""
+
+#: src/diagnosis.py:280
+msgid "diagnosis_ignore_missing_criteria"
+msgstr ""
+
+#: src/diagnosis.py:285
+msgid "diagnosis_ignore_criteria_error"
+msgstr ""
+
+#: src/diagnosis.py:308
+msgid "diagnosis_ignore_no_issue_found"
+msgstr ""
+
+#: src/diagnosis.py:318
+msgid "diagnosis_ignore_already_filtered"
+msgstr ""
+
+#: src/diagnosis.py:324
+msgid "diagnosis_ignore_filter_added"
+msgstr ""
+
+#: src/diagnosis.py:338
+msgid "diagnosis_ignore_no_filter_found"
+msgstr ""
+
+#: src/diagnosis.py:344
+msgid "diagnosis_ignore_filter_removed"
+msgstr ""
+
+#: src/diagnosis.py:421
+msgid "diagnosis_cache_still_valid"
+msgstr ""
+
+#: src/diagnosis.py:438
+msgid "diagnosis_cant_run_because_of_dep"
+msgstr ""
+
+#: src/diagnosis.py:481
+msgid "diagnosis_ignored_issues"
+msgstr ""
+
+#: src/diagnosis.py:491
+msgid "diagnosis_found_errors_and_warnings"
+msgstr ""
+
+#: src/diagnosis.py:501
+msgid "diagnosis_found_errors"
+msgstr ""
+
+#: src/diagnosis.py:510
+msgid "diagnosis_found_warnings"
+msgstr ""
+
+#: src/diagnosis.py:518
+msgid "diagnosis_everything_ok"
+msgstr ""
+
+#: src/diagnosis.py:533
+msgid "diagnosis_no_cache"
+msgstr ""
+
+#: src/dns.py:67 src/dns.py:555 src/dns.py:643
+msgid "domain_dns_conf_special_use_tld"
+msgstr ""
+
+#: src/dns.py:102
+msgid "domain_dns_conf_is_just_a_recommendation"
+msgstr ""
+
+#: src/dns.py:501
+msgid "registrar_infos"
+msgstr ""
+
+#: src/dns.py:531
+msgid "domain_dns_registrar_managed_in_parent_domain"
+msgstr ""
+
+#: src/dns.py:543
+msgid "domain_dns_registrar_yunohost"
+msgstr ""
+
+#: src/dns.py:547 src/dyndns.py:127 src/dyndns.py:141 src/dyndns.py:255
+msgid "ask_dyndns_recovery_password"
+msgstr ""
+
+#: src/dns.py:563
+msgid "domain_dns_registrar_not_supported"
+msgstr ""
+
+#: src/dns.py:567
+msgid "domain_dns_registrar_supported"
+msgstr ""
+
+#: src/dns.py:578
+msgid "domain_dns_registrar_experimental"
+msgstr ""
+
+#: src/dns.py:594
+msgid "domain_dns_registrar_use_auto"
+msgstr ""
+
+#: src/dns.py:646
+msgid "domain_dns_push_not_applicable"
+msgstr ""
+
+#: src/dns.py:661 src/dns.py:670
+msgid "domain_dns_push_managed_in_parent_domain"
+msgstr ""
+
+#: src/dns.py:676 src/dns.py:681
+msgid "domain_registrar_is_not_configured"
+msgstr ""
+
+#: src/dns.py:742
+msgid "domain_dns_push_failed_to_list"
+msgstr ""
+
+#: src/dns.py:952
+msgid "domain_dns_push_already_up_to_date"
+msgstr ""
+
+#: src/dns.py:960
+msgid "domain_dns_pushing"
+msgstr ""
+
+#: src/dns.py:1009 src/dns.py:1022
+msgid "domain_dns_push_record_failed"
+msgstr ""
+
+#: src/dns.py:1035
+msgid "domain_dns_push_success"
+msgstr ""
+
+#: src/dns.py:1039
+msgid "domain_dns_push_failed"
+msgstr ""
+
+#: src/dns.py:1041
+msgid "domain_dns_push_partial_failure"
+msgstr ""
+
+#: src/domain.py:254
+msgid "domain_unknown"
+msgstr ""
+
+#: src/domain.py:326
+msgid "domain_exists"
+msgstr ""
+
+#: src/domain.py:347 src/dyndns.py:119
+msgid "domain_dyndns_already_subscribed"
+msgstr ""
+
+#: src/domain.py:350
+msgid "tos_dyndns_acknowledgement"
+msgstr ""
+
+#: src/domain.py:375
+msgid "domain_creation_failed"
+msgstr ""
+
+#: src/domain.py:436
+msgid "domain_created"
+msgstr ""
+
+#: src/domain.py:486
+msgid "domain_cannot_remove_main"
+msgstr ""
+
+#: src/domain.py:492
+msgid "domain_cannot_remove_main_add_new_one"
+msgstr ""
+
+#: src/domain.py:518
+msgid "domain_remove_confirm_apps_removal"
+msgstr ""
+
+#: src/domain.py:525 src/utils/app_utils.py:1399
+msgid "aborting"
+msgstr "İptal ediliyor."
+
+#: src/domain.py:531
+msgid "domain_uninstall_app_first"
+msgstr ""
+
+#: src/domain.py:548
+msgid "domain_deletion_failed"
+msgstr ""
+
+#: src/domain.py:594
+msgid "domain_deleted"
+msgstr ""
+
+#: src/domain.py:675
+msgid "main_domain_change_failed"
+msgstr ""
+
+#: src/domain.py:687
+msgid "main_domain_changed"
+msgstr ""
+
+#: src/domain.py:860
+msgid "app_make_default_location_already_used"
+msgstr ""
+"'{app}' uygulaması varsayılan yapılamıyor; '{domain}' zaten '{other_app}'"
+" tarafından kullanılıyor."
+
+#: src/dyndns.py:86 src/dyndns.py:97
+msgid "dyndns_could_not_check_available"
+msgstr ""
+
+#: src/dyndns.py:94 src/dyndns.py:292
+msgid "dyndns_too_many_requests"
+msgstr ""
+
+#: src/dyndns.py:114
+msgid "dyndns_domain_not_provided"
+msgstr ""
+
+#: src/dyndns.py:125
+msgid "ask_dyndns_recovery_password_explain_unavailable"
+msgstr ""
+
+#: src/dyndns.py:135 src/tools.py:232
+msgid "dyndns_unavailable"
+msgstr ""
+
+#: src/dyndns.py:139
+msgid "ask_dyndns_recovery_password_explain"
+msgstr ""
+
+#: src/dyndns.py:145
+msgid "dyndns_no_recovery_password"
+msgstr ""
+
+#: src/dyndns.py:203 src/dyndns.py:210
+msgid "dyndns_subscribe_failed"
+msgstr ""
+
+#: src/dyndns.py:225
+msgid "dyndns_subscribed"
+msgstr ""
+
+#: src/dyndns.py:252
+msgid "ask_dyndns_recovery_password_explain_during_unsubscribe"
+msgstr ""
+
+#: src/dyndns.py:279 src/dyndns.py:295
+msgid "dyndns_unsubscribe_failed"
+msgstr ""
+
+#: src/dyndns.py:288
+msgid "dyndns_unsubscribe_denied"
+msgstr ""
+
+#: src/dyndns.py:290
+msgid "dyndns_unsubscribe_already_unsubscribed"
+msgstr ""
+
+#: src/dyndns.py:299
+msgid "dyndns_unsubscribed"
+msgstr ""
+
+#: src/dyndns.py:307 src/dyndns.py:431
+msgid "dyndns_key_not_found"
+msgstr ""
+
+#: src/dyndns.py:332 src/dyndns.py:344
+msgid "dyndns_set_recovery_password_failed"
+msgstr ""
+
+#: src/dyndns.py:335
+msgid "dyndns_set_recovery_password_success"
+msgstr ""
+
+#: src/dyndns.py:337
+msgid "dyndns_set_recovery_password_denied"
+msgstr ""
+
+#: src/dyndns.py:339
+msgid "dyndns_set_recovery_password_unknown_domain"
+msgstr ""
+
+#: src/dyndns.py:341
+msgid "dyndns_set_recovery_password_invalid_password"
+msgstr ""
+
+#: src/dyndns.py:390
+msgid "dyndns_no_domain_registered"
+msgstr ""
+
+#: src/dyndns.py:554 src/dyndns.py:558
+msgid "dyndns_ip_update_failed"
+msgstr ""
+
+#: src/dyndns.py:560
+msgid "dyndns_ip_updated"
+msgstr ""
+
+#: src/firewall.py:256
+msgid "upnp_dev_not_found"
+msgstr ""
+
+#: src/firewall.py:418
+msgid "port_already_opened"
+msgstr ""
+
+#: src/firewall.py:425 src/firewall.py:457 src/firewall.py:529
+#: src/firewall.py:563
+msgid "firewall_reloaded"
+msgstr ""
+
+#: src/firewall.py:427 src/firewall.py:459 src/firewall.py:531
+#: src/firewall.py:565
+msgid "firewall_reload_failed"
+msgstr ""
+
+#: src/firewall.py:450 src/firewall.py:522
+msgid "port_already_closed"
+msgstr ""
+
+#: src/firewall.py:580
+msgid "action_invalid"
+msgstr "Geçersiz işlem '{action}'"
+
+#: src/firewall.py:597
+msgid "upnp_enabled"
+msgstr ""
+
+#: src/firewall.py:597
+msgid "upnp_disabled"
+msgstr ""
+
+#: src/firewall.py:601
+msgid "upnp_port_open_failed"
+msgstr ""
+
+#: src/firewall.py:611
+msgid "nftables_unavailable"
+msgstr ""
+
+#: src/hook.py:117 src/hook.py:273
+msgid "hook_name_unknown"
+msgstr ""
+
+#: src/hook.py:186
+msgid "hook_list_by_invalid"
+msgstr ""
+
+#: src/hook.py:344
+msgid "file_does_not_exist"
+msgstr ""
+
+#: src/hook.py:426 src/hook.py:428
+msgid "hook_exec_not_terminated"
+msgstr ""
+
+#: src/hook.py:431
+msgid "hook_exec_failed"
+msgstr ""
+
+#: src/hook.py:503
+msgid "hook_json_return_error"
+msgstr ""
+
+#: src/hook.py:569 src/settings.py:186 src/utils/configpanel.py:634
+#: src/utils/configpanel.py:723 src/utils/resources.py:75
+#: src/utils/resources.py:103
+msgid "operation_interrupted"
+msgstr ""
+
+#: src/log.py:111 src/log.py:222 src/log.py:368
+msgid "log_corrupted_md_file"
+msgstr ""
+
+#: src/log.py:335
+msgid "log_does_exists"
+msgstr ""
+
+#: src/log.py:908
+msgid "log_link_to_log"
+msgstr ""
+
+#: src/log.py:910
+msgid "log_help_to_get_log"
+msgstr ""
+
+#: src/log.py:916
+msgid "log_link_to_failed_log"
+msgstr ""
+
+#: src/log.py:921
+msgid "log_help_to_get_failed_log"
+msgstr ""
+
+#: src/log.py:938
+msgid "log_operation_unit_unclosed_properly"
+msgstr ""
+
+#: src/log.py:1022
+msgid "automatic_task"
+msgstr ""
+
+#: src/log.py:1025
+msgid "yunohost_api"
+msgstr ""
+
+#: src/log.py:1028
+msgid "noninteractive_task"
+msgstr ""
+
+#: src/permission.py:235
+msgid "permission_require_account"
+msgstr ""
+
+#: src/permission.py:240
+msgid "permission_cant_add_to_all_users"
+msgstr ""
+
+#: src/permission.py:255
+msgid "permission_protected"
+msgstr ""
+
+#: src/permission.py:268 src/permission.py:430 src/user.py:1193
+#: src/user.py:1270 src/user.py:1462
+msgid "group_unknown"
+msgstr ""
+
+#: src/permission.py:272
+msgid "permission_already_allowed"
+msgstr ""
+
+#: src/permission.py:284
+msgid "permission_already_disallowed"
+msgstr ""
+
+#: src/permission.py:301
+msgid "permission_currently_allowed_for_all_users"
+msgstr ""
+
+#: src/permission.py:310 src/permission.py:516
+msgid "regex_incompatible_with_tile"
+msgstr ""
+
+#: src/permission.py:338 src/permission.py:340 src/permission.py:576
+#: src/user.py:1581
+msgid "permission_updated"
+msgstr ""
+
+#: src/permission.py:365
+msgid "permission_not_found"
+msgstr ""
+
+#: src/permission.py:455
+msgid "permission_created"
+msgstr ""
+
+#: src/permission.py:496
+msgid "unknown_main_domain_path"
+msgstr ""
+
+#: src/permission.py:528
+msgid "additional_urls_already_added"
+msgstr "Ek URL '{url}' zaten '{permission}' izni için ek URL'ye eklendi"
+
+#: src/permission.py:540
+msgid "additional_urls_already_removed"
+msgstr "Zaten ek URL '{url}', '{permission}' izni için ek URL'de kaldırıldı"
+
+#: src/permission.py:570 src/permission.py:714
+msgid "permission_update_failed"
+msgstr ""
+
+#: src/permission.py:590
+msgid "permission_cannot_remove_main"
+msgstr ""
+
+#: src/permission.py:612
+msgid "permission_deleted"
+msgstr ""
+
+#: src/permission.py:659
+msgid "permission_deletion_failed"
+msgstr ""
+
+#: src/permission.py:696
+msgid "permission_creation_failed"
+msgstr ""
+
+#: src/permission.py:788
+msgid "show_tile_cant_be_enabled_for_url_not_defined"
+msgstr ""
+
+#: src/permission.py:795
+msgid "show_tile_cant_be_enabled_for_regex"
+msgstr ""
+
+#: src/permission.py:973
+msgid "invalid_regex"
+msgstr ""
+
+#: src/permission.py:985
+msgid "regex_with_only_domain"
+msgstr ""
+
+#: src/portal.py:51 src/ssh.py:43 src/ssh.py:80 src/ssh.py:121 src/user.py:357
+#: src/user.py:462 src/user.py:654 src/user.py:1293
+msgid "user_unknown"
+msgstr ""
+
+#: src/portal.py:224 src/portal.py:249 src/portal.py:286
+msgid "mail_edit_operation_unauthorized"
+msgstr ""
+
+#: src/portal.py:229 src/portal.py:264 src/user.py:243 src/user.py:527
+#: src/user.py:537 src/user.py:1339
+msgid "mail_unavailable"
+msgstr ""
+
+#: src/portal.py:234 src/portal.py:271
+msgid "mail_already_exists"
+msgstr ""
+
+#: src/portal.py:237 src/portal.py:275
+msgid "mail_alias_unauthorized"
+msgstr ""
+
+#: src/authenticators/ldap_ynhuser.py:225 src/portal.py:316
+msgid "invalid_password"
+msgstr ""
+
+#: src/portal.py:326 src/user.py:520 src/user.py:546 src/user.py:602
+msgid "user_update_failed"
+msgstr ""
+
+#: src/regenconf.py:200
+msgid "regenconf_failed"
+msgstr ""
+
+#: src/regenconf.py:213
+msgid "regenconf_pending_applying"
+msgstr ""
+
+#: src/regenconf.py:215
+msgid "regenconf_dry_pending_applying"
+msgstr ""
+
+#: src/regenconf.py:320 src/regenconf.py:412
+msgid "regenconf_file_manually_modified"
+msgstr ""
+
+#: src/regenconf.py:343
+msgid "regenconf_file_manually_removed"
+msgstr ""
+
+#: src/regenconf.py:361
+msgid "regenconf_now_managed_by_yunohost"
+msgstr ""
+
+#: src/regenconf.py:374
+msgid "regenconf_file_kept_back"
+msgstr ""
+
+#: src/regenconf.py:405
+msgid "regenconf_need_to_explicitly_specify_ssh"
+msgstr ""
+
+#: src/regenconf.py:430
+msgid "regenconf_up_to_date"
+msgstr ""
+
+#: src/regenconf.py:434
+msgid "regenconf_updated"
+msgstr ""
+
+#: src/regenconf.py:436
+msgid "regenconf_would_be_updated"
+msgstr ""
+
+#: src/regenconf.py:679
+msgid "regenconf_file_backed_up"
+msgstr ""
+
+#: src/regenconf.py:685
+msgid "regenconf_file_removed"
+msgstr ""
+
+#: src/regenconf.py:693
+msgid "regenconf_file_updated"
+msgstr ""
+
+#: src/regenconf.py:701
+msgid "regenconf_file_remove_failed"
+msgstr ""
+
+#: src/regenconf.py:717
+msgid "regenconf_file_copy_failed"
+msgstr ""
+
+#: src/service.py:127
+msgid "service_add_failed"
+msgstr ""
+
+#: src/service.py:129
+msgid "service_added"
+msgstr ""
+
+#: src/service.py:143 src/service.py:370 src/service.py:531 src/service.py:591
+msgid "service_unknown"
+msgstr ""
+
+#: src/service.py:150
+msgid "service_remove_failed"
+msgstr ""
+
+#: src/service.py:152
+msgid "service_removed"
+msgstr ""
+
+#: src/service.py:169
+msgid "service_started"
+msgstr ""
+
+#: src/service.py:176
+msgid "service_start_failed"
+msgstr ""
+
+#: src/service.py:180
+msgid "service_already_started"
+msgstr ""
+
+#: src/service.py:196
+msgid "service_stopped"
+msgstr ""
+
+#: src/service.py:203
+msgid "service_stop_failed"
+msgstr ""
+
+#: src/service.py:207
+msgid "service_already_stopped"
+msgstr ""
+
+#: src/service.py:222
+msgid "service_reloaded"
+msgstr ""
+
+#: src/service.py:229
+msgid "service_reload_failed"
+msgstr ""
+
+#: src/service.py:248
+msgid "service_restarted"
+msgstr ""
+
+#: src/service.py:255
+msgid "service_restart_failed"
+msgstr ""
+
+#: src/service.py:292
+msgid "service_not_reloading_because_conf_broken"
+msgstr ""
+
+#: src/service.py:300
+msgid "service_reloaded_or_restarted"
+msgstr ""
+
+#: src/service.py:307
+msgid "service_reload_or_restart_failed"
+msgstr ""
+
+#: src/service.py:327
+msgid "service_enabled"
+msgstr ""
+
+#: src/service.py:329
+msgid "service_enable_failed"
+msgstr ""
+
+#: src/service.py:346
+msgid "service_disabled"
+msgstr ""
+
+#: src/service.py:348
+msgid "service_disable_failed"
+msgstr ""
+
+#: src/service.py:632
+msgid "service_cmd_exec_failed"
+msgstr ""
+
+#: src/settings.py:187 src/settings.py:194 src/utils/configpanel.py:635
+#: src/utils/configpanel.py:642
+msgid "config_apply_failed"
+msgstr ""
+
+#: src/settings.py:197
+msgid "global_settings_reset_success"
+msgstr ""
+
+#: src/settings.py:236
+msgid "password_confirmation_not_the_same"
+msgstr ""
+
+#: src/tools.py:86
+msgid "root_password_changed"
+msgstr ""
+
+#: src/tools.py:90
+msgid "root_password_desynchronized"
+msgstr ""
+
+#: src/tools.py:134
+msgid "domain_hostname_failed"
+msgstr ""
+
+#: src/migrations/m0031_terms_of_services.py:42 src/tools.py:178
+msgid "tos_postinstall_acknowledgement"
+msgstr ""
+
+#: src/tools.py:187 src/user.py:240
+msgid "system_username_exists"
+msgstr ""
+
+#: src/tools.py:204
+msgid "postinstall_low_rootfsspace"
+msgstr ""
+
+#: src/tools.py:221
+msgid "dyndns_provider_unreachable"
+msgstr ""
+
+#: src/tools.py:260
+msgid "yunohost_installing"
+msgstr ""
+
+#: src/tools.py:323
+msgid "yunohost_configured"
+msgstr ""
+
+#: src/tools.py:325
+msgid "yunohost_postinstall_end_tip"
+msgstr ""
+
+#: src/tools.py:417
+msgid "updating_apt_cache"
+msgstr ""
+
+#: src/tools.py:423
+msgid "update_apt_cache_failed"
+msgstr ""
+
+#: src/tools.py:429
+msgid "update_apt_cache_warning"
+msgstr ""
+
+#: src/tools.py:434 src/utils/app_utils.py:654 src/utils/app_utils.py:743
+#: src/utils/app_utils.py:775
+msgid "done"
+msgstr ""
+
+#: src/tools.py:455 src/tools.py:601
+msgid "already_up_to_date"
+msgstr "Yapılacak yeni bir şey yok. Her şey zaten güncel."
+
+#: src/tools.py:552 src/utils/app_utils.py:1270
+msgid "dpkg_is_broken"
+msgstr ""
+
+#: src/tools.py:556
+msgid "dpkg_lock_not_available"
+msgstr ""
+
+#: src/tools.py:589
+msgid "app_upgrade_some_app_failed"
+msgstr ""
+
+#: src/tools.py:603
+msgid "upgrading_packages"
+msgstr ""
+
+#: src/tools.py:619
+msgid "tools_upgrade"
+msgstr ""
+
+#: src/tools.py:653
+msgid "tools_upgrade_failed"
+msgstr ""
+
+#: src/tools.py:658
+msgid "system_upgraded"
+msgstr ""
+
+#: src/tools.py:668
+msgid "server_shutdown_confirm"
+msgstr ""
+
+#: src/tools.py:677
+msgid "server_shutdown"
+msgstr ""
+
+#: src/tools.py:687
+msgid "server_reboot_confirm"
+msgstr ""
+
+#: src/tools.py:695
+msgid "server_reboot"
+msgstr ""
+
+#: src/tools.py:774
+msgid "migrations_list_conflict_pending_done"
+msgstr ""
+
+#: src/tools.py:828
+msgid "migrations_no_such_migration"
+msgstr ""
+
+#: src/tools.py:832
+msgid "migrations_exclusive_options"
+msgstr ""
+
+#: src/tools.py:838
+msgid "migrations_must_provide_explicit_targets"
+msgstr ""
+
+#: src/tools.py:851
+msgid "migrations_not_pending_cant_skip"
+msgstr ""
+
+#: src/tools.py:855
+msgid "migrations_pending_cant_rerun"
+msgstr ""
+
+#: src/tools.py:858
+msgid "migrations_already_ran"
+msgstr ""
+
+#: src/tools.py:862
+msgid "migrations_no_migrations_to_run"
+msgstr ""
+
+#: src/tools.py:872
+msgid "migrations_to_be_ran_manually"
+msgstr ""
+
+#: src/tools.py:888
+msgid "migrations_dependencies_not_satisfied"
+msgstr ""
+
+#: src/tools.py:902
+msgid "migrations_need_to_accept_disclaimer"
+msgstr ""
+
+#: src/tools.py:917
+msgid "migrations_skip_migration"
+msgstr ""
+
+#: src/tools.py:923 src/tools.py:1049 src/tools.py:1080
+msgid "migrations_running_forward"
+msgstr ""
+
+#: src/tools.py:929 src/tools.py:1053 src/tools.py:1084
+msgid "migrations_migration_has_failed"
+msgstr ""
+
+#: src/tools.py:934
+msgid "migrations_success_forward"
+msgstr ""
+
+#: src/tools.py:998
+msgid "migrations_loading_migration"
+msgstr ""
+
+#: src/tools.py:1013
+msgid "migrations_failed_to_load_migration"
+msgstr ""
+
+#: src/tools.py:1123
+msgid "migration_ldap_backup_before_migration"
+msgstr ""
+
+#: src/tools.py:1139
+msgid "migration_ldap_can_not_backup_before_migration"
+msgstr ""
+
+#: src/tools.py:1149
+msgid "migration_ldap_migration_failed_trying_to_rollback"
+msgstr ""
+
+#: src/tools.py:1168
+msgid "migration_ldap_rollback_success"
+msgstr ""
+
+#: src/user.py:129
+msgid "field_invalid"
+msgstr ""
+
+#: src/user.py:211
+msgid "domains_available"
+msgstr ""
+
+#: src/user.py:217
+msgid "ask_user_domain"
+msgstr ""
+
+#: src/user.py:229
+msgid "user_already_exists"
+msgstr ""
+
+#: src/user.py:235 src/user.py:294
+msgid "user_creation_failed"
+msgstr ""
+
+#: src/user.py:267 src/user.py:592
+msgid "invalid_shell"
+msgstr ""
+
+#: src/user.py:306
+msgid "user_home_creation_failed"
+msgstr ""
+
+#: src/user.py:334
+msgid "user_created"
+msgstr ""
+
+#: src/user.py:359
+msgid "user_cannot_delete_last_admin"
+msgstr ""
+
+#: src/user.py:395
+msgid "user_deletion_failed"
+msgstr ""
+
+#: src/user.py:413
+msgid "user_deleted"
+msgstr ""
+
+#: src/user.py:523 src/user.py:549 src/user.py:1348
+msgid "mail_domain_unknown"
+msgstr ""
+
+#: src/user.py:561 src/user.py:1375
+msgid "mail_alias_remove_failed"
+msgstr ""
+
+#: src/user.py:581
+msgid "mail_forward_remove_failed"
+msgstr ""
+
+#: src/user.py:618
+msgid "user_updated"
+msgstr ""
+
+#: src/user.py:683
+msgid "mailbox_used_space_dovecot_down"
+msgstr ""
+
+#: src/user.py:685
+msgid "mailbox_disabled"
+msgstr ""
+
+#: src/user.py:711
+msgid "unlimit"
+msgstr ""
+
+#: src/user.py:803
+msgid "user_import_missing_columns"
+msgstr ""
+
+#: src/user.py:851
+msgid "user_import_bad_line"
+msgstr ""
+
+#: src/user.py:885
+msgid "user_import_bad_file"
+msgstr ""
+
+#: src/user.py:890
+msgid "user_import_nothing_to_do"
+msgstr ""
+
+#: src/user.py:916
+msgid "user_import_cannot_edit_or_delete_admins"
+msgstr ""
+
+#: src/user.py:1024
+msgid "user_import_partial_failed"
+msgstr ""
+
+#: src/user.py:1026
+msgid "user_import_failed"
+msgstr ""
+
+#: src/user.py:1030
+msgid "user_import_success"
+msgstr ""
+
+#: src/user.py:1117
+msgid "group_already_exist"
+msgstr ""
+
+#: src/user.py:1124
+msgid "group_already_exist_on_system_but_removing_it"
+msgstr ""
+
+#: src/user.py:1131
+msgid "group_already_exist_on_system"
+msgstr ""
+
+#: src/user.py:1161
+msgid "group_creation_failed"
+msgstr ""
+
+#: src/user.py:1167 src/user.py:1169
+msgid "group_created"
+msgstr ""
+
+#: src/user.py:1202
+msgid "group_cannot_be_deleted"
+msgstr ""
+
+#: src/user.py:1209
+msgid "group_deletion_failed"
+msgstr ""
+
+#: src/user.py:1215 src/user.py:1217
+msgid "group_deleted"
+msgstr ""
+
+#: src/user.py:1244
+msgid "group_cannot_edit_all_users"
+msgstr ""
+
+#: src/user.py:1246
+msgid "group_cannot_edit_visitors"
+msgstr ""
+
+#: src/user.py:1249
+msgid "group_cannot_edit_primary_group"
+msgstr ""
+
+#: src/user.py:1257
+msgid "group_cannot_remove_last_admin"
+msgstr ""
+
+#: src/user.py:1297
+msgid "group_user_already_in_group"
+msgstr ""
+
+#: src/user.py:1301
+msgid "group_user_add"
+msgstr ""
+
+#: src/user.py:1311
+msgid "group_user_not_in_group"
+msgstr ""
+
+#: src/user.py:1315
+msgid "group_user_remove"
+msgstr ""
+
+#: src/user.py:1345 src/user.py:1396
+msgid "group_update_failed"
+msgstr ""
+
+#: src/user.py:1351
+msgid "group_mailalias_add"
+msgstr ""
+
+#: src/user.py:1372
+msgid "group_mailalias_remove"
+msgstr ""
+
+#: src/user.py:1378
+msgid "group_update_aliases"
+msgstr ""
+
+#: src/user.py:1430
+msgid "group_no_change"
+msgstr ""
+
+#: src/user.py:1432 src/user.py:1434
+msgid "group_updated"
+msgstr ""
+
+#: src/authenticators/ldap_admin.py:81 src/authenticators/ldap_admin.py:127
+#: src/utils/ldap.py:159
+msgid "ldap_server_is_down_restart_it"
+msgstr ""
+
+#: src/authenticators/ldap_admin.py:97 src/authenticators/ldap_admin.py:134
+#: src/authenticators/ldap_ynhuser.py:227
+msgid "ldap_server_down"
+msgstr ""
+
+#: src/authenticators/ldap_admin.py:100 src/authenticators/ldap_admin.py:105
+#: src/authenticators/ldap_admin.py:110 src/authenticators/ldap_admin.py:124
+#: src/authenticators/ldap_ynhuser.py:202
+#: src/authenticators/ldap_ynhuser.py:207
+msgid "invalid_credentials"
+msgstr ""
+
+#: src/authenticators/ldap_admin.py:196 src/authenticators/ldap_admin.py:202
+#: src/authenticators/ldap_ynhuser.py:252
+#: src/authenticators/ldap_ynhuser.py:307
+#: src/authenticators/ldap_ynhuser.py:310
+#: src/authenticators/ldap_ynhuser.py:313
+#: src/authenticators/ldap_ynhuser.py:316
+msgid "unable_authenticate"
+msgstr ""
+
+#: src/authenticators/ldap_admin.py:208 src/authenticators/ldap_ynhuser.py:322
+msgid "session_expired"
+msgstr ""
+
+#: src/migrations/m0031_terms_of_services.py:40
+msgid "migration_0031_terms_of_services"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:168
+msgid "migration_0036_start"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:213
+msgid "migration_0036_patch_yunohost_dpkg"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:218
+msgid "migration_0036_patching_sources_list"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:239
+msgid "migration_0036_main_upgrade"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:286
+msgid "migration_0036_still_on_bookworm_after_main_upgrade"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:289
+msgid "migration_0036_cleaning_up"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:300
+msgid "migration_0036_apt_lists_file_still_exists"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:316
+msgid "migration_0036_yunohost_upgrade"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:350
+msgid "migration_0036_delayed_api_restart"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:411
+msgid "migration_0036_not_bullseye"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:415
+msgid "migration_0036_not_enough_free_space"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:452
+msgid "migration_0036_system_not_fully_up_to_date"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:508
+msgid "migration_0036_general_warning"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:511
+msgid "migration_0036_problematic_apps_warning"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:514
+msgid "migration_0036_modified_files"
+msgstr ""
+
+#: src/migrations/postgresql.py:52
+msgid "migration_postgresql_previous_not_installed"
+msgstr ""
+
+#: src/migrations/postgresql.py:57
+msgid "migration_postgresql_target_not_installed"
+msgstr ""
+
+#: src/migrations/postgresql.py:75
+msgid "migration_not_enough_space"
+msgstr ""
+
+#: src/migrations/python.py:145
+msgid "migration_python_venv_rebuild_disclaimer_base"
+msgstr ""
+
+#: src/migrations/python.py:150
+msgid "migration_python_venv_rebuild_disclaimer_rebuild"
+msgstr ""
+
+#: src/migrations/python.py:155
+msgid "migration_python_venv_rebuild_disclaimer_ignored"
+msgstr ""
+
+#: src/migrations/python.py:177
+msgid "migration_python_venv_rebuild_broken_app"
+msgstr ""
+
+#: src/migrations/python.py:185
+msgid "migration_python_venv_rebuild_in_progress"
+msgstr ""
+
+#: src/migrations/python.py:209
+msgid "migration_python_venv_rebuild_failed"
+msgstr ""
+
+#: src/utils/app_utils.py:144 src/utils/app_utils.py:160
+msgid "app_not_correctly_installed"
+msgstr "{app} yanlış kurulmuş gibi görünüyor"
+
+#: src/utils/app_utils.py:569 src/utils/app_utils.py:613
+msgid "app_unknown"
+msgstr ""
+
+#: src/utils/app_utils.py:584
+msgid "app_unsupported_remote_type"
+msgstr ""
+
+#: src/utils/app_utils.py:623
+msgid "extracting"
+msgstr ""
+
+#: src/utils/app_utils.py:642
+msgid "app_extraction_failed"
+msgstr "Kurulum dosyaları çıkarılamadı"
+
+#: src/utils/app_utils.py:649
+msgid "app_install_files_invalid"
+msgstr "Bu dosyalar indirilemez"
+
+#: src/utils/app_utils.py:723
+msgid "downloading"
+msgstr ""
+
+#: src/utils/app_utils.py:773
+msgid "app_sources_fetch_failed"
+msgstr ""
+
+#: src/utils/app_utils.py:807
+msgid "app_not_installed"
+msgstr ""
+
+#: src/utils/app_utils.py:827
+msgid "app_requirements_checking"
+msgstr ""
+
+#: src/utils/app_utils.py:831
+msgid "app_packaging_format_not_supported"
+msgstr ""
+
+#: src/utils/app_utils.py:844
+msgid "app_yunohost_version_not_supported"
+msgstr ""
+
+#: src/utils/app_utils.py:858
+msgid "app_arch_not_supported"
+msgstr ""
+"Bu uygulama yalnızca {required} işlemci mimarisi üzerine kurulabilir "
+"ancak sunucunuzun işlemci mimarisi {current}"
+
+#: src/utils/app_utils.py:879
+msgid "app_already_installed"
+msgstr "{app} zaten kurulu"
+
+#: src/utils/app_utils.py:899
+msgid "app_not_enough_disk"
+msgstr "Bu uygulama {required} boş alan gerektirir."
+
+#: src/utils/app_utils.py:953
+msgid "app_not_enough_ram"
+msgstr ""
+
+#: src/utils/app_utils.py:1065
+msgid "app_full_domain_unavailable"
+msgstr ""
+"Maalesef ki, bu uygulama kendisine ait bir alan adına inmesi gereklidir, "
+"ancak diğer uygulamalar zaten {domain} alan adına indirilmiştir. Bu "
+"uygulama için ayrılmış bir alt-alan adına kurmanız gerekir."
+
+#: src/utils/app_utils.py:1068
+msgid "app_location_unavailable"
+msgstr ""
+"Bu link ya kullanılamıyor ya da indirilmiş olan uygulama(lar) ile "
+"çakışıyor :{apps}"
+
+#: src/utils/app_utils.py:1260
+msgid "app_action_cannot_be_ran_because_required_services_down"
+msgstr ""
+"Bu eylemi gerçekleştirmek için şu servisler çalışıyor olmalıdır: "
+"{services}. Devam etmek için onları yeniden başlatın (ve muhtemelen neden"
+" çalışmadığını araştırın)."
+
+#: src/utils/app_utils.py:1265
+msgid "app_action_broke_system"
+msgstr "Bu işlem bazı hizmetleri bozmuş olabilir: {services}"
+
+#: src/utils/app_utils.py:1272
+msgid "this_action_broke_dpkg"
+msgstr ""
+
+#: src/utils/configpanel.py:601
+msgid "config_cant_set_value_on_section"
+msgstr ""
+
+#: src/utils/configpanel.py:724 src/utils/configpanel.py:731
+msgid "config_action_failed"
+msgstr ""
+
+#: src/utils/configpanel.py:749
+msgid "config_no_panel"
+msgstr ""
+
+#: src/utils/configpanel.py:789 src/utils/configpanel.py:867
+msgid "config_unknown_filter_key"
+msgstr ""
+
+#: src/utils/file_utils.py:54
+msgid "file_not_exist"
+msgstr "Dosya mevcut değil: '{path}'"
+
+#: src/utils/file_utils.py:60
+msgid "cannot_open_file"
+msgstr "{file} dosyası açılamadı (nedeni: {error})"
+
+#: src/utils/file_utils.py:62
+msgid "unknown_error_reading_file"
+msgstr "{file} dosyasını okumaya çalışırken bilinmeyen hata (nedeni: {error})"
+
+#: src/utils/file_utils.py:82 src/utils/file_utils.py:461
+msgid "corrupted_json"
+msgstr "{ressource} adresinden okunan bozuk json (neden: {error})"
+
+#: src/utils/file_utils.py:103
+msgid "corrupted_yaml"
+msgstr "{ressource} kaynağından bozuk YAML okunuyor (neden: {error})"
+
+#: src/utils/file_utils.py:123
+msgid "corrupted_toml"
+msgstr "{ressource} kaynağından okunan bozuk TOML(nedeni: {error})"
+
+#: src/utils/file_utils.py:171 src/utils/file_utils.py:217
+#: src/utils/file_utils.py:240
+msgid "cannot_write_file"
+msgstr "{file} dosyası yazılamadı (nedeni: {error})"
+
+#: src/utils/file_utils.py:173 src/utils/file_utils.py:219
+#: src/utils/file_utils.py:242
+msgid "error_writing_file"
+msgstr "{file} dosyası yazılırken hata oluştu: {error}"
+
+#: src/utils/file_utils.py:322
+msgid "unknown_user"
+msgstr "Bilinmeyen '{user}' kullanıcı"
+
+#: src/utils/file_utils.py:329
+msgid "unknown_group"
+msgstr "Bilinmeyen '{group}' grubu"
+
+#: src/utils/file_utils.py:343 src/utils/file_utils.py:370
+msgid "error_changing_file_permissions"
+msgstr "{path} için izinler değiştirilirken hata oluştu: {error}"
+
+#: src/utils/file_utils.py:390
+msgid "error_removing"
+msgstr "{path} kaldırılırken hata oluştu: {error}"
+
+#: src/utils/file_utils.py:424
+msgid "download_ssl_error"
+msgstr "{url} ağına bağlanırken SSL hatası"
+
+#: src/utils/file_utils.py:427
+msgid "invalid_url"
+msgstr ""
+"{url} adresine bağlanılamadı... hizmet geçici olarak kapalı olabilir ya "
+"da IPv4/IPv6 üzerinden internete düzgün bir şekilde bağlı değilsiniz."
+
+#: src/utils/file_utils.py:430
+msgid "download_timeout"
+msgstr "{url} yanıtlaması çok uzun sürdü, pes etti."
+
+#: src/utils/file_utils.py:433
+msgid "download_unknown_error"
+msgstr "{url} adresinden veri indirilirken hata oluştu: {error}"
+
+#: src/utils/file_utils.py:437
+msgid "download_bad_status_code"
+msgstr "{url} döndürülen durum kodu {code}"
+
+#: src/utils/form.py:413
+msgid "config_forbidden_keyword"
+msgstr ""
+
+#: src/utils/form.py:430
+msgid "config_forbidden_readonly_type"
+msgstr ""
+
+#: src/utils/form.py:532
+msgid "danger"
+msgstr ""
+
+#: src/utils/form.py:880
+msgid "pattern_password_app"
+msgstr ""
+
+#: src/utils/form.py:998
+msgid "invalid_number"
+msgstr ""
+
+#: src/utils/form.py:1078 src/utils/form.py:1120 src/utils/form.py:1714
+msgid "app_argument_choice_invalid"
+msgstr ""
+"'{name}'' için geçerli bir değer giriniz '{value}' mevcut seçimlerin "
+"arasında değil ({choices})"
+
+#: src/utils/form.py:1565
+msgid "other_available_options"
+msgstr ""
+
+#: src/utils/form.py:2196
+msgid "config_action_disabled"
+msgstr ""
+
+#: src/utils/ldap.py:390
+msgid "ldap_attribute_already_exists"
+msgstr ""
+
+#: src/utils/password.py:69
+msgid "password_too_long"
+msgstr ""
+
+#: src/utils/resources.py:110
+msgid "app_resource_failed"
+msgstr ""
+
+#: src/utils/resources.py:532
+msgid "app_failed_to_download_asset"
+msgstr ""
+"{app} uygulaması için {source_id}{url} adresinden indirme işlemi "
+"sağlanamadı: {out}"
+
+#: src/utils/resources.py:548
+msgid "app_corrupt_source"
+msgstr ""
+"YunoHost, {app} için '{source_id}' ({url}) adresinden indirebildi, ancak "
+"varlık olması gereken yapılandırmalarla eşleşmiyor. Bu, sunucunuzda "
+"geçici bir ağ arızası meydana geldiği veya varlığın bir şekilde yayın "
+"yapılan veri sağlacıyısı (veya kötü niyetli bir kişi?) tarafından "
+"değiştirildiği ve YunoHost yapımcılarının araştırması ve belki de bu "
+"değişikliği dikkate almak için uygulama bildirimini güncellemesi "
+"gerektiği anlamına gelebilir.\n"
+"    Beklenen sha256 sağlama toplamı: {expected_sha256}\n"
+"    İndirilen sha256 sağlama toplamı: {computed_sha256}\n"
+"    İndirilen dosya boyutu: {size}"
+
+#: src/app.py:438
+msgid "app_upgrade_upgradable"
+msgstr ""
+
+#: src/app.py:439
+msgid "app_upgrade_fail_requirements"
+msgstr ""
+
+#: src/app.py:573
+msgid "log_app_change_url"
+msgstr ""
+
+#: src/app.py:868
+msgid "confirm_app_insufficient_ram"
+msgstr ""
+
+#: src/app.py:1178
+msgid "apps_confirm_partial_upgrade"
+msgstr ""
+
+#: src/app.py:1301
+msgid "log_app_install"
+msgstr ""
+
+#: src/app.py:1632
+msgid "log_app_remove"
+msgstr ""
+
+#: src/app.py:1726
+msgid "log_app_makedefault"
+msgstr ""
+
+#: src/app.py:2174
+msgid "log_app_config_set"
+msgstr ""
+
+#: src/app.py:2404
+msgid "app_config_permission_extraperm_section_name"
+msgstr ""
+
+#: src/app.py:978
+msgid "log_app_upgrade"
+msgstr ""
+
+#: src/app.py:1546
+msgid "log_remove_on_failed_install"
+msgstr ""
+
+#: src/app.py:2132
+msgid "log_app_action_run"
+msgstr ""
+
+#: src/certificate.py:156
+msgid "log_selfsigned_cert_install"
+msgstr ""
+
+#: src/certificate.py:296
+msgid "log_letsencrypt_cert_install"
+msgstr ""
+
+#: src/certificate.py:410
+msgid "log_letsencrypt_cert_renew"
+msgstr ""
+
+#: src/diagnosis.py:160
+msgid "log_diagnosis_run"
+msgstr ""
+
+#: src/domain.py:288
+msgid "log_domain_add"
+msgstr ""
+
+#: src/domain.py:350 src/tools.py:179
+msgid "confirm_tos_acknowledgement"
+msgstr ""
+
+#: src/domain.py:442
+msgid "log_domain_remove"
+msgstr ""
+
+#: src/domain.py:642
+msgid "log_domain_main_domain"
+msgstr ""
+
+#: src/domain.py:744
+msgid "log_domain_config_set"
+msgstr ""
+
+#: src/domain.py:772 src/domain.py:826
+msgid "domain_config_cert_renew_help"
+msgstr ""
+
+#: src/domain.py:773
+msgid "domain_config_default_app_help"
+msgstr ""
+
+#: src/domain.py:805
+msgid "domain_config_cert_summary_expired"
+msgstr ""
+
+#: src/domain.py:806
+msgid "domain_config_cert_summary_selfsigned"
+msgstr ""
+
+#: src/domain.py:807
+msgid "domain_config_cert_summary_abouttoexpire"
+msgstr ""
+
+#: src/domain.py:808
+msgid "domain_config_cert_summary_ok"
+msgstr ""
+
+#: src/domain.py:809
+msgid "domain_config_cert_summary_letsencrypt"
+msgstr ""
+
+#: src/dyndns.py:101
+msgid "log_dyndns_subscribe"
+msgstr ""
+
+#: src/dyndns.py:228
+msgid "log_dyndns_unsubscribe"
+msgstr ""
+
+#: src/dyndns.py:367
+msgid "log_dyndns_update"
+msgstr ""
+
+#: src/regenconf.py:54
+msgid "log_regen_conf"
+msgstr ""
+
+#: src/settings.py:92
+msgid "log_settings_set"
+msgstr ""
+
+#: src/settings.py:107
+msgid "log_settings_reset"
+msgstr ""
+
+#: src/settings.py:121
+msgid "log_settings_reset_all"
+msgstr ""
+
+#: src/tools.py:139
+msgid "log_tools_postinstall"
+msgstr ""
+
+#: src/tools.py:363
+msgid "log_tools_update"
+msgstr ""
+
+#: src/tools.py:539
+msgid "log_tools_upgrade"
+msgstr ""
+
+#: src/tools.py:662
+msgid "log_tools_shutdown"
+msgstr ""
+
+#: src/tools.py:681
+msgid "log_tools_reboot"
+msgstr ""
+
+#: src/tools.py:913
+msgid "log_tools_migrations_migrate_forward"
+msgstr ""
+
+#: src/user.py:167
+msgid "log_user_create"
+msgstr ""
+
+#: src/user.py:339
+msgid "log_user_delete"
+msgstr ""
+
+#: src/user.py:416
+msgid "log_user_update"
+msgstr ""
+
+#: src/user.py:755
+msgid "log_user_import"
+msgstr ""
+
+#: src/user.py:1094
+msgid "log_user_group_create"
+msgstr ""
+
+#: src/user.py:1174
+msgid "log_user_group_delete"
+msgstr ""
+
+#: src/user.py:1220
+msgid "log_user_group_update"
+msgstr ""
+
+#: src/backup.py:771
+msgid "backup_applying_method_copy"
+msgstr ""
+
+#: src/backup.py:772
+msgid "backup_applying_method_custom"
+msgstr ""
+
+#: src/backup.py:773
+msgid "backup_applying_method_tar"
+msgstr ""
+
+#: src/backup.py:781
+msgid "backup_method_copy_finished"
+msgstr ""
+
+#: src/backup.py:782
+msgid "backup_method_custom_finished"
+msgstr ""
+
+#: src/backup.py:783
+msgid "backup_method_tar_finished"
+msgstr ""
+
+#: src/backup.py:2106
+msgid "log_backup_create"
+msgstr ""
+
+#: src/backup.py:1237
+msgid "log_backup_restore_system"
+msgstr ""
+
+#: src/backup.py:1344
+msgid "log_backup_restore_app"
+msgstr ""
+
+#: src/dns.py:618
+msgid "log_domain_dns_push"
+msgstr ""
+
+#: src/diagnosers/21-web.py:143
+msgid "diagnosis_http_bad_status_code"
+msgstr ""
+
+#: src/diagnosers/21-web.py:144
+msgid "diagnosis_http_connection_error"
+msgstr ""
+
+#: src/diagnosers/21-web.py:145
+msgid "diagnosis_http_timeout"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:55
+msgid "diagnosis_mail_outgoing_port_25_ok"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:56
+msgid "diagnosis_mail_ehlo_ok"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:57
+msgid "diagnosis_mail_fcrdns_ok"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:58
+msgid "diagnosis_mail_blocklist_ok"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:59 src/diagnosers/24-mail.py:298
+msgid "diagnosis_mail_queue_ok"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:122
+msgid "diagnosis_mail_ehlo_bad_answer"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:123
+msgid "diagnosis_mail_ehlo_bad_answer_details"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:124
+msgid "diagnosis_mail_ehlo_unreachable"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:125
+msgid "diagnosis_mail_ehlo_unreachable_details"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:113
+msgid "diagnosis_apps_security_issue_warning"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:114
+msgid "diagnosis_apps_security_issue_error"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:268
+msgid "diagnosis_domain_not_found_details"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:304
+msgid "diagnosis_domain_expiration_not_found"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:305
+msgid "diagnosis_domain_expiration_error"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:306
+msgid "diagnosis_domain_expiration_warning"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:307
+msgid "diagnosis_domain_expiration_success"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:308
+msgid "diagnosis_domain_expiration_not_found_details"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:380
+msgid "diagnosis_package_security_issue_warning"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:381
+msgid "diagnosis_package_security_issue_error"
+msgstr ""
+
+#: src/utils/password.py:144
+msgid "password_listed"
+msgstr ""
+
+#: src/utils/password.py:147
+msgid "password_too_simple_1"
+msgstr "Şifre en az 8 karakter uzunluğunda olmalı"
+
+#: src/utils/password.py:148
+msgid "password_too_simple_2"
+msgstr ""
+
+#: src/utils/password.py:149
+msgid "password_too_simple_3"
+msgstr ""
+
+#: src/utils/password.py:150
+msgid "password_too_simple_4"
+msgstr ""
+
+#: src/utils/app_utils.py:97
+msgid "confirm_app_install_warning"
+msgstr ""
+
+#: src/utils/app_utils.py:98
+msgid "confirm_app_install_danger"
+msgstr ""
+
+#: src/utils/app_utils.py:99
+msgid "confirm_app_install_thirdparty"
+msgstr ""
+
+#: src/utils/app_utils.py:483
+msgid "app_manifest_install_ask_domain"
+msgstr "Bu uygulamanın yüklenmesi gereken alan adını seçin"
+
+#: src/utils/app_utils.py:484
+msgid "app_manifest_install_ask_path"
+msgstr "Bu uygulamanın yüklenmesi gereken URL yolunu (alan adından sonra) seçin"
+
+#: src/utils/app_utils.py:485
+msgid "app_manifest_install_ask_password"
+msgstr "Bu uygulama için yönetici şifresi seçin"
+
+#: src/utils/app_utils.py:486
+msgid "app_manifest_install_ask_admin"
+msgstr "Bu uygulamayı kullanmak için bir yönetici seç"
+
+#: src/utils/app_utils.py:487
+msgid "app_manifest_install_ask_is_public"
+msgstr "Bu uygulama anonim ziyaretçilere açık olmalı mı?"
+
+#: src/utils/app_utils.py:491
+msgid "app_manifest_install_ask_init_main_permission"
+msgstr "Bu uygulamaya kimin erişimi olmalı?(Bu sonradan değiştirilebilir)"
+
+#: src/utils/app_utils.py:495
+msgid "app_manifest_install_ask_init_admin_permission"
+msgstr ""
+"Kime bu uygulamanın yönetici özelliklerine erişim hakkı verilmeli?( Bu "
+"daha sonra değiştirilebilir)"
+
+#: src/utils/app_utils.py:1326
+msgid "confirm_notifications_read"
+msgstr ""
+
+#: src/utils/form.py:1925
+msgid "visitors"
+msgstr ""
+
+#: src/utils/form.py:1926
+msgid "all_users"
+msgstr "Tüm YunoHost kullanıcıları"
+
+#: src/utils/form.py:1927
+msgid "admins"
+msgstr "Yöneticiler"
+
+#: src/utils/form.py:2161
+msgid "pydantic_type_error"
+msgstr ""
+
+#: src/utils/form.py:2162
+msgid "pydantic_type_error_none_not_allowed"
+msgstr ""
+
+#: src/utils/form.py:2163
+msgid "pydantic_type_error_str"
+msgstr ""
+
+#: src/utils/form.py:2164
+msgid "pydantic_value_error_color"
+msgstr ""
+
+#: src/utils/form.py:2165
+msgid "pydantic_value_error_const"
+msgstr ""
+
+#: src/utils/form.py:2166
+msgid "pydantic_value_error_date"
+msgstr ""
+
+#: src/utils/form.py:2167
+msgid "pydantic_value_error_email"
+msgstr ""
+
+#: src/utils/form.py:2168
+msgid "pydantic_value_error_number_not_ge"
+msgstr ""
+
+#: src/utils/form.py:2169
+msgid "pydantic_value_error_number_not_le"
+msgstr ""
+
+#: src/utils/form.py:2170
+msgid "pydantic_value_error_str_regex"
+msgstr ""
+
+#: src/utils/form.py:2171
+msgid "pydantic_value_error_time"
+msgstr ""
+
+#: src/utils/form.py:2172
+msgid "pydantic_value_error_url_extra"
+msgstr ""
+
+#: src/utils/form.py:2173
+msgid "pydantic_value_error_url_host"
+msgstr ""
+
+#: src/utils/form.py:2174
+msgid "pydantic_value_error_url_port"
+msgstr ""
+
+#: src/utils/form.py:2175
+msgid "pydantic_value_error_url_scheme"
+msgstr ""
+
+#: src/utils/resources.py:284
+msgid "log_resource_snippet"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:53
+msgid "diagnosis_ip_not_connected_at_all"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:77
+msgid "diagnosis_ip_broken_dnsresolution"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:79
+msgid "diagnosis_ip_broken_resolvconf"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:89
+msgid "diagnosis_ip_weird_resolvconf"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:90
+msgid "diagnosis_ip_weird_resolvconf_details"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:96
+msgid "diagnosis_ip_dnsresolution_working"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:131
+msgid "diagnosis_ip_connected_ipv4"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:131
+msgid "diagnosis_ip_no_ipv4"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:132 src/diagnosers/10-ip.py:149
+msgid "diagnosis_ip_global"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:132 src/diagnosers/10-ip.py:149
+msgid "diagnosis_ip_local"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:147
+msgid "diagnosis_ip_connected_ipv6"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:147
+msgid "diagnosis_ip_no_ipv6"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:153
+msgid "diagnosis_ip_no_ipv6_tip_important"
+msgstr ""
+
+#: src/diagnosers/10-ip.py:155
+msgid "diagnosis_ip_no_ipv6_tip"
+msgstr ""
+
+#: src/diagnosers/10-ip.py
+msgid "diagnosis_description_ip"
+msgstr ""
+
+#: src/diagnosers/14-ports.py:75
+msgid "diagnosis_ports_could_not_diagnose"
+msgstr ""
+
+#: src/diagnosers/14-ports.py:76
+msgid "diagnosis_ports_could_not_diagnose_details"
+msgstr ""
+
+#: src/diagnosers/14-ports.py:94 src/diagnosers/14-ports.py:155
+msgid "diagnosis_ports_ok"
+msgstr ""
+
+#: src/diagnosers/14-ports.py:95 src/diagnosers/14-ports.py:107
+#: src/diagnosers/14-ports.py:142 src/diagnosers/14-ports.py:156
+#: src/diagnosers/14-ports.py:169
+msgid "diagnosis_ports_needed_by"
+msgstr ""
+
+#: src/diagnosers/14-ports.py:105
+msgid "diagnosis_ports_unreachable"
+msgstr ""
+
+#: src/diagnosers/14-ports.py:108 src/diagnosers/14-ports.py:143
+#: src/diagnosers/14-ports.py:170
+msgid "diagnosis_ports_forwarding_tip"
+msgstr ""
+
+#: src/diagnosers/14-ports.py:140 src/diagnosers/14-ports.py:167
+msgid "diagnosis_ports_partially_unreachable"
+msgstr ""
+
+#: src/diagnosers/14-ports.py
+msgid "diagnosis_description_ports"
+msgstr ""
+
+#: src/diagnosers/21-web.py:50
+msgid "diagnosis_http_nginx_conf_not_up_to_date"
+msgstr ""
+
+#: src/diagnosers/21-web.py:51
+msgid "diagnosis_http_nginx_conf_not_up_to_date_details"
+msgstr ""
+
+#: src/diagnosers/21-web.py:57
+msgid "diagnosis_http_special_use_tld"
+msgstr ""
+
+#: src/diagnosers/21-web.py:109
+msgid "diagnosis_http_hairpinning_issue"
+msgstr ""
+
+#: src/diagnosers/21-web.py:110
+msgid "diagnosis_http_hairpinning_issue_details"
+msgstr ""
+
+#: src/diagnosers/21-web.py:133
+msgid "diagnosis_http_could_not_diagnose"
+msgstr ""
+
+#: src/diagnosers/21-web.py:134
+msgid "diagnosis_http_could_not_diagnose_details"
+msgstr ""
+
+#: src/diagnosers/21-web.py:159 src/diagnosers/21-web.py:215
+msgid "diagnosis_http_ok"
+msgstr ""
+
+#: src/diagnosers/21-web.py:169
+msgid "diagnosis_http_unreachable"
+msgstr ""
+
+#: src/diagnosers/21-web.py:201 src/diagnosers/21-web.py:221
+msgid "diagnosis_http_partially_unreachable"
+msgstr ""
+
+#: src/diagnosers/21-web.py
+msgid "diagnosis_description_web"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:89
+msgid "diagnosis_mail_outgoing_port_25_blocked"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:91
+msgid "diagnosis_mail_outgoing_port_25_blocked_details"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:92
+msgid "diagnosis_mail_outgoing_port_25_blocked_relay_vpn"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:116
+msgid "diagnosis_mail_ehlo_could_not_diagnose"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:117
+msgid "diagnosis_mail_ehlo_could_not_diagnose_details"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:139
+msgid "diagnosis_mail_ehlo_wrong"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:140
+msgid "diagnosis_mail_ehlo_wrong_details"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:154 src/diagnosers/24-mail.py:160
+msgid "diagnosis_mail_fcrdns_nok_details"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:155
+msgid "diagnosis_mail_fcrdns_nok_alternatives_6"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:161
+msgid "diagnosis_mail_fcrdns_nok_alternatives_4"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:179
+msgid "diagnosis_mail_fcrdns_dns_missing"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:189
+msgid "diagnosis_mail_fcrdns_different_from_ehlo_domain_details"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:199
+msgid "diagnosis_mail_fcrdns_different_from_ehlo_domain"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:243
+msgid "diagnosis_mail_blocklist_reason"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:245
+msgid "diagnosis_mail_blocklist_reason_openresolver"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:248
+msgid "diagnosis_mail_blocklist_website"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:262
+msgid "diagnosis_mail_blocklist_listed_by"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:282
+msgid "diagnosis_mail_queue_unavailable"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:283
+msgid "diagnosis_mail_queue_unavailable_details"
+msgstr ""
+
+#: src/diagnosers/24-mail.py:291
+msgid "diagnosis_mail_queue_too_big"
+msgstr ""
+
+#: src/diagnosers/24-mail.py
+msgid "diagnosis_description_mail"
+msgstr ""
+
+#: src/diagnosers/30-services.py:45
+msgid "diagnosis_services_bad_status"
+msgstr ""
+
+#: src/diagnosers/30-services.py:46
+msgid "diagnosis_services_bad_status_tip"
+msgstr ""
+
+#: src/diagnosers/30-services.py:50
+msgid "diagnosis_services_conf_broken"
+msgstr ""
+
+#: src/diagnosers/30-services.py:55
+msgid "diagnosis_services_running"
+msgstr ""
+
+#: src/diagnosers/30-services.py
+msgid "diagnosis_description_services"
+msgstr ""
+
+#: src/diagnosers/70-regenconf.py:41
+msgid "diagnosis_regenconf_allgood"
+msgstr ""
+
+#: src/diagnosers/70-regenconf.py:52
+msgid "diagnosis_regenconf_manually_modified"
+msgstr ""
+
+#: src/diagnosers/70-regenconf.py:53
+msgid "diagnosis_regenconf_manually_modified_details"
+msgstr ""
+
+#: src/diagnosers/70-regenconf.py:66
+msgid "diagnosis_sshd_config_insecure"
+msgstr ""
+
+#: src/diagnosers/70-regenconf.py:78
+msgid "diagnosis_sshd_config_inconsistent"
+msgstr ""
+
+#: src/diagnosers/70-regenconf.py:79
+msgid "diagnosis_sshd_config_inconsistent_details"
+msgstr ""
+
+#: src/diagnosers/70-regenconf.py
+msgid "diagnosis_description_regenconf"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py:56
+msgid "diagnosis_ram_verylow"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py:59
+msgid "diagnosis_ram_low"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py:62
+msgid "diagnosis_ram_ok"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py:76
+msgid "diagnosis_swap_none"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py:79
+msgid "diagnosis_swap_notsomuch"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py:82
+msgid "diagnosis_swap_ok"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py:83
+msgid "diagnosis_swap_tip"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py:128
+msgid "diagnosis_diskusage_verylow"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py:133
+msgid "diagnosis_diskusage_low"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py:136
+msgid "diagnosis_diskusage_ok"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py:158
+msgid "diagnosis_rootfstotalspace_critical"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py:165
+msgid "diagnosis_rootfstotalspace_warning"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py:181
+msgid "diagnosis_processes_killed_by_oom_reaper"
+msgstr ""
+
+#: src/diagnosers/50-systemresources.py
+msgid "diagnosis_description_systemresources"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:49
+msgid "diagnosis_apps_allgood"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:69
+msgid "diagnosis_apps_issue"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:130
+msgid "diagnosis_apps_not_in_app_catalog"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:135
+msgid "diagnosis_apps_broken"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:137
+msgid "diagnosis_apps_bad_quality"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:142
+msgid "diagnosis_apps_outdated_packaging_format"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:152
+msgid "diagnosis_apps_outdated_ynh_requirement"
+msgstr ""
+
+#: src/diagnosers/80-apps.py:169 src/diagnosers/80-apps.py:176
+msgid "diagnosis_apps_deprecated_practices"
+msgstr ""
+
+#: src/diagnosers/80-apps.py
+msgid "diagnosis_description_apps"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:90
+msgid "diagnosis_dns_specialusedomain"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:133
+msgid "diagnosis_dns_missing_record"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:136
+msgid "diagnosis_dns_discrepancy"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:156
+msgid "diagnosis_dns_bad_conf"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:159
+msgid "diagnosis_dns_good_conf"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:177
+msgid "diagnosis_dns_try_dyndns_update_force"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:180
+msgid "diagnosis_dns_point_to_doc"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py:292
+msgid "diagnosis_domain_expires_in"
+msgstr ""
+
+#: src/diagnosers/12-dnsrecords.py
+msgid "diagnosis_description_dnsrecords"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:62
+msgid "diagnosis_basesystem_hardware"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:69 src/diagnosers/00-basesystem.py:78
+msgid "diagnosis_basesystem_hardware_model"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:88
+msgid "diagnosis_basesystem_kernel"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:96
+msgid "diagnosis_basesystem_host"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:112
+msgid "diagnosis_basesystem_ynh_single_version"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:130
+msgid "diagnosis_basesystem_ynh_main_version"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:132
+msgid "diagnosis_basesystem_ynh_inconsistent_versions"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:141
+msgid "diagnosis_security_vulnerable_to_meltdown"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:142
+msgid "diagnosis_security_vulnerable_to_meltdown_details"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:154
+msgid "diagnosis_package_installed_from_sury"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:155
+msgid "diagnosis_package_installed_from_sury_details"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:162
+msgid "diagnosis_backports_in_sources_list"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:189
+msgid "diagnosis_using_yunohost_testing"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:190
+msgid "diagnosis_using_yunohost_testing_details"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:206
+msgid "diagnosis_using_stable_codename"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:207
+msgid "diagnosis_using_stable_codename_details"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:214
+msgid "diagnosis_high_number_auth_failures"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:222
+msgid "diagnosis_rfkill_wifi"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py:223
+msgid "diagnosis_rfkill_wifi_details"
+msgstr ""
+
+#: src/diagnosers/00-basesystem.py
+msgid "diagnosis_description_basesystem"
+msgstr ""
+
+#: src/migrations/m0032_firewall_config.py
+msgid "migration_description_0032_firewall_config"
+msgstr ""
+
+#: src/migrations/m0033_rework_permission_infos.py
+msgid "migration_description_0033_rework_permission_infos"
+msgstr ""
+
+#: src/migrations/m0034_fix_missing_admins_aliases.py
+msgid "migration_description_0034_fix_missing_admins_aliases"
+msgstr ""
+
+#: src/migrations/m0035_fix_apps_nodejs_version.py
+msgid "migration_description_0035_fix_apps_nodejs_version"
+msgstr ""
+
+#: src/migrations/m0031_terms_of_services.py
+msgid "migration_description_0031_terms_of_services"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled
+msgid "migration_description_0036_migrate_to_trixie"
+msgstr ""
+
