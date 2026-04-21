@@ -4,6 +4,7 @@ hooks/* /usr/share/yunohost/hooks/
 helpers/* /usr/share/yunohost/
 conf/* /usr/share/yunohost/conf/
 po/generated/* /usr/share/yunohost/locales/
+po/en.json /usr/share/yunohost/locales/en.json
 doc/yunohost.8.gz /usr/share/man/man8/
 doc/bash_completion.d/* /etc/bash_completion.d/
 doc/zsh_completion.d/* /usr/share/zsh/vendor-completions/
