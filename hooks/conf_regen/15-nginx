@@ -140,6 +140,12 @@ do_pre_regen() {
             export mail_enabled="False"
         fi
 
+        if tr ' ' '\n' <<< "$YNH_DOMAINS_WITH_BALANCer" | grep -q "^$domain$"; then
+            export balancer_enabled="True"
+        else
+            export balancer_enabled="False"
+        fi
+
         ynh_render_template "server.tpl.conf" "${nginx_conf_dir}/${domain}.conf"
         if [ $balancer_enabled == "True" ]; then
             # make nginx enable to use upstream config file to enable loadbalancing feature 
