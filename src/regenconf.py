@@ -172,6 +172,9 @@ def regen_conf(
         env["YNH_DOMAINS_WITH_MAIL_IN_AND_OUT"] = " ".join(
             domain_list(features=["mail_in", "mail_out"])["domains"]
         )
+        env["YNH_DOMAINS_WITH_BALANCER"] = " ".join(
+            domain_list(features=["balancer"])["domains"]
+        )
 
     env["YNH_CONTEXT"] = "regenconf"
     env["YNH_HELPERS_VERSION"] = "2"
