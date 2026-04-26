@@ -19,7 +19,7 @@ i18n = "domain_config"
         default = "_none"
 
     [feature.balancer]
-        [feature.banlancer.status]
+        [feature.balancer.status]
         type = "boolean"
         default = false
 
