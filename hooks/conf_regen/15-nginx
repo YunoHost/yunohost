@@ -140,7 +140,7 @@ do_pre_regen() {
             export mail_enabled="False"
         fi
 
-        if tr ' ' '\n' <<< "$YNH_DOMAINS_WITH_BALANCer" | grep -q "^$domain$"; then
+        if tr ' ' '\n' <<< "$YNH_DOMAINS_WITH_BALANCER" | grep -q "^$domain$"; then
             export balancer_enabled="True"
         else
             export balancer_enabled="False"
