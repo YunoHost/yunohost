@@ -18,8 +18,8 @@ i18n = "domain_config"
         filter = "is_webapp"
         default = "_none"
 
-    [feature.balancer]
-        [feature.balancer.status]
+    [feature.proxy]
+        [feature.proxy.balancer]
         type = "boolean"
         default = false
 
