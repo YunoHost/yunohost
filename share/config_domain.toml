@@ -18,6 +18,11 @@ i18n = "domain_config"
         filter = "is_webapp"
         default = "_none"
 
+    [feature.balancer]
+        [feature.app.default_app]
+        type = "boolean"
+        default = false
+
     [feature.portal]
     # Only available for "topest" domains
 
