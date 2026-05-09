@@ -1078,6 +1078,14 @@ app:
                     extra:
                         autocomplete: *apps_list
 
+        ### app_db()
+        db:
+            action_help: Open an interactive database client prompt for the app
+            api: GET /apps/<app>/db
+            arguments:
+                app:
+                    help: App ID
+
         ### app_register_url()
         register-url:
             hide_in_help: True
