@@ -73,7 +73,7 @@ user:
                     help: The unique username to create
                     extra:
                         pattern: &pattern_username
-                            - !!str ^[a-z0-9_\.]+$
+                            - !!str ^[a-z][-a-z0-9_\.]*$
                             - "pattern_username"
                 -F:
                     full: --fullname
@@ -265,7 +265,7 @@ user:
                             help: Name of the group to be created
                             extra:
                                 pattern: &pattern_groupname
-                                    - !!str ^[a-z0-9_]+$
+                                    - !!str ^[a-z][-a-z0-9_\.]*$
                                     - "pattern_groupname"
 
                 ### user_group_delete()

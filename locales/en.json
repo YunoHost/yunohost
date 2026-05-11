@@ -753,7 +753,7 @@
     "pattern_password": "Must be at least 3 characters long",
     "pattern_password_app": "Sorry, passwords can not contain the following characters: {forbidden_chars}",
     "pattern_port_or_range": "Must be a valid port number (i.e. 0-65535) or range of ports (e.g. 100:200)",
-    "pattern_username": "Must be lower-case alphanumeric and underscore characters only",
+    "pattern_username": "Must be lower-case alphanumeric, dot, dash and underscore characters only",
     "permission_already_allowed": "Group '{group}' already has permission '{permission}' enabled",
     "permission_already_disallowed": "Group '{group}' already has permission '{permission}' disabled",
     "permission_cannot_remove_main": "Removing a main permission is not allowed",
