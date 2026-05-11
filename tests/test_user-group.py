@@ -219,7 +219,7 @@ def test_export_user():
 
 
 def test_create_group():
-    with message("group_created", group="adminsys"):
+    with message("group_created", group="volunteer-stand.2026_02"):
         user_group_create("volunteer-stand.2026_02")
 
     group_res = user_group_list()["groups"]
