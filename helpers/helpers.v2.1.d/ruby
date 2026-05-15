@@ -24,7 +24,7 @@ export MISE_RUBY_COMPILE=false
 _ynh_load_ruby_in_path_and_other_tweaks() {
 
     # Get the absolute path of this version of ruby
-    ruby_dir=$(MISE_DATA_DIR="$MISE_DATA_DIR" MISE_CACHE_DIR="$MISE_CACHE_DIR" MISE_STATE_DIR="$MISE_STATE_DIR" "$MISE_BIN_DIR/mise" bin-paths "ruby@$ruby_version")
+    ruby_dir=$("$MISE_BIN_DIR/mise" bin-paths "ruby@$ruby_version")
 
     if [ ! -e "$ruby_dir" ]; then
         echo "Skipping loading ruby, because it doesn't seem to be provisioned yet. This is likely to happen during restore and other specific contexts."
@@ -80,7 +80,7 @@ ynh_ruby_install() {
     # Installing precompiled ruby from the $install_dir so the created mise.toml will be at the right place
     pushd "$install_dir" || ynh_die
         ynh_print_info "Installing ruby@$ruby_version"
-        ynh_hide_warnings env MISE_RUBY_COMPILE=false MISE_DATA_DIR="$MISE_DATA_DIR" MISE_CACHE_DIR="$MISE_CACHE_DIR" MISE_STATE_DIR="$MISE_STATE_DIR" "$MISE_BIN_DIR"/mise use ruby@"$ruby_version"
+        ynh_hide_warnings "$MISE_BIN_DIR"/mise use ruby@"$ruby_version"
     popd || ynh_die
 
     _ynh_load_ruby_in_path_and_other_tweaks
@@ -112,7 +112,7 @@ ynh_ruby_remove() {
 # usage: _ynh_ruby_cleanup
 _ynh_ruby_cleanup() {
 
-    local installed_ruby_versions=$(MISE_DATA_DIR="$MISE_DATA_DIR" MISE_CACHE_DIR="$MISE_CACHE_DIR" MISE_STATE_DIR="$MISE_STATE_DIR" "${MISE_BIN_DIR}/mise" ls ruby --json | jq -r '.[].version')
+    local installed_ruby_versions=$("${MISE_BIN_DIR}/mise" ls ruby --json | jq -r '.[].version')
     for installed_ruby_version in $installed_ruby_versions; do
         if [[ -n "$installed_ruby_version" ]] && [[ "$installed_ruby_version" != "$ruby_version" ]] && ! grep -qE "^ruby_version: '?$installed_ruby_version'?" /etc/yunohost/apps/*/settings.yml; then
             ynh_print_info "Removing ruby@$installed_ruby_version"

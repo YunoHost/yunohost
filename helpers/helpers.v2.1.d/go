@@ -22,7 +22,7 @@
 _ynh_load_go_in_path_and_other_tweaks() {
 
     # Get the absolute path of this version of go
-    go_dir=$(MISE_DATA_DIR=$MISE_DATA_DIR MISE_CACHE_DIR=$MISE_CACHE_DIR "$MISE_BIN_DIR/mise" bin-paths "go@$go_version")
+    go_dir=$("$MISE_BIN_DIR/mise" bin-paths "go@$go_version")
 
     if [ ! -e "$go_dir" ]; then
         echo "Skipping loading go, because it doesn't seem to be provisioned yet. This is likely to happen during restore and other specific contexts."
@@ -78,7 +78,7 @@ ynh_go_install() {
     # Installing precompiled go from the $install_dir so the created mise.toml will be at the right place
     pushd "$install_dir" || ynh_die
         ynh_print_info "Installing go@$go_version"
-        ynh_hide_warnings env MISE_DATA_DIR="$MISE_DATA_DIR" MISE_CACHE_DIR="$MISE_CACHE_DIR" "$MISE_BIN_DIR"/mise use go@"$go_version"
+        ynh_hide_warnings "$MISE_BIN_DIR"/mise use go@"$go_version"
     popd || ynh_die
 
     _ynh_load_go_in_path_and_other_tweaks
@@ -109,7 +109,7 @@ ynh_go_remove() {
 # usage: _ynh_go_cleanup
 _ynh_go_cleanup() {
 
-    local installed_go_versions=$(MISE_DATA_DIR=$MISE_DATA_DIR MISE_CACHE_DIR=$MISE_CACHE_DIR "${MISE_BIN_DIR}/mise" ls go --json | jq -r '.[].version')
+    local installed_go_versions=$("${MISE_BIN_DIR}/mise" ls go --json | jq -r '.[].version')
     for installed_go_version in $installed_go_versions; do
         if [[ -n "$installed_go_version" ]] && [[ "$installed_go_version" != "$go_version" ]] && ! grep -qE "^go_version: '?$installed_go_version'?" /etc/yunohost/apps/*/settings.yml; then
             ynh_print_info "Removing go@$installed_go_version"

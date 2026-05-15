@@ -18,13 +18,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-export MISE_NODE_COREPACK=true
-
 # [internal]
 _ynh_load_nodejs_in_path_and_other_tweaks() {
 
     # Get the absolute path of this version of node
-    nodejs_dir=$(MISE_DATA_DIR=$MISE_DATA_DIR MISE_CACHE_DIR=$MISE_CACHE_DIR "$MISE_BIN_DIR/mise" bin-paths "nodejs@$nodejs_version")
+    nodejs_dir=$("$MISE_BIN_DIR/mise" bin-paths "nodejs@$nodejs_version")
 
     if [ ! -e "$nodejs_dir" ]; then
         echo "Skipping loading nodejs, because it doesn't seem to be provisioned yet. This is likely to happen during restore and other specific contexts."
@@ -48,6 +46,7 @@ _ynh_load_nodejs_in_path_and_other_tweaks() {
     # Prevent yet another Node and Corepack madness, with Corepack wanting the user to confirm download of Yarn
     export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
     export NPM_CONFIG_UPDATE_NOTIFIER=false
+    export MISE_NODE_COREPACK=true
 
     # Cleanup Node versions
     # Calling it here will remove unused versions on install/upgrade as well
@@ -86,7 +85,7 @@ ynh_nodejs_install() {
         ynh_print_info "Installing nodejs@$nodejs_version"
         # The path has to be set for npm to now where to find node
         PATH="$MISE_DATA_DIR/installs/node/$nodejs_version/bin:$PATH"
-        ynh_hide_warnings env MISE_DATA_DIR="$MISE_DATA_DIR" MISE_CACHE_DIR="$MISE_CACHE_DIR" "$MISE_BIN_DIR"/mise use nodejs@"$nodejs_version"
+        ynh_hide_warnings "$MISE_BIN_DIR"/mise use nodejs@"$nodejs_version"
     popd || ynh_die
 
     _ynh_load_nodejs_in_path_and_other_tweaks
@@ -117,7 +116,7 @@ ynh_nodejs_remove() {
 # usage: _ynh_nodejs_cleanup
 _ynh_nodejs_cleanup() {
     
-    local installed_nodejs_versions=$(MISE_DATA_DIR=$MISE_DATA_DIR MISE_CACHE_DIR=$MISE_CACHE_DIR "${MISE_BIN_DIR}/mise" ls nodejs --json | jq -r '.[].version')
+    local installed_nodejs_versions=$("${MISE_BIN_DIR}/mise" ls nodejs --json | jq -r '.[].version')
     for installed_nodejs_version in $installed_nodejs_versions; do
         if [[ -n "$installed_nodejs_version" ]] && [[ "$installed_nodejs_version" != "$nodejs_version" ]] && ! grep -qE "^nodejs_version: '?$installed_nodejs_version'?" /etc/yunohost/apps/*/settings.yml; then
             ynh_print_info "Removing nodejs@$installed_nodejs_version"
