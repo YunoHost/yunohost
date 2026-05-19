@@ -334,10 +334,15 @@ class MyDiagnoser(Diagnoser):  # type: ignore
             _load_security_issues_list()["system"]
         )
         for package, issues in security_issues_list_per_pkg.items():
-            if package not in installed_packages:
+            if package not in installed_packages and package != "kernel":
                 continue
 
-            current_version = dpkg_package_version(package)
+            if package != "kernel":
+                current_version = dpkg_package_version(package)
+            else:
+                # Equivalent to uname -r
+                current_version = read_file("/proc/sys/kernel/osrelease").strip()
+
             for issue in issues:
                 raw_fixed_in_version = issue["fixed_in_version"]
                 if isinstance(raw_fixed_in_version, dict):
