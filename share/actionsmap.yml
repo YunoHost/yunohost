@@ -1085,6 +1085,8 @@ app:
             arguments:
                 app:
                     help: App ID
+                    extra:
+                        autocomplete: *apps_list
 
         ### app_register_url()
         register-url:
