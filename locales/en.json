@@ -88,7 +88,7 @@
     "app_upgrade_specific_channel_msg": "Note that you're currently using `{channel}` as source for upgrades. Be sure to check the ongoing discussion [here]({pr_url}).",
     "app_upgrade_up_to_date": "Force-upgrading the app (to the same version) can sometimes be useful to rebuild the app and configurations.",
     "app_upgrade_upgradable": "The app can be upgraded from version {current_version} to {new_version}",
-    "app_upgrade_url_required": "This app does not exists (anymore?) in the catalog, you must therefore take care of upgrades manually. <br/><small>From the command line, you can use `yunohost app upgrade <app>` and provide the url of the repo using the `-u` option.</small>",
+    "app_upgrade_url_required": "This app is not in the catalog (anymore?), you must therefore manually take care of its upgrades. <br/><small>From the command line, you can use `yunohost app upgrade <app>` and provide the url of the repo using the `-u` option.</small>",
     "app_upgraded": "{app} upgraded",
     "app_yunohost_version_not_supported": "This app requires YunoHost >= {required} but current installed version is {current}.",
     "apps_already_up_to_date": "All apps are already up-to-date",
