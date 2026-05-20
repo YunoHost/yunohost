@@ -622,10 +622,7 @@ class BackupManager:
         # Actual call to backup scripts/hooks
 
         def _compute_args_and_workdir_for_individual_script(name, priority, path, args):
-            if name.startswith("conf_"):
-                d = os.path.join(self.work_dir, "conf")
-            else:
-                d = os.path.join(*([self.work_dir] + name.split("_")))
+            d = os.path.join(*([self.work_dir] + name.split("_")))
             os.makedirs(d, exist_ok=True)
             return None, d
 
