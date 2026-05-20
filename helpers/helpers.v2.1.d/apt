@@ -127,7 +127,7 @@ Description: Fake package for ${app} (YunoHost app) dependencies
  This meta-package is only responsible of installing its dependencies.
 EOF
 
-    _ynh_apt update
+    _ynh_apt update --error-on=any
 
     _ynh_wait_dpkg_free
 
@@ -269,7 +269,7 @@ EOF
     # ynh_apt_install_dependencies will also call an ynh_apt update on its own
     # and it's good to limit unecessary requests ...  Here we mainly want to
     # validate that the url+key is correct before going further
-    _ynh_apt update -o Dir::Etc::sourcelist="/etc/apt/sources.list.d/$app.list"
+    _ynh_apt update --error-on=any -o Dir::Etc::sourcelist="/etc/apt/sources.list.d/$app.list"
 
     # Force the cache to be reupdated on the next "apt update" (in
     # ynh_apt_install_dependencies) because the previous command with
@@ -296,7 +296,7 @@ EOF
     ynh_safe_rm "/etc/apt/sources.list.d/$app.list"
     ynh_safe_rm "/etc/apt/preferences.d/$app"
     ynh_safe_rm "/etc/apt/trusted.gpg.d/$app.gpg"
-    _ynh_apt update
+    _ynh_apt update --error-on=any
 }
 
 # #####################

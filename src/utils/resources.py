@@ -298,7 +298,9 @@ ynh_abort_if_errors
                 env=env_,
                 operation_logger=operation_logger,
                 error_message_if_script_failed="An error occured inside the script snippet",
-                error_message_if_failed=lambda e: f"{action} failed for {self.type} : {e}",
+                error_message_if_failed=lambda e: (
+                    f"{action} failed for {self.type} : {e}"
+                ),
             )
         finally:
             if call_failed:
