@@ -1933,8 +1933,6 @@ password={password}
     # Let's create a temp file that is destroyed when quitting
     with tempfile.NamedTemporaryFile() as fp:
         fp.write(password_file_content.encode())
-        # FIXME: should close + call NamedTemporaryFile with `delete_on_close=False`
-        # when we can (requires 3.13 so when we deprecate bookworm)
         fp.flush()
 
         env_by_type = {
