@@ -35,7 +35,7 @@ _ynh_load_ruby_in_path_and_other_tweaks() {
     if [[ :$PATH: != *":$ruby_dir"* ]]; then
         PATH="$ruby_dir:$PATH"
     fi
-    
+
     # Export PATH such that it's available through sudo -E / ynh_exec_as_app
     export PATH
 
@@ -44,10 +44,6 @@ _ynh_load_ruby_in_path_and_other_tweaks() {
     path_with_ruby="$PATH"
     # shellcheck disable=SC2034
     PATH_with_ruby="$PATH"
-
-    # Cleanup Ruby versions
-    # Calling it here will remove unused versions on install/upgrade as well
-    _ynh_ruby_cleanup
 }
 
 # Auto-load Ruby path tweaks if this app uses the ruby resource in the manifest
@@ -71,7 +67,7 @@ ynh_ruby_install() {
     [[ -n "${ruby_version:-}" ]] || ynh_die "\$ruby_version should be defined prior to calling ynh_ruby_install"
 
     ynh_mise_install
-    
+
     # Install the requested version of ruby
     local final_ruby_version=$("${MISE_BIN_DIR}"/mise ls-remote ruby@"$ruby_version" --json | jq -r '.[].version' | tail -n1 )
     ruby_version=${final_ruby_version:-$ruby_version}
@@ -82,6 +78,10 @@ ynh_ruby_install() {
         ynh_print_info "Installing ruby@$ruby_version"
         ynh_hide_warnings "$MISE_BIN_DIR"/mise use ruby@"$ruby_version"
     popd || ynh_die
+
+    # Cleanup Node versions
+    # Calling it here will remove unused versions on install/upgrade as well
+    _ynh_ruby_cleanup
 
     _ynh_load_ruby_in_path_and_other_tweaks
 }
@@ -111,16 +111,25 @@ ynh_ruby_remove() {
 #
 # usage: _ynh_ruby_cleanup
 _ynh_ruby_cleanup() {
+    
+    ruby_used_versions=$(
+        for app in $(yunohost app list --json | jq -r '.apps[].id'); do
+            yunohost app setting "$app" ruby_version 2>/dev/null
+        done | tr '\n' ' '
+    )
 
-    local installed_ruby_versions=$("${MISE_BIN_DIR}/mise" ls ruby --json | jq -r '.[].version')
-    for installed_ruby_version in $installed_ruby_versions; do
-        if [[ -n "$installed_ruby_version" ]] && [[ "$installed_ruby_version" != "$ruby_version" ]] && ! grep -qE "^ruby_version: '?$installed_ruby_version'?" /etc/yunohost/apps/*/settings.yml; then
-            ynh_print_info "Removing ruby@$installed_ruby_version"
-            ynh_hide_warnings "$MISE_BIN_DIR/mise" unuse ruby@"$installed_ruby_version"
-            ynh_hide_warnings "$MISE_BIN_DIR/mise" uninstall ruby@"$installed_ruby_version"
+    local installed_versions=$("${MISE_BIN_DIR}/mise" ls ruby --json | jq -r '.[].version' | grep -v '^$')
+    for version in $installed_versions; do
+        if [[ " $ruby_used_versions " != *" $version "* ]]; then
+            ynh_print_info "Removing ruby@$version"
+            ynh_hide_warnings "$MISE_BIN_DIR/mise" unuse ruby@"$version"
+            ynh_hide_warnings "$MISE_BIN_DIR/mise" uninstall ruby@"$version"
         fi
     done
 
+    # Remove mise if no apps use it anymore
+    _ynh_mise_cleanup
+    
     ## LEGACY but still there until all ruby apps have migrated to mise
     # Remove no more needed Ruby versions
     export RBENV_ROOT="/opt/rbenv"

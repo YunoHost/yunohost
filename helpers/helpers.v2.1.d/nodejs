@@ -47,10 +47,6 @@ _ynh_load_nodejs_in_path_and_other_tweaks() {
     export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
     export NPM_CONFIG_UPDATE_NOTIFIER=false
     export MISE_NODE_COREPACK=true
-
-    # Cleanup Node versions
-    # Calling it here will remove unused versions on install/upgrade as well
-    _ynh_nodejs_cleanup
 }
 
 # Auto-load Nodejs path tweaks if this app uses the nodejs resource in the manifest
@@ -88,6 +84,10 @@ ynh_nodejs_install() {
         ynh_hide_warnings "$MISE_BIN_DIR"/mise use nodejs@"$nodejs_version"
     popd || ynh_die
 
+    # Cleanup Node versions
+    # Calling it here will remove unused versions on install/upgrade as well
+    _ynh_nodejs_cleanup
+
     _ynh_load_nodejs_in_path_and_other_tweaks
 }
 
@@ -116,14 +116,23 @@ ynh_nodejs_remove() {
 # usage: _ynh_nodejs_cleanup
 _ynh_nodejs_cleanup() {
     
-    local installed_nodejs_versions=$("${MISE_BIN_DIR}/mise" ls nodejs --json | jq -r '.[].version')
-    for installed_nodejs_version in $installed_nodejs_versions; do
-        if [[ -n "$installed_nodejs_version" ]] && [[ "$installed_nodejs_version" != "$nodejs_version" ]] && ! grep -qE "^nodejs_version: '?$installed_nodejs_version'?" /etc/yunohost/apps/*/settings.yml; then
-            ynh_print_info "Removing nodejs@$installed_nodejs_version"
-            ynh_hide_warnings "$MISE_BIN_DIR/mise" unuse nodejs@"$installed_nodejs_version"
-            ynh_hide_warnings "$MISE_BIN_DIR/mise" uninstall nodejs@"$installed_nodejs_version"
+    nodejs_used_versions=$(
+        for app in $(yunohost app list --json | jq -r '.apps[].id'); do
+            yunohost app setting "$app" nodejs_version 2>/dev/null
+        done | tr '\n' ' '
+    )
+
+    local installed_versions=$("${MISE_BIN_DIR}/mise" ls nodejs --json | jq -r '.[].version' | grep -v '^$')
+    for version in $installed_versions; do
+        if [[ " $nodejs_used_versions " != *" $version "* ]]; then
+            ynh_print_info "Removing nodejs@$version"
+            ynh_hide_warnings "$MISE_BIN_DIR/mise" unuse nodejs@"$version"
+            ynh_hide_warnings "$MISE_BIN_DIR/mise" uninstall nodejs@"$version"
         fi
     done
+
+    # Remove mise if no apps use it anymore
+    _ynh_mise_cleanup
 
     # LEGACY but still here for transition
     export N_PREFIX="/opt/node_n"

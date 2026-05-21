@@ -37,6 +37,23 @@ readonly MISE_DATA_DIR
 readonly MISE_CACHE_DIR
 readonly MISE_STATE_DIR
 
+# [internal]
+_ynh_load_mise_in_path_and_other_tweaks() {
+    # Load the path of this version of mise in $PATH
+    if [[ :$PATH: != *":$MISE_BIN_DIR"* ]]; then
+        PATH="$MISE_BIN_DIR:$PATH"
+    fi
+
+    # Export PATH such that it's available through sudo -E / ynh_exec_as $app
+    export PATH
+
+    # This is in full lowercase such that it gets replaced in templates
+    # shellcheck disable=SC2034
+    path_with_mise="$PATH"
+    # shellcheck disable=SC2034
+    PATH_with_mise="$PATH"
+}
+
 ynh_mise_install() {
 
     # Check early for the supported architecture
@@ -85,18 +102,10 @@ ynh_mise_install() {
     _ynh_load_mise_in_path_and_other_tweaks
 }
 
-_ynh_load_mise_in_path_and_other_tweaks() {
-    # Load the path of this version of mise in $PATH
-    if [[ :$PATH: != *":$MISE_BIN_DIR"* ]]; then
-        PATH="$MISE_BIN_DIR:$PATH"
+# [internal]
+_ynh_mise_cleanup() {
+    if "${MISE_BIN_DIR}/mise" ls --json | jq -e '. | length == 0'; then
+        ynh_print_info "Removing mise"
+        ynh_safe_rm "$MISE_INSTALL_DIR"
     fi
-
-    # Export PATH such that it's available through sudo -E / ynh_exec_as $app
-    export PATH
-
-    # This is in full lowercase such that it gets replaced in templates
-    # shellcheck disable=SC2034
-    path_with_mise="$PATH"
-    # shellcheck disable=SC2034
-    PATH_with_mise="$PATH"
 }

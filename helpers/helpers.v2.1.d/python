@@ -98,12 +98,21 @@ ynh_python_remove() {
 # usage: _ynh_python_cleanup
 _ynh_python_cleanup() {
 
-    local installed_python_versions=$("${MISE_BIN_DIR}/mise" ls python --json | jq -r '.[].version')
-    for installed_python_version in $installed_python_versions; do
-        if [[ -n "$installed_python_version" ]] && [[ "$installed_python_version" != "$python_version" ]] && ! grep -qE "^python_version: '?$installed_python_version'?" /etc/yunohost/apps/*/settings.yml; then
-            ynh_print_info "Removing python@$installed_python_version"
-            ynh_hide_warnings "$MISE_BIN_DIR/mise" unuse python@"$installed_python_version"
-            ynh_hide_warnings "$MISE_BIN_DIR/mise" uninstall python@"$installed_python_version"
+    python_used_versions=$(
+        for app in $(yunohost app list --json | jq -r '.apps[].id'); do
+            yunohost app setting "$app" python_version 2>/dev/null
+        done | tr '\n' ' '
+    )
+    
+    local installed_versions=$("${MISE_BIN_DIR}/mise" ls python --json | jq -r '.[].version' | grep -v '^$')
+    for version in $installed_versions; do
+        if [[ " $python_used_versions " != *" $version "* ]]; then
+            ynh_print_info "Removing python@$version"
+            ynh_hide_warnings "$MISE_BIN_DIR/mise" unuse python@"$version"
+            ynh_hide_warnings "$MISE_BIN_DIR/mise" uninstall python@"$version"
         fi
     done
+
+    # Remove mise if no apps use it anymore
+    _ynh_mise_cleanup
 }
