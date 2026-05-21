@@ -914,5 +914,6 @@
     "yunohost_configured": "YunoHost está configurado",
     "yunohost_installing": "A instalar YunoHost…",
     "yunohost_not_installed": "YunoHost non está instalado correctamente. Executa 'yunohost tools postinstall'",
-    "yunohost_postinstall_end_tip": "Post-install completada! Para rematar a configuración considera:\n- diagnosticar potenciais problemas na sección 'Diagnóstico' na webadmin (ou 'yunohost diagnosis run' na liña de comandos);\n- ler 'Rematando a configuración' e 'Coñece YunoHost' na documentación da administración: https://doc.yunohost.org/admin."
+    "yunohost_postinstall_end_tip": "Post-install completada! Para rematar a configuración considera:\n- diagnosticar potenciais problemas na sección 'Diagnóstico' na webadmin (ou 'yunohost diagnosis run' na liña de comandos);\n- ler 'Rematando a configuración' e 'Coñece YunoHost' na documentación da administración: https://doc.yunohost.org/admin.",
+    "migration_0036_apt_lists_file_still_exists": "O ficheiro '{file}' procedente de versións antigas non debería existir. Vaise renomear como '{file}.legacy_bookworm'."
 }

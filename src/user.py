@@ -62,7 +62,7 @@ else:
 
 
 FIELDS_FOR_IMPORT = {
-    "username": r"^[a-z0-9_.]+$",
+    "username": r"^[a-z0-9][-a-z0-9_.]*$",
     "firstname": r"^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$",
     "lastname": r"^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$",
     "password": r"^|(.{3,})$",
@@ -70,7 +70,7 @@ FIELDS_FOR_IMPORT = {
     "mail-alias": r"^|([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$",
     "mail-forward": r"^|([\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$",
     "mailbox-quota": r"^(\d+[bkMGT])|0|$",
-    "groups": r"^|([a-z0-9_]+(,?[a-z0-9_]+)*)$",
+    "groups": r"^|([a-z0-9][-a-z0-9_.]*(,?[a-z0-9][-a-z0-9_.]*)*)$",
 }
 
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
