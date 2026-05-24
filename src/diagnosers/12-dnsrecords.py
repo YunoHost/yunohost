@@ -123,6 +123,8 @@ class MyDiagnoser(Diagnoser):
                 if self.current_record_match_expected(r):
                     results[id_] = "OK"
                 else:
+                    if r["type"] == "TXT" and fqdn == f"mail._domainkey.{domain}":
+                        r["value"] = r["value"].replace('" "', "")
                     if r["current"] is None:
                         results[id_] = "MISSING"
                         discrepancies.append(("diagnosis_dns_missing_record", r))
