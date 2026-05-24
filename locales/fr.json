@@ -543,8 +543,8 @@
     "global_settings_setting_ssh_compatibility": "Compatibilité SSH",
     "global_settings_setting_ssh_compatibility_help": "Compromis 'compatibilité versus sécurité' pour le serveur SSH. Affecte les cryptogrammes utilisés (et d'autres aspects liés à la sécurité).",
     "global_settings_setting_ssh_name": "SSH",
-    "global_settings_setting_ssh_password_authentication": "Authentification par mot de passe",
-    "global_settings_setting_ssh_password_authentication_help": "Autoriser l'authentification par mot de passe pour SSH",
+    "global_settings_setting_ssh_authentication_methods": "Méthodes d'authentification SSH",
+    "global_settings_setting_ssh_authentication_methods_help": "Choisir la méthode d'authentification pour SSH. Les options disponibles sont password, publickey, et publickey_and_password. L'option password permet l'authentification ssh seulement via le mot de passe utilisateur du serveur (non recommandée). L'option publickey permet l'authentification ssh seulement via clé publique (recommandée). L’option publickey_and_password nécessite une authentification via la clé publique *et* le mot de passe utilisateur du serveur."
     "global_settings_setting_ssh_port": "Port SSH",
     "global_settings_setting_ssh_port_help": "Il est préférable d'utiliser un port inférieur à 1024 pour éviter les tentatives d'usurpation par des services non administrateurs sur la machine distante. Vous devez également éviter d'utiliser un port déjà utilisé tel que le 80 ou le 443.",
     "global_settings_setting_tls_passthrough_enabled": "Activer le flux TLS-passthrough/transfert basé sur les SNI",
