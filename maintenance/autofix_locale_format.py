@@ -18,21 +18,21 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import json
 import re
 import sys
 import textwrap
-from collections import OrderedDict
 from pathlib import Path
 
-Locale = dict[str, str]
+from babel.messages.catalog import Catalog
+from babel.messages.pofile import read_po, write_po
 
 
 def autofix_i18n_placeholders(
-    reference: Locale, locale: Locale, reference_filename: str, filename: str
-) -> tuple[bool, Locale]:
+    reference: Catalog,
+    catalog: Catalog,
+) -> tuple[bool, Catalog]:
     """
-    This tries for magically fix mismatch between en.json format and other.json format
+    This tries for magically fix mismatch between en.po format and language.po format
     e.g. an i18n string with:
         source:   "Lorem ipsum {some_var}"
         fr:       "Lorem ipsum {une_variable}"
@@ -40,51 +40,55 @@ def autofix_i18n_placeholders(
     """
     fatal_errors = False
 
-    # We iterate over all keys/string in en.json
-    for key, string in reference.items():
+    # We iterate over all keys/string in en.po
+    for message in reference:
         # Ignore check if there's no translation yet for this key
-        if key not in locale:
+        if (localemsg := catalog.get(message.id)) is None:
             continue
+        localestring = localemsg.string
+        assert isinstance(localestring, str)
+
+        refstring = message.string
+        assert isinstance(refstring, str)
 
         # Then we check that every "{stuff}" (for python's .format())
         # should also be in the translated string, otherwise the .format
         # will trigger an exception!
-        subkeys_in_ref = [k[0] for k in re.findall(r"{(\w+)(:\w)?}", string)]
+        subkeys_in_ref = [k[0] for k in re.findall(r"{(\w+)(:\w)?}", refstring)]
         subkeys_in_this_locale = [
-            k[0] for k in re.findall(r"{(\w+)(:\w)?}", locale[key])
+            k[0] for k in re.findall(r"{(\w+)(:\w)?}", localestring)
         ]
 
         if set(subkeys_in_ref) != set(subkeys_in_this_locale) and (
             len(subkeys_in_ref) == len(subkeys_in_this_locale)
         ):
             for i, subkey in enumerate(subkeys_in_ref):
-                locale[key] = locale[key].replace(
+                localestring = localestring.replace(
                     f"{{{subkeys_in_this_locale[i]}}}",
                     f"{{{subkey}}}",
                 )
+            catalog.add(message.id, localestring)
 
         # Validate that now it's okay ?
-        subkeys_in_ref = [k[0] for k in re.findall(r"{(\w+)(:\w)?}", string)]
+        subkeys_in_ref = [k[0] for k in re.findall(r"{(\w+)(:\w)?}", refstring)]
         subkeys_in_this_locale = [
-            k[0] for k in re.findall(r"{(\w+)(:\w)?}", locale[key])
+            k[0] for k in re.findall(r"{(\w+)(:\w)?}", localestring)
         ]
         if any(k not in subkeys_in_ref for k in subkeys_in_this_locale):
             errmsg = textwrap.dedent(f"""\
                 ==========================
-                Format inconsistency for string {key} in {filename}:
-                {reference_filename} -> {string.encode("utf-8")}
-                {filename} -> {locale[key].encode("utf-8")}
+                Format inconsistency for string {message.id} in {catalog.locale}:
+                {reference.locale} -> {refstring.encode("utf-8")}
+                {catalog.locale} -> {localestring.encode("utf-8")}
                 Please fix it manually !
                 """)
             print(errmsg)
             fatal_errors = True
 
-    return fatal_errors, locale
+    return fatal_errors, catalog
 
 
-def autofix_orthotypography_and_standardized_words(
-    locale: Locale, filename: str
-) -> Locale:
+def autofix_orthotypography_and_standardized_words(catalog: Catalog) -> Catalog:
     godamn_spaces_of_hell = [
         "\u00a0",
         "\u2000",
@@ -121,63 +125,48 @@ def autofix_orthotypography_and_standardized_words(
         "’": "'",  # noqa: RUF001
         # r"$(\w{1,2})'|( \w{1,2})'": r"\1\2’",  # noqa: RUF003
     }
-
-    match filename:
-        case "en.json":
+    assert catalog.locale is not None
+    match catalog.locale.language:
+        case "en":
             transformations = transformations_space | transformations_misc
-        case "fr.json":
+        case "fr":
             transformations = (
                 transformations_space | transformations_misc | transformations_fr
             )
         case _:
             transformations = {}
 
-    for pattern, replace in transformations.items():
-        for key, value in locale.items():
-            locale[key] = re.sub(pattern, replace, value)
-    return locale
-
-
-def remove_stale_translated_strings(reference: Locale, locale: Locale) -> Locale:
-    return {k: v for k, v in locale.items() if k in reference}
-
-
-def sort_locale(locale: Locale) -> Locale:
-    return dict(sorted(locale.items()))
+    for message in catalog:
+        newstring = message.string
+        assert isinstance(newstring, str)
+        for pattern, replace in transformations.items():
+            newstring = re.sub(pattern, replace, newstring)
+        if newstring != message.string:
+            message.string = newstring
+            catalog[message.id] = message
+    return catalog
 
 
 def main() -> None:
     project_dir: Path = Path(__file__).resolve().parent.parent
-    locale_dir = project_dir / "locales"
+    locale_dir = project_dir / "po"
 
-    reference_file = locale_dir / "en.json"
-    locale_files = list(locale_dir.glob("*.json"))
+    reference_file = locale_dir / "en.po"
+    locale_files = list(locale_dir.glob("*.po"))
     locale_files.remove(reference_file)
 
-    reference = json.load(reference_file.open())
+    reference = read_po(reference_file.open(), locale="en")
     fatal_errors = []
 
     for file in locale_files:
-        locale = json.load(file.open(), object_pairs_hook=OrderedDict)
+        catalog = read_po(file.open())
 
-        locale = autofix_orthotypography_and_standardized_words(locale, file.name)
-        locale = remove_stale_translated_strings(reference, locale)
-        errors, locale = autofix_i18n_placeholders(
-            reference, locale, reference_file.name, file.name
-        )
+        catalog = autofix_orthotypography_and_standardized_words(catalog)
+        errors, catalog = autofix_i18n_placeholders(reference, catalog)
         if errors:
             fatal_errors.append(file.name)
 
-        # locale = sort_locale(locale)
-
-        with file.open("w") as locale_io:
-            json.dump(
-                locale,
-                locale_io,
-                indent=4,
-                ensure_ascii=False,
-            )
-            locale_io.write("\n")
+        write_po(file.open("wb"), catalog)
 
     if fatal_errors:
         print(f"Errors found in files: {', '.join(fatal_errors)}.")

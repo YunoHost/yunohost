@@ -27,11 +27,12 @@ from glob import iglob
 from importlib import import_module
 from logging import getLogger
 
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 
 from .utils import jinja_filters
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import cp, read_yaml
+from .utils.i18n import m18n
 
 HOOK_FOLDER = "/usr/share/yunohost/hooks/"
 CUSTOM_HOOK_FOLDER = "/etc/yunohost/hooks.d/"

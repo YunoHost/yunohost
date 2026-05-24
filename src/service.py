@@ -27,7 +27,8 @@ from glob import glob
 from logging import getLogger
 
 import yaml
-from moulinette import Moulinette, m18n
+
+from moulinette import Moulinette
 
 from .diagnosis import diagnosis_ignore, diagnosis_unignore
 from .log import is_unit_operation
@@ -39,6 +40,7 @@ from .utils.file_utils import (
     write_to_file,
     write_to_yaml,
 )
+from .utils.i18n import m18n
 from .utils.process import check_output
 
 MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"

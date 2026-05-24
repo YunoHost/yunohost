@@ -25,7 +25,6 @@ import pwd
 import pytest
 import requests
 import requests_mock
-from moulinette import m18n
 from yunohost.utils.error import YunohostError
 from yunohost.utils.file_utils import (
     append_to_file,
@@ -43,6 +42,7 @@ from yunohost.utils.file_utils import (
     write_to_json,
     write_to_yaml,
 )
+from yunohost.utils.i18n import m18n
 
 
 def test_read_file(test_file):

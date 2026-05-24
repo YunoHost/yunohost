@@ -1,0 +1,4601 @@
+# Basque translations for yunohost package.
+# Copyright (C) 2014-2026 YunoHost
+# ssh <ssh@yunohost.org>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: yunohost 13.0.1\n"
+"Report-Msgid-Bugs-To: ssh@yunohost.org\n"
+"POT-Creation-Date: 2026-04-21 21:34+0200\n"
+"PO-Revision-Date: 2026-04-21 21:34+0200\n"
+"Last-Translator: Automatically generated\n"
+"Language: eu\n"
+"Language-Team: none\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: conf/yunohost/services.yml
+msgid "service_description_dnsmasq"
+msgstr "Domeinuen izenen ebazpena (DNSa) kudeatzen du"
+
+#: conf/yunohost/services.yml
+msgid "service_description_dovecot"
+msgstr ""
+"Posta elektronikorako programei mezuak jasotzea ahalbidetzen die (IMAP "
+"eta POP3 bidez)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_fail2ban"
+msgstr ""
+"Internetetik datozen bortxaz egindako saiakerak eta bestelako erasoak "
+"ekiditen ditu"
+
+#: conf/yunohost/services.yml
+msgid "service_description_mysql"
+msgstr "Aplikazioen datuak gordetzen ditu (SQL datubasea)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_nginx"
+msgstr "Zerbitzariak ostatazen dituen webguneak ikusgai egiten ditu"
+
+#: conf/yunohost/services.yml
+msgid "service_description_opendkim"
+msgstr ""
+"Bidalitako ePostak DKIM erabiliz sinatzen ditu, enpresa handiek mezu "
+"baztergarritzat hartzeko arriskua txikitzeko asmoz"
+
+#: conf/yunohost/services.yml
+msgid "service_description_postfix"
+msgstr "Posta elektronikoa bidali eta jasotzeko erabiltzen da"
+
+#: conf/yunohost/services.yml
+msgid "service_description_postgresql"
+msgstr "Aplikazioen datuak gordetzen ditu (SQL datubasea)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_redis-server"
+msgstr ""
+"Datuak bizkor atzitzeko, zereginak lerratzeko eta programen arteko "
+"komunikaziorako datubase berezi bat da"
+
+#: conf/yunohost/services.yml
+msgid "service_description_slapd"
+msgstr "Erabiltzaileak, domeinuak eta hauei lotutako informazioa gordetzen du"
+
+#: conf/yunohost/services.yml
+msgid "service_description_ssh"
+msgstr ""
+"Zerbitzarira sare lokaletik kanpo konektatzea ahalbidetzen du (SSH "
+"protokoloa)"
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunohost-portal-api"
+msgstr ""
+"Atariaren interfaze desberdinen eta sistemaren arteko interakzioak "
+"kudeatzen ditu"
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunohost-api"
+msgstr "YunoHosten web-interfazearen eta sistemaren arteko hartuemana kudeatzen du"
+
+#: conf/yunohost/services.yml
+msgid "service_description_nftables"
+msgstr "Zerbitzuen konexiorako atakak ireki eta ixteko kudeatzailea da"
+
+#: conf/yunohost/services.yml
+msgid "service_description_yunomdns"
+msgstr ""
+"Sare lokalean zerbitzarira 'yunohost.local' erabiliz konektatzea "
+"ahalbidetzen du"
+
+#: share/actionsmap.yml
+msgid "pattern_username"
+msgstr ""
+"Txikiz idatzitako karaktere alfanumerikoak eta azpiko marra soilik eduki "
+"ditzake"
+
+#: share/actionsmap.yml
+msgid "ask_fullname"
+msgstr "Izen osoa"
+
+#: share/actionsmap.yml
+msgid "pattern_fullname"
+msgstr "Baliozko izen oso bat izan behar da (gutxienez hiru karaktere)"
+
+#: share/actionsmap.yml src/user.py:496
+msgid "ask_password"
+msgstr "Pasahitza"
+
+#: share/actionsmap.yml
+msgid "good_practices_about_user_password"
+msgstr ""
+"Erabiltzaile-pasahitz berria ezartzear zaude. Pasahitzak 8 karaktere izan"
+" beharko lituzke gutxienez, baina gomendagarria da pasahitz luzeagoa "
+"erabiltzea (esaldi bat, esaterako) edota karaktere desberdinak erabiltzea"
+" (hizki larriak, txikiak, zenbakiak eta karaktere bereziak)."
+
+#: share/actionsmap.yml
+msgid "pattern_password"
+msgstr "Gutxienez hiru karaktere izan behar ditu"
+
+#: share/actionsmap.yml
+msgid "pattern_domain"
+msgstr "Domeinu izen baliagarri bat izan behar da (adibidez: nire-domeinua.eus)"
+
+#: share/actionsmap.yml
+msgid "pattern_mailbox_quota"
+msgstr "Tamainak b/k/M/G/T zehaztu behar du edo 0 mugarik ezarri nahi ez bada"
+
+#: share/actionsmap.yml
+msgid "pattern_email"
+msgstr ""
+"Helbide elektroniko baliagarri bat izan behar da, '+' karaktererik gabe "
+"(adibidez: izena@domeinua.eus)"
+
+#: share/actionsmap.yml
+msgid "pattern_email_forward"
+msgstr ""
+"Helbide elektroniko baliagarri bat izan behar da, '+' karakterea onartzen"
+" da (adibidez: izena+urtea@domeinua.eus)"
+
+#: share/actionsmap.yml
+msgid "ask_new_domain"
+msgstr "Domeinu berria"
+
+#: share/actionsmap.yml
+msgid "ask_new_path"
+msgstr "Bide berria"
+
+#: share/actionsmap.yml
+msgid "pattern_backup_archive_name"
+msgstr ""
+"Fitxategiaren izenak 30 karaktere izan ditzake gehienez, alfanumerikoak "
+"eta ._- baino ez"
+
+#: share/actionsmap.yml
+msgid "pattern_port_or_range"
+msgstr ""
+"Ataka zenbaki (0-65535) edo errenkada (100:200) baliagarri bat izan behar"
+" da"
+
+#: share/actionsmap.yml
+msgid "ask_new_admin_password"
+msgstr "Administrazio-pasahitz berria"
+
+#: share/actionsmap.yml
+msgid "good_practices_about_admin_password"
+msgstr ""
+"Administrazio-pasahitz berria ezartzear zaude. Pasahitzak 8 karaktere "
+"izan beharko lituzke gutxienez, baina gomendagarria da pasahitz luzeagoa "
+"erabiltzea (esaldi bat, esaterako) edota karaktere desberdinak erabiltzea"
+" (hizki larriak, txikiak, zenbakiak eta karaktere bereziak)."
+
+#: share/actionsmap.yml
+msgid "ask_main_domain"
+msgstr "Domeinu nagusia"
+
+#: share/actionsmap.yml
+msgid "ask_admin_username"
+msgstr "Administratzailearen erabiltzaile-izena"
+
+#: share/actionsmap.yml
+msgid "ask_admin_fullname"
+msgstr "Administratzailearen izen osoa"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_entrypoint"
+msgstr "APIaren sarrera"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_application_key"
+msgstr "Aplikazioaren gakoa"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_application_secret"
+msgstr "Aplikazioaren gako sekretua"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_consumer_key"
+msgstr "Erabiltzailearen gakoa"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_token"
+msgstr "Token autentifikazioa"
+
+#: share/registrar_list.toml
+msgid "domain_config_api_protocol"
+msgstr "API protokoloa"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_key"
+msgstr "Autentifikazio gakoa"
+
+#: share/registrar_list.toml
+msgid "domain_config_auth_secret"
+msgstr "Autentifikazioaren \"secret\"a"
+
+#: share/config_domain.toml
+msgid "domain_config_feature_name"
+msgstr "Ezaugarriak"
+
+#: share/config_domain.toml
+msgid "domain_config_mail_out"
+msgstr "Bidalitako mezuak"
+
+#: share/config_domain.toml
+msgid "domain_config_mail_in"
+msgstr "Jasotako mezuak"
+
+#: share/config_domain.toml
+msgid "domain_config_default_app"
+msgstr "Lehenetsitako aplikazioa"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_name"
+msgstr "Atariaren pertsonalizazioa"
+
+#: share/config_domain.toml
+msgid "domain_config_enable_public_apps_page"
+msgstr "Erakutsi bisitariei aplikazio publikoen zerrenda"
+
+#: share/config_domain.toml
+msgid "domain_config_enable_public_apps_page_help"
+msgstr ""
+"Bisitariek 'aplikazio publikoen' orria kusiko dute atarira iristerakoan, "
+"saioa hasteko formularioaren bidez."
+
+#: share/config_domain.toml
+msgid "domain_config_show_other_domains_apps"
+msgstr "Erakutsi beste domeinuetako aplikazioak"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_title"
+msgstr "Titulu pertsonalizatua"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_logo"
+msgstr "Logo pertsonalizatua"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_logo_help"
+msgstr ""
+".svg, .png eta .jpeg onartzen ditu. Lehenetsi <code>fill: "
+"currentColor</code> duen .svg monokromatiko bat logoa gai desberdinetara "
+"egokitu dadin."
+
+#: share/config_domain.toml
+msgid "domain_config_portal_theme"
+msgstr "Defektuzko kolore-gaia"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_theme_help"
+msgstr "Erabiltzaileek beste bat aukeratu dezakete euren ezarpenetan."
+
+#: share/config_domain.toml
+msgid "domain_config_portal_tile_theme"
+msgstr "Aplikazioen lauzak erakusteko gaia"
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine"
+msgstr "Bilaketa motorraren URLa"
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine_help"
+msgstr ""
+"Aukerako ezaugarria da, atarian bilaketa-barra bat erakustea ahalbidetzen"
+" duena (adibidez YunoHosten ataria nabigatzaileko hasierako orri ezarri "
+"nahi baduzu). Kontsulta-katea hutsik duen URL bat izan behar da, "
+"'https://duckduckgo.com/?q=' esaterako, 'q=' duckduckgo-ren kontsulta "
+"parametro bezala"
+
+#: share/config_domain.toml
+msgid "domain_config_search_engine_name"
+msgstr "Bilaketa motorraren izena"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_user_intro"
+msgstr "Erabiltzailearen aurkezpen pertsonalizatua"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_user_intro_help"
+msgstr ""
+"HTML erabili dezakezu; oinarrizko estiloak aplikatuko zaizkie elementu "
+"orokorrei."
+
+#: share/config_domain.toml
+msgid "domain_config_portal_public_intro"
+msgstr "Sarrera publiko pertsonalizatua"
+
+#: share/config_domain.toml
+msgid "domain_config_portal_public_intro_help"
+msgstr ""
+"HTML erabili dezakezu; oinarrizko estiloak aplikatuko zaizkie elementu "
+"orokorrei."
+
+#: share/config_domain.toml
+msgid "domain_config_custom_css"
+msgstr "CSS estilo-orri pertsonalizatua"
+
+#: share/config_domain.toml
+msgid "domain_config_custom_css_help"
+msgstr ""
+"Administrari adituentzako da, erabiltzaile-ataria pertsonalizatu nahi "
+"badute"
+
+#: share/config_domain.toml
+msgid "domain_config_dns_name"
+msgstr "DNSa"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_name"
+msgstr "Ziurtagiria"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_summary"
+msgstr "Ziurtagiriaren egoera"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_validity"
+msgstr "Balizokotasuna"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_issuer"
+msgstr "Ziurtagiriaren jaulkitzailea"
+
+#: share/config_domain.toml
+msgid "domain_config_acme_eligible"
+msgstr "ACME hautagarritasuna"
+
+#: share/config_domain.toml
+msgid "domain_config_acme_eligible_explain"
+msgstr ""
+"Ez dirudi domeinu hau Let's Encrypt ziurtagirirako prest dagoenik. "
+"Egiaztatu DNS ezarpenak eta zerbitzariaren HTTP irisgarritasuna. <a "
+"href='#/diagnosis'>Diagnostikoen guneko</a> 'DNS erregistroak' eta 'Web' "
+"atalek zer dagoen gaizki ulertzen lagun zaitzakete."
+
+#: share/config_domain.toml
+msgid "domain_config_cert_no_checks"
+msgstr "Muzin egin diagnostikoaren egiaztapenei"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_install"
+msgstr "Instalatu Let's Encrypt ziurtagiria"
+
+#: share/config_domain.toml
+msgid "domain_config_cert_renew"
+msgstr "Berritu Let's Encrypt ziurtagiria"
+
+#: share/config_app.toml
+msgid "app_config__core_name"
+msgstr "Lauzak eta baimenak"
+
+#: share/config_app.toml src/app.py:2448
+msgid "app_config_permission_location"
+msgstr "[{absolute_url}]({absolute_url})(r)i dagokio"
+
+#: share/config_app.toml
+msgid "app_config_permission_label"
+msgstr "Etiketa"
+
+#: share/config_app.toml
+msgid "app_config_permission_description"
+msgstr "Deskribapena"
+
+#: share/config_app.toml
+msgid "app_config_permission_description_help"
+msgstr "Erabilgarria da soilik atariaren modu deskribatzailea erabiltzen baduzu"
+
+#: share/config_app.toml
+msgid "app_config_permission_show_tile"
+msgstr "Erakutsi lauza atarian"
+
+#: share/config_app.toml
+msgid "app_config_permission_logo"
+msgstr "Logo propioa"
+
+#: share/config_app.toml
+msgid "app_config_permission_logo_help"
+msgstr "PNG fitxategiak soilik"
+
+#: share/config_app.toml
+msgid "app_config_permission_allowed"
+msgstr "Sarbidea baimenduta duten taldeak/erabiltzaileak"
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_name"
+msgstr "Segurtasuna"
+
+#: share/config_global.toml
+msgid "global_settings_setting_password_name"
+msgstr "Pasahitzak"
+
+#: share/config_global.toml
+msgid "global_settings_setting_admin_strength"
+msgstr "Administrazio-pasahitzaren segurtasuna"
+
+#: share/config_global.toml
+msgid "global_settings_setting_admin_strength_help"
+msgstr ""
+"Betekizun hauek pasahitza lehenbizikoz sortzerakoan edo aldatzerakoan "
+"baino ez dira bete behar"
+
+#: share/config_global.toml
+msgid "global_settings_setting_user_strength"
+msgstr "Erabiltzaile-pasahitzaren segurtasuna"
+
+#: share/config_global.toml
+msgid "global_settings_setting_user_strength_help"
+msgstr ""
+"Betekizun hauek lehenbizikoz sortzerakoan edo pasahitza aldatzerakoan "
+"bete behar dira soilik"
+
+#: share/config_global.toml
+msgid "global_settings_setting_passwordless_sudo"
+msgstr ""
+"Baimendu administratzaileek 'sudo' erabiltzea pasahitzak berriro idatzi "
+"beharrik gabe"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_name"
+msgstr "SSH"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_compatibility"
+msgstr "SSH bateragarritasuna"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_compatibility_help"
+msgstr ""
+"Bateragarritasunaren eta segurtasunaren arteko oreka SSH zerbitzarirako. "
+"Zifraketari eragiten dio (eta segurtasunari lotutako beste kontu "
+"batzuei). Ikus https://infosec.mozilla.org/guidelines/openssh informazio "
+"gehiagorako."
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_port"
+msgstr "SSH ataka"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_port_help"
+msgstr ""
+"1024 baino ataka txikiago bat izan beharko litzateke, zerbitzu ez-"
+"administratzaileek urruneko makinan usurpazio-saiorik egin ez dezaten. "
+"Lehendik ere erabiltzen ari diren atakak ere ekidin beharko zenituzke, 80"
+" edo 443 kasu."
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_password_authentication"
+msgstr "Pasahitz bidezko autentifikazioa"
+
+#: share/config_global.toml
+msgid "global_settings_setting_ssh_password_authentication_help"
+msgstr "Baimendu pasahitz bidezko autentikazioa SSHrako"
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_name"
+msgstr "NGINX (web zerbitzaria)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_redirect_to_https"
+msgstr "Behartu HTTPS"
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_redirect_to_https_help"
+msgstr ""
+"Birbideratu HTTP eskaerak HTTPSra (EZ ITZALI hau ez badakizu zertan ari "
+"zaren!)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_compatibility"
+msgstr "NGINXekin bateragarritasuna"
+
+#: share/config_global.toml
+msgid "global_settings_setting_nginx_compatibility_help"
+msgstr ""
+"Bateragarritasun eta segurtasun arteko gatazka NGINX web zerbitzarirako. "
+"Zifraketari eragiten dio (eta segurtasunari lotutako beste kontu batzuei)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_name"
+msgstr "Postfix (SMTP ePosta zerbitzaria)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_compatibility"
+msgstr "Postfixekin bateragarritasuna"
+
+#: share/config_global.toml
+msgid "global_settings_setting_postfix_compatibility_help"
+msgstr ""
+"Bateragarritasun eta segurtasun arteko gatazka Postfix zerbitzarirako. "
+"Zifraketari eragiten dio (eta segurtasunari lotutako beste kontu batzuei)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_name"
+msgstr "Web administrazioa"
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_enabled"
+msgstr "Gaitu administrazio-gunera sartzeko baimendutako IPak"
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_enabled_help"
+msgstr "Baimendu IP zehatz batzuk bakarrik administrazio-gunerako."
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist"
+msgstr "Administrazio-atarira sartzeko baimendutako IPak"
+
+#: share/config_global.toml
+msgid "global_settings_setting_webadmin_allowlist_help"
+msgstr ""
+"Administrazio-atarira sar daitezken IP helbideak. CIDR notazioa "
+"ahalbidetzen da."
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_name"
+msgstr "Ataria"
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email"
+msgstr "Baimendu erabiltzaileek euren ePosta helbide nagusia editatzea"
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_help"
+msgstr "Baimendu ezean, administrariei eskatu behar dizkiete aldaketak."
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_alias"
+msgstr "Baimendu erabiltzaileek ePosta ezizenak gehitzea, kentzea eta editatzea"
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_alias_help"
+msgstr "Baimendu ezean, administrariei eskatu behar dizkiete aldaketak."
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_forward"
+msgstr ""
+"Baimendu erabiltzaileek ePosta birbidalketak gehitzea, kentzea eta "
+"editatzea"
+
+#: share/config_global.toml
+msgid "global_settings_setting_portal_allow_edit_email_forward_help"
+msgstr "Baimendu ezean, administrariei eskatu behar dizkiete aldaketak."
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_access_name"
+msgstr "Aldatu root pasahitza"
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_access_explain"
+msgstr ""
+"Linux sistemetan 'root' administratzaile gorena da. YunoHosten "
+"testuinguruan, zuzeneko 'root' SSH saioa desgaituta dago defektuz, "
+"zerbitzariaren sare lokaletik ez bada. 'administratzaileak' taldeko "
+"kideek sudo komandoa erabili dezakete root bailitzan jarduteko "
+"terminalaren bidez. Hala ere, lagungarri izan liteke root pasahitz "
+"(sendo) bat izatea sistema arazteko egoeraren batean administratzaile "
+"arruntek saiorik hasi ezin balute."
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_password"
+msgstr "root pasahitz berria"
+
+#: share/config_global.toml
+msgid "global_settings_setting_root_password_confirm"
+msgstr "root pasahitz berria (egiaztatu)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_experimental_name"
+msgstr "Esperimentala"
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_experimental_enabled"
+msgstr "Segurtasun ezaugarri esperimentalak"
+
+#: share/config_global.toml
+msgid "global_settings_setting_security_experimental_enabled_help"
+msgstr ""
+"Gaitu segurtasun funtzio esperimentalak (ez ezazu egin ez badakizu zertan"
+" ari zaren!)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_email_name"
+msgstr "ePosta"
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_name"
+msgstr "POP3"
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_enabled"
+msgstr "Gaitu POP3"
+
+#: share/config_global.toml
+msgid "global_settings_setting_pop3_enabled_help"
+msgstr ""
+"Gaitu POP3 protokoloa ePosta zerbitzarirako. POP3 posta elektronikoko "
+"bezeroen postontzietan sartzeko protokolo zaharragoa da, baita arinagoa "
+"ere, baina ezaugarri gutxiago ditu IMAPek baino (defektuz gaituta)"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_name"
+msgstr "SMTP"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_allow_ipv6"
+msgstr "Gaitu IPv6"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_allow_ipv6_help"
+msgstr "Gaitu IPv6 posta elektronikoa jaso eta bidaltzeko"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_enabled"
+msgstr "Gaitu SMTP errelea"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_enabled_help"
+msgstr ""
+"YunoHosten ordez posta elektronikoa bidaltzeko SMTP relay helbidea. "
+"Erabilgarri izan daiteke egoera hauetan: operadore edo VPS enpresak 25. "
+"ataka blokeatzen badu; DUHLen zure etxeko IPa ageri bada; ezin baduzu "
+"alderantzizko DNSa ezarri; edo zerbitzari hau ez badago zuzenean "
+"Internetera konektatuta, baina posta elektronikoa bidali nahi baduzu."
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_host"
+msgstr "SMTP errele-ostatatzailea"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_port"
+msgstr "SMTP relay ataka"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_user"
+msgstr "SMTP relay erabiltzailea"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_relay_password"
+msgstr "SMTP relay pasahitza"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_domains"
+msgstr "Bigarren mailako MX gisa jarduteko domeinuak"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_domains_help"
+msgstr ""
+"Zerbitzari honek zerrendan agertzen den domeinurako *bigarren mailako* MX"
+" domeinu gisa jardun dezake. Domeinurako lehenetsitako MX lortu ezin "
+"denean (adibidez, itzalaldi baten ondorioz), mezuak bigarren zerbitzari "
+"horretara bidaliko dira —gehienez 20 egunez mantenduko dituena— eta "
+"berriro eskuragarri dagoenean benetako helburura helarazten saiatuko da. "
+"Hainbat domeinu zehaztu daitezke, komaz bereizita."
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_emails_whitelisted"
+msgstr "Baimendutako posta elektronikoen MXren SMTP babeskopia"
+
+#: share/config_global.toml
+msgid "global_settings_setting_smtp_backup_mx_emails_whitelisted_help"
+msgstr ""
+"Bigarren mailako MX gisa jarduten duenean, baimendutako hartzaileen posta"
+" elektronikoko helbideen zerrenda zehatza eman beharko da (bestela, "
+"mezuak ukatu eta baztertuko dira). Hainbat sarrera eman daitezke, komaz "
+"bereizita."
+
+#: share/config_global.toml
+msgid "global_settings_setting_antispam_name"
+msgstr "SPAMaren aurkakoa"
+
+#: share/config_global.toml
+msgid "global_settings_setting_enable_blocklists"
+msgstr "Gaitu blokeo-zerrendak sarrera-trafikorako"
+
+#: share/config_global.toml
+msgid "global_settings_setting_enable_blocklists_help"
+msgstr ""
+"Mezu baztergarriak galarazi aldera, spamcop.net, spamhaus.org eta "
+"abuseat.org ekimenek zerrendatutako zerbitzariak blokeatzen ditu. Honek "
+"arazoak eragin ditzake hirugarren horiek zerrendatutakoak kaltegarriak ez"
+" diren posta zerbitzari batzuentzat; kasu horietan, ez da jasoko "
+"zerbitzari horietatik bidalitako postarik."
+
+#: share/config_global.toml
+msgid "global_settings_setting_misc_name"
+msgstr "Beste batzuk"
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_name"
+msgstr "Babeskopia"
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_compress_tar_archives"
+msgstr "Konprimatu babeskopiak"
+
+#: share/config_global.toml
+msgid "global_settings_setting_backup_compress_tar_archives_help"
+msgstr ""
+"Babeskopia berriak sortzean, konprimitu fitxategiak (.tar.gz) konprimitu "
+"gabeko fitxategien (.tar) ordez. Aukera hau gaitzean babeskopiek espazio "
+"gutxiago beharko dute, baina hasierako prozesua luzeagoa izango da eta "
+"CPUari lan handiagoa eragingo dio."
+
+#: share/config_global.toml
+msgid "global_settings_setting_network_name"
+msgstr "Sarea"
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_exposure"
+msgstr "DNS ezarpenetan eta diagnostikoan kontuan hartzeko IP bertsioak"
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_exposure_help"
+msgstr ""
+"Ohart ongi: honek gomendatutako DNS ezarpenei eta diagnostikoari eragiten"
+" die soilik. Ez du eraginik sistemaren ezarpenetan."
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_enabled"
+msgstr "Erabili DNS ebazle (resolver) propioak"
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_enabled_help"
+msgstr ""
+"Defektuz, YunoHostek Europan kokatutako eta fidagarritzat hartzen diren "
+"ebazleen (resolver) zerrenda bat erabiltzen du. Litekeena da erabiltzaile"
+" adituek beste ebazle batzuk ezarri nahi izatea."
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_list"
+msgstr "Norberak ezarritako ebazleen helbideak"
+
+#: share/config_global.toml
+msgid "global_settings_setting_dns_custom_resolvers_list_help"
+msgstr ""
+"Gutxienez 2 DNS ebazleren zerrenda erabiltzen den IP protokoloko "
+"(IPv4/IPv6). Adibidea: 89.234.141.66 45.67.81.23 2a00:5881:8100:1000::3 "
+"2a0c:e300::1337"
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_name"
+msgstr "TLS-passthrough / SNIn oinarritutako birbidalketa"
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_enabled"
+msgstr "Gaitu TLS-passthrough / SNI-n oinarritutako birbidalketa"
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_enabled_help"
+msgstr ""
+"Funtzio aurreratua da reverse-proxy erabiliz domeinu oso bat beste makina"
+" batera desbideratzeko *trafikoa deszifratu gabe*. Erabilgarria da IP "
+"berarekin makina bat baino gehiago zerbitzatu nahi dituzunean, makina "
+"bakoitzak dagozkion SSL amaierak kudeatzeko aukera mantenduz."
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_explain"
+msgstr ""
+"Ezaugarri hau AURRERATUA eta ESPERIMENTALA da, eta aldaketa handiak "
+"eragingo ditu zerbitzari honen nginx konfigurazioan. EZ erabili ez "
+"badakizu zertan ari zaren! Kontuan izan fail2ban ezin dela inplementatu "
+"proxy atzeko zerbitzarian (nfttables-ek ezin dute trafiko maltzurra "
+"debekatu, IP pakete guztiak zerbitzari nagusitik datozelaren itxura "
+"dutelako). Horrez gain, oraingoz, proxy atzeko zerbitzariaren nginx "
+"konfigurazioa eskuz moldatu behar da `proxy_protocol` onartzeko."
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_list"
+msgstr "Birbidalketen zerrenda"
+
+#: share/config_global.toml
+msgid "global_settings_setting_tls_passthrough_list_help"
+msgstr ""
+"Zerrendak DOMEINUA;HELBURUA;ATAKA egitura izan behar du. Adibidez: "
+"domeinua.eus;192.168.1.42;443 edo domeinua.eus;zerbitzaria.local;8123"
+
+#: src/__init__.py:142
+msgid "yunohost_not_installed"
+msgstr "YunoHost ez da zuzen instalatu. Exekutatu 'yunohost tools postinstall'"
+
+#: src/app.py:328
+msgid "app_upgrade_url_required"
+msgstr ""
+"Aplikazioa ez dago katalogoan (egoteari utzi dio?), eta, hortaz, bertsio-"
+"berritzeko ardura zurea da aurrerantzean. <br/><small>`yunohost app "
+"upgrade <app>` komandoa erabil dezakezu eta `-u` aukerarekin gordailuaren"
+" URLa zehaztu.</small>"
+
+#: src/app.py:355
+msgid "app_upgrade_specific_channel_msg"
+msgstr ""
+"Bertsio-berritzeko iturri gisa `{channel}`erabiltzen ari zara une "
+"honetan. Irakurri zer esaten ari diren [hemen]({pr_url})."
+
+#: src/app.py:382
+msgid "app_upgrade_bad_quality"
+msgstr ""
+"Aplikazioa hondatutzat ageri da YunoHosten aplikazioen katalogoan. Behin-"
+"behineko kontua izan daiteke arduradunek arazoa konpondu bitartean. "
+"Oraingoz, ezin da aplikazioa bertsio-berritu."
+
+#: src/app.py:398
+msgid "app_upgrade_up_to_date"
+msgstr ""
+"Aplikazioa bertsio-berritzera behartzea (bertsio bera erabiliz) "
+"erabilgarri izan daiteke batzuetan aplikazioa eta konfigurazioa "
+"birsortzeko."
+
+#: src/app.py:595
+msgid "app_change_url_no_script"
+msgstr ""
+"'{app_name}' aplikazioak oraingoz ez du URLa moldatzerik onartzen. Agian "
+"eguneratu beharko zenuke."
+
+#: src/app.py:612
+msgid "app_change_url_identical_domains"
+msgstr ""
+"Domeinu zahar eta berriaren bidea bera dira: ('{domain}{path}'), ez dago "
+"ezer egitekorik."
+
+#: src/app.py:621
+msgid "app_change_url_require_full_domain"
+msgstr ""
+"Ezin da {app} aplikazioa URL berri honetara aldatu domeinu oso bat behar "
+"duelako (hots, / bide-izena duena)"
+
+#: src/app.py:672
+msgid "app_change_url_script_failed"
+msgstr "Errorea gertatu da URLa aldatzeko aginduaren barnean"
+
+#: src/app.py:674
+msgid "app_change_url_failed"
+msgstr "Ezin izan da {app} aplikazioaren URLa aldatu: {error}"
+
+#: src/app.py:705
+msgid "app_change_url_success"
+msgstr "{app} aplikazioaren URLa {domain}{path} da orain"
+
+#: src/app.py:772
+msgid "disk_space_not_sufficient_update"
+msgstr "Ez dago aplikazio hau eguneratzeko nahikoa espaziorik"
+
+#: src/app.py:800
+msgid "app_upgrade_cli_url_required"
+msgstr ""
+"{app} ez dago katalogoan (egoteari utzi dio?), eta, hortaz, ezin da "
+"automatikoki bertsio-berritu. `yunohost app upgrade {app}`erabili beharko"
+" zenuke gordailuaren URLa zehazteko, `-u` aukerarekin."
+
+#: src/app.py:820 src/app.py:830
+msgid "app_upgrade_cli_will_upgrade"
+msgstr "{app} {current_version}(e)tik {new_version}(e)ra bertsio-berrituko da"
+
+#: src/app.py:839
+msgid "app_upgrade_cli_will_force_upgrade"
+msgstr "{app} bertsio-berritzera behartuko da ({current_version})"
+
+#: src/app.py:847
+msgid "app_upgrade_cli_up_to_date"
+msgstr "{app} dagoeneko egunean dago ({current_version})"
+
+#: src/app.py:853
+msgid "app_upgrade_cli_bad_quality"
+msgstr ""
+"{app} aplikazioa bertsio-berritu gabe utziko da hondatutzat ageri delako "
+"YunoHosten aplikazioen katalogoan."
+
+#: src/app.py:880
+msgid "app_upgrade_app_name"
+msgstr "Orain {app} eguneratzen…"
+
+#: src/app.py:946
+msgid "backup_before_upgrade_deleted_because_replaced_by_newer_backup"
+msgstr ""
+"{name} babeskopia ezabatu da {newname} izeneko babeskopia berriago batek "
+"ordeztu duelako"
+
+#: src/app.py:1014
+msgid "app_upgrade_script_failed"
+msgstr "Errore bat gertatu da aplikazioaren eguneratze aginduan"
+
+#: src/app.py:1016 src/app.py:1040
+msgid "app_upgrade_failed"
+msgstr "{app} bertsio-berritzeak huts egin du: {error}"
+
+#: src/app.py:1093
+msgid "app_upgrade_failed_and_broke_the_system"
+msgstr ""
+"{app} aplikazioaren bertsio-berritzeak huts egin du, eta sistema hondatu "
+"du."
+
+#: src/app.py:1095
+msgid "app_upgrade_broke_the_system"
+msgstr ""
+"Badirudi {app} bertsio-berritu dela, baina sistema hondatu du eta, "
+"hortaz, hutsegitetzat hartu da."
+
+#: src/app.py:1102
+msgid "app_upgraded"
+msgstr "{app} eguneratu da"
+
+#: src/app.py:1151 src/tools.py:580
+msgid "apps_already_up_to_date"
+msgstr "Aplikazio guztiak egunean daude lehendik ere"
+
+#: src/app.py:1160
+msgid "apps_no_target_can_be_upgraded"
+msgstr "Ez dago bertsio-berritzeko aplikaziorik"
+
+#: src/app.py:1170
+msgid "app_upgrade_several_apps"
+msgstr "Honako aplikazioak eguneratuko dira: {apps}"
+
+#: src/app.py:1234
+msgid "app_upgrade_continuing_with_other_apps"
+msgstr ""
+"{app} aplikazioaren bertsio-berritzeak huts egin du, baina beste "
+"aplikazio batzuk bertsio-berritzen jarraituko da (`--continue-on-failure`"
+" aukera erabili delako)"
+
+#: src/app.py:1240
+msgid "apps_upgrade_cancelled"
+msgstr ""
+"Bertsio-berritze batzuk zain zeuden beste aplikazio batzuetarako, baina "
+"bertan behera utzi dira (erabili `--continue-on-failure`edonola ere "
+"jarraitzeko): {apps}"
+
+#: src/app.py:1340
+msgid "disk_space_not_sufficient_install"
+msgstr "Ez dago aplikazio hau instalatzeko nahikoa espaziorik"
+
+#: src/app.py:1354
+msgid "app_id_invalid"
+msgstr "Aplikazio ID okerra"
+
+#: src/app.py:1411
+msgid "app_start_install"
+msgstr "{app} instalatzen…"
+
+#: src/app.py:1501
+msgid "app_install_script_failed"
+msgstr "Errore bat gertatu da aplikazioaren instalatzailearen aginduetan"
+
+#: src/app.py:1503 src/app.py:1514
+msgid "app_install_failed"
+msgstr "Ezin da {app} instalatu: {error}"
+
+#: src/app.py:1538
+msgid "app_remove_after_failed_install"
+msgstr "Aplikazioa kentzen instalatzerakoan errorea dela-eta…"
+
+#: src/app.py:1570 src/app.py:1694 src/backup.py:1390 src/hook.py:576
+#: src/service.py:636 src/settings.py:193 src/utils/configpanel.py:641
+#: src/utils/configpanel.py:730
+msgid "unexpected_error"
+msgstr "Ezusteko zerbaitek huts egin du: {error}"
+
+#: src/app.py:1578 src/app.py:1720
+msgid "app_not_properly_removed"
+msgstr "Ezinezkoa izan da {app} guztiz ezabatzea"
+
+#: src/app.py:1610
+msgid "installation_complete"
+msgstr "Instalazioa amaitu da"
+
+#: src/app.py:1656
+msgid "app_start_remove"
+msgstr "{app} kentzen…"
+
+#: src/app.py:1717
+msgid "app_removed"
+msgstr "{app} desinstalatu da"
+
+#: src/app.py:1849
+msgid "app_already_installed_cant_change_url"
+msgstr ""
+"Aplikazio hau instalatuta dago lehendik ere. URLa ezin da aldatu aukera "
+"honekin. Markatu 'app changeurl' erabilgarri badago."
+
+#: src/app.py:2087
+msgid "ssowat_conf_generated"
+msgstr "SSOwat eta atariaren ezarpenak berregin dira"
+
+#: src/app.py:2223 src/utils/form.py:996 src/utils/form.py:1312
+#: src/utils/form.py:1325 src/utils/form.py:1700 src/utils/form.py:1878
+#: src/utils/form.py:2305
+msgid "app_argument_invalid"
+msgstr "Aukeratu balio egoki bat '{name}' argumenturako: {error}"
+
+#: src/app.py:2268
+msgid "app_config_unable_to_read"
+msgstr "Konfigurazio-aukeren irakurketak huts egin du."
+
+#: src/app.py:2270
+msgid "app_config_unable_to_apply"
+msgstr "Konfigurazio-aukeren ezarpenak huts egin du."
+
+#: src/app.py:2272
+msgid "app_action_failed"
+msgstr "{app} aplikaziorako {action} eragiketak huts egin du"
+
+#: src/app.py:2468
+msgid "app_config_permission_allowed_warn_protected"
+msgstr ""
+"Ohart ongi: baimena 'babestuta' da, eta, beraz, 'bisitariak' taldea ezin "
+"da gehitu/kendu baimendutako taldeetatik."
+
+#: src/app_catalog.py:194
+msgid "apps_catalog_updating"
+msgstr "Aplikazioen katalogoa eguneratzen…"
+
+#: src/app_catalog.py:216
+msgid "apps_catalog_failed_to_download"
+msgstr "Ezin da {apps_catalog} aplikazioen zerrenda eskuratu: {error}"
+
+#: src/app_catalog.py:275
+msgid "apps_catalog_update_success"
+msgstr "Aplikazioen katalogoa eguneratu da!"
+
+#: src/app_catalog.py:329
+msgid "apps_catalog_obsolete_cache"
+msgstr "Aplikazioen katalogoaren katxea hutsik edo zaharkituta dago."
+
+#: src/backup.py:363 src/backup.py:2159
+msgid "backup_output_directory_not_empty"
+msgstr "Aukeratu hutsik dagoen katalogo bat"
+
+#: src/backup.py:386
+msgid "backup_hook_unknown"
+msgstr "Babeskopiaren '{hook}' kakoa ezezaguna da"
+
+#: src/backup.py:403
+msgid "unbackup_app"
+msgstr "{app} ez da gordeko"
+
+#: src/backup.py:418
+msgid "backup_with_no_backup_script_for_app"
+msgstr ""
+"'{app}' aplikazioak ez du babeskopia egiteko agindurik. Ez da kontuan "
+"hartuko."
+
+#: src/backup.py:422
+msgid "backup_with_no_restore_script_for_app"
+msgstr ""
+"{app}(e)k ez du lehengoratzeko agindurik, ezingo duzu aplikazio hau "
+"automatikoki lehengoratu."
+
+#: src/backup.py:502
+msgid "backup_csv_creation_failed"
+msgstr ""
+"Ezinezkoa izan da lehengoratzeko beharrezkoak diren CSV fitxategiak "
+"sortzea"
+
+#: src/backup.py:508
+msgid "backup_csv_addition_failed"
+msgstr "Ezinezkoa izan da fitxategiak CSV fitxategira kopiatzea"
+
+#: src/backup.py:547
+msgid "backup_no_file_collected"
+msgstr "Babeskopia egiteko fitxategiak biltzeak huts egin du"
+
+#: src/backup.py:616
+msgid "backup_running_hooks"
+msgstr "Babeskopien kakoak exekutatzen…"
+
+#: src/backup.py:669 src/backup.py:1037
+msgid "restore_hook_unavailable"
+msgstr ""
+"'{part}'-(e)rako lehengoratze agindua ez dago erabilgarri ez sisteman "
+"ezta fitxategian ere"
+
+#: src/backup.py:673
+msgid "backup_system_part_failed"
+msgstr "Ezinezkoa izan da sistemaren '{part}' atalaren babeskopia egitea"
+
+#: src/backup.py:722
+msgid "app_start_backup"
+msgstr "{app}(r)en babeskopia egiteko fitxategiak eskuratzen…"
+
+#: src/backup.py:744
+msgid "backup_app_script_failed"
+msgstr "{app} aplikazioaren babeskopia egiteko fitxategiak biltzeak huts egin du."
+
+#: src/backup.py:895
+msgid "restore_backup_too_old"
+msgstr ""
+"Babeskopia fitxategi hau ezin da lehengoratu YunoHosten bertsio zaharregi"
+" batetik datorrelako."
+
+#: src/backup.py:930 src/backup.py:1962 src/backup.py:2438 src/backup.py:2453
+msgid "backup_archive_cant_retrieve_info_json"
+msgstr ""
+"Ezinezkoa izan da '{archive}' fitxategiko informazioa eskuratzea… "
+"info.json fitxategia ezin izan da eskuratu (edo ez da baliozko json-a)."
+
+#: src/backup.py:986
+msgid "restore_cleaning_failed"
+msgstr "Ezin izan dira lehengoratzeko behin-behineko fitxategiak ezabatu"
+
+#: src/backup.py:1004
+msgid "backup_archive_system_part_not_available"
+msgstr "'{part}' sistemaren atala ez dago erabilgarri babeskopia honetan"
+
+#: src/backup.py:1066
+msgid "backup_archive_app_not_found"
+msgstr "Ezin izan da {app} aurkitu babeskopia fitxategian"
+
+#: src/backup.py:1079 src/backup.py:1084
+msgid "restore_already_installed_apps"
+msgstr ""
+"Honako aplikazioak ezin dira lehengoratu lehendik ere instalatuta "
+"daudelako: {apps}"
+
+#: src/backup.py:1111 src/backup.py:1120
+msgid "restore_removing_tmp_dir_failed"
+msgstr "Ezinezkoa izan da behin-behineko direktorio zaharra ezabatzea"
+
+#: src/backup.py:1185
+msgid "restore_may_be_not_enough_disk_space"
+msgstr ""
+"Badirudi zure sistemak ez duela nahikoa espazio (erabilgarri: "
+"{free_space} B, beharrezkoa {needed_space} B, segurtasun-tartea: {margin}"
+" B)"
+
+#: src/backup.py:1192
+msgid "restore_not_enough_disk_space"
+msgstr ""
+"Ez dago nahikoa espazio (erabilgarri: {free_space} B, beharrezkoa "
+"{needed_space} B, segurtasun-tartea: {margin} B)"
+
+#: src/backup.py:1240
+msgid "restore_running_hooks"
+msgstr "Lehengoratzeko 'hook'ak exekutatzen…"
+
+#: src/backup.py:1272 src/backup.py:1278
+msgid "restore_system_part_failed"
+msgstr "Ezinezkoa izan da sistemaren '{part}' atala lehengoratzea"
+
+#: src/backup.py:1338
+msgid "restore_already_installed_app"
+msgstr "'{app}' IDa duen aplikazioa lehendik instalatuta dago"
+
+#: src/backup.py:1347
+msgid "app_start_restore"
+msgstr "{app} lehengoratzen…"
+
+#: src/backup.py:1361
+msgid "unrestore_app"
+msgstr "{app} ez da lehengoratuko"
+
+#: src/backup.py:1391 src/backup.py:1445
+msgid "app_restore_failed"
+msgstr "Ezinezkoa izan da {app} lehengoratzea: {error}"
+
+#: src/backup.py:1403
+msgid "restore_running_app_script"
+msgstr "'{app}' aplikazioa lehengoratzen…"
+
+#: src/backup.py:1443
+msgid "app_restore_script_failed"
+msgstr "Errorea gertatu da aplikazioa lehengoratzeko aginduan"
+
+#: src/backup.py:1568 src/backup.py:1572
+msgid "backup_abstract_method"
+msgstr "Babeskopia modu hau oraindik ez da go erabilgarri"
+
+#: src/backup.py:1641 src/backup.py:2589
+msgid "backup_cleaning_failed"
+msgstr "Ezinezkoa izan da behin-behineko babeskopien karpeta hustea"
+
+#: src/backup.py:1662
+msgid "not_enough_disk_space"
+msgstr "Ez dago nahikoa espazio librerik '{path}'-n"
+
+#: src/backup.py:1702
+msgid "backup_couldnt_bind"
+msgstr "Ezin izan da {src} {dest}-ra lotu."
+
+#: src/backup.py:1765
+msgid "backup_ask_for_copying_if_needed"
+msgstr ""
+"Behin-behinean {size}MB erabili nahi dituzu babeskopia gauzatu ahal "
+"izateko? (Horrela egiten da fitxategi batzuk ezin direlako modu "
+"eraginkorragoan prestatu.)"
+
+#: src/backup.py:1771
+msgid "backup_unable_to_organize_files"
+msgstr ""
+"Ezinezkoa izan da modu azkarra erabiltzea fitxategiko artxiboak "
+"prestatzeko"
+
+#: src/backup.py:1779
+msgid "backup_copying_to_organize_the_archive"
+msgstr "{size}MB kopiatzen fitxategia antolatzeko"
+
+#: src/backup.py:1826
+msgid "backup_no_uncompress_archive_dir"
+msgstr "Ez dago horrelako deskonprimatutako fitxategi katalogorik"
+
+#: src/backup.py:1840
+msgid "backup_cant_mount_uncompress_archive"
+msgstr ""
+"Ezinezkoa izan da deskonprimatutako fitxategia muntatzea idazketa-babesa "
+"duelako"
+
+#: src/backup.py:1890 src/backup.py:1941
+msgid "backup_archive_open_failed"
+msgstr "Ezinezkoa izan da babeskopien fitxategia irekitzea"
+
+#: src/backup.py:1901
+msgid "backup_archive_writing_error"
+msgstr ""
+"Ezinezkoa izan da '{source}' ('{dest}' fitxategiak eskatu dituenak) "
+"fitxategia '{archive}' konprimatutako babeskopian sartzea"
+
+#: src/backup.py:1908
+msgid "backup_creation_failed"
+msgstr "Ezinezkoa izan da babeskopiaren fitxategia sortzea"
+
+#: src/backup.py:1931
+msgid "restore_extracting"
+msgstr "Behar diren fitxategiak ateratzen…"
+
+#: src/backup.py:1947 src/backup.py:2423
+msgid "backup_archive_corrupted"
+msgstr "Badirudi '{archive}' babeskopia fitxategia kaltetuta dagoela: {error}"
+
+#: src/backup.py:2070
+msgid "backup_custom_backup_error"
+msgstr ""
+"Neurrira egindako babeskopiak ezin izan du 'babeskopia egin' urratsetik "
+"haratago egin"
+
+#: src/backup.py:2087
+msgid "backup_custom_mount_error"
+msgstr ""
+"Neurrira egindako babeskopiak ezin izan du 'muntatu' urratsetik haratago "
+"egin"
+
+#: src/backup.py:2137
+msgid "backup_archive_name_exists"
+msgstr "Lehendik ere existitzen da '{name}' izena duen babeskopia-fitxategi bat."
+
+#: src/backup.py:2152
+msgid "backup_output_directory_forbidden"
+msgstr ""
+"Aukeratu beste katalogo bat emaitza gordetzeko. Babeskopiak ezin dira "
+"sortu /bin, /boot, /dev, /etc, /lib, /root, /run, /sbin, /sys, /usr, /var"
+" edo /home/yunohost.backup/archives azpi-katalogoetan"
+
+#: src/backup.py:2156
+msgid "backup_output_directory_required"
+msgstr "Babeskopia non gorde nahi duzun zehaztu behar duzu"
+
+#: src/backup.py:2204
+msgid "backup_actually_backuping"
+msgstr "Bildutako fitxategiekin babeskopia sortzen…"
+
+#: src/backup.py:2207
+msgid "backup_create_size_estimation"
+msgstr "Fitxategiak {size} datu inguru izango ditu."
+
+#: src/backup.py:2213
+msgid "backup_created"
+msgstr "Babeskopia sortu da: {name}"
+
+#: src/backup.py:2265 src/tools.py:169
+msgid "yunohost_already_installed"
+msgstr "YunoHost instalatuta dago lehendik ere"
+
+#: src/backup.py:2270
+msgid "restore_confirm_yunohost_installed"
+msgstr ""
+"Ziur al zaude lehendik instalatuta dagoen sistema lehengoratu nahi "
+"duzula? [{answers}]"
+
+#: src/backup.py:2278
+msgid "restore_failed"
+msgstr "Ezin izan da sistema lehengoratu"
+
+#: src/backup.py:2284
+msgid "backup_mount_archive_for_restore"
+msgstr "Lehengoratzeko fitxategiak prestatzen…"
+
+#: src/backup.py:2290
+msgid "restore_complete"
+msgstr "Lehengoratzea amaitu da"
+
+#: src/backup.py:2292
+msgid "restore_nothings_done"
+msgstr "Ez da ezer lehengoratu"
+
+#: src/backup.py:2353 src/backup.py:2399 src/backup.py:2508
+msgid "backup_archive_name_unknown"
+msgstr "Ez da '{name}' izeneko babeskopia ezagutzen"
+
+#: src/backup.py:2362 src/backup.py:2408
+msgid "backup_archive_broken_link"
+msgstr "Ezin izan da babeskopiaren fitxategia eskuratu ({path}ra esteka okerra)"
+
+#: src/backup.py:2531
+msgid "backup_delete_error"
+msgstr "Ezinezkoa izan da '{path}' ezabatzea"
+
+#: src/backup.py:2540
+msgid "backup_deleted"
+msgstr "Babeskopia ezabatu da: {name}"
+
+#: src/backup.py:2552
+msgid "backup_output_symlink_dir_broken"
+msgstr ""
+"'{path}' fitxategi-katalogoaren symlink-a ez dabil. Agian [ber]muntatzea "
+"ahaztu zaizu edo euskarria atakara konektatzea ahaztu duzu."
+
+#: src/certificate.py:179
+msgid "certmanager_attempt_to_replace_valid_cert"
+msgstr ""
+"{domain} domeinurako egokia eta baliogarria den ziurtagiri bat "
+"ordezkatzen saiatzen ari zara! (Erabili --force mezu hau deuseztatu eta "
+"ziurtagiria ordezkatzeko)"
+
+#: src/certificate.py:211
+msgid "domain_cert_gen_failed"
+msgstr "Ezinezkoa izan da ziurtagiria sortzea"
+
+#: src/certificate.py:239
+msgid "certmanager_cert_install_success_selfsigned"
+msgstr "Norberak sinatutako ziurtagiria instalatu da '{domain}' domeinurako"
+
+#: src/certificate.py:251
+msgid "certmanager_cert_install_failed_selfsigned"
+msgstr ""
+"Norberak sinatutako zirutagiriaren instalazioak huts egin du honako "
+"domeinurako: {domains}"
+
+#: src/certificate.py:281
+msgid "certmanager_domain_cert_not_selfsigned"
+msgstr ""
+"{domain} domeinurako ziurtagiria ez da norberak sinatutakoa. Ziur al "
+"zaude ordezkatu nahi duzula? (Erabili '--force' hori egiteko.)"
+
+#: src/certificate.py:315
+msgid "certmanager_cert_install_success"
+msgstr "Let's Encrypt ziurtagiria instalatu da '{domain}' domeinurako"
+
+#: src/certificate.py:321 src/domain.py:439
+msgid "certmanager_cert_install_failed"
+msgstr ""
+"Let's Encrypt zirutagiriaren instalazioak huts egin du honako "
+"domeinurako: {domains}"
+
+#: src/certificate.py:360 src/certificate.py:392
+msgid "certmanager_acme_not_configured_for_domain"
+msgstr ""
+"Une honetan ezinezkoa da ACME azterketa {domain} domeinurako burutzea "
+"nginx ezarpenek ez dutelako beharrezko kodea… Egiaztatu nginx ezarpenak "
+"egunean daudela 'yunohost tools regen-conf nginx --dry-run --with-diff' "
+"komandoa exekutatuz."
+
+#: src/certificate.py:380
+msgid "certmanager_attempt_to_renew_valid_cert"
+msgstr ""
+"'{domain}' domeinurako ziurtagiria iraungitzear dago! (Zertan ari zaren "
+"baldin badakizu, --force erabil dezakezu)"
+
+#: src/certificate.py:386
+msgid "certmanager_attempt_to_renew_nonLE_cert"
+msgstr ""
+"'{domain}' domeinurako ziurtagiria ez da Let's Encryptek jaulkitakoa. "
+"Ezin da automatikoki berriztu!"
+
+#: src/certificate.py:443
+msgid "certmanager_cert_renew_success"
+msgstr "Let's Encrypt ziurtagiria berriztu da '{domain}' domeinurako"
+
+#: src/certificate.py:448
+msgid "certmanager_cert_renew_failed"
+msgstr ""
+"Let's Encrypt zirutagiriaren berrizteak huts egin du honako domeinurako: "
+"{domains}"
+
+#: src/certificate.py:541
+msgid "certmanager_hit_rate_limit"
+msgstr ""
+"{domain} domeinu-multzorako ziurtagiri gehiegi jaulki dira lehendik ere. "
+"Saiatu geroago. Ikus https://letsencrypt.org/docs/rate-limits/ xehetasun "
+"gehiagorako"
+
+#: src/certificate.py:544 src/certificate.py:549
+msgid "certmanager_cert_signing_failed"
+msgstr "Ezinezkoa izan da ziurtagiri berria sinatzea"
+
+#: src/certificate.py:583
+msgid "certmanager_certificate_fetching_or_enabling_failed"
+msgstr "{domain} domeinurako ziurtagiri berriak kale egin du…"
+
+#: src/certificate.py:649
+msgid "certmanager_no_cert_file"
+msgstr ""
+"Ezinezkoa izan da {domain} domeinurako ziurtagiri fitxategia irakurrtzea "
+"(fitxategia: {file})"
+
+#: src/certificate.py:663
+msgid "certmanager_cannot_read_cert"
+msgstr ""
+"Arazoren bat egon da {domain} (fitxategia: {file}) domeinurako oraingo "
+"ziurtagiria irekitzen saiatzerakoan, zergatia: {reason}"
+
+#: src/certificate.py:843
+msgid "certmanager_domain_not_diagnosed_yet"
+msgstr ""
+"Oraindik ez dago {domain} domeinurako diagnostikorik. Berrabiarazi "
+"diagnostikoak 'DNS balioak' eta 'Web' ataletarako diagnostikoen gunean "
+"Let's Encrypt ziurtagirirako prest ote dagoen egiaztatzeko. (Edo zertan "
+"ari zaren baldin badakizu, erabili '--no-checks' egiaztatzea "
+"desgaitzeko.)"
+
+#: src/certificate.py:854
+msgid "certmanager_domain_dns_ip_differs_from_public_ip"
+msgstr ""
+"'{domain}' domeinurako DNS balioak ez datoz bat zerbitzariaren IParekin. "
+"Egiaztatu 'DNS balioak' (oinarrizkoa) atala diagnostikoen gunean. 'A' "
+"balioak duela gutxi aldatu badituzu, itxaron hedatu daitezen (badaude "
+"DNSen hedapena ikusteko erramintak Interneten). (Zertan ari zeren baldin "
+"badakizu, erabili '--no-checks' egiaztapen horiek desgaitzeko.)"
+
+#: src/certificate.py:860
+msgid "certmanager_domain_http_not_working"
+msgstr ""
+"Ez dirudi {domain} domeinua HTTP bidez ikusgai dagoenik. Egiaztatu 'Weba'"
+" atala diagnostikoen gunean informazio gehiagorako. (Zertan ari zaren "
+"baldin badakizu, erabili '--no-checks' egiaztapen horiek desgaitzeko.)"
+
+#: src/certificate.py:904
+msgid "certmanager_self_ca_conf_file_not_found"
+msgstr ""
+"Ezinezkoa izan da konfigurazio-fitxategia aurkitzea norberak sinatutako "
+"ziurtagirirako (fitxategia: {file})"
+
+#: src/certificate.py:914
+msgid "certmanager_unable_to_parse_self_CA_name"
+msgstr ""
+"Ezinezkoa izan da norberak sinatutako ziurtagiriaren izena prozesatzea "
+"(fitxategia: {file})"
+
+#: src/diagnosis.py:58 src/diagnosis.py:90 src/diagnosis.py:181
+msgid "diagnosis_unknown_categories"
+msgstr "Honako atalak ez dira ezagutzen: {categories}"
+
+#: src/diagnosis.py:77
+msgid "diagnosis_never_ran_yet"
+msgstr ""
+"Badirudi zerbitzari hau duela gutxi konfiguratu dela eta oraindik ez dago"
+" erakusteko diagnostikorik. Diagnostiko osoa abiarazi beharko zenuke, "
+"administrazio-webgunetik edo 'yunohost diagnosis run' komandoa "
+"exekutatuz."
+
+#: src/diagnosis.py:99
+msgid "diagnosis_failed"
+msgstr "'{category}' ataleko diagnostikoa lortzeak huts egin du: {error}"
+
+#: src/diagnosis.py:132 src/log.py:357
+msgid "log_available_on_yunopaste"
+msgstr "Erregistroa {url} estekan ikus daiteke"
+
+#: src/diagnosis.py:201
+msgid "diagnosis_failed_for_category"
+msgstr "'{category}' ataleko diagnostikoak huts egin du: {error}"
+
+#: src/diagnosis.py:220
+msgid "diagnosis_display_tip"
+msgstr ""
+"Aurkitu diren arazoak ikusteko joan administrazio-atariko Diagnostikoak "
+"gunera, edo exekutatu 'yunohost diagnosis show --issues --human-readable'"
+" komandoak nahiago badituzu."
+
+#: src/diagnosis.py:280
+msgid "diagnosis_ignore_missing_criteria"
+msgstr ""
+"Gutxienez irizpide bat gehitu behar duzu atalaren diagnostikoak kontuan "
+"har ez dezan"
+
+#: src/diagnosis.py:285
+msgid "diagnosis_ignore_criteria_error"
+msgstr ""
+"Irizpideek forma hau izan behar dute: gakoa=balorea (adib. "
+"domain=yolo.test)"
+
+#: src/diagnosis.py:308
+msgid "diagnosis_ignore_no_issue_found"
+msgstr "Ez da arazorik aurkitu emandako irizpideekin."
+
+#: src/diagnosis.py:318
+msgid "diagnosis_ignore_already_filtered"
+msgstr ""
+"(Badago lehendik ere irizpide horiek dituen {category} atalaren "
+"diagnostikorako iragazkia)"
+
+#: src/diagnosis.py:324
+msgid "diagnosis_ignore_filter_added"
+msgstr "{category} atalaren diagnostikorako iragazkia gehitu da"
+
+#: src/diagnosis.py:338
+msgid "diagnosis_ignore_no_filter_found"
+msgstr ""
+"(Ez dago irizpide horiek dituen {category} atalaren diagnostikorako "
+"iragazkirik)"
+
+#: src/diagnosis.py:344
+msgid "diagnosis_ignore_filter_removed"
+msgstr "{category} atalaren diagnostikorako iragazkia kendu da"
+
+#: src/diagnosis.py:421
+msgid "diagnosis_cache_still_valid"
+msgstr ""
+"(Katxea oraindik baliogarria da {category} ataleko diagnostikorako. Ez da"
+" berrabiaraziko!)"
+
+#: src/diagnosis.py:438
+msgid "diagnosis_cant_run_because_of_dep"
+msgstr ""
+"Ezinezkoa da diagnostikoa abiaraztea {category} atalerako {dep}(r)i "
+"lotutako arazo garrantzitsuak / garrantzitsuek dirau(t)en artean."
+
+#: src/diagnosis.py:481
+msgid "diagnosis_ignored_issues"
+msgstr "(kontuan hartu ez d(ir)en + {nb_ignored} arazo)"
+
+#: src/diagnosis.py:491
+msgid "diagnosis_found_errors_and_warnings"
+msgstr ""
+"{category} atalari dago(z)kion {errors} arazo (eta {warnings} abisu) "
+"aurkitu d(ir)a!"
+
+#: src/diagnosis.py:501
+msgid "diagnosis_found_errors"
+msgstr "{category} atalari dago(z)kion {errors} arazo aurkitu d(ir)a!"
+
+#: src/diagnosis.py:510
+msgid "diagnosis_found_warnings"
+msgstr ""
+"{category} atalari dagokion eta hobetu daite(z)keen {warnings} abisu "
+"aurkitu d(ir)a."
+
+#: src/diagnosis.py:518
+msgid "diagnosis_everything_ok"
+msgstr "Badirudi guztia zuzen dagoela {category} atalean!"
+
+#: src/diagnosis.py:533
+msgid "diagnosis_no_cache"
+msgstr "Oraindik ez dago '{category}' atalerako diagnostikoaren katxerik"
+
+#: src/dns.py:67 src/dns.py:555 src/dns.py:643
+msgid "domain_dns_conf_special_use_tld"
+msgstr ""
+"Domeinu hau top-level domain (TLD) erabilera bereziko motakoa da .local "
+"edo .test bezala eta ez du DNS ezarpenik behar."
+
+#: src/dns.py:102
+msgid "domain_dns_conf_is_just_a_recommendation"
+msgstr ""
+"Komando honek *iradokitako* konfigurazioa erakusten du. Ez du DNS "
+"konfigurazioa zugatik ezartzen. Zure ardura da DNS gunea zure erregistro-"
+"enpresaren gomendioen arabera ezartzea."
+
+#: src/dns.py:501
+msgid "registrar_infos"
+msgstr "Erregistro-enpresaren informazioa"
+
+#: src/dns.py:531
+msgid "domain_dns_registrar_managed_in_parent_domain"
+msgstr ""
+"Domeinu hau {parent_domain_link}(r)en azpidomeinua da. DNS ezarpenak "
+"{parent_domain}(r)en konfigurazio atalean kudeatu behar dira."
+
+#: src/dns.py:543
+msgid "domain_dns_registrar_yunohost"
+msgstr ""
+"Hau nohost.me / nohost.st / ynh.fr domeinu bat da eta, beraz, DNS "
+"ezarpenak automatikoki kudeatzen ditu YunoHostek, bestelako ezer "
+"konfiguratu beharrik gabe. (ikus 'yunohost dyndns update' komandoa)"
+
+#: src/dns.py:547 src/dyndns.py:127 src/dyndns.py:141 src/dyndns.py:255
+msgid "ask_dyndns_recovery_password"
+msgstr "DynDNS berreskuratze-pasahitza"
+
+#: src/dns.py:563
+msgid "domain_dns_registrar_not_supported"
+msgstr ""
+"YunoHostek ezin izan du domeinu honen erregistro-enpresa automatikoki "
+"antzeman. Eskuz konfiguratu beharko dituzu DNS ezarpenak gidalerroei "
+"erreparatuz: https://doc.yunohost.org/dns_config."
+
+#: src/dns.py:567
+msgid "domain_dns_registrar_supported"
+msgstr ""
+"YunoHostek automatikoki antzeman du domeinu hau **{registrar}** "
+"erregistro-enpresak kudeatzen duela. Nahi baduzu YunoHostek automatikoki "
+"konfiguratu ditzake DNS ezarpenak, API egiaztagiri zuzenak zehazten "
+"badituzu. API egiaztagiriak non lortzeko dokumentazioa orri honetan "
+"daukazu: "
+"https://doc.yunohost.org/admin/get_started/providers/registrar/{registrar}/."
+" (Baduzu DNS erregistroak eskuz konfiguratzeko aukera ere, gidalerro "
+"hauetan ageri den bezala: https://doc.yunohost.org/dns_config)"
+
+#: src/dns.py:578
+msgid "domain_dns_registrar_experimental"
+msgstr ""
+"Oraingoz, YunoHosten kideek ez dute **{registrar}** erregistro-enpresaren"
+" APIa nahi beste probatu eta aztertu. Funtzioa **oso esperimentala** da —"
+" kontuz!"
+
+#: src/dns.py:594
+msgid "domain_dns_registrar_use_auto"
+msgstr "Erabili DNS automatikoaren ezaugarria"
+
+#: src/dns.py:646
+msgid "domain_dns_push_not_applicable"
+msgstr ""
+"Ezin da {domain} domeinurako DNS konfigurazio automatiko funtzioa "
+"erabili. DNS erregistroak eskuz ezarri beharko zenituzke gidaorriei "
+"erreparatuz: https://doc.yunohost.org/dns_config."
+
+#: src/dns.py:661 src/dns.py:670
+msgid "domain_dns_push_managed_in_parent_domain"
+msgstr ""
+"DNS ezarpenak automatikoki konfiguratzeko funtzioa {parent_domain} "
+"domeinu nagusian kudeatzen da."
+
+#: src/dns.py:676 src/dns.py:681
+msgid "domain_registrar_is_not_configured"
+msgstr "Oraindik ez da {domain} domeinurako erregistro-enpresa ezarri."
+
+#: src/dns.py:742
+msgid "domain_dns_push_failed_to_list"
+msgstr "APIa erabiliz uneko erregistroak antzemateak huts egin du: {error}"
+
+#: src/dns.py:952
+msgid "domain_dns_push_already_up_to_date"
+msgstr "Ezarpenak dagoeneko egunean daude, ez dago zereginik."
+
+#: src/dns.py:960
+msgid "domain_dns_pushing"
+msgstr "DNS ezarpenak bidaltzen…"
+
+#: src/dns.py:1009 src/dns.py:1022
+msgid "domain_dns_push_record_failed"
+msgstr "{type}/{name} ezarpenak {action} huts egin du: {error}"
+
+#: src/dns.py:1035
+msgid "domain_dns_push_success"
+msgstr "DNS ezarpenak eguneratu dira!"
+
+#: src/dns.py:1039
+msgid "domain_dns_push_failed"
+msgstr "DNS ezarpenen eguneratzeak huts egin du."
+
+#: src/dns.py:1041
+msgid "domain_dns_push_partial_failure"
+msgstr ""
+"DNS ezarpenak erdipurdi eguneratu dira: jakinarazpen/errore batzuk egon "
+"dira."
+
+#: src/domain.py:254
+msgid "domain_unknown"
+msgstr "'{domain}' domeinua ezezaguna da"
+
+#: src/domain.py:326
+msgid "domain_exists"
+msgstr "Lehendik ere existitzen da domeinu hau"
+
+#: src/domain.py:347 src/dyndns.py:119
+msgid "domain_dyndns_already_subscribed"
+msgstr "Lehendik ere izena eman duzu DynDNS domeinu batean"
+
+#: src/domain.py:350
+msgid "tos_dyndns_acknowledgement"
+msgstr ""
+"DynDNS domeinu bat erregistratzea aukeratu zenuen, YunoHost proiektuaren "
+"eskaintzen baitan. Domeinu-izenak epe luzeko zerbitzu digitalen alderdi "
+"garrantzitsua direnez, gogorarazten dizugu arretaz irakur ditzazula "
+"dagozkion Zerbitzu-baldintzak, bereziki domeinu-izen libre horiei "
+"dagokien atala: <https://doc.yunohost.org/terms_of_services>."
+
+#: src/domain.py:375
+msgid "domain_creation_failed"
+msgstr "Ezin da {domain} domeinua sortu: {error}"
+
+#: src/domain.py:436
+msgid "domain_created"
+msgstr "Sortu da domeinua"
+
+#: src/domain.py:486
+msgid "domain_cannot_remove_main"
+msgstr ""
+"Ezin duzu '{domain}' ezabatu domeinu nagusia delako. Beste domeinu bat "
+"ezarri beharko duzu nagusi bezala 'yunohost domain main-domain -n "
+"<another-domain>' erabiliz; honako hauek dituzu aukeran: {other_domains}"
+
+#: src/domain.py:492
+msgid "domain_cannot_remove_main_add_new_one"
+msgstr ""
+"Ezin duzu '{domain}' ezabatu domeinu nagusi eta bakarra delako. Beste "
+"domeinu bat gehitu 'yunohost domain add <beste-domeinua.eus>' exekutatuz;"
+" gero erabili 'yunohost domain main-domain -n <beste-domeinua.eus>' "
+"domeinu nagusi bilakatzeko; eta azkenik ezabatu {domain}' domeinua "
+"'yunohost domain remove {domain}' komandoarekin."
+
+#: src/domain.py:518
+msgid "domain_remove_confirm_apps_removal"
+msgstr ""
+"Domeinu hau ezabatzean aplikazio hauek desinstalatuko dira:\n"
+"{apps}\n"
+"\n"
+"Ziur al zaude? [{answers}]"
+
+#: src/domain.py:525 src/utils/app_utils.py:1399
+msgid "aborting"
+msgstr "Bertan behera uzten."
+
+#: src/domain.py:531
+msgid "domain_uninstall_app_first"
+msgstr ""
+"Honako aplikazio hauek domeinuan instalatuta daude:\n"
+"{apps}\n"
+"\n"
+"Desinstalatu 'yunohost app remove the_app_id' exekutatuz edo alda itzazu "
+"beste domeinu batera 'yunohost app change-url the_app_id' erabiliz "
+"domeinua ezabatu baino lehen"
+
+#: src/domain.py:548
+msgid "domain_deletion_failed"
+msgstr "Ezin da {domain} ezabatu: {error}"
+
+#: src/domain.py:594
+msgid "domain_deleted"
+msgstr "Domeinua ezabatu da"
+
+#: src/domain.py:675
+msgid "main_domain_change_failed"
+msgstr "Ezin da domeinu nagusia aldatu"
+
+#: src/domain.py:687
+msgid "main_domain_changed"
+msgstr "Domeinu nagusia aldatu da"
+
+#: src/domain.py:860
+msgid "app_make_default_location_already_used"
+msgstr ""
+"Ezin da '{app}' '{domain}' domeinuan lehenetsi, '{other_app}'(e)k "
+"lehendik ere erabiltzen duelako"
+
+#: src/dyndns.py:86 src/dyndns.py:97
+msgid "dyndns_could_not_check_available"
+msgstr "Ezinezkoa izan da {domain} {provider}(e)n eskuragarri dagoen egiaztatzea."
+
+#: src/dyndns.py:94 src/dyndns.py:292
+msgid "dyndns_too_many_requests"
+msgstr ""
+"YunoHosten dyndns zerbitzuak zuk egindako eskaera gehiegi jaso ditu, "
+"itxaron ordubete inguru berriro saiatu baino lehen."
+
+#: src/dyndns.py:114
+msgid "dyndns_domain_not_provided"
+msgstr "{provider} DynDNS enpresak ezin du {domain} domeinua eskaini."
+
+#: src/dyndns.py:125
+msgid "ask_dyndns_recovery_password_explain_unavailable"
+msgstr ""
+"DynDNS domeinu hau erregistratuta dago lehendik ere. Domeinua zeuk "
+"erregistratu bazenuen, sartu berreskuratze-pasahitza domeinua "
+"berreskuratzeko."
+
+#: src/dyndns.py:135 src/tools.py:232
+msgid "dyndns_unavailable"
+msgstr "'{domain}' domeinua ez dago eskuragarri."
+
+#: src/dyndns.py:139
+msgid "ask_dyndns_recovery_password_explain"
+msgstr ""
+"Aukeratu DynDNS domeinurako berreskuratze-pasahitza, etorkizunean "
+"berrezarri beharko bazenu."
+
+#: src/dyndns.py:145
+msgid "dyndns_no_recovery_password"
+msgstr ""
+"Ez da berreskuratze-pasahitzik zehaztu! Domeinuaren gaineko kontrola "
+"galduz gero, YunoHost taldeko administratzailearekin jarri beharko zara "
+"harremanetan!"
+
+#: src/dyndns.py:203 src/dyndns.py:210
+msgid "dyndns_subscribe_failed"
+msgstr "Ezin izan da DynDNS domeinua harpidetu: {error}"
+
+#: src/dyndns.py:225
+msgid "dyndns_subscribed"
+msgstr "DynDNS domeinua harpidetu da"
+
+#: src/dyndns.py:252
+msgid "ask_dyndns_recovery_password_explain_during_unsubscribe"
+msgstr "Sartu DynDNS domeinuaren berreskuratze-pasahitza."
+
+#: src/dyndns.py:279 src/dyndns.py:295
+msgid "dyndns_unsubscribe_failed"
+msgstr "Ezin izan da DynDNS domeinuaren harpidetza utzi: {error}"
+
+#: src/dyndns.py:288
+msgid "dyndns_unsubscribe_denied"
+msgstr "Domeinuaren harpidetza uzteak huts egin du: datu okerrak"
+
+#: src/dyndns.py:290
+msgid "dyndns_unsubscribe_already_unsubscribed"
+msgstr "Domeinuaren harpidetza utzita dago lehendik ere"
+
+#: src/dyndns.py:299
+msgid "dyndns_unsubscribed"
+msgstr "DynDNS domeinuaren harpidetza utzi da"
+
+#: src/dyndns.py:307 src/dyndns.py:431
+msgid "dyndns_key_not_found"
+msgstr "Ez da domeinurako DNS gakorik aurkitu"
+
+#: src/dyndns.py:332 src/dyndns.py:344
+msgid "dyndns_set_recovery_password_failed"
+msgstr "Berreskuratze-pasahitza ezartzeak huts egin du: {error}"
+
+#: src/dyndns.py:335
+msgid "dyndns_set_recovery_password_success"
+msgstr "Berreskuratze-pasahitza ezarri da!"
+
+#: src/dyndns.py:337
+msgid "dyndns_set_recovery_password_denied"
+msgstr "Berreskuratze-pasahitza ezartzeak huts egin du: gako okerra"
+
+#: src/dyndns.py:339
+msgid "dyndns_set_recovery_password_unknown_domain"
+msgstr ""
+"Berreskuratze-pasahitza ezartzeak huts egin du: domeinua ez dago "
+"erregistratuta"
+
+#: src/dyndns.py:341
+msgid "dyndns_set_recovery_password_invalid_password"
+msgstr ""
+"Berreskuratze-pasahitza ezartzeak huts egin du: pasahitza ez da nahikoa "
+"sendoa"
+
+#: src/dyndns.py:390
+msgid "dyndns_no_domain_registered"
+msgstr "Ez dago DynDNSrekin izena emandako domeinurik"
+
+#: src/dyndns.py:554 src/dyndns.py:558
+msgid "dyndns_ip_update_failed"
+msgstr "Ezin izan da IP helbidea DynDNSan eguneratu"
+
+#: src/dyndns.py:560
+msgid "dyndns_ip_updated"
+msgstr "IP helbidea DynDNS-n eguneratu da"
+
+#: src/firewall.py:256
+msgid "upnp_dev_not_found"
+msgstr "Ez da UPnP gailurik aurkitu"
+
+#: src/firewall.py:418
+msgid "port_already_opened"
+msgstr "{port}. ataka lehendik ere irekita"
+
+#: src/firewall.py:425 src/firewall.py:457 src/firewall.py:529
+#: src/firewall.py:563
+msgid "firewall_reloaded"
+msgstr "Suebakia birkargatu da"
+
+#: src/firewall.py:427 src/firewall.py:459 src/firewall.py:531
+#: src/firewall.py:565
+msgid "firewall_reload_failed"
+msgstr ""
+"Ezinezkoa izan da suebakia birkargatzea. Informazio gehiago "
+"erregistroetan."
+
+#: src/firewall.py:450 src/firewall.py:522
+msgid "port_already_closed"
+msgstr "{port}. ataka itxita dago lehendik"
+
+#: src/firewall.py:580
+msgid "action_invalid"
+msgstr "'{action}' eragiketa baliogabea da"
+
+#: src/firewall.py:597
+msgid "upnp_enabled"
+msgstr "UPnP piztuta dago"
+
+#: src/firewall.py:597
+msgid "upnp_disabled"
+msgstr "UPnP itzalita dago"
+
+#: src/firewall.py:601
+msgid "upnp_port_open_failed"
+msgstr "Ezin izan da UPnP bidez ataka zabaldu"
+
+#: src/firewall.py:611
+msgid "nftables_unavailable"
+msgstr ""
+"Ezin dituzu iptaulak hemen moldatu; edukiontzi bat erabiltzen ari zara "
+"edo kernelak ez du aukera hau onartzen"
+
+#: src/hook.py:117 src/hook.py:273
+msgid "hook_name_unknown"
+msgstr "'{name}' 'hook' izen ezezaguna"
+
+#: src/hook.py:186
+msgid "hook_list_by_invalid"
+msgstr "Aukera hau ezin da 'hook'ak zerrendatzeko erabili"
+
+#: src/hook.py:344
+msgid "file_does_not_exist"
+msgstr "{path} fitxategia ez da existitzen."
+
+#: src/hook.py:426 src/hook.py:428
+msgid "hook_exec_not_terminated"
+msgstr "Aginduak ez du behar bezala amaitu: {path}"
+
+#: src/hook.py:431
+msgid "hook_exec_failed"
+msgstr "Ezinezkoa izan da agindua exekutatzea: {path}"
+
+#: src/hook.py:503
+msgid "hook_json_return_error"
+msgstr ""
+"Ezin izan da {path} aginduaren erantzuna irakurri. Errorea: {msg}. "
+"Jatorrizko edukia: {raw_content}"
+
+#: src/hook.py:569 src/settings.py:186 src/utils/configpanel.py:634
+#: src/utils/configpanel.py:723 src/utils/resources.py:75
+#: src/utils/resources.py:103
+msgid "operation_interrupted"
+msgstr "Eragiketa eskuz geldiarazi da?"
+
+#: src/log.py:111 src/log.py:222 src/log.py:368
+msgid "log_corrupted_md_file"
+msgstr ""
+"Erregistroei lotutako YAML metadatu fitxategia kaltetuta dago: '{md_file}"
+"\n"
+"Errorea: {error}'"
+
+#: src/log.py:335
+msgid "log_does_exists"
+msgstr ""
+"Ez dago '{log}' izena duen eragiketa-erregistrorik; erabili 'yunohost log"
+" list' eragiketa-erregistro guztiak ikusteko"
+
+#: src/log.py:908
+msgid "log_link_to_log"
+msgstr ""
+"Eragiketa honen erregistro osoa: '<a href=\"#/tools/logs/{name}\" style"
+"=\"text-decoration:underline\">{desc}</a>'"
+
+#: src/log.py:910
+msgid "log_help_to_get_log"
+msgstr ""
+"'{desc}' eragiketaren erregistroa ikusteko, exekutatu 'yunohost log show "
+"{name}'"
+
+#: src/log.py:916
+msgid "log_link_to_failed_log"
+msgstr ""
+"Ezinezkoa izan da '{desc}' eragiketa exekutatzea. Laguntza nahi izanez "
+"gero, partekatu erakigeta honen erregistro osoa <a "
+"href=\"#/tools/logs/{name}\">hemen sakatuz</a>"
+
+#: src/log.py:921
+msgid "log_help_to_get_failed_log"
+msgstr ""
+"Ezin izan da '{desc}' eragiketa exekutatu. Laguntza nahi baduzu partekatu"
+" eragiketa honen erregistro osoa 'yunohost log share {name}' komandoa "
+"erabiliz"
+
+#: src/log.py:938
+msgid "log_operation_unit_unclosed_properly"
+msgstr "Eragiketa ez da modu egokian itxi"
+
+#: src/log.py:1022
+msgid "automatic_task"
+msgstr "Ataza automatikoa"
+
+#: src/log.py:1025
+msgid "yunohost_api"
+msgstr "YunoHosten APIa"
+
+#: src/log.py:1028
+msgid "noninteractive_task"
+msgstr "Interakziorik gabeko ataza"
+
+#: src/permission.py:235
+msgid "permission_require_account"
+msgstr ""
+"'{permission}' baimena zerbitzarian kontua duten erabiltzaileentzat da "
+"eta, beraz, ezin da gaitu bisitarientzat."
+
+#: src/permission.py:240
+msgid "permission_cant_add_to_all_users"
+msgstr "{permission} baimena ezin da erabiltzaile guztiei ezarri."
+
+#: src/permission.py:255
+msgid "permission_protected"
+msgstr ""
+"'{permission}' baimena babestuta dago. Ezin duzu bisitarien taldea baimen"
+" honetara gehitu / baimen honetatik kendu."
+
+#: src/permission.py:268 src/permission.py:430 src/user.py:1193
+#: src/user.py:1270 src/user.py:1462
+msgid "group_unknown"
+msgstr "'{group}' taldea ezezaguna da"
+
+#: src/permission.py:272
+msgid "permission_already_allowed"
+msgstr "'{group} taldeak badauka lehendik ere '{permission}' baimena"
+
+#: src/permission.py:284
+msgid "permission_already_disallowed"
+msgstr "'{group}' taldeak desgaituta dauka lehendik ere '{permission} baimena"
+
+#: src/permission.py:301
+msgid "permission_currently_allowed_for_all_users"
+msgstr ""
+"Baimen hau erabiltzaile guztiei esleitzen zaie eta baita beste talde "
+"batzuei ere. Litekeena da 'all users' baimena edo esleituta duten taldeei"
+" baimena kendu nahi izatea."
+
+#: src/permission.py:310 src/permission.py:516
+msgid "regex_incompatible_with_tile"
+msgstr ""
+"/!\\ Pakete-arduradunak! {permission}' baimenak show_tile aukera 'true' "
+"bezala dauka eta horregatik ezin duzue regex URLa URL nagusi bezala "
+"ezarri"
+
+#: src/permission.py:338 src/permission.py:340 src/permission.py:576
+#: src/user.py:1581
+msgid "permission_updated"
+msgstr "'{permission}' baimena moldatu da"
+
+#: src/permission.py:365
+msgid "permission_not_found"
+msgstr "Ez da '{permission}' baimena aurkitu"
+
+#: src/permission.py:455
+msgid "permission_created"
+msgstr "'{permission}' baimena sortu da"
+
+#: src/permission.py:496
+msgid "unknown_main_domain_path"
+msgstr ""
+"{app} aplikaziorako domeinu edo bide ezezaguna. Domeinua eta bidea "
+"zehaztu behar dituzu baimena emateko URLa ahalbidetzeko."
+
+#: src/permission.py:528
+msgid "additional_urls_already_added"
+msgstr "'{url}' URL gehigarria '{permission}' baimenerako gehitu da lehendik ere"
+
+#: src/permission.py:540
+msgid "additional_urls_already_removed"
+msgstr "'{url}' URL gehigarriari '{permission}' baimena kendu zaio lehendik ere"
+
+#: src/permission.py:570 src/permission.py:714
+msgid "permission_update_failed"
+msgstr "Ezinezkoa izan da '{permission}' baimena aldatzea: {error}"
+
+#: src/permission.py:590
+msgid "permission_cannot_remove_main"
+msgstr "Ezin da baimen nagusi bat kendu"
+
+#: src/permission.py:612
+msgid "permission_deleted"
+msgstr "'{permission}' baimena ezabatu da"
+
+#: src/permission.py:659
+msgid "permission_deletion_failed"
+msgstr "Ezinezkoa izan da '{permission}' baimena ezabatzea: {error}"
+
+#: src/permission.py:696
+msgid "permission_creation_failed"
+msgstr "Ezinezkoa izan da '{permission}' baimena sortzea: {error}"
+
+#: src/permission.py:788
+msgid "show_tile_cant_be_enabled_for_url_not_defined"
+msgstr ""
+"Ezin duzu 'show_tile' gaitu une honetan, '{permission}' baimenerako URL "
+"bat zehaztu behar duzulako"
+
+#: src/permission.py:795
+msgid "show_tile_cant_be_enabled_for_regex"
+msgstr ""
+"Ezin duzu 'show_tile' gaitu une honetan, '{permission}' baimenerako URLa "
+"regex delako"
+
+#: src/permission.py:973
+msgid "invalid_regex"
+msgstr "'Regexa' ez da zuzena: '{regex}'"
+
+#: src/permission.py:985
+msgid "regex_with_only_domain"
+msgstr "Ezin duzu regex domeinuetarako erabili; bideetarako bakarrik"
+
+#: src/portal.py:51 src/ssh.py:43 src/ssh.py:80 src/ssh.py:121 src/user.py:357
+#: src/user.py:462 src/user.py:654 src/user.py:1293
+msgid "user_unknown"
+msgstr "Erabiltzaile ezezaguna: {user}"
+
+#: src/portal.py:224 src/portal.py:249 src/portal.py:286
+msgid "mail_edit_operation_unauthorized"
+msgstr "Ez duzu baimenik kontuaren aldaketa hau egiteko."
+
+#: src/portal.py:229 src/portal.py:264 src/user.py:243 src/user.py:527
+#: src/user.py:537 src/user.py:1339
+msgid "mail_unavailable"
+msgstr "Helbide elektroniko hau administratzaileen taldearentzat gorde da"
+
+#: src/portal.py:234 src/portal.py:271
+msgid "mail_already_exists"
+msgstr "'{mail}' posta helbidea lehendik ere dago"
+
+#: src/portal.py:237 src/portal.py:275
+msgid "mail_alias_unauthorized"
+msgstr "Ez duzu baimenik '{domain}' domeinurako ezizenak gehitzeko"
+
+#: src/authenticators/ldap_ynhuser.py:225 src/portal.py:316
+msgid "invalid_password"
+msgstr "Pasahitz baliogabea"
+
+#: src/portal.py:326 src/user.py:520 src/user.py:546 src/user.py:602
+msgid "user_update_failed"
+msgstr "Ezin izan da {user} erabiltzailea eguneratu: {error}"
+
+#: src/regenconf.py:200
+msgid "regenconf_failed"
+msgstr "Ezinezkoa izan da honako atal(ar)en konfigurazioa berregitea: {categories}"
+
+#: src/regenconf.py:213
+msgid "regenconf_pending_applying"
+msgstr "'{category}' atalerako konfigurazioa ezartzen…"
+
+#: src/regenconf.py:215
+msgid "regenconf_dry_pending_applying"
+msgstr ""
+"'{category}' atalari aplikatu behar zitzaion baina aplikatu gabeko "
+"konfigurazioa egiaztatzen…"
+
+#: src/regenconf.py:320 src/regenconf.py:412
+msgid "regenconf_file_manually_modified"
+msgstr "'{conf}' konfigurazio fitxategia eskuz moldatu da eta ez da eguneratuko"
+
+#: src/regenconf.py:343
+msgid "regenconf_file_manually_removed"
+msgstr ""
+"'{conf}' konfigurazio fitxategia eskuz ezabatu da eta ez da berriro "
+"sortuko"
+
+#: src/regenconf.py:361
+msgid "regenconf_now_managed_by_yunohost"
+msgstr ""
+"'{conf}' konfigurazio fitxategia YunoHostek kudeatzen du orain "
+"({category} atala)."
+
+#: src/regenconf.py:374
+msgid "regenconf_file_kept_back"
+msgstr ""
+"'{conf}' konfigurazio fitxategia regen-conf-ek ({category} atala) "
+"ezabatzekoa zen, baina mantendu egin da."
+
+#: src/regenconf.py:405
+msgid "regenconf_need_to_explicitly_specify_ssh"
+msgstr ""
+"SSH ezarpenak eskuz aldatu dira, baina, aldaketak erabiltzeko, '--force' "
+"zehaztu behar duzu 'ssh' atalean."
+
+#: src/regenconf.py:430
+msgid "regenconf_up_to_date"
+msgstr "Konfigurazioa egunean dago lehendik ere '{category}' atalerako"
+
+#: src/regenconf.py:434
+msgid "regenconf_updated"
+msgstr "'{category}' atalerako ezarpenak eguneratu dira"
+
+#: src/regenconf.py:436
+msgid "regenconf_would_be_updated"
+msgstr "'{category}' atalerako konfigurazioa eguneratu izango litzatekeen"
+
+#: src/regenconf.py:679
+msgid "regenconf_file_backed_up"
+msgstr "'{conf} konfigurazio fitxategia '{backup}' babeskopian kopiatu da"
+
+#: src/regenconf.py:685
+msgid "regenconf_file_removed"
+msgstr "'{conf}' konfigurazio fitxategia ezabatu da"
+
+#: src/regenconf.py:693
+msgid "regenconf_file_updated"
+msgstr "'{conf}' konfigurazio fitxategia eguneratu da"
+
+#: src/regenconf.py:701
+msgid "regenconf_file_remove_failed"
+msgstr "Ezinezkoa izan da '{conf}' konfigurazio fitxategia ezabatzea"
+
+#: src/regenconf.py:717
+msgid "regenconf_file_copy_failed"
+msgstr ""
+"Ezinezkoa izan da '{new}' konfigurazio fitxategi berria '{conf}'-(e)n "
+"kopiatzea"
+
+#: src/service.py:127
+msgid "service_add_failed"
+msgstr "Ezinezkoa izan da '{service}' zerbitzua gehitzea"
+
+#: src/service.py:129
+msgid "service_added"
+msgstr "'{service}' zerbitzua gehitu da"
+
+#: src/service.py:143 src/service.py:370 src/service.py:531 src/service.py:591
+msgid "service_unknown"
+msgstr "'{service}' zerbitzu ezezaguna"
+
+#: src/service.py:150
+msgid "service_remove_failed"
+msgstr "Ezin izan da '{service}' zerbitzua ezabatu"
+
+#: src/service.py:152
+msgid "service_removed"
+msgstr "'{service}' zerbitzua ezabatu da"
+
+#: src/service.py:169
+msgid "service_started"
+msgstr "'{service}' zerbitzua abiarazi da"
+
+#: src/service.py:176
+msgid "service_start_failed"
+msgstr "Ezin izan da '{service}' zerbitzua abiarazi"
+
+#: src/service.py:180
+msgid "service_already_started"
+msgstr "'{service}' zerbitzua matxan dago lehendik ere"
+
+#: src/service.py:196
+msgid "service_stopped"
+msgstr "'{service}' zerbitzua geldiarazi da"
+
+#: src/service.py:203
+msgid "service_stop_failed"
+msgstr "Ezin da '{service}' zerbitzua geldiarazi"
+
+#: src/service.py:207
+msgid "service_already_stopped"
+msgstr "'{service}' zerbitzua geldiarazi da lehendik ere"
+
+#: src/service.py:222
+msgid "service_reloaded"
+msgstr "'{service}' zerbitzua birkargatu da"
+
+#: src/service.py:229
+msgid "service_reload_failed"
+msgstr "Ezin izan da '{service}' zerbitzua birkargatu"
+
+#: src/service.py:248
+msgid "service_restarted"
+msgstr "'{service}' zerbitzua berrabiarazi da"
+
+#: src/service.py:255
+msgid "service_restart_failed"
+msgstr "Ezin izan da '{service}' zerbitzua berrabiarazi"
+
+#: src/service.py:292
+msgid "service_not_reloading_because_conf_broken"
+msgstr ""
+"Ez da '{name}' zerbitzua birkargatu/berrabiarazi konfigurazioa kaltetuta "
+"dagoelako: {errors}"
+
+#: src/service.py:300
+msgid "service_reloaded_or_restarted"
+msgstr "'{service}' zerbitzua birkargatu edo berrabiarazi da"
+
+#: src/service.py:307
+msgid "service_reload_or_restart_failed"
+msgstr "Ezin izan da '{service}' zerbitzua birkargatu edo berrabiarazi"
+
+#: src/service.py:327
+msgid "service_enabled"
+msgstr "'{service}' zerbitzua ez da automatikoki exekutatuko sistema abiaraztean."
+
+#: src/service.py:329
+msgid "service_enable_failed"
+msgstr ""
+"Ezin izan da '{service}' zerbitzua sistema abiaraztearekin batera "
+"exekutatzea lortu."
+
+#: src/service.py:346
+msgid "service_disabled"
+msgstr ""
+"'{service}' zerbitzua ez da etorkizunean zerbitzaria abiaraztearekin "
+"batera exekutatuko."
+
+#: src/service.py:348
+msgid "service_disable_failed"
+msgstr "Ezin izan da '{service}' zerbitzua geldiarazi zerbitzaria abiaraztean."
+
+#: src/service.py:632
+msgid "service_cmd_exec_failed"
+msgstr "Ezin izan da '{command}' komandoa exekutatu"
+
+#: src/settings.py:187 src/settings.py:194 src/utils/configpanel.py:635
+#: src/utils/configpanel.py:642
+msgid "config_apply_failed"
+msgstr "Konfigurazio berria ezartzeak huts egin du: {error}"
+
+#: src/settings.py:197
+msgid "global_settings_reset_success"
+msgstr "Berrezarri defektuzko ezarpenak"
+
+#: src/settings.py:236
+msgid "password_confirmation_not_the_same"
+msgstr "Pasahitzak ez datoz bat"
+
+#: src/tools.py:86
+msgid "root_password_changed"
+msgstr "root pasahitza aldatu da"
+
+#: src/tools.py:90
+msgid "root_password_desynchronized"
+msgstr ""
+"Administratzailearen pasahitza aldatu da, baina YunoHostek ezin izan du "
+"aldaketa root pasahitzera hedatu!"
+
+#: src/tools.py:134
+msgid "domain_hostname_failed"
+msgstr ""
+"Ezin da hostname berria ezarri. Honek arazoak ekar litzake etorkizunean "
+"(litekeena da ondo egotea)."
+
+#: src/migrations/m0031_terms_of_services.py:42 src/tools.py:178
+msgid "tos_postinstall_acknowledgement"
+msgstr ""
+"YunoHost boluntario talde baten proiektua da, zerbitzarietarako sistema "
+"eragile ireki bat sortzeko kausa komuna duena. YunoHosten softwareak "
+"AGPLv3 lizentzia dauka (<https://www.gnu.org/licenses/agpl-3.0.txt>). "
+"Proiektuak zerbitzu tekniko eta komunitario anitz administratu eta "
+"eskuragarri jartzen ditu, hainbat helburutarako. Zerbitzu horiek "
+"erabiltzean, Zerbitzu-baldintzak onartzen dituzu: "
+"<https://doc.yunohost.org/terms_of_services>."
+
+#: src/tools.py:187 src/user.py:240
+msgid "system_username_exists"
+msgstr ""
+"Erabiltzaile izena existitzen da lehendik ere sistemaren erabiltzaileen "
+"zerrendan"
+
+#: src/tools.py:204
+msgid "postinstall_low_rootfsspace"
+msgstr ""
+"'root' fitxategi-sistemak 10 GB edo espazio gutxiago dauka, kezkatzekoa "
+"dena! Litekeena da espaziorik gabe geratzea aurki! Gomendagarria da "
+"'root' fitxategi-sistemak gutxienez 16 GB libre izatea. Jakinarazpen "
+"honen ondoren YunoHost instalatzen jarraitu nahi baduzu, berrabiarazi "
+"agindua '--force-diskspace' gehituz"
+
+#: src/tools.py:221
+msgid "dyndns_provider_unreachable"
+msgstr ""
+"Ezin da DynDNS {provider} enpresarekin konektatu: agian zure YunoHost "
+"zerbitzaria ez dago Internetera konektatuta edo dynette zerbitzaria ez "
+"dago martxan."
+
+#: src/tools.py:260
+msgid "yunohost_installing"
+msgstr "YunoHost instalatzen…"
+
+#: src/tools.py:323
+msgid "yunohost_configured"
+msgstr "YunoHost konfiguratuta dago"
+
+#: src/tools.py:325
+msgid "yunohost_postinstall_end_tip"
+msgstr ""
+"Instalatu ondorengo prozesua amaitu da! Sistemaren konfigurazioa "
+"bukatzeko:\n"
+"- erabili 'Diagnostikoak' gunea ohiko arazoei aurre hartzeko. Abiarazi "
+"administrazio-gunean edo exekutatu 'yunohost diagnosis run';\n"
+"- irakurri 'Finalizing your setup' eta 'Getting to know YunoHost' atalak."
+" Dokumentazioan aurki ditzakezu: https://doc.yunohost.org/admin."
+
+#: src/tools.py:417
+msgid "updating_apt_cache"
+msgstr "Sistemaren paketeen eguneraketak eskuratzen…"
+
+#: src/tools.py:423
+msgid "update_apt_cache_failed"
+msgstr ""
+"Ezin da APT Debian-en pakete kudeatzailearen katxea eguneratu. Hemen "
+"dituzu sources.list fitxategiaren lerroak, arazoa identifikatzeko "
+"baliagarria izan dezakezuna:\n"
+"{sourceslist}"
+
+#: src/tools.py:429
+msgid "update_apt_cache_warning"
+msgstr ""
+"Zerbaitek huts egin du APT Debian-en pakete kudeatzailearen katxea "
+"eguneratzean. Hemen dituzu sources.list fitxategiaren lerroak, arazoa "
+"identifikatzeko baliagarria izan dezakezuna:\n"
+"{sourceslist}"
+
+#: src/tools.py:434 src/utils/app_utils.py:654 src/utils/app_utils.py:743
+#: src/utils/app_utils.py:775
+msgid "done"
+msgstr "Egina"
+
+#: src/tools.py:455 src/tools.py:601
+msgid "already_up_to_date"
+msgstr "Ez dago egiteko ezer. Guztia dago egunean."
+
+#: src/tools.py:552 src/utils/app_utils.py:1270
+msgid "dpkg_is_broken"
+msgstr ""
+"Une honetan ezinezkoa da sistemaren dpkg/APT pakateen kudeatzaileek "
+"hondatutako itxura dutelako… Arazoa konpontzeko SSH bidez konektatzen "
+"saia zaitezke eta ondoren exekutatu 'sudo apt install --fix-broken' edota"
+" 'sudo dpkg --configure -a' edota 'sudo dpkg --audit'."
+
+#: src/tools.py:556
+msgid "dpkg_lock_not_available"
+msgstr ""
+"Ezin da komando hau une honetan exekutatu beste aplikazio batek dpkg "
+"(sistemaren paketeen kudeatzailea) blokeatuta duelako, erabiltzen ari "
+"baita"
+
+#: src/tools.py:589
+msgid "app_upgrade_some_app_failed"
+msgstr "Ezinezkoa izan da aplikazio batzuk eguneratzea"
+
+#: src/tools.py:603
+msgid "upgrading_packages"
+msgstr "Paketeak bertsio-berritzen…"
+
+#: src/tools.py:619
+msgid "tools_upgrade"
+msgstr "Sistemaren paketeak eguneratzen"
+
+#: src/tools.py:653
+msgid "tools_upgrade_failed"
+msgstr "Ezin izan dira paketeak eguneratu: {packages_list}"
+
+#: src/tools.py:658
+msgid "system_upgraded"
+msgstr "Sistema eguneratu da"
+
+#: src/tools.py:668
+msgid "server_shutdown_confirm"
+msgstr "Zerbitzaria berehala itzaliko da, ziur al zaude? [{answers}]"
+
+#: src/tools.py:677
+msgid "server_shutdown"
+msgstr "Zerbitzaria itzaliko da"
+
+#: src/tools.py:687
+msgid "server_reboot_confirm"
+msgstr "Zerbitzaria berehala berrabiaraziko da, ziur al zaude? [{answers}]"
+
+#: src/tools.py:695
+msgid "server_reboot"
+msgstr "Zerbitzaria berrabiaraziko da"
+
+#: src/tools.py:774
+msgid "migrations_list_conflict_pending_done"
+msgstr "Ezin dituzu '--previous' eta '--done' aldi berean erabili."
+
+#: src/tools.py:828
+msgid "migrations_no_such_migration"
+msgstr "Ez dago '{id}' izeneko migraziorik"
+
+#: src/tools.py:832
+msgid "migrations_exclusive_options"
+msgstr ""
+"'--auto', '--skip', eta '--force-rerun' aukerek batak bestea baztertzen "
+"du."
+
+#: src/tools.py:838
+msgid "migrations_must_provide_explicit_targets"
+msgstr ""
+"'--skip' edo '--force-rerun' aukerak erabiltzean jomuga zehatzak zehaztu "
+"behar dituzu"
+
+#: src/tools.py:851
+msgid "migrations_not_pending_cant_skip"
+msgstr ""
+"Migrazio hauek ez daude exekutatzeke eta, beraz, ez dago saihesteko "
+"aukerarik: {ids}"
+
+#: src/tools.py:855
+msgid "migrations_pending_cant_rerun"
+msgstr ""
+"Migrazio hauek oraindik ez dira exekutatu eta, beraz, ezin dira berriro "
+"abiarazi: {ids}"
+
+#: src/tools.py:858
+msgid "migrations_already_ran"
+msgstr "Honako migrazio hauek amaitu dute lehendik ere: {ids}"
+
+#: src/tools.py:862
+msgid "migrations_no_migrations_to_run"
+msgstr "Ez dago exekutatzeko migraziorik"
+
+#: src/tools.py:872
+msgid "migrations_to_be_ran_manually"
+msgstr ""
+"{id} migrazioa eskuz abiarazi behar da. Joan Tresnak → Migrazioak atalera"
+" administrazio-gunean edo bestela exekutatu 'yunohost tools migrations "
+"run'."
+
+#: src/tools.py:888
+msgid "migrations_dependencies_not_satisfied"
+msgstr ""
+"Exekutatu honako migrazioak: '{dependencies_id}', {id} migratu baino "
+"lehen."
+
+#: src/tools.py:902
+msgid "migrations_need_to_accept_disclaimer"
+msgstr ""
+"{id} migrazioa abiarazteko, honako baldintzak onartu behar dituzu:\n"
+"---\n"
+"{disclaimer}\n"
+"---\n"
+"Migrazioa onartzen baduzu, berrabiarazi prozesua komandoan '--accept-"
+"disclaimer' aukera gehituz."
+
+#: src/tools.py:917
+msgid "migrations_skip_migration"
+msgstr "{id} migrazioa saihesten…"
+
+#: src/tools.py:923 src/tools.py:1049 src/tools.py:1080
+msgid "migrations_running_forward"
+msgstr "{id} migrazioa exekutatzen…"
+
+#: src/tools.py:929 src/tools.py:1053 src/tools.py:1084
+msgid "migrations_migration_has_failed"
+msgstr "{id} migrazioak ez du amaitu, geldiarazten. Errorea: {exception}"
+
+#: src/tools.py:934
+msgid "migrations_success_forward"
+msgstr "{id} migrazioak amaitu du"
+
+#: src/tools.py:998
+msgid "migrations_loading_migration"
+msgstr "{id} migrazioa kargatzen…"
+
+#: src/tools.py:1013
+msgid "migrations_failed_to_load_migration"
+msgstr "Ezinezkoa izan da {id} migrazioa kargatzea: {error}"
+
+#: src/tools.py:1123
+msgid "migration_ldap_backup_before_migration"
+msgstr ""
+"Sortu LDAP datubase eta aplikazioen ezarpenen babeskopia migrazioa "
+"abiarazi baino lehen."
+
+#: src/tools.py:1139
+msgid "migration_ldap_can_not_backup_before_migration"
+msgstr ""
+"Sistemaren babeskopiak ez du amaitu migrazioak huts egin baino lehen. "
+"Errorea: {error}"
+
+#: src/tools.py:1149
+msgid "migration_ldap_migration_failed_trying_to_rollback"
+msgstr "Ezin izan da migratu… sistema lehengoratzen saiatzen."
+
+#: src/tools.py:1168
+msgid "migration_ldap_rollback_success"
+msgstr "Sistema lehengoratu da."
+
+#: src/user.py:129
+msgid "field_invalid"
+msgstr "'{field}' ez da baliogarria"
+
+#: src/user.py:211
+msgid "domains_available"
+msgstr "Erabilgarri dauden domeinuak:"
+
+#: src/user.py:217
+msgid "ask_user_domain"
+msgstr "Erabiltzailearen posta elektronikorako erabiliko den domeinua"
+
+#: src/user.py:229
+msgid "user_already_exists"
+msgstr "'{user}' erabiltzailea existitzen da lehendik ere"
+
+#: src/user.py:235 src/user.py:294
+msgid "user_creation_failed"
+msgstr "Ezin izan da '{user}' erabiltzailea sortu: {error}"
+
+#: src/user.py:267 src/user.py:592
+msgid "invalid_shell"
+msgstr "Shell baliogabea: {shell}"
+
+#: src/user.py:306
+msgid "user_home_creation_failed"
+msgstr "Ezin izan da erabiltzailearentzat '{home}' direktorioa sortu"
+
+#: src/user.py:334
+msgid "user_created"
+msgstr "Erabiltzailea sortu da"
+
+#: src/user.py:359
+msgid "user_cannot_delete_last_admin"
+msgstr ""
+"'{user}' erabiltzailea 'admins' taldeko azken erabiltzailea da, eta ez da"
+" ezabatuko."
+
+#: src/user.py:395
+msgid "user_deletion_failed"
+msgstr "Ezin izan da '{user}' ezabatu: {error}"
+
+#: src/user.py:413
+msgid "user_deleted"
+msgstr "Erabiltzailea ezabatu da"
+
+#: src/user.py:523 src/user.py:549 src/user.py:1348
+msgid "mail_domain_unknown"
+msgstr ""
+"Ezinezkoa da posta elektroniko hori '{domain}' domeinurako erabiltzea. "
+"Erabili zerbitzari honek kudeatzen duen domeinu bat."
+
+#: src/user.py:561 src/user.py:1375
+msgid "mail_alias_remove_failed"
+msgstr "Ezin izan da '{mail}' e-mail ezizena ezabatu"
+
+#: src/user.py:581
+msgid "mail_forward_remove_failed"
+msgstr "Ezinezkoa izan da '{mail}' posta elektronikoko birbidalketa ezabatzea"
+
+#: src/user.py:618
+msgid "user_updated"
+msgstr "Erabiltzailearen informazioa aldatu da"
+
+#: src/user.py:683
+msgid "mailbox_used_space_dovecot_down"
+msgstr ""
+"Dovecot mailbox zerbitzua martxan egon behar da postak erabilitako "
+"espazioa ezagutzeko"
+
+#: src/user.py:685
+msgid "mailbox_disabled"
+msgstr "Posta elektronikoa desgaituta dago {user} erabiltzailearentzat"
+
+#: src/user.py:711
+msgid "unlimit"
+msgstr "Mugarik ez"
+
+#: src/user.py:803
+msgid "user_import_missing_columns"
+msgstr "Honako zutabeak falta dira: {columns}"
+
+#: src/user.py:851
+msgid "user_import_bad_line"
+msgstr "{line} lerro okerra: {details}"
+
+#: src/user.py:885
+msgid "user_import_bad_file"
+msgstr ""
+"CSV fitxategiak ez du formatu egokia eta ekidingo da balizko datuen "
+"galera saihesteko"
+
+#: src/user.py:890
+msgid "user_import_nothing_to_do"
+msgstr "Ez dago erabiltzaileak inportatu beharrik"
+
+#: src/user.py:916
+msgid "user_import_cannot_edit_or_delete_admins"
+msgstr ""
+"Ezin da '{user}' erabiltzailea editatu edo ezabatu (inportazio bidez) "
+"administratzailea delako"
+
+#: src/user.py:1024
+msgid "user_import_partial_failed"
+msgstr "Erabiltzaileak inportatzeko eragiketak erdizka huts egin du"
+
+#: src/user.py:1026
+msgid "user_import_failed"
+msgstr "Erabiltzaileak inportatzeko eragiketak huts egin du"
+
+#: src/user.py:1030
+msgid "user_import_success"
+msgstr "Erabiltzaileak arazorik gabe inportatu dira"
+
+#: src/user.py:1117
+msgid "group_already_exist"
+msgstr "{group} taldea existitzen da lehendik ere"
+
+#: src/user.py:1124
+msgid "group_already_exist_on_system_but_removing_it"
+msgstr ""
+"{group} taldea existitzen da sistemaren taldeetan, baina YunoHostek "
+"ezabatuko du…"
+
+#: src/user.py:1131
+msgid "group_already_exist_on_system"
+msgstr "{group} taldea existitzen da lehendik ere sistemaren taldeetan"
+
+#: src/user.py:1161
+msgid "group_creation_failed"
+msgstr "Ezinezkoa izan da '{group}' taldea sortzea: {error}"
+
+#: src/user.py:1167 src/user.py:1169
+msgid "group_created"
+msgstr "'{group}' taldea sortu da"
+
+#: src/user.py:1202
+msgid "group_cannot_be_deleted"
+msgstr "{group} taldea ezin da eskuz ezabatu."
+
+#: src/user.py:1209
+msgid "group_deletion_failed"
+msgstr "Ezinezkoa izan da '{group}' taldea ezabatzea: {error}"
+
+#: src/user.py:1215 src/user.py:1217
+msgid "group_deleted"
+msgstr "'{group}' taldea ezabatu da"
+
+#: src/user.py:1244
+msgid "group_cannot_edit_all_users"
+msgstr ""
+"'all_users' taldea ezin da eskuz moldatu. YunoHosten izena emanda dauden "
+"erabiltzaile guztiak barne dituen talde berezia da"
+
+#: src/user.py:1246
+msgid "group_cannot_edit_visitors"
+msgstr ""
+"'bisitariak' taldea ezin da eskuz moldatu. Saiorik hasi gabeko bisitariak"
+" barne hartzen dituen talde berezia da"
+
+#: src/user.py:1249
+msgid "group_cannot_edit_primary_group"
+msgstr ""
+"'{group}' taldea ezin da eskuz moldatu. Erabiltzaile zehatz bakar bat "
+"duen talde nagusia da."
+
+#: src/user.py:1257
+msgid "group_cannot_remove_last_admin"
+msgstr ""
+"'{user}' erabiltzailea 'admins' taldeko azken erabiltzailea da, eta ez da"
+" bertatik kenduko."
+
+#: src/user.py:1297
+msgid "group_user_already_in_group"
+msgstr "{user} erabiltzailea {group} taldean dago lehendik ere"
+
+#: src/user.py:1301
+msgid "group_user_add"
+msgstr "'{user}' erabiltzailea '{group}' taldera gehituko da"
+
+#: src/user.py:1311
+msgid "group_user_not_in_group"
+msgstr "{user} erabiltzailea ez dago {group} taldean"
+
+#: src/user.py:1315
+msgid "group_user_remove"
+msgstr "'{user}' erabiltzailea '{group}' taldetik kenduko da"
+
+#: src/user.py:1345 src/user.py:1396
+msgid "group_update_failed"
+msgstr "Ezinezkoa izan da '{group}' taldea eguneratzea: {error}"
+
+#: src/user.py:1351
+msgid "group_mailalias_add"
+msgstr "'{mail}' ePosta ezizena jarri zaio '{group}' taldeari"
+
+#: src/user.py:1372
+msgid "group_mailalias_remove"
+msgstr "'{mail}' ePosta ezizena kendu zaio '{group}' taldeari"
+
+#: src/user.py:1378
+msgid "group_update_aliases"
+msgstr "'{group}' taldearen ezizenak eguneratzen"
+
+#: src/user.py:1430
+msgid "group_no_change"
+msgstr "Ez da ezer aldatu behar '{group}' talderako"
+
+#: src/user.py:1432 src/user.py:1434
+msgid "group_updated"
+msgstr "'{group}' taldea eguneratu da"
+
+#: src/authenticators/ldap_admin.py:81 src/authenticators/ldap_admin.py:127
+#: src/utils/ldap.py:159
+msgid "ldap_server_is_down_restart_it"
+msgstr "LDAP zerbitzaria ez dago martxan, saia zaitez berrabiarazten…"
+
+#: src/authenticators/ldap_admin.py:97 src/authenticators/ldap_admin.py:134
+#: src/authenticators/ldap_ynhuser.py:227
+msgid "ldap_server_down"
+msgstr "Ezin da LDAP zerbitzarira konektatu"
+
+#: src/authenticators/ldap_admin.py:100 src/authenticators/ldap_admin.py:105
+#: src/authenticators/ldap_admin.py:110 src/authenticators/ldap_admin.py:124
+#: src/authenticators/ldap_ynhuser.py:202
+#: src/authenticators/ldap_ynhuser.py:207
+msgid "invalid_credentials"
+msgstr "Pasahitz edo erabiltzaile-izen baliogabea"
+
+#: src/authenticators/ldap_admin.py:196 src/authenticators/ldap_admin.py:202
+#: src/authenticators/ldap_ynhuser.py:252
+#: src/authenticators/ldap_ynhuser.py:307
+#: src/authenticators/ldap_ynhuser.py:310
+#: src/authenticators/ldap_ynhuser.py:313
+#: src/authenticators/ldap_ynhuser.py:316
+msgid "unable_authenticate"
+msgstr "Huts egin du saioaren autentikazioak"
+
+#: src/authenticators/ldap_admin.py:208 src/authenticators/ldap_ynhuser.py:322
+msgid "session_expired"
+msgstr "Saioa iraungi da"
+
+#: src/migrations/m0031_terms_of_services.py:40
+msgid "migration_0031_terms_of_services"
+msgstr ""
+"Migrazio hau informazio mezu bat baino ez da: YunoHost proiektuak "
+"zerbitzu tekniko eta komunitarioei buruzko Zerbitzu-baldintzak "
+"argitaratzen ditu orain."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:168
+msgid "migration_0036_start"
+msgstr "Trixie-rako migrazioa abiarazten…"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:213
+msgid "migration_0036_patch_yunohost_dpkg"
+msgstr "Gatazkak saihesteko dpkg datu-baseari adabakia jartzen…"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:218
+msgid "migration_0036_patching_sources_list"
+msgstr "sources.lists fitxategiari adabakia jartzen…"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:239
+msgid "migration_0036_main_upgrade"
+msgstr "Bertsio-berritze nagusia abiarazten…"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:286
+msgid "migration_0036_still_on_bookworm_after_main_upgrade"
+msgstr ""
+"Zerbaitek kale egin du bertsio-berritze nagusian; sistemak oraindik "
+"Debian Bookworm darabilela dirudi."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:289
+msgid "migration_0036_cleaning_up"
+msgstr "Erabilgarri izateari utzi dioten katxe eta paketeak garbitzen…"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:300
+msgid "migration_0036_apt_lists_file_still_exists"
+msgstr ""
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:316
+msgid "migration_0036_yunohost_upgrade"
+msgstr "YunoHosten muineko bertsio-berriztea abiarazten…"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:350
+msgid "migration_0036_delayed_api_restart"
+msgstr ""
+"YunoHosten APIa 15 segundu barru berrabiaraziko da automatikoki. "
+"Litekeena da tarte batez erabilgarri egoteari uztea eta ondoren berriro "
+"hasi beharko duzu saioa."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:411
+msgid "migration_0036_not_bullseye"
+msgstr ""
+"Zerbitzariak darabilen Debian bertsioa ez da Bookworm! Lehendik ere "
+"Bookworm -> Trixie migrazioa exekutatu baduzu, errore honek migrazioa "
+"erabat arrakastatsua izan ez zela esan nahi du (bestela YunoHostek "
+"amaitutzat markatuko luke). Komenigarria izango litzateke, laguntza "
+"taldearekin batera, zer gertatu zen aztertzea. Horretarako migrazioaren "
+"erregistro **osoa** beharko duzue, Tresnak > Erregistroak atalean "
+"eskuragarri dagoena."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:415
+msgid "migration_0036_not_enough_free_space"
+msgstr ""
+"/var/-en erabilgarri dagoen espazioa oso txikia da! Gutxienez GB 1 izan "
+"beharko zenuke erabilgarri migrazioari ekiteko."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:452
+msgid "migration_0036_system_not_fully_up_to_date"
+msgstr ""
+"Sistema ez dago erabat egunean. Egizu eguneratze arrunt bat Trixie-rako "
+"migrazioa abiarazi baino lehen."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:508
+msgid "migration_0036_general_warning"
+msgstr ""
+"Azkenik, kontuan izan migrazioa **tentuz ibiltzeko prozedura** dela. "
+"YunoHosten taldeak ahal izan duen guztia egin du berrikusi eta "
+"probatzeko, baina, hala ere, sistemaren atalak edo aplikazioak honda "
+"litzake.\n"
+"\n"
+"Beraz, gomendagarria da:\n"
+"    - Datu edo aplikazio garrantzitsuen **babeskopia egitea**. Informazio"
+" gehiagorako: https://doc.yunohost.org/backup;\n"
+"    - **Ez izan presarik** migrazioa abiaraztean: Internet konexioaren "
+"eta hardwarearen arabera, litekeena da ordu apur batzuk ere behar izatea "
+"guztia dagokion bezala bertsio-berritzeko.\n"
+"    - **Bisitatu foroa** arazoren bat izanez gero laguntza eskatzeko."
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:511
+msgid "migration_0036_problematic_apps_warning"
+msgstr ""
+"Kontuan izan ziur asko gatazkatsuak izango diren honako aplikazioak "
+"aurkitu direla. Badirudi ez zirela YunoHost aplikazioen katalogotik "
+"instalatu, edo ez daude 'badabiltza' bezala etiketatuta. Ondorioz, ezin "
+"da bermatu eguneratu ondoren funtzionatzen jarraituko dutenik:"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled:514
+msgid "migration_0036_modified_files"
+msgstr ""
+"Honako fitxategiak eskuz moldatu direla antzeman da, eta litekeena da "
+"bertsio-berritzeak gainean idaztea:"
+
+#: src/migrations/postgresql.py:52
+msgid "migration_postgresql_previous_not_installed"
+msgstr "PostgreSQL ez zegoen sisteman instalatuta. Ez dago egiteko ezer."
+
+#: src/migrations/postgresql.py:57
+msgid "migration_postgresql_target_not_installed"
+msgstr ""
+"PostgreSQL 13 instalatuta dago, baina PostgreSQL 15 ez? Zerbait arraroa "
+"gertatu zaio zure sistemari :( …"
+
+#: src/migrations/postgresql.py:75
+msgid "migration_not_enough_space"
+msgstr "Egin nahikoa toki {path}-en mugrazioa exekutatu ahal izateko."
+
+#: src/migrations/python.py:145
+msgid "migration_python_venv_rebuild_disclaimer_base"
+msgstr ""
+"Debian Bookworm-era eguneratu ondoren, Python-en aplikazio batzuk "
+"partzialki berreraiki behar dira Debian-ek dakarren Python-en bertsio "
+"berrira bihurtzeko (termino teknikoetan: 'virtualenv' deritzaiona "
+"birsortu egin behar da). Bitartean, baliteke Python aplikazio horiek ez "
+"funtzionatzea. YunoHost virtualenv-a berreraikitzen saia daiteke "
+"horietako batzuentzat, jarraian zehazten den bezala. Beste aplikazio "
+"batzuetarako, edo berreraikitzeko saiakerak huts egiten badu, aplikazio "
+"horiek eskuz bertsio-berritzera behartu beharko dituzu."
+
+#: src/migrations/python.py:150
+msgid "migration_python_venv_rebuild_disclaimer_rebuild"
+msgstr ""
+"Honako aplikazioen virtualenvs-ak berreraikitzen saiatuko gara (NB: "
+"eragiketak luze jo dezake!): {rebuild_apps}"
+
+#: src/migrations/python.py:155
+msgid "migration_python_venv_rebuild_disclaimer_ignored"
+msgstr ""
+"Ezin dira automatikoki berreraiki aplikazio horien virtualenvs-ak. "
+"Bertsio-berritzera behartu behar dituzu honako komandoarekin: 'yunohost "
+"app upgrade --force APP': {ignored_apps}"
+
+#: src/migrations/python.py:177
+msgid "migration_python_venv_rebuild_broken_app"
+msgstr ""
+"{app} aplikazioaren virtualenv-a ezin da modu errazean berreraiki eta "
+"egin gabe utziko da. Konpondu aplikazioa bertsio-berritzen 'yunohost app "
+"upgrade --force {app}' erabiliz."
+
+#: src/migrations/python.py:185
+msgid "migration_python_venv_rebuild_in_progress"
+msgstr "{app} aplikazioaren Python virtualenv-a berreraikitze lanetan"
+
+#: src/migrations/python.py:209
+msgid "migration_python_venv_rebuild_failed"
+msgstr ""
+"Huts egin du {app} aplikazioaren Python virtualenv-a berreraikitzeak. "
+"Litekeena da aplikazioa ezin erabili izatea egoera konpondu arte. Saiatu "
+"aplikazioa bertsio-berritzen 'yunohost app upgrade --force {app}' "
+"erabiliz."
+
+#: src/utils/app_utils.py:144 src/utils/app_utils.py:160
+msgid "app_not_correctly_installed"
+msgstr "Ez dirudi {app} ondo instalatuta dagoenik"
+
+#: src/utils/app_utils.py:569 src/utils/app_utils.py:613
+msgid "app_unknown"
+msgstr "Aplikazio ezezaguna"
+
+#: src/utils/app_utils.py:584
+msgid "app_unsupported_remote_type"
+msgstr ""
+"Aplikazioak darabilen urruneko motak ez du babesik (Unsupported remote "
+"type)"
+
+#: src/utils/app_utils.py:623
+msgid "extracting"
+msgstr "Ateratzen…"
+
+#: src/utils/app_utils.py:642
+msgid "app_extraction_failed"
+msgstr "Ezinezkoa izan da instalazio fitxategiak ateratzea"
+
+#: src/utils/app_utils.py:649
+msgid "app_install_files_invalid"
+msgstr "Ezin dira fitxategi hauek instalatu"
+
+#: src/utils/app_utils.py:723
+msgid "downloading"
+msgstr "Deskargatzen…"
+
+#: src/utils/app_utils.py:773
+msgid "app_sources_fetch_failed"
+msgstr "Ezinezkoa izan da fitxategiak eskuratzea, zuzena al da URLa?"
+
+#: src/utils/app_utils.py:807
+msgid "app_not_installed"
+msgstr ""
+"Ezinezkoa izan da {app} aurkitzea instalatutako aplikazioen zerrendan: "
+"{all_apps}"
+
+#: src/utils/app_utils.py:827
+msgid "app_requirements_checking"
+msgstr "{app}(e)k behar dituen betekizunak egiaztatzen…"
+
+#: src/utils/app_utils.py:831
+msgid "app_packaging_format_not_supported"
+msgstr ""
+"Aplikazio hau ezin da instalatu YunoHostek ez duelako paketea ezagutzen. "
+"Sistema eguneratzea hausnartu beharko zenuke ziur asko."
+
+#: src/utils/app_utils.py:844
+msgid "app_yunohost_version_not_supported"
+msgstr ""
+"Aplikazio honek YunoHost >= {required} behar du, baina unean "
+"instalatutako bertsioa {current} da."
+
+#: src/utils/app_utils.py:858
+msgid "app_arch_not_supported"
+msgstr ""
+"Aplikazio hau {required} arkitekturan instala daiteke bakarrik, baina "
+"zure zerbitzariaren arkitektura {current} da"
+
+#: src/utils/app_utils.py:879
+msgid "app_already_installed"
+msgstr "{app} instalatuta dago lehendik ere"
+
+#: src/utils/app_utils.py:899
+msgid "app_not_enough_disk"
+msgstr "Aplikazio honek {required} espazio libre behar ditu."
+
+#: src/utils/app_utils.py:953
+msgid "app_not_enough_ram"
+msgstr ""
+"Aplikazio honek {required} RAM behar ditu instalatu edo bertsio-"
+"berritzeko, baina {current} bakarrik daude erabilgarri une honetan."
+
+#: src/utils/app_utils.py:1065
+msgid "app_full_domain_unavailable"
+msgstr ""
+"Aplikazio honek bere domeinu propioa behar du, baina beste aplikazio "
+"batzuk daude instalatuta lehendik ere '{domain}' domeinuan. Azpidomeinu "
+"bat erabil zenezake instalatu nahi duzun aplikaziorako."
+
+#: src/utils/app_utils.py:1068
+msgid "app_location_unavailable"
+msgstr ""
+"URL hau ez dago erabilgarri edota lehendik ere instalatutako aplikazioren"
+" batekin talka egiten du:\n"
+"{apps}"
+
+#: src/utils/app_utils.py:1260
+msgid "app_action_cannot_be_ran_because_required_services_down"
+msgstr ""
+"{services} zerbitzuak martxan egon beharko lirateke eragiketa hau "
+"exekutatu ahal izateko. Saia zaitez zerbitzuok berrabiarazten (eta ikertu"
+" zergatik ez diren abiarazi)."
+
+#: src/utils/app_utils.py:1265
+msgid "app_action_broke_system"
+msgstr ""
+"Eragiketa honek {services} zerbitzu garrantzitsua(k) hondatu d(it)uela "
+"dirudi"
+
+#: src/utils/app_utils.py:1272
+msgid "this_action_broke_dpkg"
+msgstr ""
+"Eragiketa honek dpkg/APT (sistemaren pakete kudeatzaileak) kaltetu ditu… "
+"Arazoa konpontzeko SSH bidez konektatu eta 'sudo apt install --fix-"
+"broken' edota 'sudo dpkg --configure -a' exekutatu dezakezu."
+
+#: src/utils/configpanel.py:601
+msgid "config_cant_set_value_on_section"
+msgstr "Ezinezkoa da balio bakar bat ezartzea konfigurazio atal oso batean."
+
+#: src/utils/configpanel.py:724 src/utils/configpanel.py:731
+msgid "config_action_failed"
+msgstr "'{action}' eragiketa exekutatzeak huts egin du: {error}"
+
+#: src/utils/configpanel.py:749
+msgid "config_no_panel"
+msgstr "Ez da konfigurazio-panelik aurkitu."
+
+#: src/utils/configpanel.py:789 src/utils/configpanel.py:867
+msgid "config_unknown_filter_key"
+msgstr "'{filter_key}' filtroaren kakoa ez da zuzena."
+
+#: src/utils/file_utils.py:54
+msgid "file_not_exist"
+msgstr "Fitxategia ez da existitzen: '{path}'"
+
+#: src/utils/file_utils.py:60
+msgid "cannot_open_file"
+msgstr "Ezinezkoa izan da {file} fitxategia irekitzea (zergatia: {error})"
+
+#: src/utils/file_utils.py:62
+msgid "unknown_error_reading_file"
+msgstr ""
+"Errore ezezaguna {file} fitxategia irakurtzen saiatzerakoan (zergatia: "
+"{error})"
+
+#: src/utils/file_utils.py:82 src/utils/file_utils.py:461
+msgid "corrupted_json"
+msgstr "{ressource}-eko/go JSONa kaltetuta dago (zergatia: {error})"
+
+#: src/utils/file_utils.py:103
+msgid "corrupted_yaml"
+msgstr "{ressource}-eko/go YAMLa kaltetuta dago (zergatia: {error})"
+
+#: src/utils/file_utils.py:123
+msgid "corrupted_toml"
+msgstr "{ressource}-eko/go TOMLa kaltetuta dago (zergatia: {error})"
+
+#: src/utils/file_utils.py:171 src/utils/file_utils.py:217
+#: src/utils/file_utils.py:240
+msgid "cannot_write_file"
+msgstr "Ezinezkoa izan da {file} fitxategia idaztea (zergatia: {error})"
+
+#: src/utils/file_utils.py:173 src/utils/file_utils.py:219
+#: src/utils/file_utils.py:242
+msgid "error_writing_file"
+msgstr "Errorea {file} fitxategia idazterakoan: {error}"
+
+#: src/utils/file_utils.py:322
+msgid "unknown_user"
+msgstr "'{user}' erabiltzailea ezezaguna da"
+
+#: src/utils/file_utils.py:329
+msgid "unknown_group"
+msgstr "'{group}' talde ezezaguna"
+
+#: src/utils/file_utils.py:343 src/utils/file_utils.py:370
+msgid "error_changing_file_permissions"
+msgstr "Errorea {path}-i eragiten dioten baimenak aldatzean: {error}"
+
+#: src/utils/file_utils.py:390
+msgid "error_removing"
+msgstr "Errorea {path} ezabatzerakoan: {error}"
+
+#: src/utils/file_utils.py:424
+msgid "download_ssl_error"
+msgstr "SSL errorea {url}-(e)ra konektatzean"
+
+#: src/utils/file_utils.py:427
+msgid "invalid_url"
+msgstr ""
+"{url}-(e)ra konektatzeak huts egin du... agian zerbitzua ez dago martxan,"
+" edo ez zaude IPv4/IPv6 bidez ondo konektatuta Internetera."
+
+#: src/utils/file_utils.py:430
+msgid "download_timeout"
+msgstr ""
+"{url}(e)k denbora gehiegi behar izan du erantzuteko, bertan behera utzi "
+"du zerbitzariak."
+
+#: src/utils/file_utils.py:433
+msgid "download_unknown_error"
+msgstr "Errorea {url}(e)tik deskargatzerakoan: {error}"
+
+#: src/utils/file_utils.py:437
+msgid "download_bad_status_code"
+msgstr "{url} helbideak {code} egoera kodea agertu du"
+
+#: src/utils/form.py:413
+msgid "config_forbidden_keyword"
+msgstr ""
+"'{keyword}' etiketa sistemak bakarrik erabil dezake; ezin da ID hau "
+"daukan baliorik sortu edo erabili."
+
+#: src/utils/form.py:430
+msgid "config_forbidden_readonly_type"
+msgstr ""
+"'{type}' mota ezin da ezarri readonly bezala; beste mota bat erabili "
+"balio hau emateko (argudioaren ida: '{id}')."
+
+#: src/utils/form.py:532
+msgid "danger"
+msgstr "Arriskua:"
+
+#: src/utils/form.py:880
+msgid "pattern_password_app"
+msgstr ""
+"Barka, baina pasahitzek ezin dituzte honako karaktereak izan: "
+"{forbidden_chars}"
+
+#: src/utils/form.py:998
+msgid "invalid_number"
+msgstr "Zenbaki bat izan behar da"
+
+#: src/utils/form.py:1078 src/utils/form.py:1120 src/utils/form.py:1714
+msgid "app_argument_choice_invalid"
+msgstr ""
+"Hautatu ({choices}) aukeretako bat '{name}' argumenturako: '{value}' ez "
+"dago aukera horien artean"
+
+#: src/utils/form.py:1565
+msgid "other_available_options"
+msgstr "… eta erakusten ez diren beste {n} aukera daude"
+
+#: src/utils/form.py:2196
+msgid "config_action_disabled"
+msgstr ""
+"Ezin izan da '{action}' eragiketa exekutatu desgaituta dagoelako; "
+"egiaztatu bere mugak betetzen dituzula. Laguntza: {help}"
+
+#: src/utils/ldap.py:390
+msgid "ldap_attribute_already_exists"
+msgstr ""
+"'{attribute}' LDAP funtzioa existitzen da lehendik ere eta '{value}' "
+"balioa dauka"
+
+#: src/utils/password.py:69
+msgid "password_too_long"
+msgstr "Aukeratu 127 karaktere baino laburragoa den pasahitz bat"
+
+#: src/utils/resources.py:110
+msgid "app_resource_failed"
+msgstr ""
+"{app} aplikaziorako baliabideen eguneratzeak / prestaketak / askapenak "
+"huts egin du: {error}"
+
+#: src/utils/resources.py:532
+msgid "app_failed_to_download_asset"
+msgstr ""
+"{app} aplikaziorako '{source_id}' ({url}) baliabidea deskargatzeak huts "
+"egin du: {out}"
+
+#: src/utils/resources.py:548
+msgid "app_corrupt_source"
+msgstr ""
+"YunoHostek deskargatu du {app} aplikaziorako '{source_id}' ({url}) "
+"baliabidea, baina ez dator bat espero zen egiaztapen-baturarekin. Agian "
+"zerbitzariak Interneteko konexioa galdu du tarte batez, EDO baliabidea "
+"nolabait moldatua izan da arduradunaren aldetik (edo partehartzaile "
+"maltzur baten aldetik?) eta YunoHosten arduradunek egoera aztertu eta "
+"agian aplikazioaren manifestua eguneratu behar dute aldaketa hau kontuan "
+"hartzeko.\n"
+"    Espero zen sha256 egiaztapen-batura: {expected_sha256}\n"
+"    Deskargatutakoaren sha256 egiaztapen-batura: {computed_sha256}\n"
+"    Deskargatutako fitxategiaren tamaina: {size}"
+
+#: src/app.py:438
+msgid "app_upgrade_upgradable"
+msgstr ""
+"Aplikazioa bertsio-berritu daiteke {current_version} bertsiotik "
+"{new_version} bertsiora"
+
+#: src/app.py:439
+msgid "app_upgrade_fail_requirements"
+msgstr ""
+"Aplikazio honen bertsio berriago bat dago ({new_version}), baina ez dira "
+"betekizun guztiak betetzen:\n"
+"{failed_requirements}"
+
+#: src/app.py:573
+msgid "log_app_change_url"
+msgstr "'{}' aplikazioaren URLa aldatu"
+
+#: src/app.py:868
+msgid "confirm_app_insufficient_ram"
+msgstr ""
+"Aplikazio honek unean erabilgarri dagoen baino RAM gehiago behar du "
+"instalatzeko. Aplikazioa ibiliko balitz ere, instalazioak edo bertsio-"
+"berritzeak RAM kopuru handia behar du, eta zure zerbitzariak erantzuteari"
+" utzi eta huts egin lezake. Hala ere, arriskatu nahi baduzu, idatzi "
+"'{answers}'"
+
+#: src/app.py:1178
+msgid "apps_confirm_partial_upgrade"
+msgstr ""
+"Bertsio-berritzeko aplikazio batzuk ezin izan dira bertsio-berritu. "
+"Besteekin jarraitu nahi al duzu?"
+
+#: src/app.py:1301
+msgid "log_app_install"
+msgstr "'{}' aplikazioa instalatu"
+
+#: src/app.py:1632
+msgid "log_app_remove"
+msgstr "Ezabatu '{}' aplikazioa"
+
+#: src/app.py:1726
+msgid "log_app_makedefault"
+msgstr "Lehenetsi '{}' aplikazioa"
+
+#: src/app.py:2174
+msgid "log_app_config_set"
+msgstr "Ezarri '{}' aplikazioko konfigurazioa"
+
+#: src/app.py:2404
+msgid "app_config_permission_extraperm_section_name"
+msgstr "'{perm}' baimena"
+
+#: src/app.py:978
+msgid "log_app_upgrade"
+msgstr "'{}' aplikazioa eguneratu"
+
+#: src/app.py:1546
+msgid "log_remove_on_failed_install"
+msgstr "Ezabatu '{}' instalazioak huts egin ondoren"
+
+#: src/app.py:2132
+msgid "log_app_action_run"
+msgstr "'{}' aplikazioaren eragiketa exekutatu"
+
+#: src/certificate.py:156
+msgid "log_selfsigned_cert_install"
+msgstr "Instalatu '{}' domeinurako norberak sinatutako ziurtagiria"
+
+#: src/certificate.py:296
+msgid "log_letsencrypt_cert_install"
+msgstr "Instalatu Let's Encrypt ziurtagiria '{}' domeinurako"
+
+#: src/certificate.py:410
+msgid "log_letsencrypt_cert_renew"
+msgstr "Berriztu '{}' Let's Encrypt ziurtagiria"
+
+#: src/diagnosis.py:160
+msgid "log_diagnosis_run"
+msgstr "Abiarazi diagnostikoa"
+
+#: src/domain.py:288
+msgid "log_domain_add"
+msgstr "Gehitu '{}' domeinua"
+
+#: src/domain.py:350 src/tools.py:179
+msgid "confirm_tos_acknowledgement"
+msgstr "Zerbitzuen Baldintzak irakurri eta ulertzen ditut [{answers}]"
+
+#: src/domain.py:442
+msgid "log_domain_remove"
+msgstr "Ezabatu '{}' domeinua"
+
+#: src/domain.py:642
+msgid "log_domain_main_domain"
+msgstr "Lehenetsi '{}' domeinua"
+
+#: src/domain.py:744
+msgid "log_domain_config_set"
+msgstr "Aldatu '{}' domeinuko ezarpenak"
+
+#: src/domain.py:772 src/domain.py:826
+msgid "domain_config_cert_renew_help"
+msgstr ""
+"Ziurtagiria automatikoki berrituko da baliozkoa den azken 15 egunetan. "
+"Eskuz berritu dezakezu hala nahi baduzu. (Ez da gomendagarria)."
+
+#: src/domain.py:773
+msgid "domain_config_default_app_help"
+msgstr ""
+"Jendea automatikoki birbideratuko da aplikazio honetara domeinu hau "
+"bisitatzerakoan. Aplikaziorik ezarri ezean, jendea saioa hasteko atarira "
+"birbideratuko da."
+
+#: src/domain.py:805
+msgid "domain_config_cert_summary_expired"
+msgstr "LARRIA: Uneko ziurtagiria ez da baliozkoa! HTTPS ezin da erabili!"
+
+#: src/domain.py:806
+msgid "domain_config_cert_summary_selfsigned"
+msgstr ""
+"ADI: Uneko zirutagiria norberak sinatutakoa da. Web-nabigatzaileek "
+"bisitariak izutuko dituen mezu bat erakutsiko dute!"
+
+#: src/domain.py:807
+msgid "domain_config_cert_summary_abouttoexpire"
+msgstr ""
+"Uneko ziurtagiria iraungitzear dago. Aurki berritu beharko litzateke "
+"automatikoki."
+
+#: src/domain.py:808
+msgid "domain_config_cert_summary_ok"
+msgstr "Ados, uneko ziurtagiriak itxura ona du!"
+
+#: src/domain.py:809
+msgid "domain_config_cert_summary_letsencrypt"
+msgstr "Primeran! Baliozko Let's Encrypt zirutagiria erabiltzen ari zara!"
+
+#: src/dyndns.py:101
+msgid "log_dyndns_subscribe"
+msgstr "Erregistratu YunoHosten '{}' azpidomeinua"
+
+#: src/dyndns.py:228
+msgid "log_dyndns_unsubscribe"
+msgstr "Utzi '{}' YunoHost azpidomeinuaren erregistroa"
+
+#: src/dyndns.py:367
+msgid "log_dyndns_update"
+msgstr "Eguneratu YunoHosten '{}' domeinuari lotutako IP helbidea"
+
+#: src/regenconf.py:54
+msgid "log_regen_conf"
+msgstr "Berregin '{}' sistemaren konfigurazioa"
+
+#: src/settings.py:92
+msgid "log_settings_set"
+msgstr "Aplikatu ezarpenak"
+
+#: src/settings.py:107
+msgid "log_settings_reset"
+msgstr "Berrezarri ezarpenak"
+
+#: src/settings.py:121
+msgid "log_settings_reset_all"
+msgstr "Berrezarri ezarpen guztiak"
+
+#: src/tools.py:139
+msgid "log_tools_postinstall"
+msgstr "Abiarazi YunoHost zerbitzaria instalatu ondorengo prozesua"
+
+#: src/tools.py:363
+msgid "log_tools_update"
+msgstr "Sistemaren eguneraketak eskuratzen eta aplikazioen katalogoa freskatzen"
+
+#: src/tools.py:539
+msgid "log_tools_upgrade"
+msgstr "Eguneratu sistemaren paketeak"
+
+#: src/tools.py:662
+msgid "log_tools_shutdown"
+msgstr "Itzali zerbitzaria"
+
+#: src/tools.py:681
+msgid "log_tools_reboot"
+msgstr "Berrabiarazi zerbitzaria"
+
+#: src/tools.py:913
+msgid "log_tools_migrations_migrate_forward"
+msgstr "Exekutatu migrazioak"
+
+#: src/user.py:167
+msgid "log_user_create"
+msgstr "Gehitu '{}' erabiltzailea"
+
+#: src/user.py:339
+msgid "log_user_delete"
+msgstr "Ezabatu '{}' erabiltzailea"
+
+#: src/user.py:416
+msgid "log_user_update"
+msgstr "Eguneratu '{}' erabiltzailearen informazioa"
+
+#: src/user.py:755
+msgid "log_user_import"
+msgstr "Inportatu erabiltzaileak"
+
+#: src/user.py:1094
+msgid "log_user_group_create"
+msgstr "Sortu '{}' taldea"
+
+#: src/user.py:1174
+msgid "log_user_group_delete"
+msgstr "Ezabatu '{}' taldea"
+
+#: src/user.py:1220
+msgid "log_user_group_update"
+msgstr "Moldatu '{}' taldea"
+
+#: src/backup.py:771
+msgid "backup_applying_method_copy"
+msgstr "Babeskopiarako fitxategi guztiak kopiatzen…"
+
+#: src/backup.py:772
+msgid "backup_applying_method_custom"
+msgstr "'{method}' neurrira egindako babeskopia sortzen…"
+
+#: src/backup.py:773
+msgid "backup_applying_method_tar"
+msgstr "Babeskopiaren TAR fitxategia sortzen…"
+
+#: src/backup.py:781
+msgid "backup_method_copy_finished"
+msgstr "Babeskopiak amaitu du"
+
+#: src/backup.py:782
+msgid "backup_method_custom_finished"
+msgstr "'{method}' neurrira egindako babeskopiak amaitu du"
+
+#: src/backup.py:783
+msgid "backup_method_tar_finished"
+msgstr "TAR babeskopia artxiboa sortu da"
+
+#: src/backup.py:2106
+msgid "log_backup_create"
+msgstr "Sortu babeskopia fitxategia"
+
+#: src/backup.py:1237
+msgid "log_backup_restore_system"
+msgstr "Lehengoratu sistema babeskopia fitxategi batetik"
+
+#: src/backup.py:1344
+msgid "log_backup_restore_app"
+msgstr "Lehengoratu '{}' babeskopia fitxategi bat erabiliz"
+
+#: src/dns.py:618
+msgid "log_domain_dns_push"
+msgstr "Bidali '{}' domeinuaren DNS ezarpenak"
+
+#: src/diagnosers/21-web.py:143
+msgid "diagnosis_http_bad_status_code"
+msgstr ""
+"Zerbitzari hau ez den beste gailu batek erantzun omen dio eskaerari "
+"(agian routerrak).<br>1. Arazo honen zergati ohikoena da 80. (eta 443.) "
+"ataka <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>egoki"
+" birbideratuta ez egotea</a>.<br>2. Konfigurazio konplexua badarabilzu, "
+"egiaztatu suebakiak edo reverse-proxyk oztopatzen ez dutela."
+
+#: src/diagnosers/21-web.py:144
+msgid "diagnosis_http_connection_error"
+msgstr ""
+"Arazoa konexioan: ezin izan da domeinu horretara konektatu, litekeena da "
+"eskuragarri ez egotea."
+
+#: src/diagnosers/21-web.py:145
+msgid "diagnosis_http_timeout"
+msgstr ""
+"Denbora agortu da sare lokaletik kanpo zure zerbitzarira konektatzeko "
+"ahaleginean. Eskuragarri ez dagoela dirudi.<br>1. Arazo honen zergati "
+"ohikoena da 80. (eta 443.) ataka <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>egoki"
+" birbideratuta ez egotea</a>.<br>2. Badaezpada egiaztatu nginx martxan "
+"dagoela.<br>3. Konfigurazio konplexuetan, egiaztatu suebakiak edo "
+"reverse-proxyk konexioa oztopatzen ez dutela."
+
+#: src/diagnosers/24-mail.py:55
+msgid "diagnosis_mail_outgoing_port_25_ok"
+msgstr ""
+"SMTP posta zerbitzaria posta elektronikoa bidaltzeko gai da (25. atakaren"
+" irteera ez dago blokeatuta)."
+
+#: src/diagnosers/24-mail.py:56
+msgid "diagnosis_mail_ehlo_ok"
+msgstr ""
+"SMTP posta zerbitzaria eskuragarri dago kanpoko saretik eta, beraz, posta"
+" elektronikoa jasotzeko gai da!"
+
+#: src/diagnosers/24-mail.py:57
+msgid "diagnosis_mail_fcrdns_ok"
+msgstr "Alderantzizko DNSa zuzen konfiguratuta dago!"
+
+#: src/diagnosers/24-mail.py:58
+msgid "diagnosis_mail_blocklist_ok"
+msgstr ""
+"Ez dirudi zerbitzari honek darabiltzan IPak eta domeinuak inolako "
+"zerrenda beltzean daudenik"
+
+#: src/diagnosers/24-mail.py:59 src/diagnosers/24-mail.py:298
+msgid "diagnosis_mail_queue_ok"
+msgstr "Posta elektronikoaren ilaran zain dauden mezuak: {nb_pending}"
+
+#: src/diagnosers/24-mail.py:122
+msgid "diagnosis_mail_ehlo_bad_answer"
+msgstr "SMTP ez den zerbitzu batek erantzun du IPv{ipversion}ko 25. atakan"
+
+#: src/diagnosers/24-mail.py:123
+msgid "diagnosis_mail_ehlo_bad_answer_details"
+msgstr "Litekeena da zure zerbitzaria ez den beste gailu batek erantzun izana."
+
+#: src/diagnosers/24-mail.py:124
+msgid "diagnosis_mail_ehlo_unreachable"
+msgstr ""
+"SMTP posta zerbitzaria ez dago eskuragarri IPv{ipversion}ko sare "
+"lokaletik kanpo eta, beraz, ez da posta elektronikoa jasotzeko gai."
+
+#: src/diagnosers/24-mail.py:125
+msgid "diagnosis_mail_ehlo_unreachable_details"
+msgstr ""
+"Ezinezkoa izan da zure zerbitzariko 25. atakari konektatzea "
+"IPv{ipversion} erabiliz. Badirudi ez dagoela eskuragarri.<br>1. Arazo "
+"honen zergati ohikoena da 25. ataka <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>egoki"
+" birbideratuta ez egotea</a>.<br>2. Egiaztatu postfix zerbitzua martxan "
+"dagoela.<br>3. Konfigurazio konplexuagoetan: egiaztatu suebaki edo "
+"reverse-proxyak konexioa oztopatzen ez dutela."
+
+#: src/diagnosers/80-apps.py:113
+msgid "diagnosis_apps_security_issue_warning"
+msgstr ""
+"{app} aplikazioaren bertsioa '{current_version}' da, zeinak segurtasun "
+"arazo ertain bat baitu: {title}. Gomendagarria da '{fixed_in_version}' "
+"bertsiora berritzea. Informazio gehiago: {more_infos_list}"
+
+#: src/diagnosers/80-apps.py:114
+msgid "diagnosis_apps_security_issue_error"
+msgstr ""
+"{app} aplikazioaren bertsioa '{current_version}' da, zeinak segurtasun "
+"arazo LARRI bat baitu: {title}. Gomendagarria da LEHENBAILEHEN "
+"'{fixed_in_version}' bertsiora berritzea. Informazio gehiago: "
+"{more_infos_list}"
+
+#: src/diagnosers/12-dnsrecords.py:268
+msgid "diagnosis_domain_not_found_details"
+msgstr "{domain} domeinua ez da WHOISen datubasean existitzen edo iraungi da!"
+
+#: src/diagnosers/12-dnsrecords.py:304
+msgid "diagnosis_domain_expiration_not_found"
+msgstr "Ezin da domeinu batzuen iraungitze data egiaztatu"
+
+#: src/diagnosers/12-dnsrecords.py:305
+msgid "diagnosis_domain_expiration_error"
+msgstr "Domeinu batzuk IRAUNGITZEAR daude!"
+
+#: src/diagnosers/12-dnsrecords.py:306
+msgid "diagnosis_domain_expiration_warning"
+msgstr "Domeinu batzuk iraungitzear daude!"
+
+#: src/diagnosers/12-dnsrecords.py:307
+msgid "diagnosis_domain_expiration_success"
+msgstr "Domeinuak erregistratuta daude eta ez dira oraingoz iraungiko."
+
+#: src/diagnosers/12-dnsrecords.py:308
+msgid "diagnosis_domain_expiration_not_found_details"
+msgstr ""
+"Badirudi {domain} domeinuari buruzko WHOIS informazioak ez duela zehazten"
+" noiz iraungiko den?"
+
+#: src/diagnosers/00-basesystem.py:380
+msgid "diagnosis_package_security_issue_warning"
+msgstr ""
+"'{package}' sistemaren paketearen bertsioa '{current_version}' da, zeinak"
+" segurtasun arazo ertain bat baitu: {title}. Gomendagarria da "
+"'{fixed_in_version}' bertsiora berritzea. Informazio gehiago: "
+"{more_infos_list}"
+
+#: src/diagnosers/00-basesystem.py:381
+msgid "diagnosis_package_security_issue_error"
+msgstr ""
+"'{package}' sistemaren paketearen bertsioa '{current_version}' da, zeinak"
+" segurtasun arazo LARRI bat baitu: {title}. Gomendagarria da "
+"LEHENBAILEHEN '{fixed_in_version}' bertsiora berritzea. Informazio "
+"gehiago: {more_infos_list}"
+
+#: src/utils/password.py:144
+msgid "password_listed"
+msgstr ""
+"Pasahitz hau munduan erabilienetarikoa da. Aukeratu bereziagoa den beste "
+"bat."
+
+#: src/utils/password.py:147
+msgid "password_too_simple_1"
+msgstr "Pasahitzak 8 karaktere izan behar ditu gutxienez"
+
+#: src/utils/password.py:148
+msgid "password_too_simple_2"
+msgstr ""
+"Pasahitzak 8 karaktere izan behar ditu gutxienez eta zenbakiren bat, "
+"hizki larriren bat eta txikiren bat izan behar ditu"
+
+#: src/utils/password.py:149
+msgid "password_too_simple_3"
+msgstr ""
+"Pasahitzak 8 karaktere izan behar ditu gutxienez eta zenbakiren bat, "
+"hizki larriren bat, txikiren bat eta karaktere bereziren bat izan behar "
+"ditu"
+
+#: src/utils/password.py:150
+msgid "password_too_simple_4"
+msgstr ""
+"Pasahitzak 12 karaktere izan behar ditu gutxienez eta zenbakiren bat, "
+"hizki larriren bat, txikiren bat eta karaktere bereziren bat izan behar "
+"ditu"
+
+#: src/utils/app_utils.py:97
+msgid "confirm_app_install_warning"
+msgstr ""
+"Adi: litekeena da aplikazio hau ibiltzea, baina ez dago YunoHostera "
+"egina. Ezaugarri batzuk, SSO edo babeskopia/lehengoratzea esaterako, "
+"desgaituta egon daitezke. Instalatu hala ere? [{answers}] "
+
+#: src/utils/app_utils.py:98
+msgid "confirm_app_install_danger"
+msgstr ""
+"KONTUZ! Aplikazio hau esperimentala da (edo ez dabil)! Ez zenuke "
+"instalatu beharko zertan ari zaren ez badakizu. Aplikazio hau ez badabil "
+"edo sistema kaltetzen badu, EZ DA LAGUNTZARIK EMANGO… aurrera jarraitu "
+"nahi al duzu hala ere? Aukeratu '{answers}'"
+
+#: src/utils/app_utils.py:99
+msgid "confirm_app_install_thirdparty"
+msgstr ""
+"KONTUZ! Aplikazio hau ez da YunoHosten aplikazioen katalogokoa. Kanpoko "
+"aplikazioek sistemaren integritate eta segurtasuna arriskuan jar "
+"dezakete. Ziur asko EZ zenuke instalatu beharko zertan ari zaren ez "
+"badakizu. Aplikazio hau ez badabil edo sistema kaltetzen badu EZ DA "
+"LAGUNTZARIK EMANGO… aurrera jarraitu nahi duzu hala ere? Hautatu "
+"'{answers}'"
+
+#: src/utils/app_utils.py:483
+msgid "app_manifest_install_ask_domain"
+msgstr "Aukeratu zein domeinutan instalatu nahi duzun aplikazioa"
+
+#: src/utils/app_utils.py:484
+msgid "app_manifest_install_ask_path"
+msgstr ""
+"Aukeratu aplikazio hau instalatzeko URLaren bidea (domeinuaren atzeko "
+"aldean)"
+
+#: src/utils/app_utils.py:485
+msgid "app_manifest_install_ask_password"
+msgstr "Aukeratu administrazio-pasahitz bat aplikazio honetarako"
+
+#: src/utils/app_utils.py:486
+msgid "app_manifest_install_ask_admin"
+msgstr "Aukeratu administratzaile bat aplikazio honetarako"
+
+#: src/utils/app_utils.py:487
+msgid "app_manifest_install_ask_is_public"
+msgstr "Saiorik hasi gabeko bisitarientzat ikusgai egon beharko luke aplikazioak?"
+
+#: src/utils/app_utils.py:491
+msgid "app_manifest_install_ask_init_main_permission"
+msgstr "Nork izan beharko luke aplikazio honetara sarbidea? (Aldatzea dago)"
+
+#: src/utils/app_utils.py:495
+msgid "app_manifest_install_ask_init_admin_permission"
+msgstr ""
+"Nork izan beharko luke aplikazio honetako administrazio-aukeretara "
+"sarbidea? (Aldatzea dago)"
+
+#: src/utils/app_utils.py:1326
+msgid "confirm_notifications_read"
+msgstr ""
+"ADI: Aztertu aplikazioaren jakinarazpenak jarraitu baino lehen, baliteke "
+"jakin beharreko zerbait esatea. [{answers}]"
+
+#: src/utils/form.py:1925
+msgid "visitors"
+msgstr "Bisitariek"
+
+#: src/utils/form.py:1926
+msgid "all_users"
+msgstr "YunoHosten erabiltzaile guztiek"
+
+#: src/utils/form.py:1927
+msgid "admins"
+msgstr "Administratzaileek"
+
+#: src/utils/form.py:2161
+msgid "pydantic_type_error"
+msgstr "Mota baliogabea."
+
+#: src/utils/form.py:2162
+msgid "pydantic_type_error_none_not_allowed"
+msgstr "Balioa beharrezkoa da."
+
+#: src/utils/form.py:2163
+msgid "pydantic_type_error_str"
+msgstr "Mota baliogabea, katea espero da."
+
+#: src/utils/form.py:2164
+msgid "pydantic_value_error_color"
+msgstr "Kolore baliogabea, balioa izena edo hex kolorea izan behar da."
+
+#: src/utils/form.py:2165
+msgid "pydantic_value_error_const"
+msgstr "Ustekabeko balioa; aukeratu hauen artean {permitted}"
+
+#: src/utils/form.py:2166
+msgid "pydantic_value_error_date"
+msgstr "Data-formatu baliogabea"
+
+#: src/utils/form.py:2167
+msgid "pydantic_value_error_email"
+msgstr "Balioa ez da baliozko ePosta helbidea"
+
+#: src/utils/form.py:2168
+msgid "pydantic_value_error_number_not_ge"
+msgstr "Balioa {limit_value} edo handiagoa izan behar da."
+
+#: src/utils/form.py:2169
+msgid "pydantic_value_error_number_not_le"
+msgstr "Balioa {limit_value} edo txikiagoa izan behar da."
+
+#: src/utils/form.py:2170
+msgid "pydantic_value_error_str_regex"
+msgstr "Kate baliogabea; balioak ez du '{pattern}' eredua errespetatzen"
+
+#: src/utils/form.py:2171
+msgid "pydantic_value_error_time"
+msgstr "Denbora-formatu baliogabea"
+
+#: src/utils/form.py:2172
+msgid "pydantic_value_error_url_extra"
+msgstr ""
+"URL baliogabea, aparteko karaktereak topatu dira baliozko URLaren "
+"ondoren: '{extra}'"
+
+#: src/utils/form.py:2173
+msgid "pydantic_value_error_url_host"
+msgstr "Zerbitzariaren URL baliogabea"
+
+#: src/utils/form.py:2174
+msgid "pydantic_value_error_url_port"
+msgstr "URLaren ataka baliogabea, ataka ezin da 65535 baino handiagoa izan"
+
+#: src/utils/form.py:2175
+msgid "pydantic_value_error_url_scheme"
+msgstr "URL eskema falta da edo baliogabea da"
+
+#: src/utils/resources.py:284
+msgid "log_resource_snippet"
+msgstr "Baliabide bat eguneratzen / eskuratzen / eskuragarritasuna uzten"
+
+#: src/diagnosers/10-ip.py:53
+msgid "diagnosis_ip_not_connected_at_all"
+msgstr "Badirudi zerbitzaria ez dagoela Internetera konektatuta!?"
+
+#: src/diagnosers/10-ip.py:77
+msgid "diagnosis_ip_broken_dnsresolution"
+msgstr ""
+"Domeinu izenaren ebazpena kaltetuta dagoela dirudi… Suebakiren bat ote "
+"dago DNS eskaerak oztopatzen?"
+
+#: src/diagnosers/10-ip.py:79
+msgid "diagnosis_ip_broken_resolvconf"
+msgstr ""
+"Zure zerbitzarian domeinu izenaren ebazpena kaltetuta dagoela dirudi, "
+"antza denez <code>/etc/resolv.conf</code> fitxategia ez dago "
+"<code>127.0.0.1</code>ra adi."
+
+#: src/diagnosers/10-ip.py:89
+msgid "diagnosis_ip_weird_resolvconf"
+msgstr ""
+"DNS ebazpena badabilela dirudi, baina antza denez moldatutako "
+"<code>/etc/resolv.conf</code> fitxategia erabiltzen ari zara."
+
+#: src/diagnosers/10-ip.py:90
+msgid "diagnosis_ip_weird_resolvconf_details"
+msgstr ""
+"<code>/etc/resolv.conf</code> fitxategia symlink bat izan beharko "
+"litzateke <code>127.0.0.1</code>ra adi dagoen "
+"<code>/etc/resolvconf/run/resolv.conf</code> fitxategira (dnsmasq). DNS "
+"ebazleak eskuz konfiguratu nahi badituzu, aldatu "
+"<code>/etc/resolv.dnsmasq.conf</code> fitxategia."
+
+#: src/diagnosers/10-ip.py:96
+msgid "diagnosis_ip_dnsresolution_working"
+msgstr "Domeinu izenaren ebazpena badabil!"
+
+#: src/diagnosers/10-ip.py:131
+msgid "diagnosis_ip_connected_ipv4"
+msgstr "Zerbitzaria IPv4 bidez dago Internetera konektatuta!"
+
+#: src/diagnosers/10-ip.py:131
+msgid "diagnosis_ip_no_ipv4"
+msgstr "Zerbitzariak ez du dabilen IPv4rik."
+
+#: src/diagnosers/10-ip.py:132 src/diagnosers/10-ip.py:149
+msgid "diagnosis_ip_global"
+msgstr "IP orokorra: <code>{global}</code>"
+
+#: src/diagnosers/10-ip.py:132 src/diagnosers/10-ip.py:149
+msgid "diagnosis_ip_local"
+msgstr "IP lokala: <code>{local}</code>"
+
+#: src/diagnosers/10-ip.py:147
+msgid "diagnosis_ip_connected_ipv6"
+msgstr "Zerbitzaria IPv6 bidez dago Internetera konektatuta!"
+
+#: src/diagnosers/10-ip.py:147
+msgid "diagnosis_ip_no_ipv6"
+msgstr "Zerbitzariak ez du dabilen IPv6rik."
+
+#: src/diagnosers/10-ip.py:153
+msgid "diagnosis_ip_no_ipv6_tip_important"
+msgstr ""
+"IPv6 automatikoki ezarri ohi du sistemak edo hornitzaileak, erabilgarri "
+"baldin badago. Bestela, eskuz ezarri beharko dituzu aukera batzuk honako "
+"dokumentazioan azaldu bezala: <a "
+"href='https://doc.yunohost.org/ipv6'>https://doc.yunohost.org/ipv6</a>."
+
+#: src/diagnosers/10-ip.py:155
+msgid "diagnosis_ip_no_ipv6_tip"
+msgstr ""
+"Dabilen IPv6 izatea ez da derrigorrezkoa zerbitzariaren "
+"funtzionamendurako, baina egokiena da Interneten osasunerako. IPv6 "
+"automatikoki konfiguratu beharko luke sistemak edo operadoreak. Bestela, "
+"eskuz konfiguratu beharko zenituzke hainbat gauza <a "
+"href='https://doc.yunohost.org/ipv6'>dokumentazioa</a>n azaltzen den "
+"bezala. Ezin baduzu edo IPv6 gaitzea zuretzat kontu teknikoegia baldin "
+"bada, ez duzu abisu hau zertan kontuan hartu."
+
+#: src/diagnosers/10-ip.py
+msgid "diagnosis_description_ip"
+msgstr "Internet konexioa"
+
+#: src/diagnosers/14-ports.py:75
+msgid "diagnosis_ports_could_not_diagnose"
+msgstr ""
+"Ezinezkoa izan da atakak IPv{ipversion} erabiliz kanpotik eskuragarri "
+"dauden egiaztatzea."
+
+#: src/diagnosers/14-ports.py:76
+msgid "diagnosis_ports_could_not_diagnose_details"
+msgstr "Errorea: {error}"
+
+#: src/diagnosers/14-ports.py:94 src/diagnosers/14-ports.py:155
+msgid "diagnosis_ports_ok"
+msgstr "{port}. ataka eskuragarri dago kanpotik."
+
+#: src/diagnosers/14-ports.py:95 src/diagnosers/14-ports.py:107
+#: src/diagnosers/14-ports.py:142 src/diagnosers/14-ports.py:156
+#: src/diagnosers/14-ports.py:169
+msgid "diagnosis_ports_needed_by"
+msgstr ""
+"{category} funtzioetarako ezinbestekoa da ataka hau eskuragarri egotea "
+"({service} zerbitzua)"
+
+#: src/diagnosers/14-ports.py:105
+msgid "diagnosis_ports_unreachable"
+msgstr "{port}. ataka ez dago eskuragarri kanpotik."
+
+#: src/diagnosers/14-ports.py:108 src/diagnosers/14-ports.py:143
+#: src/diagnosers/14-ports.py:170
+msgid "diagnosis_ports_forwarding_tip"
+msgstr ""
+"Arazoa konpontzeko, litekeena da operadorearen routerrean ataken "
+"birbideraketa konfiguratu behar izatea, <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>https://doc.yunohost.org/admin/get_started/post_install/dns_config/</a>-n"
+" agertzen den bezala"
+
+#: src/diagnosers/14-ports.py:140 src/diagnosers/14-ports.py:167
+msgid "diagnosis_ports_partially_unreachable"
+msgstr "{port}. ataka ez dago eskuragarri kanpotik IPv{failed} erabiliz."
+
+#: src/diagnosers/14-ports.py
+msgid "diagnosis_description_ports"
+msgstr "Ataken irisgarritasuna"
+
+#: src/diagnosers/21-web.py:50
+msgid "diagnosis_http_nginx_conf_not_up_to_date"
+msgstr ""
+"Domeinu honen nginx ezarpenak eskuz moldatu direla dirudi eta YunoHostek "
+"ezin du egiaztatu HTTP bidez eskuragarri dagoenik."
+
+#: src/diagnosers/21-web.py:51
+msgid "diagnosis_http_nginx_conf_not_up_to_date_details"
+msgstr ""
+"Egoera konpontzeko, ikuskatu desberdintasunak <cmd> yunohost tools regen-"
+"conf nginx --dry-run --with-diff</cmd> komandoaren bidez eta, "
+"proposatutako aldaketak onartzen badituzu, ezarri itzazu <cmd>yunohost "
+"tools regen-conf nginx --force</cmd> erabiliz."
+
+#: src/diagnosers/21-web.py:57
+msgid "diagnosis_http_special_use_tld"
+msgstr ""
+"{domain} domeinua top-level domain (TLD) motakoa da .local edo .test "
+"bezala eta ez du sare lokaletik kanpo eskuragarri zertan egon."
+
+#: src/diagnosers/21-web.py:109
+msgid "diagnosis_http_hairpinning_issue"
+msgstr "Dirudienez zure sareak ez du hairpinninga gaituta."
+
+#: src/diagnosers/21-web.py:110
+msgid "diagnosis_http_hairpinning_issue_details"
+msgstr ""
+"Litekeena da erantzulea zure kable-modem / routerra izatea. Honen "
+"eraginez, saretik kanpo daudenek zerbitzaria arazorik gabe erabili ahal "
+"izango dute, baina sare lokalean bertan daudenek (ziur asko zure kasua) "
+"ezingo dute kanpoko IPa edo domeinu izena erabili zerbitzarira "
+"konektatzeko. Egoera hobetu edo guztiz konpontzeko, irakurri <a "
+"href='https://doc.yunohost.org/dns_local_network'>dokumentazioa</a>"
+
+#: src/diagnosers/21-web.py:133
+msgid "diagnosis_http_could_not_diagnose"
+msgstr ""
+"Ezinezkoa izan da domeinuak IPv{ipversion} kanpotik eskuragarri dauden "
+"egiaztatzea."
+
+#: src/diagnosers/21-web.py:134
+msgid "diagnosis_http_could_not_diagnose_details"
+msgstr "Errorea: {error}"
+
+#: src/diagnosers/21-web.py:159 src/diagnosers/21-web.py:215
+msgid "diagnosis_http_ok"
+msgstr "{domain} domeinua HTTP bidez bisitatu daiteke sare lokaletik kanpo."
+
+#: src/diagnosers/21-web.py:169
+msgid "diagnosis_http_unreachable"
+msgstr ""
+"Badirudi {domain} domeinua ez dagoela eskuragarri HTTP bidez sare "
+"lokaletik kanpo."
+
+#: src/diagnosers/21-web.py:201 src/diagnosers/21-web.py:221
+msgid "diagnosis_http_partially_unreachable"
+msgstr ""
+"Badirudi {domain} domeinua ezin dela bisitatu HTTP bidez IPv{failed} sare"
+" lokaletik kanpo, bai ordea IPv{passed} erabiliz."
+
+#: src/diagnosers/21-web.py
+msgid "diagnosis_description_web"
+msgstr "Weba"
+
+#: src/diagnosers/24-mail.py:89
+msgid "diagnosis_mail_outgoing_port_25_blocked"
+msgstr ""
+"SMTP posta zerbitzariak ezin ditu posta elektronikoak bidali 25. ataka "
+"itxita dagoelako IPv{ipversion}n."
+
+#: src/diagnosers/24-mail.py:91
+msgid "diagnosis_mail_outgoing_port_25_blocked_details"
+msgstr ""
+"Lehenik eta behin operadorearen routerreko aukeretan saiatu beharko "
+"zinateke 25. ataka desblokeatzen. (Hosting enpresaren arabera, beraiekin "
+"harremanetan jartzea beharrezkoa izango da)."
+
+#: src/diagnosers/24-mail.py:92
+msgid "diagnosis_mail_outgoing_port_25_blocked_relay_vpn"
+msgstr ""
+"Operadore batzuei bost axola zaie Interneten neutraltasuna (Net "
+"Neutrality) eta ez dute 25. ataka desblokeatzen uzten.<br>- Operadore "
+"batzuek <a href='https://doc.yunohost.org/email_configure_relay'>relay "
+"posta zerbitzari bat</a> eskaini dezakete, baina kasu horretan zure posta"
+" elektronikoa zelatatu dezakete.<br>- Pribatutasuna bermatzeko *IP "
+"publikoa* duen VPN bat erabiltzea izan daiteke irtenbidea. Ikus <a "
+"href='https://doc.yunohost.org/vpn_advantage'>https://doc.yunohost.org/vpn_advantage</a><br>-"
+" Edo <a href='https://doc.yunohost.org/providers/isp'>operadore desberdin"
+" batera aldatu</a>"
+
+#: src/diagnosers/24-mail.py:116
+msgid "diagnosis_mail_ehlo_could_not_diagnose"
+msgstr ""
+"Ezinezkoa izan da postfix posta zerbitzaria IPv{ipversion}az kanpo "
+"eskuragarri dagoen egiaztatzea."
+
+#: src/diagnosers/24-mail.py:117
+msgid "diagnosis_mail_ehlo_could_not_diagnose_details"
+msgstr "Errorea: {error}"
+
+#: src/diagnosers/24-mail.py:139
+msgid "diagnosis_mail_ehlo_wrong"
+msgstr ""
+"Zurea ez den SMTP posta zerbitzari batek erantzun du IPv{ipversion}an. "
+"Litekeena da zure zerbitzariak posta elektronikorik jaso ezin izatea."
+
+#: src/diagnosers/24-mail.py:140
+msgid "diagnosis_mail_ehlo_wrong_details"
+msgstr ""
+"Kanpo-diagnostikatzaileak IPv{ipversion}an jaso duen EHLOa eta zure "
+"zerbitzariaren domeinukoa ez datoz bat.<br> Jasotako EHLOa: "
+"<code>{wrong_ehlo}</code><br>Esperotakoa: "
+"<code>{right_ehlo}</code><br>Arazo honen zergati ohikoena 25. ataka <a "
+"href='https://doc.yunohost.org/admin/get_started/post_install/dns_config/'>zuzen"
+" konfiguratuta ez egotea</a> da. Edo agian suebaki edo reverse-proxya "
+"oztopo izan daiteke."
+
+#: src/diagnosers/24-mail.py:154 src/diagnosers/24-mail.py:160
+msgid "diagnosis_mail_fcrdns_nok_details"
+msgstr ""
+"Lehenik eta behin zure routerraren konfigurazio gunean edo hostingaren "
+"enpresaren aukeretan alderantzizko DNSa konfiguratzen saiatu beharko "
+"zinateke <code>{ehlo_domain}</code> erabiliz. (Hosting enpresaren "
+"arabera, ezinbestekoa da beraiekin harremanetan jartzea)."
+
+#: src/diagnosers/24-mail.py:155
+msgid "diagnosis_mail_fcrdns_nok_alternatives_6"
+msgstr ""
+"Operadore batzuek ez dute alderantzizko DNSa konfiguratzen uzten (edo "
+"funtzioa ez dabil…). IPv4rako alderantzizko DNSa zuzen konfiguratuta "
+"badago, IPv6 desgaitzen saia zaitezke posta elektronikoa bidaltzeko, "
+"<cmd>yunohost settings set email.smtp.smtp_allow_ipv6 -v off</cmd> "
+"exekutatuz. Adi: honek esan nahi du ez zarela gai izango IPv6 bakarrik "
+"darabilten zerbitzari apurren posta elektronikoa jasotzeko edo beraiei "
+"bidaltzeko."
+
+#: src/diagnosers/24-mail.py:161
+msgid "diagnosis_mail_fcrdns_nok_alternatives_4"
+msgstr ""
+"Operadore batzuek ez dute alderantzizko DNSa konfiguratzen uzten (edo "
+"funtzioa ez dabil…). Hori dela eta, arazoak badituzu, irtenbide batzuk "
+"eduki ditzakezu:<br>- Operadore batzuek <a "
+"href='https://doc.yunohost.org/email_configure_relay'>relay posta "
+"zerbitzari bat</a> eskaini dezakete, baina kasu horretan zure posta "
+"elektronikoa zelatatu dezakete.<br>- Pribatutasuna bermatzeko *IP "
+"publikoa* duen VPN bat erabiltzea izan daiteke irtenbidea. Ikus <a "
+"href='https://doc.yunohost.org/vpn_advantage'>https://doc.yunohost.org/vpn_advantage</a><br>-"
+" Edo <a href='https://doc.yunohost.org/providers/isp'>operadore desberdin"
+" batera aldatu</a>"
+
+#: src/diagnosers/24-mail.py:179
+msgid "diagnosis_mail_fcrdns_dns_missing"
+msgstr ""
+"Ez da alderantzizko DNSrik ezarri IPv{ipversion}rako. Litekeena da "
+"hartzaileak posta elektroniko batzuk jaso ezin izatea edo mezuok spam "
+"gisa etiketatuak izatea."
+
+#: src/diagnosers/24-mail.py:189
+msgid "diagnosis_mail_fcrdns_different_from_ehlo_domain_details"
+msgstr ""
+"Oraingo alderantzizko DNSa: <code>{rdns_domain}</code><br>Esperotako "
+"balioa: <code>{ehlo_domain}</code>"
+
+#: src/diagnosers/24-mail.py:199
+msgid "diagnosis_mail_fcrdns_different_from_ehlo_domain"
+msgstr ""
+"Alderantzizko DNSa ez dago zuzen konfiguratuta IPv{ipversion}an. "
+"Litekeena da hartzaileak posta elektroniko batzuk jaso ezin izatea edo "
+"mezuok spam gisa etiketatuak izatea."
+
+#: src/diagnosers/24-mail.py:243
+msgid "diagnosis_mail_blocklist_reason"
+msgstr "Zerrenda beltzean egotearen zergatia zera da: {reason}"
+
+#: src/diagnosers/24-mail.py:245
+msgid "diagnosis_mail_blocklist_reason_openresolver"
+msgstr ""
+"Badirudi 'open resolver'i egiten diola aipamena.<br/>Honek esan nahi du, "
+"normalean, zure zerbitzaria ez dela bere DNS lokala erabiltzen ari, "
+"baizik eta publiko, ireki bat.<br/>Berrikusi "
+"<code>/etc/resolv.conf</code> fitxategiko edukia, <code>nameserver "
+"127.0.0.1</code> izan beharko luke bere baitan.<br/>Fitxategia "
+"automatikoki sortzen denez, ez ezazu eskuz editatu. Egiaztatu zure DHCP "
+"ezarpenak (edo zure VPN ezarpenak halakorik erabiliz gero), edo, VPS "
+"hornitzaile batek egindako Debian irudi bat erabili baduzu, bilatu "
+"<code>cloudinit</code> konfigurazioa.<br/>YunoHost laguntza-kanaletan "
+"ongi etorria zara gai honi buruzko laguntza lortzeko.<br/>Zerrenda "
+"beltzaren arrazoia honakoa da: {reason}"
+
+#: src/diagnosers/24-mail.py:248
+msgid "diagnosis_mail_blocklist_website"
+msgstr ""
+"Zerrenda beltzean zergatik zauden ulertu eta konpondu ondoren, "
+"{blocklist_website} webgunean zure IP edo domeinua bertatik atera "
+"dezatela eska dezakezu"
+
+#: src/diagnosers/24-mail.py:262
+msgid "diagnosis_mail_blocklist_listed_by"
+msgstr ""
+"Zure domeinua edo <code>{item}</code> IPa {blocklist_name} zerrenda "
+"beltzean ageri da"
+
+#: src/diagnosers/24-mail.py:282
+msgid "diagnosis_mail_queue_unavailable"
+msgstr "Ezinezkoa da ilaran zenbat posta elektroniko dauden kontsultatzea"
+
+#: src/diagnosers/24-mail.py:283
+msgid "diagnosis_mail_queue_unavailable_details"
+msgstr "Errorea: {error}"
+
+#: src/diagnosers/24-mail.py:291
+msgid "diagnosis_mail_queue_too_big"
+msgstr "Mezu gehiegi posta elektronikoaren ilaran: ({nb_pending} mezu)"
+
+#: src/diagnosers/24-mail.py
+msgid "diagnosis_description_mail"
+msgstr "Posta elektronikoa"
+
+#: src/diagnosers/30-services.py:45
+msgid "diagnosis_services_bad_status"
+msgstr "{service} zerbitzua {status} dago :("
+
+#: src/diagnosers/30-services.py:46
+msgid "diagnosis_services_bad_status_tip"
+msgstr ""
+"Zerbitzua <a href='#/services/{service}'>berrabiarazten</a> saia zaitezke"
+" eta nahikoa ez bada, <a href='#/services/{service}'>aztertu zerbitzuaren"
+" erregistroa administrazio-atarian</a>. (komandoak nahiago badituzu "
+"<cmd>yunohost service restart {service}</cmd> eta <cmd>yunohost service "
+"log {service}</cmd> hurrenez hurren)."
+
+#: src/diagnosers/30-services.py:50
+msgid "diagnosis_services_conf_broken"
+msgstr "{service} zerbitzuko konfigurazioa hondatuta dago!"
+
+#: src/diagnosers/30-services.py:55
+msgid "diagnosis_services_running"
+msgstr "{service} zerbitzua martxan dago!"
+
+#: src/diagnosers/30-services.py
+msgid "diagnosis_description_services"
+msgstr "Zerbitzuen egoeraren egiaztapena"
+
+#: src/diagnosers/70-regenconf.py:41
+msgid "diagnosis_regenconf_allgood"
+msgstr "Konfigurazio-fitxategi guztiak bat datoz gomendatutako ezarpenekin!"
+
+#: src/diagnosers/70-regenconf.py:52
+msgid "diagnosis_regenconf_manually_modified"
+msgstr "Dirudienez <code>{file}</code> konfigurazio fitxategia eskuz aldatu da."
+
+#: src/diagnosers/70-regenconf.py:53
+msgid "diagnosis_regenconf_manually_modified_details"
+msgstr ""
+"Ez dago arazorik zertan ari zaren baldin badakizu! YunoHostek fitxategi "
+"hau automatikoki eguneratzeari utziko dio… Baina kontuan izan YunoHosten "
+"eguneraketek aldaketa garrantzitsuak izan ditzaketela. Nahi izatekotan, "
+"desberdintasunak aztertu ditzakezu <cmd>yunohost tools regen-conf "
+"{category} --dry-run --with-diff</cmd> komandoa exekutatuz, eta "
+"gomendatutako konfiguraziora bueltatu <cmd>yunohost tools regen-conf "
+"{category} --force</cmd> erabiliz"
+
+#: src/diagnosers/70-regenconf.py:66
+msgid "diagnosis_sshd_config_insecure"
+msgstr ""
+"Badirudi SSH konfigurazioa eskuz aldatu dela eta ez da segurua ez duelako"
+" 'AllowGroups' edo 'AllowUsers' baldintzarik jartzen fitxategien atzitzea"
+" oztopatzeko."
+
+#: src/diagnosers/70-regenconf.py:78
+msgid "diagnosis_sshd_config_inconsistent"
+msgstr ""
+"Dirudienez SSH ataka eskuz aldatu da /etc/ssh/sshd_config fitxategian. "
+"YunoHost 4.2tik aurrera 'security.ssh.ssh_port' izeneko ezarpen orokor "
+"bat dago konfigurazioa eskuz aldatzea ekiditeko."
+
+#: src/diagnosers/70-regenconf.py:79
+msgid "diagnosis_sshd_config_inconsistent_details"
+msgstr ""
+"Exekutatu <cmd>yunohost settings set security.ssh.ssh_port -v "
+"SSH_ATAKA</cmd> SSH ataka zehazteko, egiaztatu <cmd>yunohost tools regen-"
+"conf ssh --dry-run --with-diff</cmd> erabiliz eta <cmd>yunohost tools "
+"regen-conf ssh --force</cmd> exekutatu gomendatutako konfiguraziora "
+"bueltatu nahi baduzu."
+
+#: src/diagnosers/70-regenconf.py
+msgid "diagnosis_description_regenconf"
+msgstr "Sistemaren ezarpenak"
+
+#: src/diagnosers/50-systemresources.py:56
+msgid "diagnosis_ram_verylow"
+msgstr ""
+"Sistemak RAM memoriaren {available} baino ez ditu erabilgarri; memoria "
+"guztiaren ({total}) %{available_percent}a."
+
+#: src/diagnosers/50-systemresources.py:59
+msgid "diagnosis_ram_low"
+msgstr ""
+"Sistemak RAM memoriaren {available} ditu erabilgarri; memoria guztiaren "
+"({total}) %{available_percent}a. Adi ibili."
+
+#: src/diagnosers/50-systemresources.py:62
+msgid "diagnosis_ram_ok"
+msgstr ""
+"Sistemak RAM memoriaren {available} ditu oraindik erabilgarri; memoria "
+"guztiaren ({total}) %{available_percent}a."
+
+#: src/diagnosers/50-systemresources.py:76
+msgid "diagnosis_swap_none"
+msgstr ""
+"Sistemak ez du swap-ik. Gutxienez {recommended} izaten saiatu beharko "
+"zinateke, sistema memoriarik gabe gera ez dadin."
+
+#: src/diagnosers/50-systemresources.py:79
+msgid "diagnosis_swap_notsomuch"
+msgstr ""
+"Sistemak {total} swap baino ez ditu. Gutxienez {recommended} izaten "
+"saiatu beharko zinateke sistema memoriarik gabe gera ez dadin."
+
+#: src/diagnosers/50-systemresources.py:82
+msgid "diagnosis_swap_ok"
+msgstr "Sistemak {total} swap dauzka!"
+
+#: src/diagnosers/50-systemresources.py:83
+msgid "diagnosis_swap_tip"
+msgstr ""
+"Kontuan hartu zerbitzari honen swap memoria SD edo SSD euskarri batean "
+"gordetzeak euskarri horren bizi-iraupena izugarri laburtu dezakeela."
+
+#: src/diagnosers/50-systemresources.py:128
+msgid "diagnosis_diskusage_verylow"
+msgstr ""
+"<code>{mountpoint}</code> fitxategi-sistemak (<code>{device}</code> "
+"euskarrian) edukieraren {free} (%{free_percent}a) bakarrik ditu "
+"erabilgarri ({total} orotara). Zertxobait hustu beharko zenuke!"
+
+#: src/diagnosers/50-systemresources.py:133
+msgid "diagnosis_diskusage_low"
+msgstr ""
+"<code>{mountpoint}</code> fitxategi-sistemak (<code>{device}</code> "
+"euskarrian) edukieraren {free} (%{free_percent}a) bakarrik ditu "
+"erabilgarri ({total} orotara). Kontuz ibili."
+
+#: src/diagnosers/50-systemresources.py:136
+msgid "diagnosis_diskusage_ok"
+msgstr ""
+"<code>{mountpoint}</code> fitxategi-sistemak (<code>{device}</code> "
+"euskarrian) edukieraren {free} (%{free_percent}a) ditu oraindik "
+"erabilgarri ({total} orotara)!"
+
+#: src/diagnosers/50-systemresources.py:158
+msgid "diagnosis_rootfstotalspace_critical"
+msgstr ""
+"'root' fitxategi-sistemak {space} baino ez ditu erabilgarri, eta hori "
+"kezkagarria da! Litekeena da oso laster memoriarik gabe geratzea! 'root' "
+"fitxategi-sistemak gutxienez 16GB erabilgarri izatea da gomendioa."
+
+#: src/diagnosers/50-systemresources.py:165
+msgid "diagnosis_rootfstotalspace_warning"
+msgstr ""
+"'root' fitxategi-sistemak {space} baino ez ditu. Agian ez da arazorik "
+"egongo, baina kontuz ibili edo memoriarik gabe gera zaitezke laster… "
+"'root' fitxategi-sistemak gutxienez 16GB erabilgarri izatea da gomendioa."
+
+#: src/diagnosers/50-systemresources.py:181
+msgid "diagnosis_processes_killed_by_oom_reaper"
+msgstr ""
+"Memoria agortu eta sistemak prozesu batzuk amaituarazi behar izan ditu. "
+"Honek esan nahi du sistemak ez duela memoria nahikoa edo prozesuren batek"
+" memoria gehiegi behar duela. Amaituarazi d(ir)en prozesua(k):\n"
+"{kills_summary}"
+
+#: src/diagnosers/50-systemresources.py
+msgid "diagnosis_description_systemresources"
+msgstr "Sistemaren baliabideak"
+
+#: src/diagnosers/80-apps.py:49
+msgid "diagnosis_apps_allgood"
+msgstr "Instalatutako aplikazioak bat datoz oinarrizko pakete-jarraibideekin"
+
+#: src/diagnosers/80-apps.py:69
+msgid "diagnosis_apps_issue"
+msgstr "Arazo bat dago {app} aplikazioarekin"
+
+#: src/diagnosers/80-apps.py:130
+msgid "diagnosis_apps_not_in_app_catalog"
+msgstr ""
+"Aplikazio hau ez da YunoHosten aplikazioen katalogokoa. Iraganean egon "
+"bazen eta orain ez badago, desinstalatzea litzateke onena, ez baitu "
+"eguneraketarik jasoko eta sistemaren integritate eta segurtasuna "
+"arriskuan jar lezakeelako."
+
+#: src/diagnosers/80-apps.py:135
+msgid "diagnosis_apps_broken"
+msgstr ""
+"Aplikazioa hondatutzat ageri da YunoHosten aplikazioen katalogoan. Behin-"
+"behineko kontua izan daiteke arduradunek arazoa konpondu bitartean. "
+"Oraingoz, ezin da aplikazioa bertsio-berritu."
+
+#: src/diagnosers/80-apps.py:137
+msgid "diagnosis_apps_bad_quality"
+msgstr ""
+"Aplikazioa hondatutzat ageri da YunoHosten aplikazioen katalogoan. Behin-"
+"behineko kontua izan daiteke arduradunek arazoa konpondu bitartean. "
+"Oraingoz, ezin da aplikazioa bertsio-berritu."
+
+#: src/diagnosers/80-apps.py:142
+msgid "diagnosis_apps_outdated_packaging_format"
+msgstr ""
+"Aplikazio honek zaharkitutako pakete-formatu bat darabil, eta aurki "
+"YunoHostekin bateragarri izateari utziko dio. Eguneratzen saiatu beharko "
+"zinateke."
+
+#: src/diagnosers/80-apps.py:152
+msgid "diagnosis_apps_outdated_ynh_requirement"
+msgstr ""
+"Instalatutako aplikazio honen bertsioak yunohost >= 2.x, 3.x edo 4.x "
+"baino ez du behar, eta horrek eguneratua izan ez dela eta egungo pakete-"
+"jardunbideekin bat ez datorrela iradokitzen du. Eguneratzen saiatu "
+"beharko zinateke."
+
+#: src/diagnosers/80-apps.py:169 src/diagnosers/80-apps.py:176
+msgid "diagnosis_apps_deprecated_practices"
+msgstr ""
+"Instalatutako aplikazio honen bertsioak oraindik darabiltza zaharkitutako"
+" pakete-jarraibideak. Eguneratzea hausnartu beharko zenuke."
+
+#: src/diagnosers/80-apps.py
+msgid "diagnosis_description_apps"
+msgstr "Aplikazioak"
+
+#: src/diagnosers/12-dnsrecords.py:90
+msgid "diagnosis_dns_specialusedomain"
+msgstr ""
+"{domain} domeinua top-level domain (TLD) erabilera berezikoa da .local "
+"edo .test bezala eta horregatik ez du DNS erregistrorik erabiltzeko "
+"beharrik."
+
+#: src/diagnosers/12-dnsrecords.py:133
+msgid "diagnosis_dns_missing_record"
+msgstr ""
+"Proposatutako DNS konfigurazioaren arabera, honako informazioa gehitu "
+"beharko zenuke DNS erregistroan:<br>Mota: <code>{type}</code><br>Izena: "
+"<code>{name}</code><br>Balioa: <code>{content}</code>"
+
+#: src/diagnosers/12-dnsrecords.py:136
+msgid "diagnosis_dns_discrepancy"
+msgstr ""
+"Ez dirudi honako DNS balioak bat datozenik proposatutako "
+"konfigurazioarekin:<br>Mota: <code>{type}</code><br>Izena: "
+"<code>{name}</code><br>Oraingo balioa: "
+"<code>{current}</code><br>Proposatutako balioa: <code>{content}</code>"
+
+#: src/diagnosers/12-dnsrecords.py:156
+msgid "diagnosis_dns_bad_conf"
+msgstr ""
+"DNS balio batzuk falta dira edo ez dira zuzenak {domain} domeinurako "
+"({category} atala)"
+
+#: src/diagnosers/12-dnsrecords.py:159
+msgid "diagnosis_dns_good_conf"
+msgstr ""
+"DNS ezarpenak zuzen konfiguratuta daude {domain} domeinurako ({category} "
+"atala)"
+
+#: src/diagnosers/12-dnsrecords.py:177
+msgid "diagnosis_dns_try_dyndns_update_force"
+msgstr ""
+"Domeinu honen DNS konfigurazioa YunoHostek kudeatu beharko luke "
+"automatikoki. Gertatuko ez balitz, eguneratzera behartu zenezake "
+"<cmd>yunohost dyndns update --force</cmd> erabiliz."
+
+#: src/diagnosers/12-dnsrecords.py:180
+msgid "diagnosis_dns_point_to_doc"
+msgstr ""
+"Irakurri <a href='https://doc.yunohost.org/dns_config'>dokumentazioa</a> "
+"DNS erregistroekin laguntza behar baduzu."
+
+#: src/diagnosers/12-dnsrecords.py:292
+msgid "diagnosis_domain_expires_in"
+msgstr "{domain} {days} egun barru iraungiko da."
+
+#: src/diagnosers/12-dnsrecords.py
+msgid "diagnosis_description_dnsrecords"
+msgstr "DNS erregistroak"
+
+#: src/diagnosers/00-basesystem.py:62
+msgid "diagnosis_basesystem_hardware"
+msgstr "Zerbitzariaren arkitektura {virt} {arch} da"
+
+#: src/diagnosers/00-basesystem.py:69 src/diagnosers/00-basesystem.py:78
+msgid "diagnosis_basesystem_hardware_model"
+msgstr "Zerbitzariaren modeloa {model} da"
+
+#: src/diagnosers/00-basesystem.py:88
+msgid "diagnosis_basesystem_kernel"
+msgstr "Zerbitzariak Linuxen {kernel_version} kernela darabil"
+
+#: src/diagnosers/00-basesystem.py:96
+msgid "diagnosis_basesystem_host"
+msgstr "Zerbitzariak Debian {debian_version} darabil"
+
+#: src/diagnosers/00-basesystem.py:112
+msgid "diagnosis_basesystem_ynh_single_version"
+msgstr "{package} bertsioa: {version} ({repo})"
+
+#: src/diagnosers/00-basesystem.py:130
+msgid "diagnosis_basesystem_ynh_main_version"
+msgstr "Zerbitzariak YunoHosten {main_version} ({repo}) darabil"
+
+#: src/diagnosers/00-basesystem.py:132
+msgid "diagnosis_basesystem_ynh_inconsistent_versions"
+msgstr ""
+"YunoHost paketeen bertsioak ez datoz bat… ziur asko noizbait eguneraketa "
+"batek kale egin edo erabat amaitu ez zuelako."
+
+#: src/diagnosers/00-basesystem.py:141
+msgid "diagnosis_security_vulnerable_to_meltdown"
+msgstr "Badirudi Meltdown izeneko segurtasun arazo larriak eragin diezazukela"
+
+#: src/diagnosers/00-basesystem.py:142
+msgid "diagnosis_security_vulnerable_to_meltdown_details"
+msgstr ""
+"Arazoa konpontzeko, sistema eguneratu eta berrabiarazi beharko zenuke "
+"linux-en kernel berriagoa erabiltzeko (edo zerbitzariaren arduradunarekin"
+" jarri harremanetan). Ikus https://meltdownattack.com/ argibide "
+"gehiagorako."
+
+#: src/diagnosers/00-basesystem.py:154
+msgid "diagnosis_package_installed_from_sury"
+msgstr "Sistemaren pakete batzuen lehenagoko bertsioak beharko lirateke"
+
+#: src/diagnosers/00-basesystem.py:155
+msgid "diagnosis_package_installed_from_sury_details"
+msgstr ""
+"Sury izena duen kanpoko gordailu batetik instalatu dira pakete batzuk, "
+"nahi gabe. YunoHosten taldeak hobekuntzak egin ditu pakete hauek "
+"kudeatzeko, baina litekeena da arazoak sortzea PHP7.3 aplikazioak Stretch"
+" sistema eragilean instalatu zituzten kasu batzuetan. Egoera hau "
+"konpontzeko, honako komando hau exekutatu beharko zenuke: "
+"<cmd>{cmd_to_fix}</cmd>"
+
+#: src/diagnosers/00-basesystem.py:162
+msgid "diagnosis_backports_in_sources_list"
+msgstr ""
+"Dirudienez apt (pakete kudeatzailea) backports gordailua erabiltzeko "
+"konfiguratuta dago. Zertan ari zaren ez badakizu, ez zenuke backports "
+"gordailuetako aplikaziorik instalatu beharko, ezegonkortasun eta gatazkak"
+" eragin ditzaketelako sistemarekin."
+
+#: src/diagnosers/00-basesystem.py:189
+msgid "diagnosis_using_yunohost_testing"
+msgstr ""
+"<cmd>apt</cmd> (sistemaren pakete kudeatzailea) YunoHosten muinerako "
+"'testing' (proba) izen kodea duten paketeak instalatzeko ezarrita dago "
+"une honetan."
+
+#: src/diagnosers/00-basesystem.py:190
+msgid "diagnosis_using_yunohost_testing_details"
+msgstr ""
+"Ez dago arazorik zertan ari zaren baldin badakizu, baina arretaz irakurri"
+" oharrak YunoHosten eguneraketak instalatu baino lehen! 'testing' (proba)"
+" bertsioak desgaitu nahi badituzu, kendu <cmd>testing</cmd> gakoa "
+"<cmd>/etc/apt/sources.list.d/yunohost.list</cmd> fitxategitik."
+
+#: src/diagnosers/00-basesystem.py:206
+msgid "diagnosis_using_stable_codename"
+msgstr ""
+"<cmd>apt</cmd> (sistemaren pakete kudeatzailea) 'stable' (egonkorra) "
+"izen-kodea duten paketeak instalatzeko ezarrita dago une honetan, eta ez "
+"uneko Debianen bertsioaren (bookworm) izen-kodea."
+
+#: src/diagnosers/00-basesystem.py:207
+msgid "diagnosis_using_stable_codename_details"
+msgstr ""
+"Ostatatzaileak zerbait oker ezarri duenean gertatu ohi da hau. "
+"Arriskutsua da, Debianen datorren bertsioa 'estable' (egonkorra) "
+"bilakatzen denean, <cmd>apt</cmd>-k sistemaren pakete guztiak bertsio-"
+"berritzen saiatuko da, beharrezko migrazio-prozedurarik burutu gabe. "
+"Debianen gordailuan apt iturria editatzen konpontzea da gomendioa, "
+"<cmd>stable</cmd> gakoa <cmd>bookworm</cmd> gakoarekin ordezkatuta. "
+"Ezarpen-fitxategia <cmd>/etc/apt/sources.list</cmd> izan beharko "
+"litzateke, edo <cmd>/etc/apt/sources.list.d/</cmd> direktorioko "
+"fitxategiren bat."
+
+#: src/diagnosers/00-basesystem.py:214
+msgid "diagnosis_high_number_auth_failures"
+msgstr ""
+"Azken aldian kale egin duten saio-hasiera saiakera ugari egon dira. "
+"Egiaztatu fail2ban martxan dabilela eta egoki konfiguratuta dagoela, edo "
+"erabili beste ataka bat SSHrako <a "
+"href=\"https://doc.yunohost.org/security\">dokumentazioa</a>n azaldu "
+"bezala."
+
+#: src/diagnosers/00-basesystem.py:222
+msgid "diagnosis_rfkill_wifi"
+msgstr ""
+"Wi-Fi txartela desgaituta dago eta sistemaren ohartarazpen batek "
+"aplikazioen instalazioak eragotzi ditzake"
+
+#: src/diagnosers/00-basesystem.py:223
+msgid "diagnosis_rfkill_wifi_details"
+msgstr ""
+"Ohartarazpena komando askotan ageri da, aplikazio batzuk hautsiz. "
+"Herrialdearen kodea zehaztuz konpon daiteke <code>sudo raspi-"
+"config</code> komandoaren bidez. Hau da errorea:<br>{rfkill_wifi_error}"
+
+#: src/diagnosers/00-basesystem.py
+msgid "diagnosis_description_basesystem"
+msgstr "Sistemaren oinarria"
+
+#: src/migrations/m0032_firewall_config.py
+msgid "migration_description_0032_firewall_config"
+msgstr "Barneko suebakiaren konfigurazio-fitxategiaren migrazioa"
+
+#: src/migrations/m0033_rework_permission_infos.py
+msgid "migration_description_0033_rework_permission_infos"
+msgstr "Berrantolatu gordetako aplikazio-baimenak"
+
+#: src/migrations/m0034_fix_missing_admins_aliases.py
+msgid "migration_description_0034_fix_missing_admins_aliases"
+msgstr "Konpondu administrazio talderako falta diren ePosta ezizenak"
+
+#: src/migrations/m0035_fix_apps_nodejs_version.py
+msgid "migration_description_0035_fix_apps_nodejs_version"
+msgstr "Konpondu nodejs bertsioa aplikazioaren systemd konfigurazioetan"
+
+#: src/migrations/m0031_terms_of_services.py
+msgid "migration_description_0031_terms_of_services"
+msgstr "Zerbitzu-baldintzak"
+
+#: src/migrations/m0036_migrate_to_trixie.py.disabled
+msgid "migration_description_0036_migrate_to_trixie"
+msgstr "Bertsio-berritu sistema Debian Trixie eta YunoHost 13-ra"
+

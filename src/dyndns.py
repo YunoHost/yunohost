@@ -28,8 +28,9 @@ import textwrap
 from logging import getLogger
 from typing import TYPE_CHECKING, cast
 
-from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
+
+from moulinette import Moulinette
 
 from .domain import _get_maindomain
 from .log import is_unit_operation
@@ -37,6 +38,7 @@ from .regenconf import regen_conf
 from .utils.dns import dig, is_yunohost_dyndns_domain
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import chmod, chown, rm, tail, write_to_file
+from .utils.i18n import m18n
 from .utils.misc import send_admin_email
 from .utils.network import get_public_ip
 

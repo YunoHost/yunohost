@@ -39,6 +39,10 @@ dependencies = [
 ]
 
 [dependency-groups]
+dev = [
+    "babel",
+]
+
 tests = [
     "mypy",
     "types-gevent",

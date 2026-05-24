@@ -36,8 +36,9 @@ from typing import (
 )
 
 import yaml
-from moulinette import Moulinette, m18n
 from packaging import version
+
+from moulinette import Moulinette
 
 from .error import YunohostError, YunohostValidationError
 from .file_utils import (
@@ -47,7 +48,7 @@ from .file_utils import (
     read_file,
     read_toml,
 )
-from .i18n import _value_for_locale
+from .i18n import _value_for_locale, m18n
 from .process import check_output
 from .system import (
     binary_to_human,

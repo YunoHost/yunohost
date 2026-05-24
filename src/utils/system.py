@@ -27,9 +27,9 @@ from functools import cache
 from pathlib import Path
 from typing import Any, Literal
 
-from moulinette import Moulinette
-
 from debian import debian_support
+
+from moulinette import Moulinette
 
 from ..utils.error import YunohostError
 from .process import check_output

@@ -26,7 +26,7 @@ from difflib import SequenceMatcher
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict, cast
 
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 
 from .domain import (
     _assert_domain_exists,
@@ -41,6 +41,7 @@ from .log import OperationLogger, is_unit_operation
 from .utils.dns import dig, is_special_use_tld, is_yunohost_dyndns_domain
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import mkdir, read_file, read_toml, write_to_file
+from .utils.i18n import m18n
 from .utils.network import get_public_ip
 
 if TYPE_CHECKING:
@@ -526,8 +527,8 @@ def _get_registrar_config_section(domain: str) -> OrderedDict[str, Any]:
         else:
             parent_domain_link = parent_domain
 
-        registrar_infos["registrar"]["default"] = "parent_domain"
-        registrar_infos["infos"]["ask"] = m18n.n(
+        registrar_infos["registrar"]["default"] = "parent_domain"  # type: ignore
+        registrar_infos["infos"]["ask"] = m18n.n(  # type: ignore
             "domain_dns_registrar_managed_in_parent_domain",
             parent_domain=parent_domain,
             parent_domain_link=parent_domain_link,
@@ -537,9 +538,9 @@ def _get_registrar_config_section(domain: str) -> OrderedDict[str, Any]:
     # TODO big project, integrate yunohost's dynette as a registrar-like provider
     # TODO big project, integrate other dyndns providers such as netlib.re, or cf the list of dyndns providers supported by cloudron...
     if is_yunohost_dyndns_domain(dns_zone):
-        registrar_infos["registrar"]["default"] = "yunohost"
-        registrar_infos["infos"]["style"] = "success"
-        registrar_infos["infos"]["ask"] = m18n.n("domain_dns_registrar_yunohost")
+        registrar_infos["registrar"]["default"] = "yunohost"  # type: ignore
+        registrar_infos["infos"]["style"] = "success"  # type: ignore
+        registrar_infos["infos"]["ask"] = m18n.n("domain_dns_registrar_yunohost")  # type: ignore
         registrar_infos["recovery_password"] = OrderedDict(
             {
                 "type": "password",
@@ -551,19 +552,19 @@ def _get_registrar_config_section(domain: str) -> OrderedDict[str, Any]:
         return registrar_infos
 
     elif is_special_use_tld(dns_zone):
-        registrar_infos["infos"]["ask"] = m18n.n("domain_dns_conf_special_use_tld")
+        registrar_infos["infos"]["ask"] = m18n.n("domain_dns_conf_special_use_tld")  # type: ignore
 
         return registrar_infos
 
     try:
         registrar = _relevant_provider_for_domain(dns_zone)[0]
     except ValueError:
-        registrar_infos["registrar"]["default"] = None
-        registrar_infos["infos"]["ask"] = m18n.n("domain_dns_registrar_not_supported")
-        registrar_infos["infos"]["style"] = "warning"
+        registrar_infos["registrar"]["default"] = None  # type: ignore
+        registrar_infos["infos"]["ask"] = m18n.n("domain_dns_registrar_not_supported")  # type: ignore
+        registrar_infos["infos"]["style"] = "warning"  # type: ignore
     else:
-        registrar_infos["registrar"]["default"] = registrar
-        registrar_infos["infos"]["ask"] = m18n.n(
+        registrar_infos["registrar"]["default"] = registrar  # type: ignore
+        registrar_infos["infos"]["ask"] = m18n.n(  # type: ignore
             "domain_dns_registrar_supported", registrar=registrar
         )
 

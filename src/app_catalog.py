@@ -25,11 +25,9 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, Literal, NotRequired, TypedDict
 
-from moulinette import m18n
-
 from .utils.error import YunohostError
 from .utils.file_utils import download_json, mkdir, read_json, read_yaml, write_to_json
-from .utils.i18n import _value_for_locale
+from .utils.i18n import _value_for_locale, m18n
 
 logger = getLogger("yunohost.app_catalog")
 

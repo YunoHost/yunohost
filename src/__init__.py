@@ -28,11 +28,11 @@ if TYPE_CHECKING:
     from moulinette.core import MoulinetteLock
 
 
-from moulinette.interfaces.cli import colorize, get_locale
+from moulinette.interfaces.cli import colorize
 
 import moulinette
-from moulinette import m18n
 
+from .utils.i18n import m18n
 from .utils.logging import init_logging
 
 
@@ -51,6 +51,8 @@ def cli(
 ) -> NoReturn:
     """Entry point for YunoHost CLI"""
     init_logging(interface="cli", debug=debug, quiet=quiet)
+
+    init_i18n()
 
     # Check that YunoHost is installed
     if not is_installed():
@@ -82,6 +84,8 @@ def api(debug: bool, host: str, port: int, actionsmap: str | None = None) -> NoR
 
     init_logging(interface="api", debug=debug)
 
+    init_i18n()
+
     def is_installed_api() -> dict[Literal["installed"], bool]:
         return {"installed": is_installed()}
 
@@ -109,6 +113,8 @@ def portalapi(debug: bool, host: str, port: int) -> NoReturn:
 
     # FIXME : is this the logdir we want ? (yolo to work around permission issue)
     init_logging(interface="portalapi", debug=debug, logdir="/var/log")
+
+    init_i18n()
 
     ret = moulinette.api(
         host=host,
@@ -163,4 +169,3 @@ def init_i18n() -> None:
     or moulinette.api but still willing to call m18n.n/g...
     """
     m18n.set_locales_dir("/usr/share/yunohost/locales/")
-    m18n.set_locale(get_locale())

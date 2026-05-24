@@ -35,7 +35,7 @@ from glob import glob
 from logging import getLogger
 from typing import TYPE_CHECKING, cast
 
-from moulinette import Moulinette, m18n
+from moulinette import Moulinette
 
 from .hook import (
     CUSTOM_HOOK_FOLDER,
@@ -69,6 +69,7 @@ from .utils.file_utils import (
     read_file,
     rm,
 )
+from .utils.i18n import m18n
 from .utils.misc import random_ascii
 from .utils.process import check_output
 from .utils.system import (
@@ -768,6 +769,9 @@ class BackupManager:
             method_name = (
                 method.method if hasattr(method, "method") else method.method_name
             )
+            # i18n: backup_applying_method_copy
+            # i18n: backup_applying_method_custom
+            # i18n: backup_applying_method_tar
             logger.debug(
                 m18n.n(
                     "backup_applying_method_" + method.method_name,
@@ -775,6 +779,9 @@ class BackupManager:
                 )
             )
             method.mount_and_backup()
+            # i18n: backup_method_copy_finished
+            # i18n: backup_method_custom_finished
+            # i18n: backup_method_tar_finished
             logger.debug(
                 m18n.n(
                     "backup_method_" + method.method_name + "_finished",

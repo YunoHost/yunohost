@@ -28,12 +28,12 @@ from logging import getLogger
 from typing import TYPE_CHECKING, Any, cast
 
 import yaml
-from moulinette import m18n
 
 from .hook import hook_callback, hook_list
 from .log import is_unit_operation
 from .utils.error import YunohostError
 from .utils.file_utils import mkdir
+from .utils.i18n import m18n
 from .utils.process import check_output
 
 BASE_CONF_PATH = "/var/cache/yunohost/regenconf"

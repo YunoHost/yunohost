@@ -23,10 +23,9 @@ import subprocess
 import time
 from logging import getLogger
 
-from moulinette import m18n
-
 from ..tools import Migration
 from ..utils.error import YunohostError, YunohostValidationError
+from ..utils.i18n import m18n
 from ..utils.system import free_space_in_directory, space_used_by_directory
 
 logger = getLogger("yunohost.migration")

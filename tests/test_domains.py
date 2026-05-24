@@ -23,7 +23,6 @@ import random
 
 import pytest
 from mock import patch
-from moulinette import Moulinette
 from moulinette.core import MoulinetteError
 from yunohost.domain import (
     DOMAIN_SETTINGS_DIR,
@@ -36,6 +35,8 @@ from yunohost.domain import (
     domain_remove,
 )
 from yunohost.utils.error import YunohostError, YunohostValidationError
+
+from moulinette import Moulinette
 
 TEST_DOMAINS = ["example.tld", "sub.example.tld", "other-example.com"]
 TEST_DYNDNS_DOMAIN = (

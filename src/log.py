@@ -30,11 +30,13 @@ from typing import Any
 
 import psutil
 import yaml
-from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
+
+from moulinette import Moulinette
 
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import read_file, read_yaml
+from .utils.i18n import m18n
 from .utils.logging import SUCCESS
 from .utils.system import get_ynh_package_version
 

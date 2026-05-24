@@ -30,10 +30,10 @@ from typing import Any, Literal
 import jwt
 import ldap
 import ldap.sasl
-from moulinette import m18n
 from moulinette.authentication import BaseAuthenticator
 
 from ..utils.error import YunohostAuthenticationError, YunohostError
+from ..utils.i18n import m18n
 from ..utils.ldap import _get_ldap_interface
 from ..utils.misc import random_ascii
 

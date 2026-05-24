@@ -27,10 +27,10 @@ from typing import Any, Literal, TypedDict
 
 import miniupnpc
 import yaml
-from moulinette import m18n
 
 from .regenconf import regen_conf
 from .utils.error import YunohostError, YunohostValidationError
+from .utils.i18n import m18n
 
 logger: Any = getLogger("yunohost.firewall")
 

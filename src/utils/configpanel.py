@@ -26,9 +26,10 @@ from collections.abc import Generator
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union, cast
 
-from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
+
+from moulinette import Moulinette
 
 from .error import YunohostError, YunohostValidationError
 from .file_utils import mkdir, read_toml, read_yaml, write_to_yaml
@@ -46,7 +47,7 @@ from .form import (
     parse_prefilled_values,
     prompt_or_validate_form,
 )
-from .i18n import _value_for_locale
+from .i18n import _value_for_locale, m18n
 
 if TYPE_CHECKING:
     from pydantic import GetJsonSchemaHandler

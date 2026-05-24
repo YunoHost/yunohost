@@ -20,8 +20,9 @@
 
 from typing import Any
 
-from moulinette import m18n
 from moulinette.core import MoulinetteAuthenticationError, MoulinetteError
+
+from ..utils.i18n import m18n
 
 
 class YunohostError(MoulinetteError):
