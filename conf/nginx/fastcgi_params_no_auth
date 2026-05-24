@@ -38,7 +38,7 @@ fastcgi_param  REDIRECT_STATUS    200;
 # forwarding the raw Host header can therefore lead to incorrect or unsafe
 # behaviour.
 #
-# Newer nginx versions (since 1.30.0) introduce variables "$is_request_port" a>
+# Newer nginx versions (since 1.30.0) introduce variables "$is_request_port" and
 # "$request_port", allowing HTTP_HOST to be constructed as:
 #     $host$is_request_port$request_port
 #
