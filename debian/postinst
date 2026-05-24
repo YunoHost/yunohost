@@ -33,13 +33,13 @@ do_configure() {
             echo "Sounds like /etc/yunohost/installed mysteriously disappeared ... You should probably contact the Yunohost support ..."
         else
             export YNH_SETTINGS='{}'
-            bash /usr/share/yunohost/hooks/conf_regen/01-yunohost init
-            bash /usr/share/yunohost/hooks/conf_regen/02-ssl init
-            bash /usr/share/yunohost/hooks/conf_regen/09-nss init
-            bash /usr/share/yunohost/hooks/conf_regen/43-dnsmasq init
-            bash /usr/share/yunohost/hooks/conf_regen/06-slapd init
-            bash /usr/share/yunohost/hooks/conf_regen/15-nginx init
-            bash /usr/share/yunohost/hooks/conf_regen/37-mdns init
+            bash /usr/share/yunohost/hooks/regen_conf/01-yunohost init
+            bash /usr/share/yunohost/hooks/regen_conf/02-ssl init
+            bash /usr/share/yunohost/hooks/regen_conf/09-nss init
+            bash /usr/share/yunohost/hooks/regen_conf/43-dnsmasq init
+            bash /usr/share/yunohost/hooks/regen_conf/06-slapd init
+            bash /usr/share/yunohost/hooks/regen_conf/15-nginx init
+            bash /usr/share/yunohost/hooks/regen_conf/37-mdns init
         fi
     else
         echo "Regenerating configuration, this might take a while..."

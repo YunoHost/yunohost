@@ -187,7 +187,7 @@ class MyMigration(Migration):
                 check=True,
             )
 
-        # Do not restart services during apt upgrade, that we know for sure will be broken before a conf-regen
+        # Do not restart services during apt upgrade, that we know for sure will be broken before a regen-conf
         # FIXME : we should find a ~robust way to auto-delete the policy-rc.d file after the migration went through,
         # ideally wrapping everything in a context manager somehow
         self.prevent_services_restart_during_upgrade([

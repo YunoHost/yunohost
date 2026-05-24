@@ -121,7 +121,7 @@ def hook_info(action, name):
     }
 
 
-def hook_list(action, list_by="name", show_info=False):
+def hook_list(action, list_by="name", show_info=False, recalled: bool = False):
     """
     List available hooks for an action
 
@@ -131,6 +131,18 @@ def hook_list(action, list_by="name", show_info=False):
         show_info -- Show hook information
 
     """
+
+    if not recalled and action in ["conf_regen", "regen_conf"]:
+        # This is legacy compatibility for apps installing stuff in conf_regen directories
+        # We just list hooks present with both action names, we don't migrate (yet) old
+        # hooks because users might've added manual hooks
+        cr_hooks = hook_list("conf_regen", list_by, show_info, True)["hooks"]
+        rc_hooks = hook_list("regen_conf", list_by, show_info, True)["hooks"]
+        if cr_hooks:
+            cr_list = ", ".join(cr_hooks.keys())
+            logger.warning(f"Legacy conf_regen hooks are still present on your system: {cr_list}.")
+        return {"hooks": cr_hooks | rc_hooks}
+
     result = {}
 
     # Process the property to list hook by

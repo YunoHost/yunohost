@@ -2136,7 +2136,7 @@ hook:
                         - restore
                         - backup_method
                         - post_iptable_rules
-                        - conf_regen
+                        - regen_conf
                 name:
                     help: Hook name
                     extra:
