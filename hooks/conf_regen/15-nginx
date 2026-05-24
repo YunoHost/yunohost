@@ -172,6 +172,13 @@ do_post_regen() {
     # shellcheck disable=SC2016
     sed -i 's/$remote_user;/$http_ynh_user if_not_empty;/g' /etc/nginx/fastcgi_params
 
+    # Hotfix CVE-2026-42945
+    # shellcheck disable=SC2016
+    if ! grep -qE 'fastcgi_param\s+HTTP_HOST\s+\$host;' /etc/nginx/fastcgi_params 2>/dev/null ; then
+        # shellcheck disable=SC2016
+        echo 'fastcgi_param  HTTP_HOST        $host;' >> /etc/nginx/fastcgi_params
+    fi
+
     if ls -l /etc/nginx/conf.d/*.d/*.conf; then
         chown root:root /etc/nginx/conf.d/*.d/*.conf
         chmod 644 /etc/nginx/conf.d/*.d/*.conf
