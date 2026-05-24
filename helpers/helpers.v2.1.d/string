@@ -49,8 +49,6 @@ ynh_string_random() {
 # As this helper is based on sed command, regular expressions and references to
 # sub-expressions can be used (see sed manual page for more information).
 #
-# However `--file` parameter does not accept wildcards (`*`). If required, you may want to use `ynh_replace` in a "for" loop as a workaround.
-#
 ynh_replace() {
     # ============ Argument parsing =============
     local -A args_array=([m]=match= [r]=replace= [f]=file=)
@@ -67,7 +65,10 @@ ynh_replace() {
     replace=${replace//${delimit}/"\\${delimit}"}
 
     set -o xtrace # set -x
-    sed --in-place "s${delimit}${match}${delimit}${replace}${delimit}g" "$file"
+    for f in "$file"
+    do
+        sed --in-place "s${delimit}${match}${delimit}${replace}${delimit}g" "$f"
+    done 
 }
 
 # Substitute/replace a regex in a file
