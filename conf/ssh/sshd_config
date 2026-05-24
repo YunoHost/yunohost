@@ -63,12 +63,12 @@ UsePAM yes
 # accepts any single authentication methods. Also, each authentication method
 # listed should be explicitly enabled. See
 # https://man.openbsd.org/sshd_config#AuthenticationMethods
-{% if authentication_methods == "insecure" %}
+{% if authentication_methods == "password" %}
 PasswordAuthentication yes
-{% elif authentication_methods == "basic" %}
+{% elif authentication_methods == "publickey" %}
 PasswordAuthentication no
 PubkeyAuthentication yes
-{% elif authentication_methods == "intermediate"  %}
+{% elif authentication_methods == "publickey_and_password"  %}
 AuthenticationMethods publickey,password
 PasswordAuthentication yes
 {% endif %}

@@ -39,10 +39,10 @@ i18n = "global_settings_setting"
 
         [security.ssh.ssh_authentication_methods]
         type = "select"
-        choices.insecure = "Only password authentication required"
-        choices.basic = "Only public key authentication required"
-        choices.intermediate = "Public key and password authentication required"
-        default = "basic"
+        choices.password = "Only password authentication required (not recommended)"
+        choices.publickey = "Only public key authentication required (recommended)"
+        choices.publickey_and_password = "Public key and password authentication required"
+        default = "password"
 
 
     [security.nginx]
