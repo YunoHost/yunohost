@@ -56,9 +56,12 @@ UsePAM yes
 
 # Authentication methods
 
-# Note that when no authentication method is specified, the default is "any"
-# which accepts any single authentication methods. Also, each authentication
-# method listed should be explicitly enabled. See
+# PLEASE: if you wish to change the authenticatation methods, run this command:
+# yunohost settings set security.ssh.ssh_authentication_methods -v <profile>
+
+# Note: when no authentication method is specified, the default is "any" which
+# accepts any single authentication methods. Also, each authentication method
+# listed should be explicitly enabled. See
 # https://man.openbsd.org/sshd_config#AuthenticationMethods
 {% if authentication_methods == "insecure" %}
 PasswordAuthentication yes
