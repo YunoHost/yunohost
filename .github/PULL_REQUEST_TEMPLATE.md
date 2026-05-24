@@ -9,8 +9,6 @@ Related PRs:
 
 ...
 
-### Related PR
-
 ## PR Status
 *Work in progress / Untested / Tested partially / Fully tested / Wait for other PR to be merged / Ready*
 
