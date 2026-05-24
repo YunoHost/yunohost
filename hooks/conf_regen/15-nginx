@@ -174,7 +174,7 @@ do_post_regen() {
 
     # Hotfix CVE-2026-42945
     # shellcheck disable=SC2016
-    if ! grep -qE 'fastcgi_param\s+HTTP_HOST\s+\$host;' /etc/nginx/fastcgi_params 2>/dev/null ; then
+    if ! grep -qE 'fastcgi_param\s+HTTP_HOST\s+\$host;' /etc/nginx/fastcgi_params 2> /dev/null; then
         # shellcheck disable=SC2016
         echo 'fastcgi_param  HTTP_HOST        $host;' >> /etc/nginx/fastcgi_params
     fi
