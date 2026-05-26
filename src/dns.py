@@ -354,12 +354,11 @@ def _get_DKIM(domain):
     if not dkim:
         return (None, None)
 
-    return (
-            dkim.group("host"),
+    return (dkim.group("host"),
             re.sub(r'"[\s\n]+"', '" "',
                    dkim.group("c").strip(),
-                   re.M | re.S),
-        )
+                   re.M | re.S))
+
 
 def _get_dns_zone_for_domain(domain):
     """
