@@ -9,7 +9,6 @@ from yunohost.domain import domain_list
 from yunohost.dyndns import dyndns_update, dyndns_list
 from yunohost.service import service_restart
 from yunohost.utils.file_utils import cp, chown, chmod, rm
-from yunohost.utils.error import YunohostValidationError
 
 
 logger = getLogger("yunohost.migration")
@@ -117,7 +116,5 @@ class MyMigration(Migration):
 
         # If an upgradable domain is a dyndns domain, update dyndns
         if self.manual_domains:
-            logger.warning(m18n.n("migration_0037_upgrade_dkim_keys_manual_action",
-                domains="\n - " + "\n - ".join(self.manual_domains)))
-
-
+            domains = "\n - " + "\n - ".join(self.manual_domains)
+            logger.warning(m18n.n("migration_0037_upgrade_dkim_keys_manual_action", domains=domains))
