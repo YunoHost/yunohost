@@ -1,14 +1,15 @@
 .install_debs: &install_debs
     # Temporary hack for the CI to install python3-zmq not yet in the image
     - DEBIAN_FRONTEND=noninteractive apt update
-    - DEBIAN_FRONTEND=noninteractive apt --assume-yes install python3-zmq 
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes install python3-zmq
     - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ${CI_PROJECT_DIR}/*.deb
 
 .test-stage:
   stage: test
   image: "core-tests"
   variables:
-    PYTEST_ADDOPTS: "--color=yes --cov=src"
+    #PYTEST_ADDOPTS: "--color=yes --cov=src"
+    PYTEST_ADDOPTS: "--color=yes"
     COVERAGE_FILE: ".coverage_$CI_JOB_NAME"
   before_script:
     - *install_debs
@@ -29,146 +30,158 @@
 # TESTS
 ########################################
 
-test-helpers2:
+.test-pytest:
   extends: .test-stage
   script:
-    - cd tests
-    - bash test_helpers.sh
+    - python3 -m pytest $TEST_FILE --durations=50
 
-test-helpers2.1:
-  extends: .test-stage
-  script:
-    - cd tests
-    - bash test_helpers.sh 2.1
+test-helpers:
+  extends: .test-pytest
+  variables:
+    TEST_FILE: tests/test_helpers.py
 
 test-domains:
-  extends: .test-stage
-  script:
-    - python3 -m pytest src/tests/test_domains.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_domains.py
 
 test-dns:
-  extends: .test-stage
-  script:
-    - python3 -m pytest src/tests/test_dns.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_dns.py
 
 test-apps:
-  extends: .test-stage
-  script:
-    - python3 -m pytest src/tests/test_apps.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_apps.py
 
 test-appscatalog:
-  extends: .test-stage
-  script:
-    - python3 -m pytest src/tests/test_app_catalog.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_app_catalog.py
 
 test-appurl:
-  extends: .test-stage
-  script:
-    - python3 -m pytest src/tests/test_appurl.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_appurl.py
 
 test-questions:
-  extends: .test-stage
-  script:
-    - python3 -m pytest src/tests/test_questions.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_questions.py
 
 test-app-config:
-  extends: .test-stage
-  script:
-    - python3 -m pytest src/tests/test_app_config.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_app_config.py
 
 test-app-resources:
-  extends: .test-stage
-  script:
-    - python3 -m pytest src/tests/test_app_resources.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_app_resources.py
 
 test-changeurl:
-  extends: .test-stage
-  script:
-    - python3 -m pytest src/tests/test_changeurl.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_changeurl.py
 
 test-backuprestore:
-  extends: .test-stage
-  script:
-    - python3 -m pytest src/tests/test_backuprestore.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_backuprestore.py
 
 test-permission:
-  extends: .test-stage
-  script:
-    - python3 -m pytest src/tests/test_permission.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_permission.py
 
 test-settings:
-  extends: .test-stage
-  script:
-    - python3 -m pytest src/tests/test_settings.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_settings.py
 
 test-user-group:
-  extends: .test-stage
-  script:
-    - python3 -m pytest src/tests/test_user-group.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_user-group.py
 
 test-regenconf:
-  extends: .test-stage
-  script:
-    - python3 -m pytest src/tests/test_regenconf.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_regenconf.py
 
 test-service:
-  extends: .test-stage
-  script:
-    - python3 -m pytest src/tests/test_service.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_service.py
 
 test-ldapauth:
-  extends: .test-stage
-  script:
-    - python3 -m pytest src/tests/test_ldapauth.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_ldapauth.py
 
 test-sso-and-portalapi:
-  extends: .test-stage
-  script:
-    - python3 -m pytest src/tests/test_sso_and_portalapi.py
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_sso_and_portalapi.py
+
+test-process:
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_process.py
+
+test-file-utils:
+  extends: .test-pytest
+  variables:
+   TEST_FILE: tests/test_file_utils.py
 
 ########################################
 # COVERAGE REPORT
 ########################################
 
-coverage:
-  stage: test
-  image: "core-tests"
-  needs:
-    # Yeah ... gotta list all of those individually ... https://gitlab.com/gitlab-org/gitlab/-/issues/332326
-    - job: test-domains
-      artifacts: true
-    - job: test-dns
-      artifacts: true
-    - job: test-apps
-      artifacts: true
-    - job: test-appscatalog
-      artifacts: true
-    - job: test-appurl
-      artifacts: true
-    - job: test-questions
-      artifacts: true
-    - job: test-app-config
-      artifacts: true
-    - job: test-app-resources
-      artifacts: true
-    - job: test-changeurl
-      artifacts: true
-    - job: test-backuprestore
-      artifacts: true
-    - job: test-permission
-      artifacts: true
-    - job: test-settings
-      artifacts: true
-    - job: test-user-group
-      artifacts: true
-    - job: test-regenconf
-      artifacts: true
-    - job: test-service
-      artifacts: true
-    - job: test-ldapauth
-      artifacts: true
-    - job: test-sso-and-portalapi
-      artifacts: true
-  script:
-    - coverage combine ./.coverage_*
-    - coverage report
+#coverage:
+#  stage: test
+#  image: "core-tests"
+#  needs:
+#    # Yeah ... gotta list all of those individually ... https://gitlab.com/gitlab-org/gitlab/-/issues/332326
+#    - job: test-domains
+#      artifacts: true
+#    - job: test-dns
+#      artifacts: true
+#    - job: test-apps
+#      artifacts: true
+#    - job: test-appscatalog
+#      artifacts: true
+#    - job: test-appurl
+#      artifacts: true
+#    - job: test-questions
+#      artifacts: true
+#    - job: test-app-config
+#      artifacts: true
+#    - job: test-app-resources
+#      artifacts: true
+#    - job: test-changeurl
+#      artifacts: true
+#    - job: test-backuprestore
+#      artifacts: true
+#    - job: test-permission
+#      artifacts: true
+#    - job: test-settings
+#      artifacts: true
+#    - job: test-user-group
+#      artifacts: true
+#    - job: test-regenconf
+#      artifacts: true
+#    - job: test-service
+#      artifacts: true
+#    - job: test-ldapauth
+#      artifacts: true
+#    - job: test-sso-and-portalapi
+#      artifacts: true
+#    - job: test-process
+#      artifacts: true
+#    - job: test-file-utils
+#      artifacts: true
+#  script:
+#    - coverage combine ./.coverage_*
+#    - coverage report

@@ -21,24 +21,34 @@
 import json
 import logging
 import os
+import re
 import subprocess
-from typing import List
+from collections.abc import Generator
+from typing import Any
 
-from moulinette.utils.filesystem import read_file, read_json, write_to_json
-from moulinette.utils.process import check_output
-
-from yunohost.diagnosis import Diagnoser
-from yunohost.utils.system import system_arch, system_virt, ynh_packages_version
+from ..app_catalog import SecurityIssueInfos, _load_security_issues_list
+from ..diagnosis import Diagnoser
+from ..utils.file_utils import read_file, read_json, write_to_json
+from ..utils.process import check_output
+from ..utils.system import (
+    debian_version,
+    dpkg_compare_version,
+    dpkg_list_installed_packages,
+    dpkg_package_version,
+    system_arch,
+    system_virt,
+    ynh_packages_version,
+)
 
 logger = logging.getLogger("yunohost.diagnosis")
 
 
-class MyDiagnoser(Diagnoser):
+class MyDiagnoser(Diagnoser):  # type: ignore
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
-    dependencies: List[str] = []
+    dependencies: list[str] = []
 
-    def run(self):
+    def run(self) -> Generator[dict[str, Any], None, None]:
         virt = system_virt()
         if virt.lower() == "none":
             virt = "bare-metal"
@@ -55,7 +65,7 @@ class MyDiagnoser(Diagnoser):
         # Also possibly the board / hardware name
         if os.path.exists("/proc/device-tree/model"):
             model = read_file("/proc/device-tree/model").strip().replace("\x00", "")
-            hardware["data"]["model"] = model
+            hardware["data"]["model"] = model  # type: ignore
             hardware["details"] = ["diagnosis_basesystem_hardware_model"]
         elif os.path.exists("/sys/devices/virtual/dmi/id/sys_vendor"):
             model = read_file("/sys/devices/virtual/dmi/id/sys_vendor").strip()
@@ -64,7 +74,7 @@ class MyDiagnoser(Diagnoser):
                     "/sys/devices/virtual/dmi/id/product_name"
                 ).strip()
                 model = f"{model} {product_name}"
-            hardware["data"]["model"] = model
+            hardware["data"]["model"] = model  # type: ignore
             hardware["details"] = ["diagnosis_basesystem_hardware_model"]
 
         yield hardware
@@ -79,10 +89,9 @@ class MyDiagnoser(Diagnoser):
         )
 
         # Debian release
-        debian_version = read_file("/etc/debian_version").strip()
         yield dict(
             meta={"test": "host"},
-            data={"debian_version": debian_version},
+            data={"debian_version": debian_version()},
             status="INFO",
             summary="diagnosis_basesystem_host",
         )
@@ -201,7 +210,9 @@ class MyDiagnoser(Diagnoser):
                 data={"rfkill_wifi_error": rfkill_wifi},
             )
 
-    def bad_sury_packages(self):
+        yield from self.security_issues()
+
+    def bad_sury_packages(self) -> Generator[tuple[str, str], None, None]:
         packages_to_check = ["openssl", "libssl1.1", "libssl-dev"]
         for package in packages_to_check:
             cmd = "dpkg --list | grep '^ii' | grep gbp | grep -q -w %s" % package
@@ -216,11 +227,11 @@ class MyDiagnoser(Diagnoser):
             version_to_downgrade_to = check_output(cmd)
             yield (package, version_to_downgrade_to)
 
-    def backports_in_sources_list(self):
+    def backports_in_sources_list(self) -> bool:
         cmd = "grep -q -nr '^ *deb .*-backports' /etc/apt/sources.list*"
         return os.system(cmd) == 0
 
-    def number_of_recent_auth_failure(self):
+    def number_of_recent_auth_failure(self) -> int:
         # Those syslog facilities correspond to auth and authpriv
         # c.f. https://unix.stackexchange.com/a/401398
         # and https://wiki.archlinux.org/title/Systemd/Journal#Facility
@@ -236,7 +247,7 @@ class MyDiagnoser(Diagnoser):
             )
             return -1
 
-    def is_vulnerable_to_meltdown(self):
+    def is_vulnerable_to_meltdown(self) -> bool:
         # meltdown CVE: https://security-tracker.debian.org/tracker/CVE-2017-5754
 
         # We use a cache file to avoid re-running the script so many times,
@@ -257,7 +268,7 @@ class MyDiagnoser(Diagnoser):
                 logger.debug(
                     "Using cached results for meltdown checker, from %s" % cache_file
                 )
-                return read_json(cache_file)[0]["VULNERABLE"]
+                return read_json(cache_file)[0]["VULNERABLE"]  # type: ignore
 
         # script taken from https://github.com/speed47/spectre-meltdown-checker
         # script commit id is store directly in the script
@@ -280,8 +291,8 @@ class MyDiagnoser(Diagnoser):
             # "missing some kernel info (see -v), accuracy might be reduced"
             # Dunno what to do about that but we probably don't want to harass
             # users with this warning ...
-            output, _ = call.communicate()
-            output = output.decode()
+            output_bytes, _ = call.communicate()
+            output = output_bytes.decode()
             assert call.returncode in (0, 2, 3), "Return code: %s" % call.returncode
 
             # If there are multiple lines, sounds like there was some messages
@@ -303,17 +314,90 @@ class MyDiagnoser(Diagnoser):
                 "Something wrong happened when trying to diagnose Meltdown vunerability, exception: %s"
                 % e
             )
-            raise Exception("Command output for failed meltdown check: '%s'" % output)
+            raise Exception(f"Command output for failed meltdown check: '{output}'")
 
         logger.debug(
             "Writing results from meltdown checker to cache file, %s" % cache_file
         )
         write_to_json(cache_file, CVEs)
-        return CVEs[0]["VULNERABLE"]
+        return CVEs[0]["VULNERABLE"]  # type: ignore
 
-    def rfkill_wifi(self):
+    def rfkill_wifi(self) -> str:
         if os.path.isfile("/etc/profile.d/wifi-check.sh"):
             cmd = "bash /etc/profile.d/wifi-check.sh"
-            return check_output(cmd)
+            return check_output(cmd)  # type: ignore
         else:
             return ""
+
+    def security_issues(self):
+        installed_packages = dpkg_list_installed_packages()
+        security_issues_list_per_pkg: dict[str, list[SecurityIssueInfos]] = (
+            _load_security_issues_list()["system"]
+        )
+        for package, issues in security_issues_list_per_pkg.items():
+            if package not in installed_packages and package != "kernel":
+                continue
+
+            if package != "kernel":
+                current_version = dpkg_package_version(package)
+            else:
+                # NOT equivalent to uname -r ... we are looking for the
+                # "mainline" kernel version, not the debian kernel version,
+                # cf issues#2803
+                raw_kernel_comment = read_file("/proc/sys/kernel/version").strip()
+                version_matches = re.findall(r"\s[0-9]\S+", raw_kernel_comment)
+                if len(version_matches) != 1:
+                    logger.warning(
+                        f"Unable to extract mainline kernel version from the kernel info '{raw_kernel_comment}' ... Therefore YunoHost will be unable to check for security issues related to the kernel. Please try to report this message to the YunoHost team to improve the situation"
+                    )
+                    continue
+                current_version = version_matches[0].strip()
+                # RPi have their mainline kernel version number somehow
+                # starting with "1:" which messes up the version comparison
+                # later
+                if ":" in current_version:
+                    current_version = current_version.split(":")[1]
+
+                # FIXME : so far this whole kernel check is not reliable on every setup
+                # because not every context has the kernel from Debian :
+                # - RPI ships their own kernel possibly with more recent
+                # versions than the standard Debian setup
+                # - LXC/containers use the kernel from the host, which may be
+                # in a totally different distribution therefore we can't just
+                # expect the kernel version to be related to the debian version
+                # we're running (e.g. 6.1.x for Bookworm, 6.12.x for Trixie)
+
+            for issue in issues:
+                raw_fixed_in_version = issue["fixed_in_version"]
+                if isinstance(raw_fixed_in_version, dict):
+                    if debian_version() not in raw_fixed_in_version:
+                        logger.warning(
+                            f"Not able to check versions in which security issue is fixed for package '{package}' (no version specified for Debian {debian_version()})"
+                        )
+                        continue
+                    fixed_in_version = raw_fixed_in_version[debian_version()]
+                else:
+                    fixed_in_version = raw_fixed_in_version
+
+                if dpkg_compare_version(current_version, fixed_in_version) >= 0:
+                    # installed version is >= to the version which fixes the issue, therefore there's no issue to report
+                    continue
+
+                level = "error" if issue["level"] == "danger" else "warning"
+                if isinstance(issue["more_infos"], list):
+                    more_infos_list = ", ".join(issue["more_infos"])
+                else:
+                    more_infos_list = issue["more_infos"]
+                yield dict(
+                    meta={"package": package},
+                    status=level.upper(),
+                    # i18n: diagnosis_package_security_issue_warning
+                    # i18n: diagnosis_package_security_issue_error
+                    summary=f"diagnosis_package_security_issue_{level}",
+                    data={
+                        **issue,
+                        "fixed_in_version": fixed_in_version,
+                        "more_infos_list": more_infos_list,
+                        "current_version": current_version,
+                    },
+                )

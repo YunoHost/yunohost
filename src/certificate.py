@@ -25,20 +25,26 @@ import sys
 from datetime import datetime
 from glob import glob
 from logging import getLogger
+from typing import TYPE_CHECKING, Any, cast
 
 from moulinette import m18n
-from moulinette.utils.filesystem import chmod, chown, read_file
-from moulinette.utils.process import check_output
 
-from yunohost.diagnosis import Diagnoser
-from yunohost.log import OperationLogger
-from yunohost.regenconf import regen_conf
-from yunohost.service import _run_service_command
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.network import get_public_ip
-from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
+from .diagnosis import Diagnoser
+from .log import OperationLogger
+from .regenconf import regen_conf
+from .service import _run_service_command
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import chmod, chown, read_file
+from .utils.network import get_public_ip
+from .utils.process import check_output
+from .vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 
-logger = getLogger("yunohost.certmanager")
+if TYPE_CHECKING:
+    from .utils.logging import YunohostLogger
+
+    logger = cast(YunohostLogger, getLogger("yunohost.certmanager"))
+else:
+    logger = getLogger("yunohost.certmanager")
 
 CERT_FOLDER = "/etc/yunohost/certs/"
 TMP_FOLDER = "/var/www/.well-known/acme-challenge-private/"
@@ -49,7 +55,7 @@ ACCOUNT_KEY_FILE = "/etc/yunohost/letsencrypt_account.pem"
 
 SSL_DIR = "/usr/share/yunohost/ssl"
 
-KEY_SIZE = 3072
+KEY_SIZE = 4096
 
 VALIDITY_LIMIT = 15  # days
 
@@ -61,7 +67,9 @@ PRODUCTION_CERTIFICATION_AUTHORITY = "https://acme-v02.api.letsencrypt.org"
 #
 
 
-def certificate_status(domains, full=False):
+def certificate_status(
+    domains: list[str], full: bool = False
+) -> dict[str, dict[str, Any]]:
     """
     Print the status of certificate for given domains (all by default)
 
@@ -70,7 +78,7 @@ def certificate_status(domains, full=False):
         full        -- Display more info about the certificates
     """
 
-    from yunohost.domain import (
+    from .domain import (
         _assert_domain_exists,
         _get_parent_domain_of,
         domain_list,
@@ -78,7 +86,7 @@ def certificate_status(domains, full=False):
 
     # If no domains given, consider all yunohost domains
     if domains == []:
-        domains = domain_list()["domains"]
+        domains = domain_list()["domains"]  # type: ignore[assignment]
     # Else, validate that yunohost knows the domains given
     else:
         for domain in domains:
@@ -97,7 +105,7 @@ def certificate_status(domains, full=False):
             try:
                 _check_domain_is_ready_for_ACME(domain)
                 status["ACME_eligible"] = True
-            except Exception as e:
+            except YunohostError as e:
                 if e.key == "certmanager_domain_not_diagnosed_yet":
                     status["ACME_eligible"] = None  # = unknown status
                 else:
@@ -119,7 +127,12 @@ def certificate_status(domains, full=False):
     return {"certificates": certificates}
 
 
-def certificate_install(domain_list, force=False, no_checks=False, self_signed=False):
+def certificate_install(
+    domain_list: list[str],
+    force: bool = False,
+    no_checks: bool = False,
+    self_signed: bool = False,
+) -> None:
     """
     Install a Let's Encrypt certificate for given domains (all by default)
 
@@ -241,7 +254,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
 
 def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
-    from yunohost.domain import _assert_domain_exists, domain_list
+    from .domain import _assert_domain_exists, domain_list
 
     if not os.path.exists(ACCOUNT_KEY_FILE):
         _generate_account_key()
@@ -309,7 +322,12 @@ def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
         )
 
 
-def certificate_renew(domains, force=False, no_checks=False, email=False):
+def certificate_renew(
+    domains: list[str],
+    force: bool = False,
+    no_checks: bool = False,
+    email: bool = False,
+) -> None:
     """
     Renew Let's Encrypt certificate for given domains (all by default)
 
@@ -321,7 +339,7 @@ def certificate_renew(domains, force=False, no_checks=False, email=False):
         email      -- Emails root if some renewing failed
     """
 
-    from yunohost.domain import _assert_domain_exists, domain_list
+    from .domain import _assert_domain_exists, domain_list
 
     # If no domains given, consider all yunohost domains with Let's Encrypt
     # certificates
@@ -572,7 +590,7 @@ def _fetch_and_enable_new_certificate(domain, no_checks=False):
 def _prepare_certificate_signing_request(domain, key_file, output_folder):
     from OpenSSL import crypto  # lazy loading this module for performance reasons
 
-    from yunohost.hook import hook_callback
+    from .hook import hook_callback
 
     # Init a request
     csr = crypto.X509Req()
@@ -754,7 +772,7 @@ def _enable_certificate(domain, new_cert_folder):
     _run_service_command("reload", "nginx")
     _run_service_command("restart", "dovecot")
 
-    from yunohost.hook import hook_callback
+    from .hook import hook_callback
 
     hook_callback("post_cert_update", args=[domain])
 
@@ -771,9 +789,9 @@ def _backup_current_cert(domain):
 
 
 def _check_domain_is_ready_for_ACME(domain):
-    from yunohost.dns import _get_dns_zone_for_domain
-    from yunohost.domain import _get_parent_domain_of
-    from yunohost.utils.dns import is_yunohost_dyndns_domain
+    from .dns import _get_dns_zone_for_domain
+    from .domain import _get_parent_domain_of
+    from .utils.dns import is_yunohost_dyndns_domain
 
     httpreachable = (
         Diagnoser.get_cached_report(
@@ -824,14 +842,13 @@ def _check_domain_is_ready_for_ACME(domain):
             "certmanager_domain_not_diagnosed_yet", domain=domain
         )
 
-    # Check if IP from DNS matches public IP
-    # - 'MISSING' for IPv6 ain't critical for ACME
-    # - IPv4 can be None assuming there's at least an IPv6, and viveversa
-    #    - (the case where both are None is checked before)
-    if not (
-        A_record_status in [None, "OK"]
-        and AAAA_record_status in [None, "OK", "MISSING"]
-    ):
+    # Check that DNS record matches public IP
+    # in particular we want at least one to be "OK" but neither to be "WRONG"
+    # (in particular Let's Encrypt will fail if there's an incorrect IPv6 despite a correct IPv4)
+    # Also we can live with a "MISSING" IPv4 or IPv6 record assuming the other one is OK
+    # (for example when there's theoretically an IPv6 on the machine, but the admins didnt define the AAAA record)
+    statuses = [A_record_status, AAAA_record_status]
+    if "WRONG" in statuses or "OK" not in statuses:
         raise YunohostValidationError(
             "certmanager_domain_dns_ip_differs_from_public_ip", domain=domain
         )

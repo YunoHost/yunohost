@@ -24,59 +24,138 @@ import re
 
 import requests
 
-from yunohost.domain import _get_maindomain, domain_list
-from yunohost.utils.error import YunohostError
-from yunohost.utils.network import get_public_ip
+from ..domain import _get_maindomain, domain_list
+from ..utils.error import YunohostError
+from ..utils.network import get_public_ip
 
 logger = logging.getLogger("yunohost.utils.yunopaste")
 
 
-def yunopaste(data):
+def yunopaste(data: str) -> str:
     paste_server = "https://paste.yunohost.org"
 
     try:
         data = anonymize(data)
-    except Exception as e:
+    except Exception as err:
         logger.warning(
-            "For some reason, YunoHost was not able to anonymize the pasted data. Sorry about that. Be careful about sharing the link, as it may contain somewhat private infos like domain names or IP addresses. Error: %s"
-            % e
+            "For some reason, YunoHost was not able to anonymize the pasted data. "
+            "Sorry about that. Be careful about sharing the link, as it may contain "
+            f"somewhat private infos like domain names or IP addresses. Error: {err}"
         )
 
-    data = data.encode()
+    datab = data.encode()
 
     try:
-        r = requests.post("%s/documents" % paste_server, data=data, timeout=30)
-    except Exception as e:
+        response = requests.post(f"{paste_server}/documents", data=datab, timeout=30)
+    except Exception as err:
         raise YunohostError(
-            "Something wrong happened while trying to paste data on paste.yunohost.org : %s"
-            % str(e),
+            "Something wrong happened while trying to paste data on "
+            f"paste.yunohost.org: {err}",
             raw_msg=True,
         )
 
-    if r.status_code != 200:
+    if response.status_code != 200:
         raise YunohostError(
-            "Something wrong happened while trying to paste data on paste.yunohost.org : %s, %s"
-            % (r.status_code, r.text),
+            "Something wrong happened while trying to paste data on "
+            f"paste.yunohost.org: {response.status_code}, {response.text}",
             raw_msg=True,
         )
 
     try:
-        url = json.loads(r.text)["key"]
+        url = json.loads(response.text)["key"]
     except Exception:
         raise YunohostError(
-            "Uhoh, couldn't parse the answer from paste.yunohost.org : %s" % r.text,
+            f"Uhoh, couldn't parse the answer from paste.yunohost.org: {response.text}",
             raw_msg=True,
         )
 
-    return "{}/raw/{}".format(paste_server, url)
+    return f"{paste_server}/raw/{url}"
 
 
-def anonymize(data):
-    def anonymize_domain(data, domain, redact):
+MAIL_EXT_TO_IGNORE = [
+    ".tar.gz",
+    ".tar",
+    ".svg",
+    ".png",
+    ".conf",
+    ".log",
+    ".service",
+    ".path",
+    ".listen",
+    ".init",
+    ".patch",
+    ".admin",
+    ".access",
+    ".github.com",
+    ".gitlab.com",
+]
+MAIL_PATTERNS_TO_IGNORE = [
+    "@github.com",
+    "@framagit.org",
+    "@codeberg.org",
+    "@sury.org",
+    "@Bonfire.",
+    "@example.",
+    "@localhost",
+    "DEBUG@",
+    "INFO@",
+    "WARNING@",
+    "ERROR@",
+]
+MAIL_REGEX_TO_REDACT = re.compile(
+    r"(\b([a-zA-Z0-9\.\-\+])+@((xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\.)*(xn--)?[a-z0-9-]{1,61}\.(xn--)?[a-z]{2,})"
+)
+
+
+def anonymize(data: str) -> str:
+    def anonymize_domain(data: str, domain: str, redact: str) -> str:
         data = data.replace(domain, redact)
         # This stuff appears sometimes because some folder in
         # /var/lib/metronome/ have some folders named this way
         data = data.replace(domain.replace(".", "%2e"), redact.replace(".", "%2e"))
+        return data
+
+    def redact_emails(data: str) -> str:
+        mail_matches = set([m[0] for m in MAIL_REGEX_TO_REDACT.findall(data)])
+
+        for match in mail_matches:
+            if any(match.endswith(ext) for ext in MAIL_EXT_TO_IGNORE) or any(
+                pattern in match for pattern in MAIL_PATTERNS_TO_IGNORE
+            ):
+                continue
+            split = match.split("@")
+            if len(split) != 2:
+                logger.error(
+                    "Eeeeeh, while anonymizing the file to be pasted with Yunopaste, found an email pattern with more than one @ but it shouldnt happen because of the regex definition...?"
+                )
+                continue
+            user_part, domain_part = split
+
+            # Redact the email, but try to be smart about it to not over-redact stuff making debug/support unecessarily harder...
+
+            # For the user part: redact alice@ or any "real-world" user name, but not root/admin/... and stuff that is actually template patterns (__FOOBAR__)
+            redact_user_part = not (
+                user_part
+                in {"root", "admin", "admins", "postmaster", "webmaster", "abuse"}
+                or user_part.startswith("__")
+                or user_part.endswith("__")
+            )
+            # For the domain part: redact...
+            # - except ".tld" (typically maindomain.tld) which does carry some info (ie anonymization rather than redaction)
+            # - and keep stuff that is actually template patterns (__FOOBAR__)
+            redact_domain_part = not (
+                domain_part.endswith(".tld")
+                or domain_part.startswith("__")
+                or domain_part.endswith("__")
+            )
+
+            redacted = (
+                ("*****" if redact_user_part else user_part)
+                + "@"
+                + ("*****.***" if redact_domain_part else domain_part)
+            )
+            data = data.replace(match, redacted)
+
         return data
 
     data = re.sub("\nstarted_by: .*\n", "\nstarted_by: ******\n", data)
@@ -92,17 +171,17 @@ def anonymize(data):
     # So e.g. if there's jitsi.foobar.com as a subdomain of foobar.com, it may
     # be interesting to know that the log is about a supposedly dedicated domain
     # for jisti (hopefully this explanation make sense).
-    domains = domain_list()["domains"]
+    domains: list[str] = domain_list()["domains"]  # type: ignore[assignment]
     domains = sorted(domains, key=lambda d: len(d))
 
-    count = 2
-    for domain in domains:
+    for count, domain in enumerate(domains, start=2):
         if domain not in data:
             continue
-        data = anonymize_domain(data, domain, "domain%s.tld" % count)
-        count += 1
+        data = anonymize_domain(data, domain, f"domain{count}.tld")
 
-    # We also want to anonymize the ips
+    data = redact_emails(data)
+
+    # We also want to anonymize IPs
     ipv4 = get_public_ip()
     ipv6 = get_public_ip(6)
 

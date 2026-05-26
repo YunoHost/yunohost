@@ -40,6 +40,8 @@
 #   `__VAR_1__`    by `$var_1`
 #   `__VAR_2__`    by `$var_2`
 #
+# For this to work, template tags must be in uppercase and variables names must be in lowercase (for instance `__MY_var__` or `$myVar` would not be replaced as expected).
+#
 # Special case for `__PATH__/` which is replaced by `/` instead of `//` if `$path` is `/`
 #
 # ##### When --jinja is enabled
@@ -50,6 +52,29 @@
 # For a full documentation of jinja's syntax you can refer to [the official Jinja documentation](https://jinja.palletsprojects.com/en/3.1.x/templates/).
 #
 # Note that in YunoHost context, all variables are from shell variables and therefore are strings
+# To help handling complex data Jinja engine are executed with theses additional filters:
+# - from_json: load a string as Json and return an object
+# - from_yaml: load a string as Yaml and return an object
+# - from_toml: load a string as Toml and return an object
+# - to_json: serialize to string an object to Json
+# - to_yaml: serialize to string an object to Yaml
+# - to_toml: serialize to string an object to Toml
+#
+# So by example, if you want to convert a json string `$my_json` to Toml, you can to this way:
+# `{{ my_json | from_json | to_toml }}`
+# Or you can iterate on a Json list `my_list='["a", "b", "c"]'` this way:
+# ```
+# {% for i in my_list | from_json %}
+#  value {{ i }}
+# {% endfor }}
+# ```
+#
+# which will result:
+# ```
+# value a
+# value b
+# value c
+# ```
 #
 # ##### Keeping track of manual changes by the admin
 #
@@ -92,7 +117,9 @@ ynh_config_add() {
         (   
             # shellcheck disable=SC2046
             export $(compgen -v)
-            j2 "$template_path" -f env -o "$destination"
+            j2 "$template_path" -f env \
+                --filters "$YNH_J2_FILTERS_FILE_PATH" \
+                -o "$destination"
         )
     else
         cp -f "$template_path" "$destination"
@@ -116,6 +143,8 @@ ynh_config_add() {
 #   `__APP__`      by `$app`
 #   `__VAR_1__`    by `$var_1`
 #   `__VAR_2__`    by `$var_2`
+#
+# For this to work, template tags must be in uppercase and variables names must be in lowercase (for instance `__MY_var__` or `$myVar` would not be replaced as expected).
 #
 # Special case for `__PATH__/` which is replaced by `/` instead of `//` if `$path` is `/`
 _ynh_replace_vars() {
@@ -147,6 +176,7 @@ _ynh_replace_vars() {
         match_string=${match_string//${delimit}/"\\${delimit}"}
         replace_string="${!one_var}"
         replace_string=${replace_string//\\/\\\\}
+        replace_string=${replace_string//&/\\&}
         replace_string=${replace_string//${delimit}/"\\${delimit}"}
 
         # Actually replace (sed is used instead of ynh_replace_string to avoid triggering an epic amount of debug logs)
@@ -266,6 +296,11 @@ ynh_read_var_in_file() {
 # | arg: --key=     - the key to set
 # | arg: --value=   - the value to set
 # | arg: --after=   - the line just before the key (in case of multiple lines with the name of the key in the file)
+#
+# This helpers replaces several var affectation use case in several languages
+# We don't use jq or equivalent to keep comments and blank space in files
+# This helpers works line by line, and is not made to replace a type by another.
+#
 ynh_write_var_in_file() {
     # ============ Argument parsing =============
     local -A args_array=([f]=file= [k]=key= [v]=value= [a]=after=)
@@ -331,21 +366,55 @@ ynh_write_var_in_file() {
     value=${value//&/"\&"}
     local first_char="${expression:0:1}"
     delimiter=$'\001'
+
     if [[ "$first_char" == '"' ]]; then
         # \ and sed is quite complex you need 2 \\ to get one in a sed
         # So we need \\\\ to go through 2 sed
         value="$(echo "$value" | sed 's/"/\\\\"/g')"
-        sed -ri "${range}s$delimiter"'(^'"${var_part}"'")([^"]|\\")*("[\s;,]*)(\s*'"$comments"'.*)?$'$delimiter'\1'"${value}"'"'"${endline}${delimiter}i" "$file"
+        sed -ri "${range}s$delimiter"'(^'"${var_part}"'")([^"]|\\")*("[\s;,]*)\s*('"$comments"'.*)?$'$delimiter'\1'"${value}"'"'"${endline}${delimiter}i" "$file"
     elif [[ "$first_char" == "'" ]]; then
         # \ and sed is quite complex you need 2 \\ to get one in a sed
         # However double quotes implies to double \\ to
         # So we need \\\\\\\\ to go through 2 sed and 1 double quotes str
         value="$(echo "$value" | sed "s/'/\\\\\\\\'/g")"
-        sed -ri "${range}s$delimiter(^${var_part}')([^']|\\')*('"'[\s,;]*)(\s*'"$comments"'.*)?$'$delimiter'\1'"${value}'${endline}${delimiter}i" "$file"
+        sed -ri "${range}s$delimiter(^${var_part}')([^']|\\')*('"'[\s,;]*)\s*('"$comments"'.*)?$'$delimiter'\1'"${value}'${endline}${delimiter}i" "$file"
     else
-        if [[ "$value" == *"'"* ]] || [[ "$value" == *'"'* ]] || [[ "$ext" =~ ^php|py|json|js$ ]]; then
-            value='\"'"$(echo "$value" | sed 's/"/\\\\"/g')"'\"'
+        formated="false"
+        # Boolean
+        true_equiv="^(true|True|TRUE|on|yes|t|1)$"
+        false_equiv="^(false|False|FALSE|off|no|f|0)$"
+        if [[ "$value" =~ $true_equiv ]] || [[ "$value" =~ $false_equiv ]]; then
+            _ynh_format_boolean() {
+                if [[ "$expression" =~ ^$1|$2$ ]] && [[ "$formated" == "false" ]]; then
+                    if [[ "$value" =~ $true_equiv ]]; then
+                        value="$1"
+                        formated="true"
+                    elif [[ "$value" =~ $false_equiv ]]; then
+                        value="$2"
+                        formated="true"
+                    fi
+                fi
+            }
+            _ynh_format_boolean true false
+            _ynh_format_boolean True False
+            _ynh_format_boolean TRUE FALSE
+            _ynh_format_boolean on off
+            _ynh_format_boolean yes no
+            _ynh_format_boolean t f
+            _ynh_format_boolean 1 0
         fi
+
+        # Number
+        if [[ "$formated" == "false" ]] && [[ "$value" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]]; then
+            formated="true"
+        fi
+
+        # String
+        if [[ "$formated" == "false" ]] && [[ "$value" == *"'"* || "$value" == *'"'* || "$value" =~ $comments || "$ext" =~ ^php|py|json|js$ ]]; then
+            value='\"'"$(echo "$value" | sed 's/"/\\\\"/g')"'\"'
+            formated="true"
+        fi
+
         if [[ "$ext" =~ ^yaml|yml$ ]]; then
             value=" $value"
         fi

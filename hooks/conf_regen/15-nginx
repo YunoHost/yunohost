@@ -38,6 +38,10 @@ do_base_regen() {
     cp ssowat.conf "$nginx_conf_dir"
     cp yunohost_http_errors.conf.inc "$nginx_conf_dir"
     cp yunohost_sso.conf.inc "$nginx_conf_dir"
+    cp proxy_params_with_auth "$nginx_dir"
+    cp proxy_params_no_auth "$nginx_dir"
+    cp fastcgi_params_with_auth "$nginx_dir"
+    cp fastcgi_params_no_auth "$nginx_dir"
 
     ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
     ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
@@ -119,7 +123,6 @@ do_pre_regen() {
 
     # add domain conf files
     cert_status=$(yunohost domain cert status --json)
-    mail_domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]")"
     for domain in $YNH_DOMAINS; do
         domain_conf_dir="${nginx_conf_dir}/${domain}.d"
         mkdir -p "$domain_conf_dir"
@@ -131,7 +134,7 @@ do_pre_regen() {
         export domain_cert_ca=$(echo "$cert_status" \
             | jq ".certificates.\"$domain\".CA_type" \
             | tr -d '"')
-        if echo "$mail_domain_list" | grep -q "^$domain$"; then
+        if tr ' ' '\n' <<< "$YNH_DOMAINS_WITH_MAIL_IN_AND_OUT" | grep -q "^$domain$"; then
             export mail_enabled="True"
         else
             export mail_enabled="False"
@@ -168,6 +171,13 @@ do_post_regen() {
     # Make sure fastcgi / PHP uses the YNH_USER auth header instead of $remote_user from the Authorization header
     # shellcheck disable=SC2016
     sed -i 's/$remote_user;/$http_ynh_user if_not_empty;/g' /etc/nginx/fastcgi_params
+
+    # Hotfix CVE-2026-42945
+    # shellcheck disable=SC2016
+    if ! grep -qE 'fastcgi_param\s+HTTP_HOST\s+\$host;' /etc/nginx/fastcgi_params 2> /dev/null; then
+        # shellcheck disable=SC2016
+        echo 'fastcgi_param  HTTP_HOST        $host;' >> /etc/nginx/fastcgi_params
+    fi
 
     if ls -l /etc/nginx/conf.d/*.d/*.conf; then
         chown root:root /etc/nginx/conf.d/*.d/*.conf

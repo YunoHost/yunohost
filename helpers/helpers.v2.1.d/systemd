@@ -20,48 +20,62 @@
 
 # Create a dedicated systemd config
 #
-# usage: ynh_config_add_systemd [--service=service] [--template=template]
-# | arg: --service=     - Service name (optionnal, `$app` by default)
-# | arg: --template=    - Name of template file (optionnal, this is 'systemd' by default, meaning `../conf/systemd.service` will be used as template)
+# usage: ynh_config_add_systemd [--mount=mount] [--service=service] [--template=templatename]
+# | arg: --mount=       - Mount name (optional)
+# | arg: --service=     - Service name (optional, `$app` by default)
+# | arg: --template=    - Name of template file (optional, 'systemd.service' by default, meaning `../conf/systemd.service` will be used as template)
 #
-# This will use the template `../conf/<templatename>.service`.
+# This will use the template `../conf/<templatename>`.
 #
 # See the documentation of `ynh_config_add` for a description of the template
 # format and how placeholders are replaced with actual variables.
 ynh_config_add_systemd() {
     # ============ Argument parsing =============
-    local -A args_array=([s]=service= [t]=template=)
+    local -A args_array=([m]=mount= [s]=service= [t]=template=)
+    local mount
     local service
     local template
     ynh_handle_getopts_args "$@"
+    mount="${mount:-}"
     service="${service:-$app}"
     template="${template:-systemd.service}"
     # ===========================================
 
-    ynh_config_add --template="$template" --destination="/etc/systemd/system/$service.service"
-
-    systemctl enable "$service" --quiet
+    if [[ -n "$mount" ]]; then
+        ynh_config_add --template="$template" --destination="/etc/systemd/system/$mount.mount"
+        systemctl enable "$mount.mount" --quiet
+    else
+        ynh_config_add --template="$template" --destination="/etc/systemd/system/$service.service"
+        systemctl enable "$service.service" --quiet
+    fi
     systemctl daemon-reload
 }
 
 # Remove the dedicated systemd config
 #
 # usage: ynh_config_remove_systemd service
-# | arg: service   - Service name (optionnal, $app by default)
+# | arg: service   - Service name (optional, $app by default)
 ynh_config_remove_systemd() {
     local service="${1:-$app}"
     if [ -e "/etc/systemd/system/$service.service" ]; then
         ynh_systemctl --service="$service" --action=stop
-        systemctl disable "$service" --quiet
+        systemctl disable "$service.service" --quiet
         ynh_safe_rm "/etc/systemd/system/$service.service"
+        systemctl daemon-reload
+    fi
+    if [ -e "/etc/systemd/system/$service.mount" ]; then
+        ynh_systemctl --service="$service" --action=stop
+        systemctl disable "$service.mount" --quiet
+        ynh_safe_rm "/etc/systemd/system/$service.mount"
         systemctl daemon-reload
     fi
 }
 
-# Start (or other actions) a service,  print a log in case of failure and optionnaly wait until the service is completely started
+# Start (or other actions) a service,  print a log in case of failure and optionaly wait until the service is completely started
 #
 # usage: ynh_systemctl [--service=service] [--action=action] [ [--wait_until="line to match"] [--log_path=log_path] [--timeout=300] [--length=20] ]
 # | arg: --service=      - Name of the service to start. Default : `$app`
+# | arg: --mount=        - Name of the mount. If set, service="$mount.mount"
 # | arg: --action=       - Action to perform with systemctl. Default: start
 # | arg: --wait_until=   - The pattern to find in the log to attest the service is effectively fully started.
 # | arg: --log_path=     - Log file - Path to the log file. Default : `/var/log/$app/$app.log`; `systemd` to listen on `journalctl --unit=$service`
@@ -69,8 +83,9 @@ ynh_config_remove_systemd() {
 # | arg: --length=       - Length of the error log displayed for debugging : Default : 20
 ynh_systemctl() {
     # ============ Argument parsing =============
-    local -A args_array=([n]=service= [a]=action= [w]=wait_until= [p]=log_path= [t]=timeout= [e]=length=)
+    local -A args_array=([n]=service= [m]=mount= [a]=action= [w]=wait_until= [p]=log_path= [t]=timeout= [e]=length=)
     local service
+    local mount
     local action
     local wait_until
     local length
@@ -78,16 +93,27 @@ ynh_systemctl() {
     local timeout
     ynh_handle_getopts_args "$@"
     service="${service:-$app}"
+    mount="${mount:-}"
     action=${action:-start}
     wait_until=${wait_until:-}
     length=${length:-20}
     log_path="${log_path:-/var/log/$service/$service.log}"
-    timeout=${timeout:-60}
     # ===========================================
 
-    # On CI, use length=100 because it's sometime hell to debug otherwise for super-long output
+    if [ -n "$mount" ]; then
+        service="$mount.mount"
+    fi
+
     if ynh_in_ci_tests && [ "$length" -le 20 ]; then
+        # Use a shorter timeout than in production to save CI time (services should rarely take up more than 2 minutes to start with the CI hardware)
+        timeout=${timeout:-120}
+        # On CI, use length=100 because it's sometime hell to debug otherwise for super-long output
         length=100
+    else
+        # 300 is a conservative value, especially because it may take quite
+        # long for service to start on low-end hardware, and CI should already
+        # have validate that the service is expected to be working
+        timeout=${timeout:-300}
     fi
 
     # Manage case of service already stopped
@@ -167,7 +193,7 @@ ynh_systemctl() {
             echo "" >&2
         fi
         if [ "$i" -eq "$timeout" ]; then
-            ynh_print_warn "The service $service didn't fully executed the action ${action} before the timeout."
+            ynh_print_warn "The service $service didn't fully execute the action ${action} before the timeout."
             ynh_print_warn "Please find here an extract of the end of the log of the service $service:"
             journalctl --quiet --no-hostname --no-pager --lines="$length" --unit="$service" >&2
             if [ -e "$log_path" ]; then
@@ -175,12 +201,12 @@ ynh_systemctl() {
                 tail --lines="$length" "$log_path" >&2
             fi
 
-            # If we tried to reload/start/restart the service but systemctl consider it to be still inactive/broken, then handle it as a failure
+            # If we tried to reload/start/restart but reached timeout, then handle it as a failure
             if [ "$action" == "reload" ] || [ "$action" == "start" ] || [ "$action" == "restart" ]; then
-                if systemctl --quiet is-active "$service"; then
-                    _ynh_clean_check_starting
-                    return 1
-                fi
+                # NB: we don't check the actual 'active' status of the service,
+                # because if the service is on Restart=always, it may be in a starting loop where it's temporarily active...
+                _ynh_clean_check_starting
+                return 1
             fi
         fi
         _ynh_clean_check_starting

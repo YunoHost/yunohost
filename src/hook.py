@@ -28,9 +28,10 @@ from importlib import import_module
 from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import cp, read_yaml
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
+from .utils import jinja_filters
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import cp, read_yaml
 
 HOOK_FOLDER = "/usr/share/yunohost/hooks/"
 CUSTOM_HOOK_FOLDER = "/etc/yunohost/hooks.d/"
@@ -221,9 +222,9 @@ def hook_list(action, list_by="name", show_info=False):
 
 
 def hook_callback(
-    action,
-    hooks=[],
-    args=None,
+    action: str,
+    hooks: list[str] = [],
+    args: list[str | bool] | None = None,
     chdir=None,
     env=None,
     pre_callback=None,
@@ -245,7 +246,7 @@ def hook_callback(
             (name, priority, path, succeed) as arguments
 
     """
-    result = {}
+    result: dict[str, dict] = {}
     hooks_dict = {}
 
     # Retrieve hooks
@@ -304,7 +305,7 @@ def hook_callback(
             except YunohostError as e:
                 state = "failed"
                 hook_return = {}
-                logger.error(e.strerror, exc_info=1)
+                logger.error(e.strerror, exc_info=True)
                 post_callback(name=name, priority=priority, path=path, succeed=False)
             else:
                 post_callback(name=name, priority=priority, path=path, succeed=True)
@@ -351,7 +352,7 @@ def hook_exec(
         irrelevant_warnings = [
             r"invalid value for trace file descriptor",
             r"Creating config file .* with new version",
-            r"Created symlink /etc/systemd",
+            r"Created symlink '?/etc/systemd",
             r"dpkg: warning: while removing .* not empty so not removed",
             r"apt-key output should not be parsed",
             r"update-rc.d: ",
@@ -386,6 +387,12 @@ def hook_exec(
             r"cannot open '/etc/ssl/certs/java/cacerts'",
             # Misc
             r"update-binfmts: warning:",
+            r"Not building database",
+            r"Reloading AppArmor profiles",
+            r"aspell-autobuildhash: processing:",
+            r"Setcap failed on /usr/sbin/mysqld",
+            r"Invalid file '/usr/sbin/mysqld'",
+            r"is a disabled or a static unit, not starting it.",
         ]
         return all(not re.search(w, msg) for w in irrelevant_warnings)
 
@@ -424,7 +431,7 @@ def hook_exec(
 
 
 def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
-    from moulinette.utils.process import call_async_output
+    from .utils.process import call_async_output
 
     # Construct command variables
     cmd_args = ""
@@ -472,6 +479,9 @@ def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
     # Apps that need the HOME var should define it in the app scripts
     if "HOME" in _env:
         del _env["HOME"]
+
+    # Pass jinja filters path for template helper
+    _env["YNH_J2_FILTERS_FILE_PATH"] = jinja_filters.__file__
 
     returncode = call_async_output(command, loggers, shell=False, cwd=chdir, env=_env)
 
@@ -527,7 +537,7 @@ def _hook_exec_python(path, args, env, loggers):
         and len(ret) == 2
         and isinstance(ret[0], int)
         and isinstance(ret[1], dict)
-    ), ("Module %s did not return a (int, dict) tuple !" % module)
+    ), "Module %s did not return a (int, dict) tuple !" % module
     return ret
 
 

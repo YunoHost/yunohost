@@ -21,15 +21,23 @@
 import os
 import pwd
 import re
+from typing import Literal, NotRequired, TypedDict
 
-from moulinette.utils.filesystem import chmod, chown, mkdir, read_file, write_to_file
-
-from yunohost.utils.error import YunohostValidationError
+from .utils.error import YunohostValidationError
+from .utils.file_utils import chmod, chown, mkdir, read_file, write_to_file
 
 SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
 
 
-def user_ssh_list_keys(username):
+class UserSshInfo(TypedDict):
+    username: str
+    fullname: str
+    uid: NotRequired[str]
+    mail: str
+    homeDirectory: str
+
+
+def user_ssh_list_keys(username: str) -> dict[Literal["keys"], list[dict[str, str]]]:
     user = _get_user_for_ssh(username, ["homeDirectory"])
     if not user:
         raise YunohostValidationError("user_unknown", user=username)
@@ -66,7 +74,7 @@ def user_ssh_list_keys(username):
     return {"keys": keys}
 
 
-def user_ssh_add_key(username, key, comment):
+def user_ssh_add_key(username: str, key: str, comment: str | None) -> None:
     user = _get_user_for_ssh(username, ["homeDirectory", "uid"])
     if not user:
         raise YunohostValidationError("user_unknown", user=username)
@@ -107,7 +115,7 @@ def user_ssh_add_key(username, key, comment):
     write_to_file(authorized_keys_file, authorized_keys_content)
 
 
-def user_ssh_remove_key(username, key):
+def user_ssh_remove_key(username: str, key: str) -> None:
     user = _get_user_for_ssh(username, ["homeDirectory", "uid"])
     if not user:
         raise YunohostValidationError("user_unknown", user=username)
@@ -147,8 +155,10 @@ def user_ssh_remove_key(username, key):
 #
 
 
-def _get_user_for_ssh(username, attrs=None):
-    def ssh_root_login_status():
+def _get_user_for_ssh(
+    username: str, attrs: list[str] | None = None
+) -> UserSshInfo | None:
+    def ssh_root_login_status() -> dict[Literal["PermitRootLogin"], bool]:
         # XXX temporary placed here for when the ssh_root commands are integrated
         # extracted from https://github.com/YunoHost/yunohost/pull/345
         # XXX should we support all the options?
@@ -178,10 +188,10 @@ def _get_user_for_ssh(username, attrs=None):
         }
 
     # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html
-    from yunohost.utils.ldap import _get_ldap_interface
+    from .utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
-    user = ldap.search(
+    user: list[UserSshInfo] = ldap.search(  # type: ignore
         "ou=users",
         "(&(objectclass=person)(uid=%s))" % username,
         attrs,

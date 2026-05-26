@@ -19,20 +19,37 @@
 #
 
 import os
+import re
 import shutil
-from typing import Any
-from pathlib import Path
 from logging import getLogger
+from pathlib import Path
+from typing import Any, Literal, TypedDict
 
 import miniupnpc
 import yaml
 from moulinette import m18n
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.regenconf import regen_conf
-
+from .regenconf import regen_conf
+from .utils.error import YunohostError, YunohostValidationError
 
 logger: Any = getLogger("yunohost.firewall")
+
+
+class _YunoFirewallPortSettings(TypedDict):
+    comment: str
+    open: bool
+    upnp: bool
+
+
+class YunoFirewallSettings(TypedDict):
+    """This is the description of the content of /etc/yunohost/firewall.yml"""
+
+    tcp: dict[int | str, _YunoFirewallPortSettings]  # TCP firewall settings
+    udp: dict[int | str, _YunoFirewallPortSettings]  # UDP firewall settings
+    router_forwarding_upnp: bool  # Whether to enable uPNP port forwarding configuration
+
+
+IPProto = Literal["tcp"] | Literal["udp"]
 
 
 class YunoFirewall:
@@ -40,6 +57,7 @@ class YunoFirewall:
 
     def __init__(self) -> None:
         self.need_reload = False
+        self.config: YunoFirewallSettings
 
         # This is a workaround for when we need to actively close UPnP ports
         self.upnp_to_close: list[tuple[str, int | str]] = []
@@ -69,7 +87,7 @@ class YunoFirewall:
         router_forwarding_upnp: false
         """
 
-        self.config = yaml.safe_load(self.FIREWALL_FILE.read_text()) or {}
+        self.config = yaml.safe_load(self.FIREWALL_FILE.read_text()) or {}  # type: ignore
 
         if "tcp" not in self.config or "udp" not in self.config:
             raise Exception(
@@ -81,16 +99,16 @@ class YunoFirewall:
         shutil.copyfile(self.FIREWALL_FILE, old_file)
         self.FIREWALL_FILE.write_text(yaml.dump(self.config))
 
-    def list(self, protocol: str, forwarded: bool = False) -> list[int]:
+    def list(self, protocol: str, forwarded: bool = False) -> list[int | str]:
         protocol, _ = self._validate_port(protocol, 0)
         return [
             port
             for port, status in self.config[protocol].items()
-            if (status["forwarded"] if forwarded else status["open"])
+            if (status["upnp"] if forwarded else status["open"])
         ]
 
     @staticmethod
-    def _validate_port(protocol: str, port: int | str) -> tuple[str, int | str]:
+    def _validate_port(protocol: str, port: int | str) -> tuple[IPProto, int | str]:
         if isinstance(port, str):
             # iptables used ":" and app packages might still do
             port = port.replace(":", "-")
@@ -99,7 +117,7 @@ class YunoFirewall:
                 port = int(port)
         if protocol not in ["tcp", "udp"]:
             raise ValueError(f"protocol should be tcp or udp, not {protocol}")
-        return protocol, port
+        return protocol, port  # type: ignore
 
     def open_port(
         self, protocol: str, port: int | str, comment: str, upnp: bool = False
@@ -162,7 +180,9 @@ class YunoFirewall:
 
     def apply(self, upnp: bool = True) -> bool:
         # FIXME: Ensure SSH is allowed
-        self.open_port("tcp", _get_ssh_port(), "SSH port", upnp=True)
+        ssh_port = _get_ssh_port()
+        if not (conf := self.config["tcp"].get(ssh_port)) or not conf["open"]:
+            self.open_port("tcp", ssh_port, "SSH port")
 
         # Just leverage regen_conf that will regen the nftables files, reload nftables
         try:
@@ -295,12 +315,13 @@ class YunoUPnP:
         for protocol, port in firewall.upnp_to_close:
             status = status and self.close_port(protocol, port)
 
-        for protocol in ["tcp", "udp"]:
-            for port, info in firewall.config[protocol].items():
-                if self.enabled():
-                    status = status and self.open_port(protocol, port, info["comment"])
+        protos: list[IPProto] = ["tcp", "udp"]
+        for proto in protos:
+            for port, info in firewall.config[proto].items():
+                if self.enabled() and info["open"] and info["upnp"]:
+                    status = status and self.open_port(proto, port, info["comment"])
                 else:
-                    status = status and self.close_port(protocol, port)
+                    status = status and self.close_port(proto, port)
 
         return status
 
@@ -516,7 +537,7 @@ def firewall_delete(
 
 def firewall_list(
     raw: bool = False, protocol: str = "tcp", forwarded: bool = False
-) -> dict[str, Any]:
+) -> YunoFirewallSettings | dict[str, list[int | str]]:
     """
     List all firewall rules
 
@@ -527,7 +548,11 @@ def firewall_list(
         forwarded -- If not raw, list UPnP forwarded ports instead of open ports
     """
     firewall = YunoFirewall()
-    return firewall.config if raw else {protocol: firewall.list(protocol, forwarded)}
+    if raw:
+        return firewall.config
+    else:
+        data = {protocol: firewall.list(protocol, forwarded)}  # indirection is for mypy
+        return data
 
 
 def firewall_reload(skip_upnp: bool = False) -> None:
@@ -597,12 +622,14 @@ def _get_ssh_port(default: int = 22) -> int:
     Retrieve the SSH port from the sshd_config file or used the default
     one if it's not defined.
     """
-    from moulinette.utils.text import searchf
-
     try:
-        m = searchf(r"^Port[ \t]+([0-9]+)$", "/etc/ssh/sshd_config", count=-1)
-        if m:
-            return int(m)
-    except Exception:
-        pass
+        with open("/etc/ssh/sshd_config") as f:
+            matches = re.findall(r"^Port[ \t]+([0-9]+)$", f.read(), re.MULTILINE)
+        if not matches:
+            raise Exception("No match found for the Port statement in sshd_config ?")
+        return int(matches[0])
+    except Exception as e:
+        logger.debug(
+            f"Uhoh, failed to parse the current SSH port ? (returning {default} as default) Error: {e}"
+        )
     return default
