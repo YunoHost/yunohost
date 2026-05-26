@@ -43,20 +43,29 @@ class MyMigration(Migration):
     dyndns_domains = set(dyndns_list()["domains"])
 
     @property
-    def mode(self):
-        manual_domains = self.upgradable_domains - self.dyndns_domains
-        manual_domains = [
-            domain for domain in manual_domains
+    def manual_domains(self):
+        domains = self.upgradable_domains - self.dyndns_domains
+        domains = [
+            domain for domain in domains
             if not domain.endswith(".local")
         ]
-        if not manual_domains:
+        return domains
+
+    @property
+    def mode(self):
+        if not self.manual_domains:
             return "auto"
 
         return "manual"
 
     @property
     def disclaimer(self):
-        return m18n.n("migration_0037_upgrade_dkim_keys_disclaimer")
+        if self.upgradable_domains:
+            domains = "\n - " + "\n - ".join(self.upgradable_domains)
+        else:
+            domains = "no domains seems concerned"
+
+        return m18n.n("migration_0037_upgrade_dkim_keys_disclaimer", domains=domains)
 
     def run(self, *args):
         # Find 1024 bits keys to upgrade
@@ -105,5 +114,10 @@ class MyMigration(Migration):
         # If an upgradable domain is a dyndns domain, update dyndns
         if self.upgradable_domains & self.dyndns_domains:
             dyndns_update(force=True)
+
+        # If an upgradable domain is a dyndns domain, update dyndns
+        if self.manual_domains:
+            logger.warning(m18n.n("migration_0037_upgrade_dkim_keys_manual_action",
+                domains="\n - " + "\n - ".join(self.manual_domains)))
 
 
