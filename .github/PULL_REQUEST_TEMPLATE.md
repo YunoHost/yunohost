@@ -14,7 +14,7 @@ Related PRs:
 
 ### Code TODOs
 
-*Bellow are common todo a lot of contributors miss*
+*Here are frequently forgotten tasks:*
  - [ ] Discuss about this change with others contributors (on chat, contributors meeting, forum, issues or pr)
  - [ ] Update related repo (like yunohost-admin, yunohost-portal, package-linter, etc.)
  - [ ] Write data or settings migration
