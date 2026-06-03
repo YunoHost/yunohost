@@ -19,6 +19,7 @@
 #
 
 import json
+import time
 import logging
 from pathlib import Path
 from typing import Any, Union
@@ -41,6 +42,7 @@ logger = logging.getLogger("portal")
 PORTAL_SETTINGS_DIR = "/etc/yunohost/portal"
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
+USER_PENDING_INVITATIONS = Path("/etc/yunohost/.user_invitations/")
 YUNOHOST_SOCKET_API = "/run/yunohost-socket-api.sock"
 
 def _get_user_infos(
@@ -355,6 +357,61 @@ def portal_update(
         return {}
 
 
+def portal_invitation_get(token):
+
+    from stat import filemode
+
+    try:
+        Auth().get_session_cookie()
+    except Exception:
+        pass
+    else:
+        raise YunohostValidationError("You cannot register a new account while already logged-in. Please log out first.", raw_msg=True)
+
+    from bottle import request
+    domain = request.get_header("host")
+    assert domain and "/" not in domain
+
+    if not (isinstance(token, str) and token.isalnum() and len(token) == 64):
+        raise YunohostValidationError("This invitation token is invalid. Invitation tokens are expected to be exactly 64 alphanumeric characters.", raw_msg=True)
+
+    invite_file = USER_PENDING_INVITATIONS / f"{token}.json"
+    # FIXME : need a good justification here that .exists() is safe against timing attacks. So far I don't have a clear answer
+    if not invite_file.exists():
+        raise YunohostValidationError("user_invitation_expired_or_doesnt_exist")
+
+    # Assert the permissions are right, which otherwise would be an indication that it can't be trusted
+    if not (USER_PENDING_INVITATIONS.owner(), USER_PENDING_INVITATIONS.group(), filemode(USER_PENDING_INVITATIONS.stat().st_mode)) == ("root", "ynh-portal", "drwx--x---"):
+        raise YunohostError(f"Uhoh, permissions on folder {USER_PENDING_INVITATIONS} are not right?", raw_msg=True)
+
+    # Assert the permissions are right, which otherwise would be an indication that it can't be trusted
+    if not (invite_file.owner(), invite_file.group(), filemode(invite_file.stat().st_mode)) == ("root", "ynh-portal", "-r--r-----"):
+        raise YunohostError(f"Uhoh, permissions on file {invite_file} are not right?", raw_msg=True)
+
+    infos = read_json(str(invite_file))
+    if infos["expires"] < time.time() or infos["domain"] != domain:
+        raise YunohostValidationError("user_invitation_expired_or_doesnt_exist")
+
+    tos = None
+    custom_notes = None
+
+    portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
+    if portal_settings_path.exists():
+        portal_settings = read_json(str(portal_settings_path))
+        tos = (portal_settings.get("registration_tos") or "").strip() or None
+        custom_notes = (portal_settings.get("registration_invite_notes") or "").strip() or None
+
+    return {
+        "username": infos["username"],
+        "domain": infos["domain"],
+        # "expires"
+        # "groups"
+        "external_email": infos["external_email"],
+        # "mailbox_quota"
+        "tos": tos,
+        "custom_notes": custom_notes
+    }
+
 def _call_socket_api(action: str, args: dict[str]) -> None:
 
     import socket
@@ -383,3 +440,16 @@ def _call_socket_api(action: str, args: dict[str]) -> None:
             raise YunohostValidationError(ret["error"], raw_msg=True)
         else:
             raise YunohostError(f"Failed to {action}: {ret['error']}", raw_msg=True)
+
+
+def portal_invitation_consume(token, username, fullname, password, external_email=None, accept_tos=False) -> None:
+
+    # FIXME : need to make sure that we probably obtain the localized message, which may involve passing a LANG or LC_ALL env variable idk
+    _call_socket_api("user_invitation_consume", {
+        "invitation_token": token,
+        "username": username,
+        "fullname": fullname,
+        "password": password,
+        "external_email": external_email,
+        "accept_tos": accept_tos,
+    })

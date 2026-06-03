@@ -26,6 +26,7 @@ import random
 import re
 import subprocess
 import time
+from stat import filemode
 from logging import getLogger
 from pathlib import Path
 from typing import (
@@ -230,6 +231,126 @@ def user_invitation_list(raw: bool = False) -> dict[Literal["invitations"], list
     return {"invitations": invitations}
 
 
+def user_invitation_consume(invitation_token, username, fullname, password, external_email, accept_tos) -> None:
+
+    from .utils.email import _send_email
+
+    if not isinstance(invitation_token, str) or not invitation_token.isalnum() or len(invitation_token) != 64:
+        raise YunohostValidationError("Invalid invitation token format", raw_msg=True)
+
+    invite_file = USER_PENDING_INVITATIONS / f"{invitation_token}.json"
+    if not invite_file.exists():
+        raise YunohostValidationError("user_invitation_expired_or_doesnt_exist")
+
+    # Assert the permissions are right, which otherwise would be an indication that it can't be trusted
+    if not (USER_PENDING_INVITATIONS.owner(), USER_PENDING_INVITATIONS.group(), filemode(USER_PENDING_INVITATIONS.stat().st_mode)) == ("root", "ynh-portal", "drwx--x---"):
+        raise YunohostError(f"Uhoh, permissions on folder {USER_PENDING_INVITATIONS} are not right?", raw_msg=True)
+
+    # Assert the permissions are right, which otherwise would be an indication that it can't be trusted
+    if not (invite_file.owner(), invite_file.group(), filemode(invite_file.stat().st_mode)) == ("root", "ynh-portal", "-r--r-----"):
+        raise YunohostError(f"Uhoh, permissions on file {invite_file} are not right?", raw_msg=True)
+
+    invite_data = read_json(str(invite_file))
+
+    if invite_data["expires"] < time.time():
+        invite_file.unlink()
+        raise YunohostValidationError("user_invitation_expired_or_doesnt_exist")
+
+    if invite_data["username"]:
+        username = invite_data["username"]
+    else:
+        username = username.strip()
+
+    fullname = fullname.strip()
+    groups = groups or []
+
+    external_email = invite_data["external_email"] or external_email or None
+    if external_email:
+        external_email = external_email.strip() or None
+    mailbox_quota = invite_data["mailbox_quota"]
+
+    admin = "admins" in groups if groups else False
+
+    _validate_user_inputs_for_registration(
+        username=username,
+        fullname=fullname,
+        password=password,
+        external_email=external_email,
+        domain=domain,
+        accept_tos=accept_tos,
+        is_admin=admin
+    )
+
+    user_create(username=username, domain=domain, password=password, fullname=fullname, admin=admin, mailbox_quota=mailbox_quota, mailforward=external_email)
+
+    # Delete invitation
+    invite_file.unlink()
+
+    if groups:
+        existing_groups = list(user_group_list()["groups"].keys())
+        for group in groups:
+            if group not in existing_groups:
+                logger.warning(f"Group {group} doesn't exist (anymore?)")
+            try:
+                user_group_add(group, [username])
+            except Exception as e:
+                logger.warning(f"Failed to add {username} to group {group}")
+
+    if invite_data["notify_admins_when_invite_is_consumed"]:
+        try:
+            _send_email(
+                _from=f"registrations@{domain}",
+                no_reply=f"no-reply@{domain}",
+                to=f"admins@{domain}",
+                subject=m18n.n("user_invitation_consumed_mail_subject", username=username),
+                body=m18n.n("user_invitation_consumed_mail_body", username=username, fullname=fullname)
+            )
+        except Exception as e:
+            logger.error(f"Failed to send the email to notify admins: {e}")
+
+
+def _validate_user_inputs_for_registration(username, fullname, password, external_email, domain, accept_tos, is_admin=False) -> None:
+
+    from .app import PORTAL_SETTINGS_DIR
+    from .utils.password import assert_password_is_strong_enough
+
+    # Some of the following checks should already have been performed by the portal API
+    # But we should minimize the trust we put in the portal API user, as an additional layer of security
+    # NB: the regexes are just copypasta of the actionsmap
+    if not (isinstance(username, str) and re.match(r"^[a-z0-9][-a-z0-9_\.]*$", username) and len(username) >= 2 and len(username) < 100):
+        raise YunohostValidationError("Username should be at least 2 characters and contain only alphanumeric, '_' and '.' characters.", raw_msg=True)
+
+    if not (isinstance(fullname, str) and re.match(r"^([^\W_]{1,30}[ ,.'-]{0,3})+$", fullname) and len(fullname) < 100):
+        raise YunohostValidationError("This fullname is incorrect", raw_msg=True)
+
+    if not isinstance(password, str):
+        raise YunohostValidationError("Password should be a string", raw_msg=True)
+
+    assert_password_is_strong_enough("admin" if is_admin else "user", password)
+
+    if external_email and not (isinstance(external_email, str) and re.match(r"^[\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$", external_email)):
+        raise YunohostValidationError("The external email is not valid email", raw_msg=True)
+
+    if not (isinstance(domain, str) and re.match("^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$", domain)):
+        raise YunohostValidationError("The domain is not a valid domain", raw_msg=True)
+
+    # If the admin specified TOS for invite/registration, validate that they were accepted
+    portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
+    if portal_settings_path.exists():
+        domain_tos = read_json(str(portal_settings_path)).get("registration_tos")  # type: ignore[arg-type]
+        if domain_tos:
+            domain_tos = domain_tos.strip()
+    else:
+        domain_tos = None
+
+    if domain_tos and not accept_tos:
+        raise YunohostValidationError("Terms of Services must be accepted to proceed with the invitation process", raw_msg=True)
+
+    # We want this check to happen at the latest time possible, to help protect against enumeration attacks (for example by not checking the accept_tos checkbox, hence no request gets created in the end, but the attacker is still able to infer wether or not the user exists)
+    if username in user_list()["users"]:
+        raise YunohostValidationError("user_already_exists", user=username)
+
+
 def user_list(fields: list[str] | None = None) -> dict[str, dict[str, Any]]:
     from .utils.ldap import _get_ldap_interface
 
@@ -328,6 +449,7 @@ def user_create(
     admin: bool = False,
     from_import: bool = False,
     loginShell: str | None = None,
+    mailforward: str | None = None,
 ) -> dict[str, str]:
     if not fullname.strip():
         raise YunohostValidationError(
@@ -432,7 +554,7 @@ def user_create(
         "cn": [fullname],
         "uid": [username],
         "mail": mail,  # NOTE: this one seems to be already a list
-        "maildrop": [username],
+        "maildrop": [username] + ([mailforward] if mailforward else []),
         "mailuserquota": [mailbox_quota or "0"],
         "userPassword": [_hash_user_password(password)],
         "gidNumber": [uid],
