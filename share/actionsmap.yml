@@ -335,6 +335,10 @@ user:
                         help: Do not simplify the output to be easier to read by humans
                         action: store_true
 
+                ### user_registration_review
+                review:
+                  action_help: Interactively review user registrations to accept/reject them from CLI
+
                 ### user_registration_accept
                 accept:
                   action_help: Accept a pending user registration

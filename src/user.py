@@ -527,6 +527,47 @@ def user_registration_list(raw: bool = False) -> dict[Literal["registration_requ
     return {"registration_requests": registration_requests}
 
 
+def user_registration_review() -> None:
+
+    from moulinette.interfaces.cli import colorize
+
+    registration_requests = user_registration_list()["registration_requests"]
+
+    if not registration_requests:
+        logger.info(m18n.n("user_registration_nothing_to_review"))
+        return
+
+    def bold(msg):
+        return '\033[1m' + msg + '\033[0m'
+
+    for request in registration_requests:
+        infos_to_display = []
+        infos_to_display.append((m18n.n("received"), request['submitted']))
+        infos_to_display.append((m18n.n("username"), request['username']))
+        infos_to_display.append((m18n.n("fullname"), request['fullname']))
+        infos_to_display.append((m18n.n("domain"), request['domain']))
+        if request.get("external_email"):
+            infos_to_display.append((m18n.n("external_email_address"), request['external_email']))
+        if request.get("notes"):
+            infos_to_display.append((m18n.n("custom_notes"), request['notes']))
+
+        Moulinette.display("----------------------------------")
+        for header, info in infos_to_display:
+            Moulinette.display(bold(header) + ": " + info)
+        Moulinette.display("----------------------------------")
+
+        prompt = m18n.n("user_registration_review_accept_or_reject")
+        answer = Moulinette.prompt(prompt)
+        if answer.strip().lower() == "a":
+            Moulinette.display(colorize(m18n.n("user_registration_creating_account", username=request['username']), "green"))
+            user_registration_accept(request["id"])
+        elif answer.strip().lower() == "r":
+            user_registration_reject(request["id"])
+            Moulinette.display(colorize(m18n.n("user_registration_review_reject"), "red"))
+        else:
+            Moulinette.display(colorize(m18n.n("user_registration_review_ignore"), "yellow"))
+
+
 def user_registration_accept(request_id):
 
     if not isinstance(request_id, str) or not request_id.isalnum() or len(request_id) != 16:
