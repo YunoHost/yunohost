@@ -80,7 +80,9 @@ ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
 
 USER_PENDING_INVITATIONS = Path("/etc/yunohost/.user_invitations/")
+USER_PENDING_REGISTRATIONS = Path("/etc/yunohost/.user_registrations/")
 INVITATION_LINK = "https://{domain}/yunohost/sso/register?invitation={token}"
+EMAIL_CONFIRM_LINK = "https://{domain}/yunohost/sso/register?confirm={request_id}"
 
 
 def user_invite(*args, **kwargs):
@@ -309,7 +311,7 @@ def user_invitation_consume(invitation_token, username, fullname, password, exte
             logger.error(f"Failed to send the email to notify admins: {e}")
 
 
-def _validate_user_inputs_for_registration(username, fullname, password, external_email, domain, accept_tos, is_admin=False) -> None:
+def _validate_user_inputs_for_registration(username, fullname, password, external_email, domain, accept_tos, is_admin=False, notes=None, require_and_validate_external_email=False) -> None:
 
     from .app import PORTAL_SETTINGS_DIR
     from .utils.password import assert_password_is_strong_enough
@@ -334,6 +336,9 @@ def _validate_user_inputs_for_registration(username, fullname, password, externa
     if not (isinstance(domain, str) and re.match("^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$", domain)):
         raise YunohostValidationError("The domain is not a valid domain", raw_msg=True)
 
+    if notes and not (isinstance(notes, str) and len(notes) < 1000):
+        raise YunohostValidationError("Notes for admins should be less than 1000 characters", raw_msg=True)
+
     # If the admin specified TOS for invite/registration, validate that they were accepted
     portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
     if portal_settings_path.exists():
@@ -346,12 +351,226 @@ def _validate_user_inputs_for_registration(username, fullname, password, externa
     if domain_tos and not accept_tos:
         raise YunohostValidationError("Terms of Services must be accepted to proceed with the invitation process", raw_msg=True)
 
+    if require_and_validate_external_email:
+        from .utils.email import _domain_is_able_to_send_email
+        from .dns import dig
+
+        if not external_email:
+            raise YunohostValiationError("An external email is required.")
+
+        status, message = _domain_is_able_to_send_email(domain)
+        if status is False:
+            raise YunohostValidationError(f"The server is not able to send a confirmation email right now. Please contact the server administrators. (Detail: {message})")
+
+        external_email_domain = external_email.split("@")[1]
+
+        # A hidden feature, but easy to implement using this lib [1] used by the Pypi project folks,
+        # to check that it's not a throwaway email, to further prevent spam/bots/...
+        # Admins should be able to just pip install globally the "disposable-email-domains" package to enable this check
+        # [1] https://github.com/disposable-email-domains/disposable-email-domains
+        try:
+            from disposable_email_domains import blocklist
+        except ImportError:
+            pass
+        else:
+            if external_email_domain in blocklist:
+                raise YunohostValidationError(f"Domain {user_email_domain} seems to be used for disposable email addresses. Please provide a trustworthy, reliable external email address.")
+
+        ok, _ = dig(external_email_domain, "MX")
+        if ok != "ok":
+            raise YunohostValidationError("The provided external email doesn't appear to be a valid email address ?")
+
+
     # We want this check to happen at the latest time possible, to help protect against enumeration attacks (for example by not checking the accept_tos checkbox, hence no request gets created in the end, but the attacker is still able to infer wether or not the user exists)
     if username in user_list()["users"]:
         raise YunohostValidationError("user_already_exists", user=username)
 
 
+def user_registration_queue(username, fullname, password, external_email, accept_tos, notes, domain, ip) -> None:
+
+    from .app import PORTAL_SETTINGS_DIR
+    from .domain import _get_raw_domain_settings
+    from .utils.password import _hash_user_password
+    from .utils.misc import random_ascii
+    from .utils.email import _send_email, _domain_is_able_to_send_email
+
+    domain_settings = _get_raw_domain_settings(domain)
+    if not domain_settings.get("enable_self_registration"):
+        raise YunohostValidationError("Account requests are not enabled for this domain.", raw_msg=True)
+
+    # Assert the permissions are right, which otherwise would be an indication that it can't be trusted
+    if not (USER_PENDING_REGISTRATIONS.owner(), USER_PENDING_REGISTRATIONS.group(), filemode(USER_PENDING_REGISTRATIONS.stat().st_mode)) == ("root", "root", "drwx------"):
+        raise YunohostError(f"Uhoh, permissions on folder {USER_PENDING_REGISTRATIONS} are not right?", raw_msg=True)
+
+    # NB : we want this check to happen *before* we validate the user input,
+    # such that we protect against some attacks such as allowing to test every possible usernames
+    if len(list(USER_PENDING_REGISTRATIONS.glob("*.json"))) > 100:
+        raise YunohostValidationError("There are too many registrations request pending review already.", raw_msg=True)
+
+    require_and_validate_external_email = bool(domain_settings.get("registration_require_and_verify_email"))
+
+    _validate_user_inputs_for_registration(
+        username=username,
+        fullname=fullname,
+        password=password,
+        external_email=external_email,
+        domain=domain,
+        accept_tos=accept_tos,
+        notes=notes,
+        require_and_validate_external_email=require_and_validate_external_email and domain != "yolo.test"
+    )
+
+    request_id = random_ascii(16)
+    if require_and_validate_external_email:
+        request_file = USER_PENDING_REGISTRATIONS / f"{request_id}-pending_email_confirmation.json"
+    else:
+        request_file = USER_PENDING_REGISTRATIONS / f"{request_id}.json"
+
+    write_to_json(str(request_file), dict(
+        ip=ip,
+        submitted=int(time.time()),
+        username=username,
+        fullname=fullname,
+        # Hash the password, we don't want to store it in cleartext
+        # (the complexity level was checked during _validate_user_inputs_for_registration())
+        password=_hash_user_password(password),
+        external_email=external_email,
+        domain=domain,
+        accept_tos=accept_tos,
+        notes=notes,
+    ))
+    chmod(request_file, 0o400)
+
+    if require_and_validate_external_email:
+        confirm_link = EMAIL_CONFIRM_LINK.format(request_id=request_id, domain=domain)
+        try:
+            _send_email(
+                _from=f"registrations@{domain}",
+                no_reply=f"no-reply@{domain}",
+                to=external_email,
+                subject=m18n.n("user_registration_confirm_email_mail_subject"),
+                body=m18n.n("user_registration_confirm_email_mail_body", domain=domain, confirm_link=confirm_link)
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send confirmation link by email to the user: {e}")
+    else:
+        try:
+            _send_email(
+                _from=f"registrations@{domain}",
+                no_reply=f"no-reply@{domain}",
+                to=f"admins@{domain}",
+                subject=m18n.n("user_registration_to_review_mail_subject", username=username),
+                body=m18n.n("user_registration_to_review_mail_body", username=username, fullname=fullname)
+            )
+        except Exception as e:
+            logger.warning(f"Failed to notify the admins: {e}")
+
+
+def user_registration_confirm(request_id: str) -> None:
+
+    from .utils.email import _send_email
+
+    if not isinstance(request_id, str) or len(request_id) != 16 or not request_id.isalnum():
+        raise YunohostValidationError("This is not a valid account request id", raw_msg=True)
+
+    request_pending_confirmation_file = USER_PENDING_REGISTRATIONS / f"{request_id}-pending_email_confirmation.json"
+
+    if not request_pending_confirmation_file.exists():
+        raise YunohotValidationError("user_registration_doesnt_exist_or_was_already_confirmed")
+
+    request_file = USER_PENDING_REGISTRATIONS / f"{request_id}.json"
+    request_pending_confirmation_file.rename(str(request_file))
+    registration_infos = read_json(str(request_file))
+
+    domain = registration_infos["domain"]
+    username = registration_infos["username"]
+    fullname = registration_infos["fullname"]
+
+    try:
+        _send_email(
+            _from=f"registrations@{domain}",
+            no_reply=f"no-reply@{domain}",
+            to=f"admins@{domain}",
+            subject=m18n.n("user_registration_to_review_mail_subject", username=username),
+            body=m18n.n("user_registration_to_review_mail_body", username=username, fullname=fullname)
+        )
+    except Exception as e:
+        logger.warning(f"Failed to notify the admins: {e}")
+
+
+def user_registration_list(raw: bool = False) -> dict[Literal["registration_requests"], list[dict]]:
+
+    registration_requests = []
+    for file in sorted(USER_PENDING_REGISTRATIONS.glob("*.json"), key=os.path.getmtime, reverse=True):
+
+        if "pending_email_confirmation" in str(file):
+            continue
+
+        data = read_json(str(file))
+        data["id"] = file.name[:-len(".json")]
+
+        del data["password"]
+        del data["accept_tos"]
+        del data["ip"]
+
+        # If not raw, try to reduce noise and make it more human-friendly
+        if not raw:
+            submitted_hours = round((time.time() - data['submitted']) / 3600, 1)
+            data["submitted"] = f"{round(submitted_hours/24,1)} days ago" if submitted_hours > 48 else f"{submitted_hours} hours ago"
+            if not data["external_email"]:
+                del data["external_email"]
+            if not data["notes"]:
+                del data["notes"]
+
+        registration_requests.append(data)
+
+    return {"registration_requests": registration_requests}
+
+
+def user_registration_accept(request_id):
+
+    if not isinstance(request_id, str) or not request_id.isalnum() or len(request_id) != 16:
+        raise YunohostValidationError(f"Invalid registration request id '{request_id}'")
+
+    # Assert the permissions are right, which otherwise would be an indication that it can't be trusted
+    if not (USER_PENDING_REGISTRATIONS.owner(), USER_PENDING_REGISTRATIONS.group(), filemode(USER_PENDING_REGISTRATIONS.stat().st_mode)) == ("root", "root", "drwx------"):
+        raise YunohostError(f"Uhoh, permissions on folder {USER_PENDING_REGISTRATIONS} are not right?", raw_msg=True)
+
+    request_file = USER_PENDING_REGISTRATIONS / f"{request_id}.json"
+
+    if not request_file.exists():
+        raise YunohotValidationError("user_registration_doesnt_exist")
+
+    if not (request_file.owner(), request_file.group(), filemode(request_file.stat().st_mode)) == ("root", "root", "-r--------"):
+        raise YunohostError(f"Uhoh, permissions on file {request_file} are not right?", raw_msg=True)
+
+    registration_infos = read_json(str(request_file))
+
+    domain = registration_infos["domain"]
+    username = registration_infos["username"]
+    fullname = registration_infos["fullname"]
+    password = registration_infos["password"]
+    external_email = registration_infos["external_email"] or None
+
+    user_create(username=username, domain=domain, password=password, fullname=fullname, mailforward=external_email)
+
+    request_file.unlink()
+
+
+def user_registration_reject(request_id) -> None:
+
+    if not isinstance(request_id, str) or not request_id.isalnum() or len(request_id) != 16:
+        raise YunohostValidationError(f"Invalid registration request id '{request_id}'", raw_msg=True)
+
+    request_file = USER_PENDING_REGISTRATIONS / f"{request_id}.json"
+    if not request_file.exists():
+        logger.error(m18n.n("user_registration_doesnt_exist"))
+    else:
+        request_file.unlink()
+
+
 def user_list(fields: list[str] | None = None) -> dict[str, dict[str, Any]]:
+
     from .utils.ldap import _get_ldap_interface
 
     ldap_attrs = {

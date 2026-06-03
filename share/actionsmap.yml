@@ -321,6 +321,36 @@ user:
                     token:
                       help: Invitation token to be cancelled
 
+        registration:
+
+            subcategory_help: Manage user self-registrations
+            actions:
+
+                ### user_registration_list
+                list:
+                  action_help: List pending user registrations to be accepted/rejected
+                  api: GET /users/registrations
+                  arguments:
+                    --raw:
+                        help: Do not simplify the output to be easier to read by humans
+                        action: store_true
+
+                ### user_registration_accept
+                accept:
+                  action_help: Accept a pending user registration
+                  api: PUT /users/registrations/<request_id>/accept
+                  arguments:
+                      request_id:
+                        help: The registration request id (16 alphanumeric chars)
+
+                ### user_registration_reject
+                reject:
+                  action_help: Reject a pending user registration
+                  api: PUT /users/registrations/<request_id>/reject
+                  arguments:
+                      request_id:
+                        help: The registration request id (16 alphanumeric chars)
+
         group:
             subcategory_help: Manage user groups
             actions:
