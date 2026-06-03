@@ -110,3 +110,70 @@ portal:
                     help: Accept the Terms of Services (assuming some are defined by the admins)
                     default: false
                     action: store_true
+
+        ### portal_registration_challenge()
+        registration_challenge:
+            action_help: Obtain an antibot challenge token and question to be able to submit a registration request
+            api: GET /registration/challenge
+            authentication:
+                api: null
+
+        ### portal_registration_challenge()
+        registration_challenge:
+            action_help: Obtain an antibot challenge token and question to be able to submit a registration request
+            api: GET /registration/challenge
+            authentication:
+                api: null
+
+        ### portal_registration_queue()
+        registration_queue:
+            action_help: Consume an invitation token to create an account
+            api: POST /registration
+            authentication:
+                api: null
+            arguments:
+                --username:
+                    help: The username of the new user. For example 'camille'
+                    extra:
+                        required: True
+                        pattern: *pattern_username
+                --fullname:
+                    help: The full name of the user. For example 'Camille Dupont'
+                    extra:
+                        required: True
+                        pattern: *pattern_fullname
+                --external-email:
+                    help: An external email to be used as mail forward / recovery email
+                    extra:
+                        required: False
+                        pattern: *pattern_email_forward
+                --password:
+                    help: The password chosen by the user
+                    extra:
+                        required: True
+                --notes:
+                    help: Custom notes from the user to the admin regarding the registration request
+                --accept-tos:
+                    help: Accept the Terms of Services (assuming some are defined by the admins)
+                    default: false
+                    action: store_true
+                --challenge-token:
+                    help: The anti-bot challenge token
+                    extra:
+                        required: True
+                --challenge-answer:
+                    help: The anti-bot challenge answer
+                    extra:
+                        required: True
+
+        ### portal_registration_confirm()
+        registration_confirm:
+            action_help: Confirm an account request via the link received by email
+            api: PUT /registration/<request_id>/confirm
+            authentication:
+                api: null
+            arguments:
+                request_id:
+                    help: The request ID of the account request to confirm
+                    extra:
+                        required: True

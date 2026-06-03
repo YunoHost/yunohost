@@ -453,3 +453,129 @@ def portal_invitation_consume(token, username, fullname, password, external_emai
         "external_email": external_email,
         "accept_tos": accept_tos,
     })
+
+
+# FIXME : this is probably not a proper global state shared between all the gevent/bottle threads
+# Though for now it looks like we have a single thread anyway so it may be OK ? Idk
+CHALLENGES = dict()
+def _generate_antibot_challenge() -> tuple[str, str]:
+
+    from random import randint, choice
+    from .utils.misc import random_ascii
+    token = random_ascii(64)
+
+    CALCULATIONS = {
+        "×": lambda a, b: a * b,
+        "+": lambda a, b: a + b,
+        "-": lambda a, b: a - b,
+    }
+
+    x = randint(0, 10)
+    y = randint(0, 10)
+    operator = choice(list(CALCULATIONS.keys()))
+
+    # avoid negative results for subtraction
+    if y > x and operator == "-":
+        x, y = y, x
+
+    answer = CALCULATIONS[operator](x,y)
+
+    validity_limit = int(time.time() + 3600)
+    calculation = f"{x} {operator} {y}"
+    CHALLENGES[token] = (validity_limit, answer)
+
+    _cleanup_expired_antibot_challenges()
+
+    return token, calculation
+
+
+def _cleanup_expired_antibot_challenges() -> None:
+
+    # Also add some sort of limit to prevent an attacker from filling up the RAM by requesting challenges idk
+    if len(CHALLENGES) > 10000:
+        all_tokens = list(CHALLENGES.keys())
+        tokens_to_get_rid_of = all_tokens[:-10000]
+        for token in tokens_to_get_rid_of:
+            del CHALLENGES[token]
+
+    tokens_to_get_rid_of = []
+    for token, infos in CHALLENGES.items():
+        if time.time() > infos[0]:
+            tokens_to_get_rid_of.append(token)
+    for token in tokens_to_get_rid_of:
+        del CHALLENGES[token]
+
+
+def _verify_antibot_challenge(token: str, answer: str) -> None:
+
+    _cleanup_expired_antibot_challenges()
+
+    _, expected_answer = CHALLENGES.pop(token, (None, None))
+    if expected_answer is None:
+        raise YunohostValidationError("antibot_challenge_doesnt_exist_or_expired")
+
+    if not isinstance(answer, str) or not answer.strip().isdigit() or int(answer.strip()) != expected_answer:
+        raise YunohostValidationError("antibot_challenge_wrong_answer")
+
+
+def _assert_registration_enabled_for_domain(domain):
+
+    portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
+
+    if not portal_settings_path.exists():
+        raise YunohostValidationError("Self-registration is not enabled for this domain.", raw_msg=True)
+
+    domain_settings = read_json(str(portal_settings_path))
+    if not domain_settings.get("enable_self_registration"):
+        raise YunohostValidationError("Self-registration is not enabled for this domain.", raw_msg=True)
+
+
+def portal_registration_challenge() -> (str, str):
+
+    from bottle import request
+    domain = request.get_header("host")
+    _assert_registration_enabled_for_domain(domain)
+
+    token, calculation = _generate_antibot_challenge()
+    return {"token": token, "calculation": calculation}
+
+
+def portal_registration_queue(username, fullname, password, external_email=None, notes=None, accept_tos=False, challenge_token="", challenge_answer="") -> None:
+
+    try:
+        Auth().get_session_cookie()
+    except Exception:
+        pass
+    else:
+        raise YunohostValidationError("You cannot request a new account while already logged-in. Please log out first.", raw_msg=True)
+
+    from bottle import request
+    domain = request.get_header("host")
+    _assert_registration_enabled_for_domain(domain)
+    _verify_antibot_challenge(challenge_token, challenge_answer)
+
+    # FIXME : need to make sure that we probably obtain the localized message, which may involve passing a LANG or LC_ALL env variable idk
+    _call_socket_api("user_registration_queue", {
+        "username": username,
+        "fullname": fullname,
+        "password": password,
+        "external_email": external_email,
+        "notes": notes,
+        "accept_tos": accept_tos,
+        "domain": domain,
+        "ip": request.remote_addr,
+    })
+
+
+def portal_registration_confirm(request_id) -> None:
+
+    from bottle import request
+    domain = request.get_header("host")
+    _assert_registration_enabled_for_domain(domain)
+
+    if not isinstance(request_id, str) or not request_id.isalnum() or len(request_id) != 16:
+        raise YunohostValidationError("This is not a valid account request id", raw_msg=True)
+
+    _call_socket_api("user_registration_confirm", {
+        "request_id": request_id,
+    })
