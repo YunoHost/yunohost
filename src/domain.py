@@ -781,8 +781,10 @@ def _get_DomainConfigPanel() -> type["ConfigPanel"]:
             panel_id, section_id, option_id = self.filter_key
 
             # Portal settings are only available on "topest" domains
+            # Same for registration settings
             if _get_parent_domain_of(self.entity, topest=True) is not None:
                 del raw_config["feature"]["portal"]
+                del raw_config["feature"]["registration"]
 
             # Optimize wether or not to load the DNS section,
             # e.g. we don't want to trigger the whole _get_registary_config_section
@@ -905,6 +907,11 @@ def _get_DomainConfigPanel() -> type["ConfigPanel"]:
                 "search_engine_name",
                 "portal_user_intro",
                 "portal_public_intro",
+                "enable_self_registration",
+                "registration_tos",
+                "registration_require_and_verify_email",
+                "registration_self_registration_notes",
+                "registration_invite_notes",
             ]
 
             if _get_parent_domain_of(self.entity, topest=True) is None and any(

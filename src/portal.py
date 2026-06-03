@@ -82,6 +82,10 @@ def _get_portal_settings(
         "portal_allow_edit_email": False,
         "portal_allow_edit_email_alias": False,
         "portal_allow_edit_email_forward": False,
+        "enable_self_registration": False,
+        "registration_require_and_verify_email": False,
+        "registration_self_registration_notes": None,
+        "registration_tos": None
     }
 
     portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{domain}.json")
@@ -90,6 +94,12 @@ def _get_portal_settings(
         settings.update(read_json(str(portal_settings_path)))  # type: ignore[arg-type]
         # Portal may be public (no login required)
         settings["public"] = bool(settings.pop("enable_public_apps_page", False))
+
+    # Make sure the self-registration-related infos are empty if self-registration aint enabled
+    if not settings["enable_self_registration"]:
+        settings["registration_self_registration_notes"] = None
+        settings["registration_tos"] = None
+        settings["registration_require_and_verify_email"] = False
 
     # First clear apps since it may contains private apps
     apps: dict[str, Any] = settings.pop("apps", {})

@@ -2188,6 +2188,13 @@ def app_ssowatconf() -> None:
         # Update with the new settings
         portal_settings.update(portal_email_settings)
 
+        raw_domain_settings = _get_raw_domain_settings(domain)
+        portal_settings["enable_self_registration"] = bool(raw_domain_settings.get("enable_self_registration", False))
+        portal_settings["registration_require_and_verify_email"] = bool(raw_domain_settings.get("registration_require_and_verify_email", False))
+        portal_settings["registration_tos"] = raw_domain_settings.get("registration_tos", "").strip() or None
+        portal_settings["registration_self_registration_notes"] = raw_domain_settings.get("registration_self_registration_notes", "").strip() or None
+        portal_settings["registration_invite_notes"] = raw_domain_settings.get("registration_invite_notes", "").strip() or None
+
         # Do no override anything else than "apps" since the file is shared
         # with domain's config panel "portal" options
         portal_settings["apps"] = apps
