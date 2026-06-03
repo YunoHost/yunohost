@@ -117,7 +117,7 @@ class DNSRecord(TypedDict):
 
 
 def _build_dns_conf(
-    base_domain: str, include_empty_AAAA_if_no_ipv6=False
+    base_domain: str, include_empty_AAAA_if_no_ipv6=False, dkim_split=False
 ) -> dict[Literal["basic", "mail", "extra"] | str, list[DNSRecord]]:
     """
     Internal function that will returns a data structure containing the needed
@@ -214,6 +214,8 @@ def _build_dns_conf(
             dkim_host, dkim_publickey = _get_DKIM(domain)
 
             if dkim_host:
+                if not dkim_split:
+                    dkim_publickey = dkim_publickey.replace('" "', "")
                 mail += [
                     (f"{dkim_host}{suffix}", ttl, "TXT", dkim_publickey),
                     (f"_dmarc{suffix}", ttl, "TXT", '"v=DMARC1; p=none"'),
@@ -780,7 +782,7 @@ def domain_dns_push(
         assert isinstance(wrecord["type"], str)
         assert isinstance(wrecord["name"], str)
         comparison[(wrecord["type"], wrecord["name"])]["wanted"].append(wrecord)
-
+    breakpoint()
     for type_and_name, cwrecords in comparison.items():
         #
         # Step 1 : compute a first "diff" where we remove records which are the same on both sides
