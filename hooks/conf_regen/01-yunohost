@@ -294,6 +294,10 @@ EOF
 
     cp yunohost-api.service "$pending_dir/etc/systemd/system/yunohost-api.service"
     cp yunohost-portal-api.service "$pending_dir/etc/systemd/system/yunohost-portal-api.service"
+
+    cp yunohost-socket-api.socket "$pending_dir/etc/systemd/system/yunohost-socket-api.socket"
+    cp yunohost-socket-api@.service "$pending_dir/etc/systemd/system/yunohost-socket-api@.service"
+
     cp yunoprompt.service "$pending_dir/etc/systemd/system/yunoprompt.service"
     cp proc-hidepid.service "$pending_dir/etc/systemd/system/proc-hidepid.service"
     # Delete legacy yunohost-firewall service
@@ -368,7 +372,21 @@ do_post_regen() {
         systemctl restart systemd-logind
     }
     [[ ! "$regen_conf_files" =~ "yunohost-api.service" ]] || systemctl daemon-reload
-    [[ ! "$regen_conf_files" =~ "yunohost-portal-api.service" ]] || systemctl daemon-reload
+    [[ ! "$regen_conf_files" =~ "yunohost-portal-api.service" ]] || {
+        systemctl daemon-reload
+        if systemctl is-active yunohost-portal-api --quiet
+        then
+            systemctl restart yunohost-portal-api
+        fi
+    }
+    [[ ! "$regen_conf_files" =~ "yunohost-socket-api.socket" ]] || {
+        systemctl daemon-reload
+        if systemctl is-active yunohost-socket-api.socket --quiet
+        then
+            systemctl restart yunohost-socket-api.socket
+        fi
+    }
+
     [[ ! "$regen_conf_files" =~ "nftables.service.d/yunohost-nftables-hooks.conf" ]] || systemctl daemon-reload
 
     if [[ "$regen_conf_files" =~ "yunoprompt.service" ]]; then
@@ -384,6 +402,9 @@ do_post_regen() {
 
     systemctl enable yunohost-portal-api.service --quiet
     systemctl is-active yunohost-portal-api --quiet || systemctl start yunohost-portal-api.service
+
+    systemctl enable yunohost-socket-api.socket --quiet
+    systemctl is-active yunohost-socket-api.socket --quiet || systemctl start yunohost-socket-api.socket
 
     # Change dpkg vendor
     # see https://wiki.debian.org/Derivatives/Guidelines#Vendor

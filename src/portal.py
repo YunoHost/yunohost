@@ -18,6 +18,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import json
 import logging
 from pathlib import Path
 from typing import Any, Union
@@ -40,6 +41,7 @@ logger = logging.getLogger("portal")
 PORTAL_SETTINGS_DIR = "/etc/yunohost/portal"
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
+YUNOHOST_SOCKET_API = "/run/yunohost-socket-api.sock"
 
 def _get_user_infos(
     user_attrs: list[str],
@@ -341,3 +343,33 @@ def portal_update(
         }
     else:
         return {}
+
+
+def _call_socket_api(action: str, args: dict[str]) -> None:
+
+    import socket
+
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+
+        sock.connect(YUNOHOST_SOCKET_API)
+
+        payload = json.dumps({"action": action, "args": args}).encode()
+        sock.sendall(payload)
+        sock.shutdown(socket.SHUT_WR)
+
+        response = b""
+        while True:
+            chunk = sock.recv(4096)
+            if not chunk:
+                break
+            response += chunk
+
+    # the standard output is likely to contain INFO / SUCCESS message ...
+    # ... for now, only parse the last line which is expected to be a json
+    raw_json = response.decode().strip().split("\n")[-1]
+    ret = json.loads(raw_json)
+    if ret["error"]:
+        if ret["code"] == 400:
+            raise YunohostValidationError(ret["error"], raw_msg=True)
+        else:
+            raise YunohostError(f"Failed to {action}: {ret['error']}", raw_msg=True)

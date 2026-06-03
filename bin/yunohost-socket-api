@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2026 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+import os
+import sys
+import json
+
+if os.geteuid() != 0:
+    print("\033[1;31mError:\033[0m yunohost command must be run as root or with sudo.", file=sys.stderr)
+    sys.exit(1)
+
+from moulinette import m18n
+from moulinette.core import MoulinetteLock
+import yunohost
+from yunohost.utils.logging import init_logging
+from yunohost.utils.error import YunohostError
+
+if not os.path.isfile("/etc/yunohost/installed"):
+    raise Exception("YunoHost is not installed yet.")
+
+if sys.stdin.isatty():
+    raise YunohostError("JSON data is expected to be provided on stdin", raw_msg=True)
+
+init_logging(interface="cli")
+m18n.set_locales_dir("/usr/share/yunohost/locales/")
+
+r = json.loads(sys.stdin.read())
+
+if not isinstance(r, dict) or set(r.keys()) != set(["action", "args"]) or not isinstance(r["action"], str) or not isinstance(r["args"], dict) or not all(isinstance(k, str) for k in r["args"].keys()):
+    raise YunohostError("Invalid request format for the YunoHost socket API")
+
+from yunohost.user import user_invitation_consume, user_registration_queue, user_registration_confirm
+portal_phs_actions = {
+    "user_invitation_consume": user_invitation_consume,
+    "user_registration_queue": user_registration_queue,
+    "user_registration_confirm": user_registration_confirm,
+}
+action = r["action"]
+args = r["args"]
+if action not in portal_phs_actions:
+    raise YunohostError(f"Invalid action '{action}' for the YunoHost socket API")
+f = portal_phs_actions[action]
+
+with MoulinetteLock("yunohost", timeout=5):
+    try:
+        f(**args)
+    except Exception as e:
+        import traceback
+        print(' '.join(traceback.format_exception(e)), file=sys.stderr)
+        code = getattr(e, "http_code", 500)
+        out = {"error": str(e), "code": code}
+        ret = 1
+    else:
+        out = {"error": None, "code": None}
+        ret = 0
+
+print(json.dumps(out))
+sys.exit(ret)
