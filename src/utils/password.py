@@ -58,6 +58,8 @@ def assert_password_is_compatible(password: str) -> None:
     UNIX seems to not like password longer than 127 chars ...
     e.g. SSH login gets broken (or even 'su admin' when entering the password)
     """
+    if password.startswith("{CRYPT}$6$"):
+        return
 
     if len(password) >= 127:
         # Note that those imports are made here and can't be put
@@ -74,6 +76,14 @@ def assert_password_is_strong_enough(profile: str, password: str) -> None:
 
 
 def _hash_user_password(password: str) -> str:
+
+    # Make sure we dont re-hash passwords that are already hashed
+    # This also allow, for example, to provide password hash to user_create()
+    # which is motivated by the fact that, during self-registration, the registration data
+    # is stored temporarily for review, but we dont want to save the user's cleartext password
+    if password.startswith("{CRYPT}$6$"):
+        return password
+
     import passlib.hash
 
     # passlib will returns something like:
