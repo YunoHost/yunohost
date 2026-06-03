@@ -170,8 +170,10 @@ def domain_list(
     if features:
         domains_filtered = []
         for domain in domains:
-            config = domain_config_get(domain, key="feature", export=True)
-            if any(config.get(feature) == 1 for feature in features):
+            # NB : check note in _get_raw_domain_settings, hard-coded stuff for mail_in/mail_out
+            # to avoid relying on domain_config_get
+            config = _get_raw_domain_settings(domain)
+            if any(bool(config.get(feature)) for feature in features):
                 domains_filtered.append(domain)
         domains = domains_filtered
 
@@ -693,12 +695,26 @@ def _get_raw_domain_settings(domain: str) -> dict:
     so the file may be completely empty
     """
     _assert_domain_exists(domain)
+
+    # This is hard-coded here and should match what's in
+    # share/config_domain.toml ... and in fact we only do this for mail_in /
+    # mail_out which we do use "a lot" in domain_list()'s "feature" filter This
+    # is pretty ugly and hackish, but better resource-wise than calling the
+    # entire config panel stack just to list domains with mail features
+    # enabled...
+    defaults = {
+        "mail_in": True,
+        "mail_out": True,
+    }
+
     # NB: this corresponds to save_path_tpl in DomainConfigPanel
     path = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
     if os.path.exists(path):
-        return read_yaml(path)  # type: ignore[return-value]
+        raw_settings = read_yaml(path)  # type: ignore[return-value]
+        defaults.update(raw_settings)
+        return defaults
 
-    return {}
+    return defaults
 
 
 def domain_config_get(

@@ -73,22 +73,7 @@ base_folder_and_perm_init() {
     chown root:root /var/cache/yunohost/sessions
     chmod 700 /var/cache/yunohost/sessions
 
-    if test -e /etc/yunohost/installed; then
-        # Initialize session secrets
-        # Obviously we only do this in the post_regen, ie during the postinstall, because we don't want every pre-installed instance to have the same secret
-        if [ ! -e /etc/yunohost/.admin_cookie_secret ]; then
-            dd if=/dev/urandom bs=1 count=1000 2> /dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 64 > /etc/yunohost/.admin_cookie_secret
-        fi
-        chown root:root /etc/yunohost/.admin_cookie_secret
-        chmod 400 /etc/yunohost/.admin_cookie_secret
 
-        if [ ! -e /etc/yunohost/.ssowat_cookie_secret ]; then
-            # NB: we need this to be exactly 32 char long, because it is later used as a key for AES256
-            dd if=/dev/urandom bs=1 count=1000 2> /dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 32 > /etc/yunohost/.ssowat_cookie_secret
-        fi
-        chown ynh-portal:root /etc/yunohost/.ssowat_cookie_secret
-        chmod 400 /etc/yunohost/.ssowat_cookie_secret
-    fi
 
     ##################
     # Domain folders #
@@ -164,6 +149,35 @@ base_folder_and_perm_init() {
     fi
 }
 
+generate_secrets() {
+
+    # This is to generate secrets, which are actually not tracked by the regenconf
+
+    # Obviously we only do this in the post_regen, ie during the postinstall,
+    # because we don't want every pre-installed instances (eg RPi images) to have the same secret
+
+    if test -e /etc/yunohost/installed; then
+        if [ ! -e /etc/yunohost/.admin_cookie_secret ]; then
+            dd if=/dev/urandom bs=1 count=1000 2> /dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 64 > /etc/yunohost/.admin_cookie_secret
+        fi
+        chown root:root /etc/yunohost/.admin_cookie_secret
+        chmod 400 /etc/yunohost/.admin_cookie_secret
+
+        if [ ! -e /etc/yunohost/.ssowat_cookie_secret ]; then
+            # NB: we need this to be exactly 32 char long, because it is later used as a key for AES256
+            dd if=/dev/urandom bs=1 count=1000 2> /dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 32 > /etc/yunohost/.ssowat_cookie_secret
+        fi
+        chown ynh-portal:root /etc/yunohost/.ssowat_cookie_secret
+        chmod 400 /etc/yunohost/.ssowat_cookie_secret
+
+        if [ ! -e /etc/yunohost/.email_auth_secret ]; then
+            dd if=/dev/urandom bs=1 count=1000 2> /dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 64 > /etc/yunohost/.email_auth_secret
+        fi
+        chown root:root /etc/yunohost/.email_auth_secret
+        chmod 400 /etc/yunohost/.email_auth_secret
+    fi
+}
+
 do_init_regen() {
 
     cd /usr/share/yunohost/conf/yunohost
@@ -225,6 +239,8 @@ do_pre_regen() {
     pending_dir=$1
 
     cd /usr/share/yunohost/conf/yunohost
+
+    generate_secrets
 
     mkdir -p "$pending_dir/etc/systemd/system"
     mkdir -p "$pending_dir/etc/cron.d/"
