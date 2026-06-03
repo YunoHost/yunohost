@@ -73,7 +73,17 @@ base_folder_and_perm_init() {
     chown root:root /var/cache/yunohost/sessions
     chmod 700 /var/cache/yunohost/sessions
 
+    # ################################ #
+    # User invitations / registrations #
+    # ################################ #
 
+    mkdir -p /etc/yunohost/.user_invitations
+    chown root:ynh-portal /etc/yunohost/.user_invitations
+    chmod 710 /etc/yunohost/.user_invitations
+
+    mkdir -p /etc/yunohost/.user_registrations
+    chown root:root /etc/yunohost/.user_registrations
+    chmod 700 /etc/yunohost/.user_registrations
 
     ##################
     # Domain folders #
