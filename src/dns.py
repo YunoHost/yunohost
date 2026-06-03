@@ -782,7 +782,7 @@ def domain_dns_push(
         assert isinstance(wrecord["type"], str)
         assert isinstance(wrecord["name"], str)
         comparison[(wrecord["type"], wrecord["name"])]["wanted"].append(wrecord)
-    breakpoint()
+
     for type_and_name, cwrecords in comparison.items():
         #
         # Step 1 : compute a first "diff" where we remove records which are the same on both sides
