@@ -25,6 +25,7 @@ import pwd
 import random
 import re
 import subprocess
+import time
 from logging import getLogger
 from pathlib import Path
 from typing import (
@@ -48,6 +49,7 @@ from .service import service_status
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.process import check_output
 from .utils.system import binary_to_human
+from .utils.file_utils import read_json, write_to_json, chmod, chown
 
 if TYPE_CHECKING:
     from bottle import HTTPResponse as HTTPResponseType
@@ -74,6 +76,158 @@ FIELDS_FOR_IMPORT = {
 }
 
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
+
+
+USER_PENDING_INVITATIONS = Path("/etc/yunohost/.user_invitations/")
+INVITATION_LINK = "https://{domain}/yunohost/sso/register?invitation={token}"
+
+
+def user_invite(*args, **kwargs):
+    return user_invitation_generate(*args, **kwargs)
+
+
+def user_invitation_generate(domain, username=None, groups=[], external_email=None, mailbox_quota="0", send_invite_via_email=False, notify_admins_when_invite_is_consumed=False, validity=7*24) -> str:
+
+    from .domain import domain_list, _get_maindomain, _assert_domain_exists
+    from .utils.misc import random_ascii
+    from .utils.email import _send_email
+
+    all_existing_usernames = {x.pw_name for x in pwd.getpwall()}
+    if username and username in all_existing_usernames:
+        raise YunohostValidationError("system_username_exists")
+
+    # Validate domain used for email address account
+    if domain is None:
+        if Moulinette.interface.type == "api":
+            raise YunohostValidationError(
+                "Invalid usage, you should specify a domain argument", raw_msg=True
+            )
+        else:
+            # On affiche les differents domaines possibles
+            Moulinette.display(m18n.n("domains_available"))
+            for domain in domain_list()["domains"]:
+                Moulinette.display(f"- {domain}")
+
+            maindomain = _get_maindomain()
+            domain = Moulinette.prompt(
+                m18n.n("ask_user_domain") + f" (default: {maindomain})"
+            )
+            if not domain:
+                domain = maindomain
+    else:
+        _assert_domain_exists(domain)
+
+    expires = int(time.time()) + validity * 3600
+    validity_human = f"{round(validity/24,1)} days" if validity > 48 else f"{validity} hours"
+
+    token = random_ascii(64)
+    invite_file = USER_PENDING_INVITATIONS / f"{token}.json"
+    infos = {
+        "username": username,
+        "domain": domain,
+        "expires": expires,
+        "groups": groups or [],
+        "external_email": external_email,
+        "mailbox_quota": mailbox_quota,
+        "notify_admins_when_invite_is_consumed": notify_admins_when_invite_is_consumed,
+    }
+
+    invitation_link = INVITATION_LINK.format(domain=domain, token=token)
+
+    # Permission 1 (+x) for ynh-portal group will allow it to read the file if it does know its name
+    # but not to list the existing files
+    chmod(USER_PENDING_INVITATIONS, 0o710)
+    chown(USER_PENDING_INVITATIONS, "root", "ynh-portal")
+    write_to_json(str(invite_file), infos)
+    chmod(invite_file, 0o440)
+    chown(invite_file, "root", "ynh-portal")
+
+    # FIXME: when using send_invite_via_email, should check that the mail stack seems to be able to send emails according to diagnosis
+    if send_invite_via_email and not (external_email and "@" in external_email):
+        logger.error("Cannot send the invitation via email, because no proper external email was provided")
+    elif send_invite_via_email:
+
+        from .domain import _get_raw_domain_settings
+        domain_settings = _get_raw_domain_settings(domain)
+        data_for_email = {
+            "invitation_link": invitation_link,
+            "domain": domain,
+            "validity_human": validity_human
+        }
+        if "registration_invite_mail_subject_template" in domain_settings:
+            invite_mail_subject = domain_settings["registration_invite_mail_subject_template"].format(**data_for_email)
+        else:
+            invite_mail_subject = m18n.n("user_invitation_mail_subject_template", **data_for_email)
+
+        if "registration_invite_mail_template" in domain_settings:
+            invite_mail_body = domain_settings["registration_invite_mail_template"].format(**data_for_email)
+        else:
+            invite_mail_body = m18n.n("user_invitation_mail_template", **data_for_email)
+
+        try:
+            _send_email(
+                _from=f"registrations@{domain}",
+                no_reply=f"no-reply@{domain}",
+                to=external_email,
+                subject=invite_mail_subject,
+                body=invite_mail_body
+            )
+        except Exception as e:
+            logger.error(f"Failed to send the invitation email: {e}")
+
+    if Moulinette.interface.type == "cli":
+        logger.success(m18n.n("user_invitation_created", validity=validity_human))
+        logger.info("Invitation link:")
+
+    return invitation_link
+
+
+def user_invitation_cancel(token: str) -> None:
+    invite_file = USER_PENDING_INVITATIONS / f"{token}.json"
+    if not invite_file.exists():
+        raise YunohostValidationError("user_invitation_expired_or_doesnt_exist")
+
+    invite_file.unlink()
+    logger.success(m18n.n("user_invitation_cancelled"))
+
+
+def user_invitation_list(raw: bool = False) -> dict[Literal["invitations"], list[dict]]:
+
+    invitations = []
+    for file in sorted(USER_PENDING_INVITATIONS.glob("*.json"), key=os.path.getmtime, reverse=True):
+        data = read_json(str(file))
+
+        if time.time() > data["expires"]:
+            file.unlink()
+            continue
+
+        token = file.name[:-len(".json")]
+
+        data["token"] = token
+        data["url"] = INVITATION_LINK.format(domain=data['domain'], token=token)
+
+        # If not raw, try to reduce noise and make it more human-friendly
+        if not raw:
+
+            del data["token"]
+            del data["domain"]
+            del data["notify_admins_when_invite_is_consumed"]
+            if not data["username"]:
+                del data["username"]
+            if data["mailbox_quota"] in [None, "0"]:
+                del data["mailbox_quota"]
+            if not data["external_email"]:
+                del data["external_email"]
+            if not data["groups"]:
+                del data["groups"]
+
+            hours_remaining = round((data['expires'] - time.time()) / 3600, 1)
+            data["validity"] = f"{round(hours_remaining/24,1)} days" if hours_remaining > 48 else f"{hours_remaining} hours"
+            del data["expires"]
+
+        invitations.append(data)
+
+    return {"invitations": invitations}
 
 
 def user_list(fields: list[str] | None = None) -> dict[str, dict[str, Any]]:

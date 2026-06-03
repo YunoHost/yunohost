@@ -237,7 +237,90 @@ user:
                     help: Delete all existing users that are not contained in the CSV file (by default existing users are kept)
                     action: store_true
 
+        ### user_invite()
+        invite:
+            action_help: Invite a user to create an account. Shortcut to "yunohost user invitation generate"
+            arguments: &user_invitation_generate_args
+                -u:
+                    full: --username
+                    help: Username for the user. Leave empty to let the user pick the username.
+                    extra:
+                        pattern: *pattern_username
+                -d:
+                    full: --domain
+                    help: Main domain this user will be related to, used to define the email address and which app the user has access to
+                    extra:
+                        autocomplete: *domains_list
+                -q:
+                    full: --mailbox-quota
+                    help: Mailbox size quota
+                    default: "0"
+                    metavar: "{SIZE|0}"
+                    extra:
+                        pattern: *pattern_mailbox_quota
+                -g:
+                    full: --groups
+                    nargs: "*"
+                    metavar: GROUP
+                    extra:
+                        pattern: &pattern_groupname
+                            - !!str ^[a-z0-9][-a-z0-9_\.]*$
+                            - "pattern_groupname"
+                        autocomplete: &user_groups_list
+                            ynh_selector: user group list -s
+                            jq_selector: '.groups[]'
+                            use_cache: false
+                -e:
+                    full: --external-email
+                    help: Recovery/mailforward email address for this user
+                    extra:
+                        pattern: *pattern_email_forward
+                -S:
+                    full: --send-invite-via-email
+                    default: False
+                    action: store_true
+                    help: Send the invitation by email to this user, using the chosen external mail address.
+                -N:
+                    full: --notify-admins-when-invite-is-consumed
+                    default: False
+                    action: store_true
+                    help: Notify admins once the account is created
+                -V:
+                    full: --validity
+                    default: 168 # 7*24 = 7 days
+                    type: int
+                    help: The validity of the invitation, in hours. Defaults to 168 hours = 7 days
+
     subcategories:
+
+        invitation:
+
+            subcategory_help: Manage user invitations
+            actions:
+
+                ### user_invitation_generate
+                generate:
+                  action_help: Generate an invitation link for a user to create an account.
+                  api: POST /users/invitations
+                  arguments: *user_invitation_generate_args
+
+                ### user_invitation_list
+                list:
+                  action_help: List pending invitations
+                  api: GET /users/invitations
+                  arguments:
+                    --raw:
+                        help: Do not simplify the output to be easier to read by humans
+                        action: store_true
+
+                ### user_invitation_cancel
+                cancel:
+                  action_help: Cancel a pending invitation
+                  api: DELETE /users/invitations/<token>
+                  arguments:
+                    token:
+                      help: Invitation token to be cancelled
+
         group:
             subcategory_help: Manage user groups
             actions:
@@ -264,9 +347,7 @@ user:
                         groupname:
                             help: Name of the group to be created
                             extra:
-                                pattern: &pattern_groupname
-                                    - !!str ^[a-z0-9][-a-z0-9_\.]*$
-                                    - "pattern_groupname"
+                                pattern: *pattern_groupname
 
                 ### user_group_delete()
                 delete:
@@ -277,10 +358,7 @@ user:
                             help: Name of the group to be deleted
                             extra:
                                 pattern: *pattern_groupname
-                                autocomplete: &user_groups_list
-                                    ynh_selector: user group list -s
-                                    jq_selector: '.groups[]'
-                                    use_cache: false
+                                autocomplete: *user_groups_list
 
                 ### user_group_info()
                 info:
