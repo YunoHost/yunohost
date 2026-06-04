@@ -9,6 +9,8 @@ from yunohost.domain import domain_list
 from yunohost.dyndns import dyndns_update, dyndns_list
 from yunohost.service import service_restart
 from yunohost.utils.file_utils import cp, chown, chmod, rm
+from ..utils.error import YunohostError
+from yunohost.utils.mail import get_pending_mails_nb
 
 
 logger = getLogger("yunohost.migration")
@@ -52,7 +54,7 @@ class MyMigration(Migration):
 
     @property
     def mode(self):
-        if not self.manual_domains:
+        if not self.upgradable_domains:
             return "auto"
 
         return "manual"
@@ -66,7 +68,19 @@ class MyMigration(Migration):
 
         return m18n.n("migration_0037_upgrade_dkim_keys_disclaimer", domains=domains)
 
+    def check_assertions(self):
+        try:
+            pending_mails = get_pending_mails_nb()
+        except:
+            return
+        if pending_mails > 0:
+            raise YunohostError(
+                "migration_0037_upgrade_dkim_keys_pending_mails",
+                pending_mails=pending_mails
+            )
+
     def run(self, *args):
+        self.check_assertions()
         # Find 1024 bits keys to upgrade
         # Deal with potential admin customization with
         # domains sharing the same 1048 bits dkim keys
