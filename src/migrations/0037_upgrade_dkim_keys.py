@@ -71,7 +71,7 @@ class MyMigration(Migration):
     def check_assertions(self):
         try:
             pending_mails = get_pending_mails_nb()
-        except:
+        except (ValueError, subprocess.CalledProcessError):
             return
         if pending_mails > 0:
             raise YunohostError(
