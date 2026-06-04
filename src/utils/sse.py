@@ -275,19 +275,27 @@ def get_current_operation() -> (
     return pid, operation_id, process_command_line, started_by
 
 
+@functools.cache
+def _get_shared_sub_context() -> Any:
+    # Shared green context for all SSE clients, only the SUB sockets are per-connection.
+    import zmq.green as zmq
+
+    return zmq.Context()  # type: ignore[attr-defined]
+
+
 def sse_stream() -> Generator[str, None, None]:
     # We need zmq.green to uh have some sort of async ? (I think)
     import zmq.green as zmq
 
     from ..log import OPERATIONS_PATH, log_list
 
-    ctx = zmq.Context()
-    sub = ctx.socket(zmq.SUB)
+    ctx = _get_shared_sub_context()
+    sub = ctx.socket(zmq.SUB)  # one fresh socket per client connection
     sub.subscribe("")
     sub.connect(LOG_BROKER_FRONTEND_ENDPOINT)
 
     # Set client-side auto-reconnect timeout, ms.
-    yield "retry: 100\n\n"
+    yield "retry: 3000\n\n"
 
     # Check if there's any ongoing operation right now
     _, current_operation_id, _, _ = get_current_operation()
@@ -375,4 +383,3 @@ def sse_stream() -> Generator[str, None, None]:
                     logging.warning(f"Failed to process message: {e}")
     finally:
         sub.close()
-        ctx.term()
