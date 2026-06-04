@@ -22,7 +22,6 @@
 from .process import check_output
 
 
-
 def get_pending_mails_nb() -> int:
     """
     Return number of pending mails in queue
