@@ -19,7 +19,10 @@ logger = getLogger("yunohost.migration")
 def get_upgradable_domains():
     """ Find domains with a 1024 bits DKIM to upgrade
     """
-    mail_domains = domain_list(features=["mail_in", "mail_out"])["domains"]
+    # Avoid to  filter by mail_in and mail_out features cause
+    # 1024 bits keys could already exists, and features could
+    # be reactivated
+    mail_domains = domain_list()["domains"]
     for domain in mail_domains:
         domain_key = f"/etc/dkim/{domain}.mail.key"
         # Do not recreate the key if it does not exist
