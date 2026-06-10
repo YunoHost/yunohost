@@ -599,7 +599,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     # Set the domain
     csr.get_subject().CN = domain
 
-    sanlist = []
+    sanlist = [domain]
     hook_results = hook_callback("cert_alternate_names", env={"domain": domain})
     for hook_name, results in hook_results.items():
         #
