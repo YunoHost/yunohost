@@ -33,6 +33,7 @@ from .diagnosis import Diagnoser
 from .log import OperationLogger
 from .regenconf import regen_conf
 from .service import _run_service_command
+from .settings import settings_get
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import chmod, chown, read_file
 from .utils.network import get_public_ip
@@ -60,7 +61,7 @@ KEY_SIZE = 4096
 VALIDITY_LIMIT = 15  # days
 
 # For prod
-PRODUCTION_CERTIFICATION_AUTHORITY = "https://acme-v02.api.letsencrypt.org"
+PRODUCTION_CERTIFICATION_AUTHORITY = settings_get("security.certauth.certification_authority_acme_url")
 
 #
 # Front-end stuff                                                           #
