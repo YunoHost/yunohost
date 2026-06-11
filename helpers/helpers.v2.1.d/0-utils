@@ -527,7 +527,7 @@ ynh_add_swap() {
         if [[ "$root_fs_type" == "btrfs" || "$root_fs_type" == "f2fs" ]]; then
 			chattr +C "/swap_$app"
         else
-            echo "Skipping chattr +C for swap because the root filesystem is btrfs  which doesn't support this attribute"
+            echo "Skipping chattr +C for swap because the root filesystem is '$root_fs_type' which doesn't support this "no copy-on-write" attribute"
 		fi
 
         # Preallocate space for the swap file, fallocate may sometime not be used, use dd instead in this case
