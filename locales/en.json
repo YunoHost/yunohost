@@ -7,6 +7,7 @@
     "admins": "Admins",
     "all_users": "All YunoHost users",
     "already_up_to_date": "Nothing to do. Everything is already up-to-date.",
+    "another_yunohost_operation_is_already_running": "An other YunoHost operation is already running on the server, therefore this operatin cannot be performed right now, sorry ! Please try again in a few moments.", 
     "antibot_challenge_doesnt_exist_or_expired": "This 'prove you are human' challenge does not exist or expired. Please try again.",
     "antibot_challenge_wrong_answer": "The 'prove you are human' challenge did not receive the expected answer. Please try again.",
     "app_action_broke_system": "This action seems to have broken these important services: {services}",

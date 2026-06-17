@@ -27,7 +27,7 @@ if os.geteuid() != 0:
     sys.exit(1)
 
 from moulinette import m18n
-from moulinette.core import MoulinetteLock
+from moulinette.core import MoulinetteLock, MoulinetteLockAcquireTimeout
 import yunohost
 from yunohost.utils.logging import init_logging
 from yunohost.utils.error import YunohostError
@@ -58,18 +58,22 @@ if action not in portal_phs_actions:
     raise YunohostError(f"Invalid action '{action}' for the YunoHost socket API")
 f = portal_phs_actions[action]
 
-with MoulinetteLock("yunohost", timeout=5):
-    try:
-        f(**args)
-    except Exception as e:
-        import traceback
-        print(' '.join(traceback.format_exception(e)), file=sys.stderr)
-        code = getattr(e, "http_code", 500)
-        out = {"error": str(e), "code": code}
-        ret = 1
-    else:
-        out = {"error": None, "code": None}
-        ret = 0
+try:
+    with MoulinetteLock("yunohost", timeout=5):
+        try:
+            f(**args)
+        except Exception as e:
+            import traceback
+            print(' '.join(traceback.format_exception(e)), file=sys.stderr)
+            code = getattr(e, "http_code", 500)
+            out = {"error": str(e), "code": code}
+            ret = 1
+        else:
+            out = {"error": None, "code": None}
+            ret = 0
+except MoulinetteLockAcquireTimeout:
+    out = {"error": m18n.n("another_yunohost_operation_is_already_running"), "code": 504}
+    ret = 1
 
 print(json.dumps(out))
 sys.exit(ret)
