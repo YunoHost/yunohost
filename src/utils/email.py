@@ -21,6 +21,7 @@
 import os
 from typing import Literal
 from logging import getLogger
+from moulinette import m18n
 
 logger = getLogger("yunohost.utils.email")
 

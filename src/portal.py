@@ -45,6 +45,7 @@ ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 USER_PENDING_INVITATIONS = Path("/etc/yunohost/.user_invitations/")
 YUNOHOST_SOCKET_API = "/run/yunohost-socket-api.sock"
 
+
 def _get_user_infos(
     user_attrs: list[str],
 ) -> tuple[str, str, dict[str, Any]]:
@@ -412,6 +413,7 @@ def portal_invitation_get(token):
         "custom_notes": custom_notes
     }
 
+
 def _call_socket_api(action: str, args: dict[str]) -> None:
 
     import socket
@@ -458,6 +460,8 @@ def portal_invitation_consume(token, username, fullname, password, external_emai
 # FIXME : this is probably not a proper global state shared between all the gevent/bottle threads
 # Though for now it looks like we have a single thread anyway so it may be OK ? Idk
 CHALLENGES = dict()
+
+
 def _generate_antibot_challenge() -> tuple[str, str]:
 
     from random import randint, choice
@@ -478,7 +482,7 @@ def _generate_antibot_challenge() -> tuple[str, str]:
     if y > x and operator == "-":
         x, y = y, x
 
-    answer = CALCULATIONS[operator](x,y)
+    answer = CALCULATIONS[operator](x, y)
 
     validity_limit = int(time.time() + 3600)
     calculation = f"{x} {operator} {y}"

@@ -64,12 +64,23 @@ else:
     logger = getLogger("yunohost.user")
 
 
-FIELDS_FOR_IMPORT = {
+# This regexes should be kept in sync with the actionsmap.yml
+REGEXES = {
     "username": r"^[a-z0-9][-a-z0-9_.]*$",
+    "fullname": r"^([^\W_]{1,30}[ ,.'-]{0,3})+$",
+    "external_email": r"^[\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$",
+    "domain": r"^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$"
+}
+
+FIELDS_FOR_IMPORT = {
+    "username": REGEXES["username"],
+    # FIXME : idk why the firstname / lastname regex are slightly different from the "fullname" one
+    # Also the firstname / lastname dichotomy is legacy bad design, the import/export system should be updated to only handle fullname...
     "firstname": r"^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$",
     "lastname": r"^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$",
     "password": r"^|(.{3,})$",
     "mail": r"^([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}))$",
+    # FIXME : i don't know why the regex starts with |( and ends with ,?)+, compared to the version in actionsmap.yml...
     "mail-alias": r"^|([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$",
     "mail-forward": r"^|([\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$",
     "mailbox-quota": r"^(\d+[bkMGT])|0|$",
@@ -264,7 +275,8 @@ def user_invitation_consume(invitation_token, username, fullname, password, exte
         username = username.strip()
 
     fullname = fullname.strip()
-    groups = groups or []
+    groups = invite_data["groups"] or []
+    domain = invite_data["domain"]
 
     external_email = invite_data["external_email"] or external_email or None
     if external_email:
@@ -296,7 +308,7 @@ def user_invitation_consume(invitation_token, username, fullname, password, exte
             try:
                 user_group_add(group, [username])
             except Exception as e:
-                logger.warning(f"Failed to add {username} to group {group}")
+                logger.warning(f"Failed to add {username} to group {group} : {e}")
 
     if invite_data["notify_admins_when_invite_is_consumed"]:
         try:
@@ -319,10 +331,10 @@ def _validate_user_inputs_for_registration(username, fullname, password, externa
     # Some of the following checks should already have been performed by the portal API
     # But we should minimize the trust we put in the portal API user, as an additional layer of security
     # NB: the regexes are just copypasta of the actionsmap
-    if not (isinstance(username, str) and re.match(r"^[a-z0-9][-a-z0-9_\.]*$", username) and len(username) >= 2 and len(username) < 100):
+    if not (isinstance(username, str) and re.match(REGEXES["username"], username) and len(username) >= 2 and len(username) < 100):
         raise YunohostValidationError("Username should be at least 2 characters and contain only alphanumeric, '_' and '.' characters.", raw_msg=True)
 
-    if not (isinstance(fullname, str) and re.match(r"^([^\W_]{1,30}[ ,.'-]{0,3})+$", fullname) and len(fullname) < 100):
+    if not (isinstance(fullname, str) and re.match(REGEXES["fullname"], fullname) and len(fullname) < 100):
         raise YunohostValidationError("This fullname is incorrect", raw_msg=True)
 
     if not isinstance(password, str):
@@ -330,10 +342,10 @@ def _validate_user_inputs_for_registration(username, fullname, password, externa
 
     assert_password_is_strong_enough("admin" if is_admin else "user", password)
 
-    if external_email and not (isinstance(external_email, str) and re.match(r"^[\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$", external_email)):
+    if external_email and not (isinstance(external_email, str) and re.match(REGEXES["external_email"], external_email)):
         raise YunohostValidationError("The external email is not valid email", raw_msg=True)
 
-    if not (isinstance(domain, str) and re.match("^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$", domain)):
+    if not (isinstance(domain, str) and re.match(REGEXES["domain"], domain)):
         raise YunohostValidationError("The domain is not a valid domain", raw_msg=True)
 
     if notes and not (isinstance(notes, str) and len(notes) < 1000):
@@ -356,7 +368,7 @@ def _validate_user_inputs_for_registration(username, fullname, password, externa
         from .dns import dig
 
         if not external_email:
-            raise YunohostValiationError("An external email is required.")
+            raise YunohostValidationError("An external email is required.")
 
         status, message = _domain_is_able_to_send_email(domain)
         if status is False:
@@ -374,7 +386,7 @@ def _validate_user_inputs_for_registration(username, fullname, password, externa
             pass
         else:
             if external_email_domain in blocklist:
-                raise YunohostValidationError(f"Domain {user_email_domain} seems to be used for disposable email addresses. Please provide a trustworthy, reliable external email address.")
+                raise YunohostValidationError(f"Domain {external_email_domain} seems to be used for disposable email addresses. Please provide a trustworthy, reliable external email address.")
 
         ok, _ = dig(external_email_domain, "MX")
         if ok != "ok":
@@ -388,11 +400,10 @@ def _validate_user_inputs_for_registration(username, fullname, password, externa
 
 def user_registration_queue(username, fullname, password, external_email, accept_tos, notes, domain, ip) -> None:
 
-    from .app import PORTAL_SETTINGS_DIR
     from .domain import _get_raw_domain_settings
     from .utils.password import _hash_user_password
     from .utils.misc import random_ascii
-    from .utils.email import _send_email, _domain_is_able_to_send_email
+    from .utils.email import _send_email
 
     domain_settings = _get_raw_domain_settings(domain)
     if not domain_settings.get("enable_self_registration"):
@@ -476,7 +487,7 @@ def user_registration_confirm(request_id: str) -> None:
     request_pending_confirmation_file = USER_PENDING_REGISTRATIONS / f"{request_id}-pending_email_confirmation.json"
 
     if not request_pending_confirmation_file.exists():
-        raise YunohotValidationError("user_registration_doesnt_exist_or_was_already_confirmed")
+        raise YunohostValidationError("user_registration_doesnt_exist_or_was_already_confirmed")
 
     request_file = USER_PENDING_REGISTRATIONS / f"{request_id}.json"
     request_pending_confirmation_file.rename(str(request_file))
@@ -580,7 +591,7 @@ def user_registration_accept(request_id):
     request_file = USER_PENDING_REGISTRATIONS / f"{request_id}.json"
 
     if not request_file.exists():
-        raise YunohotValidationError("user_registration_doesnt_exist")
+        raise YunohostValidationError("user_registration_doesnt_exist")
 
     if not (request_file.owner(), request_file.group(), filemode(request_file.stat().st_mode)) == ("root", "root", "-r--------"):
         raise YunohostError(f"Uhoh, permissions on file {request_file} are not right?", raw_msg=True)
