@@ -36,6 +36,7 @@ from .utils.password import (
     assert_password_is_compatible,
     assert_password_is_strong_enough,
 )
+from moulinette import m18n
 
 logger = logging.getLogger("portal")
 
@@ -422,7 +423,7 @@ def _call_socket_api(action: str, args: dict[str]) -> None:
 
         sock.connect(YUNOHOST_SOCKET_API)
 
-        payload = json.dumps({"action": action, "args": args}).encode()
+        payload = json.dumps({"action": action, "args": args, "locale": m18n.locale}).encode()
         sock.sendall(payload)
         sock.shutdown(socket.SHUT_WR)
 
