@@ -34,7 +34,7 @@ i18n = "domain_config"
         style = "info"
         visible = "enable_self_registration"
         # This message is hidden unless self-registration is enabled, to limit ui bloat
-        # However we hould also display a similar message on the webadmin form
+        # However we should also display a similar message on the webadmin form
 
         [feature.registration.registration_customize]
         type = "boolean"

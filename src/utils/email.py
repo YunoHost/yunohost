@@ -104,7 +104,7 @@ def regen_mail_senders_infos_for_dovecot_and_postfix(
         for mail_domain in mail_out_domains:
             if mail_domain not in main_domains:
                 continue
-            for mail_user in ["root", "admin", "admins", "no-reply", "registrations"]:
+            for mail_user in ["root", "admin", "admins", "no-reply", "registrations", "certmanager", "diagnosis"]:
                 postfix_map.append(f"{mail_user}@{mail_domain} root")
 
     # Now for the app credentials
@@ -221,8 +221,8 @@ def _domain_is_able_to_send_email(domain) -> tuple[Literal[True], None] | tuple[
                 failed_checks.append(check)
 
         if "outgoing_port_25" in failed_checks:
-            return False, "As reported by the diagnosis, outgoing port 25 seems to be blocked, and sending email not work."
+            return False, "As reported by the diagnosis, outgoing port 25 seems to be blocked, and sending email will not work."
         elif failed_checks:
-            return "warning", "Issues related to emails found in the diagnosis, such as reverse DNS or the server being blocklisted, indicate that sending email may not work"
+            return "warning", "Issues related to emails were found in the diagnosis, such as reverse DNS or the server being blocklisted, indicating that sending email may not work"
 
     return True, None

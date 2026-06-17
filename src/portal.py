@@ -375,7 +375,7 @@ def portal_invitation_get(token):
     assert domain and "/" not in domain
 
     if not (isinstance(token, str) and token.isalnum() and len(token) == 64):
-        raise YunohostValidationError("This invitation token is invalid. Invitation tokens are expected to be exactly 64 alphanumeric characters.", raw_msg=True)
+        raise YunohostValidationError("This invitation token is invalid. Invitation tokens are expected to be made of exactly 64 alphanumeric characters.", raw_msg=True)
 
     invite_file = USER_PENDING_INVITATIONS / f"{token}.json"
     # FIXME : need a good justification here that .exists() is safe against timing attacks. So far I don't have a clear answer

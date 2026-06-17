@@ -60,14 +60,14 @@ portal:
 
         ### portal_public()
         public:
-            action_help: Allow anybody to list public apps and other infos regarding the public portal
+            action_help: Allow anybody to list public apps and other information regarding the public portal
             api: GET /public
             authentication:
                 api: null
 
         ### portal_invitation_get()
         invitation_get:
-            action_help: Obtain info about a pending invitation
+            action_help: Obtain information about a pending invitation
             api: GET /invitation
             authentication:
                 api: null
@@ -90,7 +90,7 @@ portal:
                         # The username may have been defined by the admin and may not be overridable
                         required: False
                         pattern: &pattern_username
-                            - !!str ^[a-z0-9_\.]+$
+                            - !!str ^[a-z0-9][-a-z0-9_\.]*$
                             - "pattern_username"
                 --fullname:
                     help: The full name of the user. For example 'Camille Dupont'
@@ -110,13 +110,6 @@ portal:
                     help: Accept the Terms of Services (assuming some are defined by the admins)
                     default: false
                     action: store_true
-
-        ### portal_registration_challenge()
-        registration_challenge:
-            action_help: Obtain an antibot challenge token and question to be able to submit a registration request
-            api: GET /registration/challenge
-            authentication:
-                api: null
 
         ### portal_registration_challenge()
         registration_challenge:
