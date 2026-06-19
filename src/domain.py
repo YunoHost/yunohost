@@ -291,7 +291,7 @@ def domain_add(
     """
     from .app import app_ssowatconf
     from .certificate import (
-        _certificate_install_letsencrypt,
+        _certificate_install_certauth,
         _certificate_install_selfsigned,
         certificate_status,
     )
@@ -407,7 +407,7 @@ def domain_add(
 
         if can_install_letsencrypt:
             try:
-                _certificate_install_letsencrypt([domain], force=True, no_checks=True)
+                _certificate_install_certauth([domain], force=True, no_checks=True)
             except Exception:
                 failed_letsencrypt_cert_install = True
         else:

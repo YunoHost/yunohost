@@ -47,21 +47,24 @@ if TYPE_CHECKING:
 else:
     logger = getLogger("yunohost.certmanager")
 
+# For prod
+PRODUCTION_CERTIFICATION_AUTHORITY = settings_get("security.certauth")
+CERT_AUTH_NAME = PRODUCTION_CERTIFICATION_AUTHORITY['security.certauth.certification_authority']['value']
+CERT_AUTH_FULLNAME = PRODUCTION_CERTIFICATION_AUTHORITY['security.certauth.certification_authority_fullname']['value']
+CERT_AUTH_ACME_URL = PRODUCTION_CERTIFICATION_AUTHORITY['security.certauth.certification_authority_acme_url']['value']
+
 CERT_FOLDER = "/etc/yunohost/certs/"
 TMP_FOLDER = "/var/www/.well-known/acme-challenge-private/"
 WEBROOT_FOLDER = "/var/www/.well-known/acme-challenge-public/"
 
 SELF_CA_FILE = "/etc/ssl/certs/ca-yunohost_crt.pem"
-ACCOUNT_KEY_FILE = "/etc/yunohost/letsencrypt_account.pem"
+ACCOUNT_KEY_FILE = "/etc/yunohost/" + CERT_AUTH_NAME + "_account.pem"
 
 SSL_DIR = "/usr/share/yunohost/ssl"
 
 KEY_SIZE = 4096
 
 VALIDITY_LIMIT = 15  # days
-
-# For prod
-PRODUCTION_CERTIFICATION_AUTHORITY = settings_get("security.certauth.certification_authority_acme_url")
 
 #
 # Front-end stuff                                                           #
@@ -135,20 +138,20 @@ def certificate_install(
     self_signed: bool = False,
 ) -> None:
     """
-    Install a Let's Encrypt certificate for given domains (all by default)
+    Install a certificate from the certification authority for given domains (all by default)
 
     Keyword argument:
         domain_list  -- Domains on which to install certificates
         force        -- Install even if current certificate is not self-signed
         no-check     -- Disable some checks about the reachability of web server
                        before attempting the install
-        self-signed  -- Instal self-signed certificates instead of Let's Encrypt
+        self-signed  -- Instal self-signed certificates instead of from the CA
     """
 
     if self_signed:
         _certificate_install_selfsigned(domain_list, force)
     else:
-        _certificate_install_letsencrypt(domain_list, force, no_checks)
+        _certificate_install_certauth(domain_list, force, no_checks)
 
 
 def _certificate_install_selfsigned(domain_list, force=False):
@@ -254,7 +257,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
         )
 
 
-def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
+def _certificate_install_certauth(domains, force=False, no_checks=False):
     from .domain import _assert_domain_exists, domain_list
 
     if not os.path.exists(ACCOUNT_KEY_FILE):
@@ -295,7 +298,7 @@ def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
         logger.info("Now attempting install of certificate for domain %s!", domain)
 
         operation_logger = OperationLogger(
-            "letsencrypt_cert_install",
+            "certauth_cert_install",
             [("domain", domain)],
             args={"force": force, "no_checks": no_checks},
         )
@@ -309,7 +312,7 @@ def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
             operation_logger.error(msg)
             if no_checks:
                 logger.error(
-                    f"Please consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain {domain}."
+                    f"Please consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a {CERT_AUTH_FULLNAME} certificate on domain {domain}."
                 )
             failed_cert_install.append(domain)
         else:
@@ -330,7 +333,7 @@ def certificate_renew(
     email: bool = False,
 ) -> None:
     """
-    Renew Let's Encrypt certificate for given domains (all by default)
+    Renew certificate from the certification authority for given domains (all by default)
 
     Keyword argument:
         domains    -- Domains for which to renew the certificates
@@ -342,13 +345,13 @@ def certificate_renew(
 
     from .domain import _assert_domain_exists, domain_list
 
-    # If no domains given, consider all yunohost domains with Let's Encrypt
-    # certificates
+    # If no domains given, consider all yunohost domains with certificates
+    # from the certification authority
     if domains == []:
         for domain in domain_list()["domains"]:
-            # Does it have a Let's Encrypt cert?
+            # Does it have a cert from the CA?
             status = _get_status(domain)
-            if status["CA_type"] != "letsencrypt":
+            if status["CA_type"] != CERT_AUTH_NAME:
                 continue
 
             # Does it expire soon?
@@ -381,8 +384,8 @@ def certificate_renew(
                     "certmanager_attempt_to_renew_valid_cert", domain=domain
                 )
 
-            # Does it have a Let's Encrypt cert?
-            if status["CA_type"] != "letsencrypt":
+            # Does it have a cert from the CA?
+            if status["CA_type"] != CERT_AUTH_NAME:
                 raise YunohostValidationError(
                     "certmanager_attempt_to_renew_nonLE_cert", domain=domain
                 )
@@ -409,7 +412,7 @@ def certificate_renew(
         logger.info("Now attempting renewing of certificate for domain %s !", domain)
 
         operation_logger = OperationLogger(
-            "letsencrypt_cert_renew",
+            "certauth_cert_renew",
             [("domain", domain)],
             args={
                 "force": force,
@@ -429,7 +432,7 @@ def certificate_renew(
             traceback.print_exc(file=stack)
             msg = f"Certificate renewing for {domain} failed!"
             if no_checks:
-                msg += f"\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain {domain}."
+                msg += f"\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a {CERT_AUTH_FULLNAME} certificate on domain {domain}."
             logger.error(msg)
             operation_logger.error(msg)
             logger.error(stack.getvalue())
@@ -538,7 +541,7 @@ def _fetch_and_enable_new_certificate(domain, no_checks=False):
             WEBROOT_FOLDER,
             log=logger,
             disable_check=no_checks,
-            CA=PRODUCTION_CERTIFICATION_AUTHORITY,
+            CA=CERT_AUTH_ACME_URL,
         )
     except ValueError as e:
         if "urn:acme:error:rateLimited" in str(e):
@@ -558,7 +561,7 @@ def _fetch_and_enable_new_certificate(domain, no_checks=False):
     # Create corresponding directory
     date_tag = datetime.utcnow().strftime("%Y%m%d.%H%M%S")
 
-    new_cert_folder = f"{CERT_FOLDER}/{domain}-history/{date_tag}-letsencrypt"
+    new_cert_folder = f"{CERT_FOLDER}/{domain}-history/{date_tag}-{CERT_AUTH_NAME}"
 
     os.makedirs(new_cert_folder)
 
@@ -682,8 +685,8 @@ def _get_status(domain):
     # is actually a symlink to a dir ending with -selfsigned
     if os.path.realpath(os.path.join(CERT_FOLDER, domain)).endswith("-selfsigned"):
         CA_type = "selfsigned"
-    elif organization_name == "Let's Encrypt":
-        CA_type = "letsencrypt"
+    elif organization_name == CERT_AUTH_FULLNAME:
+        CA_type = CERT_AUTH_NAME
     else:
         CA_type = "other"
 
@@ -699,11 +702,11 @@ def _get_status(domain):
     elif CA_type == "other":
         style = "success"
         summary = "ok"
-    elif CA_type == "letsencrypt":
+    elif CA_type == CERT_AUTH_NAME:
         style = "success"
-        summary = "letsencrypt"
+        summary = "certauth"
     else:
-        # shouldnt happen, because CA_type can be only selfsigned, letsencrypt, or other
+        # shouldnt happen, because CA_type can be only selfsigned, the CA name, or other
         style = ""
         summary = "wat"
 
