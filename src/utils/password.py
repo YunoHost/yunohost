@@ -143,7 +143,7 @@ class PasswordValidator:
 
         status, key = self.validation_summary(password)
         if status == "error":
-            if  not key.startswith("password_too_simple_"):
+            if not key.startswith("password_too_simple_"):
                 raise YunohostValidationError(key)
 
             raw_msg = get_password_help(int(key[-1]))
