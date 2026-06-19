@@ -2,12 +2,14 @@
 
 ...
 
-Related issues:
-Related PRs:
+**Related issues:**
+**Related PRs:**
 
 ## Solution
 
 ...
+
+**AI transparency:** *If AI has been used, explain how. See https://doc.yunohost.org/en/dev/?persistLocale=true#%EF%B8%8F-develop*
 
 ## PR Status
 *Work in progress / Untested / Tested partially / Fully tested / Wait for other PR to be merged / Ready*
