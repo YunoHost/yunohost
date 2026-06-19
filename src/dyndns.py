@@ -36,6 +36,7 @@ from .utils.dns import dig, is_yunohost_dyndns_domain
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import chmod, chown, rm, write_to_file
 from .utils.network import get_public_ip
+from .utils.password import get_validation_strength, get_password_help
 
 logger = getLogger("yunohost.dyndns")
 
@@ -127,8 +128,11 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
     # Prompt for a password if running in CLI and no password provided
     if not recovery_password and Moulinette.interface.type == "cli":
         logger.warning(m18n.n("ask_dyndns_recovery_password_explain"))
+        # FIXME : password policy for dyndns should not be defined by instance admin
+        validation_strength = get_validation_strength("admin")
         recovery_password = Moulinette.prompt(
-            m18n.n("ask_dyndns_recovery_password"), is_password=True, confirm=True
+            m18n.n("ask_dyndns_recovery_password"), is_password=True, confirm=True,
+            help=get_password_help(validation_strength)
         )
 
     if not recovery_password:
@@ -136,7 +140,7 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
 
     if recovery_password:
         from .utils.password import assert_password_is_strong_enough
-
+        # FIXME : password policy for dyndns should not be defined by instance admin
         assert_password_is_strong_enough("admin", recovery_password)
         operation_logger.data_to_redact.append(recovery_password)
 

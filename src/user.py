@@ -446,6 +446,8 @@ def user_update(
         _hash_user_password,
         assert_password_is_compatible,
         assert_password_is_strong_enough,
+        get_validation_strength,
+        get_password_help
     )
 
     domains = domain_list()["domains"]
@@ -490,10 +492,12 @@ def user_update(
         # without a specified value, change_password will be set to the const 0.
         # In this case we prompt for the new password.
         if Moulinette.interface.type == "cli" and not change_password:
+            validation_strength = get_validation_strength("user")
             change_password = cast(
                 str,
                 Moulinette.prompt(
-                    m18n.n("ask_password"), is_password=True, confirm=True
+                    m18n.n("ask_password"), is_password=True, confirm=True,
+                    help=get_password_help(validation_strength)
                 ),
             )
 
