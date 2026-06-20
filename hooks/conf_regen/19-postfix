@@ -110,7 +110,7 @@ do_pre_regen() {
             's/inet_interfaces = all/&\ninet_protocols = ipv4/' \
             "${postfix_dir}/main.cf"
         sed -i \
-            's/smtp_address_preferences = ipv6/&\nsmtp_address_preferences = ipv4/' \
+            's/smtp_address_preference = ipv6/smtp_address_preference = ipv4/' \
             "${postfix_dir}/main.cf"
     fi
 }
