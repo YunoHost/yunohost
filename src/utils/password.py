@@ -73,8 +73,16 @@ def assert_password_is_compatible(password: str) -> None:
         raise YunohostValidationError("password_too_long")
 
 
-def assert_password_is_strong_enough(profile: str, password: str) -> None:
-    PasswordValidator(profile).validate(password)
+def assert_password_is_strong_enough(profile: int | str, password: str) -> None:
+    """
+    Validate password is string enough
+
+    profile can be a strength as defined via the setting "security.password.user_strength" OR a profile as "user" or "admin"
+
+    IMPORTANT: if you use profile name, be sure the user running the script is able to access "/etc/yunohost/settings".
+    """
+    strength = get_validation_strength(profile)
+    PasswordValidator(strength).validate(password)
 
 
 def _hash_user_password(password: str) -> str:
@@ -86,7 +94,9 @@ def _hash_user_password(password: str) -> str:
     return "{CRYPT}" + passlib.hash.sha512_crypt.hash(password)
 
 
-def get_validation_strength(profile: str) -> int:
+def get_validation_strength(profile: str | int) -> int:
+    if isinstance(profile, int):
+        return profile
     try:
         # We do this "manually" instead of using settings_get()
         # from settings.py because this file is also meant to be
@@ -111,17 +121,14 @@ def get_password_help(strength: int) -> str:
 
 
 class PasswordValidator:
-    def __init__(self, profile: str) -> None:
+    def __init__(self, validation_strength: int) -> None:
         """
         Initialize a password validator.
 
-        The profile shall be either "user" or "admin"
-        and will correspond to a validation strength
-        defined via the setting "security.password.<profile>_strength"
+        validation strength is defined via the setting "security.password.user_strength"
         """
 
-        self.profile = profile
-        self.validation_strength = get_validation_strength(profile)
+        self.validation_strength = validation_strength
 
     def validate(self, password: str) -> None:
         """

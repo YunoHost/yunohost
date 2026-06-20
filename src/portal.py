@@ -80,6 +80,8 @@ def _get_portal_settings(
         "portal_allow_edit_email": False,
         "portal_allow_edit_email_alias": False,
         "portal_allow_edit_email_forward": False,
+        "admin_strength": 5,
+        "user_strength": 4
     }
 
     portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{domain}.json")
@@ -298,8 +300,12 @@ def portal_update(
             is_admin = (
                 "cn=admins,ou=groups,dc=yunohost,dc=org" in current_user["memberOf"]
             )
+            # assert_password_is_strong_enough doesn't support
+            # "admin" or "user" profile with ynh-portal user running the script
+            # We must provide the strength integer value
+            profile_setting = "admin_strength" if is_admin else "user_strength"
             assert_password_is_strong_enough(
-                "admin" if is_admin else "user", newpassword
+                portal_settings[profile_setting], newpassword
             )
         except YunohostValidationError as e:
             raise YunohostValidationError(e.key, path="newpassword")
