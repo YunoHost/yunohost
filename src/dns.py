@@ -212,10 +212,10 @@ def _build_dns_conf(
             spf4 = ""
             spf6 = ""
             if ipv4:
-                spf4 = ' ip4:' + ipv6
+                spf4 = ' ip4:' + ipv4
             if ipv6: 
                 spf6 = ' ip6:' + ipv6
-            mail.append((basename, ttl, "TXT", '"v=spf1 a mx',spf4, spf6, ' -all"'))
+            mail.append((basename, ttl, "TXT", f'"v=spf1 a mx{spf4}{spf6} -all"'))
 
             # DKIM/DMARC record
             dkim_host, dkim_publickey = _get_DKIM(domain)
