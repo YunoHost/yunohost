@@ -5,8 +5,12 @@ Description=Entrypoint for the 'socket API', meant for ynh-portal to be able to 
 ListenStream=/run/yunohost-socket-api.sock
 # This is one of the critical point to secure the socket API by only allowing access to ynh-portal
 # (+ the fact that only specific actions, related to user registration/invites, are allowed, with tight control on inputs)
-SocketUser=ynh-portal
-SocketMode=0600
+# The socket is owned by root but with ynh-portal as group (and rw permission)
+# such that, in the even that ynh-portal gets compromised, it cannot broaden
+# the permission of this file
+SocketUser=root
+SocketGroup=ynh-portal
+SocketMode=0660
 Accept=yes
 
 [Install]
