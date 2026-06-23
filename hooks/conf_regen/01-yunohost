@@ -79,6 +79,12 @@ base_folder_and_perm_init() {
 
     mkdir -p /etc/yunohost/.user_invitations
     chown root:ynh-portal /etc/yunohost/.user_invitations
+    # Mode "710" is used in combination with "ynh-portal" being the group, because we want ynh-portal 
+    # to be able to read the invitation info (in the QUERY /invitation route) while also *not* being able to list
+    # the existing invitations (which would require the r permission).
+    # This is to avoid having to be root just for this ... In particular, if it went through the socket API everytime,
+    # this would allow an attacker to flood request that would possibly take up the lock,
+    # or at least use significant ressource, hence possibly leveraged for denial of service attack
     chmod 710 /etc/yunohost/.user_invitations
 
     mkdir -p /etc/yunohost/.user_registrations
