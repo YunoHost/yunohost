@@ -1,3 +1,20 @@
+yunohost (13.0.5) testing; urgency=low
+
+  - utils.misc: Add send_admin_email, use it in certificate and diagnosis. (7da948d2a)
+  - tools: migrations: Rename to m[0-9]*_.* ([#2212](http://github.com/YunoHost/yunohost/pull/2212))
+  - diagnosis, certificate: Fix error email formatting (f210f40ab)
+  - dyndns: Add an email option to the update operation to send failures by mail to admin (b172c8ab4)
+  - conf, hooks: Replace cron jobs with systemd timers/services (7f6c87d77)
+  - firewall: upnp: Use Systemd timer instead of a cron file for updates (b014ca1e7)
+  - Fix #2751 : Update udisks2_interfaces.py (3e370a4f9)
+  - trixie: configure sssd_ldap to use ldap:// on localhost without any TLS (4ea070260)
+  - helpers: mongodb: Support trixie (91b4b6b39)
+  - i18n: Translations updated for Basque, Catalan, Chinese (Simplified Han script), Czech, Dutch, French, Galician, German, Kabyle, Polish, Portuguese (Brazil), Russian, Ukrainian
+
+  Thanks to all contributors <3 ! (1Poireau, Alekseï, Ale Muñoz, alexAubin, bruno van den bosch, ButterflyOfFire, CodeShakingSheep, Dhanush G, Eduardo Mozart de Oliveira, ewilly, Florent, Francescc, Gredin67, g-rppl, Jaroslav Nezbeda, José M, Josue-T, ljf (zamentur), oleole39, orhtej2, philippe lhardy, Poesty Li, ppr, Rin, Salamandar, SveDec, Thomas, tituspijean, xabirequejo)
+
+ -- Félix Piédallu <felix@piedallu.me>  Tue, 23 Jun 2026 10:15:42 +0200
+
 yunohost (13.0.4) testing; urgency=low
 
   - system: debian_version_id, return type to Literal ([#2242](http://github.com/YunoHost/yunohost/pull/2242))
