@@ -47,12 +47,12 @@ class YunohostError(MoulinetteError):
         self.kwargs = kwargs  # Saving the key is useful for unit testing
         self.log_ref = log_ref
         self.error_details = error_details
-        if raw_msg == True:
-            msg = key
-        elif  raw_msg == False:
-            msg = m18n.n(key, *args, **kwargs)
-        else:
+        if isinstance(raw_msg, str):
             msg = raw_msg
+        elif raw_msg:
+            msg = key
+        else:
+            msg = m18n.n(key, *args, **kwargs)
 
         super(YunohostError, self).__init__(msg, raw_msg=True)
 

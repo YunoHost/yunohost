@@ -157,7 +157,6 @@ class PasswordValidator:
             raw_msg = get_password_help(int(key[-1]))
             raise YunohostValidationError(key, raw_msg=raw_msg)
 
-
     def validation_summary(self, password: str) -> tuple[str, str]:
         """
         Check if a password is listed in the list of most used password
