@@ -530,12 +530,12 @@ def _assert_registration_enabled_for_domain(domain: str) -> None:
     if not portal_settings_path.exists():
         raise YunohostValidationError("Self-registration is not enabled for this domain.", raw_msg=True)
 
-    domain_settings = read_json(str(portal_settings_path))
+    domain_settings: dict[str, Any] = read_json(portal_settings_path)   # type: ignore[assignment]
     if not domain_settings.get("enable_self_registration"):
         raise YunohostValidationError("Self-registration is not enabled for this domain.", raw_msg=True)
 
 
-def portal_registration_challenge() -> (str, str):
+def portal_registration_challenge() -> dict[str, str]:
 
     from bottle import request
     domain = request.get_header("host")

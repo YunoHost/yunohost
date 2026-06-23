@@ -710,7 +710,7 @@ def _get_raw_domain_settings(domain: str) -> dict[str, Any]:
     # NB: this corresponds to save_path_tpl in DomainConfigPanel
     path = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
     if os.path.exists(path):
-        raw_settings: dict[str, Any] = read_yaml(path)  # type: ignore[return-value]
+        raw_settings: dict[str, Any] = read_yaml(path)  # type: ignore[assignment]
         defaults.update(raw_settings)
         return defaults
 

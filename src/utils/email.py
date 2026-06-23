@@ -81,7 +81,7 @@ def regen_mail_senders_infos_for_dovecot_and_postfix(
 
     from .password import _hash_user_password
     from .file_utils import chmod, chown, read_file, write_to_file
-    from ..apps import _installed_apps, _get_app_settings
+    from ..app import _installed_apps, _get_app_settings
 
     postfix_map = []
     dovecot_passwd = []

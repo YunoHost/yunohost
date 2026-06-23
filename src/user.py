@@ -132,7 +132,7 @@ def user_invitation_generate(domain, username=None, groups=[], external_email=No
         _assert_domain_exists(domain)
 
     expires = int(time.time()) + validity * 3600
-    validity_human = f"{round(validity / 24,1)} days" if validity > 48 else f"{validity} hours"
+    validity_human = f"{round(validity / 24, 1)} days" if validity > 48 else f"{validity} hours"
 
     token = random_ascii(64)
     invite_file = USER_PENDING_INVITATIONS / f"{token}.json"
@@ -152,7 +152,7 @@ def user_invitation_generate(domain, username=None, groups=[], external_email=No
     # but not to list the existing files
     chmod(USER_PENDING_INVITATIONS, 0o710)
     chown(USER_PENDING_INVITATIONS, "root", "ynh-portal")
-    write_to_json(str(invite_file), infos)
+    write_to_json(invite_file, infos)  # type: ignore[arg-type]
     chmod(invite_file, 0o440)
     chown(invite_file, "root", "ynh-portal")
 
@@ -210,7 +210,7 @@ def user_invitation_list(raw: bool = False) -> dict[Literal["invitations"], list
     invitations = []
     for file in sorted(USER_PENDING_INVITATIONS.glob("*.json"), key=os.path.getmtime, reverse=True):
 
-        data: dict[str, Any] = read_json(str(file))
+        data: dict[str, Any] = read_json(file)  # type: ignore[assignment]
 
         expires: int = data["expires"]
         if time.time() > expires:
@@ -246,7 +246,7 @@ def user_invitation_list(raw: bool = False) -> dict[Literal["invitations"], list
     return {"invitations": invitations}
 
 
-def user_invitation_consume(invitation_token, username, fullname, password, external_email, accept_tos) -> None:
+def user_invitation_consume(invitation_token: str, username: str, fullname: str, password: str, external_email: str | None, accept_tos: bool) -> None:
 
     from .utils.email import _send_email
 
@@ -265,7 +265,7 @@ def user_invitation_consume(invitation_token, username, fullname, password, exte
     if not (invite_file.owner(), invite_file.group(), filemode(invite_file.stat().st_mode)) == ("root", "ynh-portal", "-r--r-----"):
         raise YunohostError(f"Uhoh, permissions on file {invite_file} are not right?", raw_msg=True)
 
-    invite_data = read_json(str(invite_file))
+    invite_data: dict[str, Any] = read_json(invite_file)  # type: ignore[assignment]
     expires: int = invite_data["expires"]
 
     if time.time() > expires:
@@ -278,13 +278,13 @@ def user_invitation_consume(invitation_token, username, fullname, password, exte
         username = username.strip()
 
     fullname = fullname.strip()
-    groups = invite_data["groups"] or []
-    domain = invite_data["domain"]
+    groups: list[str] = invite_data["groups"] or []
+    domain: str = invite_data["domain"]
 
     external_email = invite_data["external_email"] or external_email or None
     if external_email:
         external_email = external_email.strip() or None
-    mailbox_quota = invite_data["mailbox_quota"]
+    mailbox_quota: str | None = invite_data["mailbox_quota"]
 
     admin = "admins" in groups if groups else False
 
@@ -357,7 +357,7 @@ def _validate_user_inputs_for_registration(username, fullname, password, externa
     # If the admin specified TOS for invite/registration, validate that they were accepted
     portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
     if portal_settings_path.exists():
-        portal_settings: dict[str, Any] = read_json(str(portal_settings_path))  # type: ignore[arg-type]
+        portal_settings: dict[str, Any] = read_json(portal_settings_path)  # type: ignore[assignment]
         domain_tos: str | None = portal_settings.get("registration_tos")
         if domain_tos:
             domain_tos = domain_tos.strip()
@@ -395,7 +395,6 @@ def _validate_user_inputs_for_registration(username, fullname, password, externa
         ok, _ = dig(external_email_domain, "MX")
         if ok != "ok":
             raise YunohostValidationError("The provided external email doesn't appear to be a valid email address ?")
-
 
     # We want this check to happen at the latest time possible, to help protect against enumeration attacks (for example by not checking the accept_tos checkbox, hence no request gets created in the end, but the attacker is still able to infer wether or not the user exists)
     if username in user_list()["users"]:
@@ -441,7 +440,7 @@ def user_registration_queue(username, fullname, password, external_email, accept
     else:
         request_file = USER_PENDING_REGISTRATIONS / f"{request_id}.json"
 
-    write_to_json(str(request_file), dict(
+    write_to_json(request_file, dict(
         ip=ip,
         submitted=int(time.time()),
         username=username,
@@ -495,7 +494,7 @@ def user_registration_confirm(request_id: str) -> None:
 
     request_file = USER_PENDING_REGISTRATIONS / f"{request_id}.json"
     request_pending_confirmation_file.rename(str(request_file))
-    registration_infos: dict[str, Any] = read_json(str(request_file))
+    registration_infos: dict[str, Any] = read_json(request_file)   # type: ignore[assignment]
 
     domain: str = registration_infos["domain"]
     username: str = registration_infos["username"]
@@ -521,7 +520,7 @@ def user_registration_list(raw: bool = False) -> dict[Literal["registration_requ
         if "pending_email_confirmation" in str(file):
             continue
 
-        data: dict[str, Any] = read_json(str(file))
+        data: dict[str, Any] = read_json(file)   # type: ignore[assignment]
         data["id"] = file.name[:-len(".json")]
 
         del data["password"]
@@ -532,7 +531,7 @@ def user_registration_list(raw: bool = False) -> dict[Literal["registration_requ
         if not raw:
             submitted: int = data["submitted"]
             submitted_hours = round((time.time() - submitted) / 3600, 1)
-            data["submitted"] = f"{round(submitted_hours/24,1)} days ago" if submitted_hours > 48 else f"{submitted_hours} hours ago"
+            data["submitted"] = f"{round(submitted_hours / 24,1)} days ago" if submitted_hours > 48 else f"{submitted_hours} hours ago"
             if not data["external_email"]:
                 del data["external_email"]
             if not data["notes"]:
@@ -601,7 +600,7 @@ def user_registration_accept(request_id):
     if not (request_file.owner(), request_file.group(), filemode(request_file.stat().st_mode)) == ("root", "root", "-r--------"):
         raise YunohostError(f"Uhoh, permissions on file {request_file} are not right?", raw_msg=True)
 
-    registration_infos = read_json(str(request_file))
+    registration_infos = read_json(request_file)
 
     domain = registration_infos["domain"]
     username = registration_infos["username"]
