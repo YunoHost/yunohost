@@ -28,6 +28,7 @@ logger = getLogger("yunohost.utils.email")
 # This secret is provisionned during the 01-yunohost regenconf, along with the cookie secrets etc
 ROOT_EMAIL_PASSWORD_FILE = "/etc/yunohost/.email_auth_secret"
 
+
 def _send_email(_from: str, to: str, subject: str, body: str, no_reply: str | None = None) -> None:
 
     from smtplib import SMTP
@@ -147,7 +148,7 @@ def regen_mail_senders_infos_for_dovecot_and_postfix(
         chown(app_senders_map + ".db", "postfix", "root")
 
 
-def _domain_is_able_to_send_email(domain) -> tuple[Literal[True], None] | tuple[Literal[False, "warning"], str]:
+def _domain_is_able_to_send_email(domain: str) -> tuple[Literal[True], None] | tuple[Literal[False, "warning"], str]:
 
     # FIXME: i18n?
 

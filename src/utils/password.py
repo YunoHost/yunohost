@@ -18,6 +18,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import re
 import os
 import string
 import subprocess
@@ -82,7 +83,7 @@ def _hash_user_password(password: str) -> str:
     # which is motivated by the fact that, during self-registration, the registration data
     # is stored temporarily for review, but we dont want to save the user's cleartext password
 	#
-	# Regex is adapted from https://man.archlinux.org/man/crypt.5#sha512crypt 
+	# Regex is adapted from https://man.archlinux.org/man/crypt.5#sha512crypt
     if password.startswith("{CRYPT}$6$") and re.match(r"^\{CRYPT\}\$6\$(rounds=[1-9][0-9]+\$)?[./0-9a-zA-Z]{1,16}\$[./0-9a-zA-Z]{86}$", password):
         return password
 

@@ -689,7 +689,7 @@ def domain_url_available(domain: str, path: str) -> bool:
     return len(_get_conflicting_apps(domain, path)) == 0
 
 
-def _get_raw_domain_settings(domain: str) -> dict:
+def _get_raw_domain_settings(domain: str) -> dict[str, Any]:
     """Get domain settings directly from file.
     Be carefull, domain settings are saved in `"diff"` mode (i.e. default settings are not saved)
     so the file may be completely empty
@@ -710,7 +710,7 @@ def _get_raw_domain_settings(domain: str) -> dict:
     # NB: this corresponds to save_path_tpl in DomainConfigPanel
     path = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
     if os.path.exists(path):
-        raw_settings = read_yaml(path)  # type: ignore[return-value]
+        raw_settings: dict[str, Any] = read_yaml(path)  # type: ignore[return-value]
         defaults.update(raw_settings)
         return defaults
 

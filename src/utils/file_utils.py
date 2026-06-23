@@ -308,7 +308,7 @@ def mkdir(
 
 
 def chown(
-    path: str,
+    path: str | Path,
     uid: str | int | None = None,
     gid: str | int | None = None,
     recursive: bool = False,
@@ -357,7 +357,7 @@ def chown(
 
 
 def chmod(
-    path: str, mode: int, fmode: int | None = None, recursive: bool = False
+    path: str | Path, mode: int, fmode: int | None = None, recursive: bool = False
 ) -> None:
     """Change the mode of a path
 

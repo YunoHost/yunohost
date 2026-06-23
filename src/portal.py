@@ -415,7 +415,7 @@ def portal_invitation_get(token):
     }
 
 
-def _call_socket_api(action: str, args: dict[str]) -> None:
+def _call_socket_api(action: str, args: dict[str, Any]) -> None:
 
     import socket
 
@@ -459,8 +459,8 @@ def portal_invitation_consume(token, username, fullname, password, external_emai
 
 
 # FIXME : this is probably not a proper global state shared between all the gevent/bottle threads
-# Though for now it looks like we have a single thread anyway so it may be OK ? Idk
-CHALLENGES = dict()
+# Though for now it looks like we have a single thread anyway so it may be OK ?
+CHALLENGES: dict[str, tuple[int, int]] = dict()
 
 
 def _generate_antibot_challenge() -> tuple[str, str]:
@@ -523,7 +523,7 @@ def _verify_antibot_challenge(token: str, answer: str) -> None:
         raise YunohostValidationError("antibot_challenge_wrong_answer")
 
 
-def _assert_registration_enabled_for_domain(domain):
+def _assert_registration_enabled_for_domain(domain: str) -> None:
 
     portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
 

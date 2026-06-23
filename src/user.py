@@ -100,7 +100,7 @@ def user_invite(*args, **kwargs):
     return user_invitation_generate(*args, **kwargs)
 
 
-def user_invitation_generate(domain, username=None, groups=[], external_email=None, mailbox_quota="0", send_invite_via_email=False, notify_admins_when_invite_is_consumed=False, validity=7*24) -> str:
+def user_invitation_generate(domain, username=None, groups=[], external_email=None, mailbox_quota="0", send_invite_via_email=False, notify_admins_when_invite_is_consumed=False, validity=7 * 24) -> str:
 
     from .domain import domain_list, _get_maindomain, _assert_domain_exists
     from .utils.misc import random_ascii
@@ -132,7 +132,7 @@ def user_invitation_generate(domain, username=None, groups=[], external_email=No
         _assert_domain_exists(domain)
 
     expires = int(time.time()) + validity * 3600
-    validity_human = f"{round(validity/24,1)} days" if validity > 48 else f"{validity} hours"
+    validity_human = f"{round(validity / 24,1)} days" if validity > 48 else f"{validity} hours"
 
     token = random_ascii(64)
     invite_file = USER_PENDING_INVITATIONS / f"{token}.json"
@@ -205,13 +205,15 @@ def user_invitation_cancel(token: str) -> None:
     logger.success(m18n.n("user_invitation_cancelled"))
 
 
-def user_invitation_list(raw: bool = False) -> dict[Literal["invitations"], list[dict]]:
+def user_invitation_list(raw: bool = False) -> dict[Literal["invitations"], list[dict[str, Any]]]:
 
     invitations = []
     for file in sorted(USER_PENDING_INVITATIONS.glob("*.json"), key=os.path.getmtime, reverse=True):
-        data = read_json(str(file))
 
-        if time.time() > data["expires"]:
+        data: dict[str, Any] = read_json(str(file))
+
+        expires: int = data["expires"]
+        if time.time() > expires:
             file.unlink()
             continue
 
@@ -235,7 +237,7 @@ def user_invitation_list(raw: bool = False) -> dict[Literal["invitations"], list
             if not data["groups"]:
                 del data["groups"]
 
-            hours_remaining = round((data['expires'] - time.time()) / 3600, 1)
+            hours_remaining = round((expires - time.time()) / 3600, 1)
             data["validity"] = f"{round(hours_remaining/24,1)} days" if hours_remaining > 48 else f"{hours_remaining} hours"
             del data["expires"]
 
@@ -264,8 +266,9 @@ def user_invitation_consume(invitation_token, username, fullname, password, exte
         raise YunohostError(f"Uhoh, permissions on file {invite_file} are not right?", raw_msg=True)
 
     invite_data = read_json(str(invite_file))
+    expires: int = invite_data["expires"]
 
-    if invite_data["expires"] < time.time():
+    if time.time() > expires:
         invite_file.unlink()
         raise YunohostValidationError("user_invitation_expired_or_doesnt_exist")
 
@@ -354,7 +357,8 @@ def _validate_user_inputs_for_registration(username, fullname, password, externa
     # If the admin specified TOS for invite/registration, validate that they were accepted
     portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
     if portal_settings_path.exists():
-        domain_tos = read_json(str(portal_settings_path)).get("registration_tos")  # type: ignore[arg-type]
+        portal_settings: dict[str, Any] = read_json(str(portal_settings_path) # type: ignore[arg-type]
+        domain_tos: str | None = portal_settings.get("registration_tos")
         if domain_tos:
             domain_tos = domain_tos.strip()
     else:
@@ -381,7 +385,7 @@ def _validate_user_inputs_for_registration(username, fullname, password, externa
         # Admins should be able to just pip install globally the "disposable-email-domains" package to enable this check
         # [1] https://github.com/disposable-email-domains/disposable-email-domains
         try:
-            from disposable_email_domains import blocklist
+            from disposable_email_domains import blocklist  # type: ignore[import-not-found]
         except ImportError:
             pass
         else:
@@ -491,11 +495,11 @@ def user_registration_confirm(request_id: str) -> None:
 
     request_file = USER_PENDING_REGISTRATIONS / f"{request_id}.json"
     request_pending_confirmation_file.rename(str(request_file))
-    registration_infos = read_json(str(request_file))
+    registration_infos: dict[str, Any] = read_json(str(request_file))
 
-    domain = registration_infos["domain"]
-    username = registration_infos["username"]
-    fullname = registration_infos["fullname"]
+    domain: str = registration_infos["domain"]
+    username: str = registration_infos["username"]
+    fullname: str = registration_infos["fullname"]
 
     try:
         _send_email(
@@ -517,7 +521,7 @@ def user_registration_list(raw: bool = False) -> dict[Literal["registration_requ
         if "pending_email_confirmation" in str(file):
             continue
 
-        data = read_json(str(file))
+        data: dict[str, Any] = read_json(str(file))
         data["id"] = file.name[:-len(".json")]
 
         del data["password"]
@@ -526,7 +530,8 @@ def user_registration_list(raw: bool = False) -> dict[Literal["registration_requ
 
         # If not raw, try to reduce noise and make it more human-friendly
         if not raw:
-            submitted_hours = round((time.time() - data['submitted']) / 3600, 1)
+            submitted: int = data["submitted"]
+            submitted_hours = round((time.time() - submitted) / 3600, 1)
             data["submitted"] = f"{round(submitted_hours/24,1)} days ago" if submitted_hours > 48 else f"{submitted_hours} hours ago"
             if not data["external_email"]:
                 del data["external_email"]
