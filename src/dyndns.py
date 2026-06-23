@@ -505,7 +505,7 @@ def _dyndns_update(
         operation_logger.start()
         logger.info("Update needed, going on...")
 
-    dns_conf = _build_dns_conf(domain)
+    dns_conf = _build_dns_conf(domain, dkim_split=True)
 
     # Delete custom DNS records, we don't support them (have to explicitly
     # authorize them on dynette)

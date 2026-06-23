@@ -73,7 +73,7 @@ user:
                     help: The unique username to create
                     extra:
                         pattern: &pattern_username
-                            - !!str ^[a-z0-9_\.]+$
+                            - !!str ^[a-z0-9][-a-z0-9_\.]*$
                             - "pattern_username"
                 -F:
                     full: --fullname
@@ -265,7 +265,7 @@ user:
                             help: Name of the group to be created
                             extra:
                                 pattern: &pattern_groupname
-                                    - !!str ^[a-z0-9_]+$
+                                    - !!str ^[a-z0-9][-a-z0-9_\.]*$
                                     - "pattern_groupname"
 
                 ### user_group_delete()
@@ -1072,6 +1072,16 @@ app:
             action_help: Open an interactive shell with the app environment already loaded
             # Here we set a GET only not to lock the command line. There is no actual API endpoint for app_shell()
             api: GET /apps/<app>/shell
+            arguments:
+                app:
+                    help: App ID
+                    extra:
+                        autocomplete: *apps_list
+
+        ### app_db()
+        db:
+            action_help: Open an interactive database client prompt for the app
+            api: GET /apps/<app>/db
             arguments:
                 app:
                     help: App ID

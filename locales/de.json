@@ -749,5 +749,7 @@
     "yunohost_configured": "YunoHost ist nun konfiguriert",
     "yunohost_installing": "YunoHost wird installiert…",
     "yunohost_not_installed": "YunoHost ist nicht oder unvollständig installiert worden. Bitte 'yunohost tools postinstall' ausführen",
-    "yunohost_postinstall_end_tip": "Post-Installation ist fertig! Um das Setup abzuschliessen, wird folgendes empfohlen:\n - mögliche Fehler diagnostizieren im Bereich 'Diagnose' des Adminbereichs (oder mittels 'yunohost diagnosis run' in der Kommandozeile;\n - Die Abschnitte 'Install YunoHost' und 'Geführte Tour' im Administratorenhandbuch lesen: https://doc.yunohost.org/admin."
+    "yunohost_postinstall_end_tip": "Post-Installation ist fertig! Um das Setup abzuschliessen, wird folgendes empfohlen:\n - mögliche Fehler diagnostizieren im Bereich 'Diagnose' des Adminbereichs (oder mittels 'yunohost diagnosis run' in der Kommandozeile;\n - Die Abschnitte 'Install YunoHost' und 'Geführte Tour' im Administratorenhandbuch lesen: https://doc.yunohost.org/admin.",
+    "app_config_permission_label": "Label",
+    "yunohost_api": "YunoHost API"
 }
