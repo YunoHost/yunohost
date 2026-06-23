@@ -68,7 +68,10 @@ portal:
         ### portal_invitation_get()
         invitation_get:
             action_help: Obtain information about a pending invitation
-            api: GET /invitation
+            # NB : we use the QUERY verb because we want something as close as
+            # "GET" but that doesnt log the token query arg which is supposed
+            # to be secret-ish
+            api: QUERY /invitation
             authentication:
                 api: null
             arguments:
@@ -120,7 +123,7 @@ portal:
 
         ### portal_registration_queue()
         registration_queue:
-            action_help: Consume an invitation token to create an account
+            action_help: Create a pending registration / account request
             api: POST /registration
             authentication:
                 api: null
