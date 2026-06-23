@@ -13,7 +13,7 @@ i18n = "global_settings_setting"
         choices.4 = "ditto, but also require at least 12 chars (offline crackable by a nation)"
         choices.5 = "ditto, but also require at least 15 chars (default)"
         choices.6 = "Passphrase of at least 30 chars"
-        default = "5"
+        default = "5" # Change on this default value should be copied into portal.py
 
         [security.password.user_strength]
         type = "select"
@@ -25,7 +25,8 @@ i18n = "global_settings_setting"
         choices.4 = "ditto, but also require at least 12 chars (default, offline crackable by a nation)"
         choices.5 = "ditto, but also require at least 15 chars"
         choices.6 = "Passphrase of at least 30 chars"
-        default = "4"
+        default = "4" # Change on this default value should be copied into portal.py
+
 
         [security.password.passwordless_sudo]
         type = "boolean"
