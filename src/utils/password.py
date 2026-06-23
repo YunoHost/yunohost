@@ -46,6 +46,7 @@ SMALL_PWD_LIST = [
 MOST_USED_PASSWORDS = "/usr/share/yunohost/100000-most-used-passwords-length8plus.txt"
 
 # Length, digits, lowers, uppers, others
+# Sync this data with components/UserPasswordForm.vue
 STRENGTH_LEVELS = [
     (8, 0, 0, 0, 0),
     (8, 1, 1, 1, 0),
