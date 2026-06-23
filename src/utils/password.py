@@ -81,7 +81,7 @@ def _hash_user_password(password: str) -> str:
     # This also allow, for example, to provide password hash to user_create()
     # which is motivated by the fact that, during self-registration, the registration data
     # is stored temporarily for review, but we dont want to save the user's cleartext password
-    if password.startswith("{CRYPT}$6$"):
+    if password.startswith("{CRYPT}$6$") and re.match(r"^\{CRYPT\}\$6\$(rounds=[1-9][0-9]+\$)?[./0-9a-zA-Z]{1,16}\$[./0-9a-zA-Z]{86}$", password):
         return password
 
     import passlib.hash
