@@ -357,7 +357,7 @@ def _validate_user_inputs_for_registration(username, fullname, password, externa
     # If the admin specified TOS for invite/registration, validate that they were accepted
     portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
     if portal_settings_path.exists():
-        portal_settings: dict[str, Any] = read_json(str(portal_settings_path) # type: ignore[arg-type]
+        portal_settings: dict[str, Any] = read_json(str(portal_settings_path))  # type: ignore[arg-type]
         domain_tos: str | None = portal_settings.get("registration_tos")
         if domain_tos:
             domain_tos = domain_tos.strip()
