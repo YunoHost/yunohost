@@ -816,7 +816,8 @@ class TextOption(BaseStringOption):
 
     type: Literal[OptionType.text] = OptionType.text
 
-
+# FIXME Why those chars are forbidden ?
+# Is it a bash issue ? an ldap issue ? a template issue ?
 FORBIDDEN_PASSWORD_CHARS = r"{}"
 
 
@@ -866,9 +867,12 @@ class PasswordOption(BaseInputOption):
                 )
 
             # If it's an optional argument the value should be empty or strong enough
-            from ..utils.password import assert_password_is_strong_enough
-
-            assert_password_is_strong_enough("user", value)
+            from ..utils.password import STRENGTH_LEVELS, assert_password_is_strong_enough
+            # FIXME Depending of the context, we should be able to customize
+            # password requirements in app packages or in CoreConfigPanel
+            # Here we adopt a very small requirements to avoid some issues
+            # with quite weak password defined by a provider
+            assert_password_is_strong_enough(1, value)
 
         return value
 
