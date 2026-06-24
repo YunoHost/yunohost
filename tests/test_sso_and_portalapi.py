@@ -46,7 +46,7 @@ from .conftest import get_test_apps_dir, message, raiseYunohostError
 maindomain = open("/etc/yunohost/current_host").read().strip()
 subdomain = f"sub.{maindomain}"
 secondarydomain = "secondary.test"
-dummy_password = "test123Ynh"
+dummy_password = "testà?23Ynh55éé"
 
 
 def setup_function(function):

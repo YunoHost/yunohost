@@ -113,7 +113,7 @@ def config_app(request):
 
 
 def test_app_config_get(config_app):
-    user_create("alice", _get_maindomain(), "test123Ynh", fullname="Alice White")
+    user_create("alice", _get_maindomain(), "test?23Ynh55", fullname="Alice White")
 
     assert isinstance(app_config_get(config_app), dict)
     assert isinstance(app_config_get(config_app, full=True), dict)
@@ -209,10 +209,10 @@ def test_app_config_custom_set(config_app):
     assert not os.path.exists("/var/www/config_app/password")
     assert app_setting(config_app, "arg8") is None
 
-    app_config_set(config_app, "bind.function.arg8", "OneSuperStrongPassword")
+    app_config_set(config_app, "bind.function.arg8", "OneSuperStrong.Password")
 
     assert os.path.exists("/var/www/config_app/password")
     content = read_file("/var/www/config_app/password")
-    assert "OneSuperStrongPassword" not in content
+    assert "OneSuperStrong.Password" not in content
     assert content.startswith("$6$saltsalt$")
     assert app_setting(config_app, "arg8") is None

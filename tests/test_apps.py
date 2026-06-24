@@ -348,7 +348,7 @@ def test_app_from_catalog():
 
     app_install(
         "my_webapp",
-        args=f"domain={main_domain}&path=/site&with_sftp=0&password=superpassword&init_main_permission=visitors&with_mysql=0&phpversion=none",
+        args=f"domain={main_domain}&path=/site&with_sftp=0&password=superPassword&init_main_permission=visitors&with_mysql=0&phpversion=none",
     )
     app_map_ = app_map(raw=True)
     assert main_domain in app_map_

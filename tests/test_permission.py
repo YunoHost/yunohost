@@ -59,7 +59,7 @@ from .conftest import get_test_apps_dir, message, raiseYunohostError
 # Get main domain
 maindomain = ""
 other_domains = []
-dummy_password = "test123Ynh"
+dummy_password = "testà?23Ynh55éé"
 
 # Dirty patch of DNS resolution. Force the DNS to 127.0.0.1 address even if dnsmasq have the public address.
 # Mainly used for 'can_access_webpage' function
