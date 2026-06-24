@@ -353,7 +353,7 @@ def can_access_webpage(webpath, logged_as=None):
         with requests.Session() as session:
             r = session.post(
                 login_endpoint,
-                data={"credentials": f"{logged_as}:{dummy_password}"},
+                json={"credentials": f"{logged_as}:{dummy_password}"},
                 headers={
                     "X-Requested-With": "",
                 },

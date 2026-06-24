@@ -106,7 +106,7 @@ def login(session, logged_as, logged_on=None):
     login_endpoint = f"https://{logged_on}/yunohost/portalapi/login"
     r = session.post(
         login_endpoint,
-        data={"credentials": f"{logged_as}:{dummy_password}"},
+        json={"credentials": f"{logged_as}:{dummy_password}"},
         headers={
             "X-Requested-With": "",
         },
