@@ -816,6 +816,7 @@ class TextOption(BaseStringOption):
 
     type: Literal[OptionType.text] = OptionType.text
 
+
 # FIXME Why those chars are forbidden ?
 # Is it a bash issue ? an ldap issue ? a template issue ?
 FORBIDDEN_PASSWORD_CHARS = r"{}"
