@@ -1928,7 +1928,7 @@ def test_options_query_string():
     results = {
         "string_id": "string",
         "text_id": "text\ntext",
-        "password_id": "sUpRSCRT",
+        "password_id": "sUpRSCRT2",
         "color_id": "#ff0",
         "number_id": 10,
         "boolean_id": 1,
@@ -1951,7 +1951,7 @@ def test_options_query_string():
         yield (
             "string_id= string"
             "&text_id=text\ntext"
-            "&password_id=sUpRSCRT"
+            "&password_id=sUpRSCRT2"
             "&color_id=#ffff00"
             "&number_id=10"
             "&boolean_id=y"

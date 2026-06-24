@@ -209,10 +209,10 @@ def test_app_config_custom_set(config_app):
     assert not os.path.exists("/var/www/config_app/password")
     assert app_setting(config_app, "arg8") is None
 
-    app_config_set(config_app, "bind.function.arg8", "OneSuperStrong.Password")
+    app_config_set(config_app, "bind.function.arg8", "OneSuperStrong2.Password")
 
     assert os.path.exists("/var/www/config_app/password")
     content = read_file("/var/www/config_app/password")
-    assert "OneSuperStrong.Password" not in content
+    assert "OneSuperStrong2.Password" not in content
     assert content.startswith("$6$saltsalt$")
     assert app_setting(config_app, "arg8") is None
