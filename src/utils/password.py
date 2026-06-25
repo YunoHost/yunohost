@@ -118,7 +118,7 @@ def get_password_help(strength: int) -> str:
         msg = m18n.n(f"password_too_simple_{strength}")
     if strength >= 5:
         return msg
-    return msg + ' ' + m18n.n("password_advice")
+    return msg + "\n" + m18n.n("password_advice")
 
 
 class PasswordValidator:
