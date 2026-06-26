@@ -387,7 +387,7 @@ def certificate_renew(
             # Does it have a cert from the CA?
             if status["CA_type"] != CERT_AUTH_NAME:
                 raise YunohostValidationError(
-                    "certmanager_attempt_to_renew_nonLE_cert", domain=domain
+                    "certmanager_attempt_to_renew_nonCA_cert", domain=domain
                 )
 
             # Check ACME challenge configured for given domain
