@@ -276,7 +276,7 @@ def domain_add(
     domain: str,
     dyndns_recovery_password=None,
     ignore_dyndns=False,
-    install_letsencrypt_cert=False,
+    install_certauth_cert=False,
     skip_tos=False,
 ):
     """
@@ -287,7 +287,7 @@ def domain_add(
         dyndns -- Subscribe to DynDNS
         dyndns_recovery_password -- Password used to later unsubscribe from DynDNS
         ignore_dyndns -- If we want to just add the DynDNS domain to the list, without subscribing
-        install_letsencrypt_cert -- If adding a subdomain of an already added domain, try to install a Let's Encrypt certificate
+        install_certauth_cert -- If adding a subdomain of an already added domain, try to install a certificate from the certification authority
     """
     from .app import app_ssowatconf
     from .certificate import (
@@ -395,32 +395,32 @@ def domain_add(
             pass
         raise e
 
-    failed_letsencrypt_cert_install = False
-    if install_letsencrypt_cert:
+    failed_certauth_cert_install = False
+    if install_certauth_cert:
         parent_domain = _get_parent_domain_of(domain)
-        can_install_letsencrypt = (
+        can_install_certauth = (
             parent_domain
             and certificate_status([parent_domain], full=True)["certificates"][
                 parent_domain
             ]["has_wildcards"]
         )
 
-        if can_install_letsencrypt:
+        if can_install_certauth:
             try:
                 _certificate_install_certauth([domain], force=True, no_checks=True)
             except Exception:
-                failed_letsencrypt_cert_install = True
+                failed_certauth_cert_install = True
         else:
             logger.warning(
-                "Skipping Let's Encrypt certificate attempt because there's no wildcard configured on the parent domain's DNS records."
+                "Skipping certificate attempt from the CA because there's no wildcard configured on the parent domain's DNS records."
             )
-            failed_letsencrypt_cert_install = True
+            failed_certauth_cert_install = True
 
     hook_callback("post_domain_add", args=[domain])
 
     logger.success(m18n.n("domain_created"))
 
-    if failed_letsencrypt_cert_install:
+    if failed_certauth_cert_install:
         logger.warning(m18n.n("certmanager_cert_install_failed", domains=domain))
 
 
@@ -792,7 +792,7 @@ def _get_DomainConfigPanel() -> type["ConfigPanel"]:
                 # i18n: domain_config_cert_summary_selfsigned
                 # i18n: domain_config_cert_summary_abouttoexpire
                 # i18n: domain_config_cert_summary_ok
-                # i18n: domain_config_cert_summary_letsencrypt
+                # i18n: domain_config_cert_summary_certauth
                 raw_config["cert"]["cert_"]["cert_summary"]["ask"] = m18n.n(
                     f"domain_config_cert_summary_{status['summary']}"
                 )
