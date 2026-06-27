@@ -751,5 +751,15 @@
     "yunohost_not_installed": "YunoHost ist nicht oder unvollständig installiert worden. Bitte 'yunohost tools postinstall' ausführen",
     "yunohost_postinstall_end_tip": "Post-Installation ist fertig! Um das Setup abzuschliessen, wird folgendes empfohlen:\n - mögliche Fehler diagnostizieren im Bereich 'Diagnose' des Adminbereichs (oder mittels 'yunohost diagnosis run' in der Kommandozeile;\n - Die Abschnitte 'Install YunoHost' und 'Geführte Tour' im Administratorenhandbuch lesen: https://doc.yunohost.org/admin.",
     "app_config_permission_label": "Label",
-    "yunohost_api": "YunoHost API"
+    "yunohost_api": "YunoHost API",
+    "app_upgrade_cli_will_upgrade": "{app} wird von {current_version} zu {new_version} aktualisiert",
+    "app_upgrade_broke_the_system": "Das {app}-Upgrade schien zwar funktioniert zu haben, hat das System jedoch in einem fehlerhaften Zustand zurückgelassen und gilt daher als fehlgeschlagen.",
+    "app_upgrade_cli_bad_quality": "Upgrades für {app} werden übersprungen, da die App derzeit im Anwendungskatalog von YunoHost als fehlerhaft gekennzeichnet ist.",
+    "app_upgrade_cli_up_to_date": "{app} ist bereits auf dem neusten Stand ({current_version})",
+    "app_upgrade_cli_will_force_upgrade": "Upgrade von {app} wird erzwungen ({current_version})",
+    "app_upgrade_continuing_with_other_apps": "Fehler beim Aktualisieren von {app}, das Upgrade der übrigen Apps wird jedoch fortgesetzt (da `--continue-on-failure` verwendet wurde)",
+    "app_upgrade_fail_requirements": "Für diese App ist eine neue Version verfügbar ({new_version}), jedoch sind einige Voraussetzungen nicht erfüllt:\n{failed_requirements}",
+    "apps_upgrade_cancelled": "Für mehrere andere Apps stehen noch Updates aus, deren Installation jedoch abgebrochen wurde (verwende `--continue-on-failure`, um trotzdem fortzufahren): {apps}",
+    "app_db_prompt_no_app_database": "Im Manifest dieser App scheint keine Datenbank definiert zu sein",
+    "app_db_prompt_type_not_supported": "Der Befehl unterstützt diesen Datenbanktyp nicht: {type}"
 }
