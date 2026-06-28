@@ -761,5 +761,15 @@
     "app_upgrade_fail_requirements": "Für diese App ist eine neue Version verfügbar ({new_version}), jedoch sind einige Voraussetzungen nicht erfüllt:\n{failed_requirements}",
     "apps_upgrade_cancelled": "Für mehrere andere Apps stehen noch Updates aus, deren Installation jedoch abgebrochen wurde (verwende `--continue-on-failure`, um trotzdem fortzufahren): {apps}",
     "app_db_prompt_no_app_database": "Im Manifest dieser App scheint keine Datenbank definiert zu sein",
-    "app_db_prompt_type_not_supported": "Der Befehl unterstützt diesen Datenbanktyp nicht: {type}"
+    "app_db_prompt_type_not_supported": "Der Befehl unterstützt diesen Datenbanktyp nicht: {type}",
+    "app_upgrade_bad_quality": "Diese App ist derzeit im Anwendungskatalog von YunoHost als defekt gekennzeichnet. Möglicherweise handelt es sich um ein vorübergehendes Problem, während die Entwickler versuchen, den Fehler zu beheben. In der Zwischenzeit sind Updates für dieser App deaktiviert.",
+    "app_upgrade_cli_url_required": "{app} ist nicht (mehr?) im Katalog enthalten und kann daher nicht automatisch aktualisiert werden. Verwenden Sie den Befehl `yunohost app upgrade {app}`, um die URL des Repositorys mit der Option `-u` anzugeben.",
+    "app_upgrade_failed_and_broke_the_system": "Das Upgrade der App „{app}“ ist fehlgeschlagen, wodurch das System in einen fehlerhaften Zustand versetzt wurde.",
+    "app_upgrade_specific_channel_msg": "Beachte, dass derzeit `{channel}` als Quelle für Upgrades verwendet wird. Informiere dich unbedingt über die laufende Diskussion [here]({pr_url}).",
+    "app_upgrade_up_to_date": "Ein erzwungenes Update der App (auf dieselbe Version) kann manchmal nützlich sein, um die App und die Konfigurationen neu erstellen.",
+    "app_upgrade_upgradable": "Die App kann von Version {current_version} auf {new_version} aktualisiert werden",
+    "app_upgrade_url_required": "Diese App ist nicht (mehr?) im Katalog enthalten, daher muss das Upgrades manuell durchgeführt werden. <br/><small>Über die Befehlszeile kann der Befehl `yunohost app upgrade <app>` verwendet und die URL des Repos mit der Option `-u` angeben werden.</small>",
+    "apps_confirm_partial_upgrade": "Einige Apps, für die ein Upgrade angefordert wurde, können nicht aktualisiert werden. Trotzdem mit den übrigen fortfahren?",
+    "apps_no_target_can_be_upgraded": "Keine ausstehenden App-Upgrades",
+    "backup_before_upgrade_deleted_because_replaced_by_newer_backup": "Sicherung {name} wurde gelöscht, da sie durch eine neuere Sicherung {newname} ersetzt wurde"
 }
