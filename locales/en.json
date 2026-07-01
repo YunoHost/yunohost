@@ -422,7 +422,7 @@
     "domain_config_registration_customize": "Customize messages and options for account requests and invitations",
     "domain_config_registration_double_check_mail_stack_for_mail_notification": "Sending emails is sometimes necessary to notify users or admins during the account request or invitation process. If you intend to use these, use the diagnosis to double-check that everything email-related (DNS records, outgoing port 25, reverse DNS, services...) is properly configured.",
     "domain_config_registration_invite_mail_template": "Custom email template for invitations",
-    "domain_config_registration_invite_mail_template_help": "This is used when choosing to send the invitation by email, when generating the invite. In the template, you can use the following placeholders which will be replaced with the appropriate information: `{{invitation_link}}` (the invitation link), `{{validity_human}}` (the duration validity of the invitation), `{{domain}}`. FIXME: document whether or not HTML or, for example, images tags are supported",
+    "domain_config_registration_invite_mail_template_help": "This is used when choosing to send the invitation by email, when generating the invite. In the template, you can use the following placeholders which will be replaced with the appropriate information: `{{invitation_link}}` (the invitation link), `{{validity_human}}` (the duration validity of the invitation), `{{domain}}`. HTML is not supported.",
     "domain_config_registration_invite_notes": "Custom notice for invites",
     "domain_config_registration_invite_notes_help": "This will be displayed in a blue info box at the top of the invitation form. Leave empty to disable.",
     "domain_config_registration_name": "User registration and invitations",

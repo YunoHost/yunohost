@@ -378,7 +378,8 @@ def portal_invitation_get(token):
         raise YunohostValidationError("This invitation token is invalid. Invitation tokens are expected to be made of exactly 64 alphanumeric characters.", raw_msg=True)
 
     invite_file = USER_PENDING_INVITATIONS / f"{token}.json"
-    # FIXME : need a good justification here that .exists() is safe against timing attacks. So far I don't have a clear answer
+    # See this quick study https://github.com/YunoHost/yunohost/pull/2309/changes#r3436493337
+    # on how .exists() can be considered safe against timing attacks
     if not invite_file.exists():
         raise YunohostValidationError("user_invitation_expired_or_doesnt_exist")
 
@@ -447,7 +448,6 @@ def _call_socket_api(action: str, args: dict[str, Any]) -> None:
 
 def portal_invitation_consume(token, username, fullname, password, external_email=None, accept_tos=False) -> None:
 
-    # FIXME : need to make sure that we probably obtain the localized message, which may involve passing a LANG or LC_ALL env variable idk
     _call_socket_api("user_invitation_consume", {
         "invitation_token": token,
         "username": username,
@@ -559,7 +559,6 @@ def portal_registration_queue(username, fullname, password, external_email=None,
     _assert_registration_enabled_for_domain(domain)
     _verify_antibot_challenge(challenge_token, challenge_answer)
 
-    # FIXME : need to make sure that we probably obtain the localized message, which may involve passing a LANG or LC_ALL env variable idk
     _call_socket_api("user_registration_queue", {
         "username": username,
         "fullname": fullname,
