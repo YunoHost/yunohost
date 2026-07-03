@@ -88,7 +88,7 @@
     "app_upgrade_specific_channel_msg": "Ten en conta que estás usando `{channel}` como orixe das actualizacións. Mira [aquí]({pr_url}) a conversa en curso.",
     "app_upgrade_up_to_date": "Forzar a actualización da aplicación (á mesma versión) a veces pode ser útil para reconstruir a aplicación e a súa configuración.",
     "app_upgrade_upgradable": "A aplicación pódese actualizar desde a versión {current_version} a {new_version}",
-    "app_upgrade_url_required": "Xa non está (nunca máis?) esta aplicación no catálogo, deberías realizar as actualización manualmente.<br/><small>Desde a liña de ordes, podes usar `yunohost app upgrade <app>` e engadirlle o URL do repositorio a utilizar usando a opción `-u`.</small>",
+    "app_upgrade_url_required": "Esta aplicación non está no catálogo (nunca máis?), deberías ocuparte de actualizala manualmente.<br/><small>Desde a liña de ordes, podes usar `yunohost app upgrade <app>` e engadirlle o URL do repositorio a utilizar usando a opción `-u`.</small>",
     "app_upgraded": "{app} actualizadas",
     "app_yunohost_version_not_supported": "Esta app require YunoHost >= {required} pero a versión actual instalada é {current}.",
     "apps_already_up_to_date": "Xa tes todas as apps ao día",
@@ -750,7 +750,7 @@
     "pattern_password": "Ten que ter polo menos 3 caracteres",
     "pattern_password_app": "Lamentámolo, os contrasinais non poden conter os seguintes caracteres: {forbidden_chars}",
     "pattern_port_or_range": "Debe ser un número válido de porto (entre 0-65535) ou rango de portos (ex. 100:200)",
-    "pattern_username": "Só admite caracteres alfanuméricos en minúscula e trazo baixo",
+    "pattern_username": "Só admite caracteres alfanuméricos en minúscula, punto, trazo e trazo baixo",
     "permission_already_allowed": "O grupo '{group}' xa ten o permiso '{permission}' activado",
     "permission_already_disallowed": "O grupo '{group}' xa ten o permiso '{permission}' desactivado",
     "permission_cannot_remove_main": "Non está permitido eliminar un permiso principal",
@@ -915,5 +915,7 @@
     "yunohost_installing": "A instalar YunoHost…",
     "yunohost_not_installed": "YunoHost non está instalado correctamente. Executa 'yunohost tools postinstall'",
     "yunohost_postinstall_end_tip": "Post-install completada! Para rematar a configuración considera:\n- diagnosticar potenciais problemas na sección 'Diagnóstico' na webadmin (ou 'yunohost diagnosis run' na liña de comandos);\n- ler 'Rematando a configuración' e 'Coñece YunoHost' na documentación da administración: https://doc.yunohost.org/admin.",
-    "migration_0036_apt_lists_file_still_exists": "O ficheiro '{file}' procedente de versións antigas non debería existir. Vaise renomear como '{file}.legacy_bookworm'."
+    "migration_0036_apt_lists_file_still_exists": "O ficheiro '{file}' procedente de versións antigas non debería existir. Vaise renomear como '{file}.legacy_bookworm'.",
+    "app_db_prompt_no_app_database": "Semella que esta app non ten declarada unha base de datos no seu manifesto",
+    "app_db_prompt_type_not_supported": "A orde non é compatible con este tipo de base de datos: {type}"
 }

@@ -88,7 +88,7 @@
     "app_upgrade_specific_channel_msg": "Veuillez noter que vous utilisez actuellement `{channel}` comme source pour les mises à jour. Assurez-vous de consulter la discussion en cours [ici]({pr_url}).",
     "app_upgrade_up_to_date": "La mise à jour forcée de l'application (vers la même version) peut parfois être utile pour reconstruire ou restaurer l'application et ses configurations.",
     "app_upgrade_upgradable": "L'application peut être mise à jour de la version {current_version} à la version {new_version}",
-    "app_upgrade_url_required": "Cette application n'existe pas (plus ?) dans le catalogue, vous devez donc vous occuper manuellement des mises à jour. <br/><small>Depuis la ligne de commande, vous pouvez utiliser `yunohost app upgrade <app>` et fournir l'URL du dépôt à l'aide de l'option `-u`.</small>",
+    "app_upgrade_url_required": "Cette application ne figure pas (plus ?) dans le catalogue ; vous devez donc vous charger manuellement de ses mises à jour. <br/><small>Depuis la ligne de commande, vous pouvez utiliser la commande `yunohost app upgrade <app>` et indiquer l'URL du dépôt à l'aide de l'option `-u`.</small>",
     "app_upgraded": "{app} mis à jour",
     "app_yunohost_version_not_supported": "Cette application nécessite une version de YunoHost >= {required}. La version installée est {current}.",
     "apps_already_up_to_date": "Toutes les applications sont déjà à jour",
@@ -750,7 +750,7 @@
     "pattern_password": "Doit être composé d'au moins 3 caractères",
     "pattern_password_app": "Désolé, les mots de passe ne peuvent pas contenir les caractères suivants : {forbidden_chars}",
     "pattern_port_or_range": "Doit être un numéro de port valide compris entre 0 et 65535, ou une gamme de ports (exemple : 100 :200)",
-    "pattern_username": "Doit être composé uniquement de caractères alphanumériques minuscules et de tirets bas (aussi appelé tiret du 8 ou underscore)",
+    "pattern_username": "Ne doit contenir que des caractères alphanumériques en minuscules, des points, des tirets (aussi appelé tiret du 6) et des traits de soulignement (aussi appelé tiret du 8 ou underscore)",
     "permission_already_allowed": "Le groupe '{group}' a déjà l'autorisation '{permission}' activée",
     "permission_already_disallowed": "Le groupe '{group}' a déjà l'autorisation '{permission}' désactivé",
     "permission_cannot_remove_main": "Supprimer une autorisation principale n'est pas autorisé",
@@ -915,5 +915,12 @@
     "yunohost_installing": "L'installation de YunoHost est en cours…",
     "yunohost_not_installed": "YunoHost n'est pas correctement installé. Veuillez exécuter 'yunohost tools postinstall'",
     "yunohost_postinstall_end_tip": "La post-installation est terminée ! Pour finaliser votre installation, il est recommandé de :\n    - diagnostiquer les potentiels problèmes dans la section 'Diagnostic' de l'interface web (ou 'yunohost diagnosis run' en ligne de commande) ;\n    - lire les parties 'Lancer la configuration initiale' et 'Découvrez l'auto-hébergement, comment installer et utiliser YunoHost' dans le guide d'administration : https://doc.yunohost.org/admin.",
-    "migration_0036_apt_lists_file_still_exists": "Le fichier hérité '{file}' existe toujours alors qu'il ne devrait plus être présent. Il sera renommé '{file}.legacy_bookworm'."
+    "migration_0036_apt_lists_file_still_exists": "Le fichier hérité '{file}' existe toujours alors qu'il ne devrait plus être présent. Il sera renommé '{file}.legacy_bookworm'.",
+    "app_db_prompt_no_app_database": "Cette application ne semble pas avoir de base de données déclarée dans son fichier manifest",
+    "app_db_prompt_type_not_supported": "La commande ne prend pas en charge ce type de base de données : {type}",
+    "migration_0037_upgrade_dkim_keys_disclaimer": "Cette migration vise à mettre à niveau les anciennes clés DKIM de 1 024 bits vers des clés de 2 048 bits afin d'améliorer la délivrabilité des e-mails. Les domaines suivants sont concernés et certains d'entre eux pourraient nécessiter une mise à jour des clés DKIM dans votre zone DNS immédiatement après la migration : {domains}\nIMPORTANT : Afin d'éviter tout risque de mise sur liste noire et de problème de délivrabilité, cette migration doit être effectuée à un moment où votre serveur n'envoie pas d'e-mails. Par mesure de sécurité, vous pouvez arrêter le service Postfix avant la migration et le redémarrer 1 heure après la mise à jour de vos clés DKIM dans vos zones DNS.",
+    "migration_0037_upgrade_dkim_keys_pending_mails": "{pending_mails} messages se trouvent dans votre file d'attente de courrier. Afin d'éviter tout risque de mise sur liste noire et tout problème de délivrabilité, cette migration doit être effectuée à un moment où votre serveur n'envoie pas d'e-mails. Vous pouvez arrêter temporairement Postfix et utiliser <code>postsuper -d ALL</code> pour vider votre file d'attente de courrier. Pour voir quels e-mails se trouvent dans la file d'attente, utilisez <code>postqueue -p</code>",
+    "migration_0037_upgrade_dkim_keys_failed": "Impossible de générer une nouvelle clé de 2048 bits pour {domains}.",
+    "migration_0037_upgrade_dkim_keys_manual_action": "Pour finaliser le processus de migration, vous devez mettre à jour les clés publiques DKIM dans les zones DNS suivantes : {domains}\nLancez le diagnostic ou utilisez l'onglet DNS dans 'Webadmin > Domaines', ou encore via la commande <cmd>yunohost domain dns suggest DOMAINE</cmd>. Si vous avez décidé d'arrêter Postfix, n'oubliez pas de le redémarrer une heure après avoir modifié votre dernière zone DNS.",
+    "migration_description_0037_upgrade_dkim_keys": "Mettez à jour vos clés DKIM pour améliorer la délivrabilité de vos e-mails"
 }
