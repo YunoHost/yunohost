@@ -289,7 +289,7 @@
     "diagnosis_ip_no_ipv6_tip_important": "IPv6 automatikoki ezarri ohi du sistemak edo hornitzaileak, erabilgarri baldin badago. Bestela, eskuz ezarri beharko dituzu aukera batzuk honako dokumentazioan azaldu bezala: <a href='https://doc.yunohost.org/ipv6'>https://doc.yunohost.org/ipv6</a>.",
     "diagnosis_ip_not_connected_at_all": "Badirudi zerbitzaria ez dagoela Internetera konektatuta!?",
     "diagnosis_ip_weird_resolvconf": "DNS ebazpena badabilela dirudi, baina antza denez moldatutako <code>/etc/resolv.conf</code> fitxategia erabiltzen ari zara.",
-    "diagnosis_ip_weird_resolvconf_details": "<code>/etc/resolv.conf</code> fitxategia symlink bat izan beharko litzateke <code>127.0.0.1</code>ra adi dagoen <code>/etc/resolvconf/run/resolv.conf</code> fitxategira (dnsmasq). DNS ebazleak eskuz konfiguratu nahi badituzu, aldatu <code>/etc/resolv.dnsmasq.conf</code> fitxategia.",
+    "diagnosis_ip_weird_resolvconf_details": "<code>/etc/resolv.conf</code> fitxategia <code>/etc/resolvconf/run/resolv.conf</code>-ren esteka sinbolikoa izan behar da, <code>127.0.0.1</code> (dnsmasq) adierazi behar duena. DNS ebazleak eskuz konfiguratu nahi badituzu, aldatu <code>/etc/resolv.dnsmasq.conf</code> fitxategia.",
     "diagnosis_mail_blocklist_listed_by": "Zure domeinua edo <code>{item}</code> IPa {blocklist_name} zerrenda beltzean ageri da",
     "diagnosis_mail_blocklist_ok": "Ez dirudi zerbitzari honek darabiltzan IPak eta domeinuak inolako zerrenda beltzean daudenik",
     "diagnosis_mail_blocklist_reason": "Zerrenda beltzean egotearen zergatia zera da: {reason}",
@@ -596,7 +596,7 @@
     "invalid_password": "Pasahitz baliogabea",
     "invalid_regex": "'Regexa' ez da zuzena: '{regex}'",
     "invalid_shell": "Shell baliogabea: {shell}",
-    "invalid_url": "{url}-(e)ra konektatzeak huts egin du... agian zerbitzua ez dago martxan, edo ez zaude IPv4/IPv6 bidez ondo konektatuta Internetera.",
+    "invalid_url": "{url}-(e)ra konektatzeak huts egin du… agian zerbitzua ez dago martxan, edo ez zaude IPv4/IPv6 bidez ondo konektatuta Internetera.",
     "ldap_attribute_already_exists": "'{attribute}' LDAP funtzioa existitzen da lehendik ere eta '{value}' balioa dauka",
     "ldap_server_down": "Ezin da LDAP zerbitzarira konektatu",
     "ldap_server_is_down_restart_it": "LDAP zerbitzaria ez dago martxan, saia zaitez berrabiarazten…",
@@ -914,5 +914,6 @@
     "yunohost_configured": "YunoHost konfiguratuta dago",
     "yunohost_installing": "YunoHost instalatzen…",
     "yunohost_not_installed": "YunoHost ez da zuzen instalatu. Exekutatu 'yunohost tools postinstall'",
-    "yunohost_postinstall_end_tip": "Instalatu ondorengo prozesua amaitu da! Sistemaren konfigurazioa bukatzeko:\n- erabili 'Diagnostikoak' gunea ohiko arazoei aurre hartzeko. Abiarazi administrazio-gunean edo exekutatu 'yunohost diagnosis run';\n- irakurri 'Finalizing your setup' eta 'Getting to know YunoHost' atalak. Dokumentazioan aurki ditzakezu: https://doc.yunohost.org/admin."
+    "yunohost_postinstall_end_tip": "Instalatu ondorengo prozesua amaitu da! Sistemaren konfigurazioa bukatzeko:\n- erabili 'Diagnostikoak' gunea ohiko arazoei aurre hartzeko. Abiarazi administrazio-gunean edo exekutatu 'yunohost diagnosis run';\n- irakurri 'Finalizing your setup' eta 'Getting to know YunoHost' atalak. Dokumentazioan aurki ditzakezu: https://doc.yunohost.org/admin.",
+    "migration_0036_apt_lists_file_still_exists": "'{file}' fitxategia zaharkitua dago, eta ez litzateke hemen egon beharko. Berrizendatuko da: '{file}.legacy_bookworm'."
 }

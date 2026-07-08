@@ -1,3 +1,32 @@
+yunohost (12.1.40.1) stable; urgency=low
+
+  - diagnosis: fix fetching of the kernel version info, we want the mainline kernel version and not the debian kernel version (f5f28ba4a)
+  - diagnosis: fix confusing 'fixed in version' diagnosis message when it's in fact a dict (f2ec3cf48)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 May 2026 17:05:00 +0200
+
+yunohost (12.1.40) stable; urgency=low
+
+  - settings: be able to personalize DNS resolvers ([#2246](http://github.com/YunoHost/yunohost/pull/2246))
+  - helpers/systemd: add a --mount option similar to --service for systemd helpers ([#2266](http://github.com/YunoHost/yunohost/pull/2266), [#2275](http://github.com/YunoHost/yunohost/pull/2275))
+  - services: display timestamp 0 as unknown instead of actual date ([#2257](http://github.com/YunoHost/yunohost/pull/2257))
+  - diagnosis: fix inconsistent date arithmetic ([#2261](http://github.com/YunoHost/yunohost/pull/2261))
+  - security: handle the kernel special case when checking for security issues via the security.toml index ([#2300](http://github.com/YunoHost/yunohost/pull/2300))
+  - migrations: add generic mechanism for postgreql and python migrations which are recurrent to every major debian upgrades (6aa42d104, e501f7107, 4e8f7fb31, c050319d3, ef72dc6e2)
+  - migrations: trixie: remove legacy apt list files if they still exist after apt upgrade (c936c0b60)
+  - regenconf: yunohost: fix file touched in /etc instead of pending_dir preventing to get rid of legacy node_update cron (ea56d9a82)
+  - regenconf: fix dnsmasq do_init_regen, YNH_SETTINGS should not be empty (49339ced0)
+  - helpers: fixnconsistent permissions on /var/log/$app between when provisioned via ynh_add_logrotate vs ynh_restore ([#2263](http://github.com/YunoHost/yunohost/pull/2263))
+  - misc: missing doc for ynh_del_swap helper (69291d571)
+  - misc: refactoring to use subprocess call ([#2264](http://github.com/YunoHost/yunohost/pull/2264))
+  - misc: fix typos, update doc URL ([#2259](http://github.com/YunoHost/yunohost/pull/2259), 81d68c336, bf7f6a9f5, 739c3ecec, 6ab8123be)
+  - misc: when calling apt update, use --error-on=any to have a valid returncode (edb84a2f2)
+  - i18n: Translations updated for Basque, Catalan, Czech, Dutch, French, Galician, Polish, Portuguese (Brazil), Russian, Ukrainian
+
+  Thanks to all contributors <3 ! (1Poireau, Alekseï, Ale Muñoz, bruno van den bosch, CodeShakingSheep, Dhanush G, Eduardo Mozart de Oliveira, Félix Piédallu, Francescc, Gredin67, Jaroslav Nezbeda, José M, orhtej2, ppr, Rin, SveDec, tituspijean, xabirequejo, zamentur)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 19 May 2026 23:11:21 +0200
+
 yunohost (12.1.39) stable; urgency=low
 
   - nginx: in proxy_params_no_auth snippet, do not clear the Authorization header ([#2255](http://github.com/YunoHost/yunohost/pull/2255))

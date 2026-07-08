@@ -21,7 +21,7 @@
     "app_change_url_require_full_domain": "{app} kan niet naar deze nieuwe URL verplaatst worden, omdat het een eigen (sub)domein nodig heeft (dat wil zeggen, \"Pad\" = /)",
     "app_change_url_script_failed": "Er is een fout opgetreden in het URL-wijzigings-script",
     "app_change_url_success": "{app} URL is nu {domain}{path}",
-    "app_config__core_name": "Configuratie en operaties",
+    "app_config__core_name": "Tegels en toelatingen",
     "app_config_permission_allowed": "Groepen/gebruikers met toegang",
     "app_config_permission_allowed_warn_protected": "NB: dit privelege is 'beschermd' en daarom kan de 'bezoekers'-groep niet toegevoegd/verwijderd worden van de geautoriseerde groepen.",
     "app_config_permission_description": "Omschrijving",
@@ -220,5 +220,6 @@
     "user_home_creation_failed": "Kan de map '{home}' voor gebruiker niet aanmaken",
     "user_unknown": "Gebruikersnaam {user} is onbekend",
     "user_update_failed": "Kan gebruiker niet bijwerken {user}: {error}",
-    "yunohost_configured": "YunoHost configuratie is OK"
+    "yunohost_configured": "YunoHost configuratie is OK",
+    "app_upgrade_bad_quality": "Deze applicatie is op dit moment gesignaleerd als stuk op de YunoHost applicatie catalogus. Dit kan een voorlopig probleem zijn terwijl de beheerders proberen om het probleem op te lossen. In tussentijd is het bijwerken van deze app uitgeschakeld."
 }

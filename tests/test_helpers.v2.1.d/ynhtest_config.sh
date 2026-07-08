@@ -412,6 +412,7 @@ ynhtest_config_read_json() {
     local dummy_dir="$(mktemp -d -p "$VAR_WWW")"
     file="$dummy_dir/dummy.json"
 
+    # The space after `"url": "https://yunohost.org", ` is a test not a mistake...
     cat << EOF > "$file"
 {
      "foo": null,
@@ -420,7 +421,7 @@ ynhtest_config_read_json() {
      "theme": "colib'ris",
      "email": "root@example.com",
        "port": 1234,
-     "url": "https://yunohost.org",
+     "url": "https://yunohost.org", 
      "dict": {
          "ldap_base": "ou=users,dc=yunohost,dc=org"
      }
@@ -463,6 +464,7 @@ ynhtest_config_write_json() {
     local dummy_dir="$(mktemp -d -p "$VAR_WWW")"
     file="$dummy_dir/dummy.json"
 
+    # The space after `"url": "https://yunohost.org", ` is a test not a mistake...
     cat << EOF > "$file"
 {
      "foo": null,
@@ -471,7 +473,7 @@ ynhtest_config_write_json() {
      "theme": "colib'ris",
      "email": "root@example.com",
        "port": 1234,
-     "url": "https://yunohost.org",
+     "url": "https://yunohost.org", 
      "dict": {
          "ldap_base": "ou=users,dc=yunohost,dc=org"
      }

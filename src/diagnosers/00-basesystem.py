@@ -21,6 +21,7 @@
 import json
 import logging
 import os
+import re
 import subprocess
 from collections.abc import Generator
 from typing import Any
@@ -334,10 +335,38 @@ class MyDiagnoser(Diagnoser):  # type: ignore
             _load_security_issues_list()["system"]
         )
         for package, issues in security_issues_list_per_pkg.items():
-            if package not in installed_packages:
+            if package not in installed_packages and package != "kernel":
                 continue
 
-            current_version = dpkg_package_version(package)
+            if package != "kernel":
+                current_version = dpkg_package_version(package)
+            else:
+                # NOT equivalent to uname -r ... we are looking for the
+                # "mainline" kernel version, not the debian kernel version,
+                # cf issues#2803
+                raw_kernel_comment = read_file("/proc/sys/kernel/version").strip()
+                version_matches = re.findall(r"\s[0-9]\S+", raw_kernel_comment)
+                if len(version_matches) != 1:
+                    logger.warning(
+                        f"Unable to extract mainline kernel version from the kernel info '{raw_kernel_comment}' ... Therefore YunoHost will be unable to check for security issues related to the kernel. Please try to report this message to the YunoHost team to improve the situation"
+                    )
+                    continue
+                current_version = version_matches[0].strip()
+                # RPi have their mainline kernel version number somehow
+                # starting with "1:" which messes up the version comparison
+                # later
+                if ":" in current_version:
+                    current_version = current_version.split(":")[1]
+
+                # FIXME : so far this whole kernel check is not reliable on every setup
+                # because not every context has the kernel from Debian :
+                # - RPI ships their own kernel possibly with more recent
+                # versions than the standard Debian setup
+                # - LXC/containers use the kernel from the host, which may be
+                # in a totally different distribution therefore we can't just
+                # expect the kernel version to be related to the debian version
+                # we're running (e.g. 6.1.x for Bookworm, 6.12.x for Trixie)
+
             for issue in issues:
                 raw_fixed_in_version = issue["fixed_in_version"]
                 if isinstance(raw_fixed_in_version, dict):
@@ -367,6 +396,7 @@ class MyDiagnoser(Diagnoser):  # type: ignore
                     summary=f"diagnosis_package_security_issue_{level}",
                     data={
                         **issue,
+                        "fixed_in_version": fixed_in_version,
                         "more_infos_list": more_infos_list,
                         "current_version": current_version,
                     },

@@ -30,7 +30,7 @@ from ..domain import _get_maindomain, domain_list
 from ..settings import settings_get
 from ..utils.dns import dig
 from ..utils.file_utils import read_yaml
-from ..utils.process import check_output
+from ..utils.mail import get_pending_mails_nb
 
 DEFAULT_DNS_BLOCKLIST = "/usr/share/yunohost/dnsbl_list.yml"
 
@@ -269,12 +269,8 @@ class MyDiagnoser(Diagnoser):
         Check mail queue is not filled with hundreds of email pending
         """
 
-        command = (
-            'postqueue -p | grep -v "Mail queue is empty" | grep -c "^[A-Z0-9]" || true'
-        )
         try:
-            output = check_output(command)
-            pending_emails = int(output)
+            pending_emails = get_pending_mails_nb()
         except (ValueError, CalledProcessError) as e:
             yield dict(
                 meta={"test": "mail_queue"},

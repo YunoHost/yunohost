@@ -212,7 +212,9 @@ class MyDiagnoser(Diagnoser):  # type: ignore
             # some DNS registrar sometime split it into several pieces like this:
             # "p=foo" "bar" (with a space and quotes in the middle)...
             assert r["content"] is not None and r["current"] is not None
-            expected = set(r["content"].strip(';" ').replace(";", " ").split())
+            expected = set(
+                r["content"].replace('" "', "").strip(';" ').replace(";", " ").split()
+            )
             current = set(
                 r["current"].replace('" "', "").strip(';" ').replace(";", " ").split()
             )
