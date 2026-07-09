@@ -173,10 +173,6 @@ def _actual_apps_catalog_api_url(base_url: str) -> str:
     return f"{base_url}/v{APPS_CATALOG_API_VERSION}/apps.json"
 
 
-def _actual_apps_catalog_security_url(base_url: str) -> str:
-    return f"{base_url}/v{APPS_CATALOG_API_VERSION}/security.json"
-
-
 def _update_apps_catalog() -> None:
     """
     Fetches the json for each apps_catalog and update the cache

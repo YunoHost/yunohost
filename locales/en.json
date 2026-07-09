@@ -543,7 +543,7 @@
     "global_settings_setting_smtp_relay_port": "SMTP relay port",
     "global_settings_setting_smtp_relay_user": "SMTP relay user",
     "global_settings_setting_ssh_compatibility": "SSH Compatibility",
-    "global_settings_setting_ssh_compatibility_help": "Compatibility vs. security tradeoff for the SSH server. Affects the ciphers (and other security-related aspects). See https://infosec.mozilla.org/guidelines/openssh for more info.",
+    "global_settings_setting_ssh_compatibility_help": "Compatibility vs. security tradeoff for the SSH server. Affects the ciphers (and other security-related aspects). See comments into /usr/share/yunohost/conf/ssh/sshd_config for more info.",
     "global_settings_setting_ssh_name": "SSH",
     "global_settings_setting_ssh_password_authentication": "Password authentication",
     "global_settings_setting_ssh_password_authentication_help": "Allow password authentication for SSH",
