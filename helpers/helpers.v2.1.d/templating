@@ -371,13 +371,13 @@ ynh_write_var_in_file() {
         # \ and sed is quite complex you need 2 \\ to get one in a sed
         # So we need \\\\ to go through 2 sed
         value="$(echo "$value" | sed 's/"/\\\\"/g')"
-        sed -ri "${range}s$delimiter"'(^'"${var_part}"'")([^"]|\\")*("[\s;,]*)(\s*'"$comments"'.*)?$'$delimiter'\1'"${value}"'"'"${endline}${delimiter}i" "$file"
+        sed -ri "${range}s$delimiter"'(^'"${var_part}"'")([^"]|\\")*("[\s;,]*)\s*('"$comments"'.*)?$'$delimiter'\1'"${value}"'"'"${endline}${delimiter}i" "$file"
     elif [[ "$first_char" == "'" ]]; then
         # \ and sed is quite complex you need 2 \\ to get one in a sed
         # However double quotes implies to double \\ to
         # So we need \\\\\\\\ to go through 2 sed and 1 double quotes str
         value="$(echo "$value" | sed "s/'/\\\\\\\\'/g")"
-        sed -ri "${range}s$delimiter(^${var_part}')([^']|\\')*('"'[\s,;]*)(\s*'"$comments"'.*)?$'$delimiter'\1'"${value}'${endline}${delimiter}i" "$file"
+        sed -ri "${range}s$delimiter(^${var_part}')([^']|\\')*('"'[\s,;]*)\s*('"$comments"'.*)?$'$delimiter'\1'"${value}'${endline}${delimiter}i" "$file"
     else
         formated="false"
         # Boolean

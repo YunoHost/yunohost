@@ -61,7 +61,7 @@ do_post_regen() {
     chown root:postgres "$PSQL_ROOT_PWD_FILE"
     chmod 440 "$PSQL_ROOT_PWD_FILE"
 
-    sudo --login --user=postgres psql -c"ALTER user postgres WITH PASSWORD '$(cat "$PSQL_ROOT_PWD_FILE")'" postgres
+    sudo --user=postgres psql -c"ALTER user postgres WITH PASSWORD '$(cat "$PSQL_ROOT_PWD_FILE")'" postgres
 
     # force all user to connect to local databases using hashed passwords
     # https://www.postgresql.org/docs/current/static/auth-pg-hba-conf.html#EXAMPLE-PG-HBA.CONF

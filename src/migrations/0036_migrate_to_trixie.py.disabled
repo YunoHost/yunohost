@@ -293,6 +293,12 @@ class MyMigration(Migration):
         )
         subprocess.run("apt clean --assume-yes", shell=True, check=True)
 
+        for filename in ["extra_php_version.list", "yarn.list"]:
+            legacy_file: Path = Path("/etc/apt/sources.list.d") / filename
+            if legacy_file.exists():
+                logger.warning(m18n.n("migration_0036_apt_lists_file_still_exists", file=str(legacy_file)))
+                legacy_file.rename(legacy_file.with_name(legacy_file.name + ".legacy_bookworm"))
+
         #
         # Stupid hack for stupid dnsmasq not picking up its new init.d script then breaking everything ...
         # https://forum.yunohost.org/t/20676
