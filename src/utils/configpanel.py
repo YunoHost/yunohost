@@ -387,7 +387,7 @@ class ConfigPanelModel(BaseModel):
                     yield (panel, section, None)
                 if "action" in trigger:
                     for option in section.options:
-                        if option.type is OptionType.button:
+                        if option.type == OptionType.button:
                             yield (panel, section, option)
                 if "option" in trigger:
                     for option in section.options:
@@ -572,7 +572,7 @@ class ConfigPanel:
                             result[key]["value"] = option.humanize(
                                 self.form[option.id], option
                             )
-                            if option.type is OptionType.password:
+                            if option.type == OptionType.password:
                                 result[key]["value"] = (
                                     "**************"  # Prevent displaying password in `config get`
                                 )
@@ -806,7 +806,7 @@ class ConfigPanel:
             if isinstance(option, BaseInputOption) and option.id not in raw_settings:
                 if option.default is not None:
                     value = option.default
-                elif option.type is OptionType.file or option.bind == "null":
+                elif option.type == OptionType.file or option.bind == "null":
                     continue
                 elif self.settings_must_be_defined:
                     raise YunohostError(
