@@ -1916,15 +1916,37 @@ class TarBackupMethod(BackupMethod):
         self._check_is_enough_free_space()
 
         # Open archive file for writing
+        # When compressing, pipe the tar stream through an external compressor
+        # to compress on every core, as Python's built-in tar compression is
+        # single-threaded
+        compressor = None
+        if self._archive_file.endswith(".gz") and shutil.which("pigz"):
+            compressor = ["pigz", "-c"]
+
+        compress_proc = None
+        archive_fd = None
         try:
-            tar = tarfile.open(
-                self._archive_file,
-                "w:gz" if self._archive_file.endswith(".gz") else "w",
-            )
+            if compressor:
+                archive_fd = open(self._archive_file, "wb")
+                compress_proc = subprocess.Popen(
+                    compressor, stdin=subprocess.PIPE, stdout=archive_fd
+                )
+                tar = tarfile.open(
+                    fileobj=compress_proc.stdin, mode="w|", bufsize=1024 * 1024
+                )
+            else:
+                tar = tarfile.open(
+                    self._archive_file,
+                    "w:gz" if self._archive_file.endswith(".gz") else "w",
+                )
         except Exception:
             logger.debug(
                 "unable to open '%s' for writing", self._archive_file, exc_info=1
             )
+            if compress_proc is not None:
+                compress_proc.kill()
+            if archive_fd is not None:
+                archive_fd.close()
             raise YunohostError("backup_archive_open_failed")
 
         # Add files to the archive
@@ -1946,6 +1968,24 @@ class TarBackupMethod(BackupMethod):
             raise YunohostError("backup_creation_failed")
         finally:
             tar.close()
+            if compress_proc is not None:
+                try:
+                    if compress_proc.stdin:
+                        compress_proc.stdin.close()
+                except BrokenPipeError:
+                    pass
+                compress_proc.wait()
+            if archive_fd is not None:
+                archive_fd.close()
+
+        if compress_proc is not None and compress_proc.returncode != 0:
+            logger.error(
+                "%s exited with code %s while compressing '%s'",
+                compressor[0],
+                compress_proc.returncode,
+                self._archive_file,
+            )
+            raise YunohostError("backup_creation_failed")
 
         # Move info file
         shutil.copy(
