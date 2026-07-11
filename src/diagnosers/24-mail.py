@@ -20,7 +20,6 @@
 
 import logging
 import os
-import random
 import re
 from subprocess import CalledProcessError
 
@@ -31,7 +30,7 @@ from ..domain import _get_maindomain, domain_list
 from ..settings import settings_get
 from ..utils.dns import dig
 from ..utils.file_utils import read_yaml
-from ..utils.process import check_output
+from ..utils.mail import get_pending_mails_nb
 
 DEFAULT_DNS_BLOCKLIST = "/usr/share/yunohost/dnsbl_list.yml"
 
@@ -227,33 +226,8 @@ class MyDiagnoser(Diagnoser):
                     subdomain = str(rev.split(3)[0])
                 query = subdomain + "." + blocklist["dns_server"]
 
-                # Gotta force the usage of resolvers for spamhaus,
-                # Which will otherwise complain that we may be using an open resolver...
-                # cf https://www.spamhaus.com/resource-center/successfully-accessing-spamhauss-free-block-lists-using-a-public-dns/#yes-but-why-block-queries-from-public-recursive-name-servers
-                if blocklist["dns_server"] == "zen.spamhaus.org":
-                    # spamhaus has a/b/c/d/e nameservers, cf https://multirbl.valli.org/detail/zen.spamhaus.org.html
-                    spamhaus_NS = dig("zen.spamhaus.org", "NS")
-                    if spamhaus_NS[0] != "ok":
-                        logger.warning(
-                            f"Failed to fetch NS servers for spamhaus ? -> {spamhaus_NS}"
-                        )
-                        continue
-                    # FIXME: that won't work for ipv6-only instances ?
-                    spamhaus_NS_ips = dig(random.choice(spamhaus_NS[1]), "A")
-                    if spamhaus_NS_ips[0] != "ok":
-                        logger.warning(
-                            f"Failed to fetch IP for NS servers for spamhaus ? -> {spamhaus_NS_ips}"
-                        )
-                        continue
-                    resolvers = spamhaus_NS_ips[1]
-                else:
-                    # Use whatever is in /etc/resolv.conf,
-                    # which in the nominal case will be dnsmasq
-                    # which itself uses /ec/resolv.dnsmasq.conf etc.
-                    resolvers = "local"
-
                 # Do the DNS Query
-                status, answers = dig(query, "A", resolvers=resolvers)
+                status, answers = dig(query, "A")
                 if status != "ok" or (
                     answers
                     and set(answers) <= set(blocklist["non_blocklisted_return_code"])
@@ -262,11 +236,15 @@ class MyDiagnoser(Diagnoser):
 
                 # Try to get the reason
                 details = []
-                status, answers = dig(query, "TXT", resolvers=resolvers)
+                status, answers = dig(query, "TXT")
                 reason = "-"
                 if status == "ok":
                     reason = ", ".join(answers)
-                    details.append("diagnosis_mail_blocklist_reason")
+                    details.append(
+                        "diagnosis_mail_blocklist_reason"
+                        if "open resolver" not in reason
+                        else "diagnosis_mail_blocklist_reason_openresolver"
+                    )
 
                 details.append("diagnosis_mail_blocklist_website")
 
@@ -291,12 +269,8 @@ class MyDiagnoser(Diagnoser):
         Check mail queue is not filled with hundreds of email pending
         """
 
-        command = (
-            'postqueue -p | grep -v "Mail queue is empty" | grep -c "^[A-Z0-9]" || true'
-        )
         try:
-            output = check_output(command)
-            pending_emails = int(output)
+            pending_emails = get_pending_mails_nb()
         except (ValueError, CalledProcessError) as e:
             yield dict(
                 meta={"test": "mail_queue"},

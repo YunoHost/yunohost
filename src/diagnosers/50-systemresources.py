@@ -192,13 +192,13 @@ class MyDiagnoser(Diagnoser):
             out = check_output(cmd)
             lines = out.split("\n") if out else []
 
-            now = datetime.datetime.now()
+            now = datetime.datetime.now(datetime.timezone.utc)
 
             for line in reversed(lines):
                 # Lines look like :
-                # Aug 25 18:48:21 yolo kernel: [ 9623.613667] oom_reaper: reaped process 11509 (uwsgi), now anon-rss:0kB, file-rss:0kB, shmem-rss:328kB
-                date_str = str(now.year) + " " + " ".join(line.split()[:3])
-                date = datetime.datetime.strptime(date_str, "%Y %b %d %H:%M:%S")
+                # 2025-10-15T13:58:59.799358+02:00  yolo kernel: [ 9623.613667] oom_reaper: reaped process 11509 (uwsgi), now anon-rss:0kB, file-rss:0kB, shmem-rss:328kB
+                date_str = line.split()[0]
+                date = datetime.datetime.fromisoformat(date_str)
                 diff = now - date
                 if diff.days >= 1:
                     break

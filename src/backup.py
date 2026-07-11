@@ -24,6 +24,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tarfile
 import tempfile
 import time
@@ -89,7 +90,7 @@ if TYPE_CHECKING:
 
     logger = cast(YunohostLogger, getLogger("yunohost.backup"))
 else:
-    logger = getLogger("yunohost.baclup")
+    logger = getLogger("yunohost.backup")
 
 
 class BackupRestoreTargetsManager:
@@ -865,7 +866,7 @@ class RestoreManager:
         return restore_manager.result
     """
 
-    def __init__(self, name, method="tar"):
+    def __init__(self, name, method="tar", no_remove_on_failure=False):
         """
         RestoreManager constructor
 
@@ -892,6 +893,7 @@ class RestoreManager:
         self.name = name
         self.method = BackupMethod.create(method, self)
         self.targets = BackupRestoreTargetsManager()
+        self.no_remove_on_failure = no_remove_on_failure
 
     #
     # Misc helpers                                                          #
@@ -1469,7 +1471,12 @@ class RestoreManager:
                 # Cleaning temporary scripts directory
                 shutil.rmtree(tmp_workdir_for_app, ignore_errors=True)
 
-                app_remove(app_instance_name, force_workdir=app_workdir)
+                if not self.no_remove_on_failure:
+                    app_remove(app_instance_name, force_workdir=app_workdir)
+                else:
+                    logger.error(
+                        f"The restore of {app_instance_name} failed, but was not cleaned up as requested by --no-remove-on-failure."
+                    )
 
                 logger.error(failure_message_with_debug_instructions)
 
@@ -1743,7 +1750,12 @@ class BackupMethod:
 
         # Ask confirmation for copying
         if size > MB_ALLOWED_TO_ORGANIZE:
-            try:
+            # Check if we're in an interactive terminal
+            is_interactive = (
+                sys.stdout.isatty() if hasattr(sys.stdout, "isatty") else False
+            )
+
+            if is_interactive:
                 i = Moulinette.prompt(
                     m18n.n(
                         "backup_ask_for_copying_if_needed",
@@ -1751,11 +1763,13 @@ class BackupMethod:
                         size=str(size),
                     )
                 )
-            except NotImplementedError:
-                raise YunohostError("backup_unable_to_organize_files")
-            else:
                 if i != "y" and i != "Y":
                     raise YunohostError("backup_unable_to_organize_files")
+            else:
+                # In non-interactive mode, accept automatically with a warning
+                logger.warning(
+                    f"Copying {size:.1f} MB without confirmation (non-interactive mode)"
+                )
 
         # Copy unbinded path
         logger.debug(m18n.n("backup_copying_to_organize_the_archive", size=str(size)))
@@ -2202,7 +2216,7 @@ def backup_create(
     }
 
 
-def backup_restore(name, system=[], apps=[], force=False):
+def backup_restore(name, system=[], apps=[], force=False, no_remove_on_failure=False):
     """
     Restore from a local backup archive
 
@@ -2211,6 +2225,8 @@ def backup_restore(name, system=[], apps=[], force=False):
         force -- Force restauration on an already installed system
         system -- List of system parts to restore
         apps -- List of application names to restore
+        no_remove_on_failure -- Only for apps, avoid to remove the app in case of the restore fail.
+                                Mainly useful for debug
     """
 
     #
@@ -2226,7 +2242,7 @@ def backup_restore(name, system=[], apps=[], force=False):
     # Initialize                                                            #
     #
 
-    restore_manager = RestoreManager(name)
+    restore_manager = RestoreManager(name, no_remove_on_failure=no_remove_on_failure)
 
     restore_manager.set_system_targets(system)
     restore_manager.set_apps_targets(apps)

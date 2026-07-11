@@ -187,6 +187,9 @@ _ynh_app_config_validate() {
     ynh_script_progression "Checking what changed in the new configuration..."
     local nothing_changed=true
     local changes_validated=true
+    local xtrace_enable=$(set +o | grep xtrace)
+    # Disable logging during this loop because that's a lot of noisy logs, and that's an additional layer to prevent leaking from leaking secrets heaurqg
+    set +o xtrace # set +x
     for short_setting in "${!old[@]}"; do
         changed[$short_setting]=false
         if [ -z ${!short_setting+x} ]; then
@@ -219,6 +222,8 @@ _ynh_app_config_validate() {
             fi
         fi
     done
+    eval "$xtrace_enable"
+
     if [[ "$nothing_changed" == "true" ]]; then
         ynh_print_info "Nothing has changed"
         exit 0

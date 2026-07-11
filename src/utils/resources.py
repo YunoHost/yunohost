@@ -185,7 +185,7 @@ class AppResource:
             "__APP__": self.app,
             "__YNH_ARCH__": system_arch(),
             "__YNH_DEBIAN_VERSION__": debian_version(),
-            "__YNH_DEBIAN_VERSION_ID__": debian_version_id(),
+            "__YNH_DEBIAN_VERSION_ID__": str(debian_version_id()),
             "__YNH_APP_UPSTREAM_VERSION__": app_upstream_version,
         }
 
@@ -298,7 +298,9 @@ ynh_abort_if_errors
                 env=env_,
                 operation_logger=operation_logger,
                 error_message_if_script_failed="An error occured inside the script snippet",
-                error_message_if_failed=lambda e: f"{action} failed for {self.type} : {e}",
+                error_message_if_failed=lambda e: (
+                    f"{action} failed for {self.type} : {e}"
+                ),
             )
         finally:
             if call_failed:

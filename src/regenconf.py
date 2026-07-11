@@ -74,8 +74,24 @@ def regen_conf(
 
     from .settings import settings_get
 
+    all_available_conf_regen_categories = hook_list(
+        "conf_regen", list_by="name", show_info=False
+    )["hooks"]
+
     if names is None:
         names = []
+    elif names and isinstance(names, list):
+        unknowns = [
+            name for name in names if name not in all_available_conf_regen_categories
+        ]
+        names = [name for name in names if name in all_available_conf_regen_categories]
+        if not names:
+            raise YunohostError(
+                f"No regen-conf categories named '{', '.join(unknowns)}'", raw_msg=True
+            )
+        else:
+            for name in unknowns:
+                logger.warning(f"No regen-conf category named '{name}'")
 
     result = {}
 
@@ -133,7 +149,7 @@ def regen_conf(
 
     # By default, we regen everything
     if not names:
-        names = hook_list("conf_regen", list_by="name", show_info=False)["hooks"]
+        names = all_available_conf_regen_categories
 
     # [Optimization] We compute and feed the domain list to the conf regen
     # hooks to avoid having to call "yunohost domain list" so many times which
