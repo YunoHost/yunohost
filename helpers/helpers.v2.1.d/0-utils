@@ -468,7 +468,7 @@ for item in shlex.split(s):
         continue
     k, v = item.split("=", 1)
     sys.stdout.write(k + "\t" + v + "\n")
-' "$env_line"
+' "$env_var"
 )
 
         # Source the EnvironmentFiles from the app's service
