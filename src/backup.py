@@ -85,12 +85,28 @@ CONF_MARGIN_SPACE_SIZE = 10  # IN MB
 POSTINSTALL_ESTIMATE_SPACE_SIZE = 5  # In MB
 MB_ALLOWED_TO_ORGANIZE = 10
 
+# Extensions supported by the tar backup method, in resolution order
+ARCHIVE_EXTENSIONS = (".tar.gz", ".tar")
+
 if TYPE_CHECKING:
     from .utils.logging import YunohostLogger
 
     logger = cast(YunohostLogger, getLogger("yunohost.backup"))
 else:
     logger = getLogger("yunohost.backup")
+
+
+def _archive_file_from_name(name: str) -> str | None:
+    """
+    Return the path of the archive named 'name', trying every supported
+    extension. lexists() is used to also catch archives being broken
+    symlinks, which callers handle explicitly.
+    """
+    for ext in ARCHIVE_EXTENSIONS:
+        archive_file = f"{ARCHIVES_PATH}/{name}{ext}"
+        if os.path.lexists(archive_file):
+            return archive_file
+    return None
 
 
 class BackupRestoreTargetsManager:
@@ -1855,8 +1871,10 @@ class TarBackupMethod(BackupMethod):
             return os.path.join(self.repo, self.name + ".tar.gz")
 
         f = os.path.join(self.repo, self.name + ".tar")
-        if os.path.exists(f + ".gz"):
-            f += ".gz"
+        for ext in ARCHIVE_EXTENSIONS:
+            if os.path.exists(os.path.join(self.repo, self.name + ext)):
+                f = os.path.join(self.repo, self.name + ext)
+                break
         return f
 
     def backup(self):
@@ -2301,17 +2319,22 @@ def backup_list(with_info=False, human_readable=False):
     """
     # Get local archives sorted according to last modification time
     # (we do a realpath() to resolve symlinks)
-    archives = glob(f"{ARCHIVES_PATH}/*.tar.gz") + glob(f"{ARCHIVES_PATH}/*.tar")
+    archives = [
+        archive
+        for ext in ARCHIVE_EXTENSIONS
+        for archive in glob(f"{ARCHIVES_PATH}/*{ext}")
+    ]
     archives = {os.path.realpath(archive) for archive in archives}
     archives = {archive for archive in archives if os.path.exists(archive)}
     archives = sorted(archives, key=lambda x: os.path.getctime(x))
     # Extract only filename without the extension
 
     def remove_extension(f):
-        if f.endswith(".tar.gz"):
-            return os.path.basename(f)[: -len(".tar.gz")]
-        else:
-            return os.path.basename(f)[: -len(".tar")]
+        f = os.path.basename(f)
+        for ext in ARCHIVE_EXTENSIONS:
+            if f.endswith(ext):
+                return f[: -len(ext)]
+        return f
 
     archives = [remove_extension(f) for f in archives]
 
@@ -2340,13 +2363,10 @@ def backup_download(name):
         )
         return
 
-    archive_file = f"{ARCHIVES_PATH}/{name}.tar"
-
     # Check file exist (even if it's a broken symlink)
-    if not os.path.lexists(archive_file):
-        archive_file += ".gz"
-        if not os.path.lexists(archive_file):
-            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+    archive_file = _archive_file_from_name(name)
+    if not archive_file:
+        raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
     # If symlink, retrieve the real path
     if os.path.islink(archive_file):
@@ -2378,21 +2398,18 @@ def backup_info(name, with_details=False, human_readable=False):
     """
     original_name = name
 
-    if name.endswith(".tar.gz"):
-        name = name[: -len(".tar.gz")]
-    elif name.endswith(".tar"):
-        name = name[: -len(".tar")]
-
-    archive_file = f"{ARCHIVES_PATH}/{name}.tar"
+    for ext in ARCHIVE_EXTENSIONS:
+        if name.endswith(ext):
+            name = name[: -len(ext)]
+            break
 
     # Check file exist (even if it's a broken symlink)
-    if not os.path.lexists(archive_file):
-        archive_file += ".gz"
+    archive_file = _archive_file_from_name(name)
+    if not archive_file:
+        # Maybe the user provided a path to the backup?
+        archive_file = original_name
         if not os.path.lexists(archive_file):
-            # Maybe the user provided a path to the backup?
-            archive_file = original_name
-            if not os.path.lexists(archive_file):
-                raise YunohostValidationError("backup_archive_name_unknown", name=name)
+            raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
     # If symlink, retrieve the real path
     if os.path.islink(archive_file):
@@ -2505,9 +2522,7 @@ def backup_delete(name, display_success: bool = True):
 
     hook_callback("pre_backup_delete", args=[name])
 
-    archive_file = f"{ARCHIVES_PATH}/{name}.tar"
-    if not os.path.exists(archive_file) and os.path.exists(archive_file + ".gz"):
-        archive_file += ".gz"
+    archive_file = _archive_file_from_name(name) or f"{ARCHIVES_PATH}/{name}.tar"
     info_file = f"{ARCHIVES_PATH}/{name}.info.json"
 
     files_to_delete = [archive_file, info_file]
