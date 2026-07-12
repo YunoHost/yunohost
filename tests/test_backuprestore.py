@@ -36,6 +36,7 @@ from yunohost.backup import (
 from yunohost.domain import _get_maindomain, domain_add, domain_list, domain_remove
 from yunohost.hook import CUSTOM_HOOK_FOLDER
 from yunohost.permission import user_permission_list
+from yunohost.settings import settings_reset, settings_set
 from yunohost.user import user_create, user_delete, user_list
 from yunohost.utils.misc import random_ascii
 
@@ -304,6 +305,46 @@ def test_backup_and_restore_all_sys():
 
     # Check ssowat conf is back
     assert os.path.exists("/etc/ssowat/conf.json")
+
+
+#
+# Compressed backup and restore                                              #
+#
+
+
+@pytest.mark.parametrize(
+    "compression,extension",
+    [("gzip", ".tar.gz"), ("zstd", ".tar.zst"), ("zstd_small", ".tar.zst")],
+)
+def test_backup_and_restore_compressed(compression, extension):
+    settings_set("misc.backup.backup_compress_tar_archives", compression)
+    try:
+        name = random_ascii(8)
+        with message("backup_created", name=name):
+            backup_create(name=name, system=["conf_ynh_settings"], apps=None)
+
+        archive = f"/home/yunohost.backup/archives/{name}{extension}"
+        assert os.path.exists(archive)
+        # The archive must be a standard gzip/zstd stream readable by plain tar
+        assert (
+            subprocess.call(
+                ["tar", "-tf", archive],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            == 0
+        )
+
+        archives_info = backup_info(name, with_details=True)
+        assert "conf_ynh_settings" in archives_info["system"].keys()
+
+        # Restore from the compressed archive
+        with message("restore_complete"):
+            backup_restore(
+                name=name, force=True, system=["conf_ynh_settings"], apps=None
+            )
+    finally:
+        settings_reset("misc.backup.backup_compress_tar_archives")
 
 
 #
