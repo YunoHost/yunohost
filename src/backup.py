@@ -86,7 +86,14 @@ POSTINSTALL_ESTIMATE_SPACE_SIZE = 5  # In MB
 MB_ALLOWED_TO_ORGANIZE = 10
 
 # Extensions supported by the tar backup method, in resolution order
-ARCHIVE_EXTENSIONS = (".tar.gz", ".tar")
+ARCHIVE_EXTENSIONS = (".tar.zst", ".tar.gz", ".tar")
+
+# Value of the backup_compress_tar_archives setting -> (archive extension, compressor command)
+COMPRESSION_METHODS = {
+    "gzip": (".tar.gz", ["pigz", "-c"]),
+    "zstd": (".tar.zst", ["zstd", "-T0", "-c"]),
+    "zstd_small": (".tar.zst", ["zstd", "-T0", "-19", "-c"]),
+}
 
 if TYPE_CHECKING:
     from .utils.logging import YunohostLogger
@@ -112,14 +119,24 @@ def _archive_file_from_name(name: str) -> str | None:
 @contextmanager
 def _open_archive_for_reading(archive_file: str):
     """
-    Open a .tar / .tar.gz archive for a single sequential pass: members can
-    only be iterated over once, in order.
+    Open a .tar / .tar.gz / .tar.zst archive for a single sequential pass:
+    members can only be iterated over once, in order.
 
     Stream mode is much faster than random access on compressed archives,
     where every backward seek means re-decompressing the archive from the
     start.
     """
-    tar = tarfile.open(archive_file, "r|*")
+    zstd_proc = None
+    if archive_file.endswith(".zst") and not hasattr(tarfile.TarFile, "zstopen"):
+        # tarfile only supports zstd natively starting with Python 3.14,
+        # decompress through the zstd CLI in the meantime
+        with open(archive_file, "rb") as archive_fd:
+            zstd_proc = subprocess.Popen(
+                ["zstd", "-dc"], stdin=archive_fd, stdout=subprocess.PIPE
+            )
+        tar = tarfile.open(fileobj=zstd_proc.stdout, mode="r|")
+    else:
+        tar = tarfile.open(archive_file, "r|*")
 
     # Restoring a backup requires full fidelity, whereas the default filter
     # becomes the restrictive "data" in Python 3.14, cf.
@@ -131,6 +148,10 @@ def _open_archive_for_reading(archive_file: str):
         yield tar
     finally:
         tar.close()
+        if zstd_proc is not None:
+            if zstd_proc.stdout:
+                zstd_proc.stdout.close()
+            zstd_proc.wait()
 
 
 class BackupRestoreTargetsManager:
@@ -1889,10 +1910,12 @@ class TarBackupMethod(BackupMethod):
         if isinstance(self.manager, RestoreManager):
             return self.manager.archive_path
 
-        if isinstance(self.manager, BackupManager) and settings_get(
-            "misc.backup.backup_compress_tar_archives"
-        ):
-            return os.path.join(self.repo, self.name + ".tar.gz")
+        if isinstance(self.manager, BackupManager):
+            compression = settings_get("misc.backup.backup_compress_tar_archives")
+            extension = ".tar"
+            if compression in COMPRESSION_METHODS:
+                extension = COMPRESSION_METHODS[compression][0]
+            return os.path.join(self.repo, self.name + extension)
 
         f = os.path.join(self.repo, self.name + ".tar")
         for ext in ARCHIVE_EXTENSIONS:
@@ -1917,11 +1940,14 @@ class TarBackupMethod(BackupMethod):
 
         # Open archive file for writing
         # When compressing, pipe the tar stream through an external compressor
-        # to compress on every core, as Python's built-in tar compression is
+        # to compress on every core, as Python's built-in implementations are
         # single-threaded
+        from .settings import settings_get
+
+        compression = settings_get("misc.backup.backup_compress_tar_archives")
         compressor = None
-        if self._archive_file.endswith(".gz") and shutil.which("pigz"):
-            compressor = ["pigz", "-c"]
+        if compression in COMPRESSION_METHODS:
+            compressor = COMPRESSION_METHODS[compression][1]
 
         compress_proc = None
         archive_fd = None
