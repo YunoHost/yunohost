@@ -119,7 +119,7 @@ def _open_archive_for_reading(archive_file: str):
     where every backward seek means re-decompressing the archive from the
     start.
     """
-    tar = tarfile.open(archive_file, "r|*", bufsize=1024 * 1024)
+    tar = tarfile.open(archive_file, "r|*")
 
     # Restoring a backup requires full fidelity, whereas the default filter
     # becomes the restrictive "data" in Python 3.14, cf.
@@ -1931,9 +1931,7 @@ class TarBackupMethod(BackupMethod):
                 compress_proc = subprocess.Popen(
                     compressor, stdin=subprocess.PIPE, stdout=archive_fd
                 )
-                tar = tarfile.open(
-                    fileobj=compress_proc.stdin, mode="w|", bufsize=1024 * 1024
-                )
+                tar = tarfile.open(fileobj=compress_proc.stdin, mode="w|")
             else:
                 tar = tarfile.open(
                     self._archive_file,
