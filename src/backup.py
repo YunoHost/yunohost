@@ -88,6 +88,13 @@ MB_ALLOWED_TO_ORGANIZE = 10
 # Extensions supported by the tar backup method, in resolution order
 ARCHIVE_EXTENSIONS = (".tar.zst", ".tar.gz", ".tar")
 
+# Value of the backup_compress_tar_archives setting -> (archive extension, compressor command)
+COMPRESSION_METHODS = {
+    "gzip": (".tar.gz", ["pigz", "-c"]),
+    "zstd": (".tar.zst", ["zstd", "-T0", "-c"]),
+    "zstd_small": (".tar.zst", ["zstd", "-T0", "-19", "-c"]),
+}
+
 if TYPE_CHECKING:
     from .utils.logging import YunohostLogger
 
@@ -1905,10 +1912,10 @@ class TarBackupMethod(BackupMethod):
 
         if isinstance(self.manager, BackupManager):
             compression = settings_get("misc.backup.backup_compress_tar_archives")
-            if compression == "zstd":
-                return os.path.join(self.repo, self.name + ".tar.zst")
-            elif compression == "gzip":
-                return os.path.join(self.repo, self.name + ".tar.gz")
+            extension = ".tar"
+            if compression in COMPRESSION_METHODS:
+                extension = COMPRESSION_METHODS[compression][0]
+            return os.path.join(self.repo, self.name + extension)
 
         f = os.path.join(self.repo, self.name + ".tar")
         for ext in ARCHIVE_EXTENSIONS:
@@ -1935,11 +1942,12 @@ class TarBackupMethod(BackupMethod):
         # When compressing, pipe the tar stream through an external compressor
         # to compress on every core, as Python's built-in implementations are
         # single-threaded
+        from .settings import settings_get
+
+        compression = settings_get("misc.backup.backup_compress_tar_archives")
         compressor = None
-        if self._archive_file.endswith(".zst"):
-            compressor = ["zstd", "-T0", "-c"]
-        elif self._archive_file.endswith(".gz") and shutil.which("pigz"):
-            compressor = ["pigz", "-c"]
+        if compression in COMPRESSION_METHODS:
+            compressor = COMPRESSION_METHODS[compression][1]
 
         compress_proc = None
         archive_fd = None

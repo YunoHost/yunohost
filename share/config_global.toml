@@ -169,6 +169,7 @@ i18n = "global_settings_setting"
         choices.none = "No compression (.tar)"
         choices.gzip = "gzip: compatible with all YunoHost versions (.tar.gz)"
         choices.zstd = "zstd: much faster to compress and restore (.tar.zst)"
+        choices.zstd_small = "zstd, smaller archives: slower backup consuming more RAM, restore as fast (.tar.zst)"
         default = "none"
 
     [misc.network]
