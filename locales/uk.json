@@ -541,7 +541,7 @@
     "global_settings_setting_smtp_relay_port": "Порт SMTP-ретрансляції",
     "global_settings_setting_smtp_relay_user": "Користувач SMTP-ретрансляції",
     "global_settings_setting_ssh_compatibility": "Сумісність SSH",
-    "global_settings_setting_ssh_compatibility_help": "Компроміс між сумісністю і безпекою для SSH-сервера. Впливає на шифри (і інші аспекти, пов'язані з безпекою).",
+    "global_settings_setting_ssh_compatibility_help": "Компроміс між сумісністю та безпекою для SSH-сервера. Впливає на шифри (та інші аспекти, пов'язані з безпекою). Див. коментарі у /usr/share/yunohost/conf/ssh/sshd_config для отримання додаткової інформації.",
     "global_settings_setting_ssh_name": "SSH",
     "global_settings_setting_ssh_password_authentication": "Парольна автентифікація",
     "global_settings_setting_ssh_password_authentication_help": "Дозволити автентифікацію паролем для SSH",
