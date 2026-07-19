@@ -207,6 +207,7 @@ for item in shlex.split(s):
     sys.stdout.write(k + "\t" + v + "\n")
 ' "$env_var"
 )
+    fi
 
     # Source the EnvironmentFiles from the app's service
     local env_files=($(systemctl show $service.service -p "EnvironmentFiles" --value))
