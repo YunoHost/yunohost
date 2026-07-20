@@ -256,7 +256,7 @@ def log_list(
 
     operations = list(reversed(sorted(operations, key=lambda o: o["name"])))
     # Reverse the order of log when in cli, more comfortable to read (avoid
-    # unecessary scrolling)
+    # unnecessary scrolling)
     is_api = Moulinette.interface.type == "api"
     if not is_api:
         operations = list(reversed(operations))
