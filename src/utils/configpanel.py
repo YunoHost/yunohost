@@ -911,7 +911,7 @@ class ConfigPanel:
                 options = [
                     option
                     for option in section.options
-                    if option.type is not OptionType.button or option.id == action_id
+                    if option.type != OptionType.button or option.id == action_id
                 ]
 
                 form = prompt_or_validate_form(
