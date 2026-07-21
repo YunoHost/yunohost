@@ -28,6 +28,7 @@ from yunohost.utils.app_utils import _is_app_repo_url, _parse_app_instance_name
 from yunohost.utils.error import YunohostError
 
 from .conftest import get_test_apps_dir
+from .test_apps import install_manifestv2_app
 
 # Get main domain
 maindomain = _get_maindomain()
@@ -35,14 +36,14 @@ maindomain = _get_maindomain()
 
 def setup_function(function):
     try:
-        app_remove("register_url_app")
+        app_remove("manifestv2_app")
     except Exception:
         pass
 
 
 def teardown_function(function):
     try:
-        app_remove("register_url_app")
+        app_remove("manifestv2_app")
     except Exception:
         pass
 
@@ -123,30 +124,18 @@ def test_urlavailable():
 
 
 def test_registerurl():
-    app_install(
-        os.path.join(get_test_apps_dir(), "register_url_app_ynh"),
-        args="domain={}&path={}".format(maindomain, "/urlregisterapp"),
-        force=True,
-    )
+    install_manifestv2_app(maindomain, "/urlregisterapp")
 
     assert not domain_url_available(maindomain, "/urlregisterapp")
 
     # Try installing at same location
     with pytest.raises(YunohostError):
-        app_install(
-            os.path.join(get_test_apps_dir(), "register_url_app_ynh"),
-            args="domain={}&path={}".format(maindomain, "/urlregisterapp"),
-            force=True,
-        )
+        install_manifestv2_app(maindomain, "/urlregisterapp")
 
 
 def test_registerurl_baddomain():
     with pytest.raises(YunohostError):
-        app_install(
-            os.path.join(get_test_apps_dir(), "register_url_app_ynh"),
-            args="domain={}&path={}".format("yolo.swag", "/urlregisterapp"),
-            force=True,
-        )
+        install_manifestv2_app("yolo.swag", "/urlregisterapp")
 
 
 def test_normalize_permission_path():
@@ -253,11 +242,7 @@ def test_normalize_permission_path_with_unknown_domain():
 
 
 def test_normalize_permission_path_conflicting_path():
-    app_install(
-        os.path.join(get_test_apps_dir(), "register_url_app_ynh"),
-        args="domain={}&path={}".format(maindomain, "/url/registerapp"),
-        force=True,
-    )
+    install_manifestv2_app(maindomain, "/url/registerapp")
 
     with pytest.raises(YunohostError):
         _validate_and_sanitize_permission_url(

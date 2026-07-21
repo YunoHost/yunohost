@@ -3,15 +3,18 @@ ssl_session_cache shared:SSL:50m;  # about 200000 sessions
 ssl_session_tickets off;
 
 {% if compatibility == "modern" %}
-# generated 2023-06-13, Mozilla Guideline v5.7, nginx 1.22.1, OpenSSL 3.0.9, modern configuration
-# https://ssl-config.mozilla.org/#server=nginx&version=1.22.1&config=modern&openssl=3.0.9&guideline=5.7
+# generated 2025-10-31, Mozilla Guideline v5.7, nginx 1.26.3, OpenSSL 3.5.1, modern config
+# https://ssl-config.mozilla.org/#server=nginx&version=1.26.3&config=modern&openssl=3.5.1&guideline=5.7
+# modern configuration
 ssl_protocols TLSv1.3;
+ssl_ecdh_curve X25519:prime256v1:secp384r1;
 ssl_prefer_server_ciphers off;
 {% else %}
 # Ciphers with intermediate compatibility
-# generated 2023-06-13, Mozilla Guideline v5.7, nginx 1.22.1, OpenSSL 3.0.9, intermediate configuration
-# https://ssl-config.mozilla.org/#server=nginx&version=1.22.1&config=intermediate&openssl=3.0.9&guideline=5.7
+# generated 2025-10-31, Mozilla Guideline v5.7, nginx 1.26.3, OpenSSL 3.5.1, intermediate config
+# https://ssl-config.mozilla.org/#server=nginx&version=1.26.3&config=intermediate&openssl=3.5.1&guideline=5.7
 ssl_protocols TLSv1.2 TLSv1.3;
+ssl_ecdh_curve X25519:prime256v1:secp384r1;
 ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305;
 ssl_prefer_server_ciphers off;
 
