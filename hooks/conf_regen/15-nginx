@@ -184,6 +184,10 @@ do_post_regen() {
         chmod 644 /etc/nginx/conf.d/*.d/*.conf
     fi
 
+    # We don't want nginx logs to be world-readable which could leak secrets from GET query args in some cases/apps...
+    find /var/log/nginx -type f | xargs -r chmod 0640
+    find /var/log/nginx -type f | xargs -r chown www-data:adm
+
     [ -z "$regen_conf_files" ] && exit 0
 
     # create NGINX conf directories for domains

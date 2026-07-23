@@ -541,7 +541,7 @@
     "global_settings_setting_smtp_relay_port": "Порт ретрансляции SMTP",
     "global_settings_setting_smtp_relay_user": "Пользователь SMTP-ретранслятора",
     "global_settings_setting_ssh_compatibility": "Совместимость SSH",
-    "global_settings_setting_ssh_compatibility_help": "Выбор между совместимостью и безопасностью SSH-сервера. Это влияет на шифрование (и другие аспекты, связанные с безопасностью). Дополнительную информацию смотрите в разделе https://infosec.mozilla.org/guidelines/openssh.",
+    "global_settings_setting_ssh_compatibility_help": "Компромисс между совместимостью и безопасностью SSH-сервера. Влияет на алгоритмы шифрования (и другие аспекты, связанные с безопасностью). Дополнительную информацию см. в комментариях к файлу /usr/share/yunohost/conf/ssh/sshd_config.",
     "global_settings_setting_ssh_name": "SSH",
     "global_settings_setting_ssh_password_authentication": "Аутентификация по паролю",
     "global_settings_setting_ssh_password_authentication_help": "Разрешить аутентификацию по паролю для SSH",
