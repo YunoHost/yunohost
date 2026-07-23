@@ -541,7 +541,7 @@
     "global_settings_setting_smtp_relay_port": "Port du relais SMTP",
     "global_settings_setting_smtp_relay_user": "Compte du relais SMTP",
     "global_settings_setting_ssh_compatibility": "Compatibilité SSH",
-    "global_settings_setting_ssh_compatibility_help": "Compromis 'compatibilité versus sécurité' pour le serveur SSH. Affecte les cryptogrammes utilisés (et d'autres aspects liés à la sécurité).",
+    "global_settings_setting_ssh_compatibility_help": "Compromis entre compatibilité et sécurité pour le serveur SSH. Cela concerne les algorithmes de chiffrement (et d'autres aspects liés à la sécurité). Consultez les commentaires dans le fichier /usr/share/yunohost/conf/ssh/sshd_config pour plus d'informations.",
     "global_settings_setting_ssh_name": "SSH",
     "global_settings_setting_ssh_password_authentication": "Authentification par mot de passe",
     "global_settings_setting_ssh_password_authentication_help": "Autoriser l'authentification par mot de passe pour SSH",
