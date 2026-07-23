@@ -144,7 +144,7 @@ ynh_local_curl() {
     curl --silent --show-error --insecure --location --header "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url" --cookie-jar $cookiefile --cookie $cookiefile
 
     if [[ $visitors_enabled == "no" ]]; then
-        ynh_permission_update --permission "main" --remove "visitors" > /dev/null
+        ynh_permission_update --permission="main" --remove="visitors" > /dev/null
     fi
 }
 
