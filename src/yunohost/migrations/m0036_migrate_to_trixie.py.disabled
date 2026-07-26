@@ -29,7 +29,7 @@ incus exec migration-to-trixie -- apt install -y python3-debian nano htop
 incus snapshot create migration-to-trixie postinstall
 ---
 incus snapshot restore migration-to-trixie postinstall
-incus file push src/migrations/0036_migrate_to_trixie.py.disabled migration-to-trixie/usr/lib/python3/dist-packages/yunohost/migrations/0036_trixie.py
+incus file push src/yunohost/migrations/0036_migrate_to_trixie.py.disabled migration-to-trixie/usr/lib/python3/dist-packages/yunohost/migrations/0036_trixie.py
 incus exec migration-to-trixie -- yunohost tools migrations list
 incus exec migration-to-trixie -- yunohost tools migrations run 0036 --accept-disclaimer
 
