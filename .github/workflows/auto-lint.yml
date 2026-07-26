@@ -55,4 +55,4 @@ jobs:
         ignore_paths:
           tests/test_helpers.v2.d
           helpers/vendor
-          src/vendor
+          src/yunohost/vendor

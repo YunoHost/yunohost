@@ -46,7 +46,7 @@ def find_expected_string_keys(project: Path) -> Generator[str]:
     )
     regex_comment = re.compile(r"# i18n: [\'\"]?(\w+)[\'\"]?")
 
-    srcdir = project / "src"
+    srcdir = project / "src" / "yunohost"
     python_files: list[Path] = [
         *srcdir.rglob("*.py"),
         *srcdir.rglob("*.py.disabled"),

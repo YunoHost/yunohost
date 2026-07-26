@@ -28,4 +28,4 @@ licenseheaders \
     -u "https://yunohost.org" \
     -t ./agplv3.tpl \
     --current-year \
-    -f ../src/*.py ../src/{utils,diagnosers,authenticators}/*.py
+    -f ../src/yunohost/*.py ../src/yunohost/{utils,diagnosers,authenticators}/*.py

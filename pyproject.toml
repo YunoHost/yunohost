@@ -106,11 +106,11 @@ filterwarnings = [
 [tool.coverage.run]
 relative_files = true
 branch = true
-source = ["src/"]
+source = ["src/yunohost/"]
 
 [tool.coverage.report]
 omit = [
-    "src/vendor/*",
+    "src/yunohost/vendor/*",
     "/usr/lib/moulinette/yunohost/*",
     "/usr/lib/python3/dist-packages/yunohost/vendor/*",
 ]
@@ -128,7 +128,7 @@ deps = ["flake8"]
 commands = [[
     "flake8", "src", "doc", "maintenance",
     "--ignore", "E402,E501,E203,W503,E741",
-    "--exclude", "src/vendor,tests"
+    "--exclude", "src/yunohost/vendor,tests"
 ]]
 
 [tool.tox.env.py313-invalidcode]
@@ -136,7 +136,7 @@ deps = ["flake8"]
 commands = [[
     "flake8", "src", "bin", "maintenance",
     "--select", "F,E722,W605",
-    "--exclude", "src/vendor,tests"
+    "--exclude", "src/yunohost/vendor,tests"
 ]]
 
 [tool.tox.env.py313-mypy]
