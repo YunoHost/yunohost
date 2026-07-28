@@ -25,9 +25,11 @@ import subprocess
 from collections.abc import Generator
 from functools import cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from moulinette import Moulinette
+
+from debian import debian_support
 
 from ..utils.error import YunohostError
 from .process import check_output
@@ -44,21 +46,41 @@ YUNOHOST_PACKAGES = [
 
 
 @cache
-def debian_version() -> str:
+def debian_version() -> Literal["bookworm", "trixie"]:
     command = 'grep "^VERSION_CODENAME=" /etc/os-release 2>/dev/null | cut -d= -f2'
-    return check_output(command)
+    return check_output(command)  # type: ignore[return-value]
 
 
 @cache
-def debian_version_id() -> str:
+def debian_version_id() -> Literal[12, 13]:
     command = 'grep "^VERSION_ID=" /etc/os-release 2>/dev/null | cut -d= -f2'
-    return check_output(command).strip('"')
+    return int(check_output(command).strip('"'))  # type: ignore[return-value]
 
 
 @cache
-def system_arch() -> str:
+def system_arch() -> Literal["amd64", "i386", "armhf", "arm64"]:
     command = "dpkg --print-architecture 2>/dev/null"
-    return check_output(command)
+    return check_output(command)  # type: ignore[return-value]
+
+
+def dpkg_list_installed_packages() -> list[str]:
+    command = r"dpkg --list | grep -P '^ii\s*' | tr ':' ' ' | awk '{print $2}'"
+    return list(set(check_output(command).strip().split("\n")))
+
+
+def dpkg_package_version(package):
+    return check_output(
+        "dpkg-query --showformat='${Version}' --show " + package
+    ).strip()
+
+
+def dpkg_compare_version(a, b) -> Literal[-1, 0, 1]:
+    """
+    Return 1 (or positive value?) if a > b
+    or -1 (or negative value?) if a < b
+    or 0 if a == b
+    """
+    return debian_support.version_compare(a, b)
 
 
 @cache
@@ -246,7 +268,13 @@ def _group_packages_per_categories(
     all_packages_and_categories = {}
     for line in out.split("\n"):
         if " " in line:
-            package, category = line.split(" ")
+            package, category = line.split(" ", 1)
+            if category == "non-free / misc":
+                category = "misc utils and libs"
+            elif " " in category:
+                logger.warning(
+                    f"Hmm? Not sure what's the deal with category '{category}' for package '{package}' ? Raw original line is: {line}"
+                )
         else:
             package, category = line, "?"
         if "yunohost" in package or package in ["moulinette", "ssowat"]:
@@ -270,9 +298,19 @@ def _group_packages_per_categories(
                     "sudo",
                     "passwd",
                     "openssh",
+                    "firmware-",
                 ]
             )
-            or package in ["netbase", "apt", "dpkg", "aptitude"]
+            or package
+            in [
+                "netbase",
+                "apt",
+                "dpkg",
+                "aptitude",
+                "init",
+                "raspberrypi-sys-mods",
+                "ssh",
+            ]
         ):
             category = "kernel, systemd, and other critical packages"
         elif category in PACKAGE_CATEGORIES_REMAP:

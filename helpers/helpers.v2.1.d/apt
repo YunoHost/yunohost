@@ -80,7 +80,9 @@ ynh_apt_install_dependencies() {
         if test -e "/usr/bin/php$YNH_DEFAULT_PHP_VERSION"; then
             update-alternatives --set php "/usr/bin/php$YNH_DEFAULT_PHP_VERSION"
         fi
-    elif grep --quiet 'php' <<< "$dependencies"; then
+    # Otherwise force php_version back to the default version ...
+    # ... except we don't want to do this when appending the "extra" dependencies if they don't contain a php version ...
+    elif grep --quiet 'php' <<< "$dependencies" && [[ $YNH_APT_INSTALL_DEPENDENCIES_REPLACE == "true" ]]; then
         ynh_app_setting_set --key=php_version --value="$YNH_DEFAULT_PHP_VERSION"
     fi
 
@@ -125,7 +127,7 @@ Description: Fake package for ${app} (YunoHost app) dependencies
  This meta-package is only responsible of installing its dependencies.
 EOF
 
-    _ynh_apt update
+    _ynh_apt update --error-on=any
 
     _ynh_wait_dpkg_free
 
@@ -267,7 +269,7 @@ EOF
     # ynh_apt_install_dependencies will also call an ynh_apt update on its own
     # and it's good to limit unecessary requests ...  Here we mainly want to
     # validate that the url+key is correct before going further
-    _ynh_apt update -o Dir::Etc::sourcelist="/etc/apt/sources.list.d/$app.list"
+    _ynh_apt update --error-on=any -o Dir::Etc::sourcelist="/etc/apt/sources.list.d/$app.list"
 
     # Force the cache to be reupdated on the next "apt update" (in
     # ynh_apt_install_dependencies) because the previous command with
@@ -294,7 +296,7 @@ EOF
     ynh_safe_rm "/etc/apt/sources.list.d/$app.list"
     ynh_safe_rm "/etc/apt/preferences.d/$app"
     ynh_safe_rm "/etc/apt/trusted.gpg.d/$app.gpg"
-    _ynh_apt update
+    _ynh_apt update --error-on=any
 }
 
 # #####################

@@ -185,7 +185,7 @@ class AppResource:
             "__APP__": self.app,
             "__YNH_ARCH__": system_arch(),
             "__YNH_DEBIAN_VERSION__": debian_version(),
-            "__YNH_DEBIAN_VERSION_ID__": debian_version_id(),
+            "__YNH_DEBIAN_VERSION_ID__": str(debian_version_id()),
             "__YNH_APP_UPSTREAM_VERSION__": app_upstream_version,
         }
 
@@ -298,7 +298,9 @@ ynh_abort_if_errors
                 env=env_,
                 operation_logger=operation_logger,
                 error_message_if_script_failed="An error occured inside the script snippet",
-                error_message_if_failed=lambda e: f"{action} failed for {self.type} : {e}",
+                error_message_if_failed=lambda e: (
+                    f"{action} failed for {self.type} : {e}"
+                ),
             )
         finally:
             if call_failed:
@@ -1397,7 +1399,7 @@ class PortsResource(AppResource):
         # This second command is mean to cover (most) case where an app is using a port yet ain't currently using it for some reason (typically service ain't up)
         used_by_app = (
             os.system(
-                f"grep --quiet --extended-regexp \"port: '?{port}'?\" /etc/yunohost/apps/*/settings.yml"
+                f"grep --quiet --extended-regexp \"port: '?{port}'?\" --exclude=/etc/yunohost/apps/{self.app}/settings.yml /etc/yunohost/apps/*/settings.yml"
             )
             == 0
         )

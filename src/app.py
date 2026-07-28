@@ -1233,12 +1233,8 @@ def app_upgrade(
                 app_, current_manifest, new_manifest, workdir, no_safety_backup
             )
         except YunohostError as e:
-            # If upgrading a single app from the webadmin : re-raise the Exception
-            if (
-                Moulinette.interface.type == "api"
-                and raw_requested_targets
-                and len(requested_targets) == 1
-            ):
+            # If upgrading a single app : re-raise the Exception
+            if raw_requested_targets and len(requested_targets) == 1:
                 raise e
 
             failed_to_upgrade_apps[app_] = str(e)
@@ -1886,6 +1882,7 @@ def app_shell(app: str) -> None:
     env = _make_environment_for_app_script(app)
     env["PATH"] = os.environ["PATH"]
     env["YNH_APP_BASEDIR"] = os.path.join(APPS_SETTING_PATH, app)
+    env["TERM"] = os.environ.get("TERM", "xterm-256color")
     subprocess.run(
         [
             "/bin/bash",
@@ -1894,6 +1891,56 @@ def app_shell(app: str) -> None:
         ],
         env=env,
     )
+
+
+def app_db(app):
+    """
+    Open an interactive DB pompt for the app
+
+    Keyword argument:
+        app -- App ID
+
+    """
+    import subprocess
+    import tempfile
+
+    _assert_is_installed(app)
+    local_manifest = _get_manifest_of_app(app)
+    settings = _get_app_settings(app)
+
+    db_in_manifest = local_manifest["resources"].get("database", None)
+    if not db_in_manifest:
+        raise YunohostValidationError("app_db_prompt_no_app_database")
+
+    type = db_in_manifest.get("type", None)
+    database = settings["db_name"]
+    user = settings["db_user"]
+    password = settings["db_pwd"]
+
+    if type == "postgresql":
+        password_file_content = f"localhost:5432:{database}:{user}:{password}"
+    elif type == "mysql":
+        password_file_content = f"""
+[client]
+user={user}
+password={password}
+"""
+    else:
+        raise YunohostValidationError("app_db_prompt_type_not_supported", type=type)
+
+    # NOTE: Postgresql (and probably mariadb too) requires the password file to
+    # be a regular one. We can't work with pipes.
+    # Let's create a temp file that is destroyed when quitting
+    with tempfile.NamedTemporaryFile() as fp:
+        fp.write(password_file_content.encode())
+        fp.flush()
+
+        env_by_type = {"mysql": {}, "postgresql": {"PGPASSFILE": fp.name}}
+        command = {
+            "mysql": ["mysql", f"--defaults-file={fp.name}", database],
+            "postgresql": ["psql", f"--user={user}"],
+        }
+        subprocess.run(command[type], env=env_by_type[type])
 
 
 def app_register_url(app: str, domain: str, path: str) -> None:

@@ -232,6 +232,25 @@ def tools_postinstall(
             raw_msg=True,
         )
 
+    internet_ok = False
+    if os.system("ping -c1 -w3 yunohost.org >/dev/null") == 0:
+        internet_ok = True
+    elif os.system("ping -c1 -w3 8.8.8.8 >/dev/null") == 0:
+        if os.system("timeout 3 dig +short yunohost.org") == 0:
+            # yunohost.org does resolves, and 8.8.8.8 pings ... most likely yunohost.org is down?
+            logger.warning(
+                "This machine can ping the Internet and resolve DNS, but not yunohost.org? Maybe there's currently an outage on yunohost.org infrastructure which may or may not impact the postinstall process..."
+            )
+        else:
+            # yunohost.org doesnt ping, but 8.8.8.8 pings ... most likely DNS resolution is broken?
+            logger.warning(
+                "It looks like DNS resolution is broken on your server, which may impact the postinstall process..."
+            )
+    else:
+        logger.warning(
+            "It looks like internet connectivity is not available, which may or may not be what you're expecting ..."
+        )
+
     operation_logger.start()
     logger.info(m18n.n("yunohost_installing"))
 
@@ -261,10 +280,15 @@ def tools_postinstall(
     # Try to fetch the apps catalog ...
     # we don't fail miserably if this fails,
     # because that could be for example an offline installation...
-    try:
-        _update_apps_catalog()
-    except Exception as e:
-        logger.warning(str(e))
+    if internet_ok is True:
+        try:
+            _update_apps_catalog()
+        except Exception as e:
+            logger.warning(str(e))
+    else:
+        logger.warning(
+            "Skipping catalog initialization due to lack of Internet connectivity?"
+        )
 
     # Init migrations (skip them, no need to run them on a fresh system)
     _skip_all_migrations()
@@ -358,9 +382,7 @@ def tools_update(
     if target in ["system", "all"]:
         # Update APT cache
         # LC_ALL=C is here to make sure the results are in english
-        command = (
-            "LC_ALL=C apt-get update -o Acquire::Retries=3 --allow-releaseinfo-change"
-        )
+        command = "LC_ALL=C apt-get update --error-on=any -o Acquire::Retries=3 --allow-releaseinfo-change --error-on=any"
 
         # Filter boring message about "apt not having a stable CLI interface"
         # Also keep track of whether or not we encountered a warning...
@@ -1024,20 +1046,23 @@ def _tools_migrations_run_after_system_restore(backup_version: str) -> None:
     all_migrations = _get_migrations_list()
 
     current_version = version.parse(ynh_packages_version()["yunohost"]["version"])
-    backup_version = version.parse(backup_version)
+    backup_version_v = version.parse(backup_version)
 
-    if backup_version == current_version:
+    if backup_version_v == current_version:
         return
 
     for migration in all_migrations:
+        migration_version = getattr(migration, "introduced_in_version", None)
+        migration_method = getattr(migration, "run_after_system_restore", None)
+
         if (
-            hasattr(migration, "introduced_in_version")
-            and version.parse(migration.introduced_in_version) > backup_version
-            and hasattr(migration, "run_after_system_restore")
+            migration_version is not None
+            and version.parse(migration_version) > backup_version_v
+            and migration_method is not None
         ):
             try:
                 logger.info(m18n.n("migrations_running_forward", id=migration.id))
-                migration.run_after_system_restore()
+                migration_method()
             except Exception as e:
                 msg = m18n.n(
                     "migrations_migration_has_failed", exception=e, id=migration.id
@@ -1058,14 +1083,17 @@ def _tools_migrations_run_before_app_restore(
         return
 
     for migration in all_migrations:
+        migration_version = getattr(migration, "introduced_in_version", None)
+        migration_method = getattr(migration, "run_before_app_restore", None)
+
         if (
-            hasattr(migration, "introduced_in_version")
-            and version.parse(migration.introduced_in_version) > backup_version
-            and hasattr(migration, "run_before_app_restore")
+            migration_version is not None
+            and version.parse(migration_version) > backup_version
+            and migration_method is not None
         ):
             try:
                 logger.info(m18n.n("migrations_running_forward", id=migration.id))
-                migration.run_before_app_restore(app_id, app_backup_in_archive)
+                migration_method(app_id, app_backup_in_archive)
             except Exception as e:
                 msg = m18n.n(
                     "migrations_migration_has_failed", exception=e, id=migration.id

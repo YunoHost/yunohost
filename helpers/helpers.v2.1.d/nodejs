@@ -48,6 +48,7 @@ _ynh_load_nodejs_in_path_and_other_tweaks() {
 
     # Prevent yet another Node and Corepack madness, with Corepack wanting the user to confirm download of Yarn
     export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+    export NPM_CONFIG_UPDATE_NOTIFIER=false
 }
 
 # Auto-load Nodejs path tweaks if this app uses the nodejs resource in the manifest

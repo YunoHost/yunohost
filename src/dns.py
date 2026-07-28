@@ -117,7 +117,7 @@ class DNSRecord(TypedDict):
 
 
 def _build_dns_conf(
-    base_domain: str, include_empty_AAAA_if_no_ipv6=False
+    base_domain: str, include_empty_AAAA_if_no_ipv6=False, dkim_split=False
 ) -> dict[Literal["basic", "mail", "extra"] | str, list[DNSRecord]]:
     """
     Internal function that will returns a data structure containing the needed
@@ -214,6 +214,8 @@ def _build_dns_conf(
             dkim_host, dkim_publickey = _get_DKIM(domain)
 
             if dkim_host:
+                if not dkim_split:
+                    dkim_publickey = dkim_publickey.replace('" "', "")
                 mail += [
                     (f"{dkim_host}{suffix}", ttl, "TXT", dkim_publickey),
                     (f"_dmarc{suffix}", ttl, "TXT", '"v=DMARC1; p=none"'),
@@ -321,7 +323,7 @@ def _get_DKIM(domain):
     with open(DKIM_file) as f:
         dkim_content = f.read()
 
-    # Gotta manage two formats :
+    # Gotta manage 3 formats :
     #
     # Legacy
     # -----
@@ -334,54 +336,30 @@ def _get_DKIM(domain):
     #
     # mail._domainkey IN  TXT ( "v=DKIM1; h=sha256; k=rsa; "
     #           "p=<theDKIMpublicKey>" )
+    #
+    # New with 2048 key size
+    # ------
+    #
+    # mail._domainkey IN  TXT ( "v=DKIM1; h=sha256; k=rsa; "
+    #           "p=<theDKIMpublicKey split first part>"
+    #           "<dkim public key split second part>" )
 
-    is_legacy_format = " h=sha256; " not in dkim_content
-
-    # Legacy DKIM format
-    if is_legacy_format:
-        dkim = re.match(
-            (
-                r"^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+"
-                r'[^"]*"v=(?P<v>[^";]+);'
-                r'[\s"]*k=(?P<k>[^";]+);'
-                r'[\s"]*p=(?P<p>[^";]+)'
-            ),
-            dkim_content,
-            re.M | re.S,
-        )
-    else:
-        dkim = re.match(
-            (
-                r"^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+"
-                r'[^"]*"v=(?P<v>[^";]+);'
-                r'[\s"]*h=(?P<h>[^";]+);'
-                r'[\s"]*k=(?P<k>[^";]+);'
-                r'[\s"]*p=(?P<p>[^";]+)'
-            ),
-            dkim_content,
-            re.M | re.S,
-        )
+    dkim = re.match(
+        (
+            r"^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+"
+            r"[^\(]*\((?P<c>[^\)]+)\)"
+        ),
+        dkim_content,
+        re.M | re.S,
+    )
 
     if not dkim:
         return (None, None)
 
-    if is_legacy_format:
-        return (
-            dkim.group("host"),
-            '"v={v}; k={k}; p={p}"'.format(
-                v=dkim.group("v"), k=dkim.group("k"), p=dkim.group("p")
-            ),
-        )
-    else:
-        return (
-            dkim.group("host"),
-            '"v={v}; h={h}; k={k}; p={p}"'.format(
-                v=dkim.group("v"),
-                h=dkim.group("h"),
-                k=dkim.group("k"),
-                p=dkim.group("p"),
-            ),
-        )
+    return (
+        dkim.group("host"),
+        re.sub(r'"[\s\n]+"', '" "', dkim.group("c").strip(), re.M | re.S),
+    )
 
 
 def _get_dns_zone_for_domain(domain):
@@ -723,34 +701,24 @@ def domain_dns_push(
         registrar: registrar_credentials,
     }
 
-    # Ugly hack to be able to fetch all record types at once:
-    # we initialize a LexiconClient with a dummy type "all"
-    # (which lexicon doesnt actually understands)
-    # then trigger ourselves the authentication + list_records
-    # instead of calling .execute()
-    query = (
-        LexiconConfigResolver()
-        .with_dict(dict_object=base_config)
-        .with_dict(dict_object={"action": "list", "type": "all"})
-    )
-    client = LexiconClient(query)
-    try:
-        client.provider.authenticate()
-    except Exception as e:
-        raise YunohostValidationError(
-            "domain_dns_push_failed_to_authenticate", domain=domain, error=str(e)
-        )
+    # Get only records for relevant types: A, AAAA, MX, TXT, CNAME, SRV
+    relevant_types = ["A", "AAAA", "MX", "TXT", "CNAME", "SRV", "CAA"]
+    current_records = []
 
-    try:
-        current_records = client.provider.list_records()
-    except Exception as e:
-        raise YunohostError("domain_dns_push_failed_to_list", error=str(e))
+    for rtype in relevant_types:
+        query = (
+            LexiconConfigResolver()
+            .with_dict(dict_object=base_config)
+            .with_dict(dict_object={"action": "list", "type": rtype})
+        )
+        client = LexiconClient(query)
+
+        try:
+            current_records.extend(client.execute())
+        except Exception as e:
+            raise YunohostError("domain_dns_push_failed_to_list", error=str(e))
 
     managed_dns_records_hashes = _get_managed_dns_records_hashes(domain)
-
-    # Keep only records for relevant types: A, AAAA, MX, TXT, CNAME, SRV
-    relevant_types = ["A", "AAAA", "MX", "TXT", "CNAME", "SRV", "CAA"]
-    current_records = [r for r in current_records if r["type"] in relevant_types]
 
     # Ignore records which are for a higher-level domain
     # i.e. we don't care about the records for domain.tld when pushing yuno.domain.tld

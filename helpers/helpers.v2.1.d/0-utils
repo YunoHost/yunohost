@@ -64,7 +64,7 @@ ynh_abort_if_errors() {
 }
 
 # When running an app script, auto-enable ynh_abort_if_errors except for remove script
-if [[ "${YNH_CONTEXT:-}" != "regenconf" ]] && [[ "${YNH_APP_ACTION}" != "remove" ]]; then
+if [[ "${YNH_CONTEXT:-}" != "regenconf" ]] && [[ "${YNH_APP_ACTION:-}" != "remove" ]]; then
     ynh_abort_if_errors
 fi
 
@@ -74,7 +74,11 @@ fi
 #
 # usage: ynh_exec_as_app COMMAND [ARG ...]
 ynh_exec_as_app() {
-    sudo -u "$app" env PATH="$PATH" COREPACK_ENABLE_DOWNLOAD_PROMPT="0" "$@"
+    sudo -u "$app" env \
+        PATH="$PATH" \
+        COREPACK_ENABLE_DOWNLOAD_PROMPT="0" \
+        NPM_CONFIG_UPDATE_NOTIFIER="false" \
+        "$@"
 }
 
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
@@ -91,15 +95,6 @@ ynh_exec_as_app() {
 #
 # `$domain` and `$path` should be defined externally (and correspond to the domain.tld and the /path (of the app?))
 ynh_local_curl() {
-    # Define url of page to curl
-    local local_page=$(ynh_normalize_url_path "$1")
-    local full_path=$path$local_page
-
-    if [ "${path}" == "/" ]; then
-        full_path=$local_page
-    fi
-
-    local full_page_url=https://localhost$full_path
 
     # Concatenate all other arguments with '&' to prepare POST data
     local POST_data=""
@@ -109,10 +104,28 @@ ynh_local_curl() {
     done
     if [ -n "$POST_data" ]; then
         # Add --data arg and remove the last character, which is an unecessary '&'
-        POST_data_arg=(--data "${POST_data::-1}")
+        ynh_local_curl_raw "$1" --data "${POST_data::-1}"
     else
-        POST_data_arg=()
+        ynh_local_curl_raw "$1"
     fi
+}
+
+# More low-level curl wrapper, meant for more elaborate use case where people
+# want to pass arbitrary headers and other curl options, not just POST data
+#
+# [internal]
+#
+# example: ynh_local_curl_raw "/install.php?installButton" --data "foo=$var1&bar=$var2"
+ynh_local_curl_raw() {
+    # Define url of page to curl
+    local local_page=$(ynh_normalize_url_path "$1")
+    local full_path=$path$local_page
+
+    if [ "${path}" == "/" ]; then
+        full_path=$local_page
+    fi
+
+    local full_page_url=https://localhost$full_path
 
     # Wait untils nginx has fully reloaded (avoid curl fail with http2)
     sleep 2
@@ -125,14 +138,16 @@ ynh_local_curl() {
     # Temporarily enable visitors if needed...
     local visitors_enabled=$(ynh_permission_has_user --permission="main" --user="visitors" && echo yes || echo no)
     if [[ $visitors_enabled == "no" ]]; then
-        ynh_permission_update --permission="main" --add="visitors"
+        ynh_permission_update --permission="main" --add="visitors" > /dev/null # Skip print to standard output, the caller may process the output and then expect only the HTTP response.
+                                                                               # See https://github.com/YunoHost-Apps/piwigo_ynh/issues/168#issuecomment-3694238343
     fi
 
     # Curl the URL
-    curl --silent --show-error --insecure --location --header "Host: $domain" --resolve "$domain:443:127.0.0.1" "${POST_data_arg[@]}" "$full_page_url" --cookie-jar "$cookiefile" --cookie "$cookiefile"
+    shift
+    curl --silent --show-error --insecure --location --header "Host: $domain" --resolve "$domain:443:127.0.0.1" "$full_page_url" --cookie-jar "$cookiefile" --cookie "$cookiefile" "$@"
 
     if [[ $visitors_enabled == "no" ]]; then
-        ynh_permission_update --permission="main" --remove="visitors"
+        ynh_permission_update --permission="main" --remove="visitors" > /dev/null
     fi
 }
 
@@ -272,7 +287,7 @@ _ynh_apply_default_permissions() {
             chmod -R u=rwX,g=rX,o=--- "$target"
             chown -R "$app:$group" "$target"
             return
-        elif [ "$target" == "${data_dir:-}" ]; then
+        elif [ "$target" == "${data_dir:-}" ] || [ "$target" == "/var/log/$app" ]; then
             # Read the group from the data manifest resource
             local group="$(ynh_read_manifest 'resources.data_dir.group' | sed 's/null//g' | sed "s/__APP__/$app/g" | cut -f1 -d:)"
             chmod 750 "$target"
@@ -434,7 +449,7 @@ ynh_spawn_app_shell() {
 
     # Load the app's service name, or default to $app
     service=${service:-$app}
-    if systemctl list-units | grep -q "$service.service"; then
+    if systemctl list-units -a | grep -q "$service.service"; then
         # Load the Environment variables from the app's service
         local env_var=$(systemctl show "$service.service" -p "Environment" --value)
         [ -n "${env_var:-}" ] && export "${env_var?}"
@@ -544,6 +559,9 @@ ynh_add_swap() {
     fi
 }
 
+# Delete swap
+#
+# usage: ynh_del_swap
 ynh_del_swap() {
     # If there a swap at this place
     if [ -e "/swap_$app" ]; then
