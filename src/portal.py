@@ -43,6 +43,9 @@ logger = logging.getLogger("portal")
 PORTAL_SETTINGS_DIR = "/etc/yunohost/portal"
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
+ANTIBOT_CHALLENGE_VALIDITY = 3600
+ANTIBOT_CHALLENGE_MIN_DURATION = 10
+
 USER_PENDING_INVITATIONS = Path("/etc/yunohost/.user_invitations/")
 YUNOHOST_SOCKET_API = "/run/yunohost-socket-api.sock"
 
@@ -485,9 +488,9 @@ def _generate_antibot_challenge() -> tuple[str, str]:
 
     answer = CALCULATIONS[operator](x, y)
 
-    validity_limit = int(time.time() + 3600)
+    generated_time = int(time.time())
     calculation = f"{x} {operator} {y}"
-    CHALLENGES[token] = (validity_limit, answer)
+    CHALLENGES[token] = (generated_time, answer)
 
     _cleanup_expired_antibot_challenges()
 
@@ -505,7 +508,7 @@ def _cleanup_expired_antibot_challenges() -> None:
 
     tokens_to_get_rid_of = []
     for token, infos in CHALLENGES.items():
-        if time.time() > infos[0]:
+        if time.time() > infos[0] + ANTIBOT_CHALLENGE_VALIDITY:
             tokens_to_get_rid_of.append(token)
     for token in tokens_to_get_rid_of:
         del CHALLENGES[token]
@@ -515,12 +518,15 @@ def _verify_antibot_challenge(token: str, answer: str) -> None:
 
     _cleanup_expired_antibot_challenges()
 
-    _, expected_answer = CHALLENGES.pop(token, (None, None))
+    generated_time, expected_answer = CHALLENGES.pop(token, (0, None))
     if expected_answer is None:
         raise YunohostValidationError("antibot_challenge_doesnt_exist_or_expired")
 
     if not isinstance(answer, str) or not answer.strip().isdigit() or int(answer.strip()) != expected_answer:
         raise YunohostValidationError("antibot_challenge_wrong_answer")
+
+    if int(time.time()) < generated_time + ANTIBOT_CHALLENGE_MIN_DURATION:
+        raise YunohostValidationError("antibot_challenge_too_quick")
 
 
 def _assert_registration_enabled_for_domain(domain: str) -> None:
