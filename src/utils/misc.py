@@ -19,6 +19,7 @@
 import string
 import secrets
 
+
 def random_ascii(length: int = 40) -> str:
     """Return a random ascii a-zA-Z0-9 string"""
     return ''.join(secrets.choice(string.ascii_letters + string.digits)
