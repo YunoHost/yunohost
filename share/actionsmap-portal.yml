@@ -161,6 +161,10 @@ portal:
                     help: The anti-bot challenge answer
                     extra:
                         required: True
+                --proof-of-work:
+                    help: The anti-bot proof of work
+                    extra:
+                        required: True
 
         ### portal_registration_confirm()
         registration_confirm:
