@@ -11,6 +11,7 @@
     "antibot_challenge_doesnt_exist_or_expired": "This 'prove you are human' challenge does not exist or has expired. Please try again.",
     "antibot_challenge_wrong_answer": "The 'prove you are human' challenge did not receive the expected answer. Please try again.",
     "antibot_challenge_too_quick": "The 'prove you are human' challenge fails cause you answered too quickly to the form. Please try again.",
+    "antibot_challenge_no_proof_of_work": "The 'prove you are human' challenge fails for some reasons. Please try again or contact an administrator.",
     "app_action_broke_system": "This action seems to have broken these important services: {services}",
     "app_action_cannot_be_ran_because_required_services_down": "These required services should be running to run this action: {services}. Try restarting them to continue (and possibly investigate why they are down).",
     "app_action_failed": "Failed to run action {action} for app {app}",
