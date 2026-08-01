@@ -463,7 +463,7 @@ def portal_invitation_consume(token, username, fullname, password, external_emai
 
 # FIXME : this is probably not a proper global state shared between all the gevent/bottle threads
 # Though for now it looks like we have a single thread anyway so it may be OK ?
-CHALLENGES: dict[str, tuple[int, int, list[str]]] = dict()
+CHALLENGES: dict[str, tuple[int, int, str]] = dict()
 
 
 def _generate_antibot_challenge() -> tuple[str, str, str]:
