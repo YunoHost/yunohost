@@ -130,7 +130,7 @@ def main():
                 {"name": category, "description": category_params["category_help"]}
             )
 
-            for action, action_params in category_params["actions"].items():
+            for action, action_params in category_params.get("actions", {}).items():
                 if "action_help" not in action_params:
                     action_params["action_help"] = ""
                 if "api" not in action_params:
@@ -200,7 +200,11 @@ def main():
                                 allowable_values = arg_params["choices"]
                             _type = "string"
                             if "type" in arg_params:
-                                types = {"open": "file", "int": "int"}
+                                types = {
+                                    "open": "file",
+                                    "int": "int",
+                                    "argparse.FileType('rb')": "binary file",
+                                }
                                 _type = types[arg_params["type"]]
                             if (
                                 "action" in arg_params
