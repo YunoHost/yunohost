@@ -21,7 +21,7 @@
     "app_change_url_require_full_domain": "{app} kann nicht auf diese neue URL verschoben werden, weil sie eine vollständige eigene Domäne benötigt (z.B. mit Pfad = /)",
     "app_change_url_script_failed": "Es ist ein Fehler im URL-Änderungs-Script aufgetreten",
     "app_change_url_success": "{app} URL ist nun {domain}{path}",
-    "app_config__core_name": "Einrichtung und Betrieb",
+    "app_config__core_name": "Einrichtung und Berechtigungen",
     "app_config_permission_allowed": "Zugriffsberechtigte Gruppen/Konten",
     "app_config_permission_allowed_warn_protected": "Hinweis: Diese Berechtigung ist „geschützt“, so dass die Gruppe „Besucher“ nicht zu den autorisierten Gruppen hinzugefügt oder entfernt werden kann.",
     "app_config_permission_description": "Beschreibung",
@@ -841,5 +841,6 @@
     "pydantic_value_error_url_scheme": "Ungültiges oder fehlendes URL-Schema",
     "pydantic_value_error_url_port": "Ungültiger URL-Port; der Port darf den Wert 65535 nicht überschreiten",
     "pydantic_value_error_url_host": "Ungültiger URL-Host",
-    "pydantic_value_error_url_extra": "Ungültige URL, zusätzliche Zeichen nach der gültigen URL gefunden: '{extra}'"
+    "pydantic_value_error_url_extra": "Ungültige URL, zusätzliche Zeichen nach der gültigen URL gefunden: '{extra}'",
+    "automatic_task": "Automatische Aufgabe"
 }
