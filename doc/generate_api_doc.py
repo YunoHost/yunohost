@@ -203,7 +203,7 @@ def main():
                                 types = {
                                     "open": "file",
                                     "int": "int",
-                                    "argparse.FileType('rb')": "binary file"
+                                    "argparse.FileType('rb')": "binary file",
                                 }
                                 _type = types[arg_params["type"]]
                             if (
