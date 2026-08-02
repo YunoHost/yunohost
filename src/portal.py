@@ -377,20 +377,14 @@ def portal_invitation_get(token):
     domain = request.get_header("host")
     assert domain and "/" not in domain
 
-    if not (isinstance(token, str) and token.isalnum() and len(token) == 64):
-        raise YunohostValidationError("This invitation token is invalid. Invitation tokens are expected to be made of exactly 64 alphanumeric characters.", raw_msg=True)
-
-    invite_file = USER_PENDING_INVITATIONS / f"{token}.json"
-    # See this quick study https://github.com/YunoHost/yunohost/pull/2309/changes#r3436493337
-    # on how .exists() can be considered safe against timing attacks
-    if not invite_file.exists():
-        raise YunohostValidationError("user_invitation_expired_or_doesnt_exist")
+    _assert_token_is_valid(token)
 
     # Assert the permissions are right, which otherwise would be an indication that it can't be trusted
     if not (USER_PENDING_INVITATIONS.owner(), USER_PENDING_INVITATIONS.group(), filemode(USER_PENDING_INVITATIONS.stat().st_mode)) == ("root", "ynh-portal", "drwx--x---"):
         raise YunohostError(f"Uhoh, permissions on folder {USER_PENDING_INVITATIONS} are not right?", raw_msg=True)
 
     # Assert the permissions are right, which otherwise would be an indication that it can't be trusted
+    invite_file = USER_PENDING_INVITATIONS / f"{token}.json"
     if not (invite_file.owner(), invite_file.group(), filemode(invite_file.stat().st_mode)) == ("root", "ynh-portal", "-r--r-----"):
         raise YunohostError(f"Uhoh, permissions on file {invite_file} are not right?", raw_msg=True)
 
@@ -417,6 +411,18 @@ def portal_invitation_get(token):
         "tos": tos,
         "custom_notes": custom_notes
     }
+
+
+def _assert_token_is_valid(token: str) -> None:
+
+    if not (isinstance(token, str) and token.isalnum() and len(token) == 64):
+        raise YunohostValidationError("user_invitation_token_is_invalid")
+
+    invite_file = USER_PENDING_INVITATIONS / f"{token}.json"
+    # See this quick study https://github.com/YunoHost/yunohost/pull/2309/changes#r3436493337
+    # on how .exists() can be considered safe against timing attacks
+    if not invite_file.exists():
+        raise YunohostValidationError("user_invitation_expired_or_doesnt_exist")
 
 
 def _call_socket_api(action: str, args: dict[str, Any]) -> None:
@@ -450,6 +456,9 @@ def _call_socket_api(action: str, args: dict[str, Any]) -> None:
 
 
 def portal_invitation_consume(token, username, fullname, password, external_email=None, accept_tos=False) -> None:
+
+    # Avoid to flood socket API and block webadmin (with invalid token)
+    _assert_token_is_valid(token)
 
     _call_socket_api("user_invitation_consume", {
         "invitation_token": token,

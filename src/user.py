@@ -251,7 +251,7 @@ def user_invitation_consume(invitation_token: str, username: str, fullname: str,
     from .utils.email import _send_email
 
     if not isinstance(invitation_token, str) or not invitation_token.isalnum() or len(invitation_token) != 64:
-        raise YunohostValidationError("Invalid invitation token format", raw_msg=True)
+        raise YunohostValidationError("user_invitation_token_is_invalid")
 
     invite_file = USER_PENDING_INVITATIONS / f"{invitation_token}.json"
     if not invite_file.exists():

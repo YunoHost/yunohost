@@ -942,6 +942,7 @@
     "user_invitation_expired_or_doesnt_exist": "This invitation doesn't exist, has expired, or has already been used.",
     "user_invitation_mail_subject_template": "Invitation to create an account on {domain}",
     "user_invitation_mail_template": "Hi!\n\nYou’ve been invited to create an account on {domain} by the administrators.\n\nYou can complete the registration by following the link below:\n\n<{invitation_link}>\n\nThis invitation will expire in {validity_human} for security reasons.\n\n-- The {domain} server administrators\n\n---\n\nN.B.: This is an automated message. Replies to this email address are not monitored.",
+    "user_invitation_token_is_invalid": "This invitation link is invalid. It may have been copied or forwarded incorrectly. The token at the end of the link must consist of exactly 64 alphanumeric characters.",
     "user_registration_confirm_email_mail_body": "Hi,\n\nSomeone, hopefully you, requested an account on {domain} using this email address.\n\nTo confirm the registration and activate your account, please click the link below:\n\n<{confirm_link}>\n\nIf you did not request this account, you can safely ignore this email. No account will be created unless the email address is confirmed.\n\nThis link expires in 48 hours.\n\nThanks!\n\n---\n\nN.B.: This is an automated message. Replies to this email address are not monitored.",
     "user_registration_confirm_email_mail_subject": "Confirm your account registration",
     "user_registration_creating_account": "Creating account for {username}",
