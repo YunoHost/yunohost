@@ -30,7 +30,48 @@ import yaml
 
 
 def main():
-    with open("../share/actionsmap.yml") as f:
+    with open("../debian/changelog") as f:
+        top_changelog = f.readline()
+    api_version = top_changelog[top_changelog.find("(") + 1 : top_changelog.find(")")]
+
+    yunohost_json = generate(
+        title="YunoHost API",
+        description="This is the YunoHost API used on all YunoHost instances. This API is essentially used by YunoHost Webadmin.",
+        api_path="/yunohost/api",
+        actionmap_path="../share/actionsmap.yml",
+        api_version=api_version,
+        additional_paths={
+            "/installed": {
+                "get": {
+                    "tags": ["public"],
+                    "summary": "Test if the API is working",
+                    "parameters": [],
+                    "security": [],
+                    "responses": {
+                        "200": {
+                            "description": "Successfully working",
+                        }
+                    },
+                }
+            },
+        }
+    )
+    yunohost_portal_json = generate(
+        title="YunoHost Portal API",
+        description="This is the YunoHost Portal API used on all YunoHost instances. This API is essentially used by YunoHost Portal.",
+        api_path="/yunohost-portal/api",
+        actionmap_path="../share/actionsmap-portal.yml",
+        api_version=api_version,
+        additional_paths={}
+    )
+    openapi_js = f"var yunohostApi = {yunohost_json};"
+    openapi_js += f"\nvar yunohostPortalApi = {yunohost_portal_json};"
+    with open(os.getcwd() + "/openapi.js", "w") as f:
+        f.write(openapi_js)
+
+
+def generate(title, description, api_path, actionmap_path, api_version, additional_paths):
+    with open(actionmap_path) as f:
         action_map = yaml.safe_load(f)
 
     # try:
@@ -38,10 +79,6 @@ def main():
     #        domain = f.readline().rstrip()
     # except IOError:
     #    domain = requests.get("http://ip.yunohost.org").text
-
-    with open("../debian/changelog") as f:
-        top_changelog = f.readline()
-    api_version = top_changelog[top_changelog.find("(") + 1 : top_changelog.find(")")]
 
     csrf = {
         "name": "X-Requested-With",
@@ -53,8 +90,8 @@ def main():
     resource_list = {
         "openapi": "3.0.3",
         "info": {
-            "title": "YunoHost API",
-            "description": "This is the YunoHost API used on all YunoHost instances. This API is essentially used by YunoHost Webadmin.",
+            "title": title,
+            "description": description,
             "version": api_version,
         },
         "servers": [
@@ -101,21 +138,9 @@ def main():
                     },
                 }
             },
-            "/installed": {
-                "get": {
-                    "tags": ["public"],
-                    "summary": "Test if the API is working",
-                    "parameters": [],
-                    "security": [],
-                    "responses": {
-                        "200": {
-                            "description": "Successfully working",
-                        }
-                    },
-                }
-            },
         },
     }
+    resource_list['paths'].update(additional_paths)
 
     def convert_categories(categories, parent_category=""):
         for category, category_params in categories.items():
@@ -278,14 +303,7 @@ def main():
     del action_map["_global"]
     convert_categories(action_map)
 
-    openapi_json = json.dumps(resource_list)
-    # Save the OpenAPI json
-    with open(os.getcwd() + "/openapi.json", "w") as f:
-        f.write(openapi_json)
-
-    openapi_js = f"var openapiJSON = {openapi_json}"
-    with open(os.getcwd() + "/openapi.js", "w") as f:
-        f.write(openapi_js)
+    return json.dumps(resource_list)
 
 
 if __name__ == "__main__":
