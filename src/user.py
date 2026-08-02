@@ -60,10 +60,12 @@ if TYPE_CHECKING:
 else:
     logger = getLogger("yunohost.user")
 
+
 def separate_by_comma(item: str, optional: bool = True) -> str:
     if optional:
         return fr"^({item}(,{item})*)?$"
     return fr"^({item}(,{item})*)$"
+
 
 DOMAIN_REGEX = r"([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})"
 FIELDS_FOR_IMPORT = {
