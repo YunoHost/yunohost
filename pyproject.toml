@@ -1,11 +1,14 @@
 [project]
-name = "yunohost"
+name = "YunoHost"
 description = "An operating system aiming to simplify as much as possible the administration of a server"
-readme = "README.md"
 dynamic = ["version"]
+readme = "README.md"
+license = "AGPL-3.0"
 authors = [
     { name = "YunoHost", email = "yunohost@yunohost.org" }
 ]
+urls.Repository = "https://github.com/YunoHost/yunohost"
+urls.Homepage = "https://yunohost.org"
 
 requires-python = ">=3.13"
 
