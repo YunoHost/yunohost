@@ -49,6 +49,8 @@ tests/apps
 # Tmp/local doc stuff
 doc/bash-completion.sh
 doc/bash_completion.d
+doc/zsh_completion.d
+doc/*.gz
 doc/openapi.js
 doc/openapi.json
 doc/swagger
