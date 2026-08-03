@@ -1,10 +1,12 @@
 #!/usr/bin/make -f
-# -*- makefile -*-
+
+export PYBUILD_NAME=yunohost
 
 %:
-	dh ${@} --with python3
+	dh $@ --with python3 --buildsystem=pybuild
 
 override_dh_auto_build:
+	dh_auto_build
 	# Generate bash completion file
 	mkdir -p doc/bash_completion.d
 	python3 doc/generate_bash_completion.py -o doc/bash_completion.d/yunohost
@@ -13,3 +15,7 @@ override_dh_auto_build:
 	python3 doc/generate_zsh_completion.py -o doc/zsh_completion.d/_yunohost
 	# Generate man pages
 	python3 doc/generate_manpages.py --gzip --output doc/yunohost.8.gz
+
+override_dh_auto_test:
+	# Do not run tests with debhelper
+	true
