@@ -37,6 +37,15 @@ src/locales
 # Test
 tests/apps
 
+# debhelper
+/debian/.debhelper/
+/debian/yunohost/
+/debian/debhelper-build-stamp
+/debian/files
+/debian/install
+/debian/yunohost.*
+/.pybuild
+
 # Tmp/local doc stuff
 doc/bash-completion.sh
 doc/bash_completion.d
