@@ -54,6 +54,12 @@ tests = [
     "mock",
 ]
 
+[tool.setuptools.dynamic]
+version = {attr = "maintenance.version.version"}
+
+[tool.setuptools.package-dir]
+"yunohost" = "src"
+
 [tool.mypy]
 follow_imports = "skip"
 exclude = [
