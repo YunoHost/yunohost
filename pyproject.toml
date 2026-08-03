@@ -129,7 +129,7 @@ omit = [
 env_list = ["py313-lint", "py313-invalidcode", "py313-black-check", "py313-black-run"]
 
 [tool.tox.env_run_base]
-skip_install = true
+use_develop = true
 allowlist_externals = ["black"]
 
 [tool.tox.env.py313-lint]
@@ -150,6 +150,7 @@ commands = [[
 
 [tool.tox.env.py313-mypy]
 skip_install = false
+skipsdist = true
 deps = ["mypy>=1.17"]
 dependency_groups = ["tests"]
 commands = [["mypy", "--install-types", "--non-interactive", "src/",]]
