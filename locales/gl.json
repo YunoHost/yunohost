@@ -541,7 +541,7 @@
     "global_settings_setting_smtp_relay_port": "Porto do repetidor SMTP",
     "global_settings_setting_smtp_relay_user": "Usuaria no repetidor SMTP",
     "global_settings_setting_ssh_compatibility": "Compatibilidade SSH",
-    "global_settings_setting_ssh_compatibility_help": "Compromiso entre compatibilidade e seguridade para o servidor SSH. Aféctalle á cifraxe (e outros aspectos da seguridade). Máis info en https://infosec.mozilla.org/guidelines/openssh",
+    "global_settings_setting_ssh_compatibility_help": "Compromiso entre compatibilidade e seguridade para o servidor SSH. Aféctalle á cifraxe (e outros aspectos da seguridade). Podes ler /usr/share/yunohost/conf/ssh/sshd_config para ter máis información.",
     "global_settings_setting_ssh_name": "SSH",
     "global_settings_setting_ssh_password_authentication": "Autenticación con contrasinal",
     "global_settings_setting_ssh_password_authentication_help": "Permitir autenticación con contrasinal para SSH",
