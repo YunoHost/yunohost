@@ -39,20 +39,25 @@ class PythonMigration(Migration):
 
     ignored_python_apps = [
         "diacamma",  # Does an ugly sed in the sites-packages/django_auth_ldap3_ad
+        "django-for-runners",  # pip-sync is used, I'm not sure if it's a problem
+        "django-fritzconnection",  # same, pip-sync
+        "funkwhale",  # install from a folder ./api?
         "homeassistant",  # uses a custom version of Python
         "immich",  # uses a custom version of Python
+        "indico",  # symlink between venv and static web pages
         "kresus",  # uses virtualenv instead of venv, with --system-site-packages (?)
+        "lasuite-docs",  # moving stuff into the venv
         "librephotos",  # runs a setup.py ? not sure pip freeze / pip install -r requirements.txt is gonna be equivalent ..
-        "mautrix",  # install stuff from a .tar.gz
+        "mautrix_telegram",  # install stuff from a .tar.gz
         "microblogpub",  # uses poetry ? x_x
-        "mopidy",  # applies a custom patch?
-        "motioneye",  # install stuff from a .tar.gz
+        "microblogpub",  # uses poetry
         "pgadmin",  # bunch of manual patches
-        "searxng",  # uses --system-site-packages ?
+        "pretalx",  # ynh_replace into the venv
         "synapse",  # specific stuff for ARM to prevent local compiling etc
-        "matrix-synapse",  # synapse is actually installed in /opt/yunohost/matrix-synapse because ... yeah ...
+        "synapse",  # ynh_setup_source into the venv
         "tracim",  # pip install -e .
         "weblate",  # weblate settings are .. inside the venv T_T
+        "yunohost_appgenerator",  # uses pdm
     ]
 
     migration_id: str
