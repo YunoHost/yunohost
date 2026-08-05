@@ -85,7 +85,7 @@ class PostgreSQLMigration(Migration):
         self.runcmd(f"LC_ALL=C pg_dropcluster --stop {self.previous_version} main")
 
         # Fix possibly borked postgresql default config when Immich is installed
-        self.runcmd("sed -i '/^\* \* 15 main postgres$/d' /etc/postgresql-common/user_clusters")
+        self.runcmd(r"sed -i '/^\* \* 15 main postgres$/d' /etc/postgresql-common/user_clusters")
 
         self.runcmd("systemctl start postgresql")
 
@@ -100,7 +100,6 @@ class PostgreSQLMigration(Migration):
             # See https://www.postgresql.org/docs/17/sql-altercollation.html#SQL-ALTERCOLLATION-NOTES
             self.runcmd(f"{sudocmd} psql --dbname='{database}' --command='REINDEX DATABASE {database};'")
             self.runcmd(f"{sudocmd} psql --dbname='{database}' --command='ALTER DATABASE {database} REFRESH COLLATION VERSION;'")
-
 
     def package_is_installed(self, package_name):
         (returncode, out, err) = self.runcmd(
