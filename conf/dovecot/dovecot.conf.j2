@@ -60,7 +60,7 @@ passdb_default_password_scheme = SSHA
 # Regular Yunohost accounts
 passdb ldap {
   # bind = yes
-  filter = (&(objectClass=inetOrgPerson)(uid=%{user | username })(permission=cn=mail.main,ou=permission,dc=yunohost,dc=org))
+  filter = (&(objectClass=inetOrgPerson)(|(uid=%{user})(mail=%{user}))(permission=cn=mail.main,ou=permission,dc=yunohost,dc=org))
   #fields {
   #  user = %{ldap:uid}
   #  password = %{ldap:userPassword}
@@ -73,7 +73,7 @@ passdb passwd-file {
 }
 
 userdb ldap {
-  filter = (&(objectClass=inetOrgPerson)(uid=%{user | username })(permission=cn=mail.main,ou=permission,dc=yunohost,dc=org))
+  filter = (&(objectClass=inetOrgPerson)(|(uid=%{user})(mail=%{user}))(permission=cn=mail.main,ou=permission,dc=yunohost,dc=org))
 }
 
 userdb passwd-file {
