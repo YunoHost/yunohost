@@ -1,3 +1,38 @@
+yunohost (13.0.6) testing; urgency=low
+
+  - configpanel: fix broken OptionType comparisons (is -> ==) (b2315c186)
+  - [fix] option.type is no a string (d111dab03)
+  - migrations: Add migration script for upgrading PostgreSQL from 15 to 17 (27bf0174a)
+  - migrations: Add migration script for fixing Python venv after trixie migration (5fb3c8a90)
+  - locales: Add migration description strings (38e23033a)
+  - [fix] trixie-security instead of trixie #2719 (a53dfc991)
+  - i18n: Translations updated for Chinese (Simplified Han script), French, Galician, German, Russian, Ukrainian
+  - Implement `yunohost app db app` to spawn a client db prompt ([#2297](http://github.com/YunoHost/yunohost/pull/2297))
+  - enh(locales): app_upgrade_url_required grammar and rephrase (720a2f948)
+  - YNH_APP_ACTION is not guaranteed to be set ([#2180](http://github.com/YunoHost/yunohost/pull/2180))
+  - [enh] Add dash in user and group name and force first char to be alphanum ([#2298](http://github.com/YunoHost/yunohost/pull/2298))
+  - [enh] Add a test for ynh_write_var_in_file with an ending space ([#2267](http://github.com/YunoHost/yunohost/pull/2267))
+  - fix(postgres): prevent login shells (97358a572)
+  - [fix] Hotfix for the nginx cve about rewrite module CVE-2026-42945 ([#2305](http://github.com/YunoHost/yunohost/pull/2305))
+  - Increase DKIM key length to 2048 bits ([#2098](http://github.com/YunoHost/yunohost/pull/2098))
+  - [enh] Improve PR template ([#2307](http://github.com/YunoHost/yunohost/pull/2307))
+  - add new fund name ([#2310](http://github.com/YunoHost/yunohost/pull/2310))
+  - security: restrict permissions on /var/log/nginx/*.log ([#2286](http://github.com/YunoHost/yunohost/pull/2286))
+  - ssh: Rework/update ciphers and algorithms (Mozilla recommendations are too outdated) ([#2268](http://github.com/YunoHost/yunohost/pull/2268))
+  - [fix] Dead code ([#2318](http://github.com/YunoHost/yunohost/pull/2318))
+  - Fix typo in permissions helpers documentation ([#2323](http://github.com/YunoHost/yunohost/pull/2323))
+  - [fix] exclude second port used by app (5dbb2867a)
+  - fix: consistent usage of --foo=bar (instead of --foo bar) when calling ynh_permission_update inside ynh_local_curl ([#2327](http://github.com/YunoHost/yunohost/pull/2327))
+  - Handle decoding errors in subprocess output (ceae72b61)
+  - [enh] Generate random ascii between a-zA-Z0-9 instead of a-f0-9 (eb13ae741)
+  - enh(dnsbl): Hostkarma yellowlist is not blocklist ([#2333](http://github.com/YunoHost/yunohost/pull/2333))
+  - [fix] API doc generation ([#2334](http://github.com/YunoHost/yunohost/pull/2334))
+  - Move migration 0037_upgrade_dkim_keys to 0036_dkim_keys_upgrade (9321ea24b)
+
+  Thanks to all contributors <3 ! (ajoe, Alekseï, Alexandre Aubin, Florent, frju365, g-rppl, José M, Josue-T, Kay0u, ljf (zamentur), Mayeul Cantan, oleole39, Poesty Li, ppr, Salamandar, tituspijean, zamentur)
+
+ -- Félix Piédallu <felix@piedallu.me>  Thu, 06 Aug 2026 14:13:12 +0200
+
 yunohost (13.0.5) testing; urgency=low
 
   - utils.misc: Add send_admin_email, use it in certificate and diagnosis. (7da948d2a)
