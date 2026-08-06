@@ -38,7 +38,7 @@ def check_output(args, stderr=subprocess.STDOUT, shell=True, **kwargs) -> str:
     """
     return (
         subprocess.check_output(args, stderr=stderr, shell=shell, **kwargs)
-        .decode("utf-8")
+        .decode("utf-8", errors="replace")
         .strip()
     )
 
@@ -154,7 +154,9 @@ class LogPipe(Thread):  # type: ignore[valid-type,misc] # Don't know why mypy do
     def run(self):
         """Run the thread, logging everything."""
         for line in iter(self.pipeReader.readline, b""):
-            self.queue.put((self.log_callback, line.decode("utf-8").strip("\n")))
+            self.queue.put(
+                (self.log_callback, line.decode("utf-8", errors="replace").strip("\n"))
+            )
 
         self.pipeReader.close()
 

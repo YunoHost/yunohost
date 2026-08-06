@@ -19,7 +19,7 @@
   ipv4: true
   ipv6: false
   domain: false
-  non_blocklisted_return_code: ['127.0.0.1', '127.0.0.5', '127.0.1.1']
+  non_blocklisted_return_code: ['127.0.0.1', '127.0.0.3', '127.0.0.5', '127.0.1.1']
 - name: ImproWare IP based spamlist
   dns_server: spamrbl.imp.ch
   website: https://antispam.imp.ch/

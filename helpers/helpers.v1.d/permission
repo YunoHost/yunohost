@@ -188,7 +188,7 @@ ynh_permission_exists() {
 
 # Redefine the url associated to a permission
 #
-# usage: ynh_permission_url --permission "permission" [--url="url"] [--add_url="new-url" [ "other-new-url" ]] [--remove_url="old-url" [ "other-old-url" ]]
+# usage: ynh_permission_url --permission="permission" [--url="url"] [--add_url="new-url" [ "other-new-url" ]] [--remove_url="old-url" [ "other-old-url" ]]
 #                                                     [--auth_header=true|false] [--clear_urls]
 # | arg: -p, --permission=   - the name for the permission (by default a permission named "main" is removed automatically when the app is removed)
 # | arg: -u, --url=          - (optional) URL for which access will be allowed/forbidden. Note that if you want to remove url you can pass an empty sting as arguments ("").
@@ -256,7 +256,7 @@ ynh_permission_url() {
 
 # Update a permission for the app
 #
-# usage: ynh_permission_update --permission "permission" [--add="group" ["group" ...]] [--remove="group" ["group" ...]]
+# usage: ynh_permission_update --permission="permission" [--add="group" ["group" ...]] [--remove="group" ["group" ...]]
 #                                                        [--show_tile=true|false] [--protected=true|false]
 # | arg: -p, --permission= - the name for the permission (by default a permission named "main" already exist)
 # | arg: -a, --add=        - the list of group or users to enable add to the permission
