@@ -93,7 +93,7 @@ class PostgreSQLMigration(Migration):
 
         password = Path("/etc/yunohost/psql").read_text().strip()
         sudocmd = f"LC_ALL=C sudo --login -u postgres PGUSER=postgres PGPASSWORD='{password}'"
-        psqlcmd = "psql --tuples-only --no-align --dbname=postgres --command='SELECT datname FROM pg_database WHERE datistemplate = false OR datname = 'template1';'"
+        psqlcmd = "psql --tuples-only --no-align --dbname=postgres --command=\"SELECT datname FROM pg_database WHERE datistemplate = false OR datname = 'template1';\""
         _, out, _ = self.runcmd(f"{sudocmd} {psqlcmd}")
         databases = [line.strip() for line in out]
         for database in databases:
