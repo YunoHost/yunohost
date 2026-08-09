@@ -72,7 +72,7 @@ N_CURRENT_YUNOHOST = 12
 VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_trixie_upgrade.txt"
 
 
-def _get_all_venvs(dir: Path, level: int = 0, maxlevel: int = 3) -> list[Path]:
+def _get_all_venvs(_dir: Path, level: int = 0, maxlevel: int = 3) -> list[Path]:
     """
     Returns the list of all python virtual env directories recursively
 
@@ -81,12 +81,13 @@ def _get_all_venvs(dir: Path, level: int = 0, maxlevel: int = 3) -> list[Path]:
         maxlevel - the depth of the recursion
         level - do not edit this, used as an iterator
     """
-    if not dir.exists():
+    if not _dir.exists():
         return []
 
     result = []
-    # Using os functions instead of glob, because glob doesn't support hidden folders, and we need recursion with a fixed depth
-    for path in dir.iterdir():
+    # Using os functions instead of glob, because glob doesn't support hidden folders,
+    # and we need recursion with a fixed depth
+    for path in _dir.iterdir():
         if path.is_dir():
             activatepath = path / "bin" / "activate"
             if activatepath.is_file():
@@ -99,7 +100,7 @@ def _get_all_venvs(dir: Path, level: int = 0, maxlevel: int = 3) -> list[Path]:
     return result
 
 
-def _backup_pip_freeze_for_python_app_venvs():
+def _backup_pip_freeze_for_python_app_venvs() -> None:
     """
     Generate a requirements file for all python virtual env located inside /opt/ and /var/www/
     """
@@ -163,7 +164,8 @@ class MyMigration(Migration):
 
         logger.info(m18n.n("migration_0036_start"))
 
-        # Stupid stuff because resolvconf later wants to edit /etc/resolv.conf and will miserably crash if it's immutable
+        # Stupid stuff because resolvconf later wants to edit /etc/resolv.conf
+        # and will miserably crash if it's immutable
         subprocess.check_call(["chattr", "-i", Path("/etc/resolv.conf").resolve()])
 
         # Get requirements of the different venvs from python apps
@@ -172,7 +174,7 @@ class MyMigration(Migration):
         # Tell libc6 it's okay to restart system stuff during the upgrade
         subprocess.run(
             ["debconf-set-selections"],
-            input="libc6 libraries/restart-without-asking boolean true".encode("utf-8"),
+            input=b"libc6 libraries/restart-without-asking boolean true",
             check=True,
         )
 
@@ -180,7 +182,7 @@ class MyMigration(Migration):
         if package_is_installed("postgresql-common"):
             subprocess.run(
                 ["debconf-set-selections"],
-                input="postgresql-common postgresql-common/obsolete-major seen true".encode("utf-8"),
+                input=b"postgresql-common postgresql-common/obsolete-major seen true",
                 check=True,
             )
 
@@ -257,9 +259,11 @@ class MyMigration(Migration):
             f"full-upgrade {' '.join(self.apt_t64_packages_list())} --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'"
         )
 
-        # For some reason aptitude is derping about python3 / python3-venv so try to explicitly tell to install python3.11 to replace 3.9...
+        # For some reason aptitude is derping about python3 / python3-venv so try to explicitly tell
+        # to install python3.11 to replace 3.9...
         # Note the '+M' prefix which is here to mark the packages as automatically installed
-        # FIXME: This is from bookworm migration, might not be needed for Trixie ... not sure ... keeping this code commented for now
+        # FIXME: This is from bookworm migration, might not be needed for Trixie ... not sure...
+        # keeping this code commented for now
         # python_upgrade_list = "python3 python3.11+M python3.9- "
         # if os.system('dpkg --list | grep -q "^ii  python3.9-venv "') == 0:
         #     python_upgrade_list += "python3-venv+M python3.11-venv+M python3.9-venv-"
@@ -322,12 +326,12 @@ class MyMigration(Migration):
         except Exception:
             # Retry after unholding the app packages, maybe it can unlock the situation idk
             if apps_packages:
-                aptitude_with_progress_bar("unhold " + ' '.join(apps_packages))
+                aptitude_with_progress_bar("unhold " + " ".join(apps_packages))
                 aptitude_with_progress_bar(full_upgrade_cmd)
         else:
             # If the upgrade was sucessful, we want to unhold the apps packages
             if apps_packages:
-                aptitude_with_progress_bar("unhold " + ' '.join(apps_packages))
+                aptitude_with_progress_bar("unhold " + " ".join(apps_packages))
 
         # Mark this migration as completed before triggering the "new" migrations
         _write_migration_state(self.id, "done")
@@ -357,7 +361,7 @@ class MyMigration(Migration):
                 raw_msg=True,
             )
 
-    def debian_major_version(self):
+    def debian_major_version(self) -> int:
         # The python module "platform" and lsb_release are not reliable because
         # on some setup, they may still return Release=9 even after upgrading to
         # buster ... (Apparently this is related to OVH overriding some stuff
@@ -370,20 +374,21 @@ class MyMigration(Migration):
             )
         )
 
-    def yunohost_major_version(self):
+    def yunohost_major_version(self) -> int:
         return int(get_ynh_package_version("yunohost")["version"].split(".")[0])
 
-    def check_assertions(self):
+    def check_assertions(self) -> None:
         # Be on bookworm (12.x) and yunohost 12.x
         # NB : we do both check to cover situations where the upgrade crashed
         # in the middle and debian version could be > 13.x but yunohost package
         # would still be in 12.x...
         if (
-            not self.debian_major_version() == N_CURRENT_DEBIAN
-            and not self.yunohost_major_version() == N_CURRENT_YUNOHOST
+            self.debian_major_version() != N_CURRENT_DEBIAN
+            and self.yunohost_major_version() != N_CURRENT_YUNOHOST
         ):
             try:
-                # Here we try to find the previous migration log, which should be somewhat recent and be at least 10k (we keep the biggest one)
+                # Here we try to find the previous migration log, which should be somewhat recent
+                # and be at least 10k (we keep the biggest one)
                 migration_logs = sorted(
                     [
                         file
@@ -433,30 +438,28 @@ class MyMigration(Migration):
             # Lime2 have hold packages to avoid ethernet instability
             # See https://github.com/YunoHost/arm-images/commit/b4ef8c99554fd1a122a306db7abacc4e2f2942df
             # TODO:
-            lime2_hold_packages = set(
-                [
-                    "armbian-firmware",
-                    "armbian-bsp-cli-lime2",
-                    "linux-dtb-current-sunxi",
-                    "linux-image-current-sunxi",
-                    "linux-u-boot-lime2-current",
-                    "linux-image-next-sunxi",
-                ]
-            )
+            lime2_hold_packages = {
+                "armbian-firmware",
+                "armbian-bsp-cli-lime2",
+                "linux-dtb-current-sunxi",
+                "linux-image-current-sunxi",
+                "linux-u-boot-lime2-current",
+                "linux-image-next-sunxi",
+            }
 
             if upgradable_system_packages - lime2_hold_packages:
                 raise YunohostError("migration_0036_system_not_fully_up_to_date")
 
     @property
-    def disclaimer(self):
+    def disclaimer(self) -> str | None:
         # Avoid having a super long disclaimer + uncessary check if we ain't
         # on bookworm / yunohost 12.x
         # NB : we do both check to cover situations where the upgrade crashed
         # in the middle and debian version could be 13.x but yunohost package
         # would still be in 21.x...
         if (
-            not self.debian_major_version() == N_CURRENT_DEBIAN
-            and not self.yunohost_major_version() == N_CURRENT_YUNOHOST
+            self.debian_major_version() != N_CURRENT_DEBIAN
+            and self.yunohost_major_version() != N_CURRENT_YUNOHOST
         ):
             return None
 
@@ -500,7 +503,8 @@ sideway (typically by SSHing from the local network, or through rescue access on
 
         return jinja2.Template(message_jinja).render(
             beta=True,
-            migration_recent=date.today() < date(2026, 6, 1),  # FIXME: maybe retweak this later for the stable trixie release
+            # FIXME: maybe retweak this later for the stable trixie release
+            migration_recent=date.today() < date(2026, 6, 1),
             migration_0036_general_warning=m18n.n("migration_0036_general_warning"),
             # Get list of problematic apps ? I.e. not official or community+working
             problematic_apps=unstable_apps(),
@@ -510,7 +514,7 @@ sideway (typically by SSHing from the local network, or through rescue access on
             modified_files_warning=m18n.n("migration_0036_modified_files"),
         )
 
-    def patch_apt_sources_list(self):
+    def patch_apt_sources_list(self) -> None:
         sources_list_d = Path("/etc/apt/sources.list.d")
         dot_list: list[Path] = [*sources_list_d.glob("*.list")]
         if (main_sources := Path("/etc/apt/sources.list")).exists():
@@ -588,13 +592,16 @@ sideway (typically by SSHing from the local network, or through rescue access on
             fi
         """)
         )
-        policy_rc.chmod(755)
+        policy_rc.chmod(0o755)
 
     def apt_t64_packages_list(self) -> list[str]:
         # https://media1.tenor.com/m/vzLCBSJxywUAAAAd/quelle-indignit%C3%A9-sarkozy.gif
 
-        installed_packages = check_output("apt list --installed 2>/dev/null | grep -v -F 'Listing...' | awk -F/ '{print $1}'", shell=True).strip().split("\n")
-        t64_packages = check_output("apt search '.*t64' 2>/dev/null | grep 't64/' | awk -F/ '{print $1}'", shell=True).strip().split("\n")
+        cmd = "apt list --installed 2>/dev/null | grep -v -F 'Listing...' | awk -F/ '{print $1}'"
+        installed_packages = check_output(cmd, shell=True).strip().split("\n")
+
+        cmd = "apt search '.*t64' 2>/dev/null | grep 't64/' | awk -F/ '{print $1}'"
+        t64_packages = check_output(cmd, shell=True).strip().split("\n")
 
         t64_upgrades = []
         for t64_package in t64_packages:
@@ -604,7 +611,7 @@ sideway (typically by SSHing from the local network, or through rescue access on
 
         return t64_upgrades
 
-    def get_apps_equivs_packages(self):
+    def get_apps_equivs_packages(self) -> list[str]:
         command = (
             "dpkg --get-selections"
             " | grep -v deinstall"
