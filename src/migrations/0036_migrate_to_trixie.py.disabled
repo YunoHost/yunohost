@@ -106,6 +106,7 @@ def _backup_pip_freeze_for_python_app_venvs() -> None:
     """
     venvs = _get_all_venvs(Path("/opt/")) + _get_all_venvs(Path("/var/www/"))
     for venv in venvs:
+        logger.info(f"Backing up venv {venv} for upate after Trixie migration...")
         # Generate a requirements file from venv
         # Remove pkg resources from the freeze to avoid an error during the python venv https://stackoverflow.com/a/40167445
         pip = venv / "bin" / "pip"
