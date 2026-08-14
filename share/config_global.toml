@@ -29,8 +29,9 @@ i18n = "global_settings_setting"
 
         [security.ssh.ssh_compatibility]
         type = "select"
-        choices.intermediate = "Intermediate (compatible with older softwares)"
+        choices.intermediate = "Intermediate (compatible with older softwares, default debian openssh config)"
         choices.modern = "Modern (recommended)"
+        choices.paranoid = "Paranoid (openssh client 9+)"
         default = "modern"
 
         [security.ssh.ssh_port]

@@ -43,7 +43,7 @@ do_pre_regen() {
     cp systemd-override-bind-nftables.conf "${pending_dir}/etc/systemd/system/fail2ban.service.d/systemd-override-bind-nftables.conf"
 
     ssh_port="$(jq -r '.ssh_port' <<< "$YNH_SETTINGS")"
-    ynh_config_add --jinja --template="yunohost-jails.conf" --destination="${fail2ban_dir}/jail.d/yunohost-jails.conf"
+    ynh_config_add --jinja --template="yunohost-jails.conf.j2" --destination="${fail2ban_dir}/jail.d/yunohost-jails.conf"
 }
 
 do_post_regen() {

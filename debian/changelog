@@ -1,3 +1,142 @@
+yunohost (13.0.6) testing; urgency=low
+
+  - configpanel: fix broken OptionType comparisons (is -> ==) (b2315c186)
+  - [fix] option.type is no a string (d111dab03)
+  - migrations: Add migration script for upgrading PostgreSQL from 15 to 17 (27bf0174a)
+  - migrations: Add migration script for fixing Python venv after trixie migration (5fb3c8a90)
+  - locales: Add migration description strings (38e23033a)
+  - [fix] trixie-security instead of trixie #2719 (a53dfc991)
+  - i18n: Translations updated for Chinese (Simplified Han script), French, Galician, German, Russian, Ukrainian
+  - Implement `yunohost app db app` to spawn a client db prompt ([#2297](http://github.com/YunoHost/yunohost/pull/2297))
+  - enh(locales): app_upgrade_url_required grammar and rephrase (720a2f948)
+  - YNH_APP_ACTION is not guaranteed to be set ([#2180](http://github.com/YunoHost/yunohost/pull/2180))
+  - [enh] Add dash in user and group name and force first char to be alphanum ([#2298](http://github.com/YunoHost/yunohost/pull/2298))
+  - [enh] Add a test for ynh_write_var_in_file with an ending space ([#2267](http://github.com/YunoHost/yunohost/pull/2267))
+  - fix(postgres): prevent login shells (97358a572)
+  - [fix] Hotfix for the nginx cve about rewrite module CVE-2026-42945 ([#2305](http://github.com/YunoHost/yunohost/pull/2305))
+  - Increase DKIM key length to 2048 bits ([#2098](http://github.com/YunoHost/yunohost/pull/2098))
+  - [enh] Improve PR template ([#2307](http://github.com/YunoHost/yunohost/pull/2307))
+  - add new fund name ([#2310](http://github.com/YunoHost/yunohost/pull/2310))
+  - security: restrict permissions on /var/log/nginx/*.log ([#2286](http://github.com/YunoHost/yunohost/pull/2286))
+  - ssh: Rework/update ciphers and algorithms (Mozilla recommendations are too outdated) ([#2268](http://github.com/YunoHost/yunohost/pull/2268))
+  - [fix] Dead code ([#2318](http://github.com/YunoHost/yunohost/pull/2318))
+  - Fix typo in permissions helpers documentation ([#2323](http://github.com/YunoHost/yunohost/pull/2323))
+  - [fix] exclude second port used by app (5dbb2867a)
+  - fix: consistent usage of --foo=bar (instead of --foo bar) when calling ynh_permission_update inside ynh_local_curl ([#2327](http://github.com/YunoHost/yunohost/pull/2327))
+  - Handle decoding errors in subprocess output (ceae72b61)
+  - [enh] Generate random ascii between a-zA-Z0-9 instead of a-f0-9 (eb13ae741)
+  - enh(dnsbl): Hostkarma yellowlist is not blocklist ([#2333](http://github.com/YunoHost/yunohost/pull/2333))
+  - [fix] API doc generation ([#2334](http://github.com/YunoHost/yunohost/pull/2334))
+  - Move migration 0037_upgrade_dkim_keys to 0036_dkim_keys_upgrade (9321ea24b)
+
+  Thanks to all contributors <3 ! (ajoe, Alekseï, Alexandre Aubin, Florent, frju365, g-rppl, José M, Josue-T, Kay0u, ljf (zamentur), Mayeul Cantan, oleole39, Poesty Li, ppr, Salamandar, tituspijean, zamentur)
+
+ -- Félix Piédallu <felix@piedallu.me>  Thu, 06 Aug 2026 14:13:12 +0200
+
+yunohost (13.0.5) testing; urgency=low
+
+  - utils.misc: Add send_admin_email, use it in certificate and diagnosis. (7da948d2a)
+  - tools: migrations: Rename to m[0-9]*_.* ([#2212](http://github.com/YunoHost/yunohost/pull/2212))
+  - diagnosis, certificate: Fix error email formatting (f210f40ab)
+  - dyndns: Add an email option to the update operation to send failures by mail to admin (b172c8ab4)
+  - conf, hooks: Replace cron jobs with systemd timers/services (7f6c87d77)
+  - firewall: upnp: Use Systemd timer instead of a cron file for updates (b014ca1e7)
+  - Fix #2751 : Update udisks2_interfaces.py (3e370a4f9)
+  - trixie: configure sssd_ldap to use ldap:// on localhost without any TLS (4ea070260)
+  - helpers: mongodb: Support trixie (91b4b6b39)
+  - i18n: Translations updated for Basque, Catalan, Chinese (Simplified Han script), Czech, Dutch, French, Galician, German, Kabyle, Polish, Portuguese (Brazil), Russian, Ukrainian
+
+  Thanks to all contributors <3 ! (1Poireau, Alekseï, Ale Muñoz, alexAubin, bruno van den bosch, ButterflyOfFire, CodeShakingSheep, Dhanush G, Eduardo Mozart de Oliveira, ewilly, Florent, Francescc, Gredin67, g-rppl, Jaroslav Nezbeda, José M, Josue-T, ljf (zamentur), oleole39, orhtej2, philippe lhardy, Poesty Li, ppr, Rin, Salamandar, SveDec, Thomas, tituspijean, xabirequejo)
+
+ -- Félix Piédallu <felix@piedallu.me>  Tue, 23 Jun 2026 10:15:42 +0200
+
+yunohost (13.0.4) testing; urgency=low
+
+  - system: debian_version_id, return type to Literal ([#2242](http://github.com/YunoHost/yunohost/pull/2242))
+  - conf_regen: yunohost: Fix file touched in /etc instead of pending_dir (201ba39ea)
+  - conf_regen: dnsmasq: Replace hand-written file with jinja template (7dd10cadb)
+  - helpers: apt: Use deb822, install keys in /usr/share/keyrings, rename configuration files to prevent conflicts (2c567bc91)
+  - helpers: apt: sury php repository was renamed. Also, use if then instead of || (9d309ea90)
+  - conf: apt: Install repo GPG keys in /usr/share/keyrings (3ea63f9a3)
+  - conf_regen: apt: gpg dearmor directly to file without pipe (bb0d0ef76)
+  - tests: expired influxdata repo key ([#2253](http://github.com/YunoHost/yunohost/pull/2253)
+  - code: formatting and typing (8da80762d, e9f7ba489, 078e74741, 550c32e57)
+  - i18n: Translations updated for French, Kabyle
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, ButterflyOfFire, Félix Piédallu, Florent, Kayou, otm33, tituspijean)
+
+ -- tituspijean <tituspijean@yunohost.org>  Thu, 08 Jan 2026 22:14:36 +0100
+
+yunohost (13.0.3) testing; urgency=low
+
+  - debian: Add an explicit dependency on sudo: libsss-sudo doesn't actually depend on sudo... (cbf9af29c)
+  - log: Update log cache symlink handling to accept configurable age parameter, change since_days_ago default param to 1 month (b75f4cdfd)
+  - sssd: remove useless fields in sssd conf (65c1b0f55)
+  - nginx: Fix http2 setting (3edf1ddf8)
+  - nginx: Fix jinja template to remove empty lines (4d9a145ff)
+  - apt: Fix when sources.list does not exist on postinstall (030dac676)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, Kay0u)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 19 Dec 2025 19:36:50 +0100
+
+yunohost (13.0.1) testing; urgency=low
+
+  - debian/control: tweak openssl conflict rule (936d7c193)
+  - certificate: cryptography.serialization.load_pem_private_key expects binary data (a127563f6)
+  - regenconf: Rename all jinja templates as *.j2 (0fb7ac1f4)
+  - regenconf/nss: Fix post_regen, chmod before restarting the server (f584f26e1)
+  - postgresql: Use helper to prevent warning messages (379818502)
+  - postgresql: Ooops, test checking if postgresql was installed was inverted (cb54f5990)
+  - dovecot: Fix mail_plugins definition in config file (0b7d69d86)
+  - dovecot: Add back the global_script before sieve script (9b708b48e)
+  - dovecot: Remove legacy, non existing antispam plugin (14b5c300f)
+  - dovecot: replace sed with jinja expression (70bbf4af2)
+  - postfix: in Trixie, postfix main runner is not postfix@- anymore (a17a4ca29)
+  - postfix: replace sed and file creation with jinja expression (1a06c45e3)
+  - misc: more tweaks to set Python to 3.13 (8b5cd50c9, c262d3a99, f72b3b264, e245fc42f, 2fb86e364)
+
+  Thanks to all contributors <3 ! (Félix Piédallu, orhtej2)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 07 Nov 2025 15:22:09 +0100
+
+yunohost (13.0.0) testing; urgency=low
+
+  Major changes
+  -------------
+
+  - apps: drop support for packaging v1 (a736988bf)
+  - ldap: Replace nslcd/nscd/sudo-ldap etc. with sssd (9e4a7743e, 72c4fca86, 27b4a6d65, 4625953e3, a346db1fb, 6ce2c5318, ab20b1d02, a96c33367, bc2d73730)
+  - apt: refactor sources and preferences handling to use the new "deb822" / .sources format instead of "deb [...]" / .list format (57fc4b51c, f15aad34d, 330e4680a, c8d730bc8, 79a6ed9af, ac7e8f657)
+  - dovecot: various changes in dovecot conf format (70080847f, a1082f34d, 6eebf5b9d, e8ae3c784)
+  - misc: adapt config panel etc. for Pydantic v2 (#2001, 52be108d7, 9915a21e0, ceb957bda, f0b43f154, c5d6bdf61)
+
+  Misc changes
+  ------------
+
+  - postgresql: Set version to v17 (#2155, 6ff8ee02f)
+  - security: update security options for nginx, postfix, dovecot according to mozilla recommentation (ec606ab8f, 16e08e602, 414d42ecf)
+  - postfix: sync config file with default Postfix trixie config file + explicitly declare compatibility_level (4604ba8f4, f1dc4e37c)
+  - nginx: nginx now configures 'server_tokens off' in its core config (5cba66bb4)
+  - mariadb: replace mysqlshow, mysqldump with mariadb-show, mariadb-dump (7f2f5f7a2)
+  - diagnosis/certs/dns: improve check that A/AAAA records are defined to better support ipv6-only setups (acbd19ef9)
+  - apps/resources: stop deleting the install_dir if it exists already (c6f91698e)
+  - apt/yarn: remove Yarn APT repository, warn on apps depending on Yarn via APT (4df360235)
+  - debian: remove dependency to non existing udisks2 modules (4065554e4)
+  - debian: remove dependency on dovecot-antispam, not present on trixie and unmaintained (6f5ddf5d3)
+  - python: replace spwd with direct call to passwd. (f8b65301a)
+  - python: replace use of deprecated datetime utcnow and utcfromtimestamp (244171dc8)
+  - python: replace deprecated use of ast.Str, Num with ast.Constant (0a67b61dc)
+  - python: replace OpenSSL with cryptography in certificate signing request (17330291c, f4f02d8bf)
+  - python: replace deprecated call to resolver.query() with resolver.resolve(search=True) (2676bf93d)
+  - python: passwd now accepts --stdin, used in tools_rootpw() (45e135f5a)
+  - python: reimplement /etc/os-release parsing with pure python, add os_release() (5e67c61c0)
+  - tests: improve tests, propagate the removal of packaging v1 support (b200a0c03, 53fb5c23f, 11681206a, e3292d008, 6cbb71f9e, 80c7bda6c, f49820977, 2aef44f23, 8b21b5d4b)
+
+  Thanks to all contributors <3 ! Mostly Salamandar and axolotle ! (also alexAubin, Florent, Thomas, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 31 Oct 2025 18:38:56 +0100
+
 yunohost (12.1.40.1) stable; urgency=low
 
   - diagnosis: fix fetching of the kernel version info, we want the mainline kernel version and not the debian kernel version (f5f28ba4a)

@@ -51,7 +51,7 @@ do_init_regen() {
     cp plain/etcdefault /etc/default/dnsmasq
 
     wireless_interfaces=""
-    ynh_config_add --jinja --template="dnsmasq.conf.tpl" --destination="/etc/dnsmasq.conf"
+    ynh_config_add --jinja --template="dnsmasq.conf.j2" --destination="/etc/dnsmasq.conf"
 
     # Remove / disable services likely to conflict with dnsmasq
     for SERVICE in systemd-resolved bind9; do
@@ -108,7 +108,7 @@ do_pre_regen() {
     done
 
     # General configuration
-    ynh_config_add --jinja --template="dnsmasq.conf.tpl" --destination="${pending_dir}/etc/dnsmasq.conf"
+    ynh_config_add --jinja --template="dnsmasq.conf.j2" --destination="${pending_dir}/etc/dnsmasq.conf"
 
     # add domain conf files
     for domain in $YNH_DOMAINS; do
@@ -119,7 +119,7 @@ do_pre_regen() {
         else
             mail_in="False"
         fi
-        ynh_config_add --jinja --template="domain.tpl" --destination="${dnsmasq_dir}/${domain}"
+        ynh_config_add --jinja --template="domain.j2" --destination="${dnsmasq_dir}/${domain}"
     done
 
     # We arbitrarily pick 'c' for spamhaus NS but there's a/b/c/e
@@ -135,20 +135,16 @@ do_pre_regen() {
         RESOLVER_FOR_DIG=$(grep '^nameserver.*\.' /etc/resolv.dnsmasq.conf | head -n1 | awk '{print $2}')
     fi
 
-    cat << EOF > "${dnsmasq_dir}/spamhaus"
-# Gotta force the usage of resolvers for spamhaus,
-# Which will otherwise complain that we may be using an open resolver...
-# cf https://www.spamhaus.com/resource-center/successfully-accessing-spamhauss-free-block-lists-using-a-public-dns/#yes-but-why-block-queries-from-public-recursive-name-servers
-# We pick one of spamhaus' a/b/c/d/e nameservers, cf https://multirbl.valli.org/detail/zen.spamhaus.org.html
-# And kind of hard-code the corresponding IPs because in practice dnsmasq doesn't allow to have a domain name for the resolver part of server= :| ...
-# Fun-fact : did you know that AAAA is the name of IPv6 DNS records, but also the sound you make when debugging network and DNS??? #TheMoreYouKnow
-EOF
+    spamhaus_ips=""
     for IP in $( (
         dig +short A $SPAMHAUS_NS "@$RESOLVER_FOR_DIG" 2> /dev/null || true
         dig +short AAAA $SPAMHAUS_NS "@$RESOLVER_FOR_DIG" 2> /dev/null || true
     ) | grep -v '^;' | sort); do
-        echo "server=/*.zen.spamhaus.org/$IP" >> "${dnsmasq_dir}/spamhaus"
+        spamhaus_ips="$spamhaus_ips $IP"
     done
+
+    export spamhaus_ips
+    ynh_render_template "spamhaus.j2" "${dnsmasq_dir}/spamhaus"
 
     # remove old domain conf files
     for conf_file in /etc/dnsmasq.d/*.*; do

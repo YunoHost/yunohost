@@ -117,7 +117,7 @@ class DNSRecord(TypedDict):
 
 
 def _build_dns_conf(
-    base_domain: str, include_empty_AAAA_if_no_ipv6=False
+    base_domain: str, include_empty_AAAA_if_no_ipv6=False, dkim_split=False
 ) -> dict[Literal["basic", "mail", "extra"] | str, list[DNSRecord]]:
     """
     Internal function that will returns a data structure containing the needed
@@ -214,6 +214,8 @@ def _build_dns_conf(
             dkim_host, dkim_publickey = _get_DKIM(domain)
 
             if dkim_host:
+                if not dkim_split:
+                    dkim_publickey = dkim_publickey.replace('" "', "")
                 mail += [
                     (f"{dkim_host}{suffix}", ttl, "TXT", dkim_publickey),
                     (f"_dmarc{suffix}", ttl, "TXT", '"v=DMARC1; p=none"'),
@@ -321,7 +323,7 @@ def _get_DKIM(domain):
     with open(DKIM_file) as f:
         dkim_content = f.read()
 
-    # Gotta manage two formats :
+    # Gotta manage 3 formats :
     #
     # Legacy
     # -----
@@ -334,54 +336,30 @@ def _get_DKIM(domain):
     #
     # mail._domainkey IN  TXT ( "v=DKIM1; h=sha256; k=rsa; "
     #           "p=<theDKIMpublicKey>" )
+    #
+    # New with 2048 key size
+    # ------
+    #
+    # mail._domainkey IN  TXT ( "v=DKIM1; h=sha256; k=rsa; "
+    #           "p=<theDKIMpublicKey split first part>"
+    #           "<dkim public key split second part>" )
 
-    is_legacy_format = " h=sha256; " not in dkim_content
-
-    # Legacy DKIM format
-    if is_legacy_format:
-        dkim = re.match(
-            (
-                r"^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+"
-                r'[^"]*"v=(?P<v>[^";]+);'
-                r'[\s"]*k=(?P<k>[^";]+);'
-                r'[\s"]*p=(?P<p>[^";]+)'
-            ),
-            dkim_content,
-            re.M | re.S,
-        )
-    else:
-        dkim = re.match(
-            (
-                r"^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+"
-                r'[^"]*"v=(?P<v>[^";]+);'
-                r'[\s"]*h=(?P<h>[^";]+);'
-                r'[\s"]*k=(?P<k>[^";]+);'
-                r'[\s"]*p=(?P<p>[^";]+)'
-            ),
-            dkim_content,
-            re.M | re.S,
-        )
+    dkim = re.match(
+        (
+            r"^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+"
+            r"[^\(]*\((?P<c>[^\)]+)\)"
+        ),
+        dkim_content,
+        re.M | re.S,
+    )
 
     if not dkim:
         return (None, None)
 
-    if is_legacy_format:
-        return (
-            dkim.group("host"),
-            '"v={v}; k={k}; p={p}"'.format(
-                v=dkim.group("v"), k=dkim.group("k"), p=dkim.group("p")
-            ),
-        )
-    else:
-        return (
-            dkim.group("host"),
-            '"v={v}; h={h}; k={k}; p={p}"'.format(
-                v=dkim.group("v"),
-                h=dkim.group("h"),
-                k=dkim.group("k"),
-                p=dkim.group("p"),
-            ),
-        )
+    return (
+        dkim.group("host"),
+        re.sub(r'"[\s\n]+"', '" "', dkim.group("c").strip(), re.M | re.S),
+    )
 
 
 def _get_dns_zone_for_domain(domain):
@@ -927,23 +905,27 @@ def domain_dns_push(
         for action in ["delete", "update"]:  # type: ignore[assignment]
             changes[action] = [r for r in changes[action] if r["managed_by_yunohost"]]
 
-    def progress(info=""):
-        progress.nb += 1
-        width = 20
-        bar = int(progress.nb * width / progress.total)
-        bar = "[" + "#" * bar + "." * (width - bar) + "]"
-        if info:
-            bar += " > " + info
-        if progress.old == bar:
-            return
-        progress.old = bar
-        logger.info(bar)
+    class Progress:
+        def __init__(self, total: int) -> None:
+            self.total: int = total
+            self.nb: int = 0
+            self.old_bar: str = ""
 
-    progress.nb = 0  # type: ignore[attr-defined]
-    progress.old = ""  # type: ignore[attr-defined]
-    progress.total = len(changes["delete"] + changes["create"] + changes["update"])  # type: ignore[attr-defined]
+        def __call__(self, info: str) -> None:
+            self.nb += 1
+            width = 20
+            filled = int(self.nb * width / self.total)
+            bar = f"[{'#' * filled}{'.' * (width - filled)}]"
+            if info:
+                bar += " > " + info
+            if self.old_bar == bar:
+                return
+            self.old_bar = bar
+            logger.info(bar)
 
-    if progress.total == 0:  # type: ignore[attr-defined]
+    progress = Progress(len(changes["delete"] + changes["create"] + changes["update"]))
+
+    if progress.total == 0:
         logger.success(m18n.n("domain_dns_push_already_up_to_date"))
         return {}
 
@@ -1025,14 +1007,12 @@ def domain_dns_push(
 
     _set_managed_dns_records_hashes(domain, new_managed_dns_records_hashes)
 
-    progress_total = progress.total  # type: ignore[attr-defined]
-
     # Everything succeeded
     if len(results["errors"]) + len(results["warnings"]) == 0:
         logger.success(m18n.n("domain_dns_push_success"))
         return {}
     # Everything failed
-    elif len(results["errors"]) + len(results["warnings"]) == progress_total:
+    elif len(results["errors"]) + len(results["warnings"]) == progress.total:
         logger.error(m18n.n("domain_dns_push_failed"))
     else:
         logger.warning(m18n.n("domain_dns_push_partial_failure"))

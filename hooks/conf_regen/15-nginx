@@ -44,10 +44,10 @@ do_base_regen() {
     cp fastcgi_params_with_auth "$nginx_dir"
     cp fastcgi_params_no_auth "$nginx_dir"
 
-    ynh_config_add --jinja --template="security.conf.inc" --destination="${nginx_conf_dir}/security.conf.inc"
-    ynh_config_add --jinja --template="yunohost_admin.conf" --destination="${nginx_conf_dir}/yunohost_admin.conf"
-    ynh_config_add --jinja --template="yunohost_admin.conf.inc" --destination="${nginx_conf_dir}/yunohost_admin.conf.inc"
-    ynh_config_add --jinja --template="yunohost_api.conf.inc" --destination="${nginx_conf_dir}/yunohost_api.conf.inc"
+    ynh_config_add --jinja --template="security.conf.inc.j2" --destination="${nginx_conf_dir}/security.conf.inc"
+    ynh_config_add --jinja --template="yunohost_admin.conf.j2" --destination="${nginx_conf_dir}/yunohost_admin.conf"
+    ynh_config_add --jinja --template="yunohost_admin.conf.inc.j2" --destination="${nginx_conf_dir}/yunohost_admin.conf.inc"
+    ynh_config_add --jinja --template="yunohost_api.conf.inc.j2" --destination="${nginx_conf_dir}/yunohost_api.conf.inc"
 
     mkdir -p "$nginx_conf_dir/default.d/"
     cp "redirect_to_admin.conf" "$nginx_conf_dir/default.d/"
@@ -109,12 +109,12 @@ do_pre_regen() {
     mkdir -p "${pending_dir}/etc/nginx/modules-enabled/"
 
     if [[ "$tls_passthrough_enabled" == "True" ]]; then
-        ynh_config_add --jinja --template="tls_passthrough.conf" --destination="${tls_passthrough_module}"
+        ynh_config_add --jinja --template="tls_passthrough.conf.j2" --destination="${tls_passthrough_module}"
         for tls_passthrough_domain_and_ip in ${tls_passthrough_list//,/ }; do
             tls_passthrough_domain=$(echo "$tls_passthrough_domain_and_ip" | awk -F';' '{print $1}')
             tls_passthrough_ip=$(echo "$tls_passthrough_domain_and_ip" | awk -F';' '{print $2}')
             tls_passthrough_port=$(echo "$tls_passthrough_domain_and_ip" | awk -F';' '{print $3}')
-            ynh_config_add --jinja --template="tls_passthrough_server.conf" --destination="${nginx_conf_dir}/${tls_passthrough_domain}.forward80.conf"
+            ynh_config_add --jinja --template="tls_passthrough_server.conf.j2" --destination="${nginx_conf_dir}/${tls_passthrough_domain}.forward80.conf"
         done
     else
         touch "${tls_passthrough_module}"
@@ -146,13 +146,10 @@ do_pre_regen() {
             mail_enabled="False"
         fi
 
-        ynh_config_add --jinja --template="server.tpl.conf" --destination="${nginx_conf_dir}/${domain}.conf"
+        ynh_config_add --jinja --template="server.conf.j2" --destination="${nginx_conf_dir}/${domain}.conf"
         if [ $mail_enabled == "True" ]; then
-            ynh_config_add --jinja --template="autoconfig.tpl.xml" --destination="${mail_autoconfig_dir}/config-v1.1.xml"
+            ynh_config_add --jinja --template="autoconfig.xml.j2" --destination="${mail_autoconfig_dir}/config-v1.1.xml"
         fi
-
-        touch "${domain_conf_dir}/yunohost_local.conf" # Clean legacy conf files
-
     done
 
     # Legacy file to remove, but we can't really remove it because it may be included by app confs...
@@ -178,10 +175,21 @@ do_post_regen() {
     # shellcheck disable=SC2016
     sed -i 's/$remote_user;/$http_ynh_user if_not_empty;/g' /etc/nginx/fastcgi_params
 
+    # Hotfix CVE-2026-42945
+    # shellcheck disable=SC2016
+    if ! grep -qE 'fastcgi_param\s+HTTP_HOST\s+\$host;' /etc/nginx/fastcgi_params 2> /dev/null; then
+        # shellcheck disable=SC2016
+        echo 'fastcgi_param  HTTP_HOST        $host;' >> /etc/nginx/fastcgi_params
+    fi
+
     if ls -l /etc/nginx/conf.d/*.d/*.conf; then
         chown root:root /etc/nginx/conf.d/*.d/*.conf
         chmod 644 /etc/nginx/conf.d/*.d/*.conf
     fi
+
+    # We don't want nginx logs to be world-readable which could leak secrets from GET query args in some cases/apps...
+    find /var/log/nginx -type f | xargs -r chmod 0640
+    find /var/log/nginx -type f | xargs -r chown www-data:adm
 
     [ -z "$regen_conf_files" ] && exit 0
 

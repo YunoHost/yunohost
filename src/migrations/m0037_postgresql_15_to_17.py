@@ -1,6 +1,6 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2026 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -18,28 +18,13 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-# Exit hook on subcommand error or unset variable
-set -eu
+from .postgresql import PostgreSQLMigration
 
-do_init_regen() {
-    do_pre_regen ""
-    systemctl restart unscd
-}
 
-do_pre_regen() {
-    pending_dir=$1
+class MyMigration(PostgreSQLMigration):
+    "Migrate DBs from Postgresql 15 to 17 after migrating to Trixie"
 
-    cd /usr/share/yunohost/conf/nsswitch
+    previous_version = "15"
+    target_version = "17"
 
-    install -D -m 644 nsswitch.conf "$pending_dir/etc/nsswitch.conf"
-}
-
-do_post_regen() {
-    regen_conf_files=$1
-
-    if [[ -n "$regen_conf_files" ]]; then
-        systemctl restart unscd
-    fi
-}
-
-"do_$1_regen" "$(echo "${*:2}" | xargs)"
+    dependencies = ["migrate_to_trixie"]

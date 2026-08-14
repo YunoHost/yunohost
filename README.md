@@ -65,4 +65,4 @@ We are thankful for our sponsors providing us with infrastructure and grants!
 </p>
 </div>
 
-This project was funded through the [NGI0 PET](https://nlnet.nl/PET) Fund, a fund established by NLnet with financial support from the European Commission's [Next Generation Internet](https://ngi.eu/) programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 825310. If you're interested, [check out how to apply in this video](https://media.ccc.de/v/36c3-10795-ngi_zero_a_treasure_trove_of_it_innovation)!
+This project was funded successively through the [NGI0 PET Fund](https://nlnet.nl/PET) and the [NGI0 Commons Fund](https://nlnet.nl/commonsfund), two funds established by NLnet with financial support from the European Commission's [Next Generation Internet](https://ngi.eu/) programme, under the aegis of DG Communications Networks, Content and Technology under respective grant agreements No 825310 and No 101135429. If you're interested, [check out how to apply in this video](https://media.ccc.de/v/36c3-10795-ngi_zero_a_treasure_trove_of_it_innovation)!

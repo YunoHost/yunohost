@@ -73,7 +73,7 @@ user:
                     help: The unique username to create
                     extra:
                         pattern: &pattern_username
-                            - !!str ^[a-z0-9_\.]+$
+                            - !!str ^[a-z0-9][-a-z0-9_\.]*$
                             - "pattern_username"
                 -F:
                     full: --fullname
@@ -265,7 +265,7 @@ user:
                             help: Name of the group to be created
                             extra:
                                 pattern: &pattern_groupname
-                                    - !!str ^[a-z0-9_]+$
+                                    - !!str ^[a-z0-9][-a-z0-9_\.]*$
                                     - "pattern_groupname"
 
                 ### user_group_delete()
@@ -1078,6 +1078,16 @@ app:
                     extra:
                         autocomplete: *apps_list
 
+        ### app_db()
+        db:
+            action_help: Open an interactive database client prompt for the app
+            api: GET /apps/<app>/db
+            arguments:
+                app:
+                    help: App ID
+                    extra:
+                        autocomplete: *apps_list
+
         ### app_register_url()
         register-url:
             hide_in_help: True
@@ -1835,6 +1845,9 @@ dyndns:
                     full: --dry-run
                     help: Only display the generated zone
                     action: store_true
+                --email:
+                    help: Send an email to root with logs if some updating fails
+                    action: store_true
 
 #############################
 #           Tools           #
@@ -1925,7 +1938,7 @@ tools:
 
 
         update_norefresh:
-            # This exists mainly for the API, such that there's an explicit read-only (GET) route 
+            # This exists mainly for the API, such that there's an explicit read-only (GET) route
             # vs the old/regular/legacy(?)/ambiguous PUT /update route ...
             hide_in_help: True
             action_help: List available system/apps updates (without refreshing caches)

@@ -50,7 +50,7 @@ do_pre_regen() {
     cd /usr/share/yunohost/conf/nftables
     mkdir -p "${pending_dir}/etc/nftables.d"
     cp nftables.conf "${pending_dir}/etc/nftables.conf"
-    ynh_config_add --jinja --template=nftables.d/yunohost-firewall.tpl.conf --destination="${pending_dir}/etc/nftables.d/yunohost-firewall.conf"
+    ynh_config_add --jinja --template=nftables.d/yunohost-firewall.conf.j2 --destination="${pending_dir}/etc/nftables.d/yunohost-firewall.conf"
 }
 
 do_post_regen() {

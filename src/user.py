@@ -62,7 +62,7 @@ else:
 
 
 FIELDS_FOR_IMPORT = {
-    "username": r"^[a-z0-9_.]+$",
+    "username": r"^[a-z0-9][-a-z0-9_.]*$",
     "firstname": r"^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$",
     "lastname": r"^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$",
     "password": r"^|(.{3,})$",
@@ -70,7 +70,7 @@ FIELDS_FOR_IMPORT = {
     "mail-alias": r"^|([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$",
     "mail-forward": r"^|([\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$",
     "mailbox-quota": r"^(\d+[bkMGT])|0|$",
-    "groups": r"^|([a-z0-9_]+(,?[a-z0-9_]+)*)$",
+    "groups": r"^|([a-z0-9][-a-z0-9_.]*(,?[a-z0-9][-a-z0-9_.]*)*)$",
 }
 
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
@@ -293,8 +293,7 @@ def user_create(
         raise YunohostError("user_creation_failed", user=username, error=e)
 
     # Invalidate passwd and group to take user and group creation into account
-    subprocess.call(["nscd", "-i", "passwd"])
-    subprocess.call(["nscd", "-i", "group"])
+    subprocess.call(["sss_cache", "-E"])
 
     try:
         # Attempt to create user home folder
@@ -401,7 +400,7 @@ def user_delete(
     AdminAuth.invalidate_all_sessions_for_user(username)
 
     # Invalidate passwd to take user deletion into account
-    subprocess.call(["nscd", "-i", "passwd"])
+    subprocess.call(["sss_cache", "-E"])
 
     if purge:
         subprocess.call(["rm", "-rf", f"/home/{username}"])
@@ -608,8 +607,7 @@ def user_update(
         PortalAuth.invalidate_all_sessions_for_user(username)
 
     # Invalidate passwd and group to update the loginShell
-    subprocess.call(["nscd", "-i", "passwd"])
-    subprocess.call(["nscd", "-i", "group"])
+    subprocess.call(["sss_cache", "-E"])
 
     # Trigger post_user_update hooks
     hook_callback("post_user_update", env=env_dict)

@@ -68,11 +68,6 @@ def setup_function(function):
         add_archive_wordpress_from_11p2()
         assert len(backup_list()["archives"]) == 1
 
-    if "with_legacy_app_installed" in markers:
-        assert not app_is_installed("legacy_app")
-        install_app("legacy_app_ynh", "/yolo", "&is_public=true")
-        assert app_is_installed("legacy_app")
-
     if "with_backup_recommended_app_installed" in markers:
         assert not app_is_installed("backup_recommended_app")
         install_app(
@@ -165,7 +160,6 @@ def backup_test_dependencies_are_met():
     assert os.path.exists(
         os.path.join(get_test_apps_dir(), "backup_wordpress_from_11p2")
     )
-    assert os.path.exists(os.path.join(get_test_apps_dir(), "legacy_app_ynh"))
     assert os.path.exists(
         os.path.join(get_test_apps_dir(), "backup_recommended_app_ynh")
     )
@@ -213,7 +207,7 @@ def delete_all_backups():
 
 
 def uninstall_test_apps_if_needed():
-    for app in ["legacy_app", "backup_recommended_app", "wordpress", "permissions_app"]:
+    for app in ["backup_recommended_app", "wordpress", "permissions_app"]:
         if _is_installed(app):
             app_remove(app)
 
@@ -535,11 +529,6 @@ def test_restore_app_already_installed(mocker):
         )
 
     assert _is_installed("wordpress")
-
-
-@pytest.mark.with_legacy_app_installed
-def test_backup_and_restore_legacy_app():
-    _test_backup_and_restore_app("legacy_app")
 
 
 @pytest.mark.with_backup_recommended_app_installed

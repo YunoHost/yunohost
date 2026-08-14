@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env bash
 #
 # Copyright (c) 2024 YunoHost Contributors
 #
@@ -18,26 +18,32 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from logging import getLogger
+# Exit hook on subcommand error or unset variable
+set -eu
 
-from ..tools import Migration
+do_init_regen() {
+    do_pre_regen ""
+    systemctl restart sssd
+}
 
-logger = getLogger("yunohost.migration")
+do_pre_regen() {
+    pending_dir=$1
+    config_dir=/usr/share/yunohost/conf
 
-###################################################
-# Tools used also for restoration
-###################################################
+    install -D -m 644 "$config_dir/nsswitch/nsswitch.conf" "$pending_dir/etc/nsswitch.conf"
+    install -D -m 640 "$config_dir/sssd/sssd.conf" "$pending_dir/etc/sssd/sssd.conf"
+}
 
+do_post_regen() {
+    regen_conf_files=$1
 
-class MyMigration(Migration):
-    """
-    Delete legacy XMPP permission
-    """
+    chmod 644 "/etc/nsswitch.conf"
+    chmod 640 "/etc/sssd/sssd.conf"
 
-    introduced_in_version = "12.0"
-    dependencies = []
+    if [[ -n "$regen_conf_files" ]]; then
+        sss_cache -E
+        systemctl restart sssd
+    fi
+}
 
-    @Migration.ldap_migration
-    def run(self, *args):
-        # Superseded by migration 0033 / permission rework to move infos out of ldap
-        pass
+"do_$1_regen" "$(echo "${*:2}" | xargs)"

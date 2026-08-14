@@ -23,15 +23,17 @@ Generate JSON specification files API
 """
 
 import json
-import os
 import sys
+from pathlib import Path
 
 import yaml
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-def main():
-    with open("../share/actionsmap.yml") as f:
-        action_map = yaml.safe_load(f)
+
+def main() -> None:
+    actionsmap_yml = PROJECT_ROOT / "share" / "actionsmap.yml"
+    action_map = yaml.safe_load(actionsmap_yml.open())
 
     # try:
     #    with open("/etc/yunohost/current_host", "r") as f:
@@ -39,8 +41,8 @@ def main():
     # except IOError:
     #    domain = requests.get("http://ip.yunohost.org").text
 
-    with open("../debian/changelog") as f:
-        top_changelog = f.readline()
+    changelog = PROJECT_ROOT / "debian" / "changelog"
+    top_changelog = changelog.open().readline()
     api_version = top_changelog[top_changelog.find("(") + 1 : top_changelog.find(")")]
 
     csrf = {
@@ -54,7 +56,10 @@ def main():
         "openapi": "3.0.3",
         "info": {
             "title": "YunoHost API",
-            "description": "This is the YunoHost API used on all YunoHost instances. This API is essentially used by YunoHost Webadmin.",
+            "description": (
+                "This is the YunoHost API used on all YunoHost instances. "
+                "This API is essentially used by YunoHost Webadmin."
+            ),
             "version": api_version,
         },
         "servers": [
@@ -130,7 +135,7 @@ def main():
                 {"name": category, "description": category_params["category_help"]}
             )
 
-            for action, action_params in category_params["actions"].items():
+            for action, action_params in category_params.get("actions", {}).items():
                 if "action_help" not in action_params:
                     action_params["action_help"] = ""
                 if "api" not in action_params:
@@ -200,7 +205,11 @@ def main():
                                 allowable_values = arg_params["choices"]
                             _type = "string"
                             if "type" in arg_params:
-                                types = {"open": "file", "int": "int"}
+                                types = {
+                                    "open": "file",
+                                    "int": "int",
+                                    "argparse.FileType('rb')": "binary file",
+                                }
                                 _type = types[arg_params["type"]]
                             if (
                                 "action" in arg_params
@@ -276,12 +285,11 @@ def main():
 
     openapi_json = json.dumps(resource_list)
     # Save the OpenAPI json
-    with open(os.getcwd() + "/openapi.json", "w") as f:
-        f.write(openapi_json)
+    json_file = Path.cwd() / "openapi.json"
+    json_file.write_text(openapi_json)
 
-    openapi_js = f"var openapiJSON = {openapi_json}"
-    with open(os.getcwd() + "/openapi.js", "w") as f:
-        f.write(openapi_js)
+    js_file = Path.cwd() / "openapi.js"
+    js_file.write_text(f"var openapiJSON = {openapi_json}")
 
 
 if __name__ == "__main__":

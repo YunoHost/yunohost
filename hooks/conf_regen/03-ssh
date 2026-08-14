@@ -41,7 +41,7 @@ do_pre_regen() {
     [[ -f /proc/net/if_inet6 ]] && ipv6_enabled=true || ipv6_enabled=false
 
     mkdir -p "${pending_dir}/etc/ssh"
-    ynh_config_add --jinja --template='sshd_config' --destination="${pending_dir}/etc/ssh/sshd_config"
+    ynh_config_add --jinja --template='sshd_config.j2' --destination="${pending_dir}/etc/ssh/sshd_config"
 }
 
 do_post_regen() {

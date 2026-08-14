@@ -22,7 +22,7 @@ import hashlib
 import json
 import os
 import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 from difflib import unified_diff
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, cast
@@ -469,6 +469,8 @@ def _get_regenconf_infos():
             del data["metronome"]
         if "rspamd" in data:
             del data["rspamd"]
+        if "nsswitch" in data:
+            del data["nsswitch"]
         return data
     except Exception:
         return {}
@@ -656,7 +658,7 @@ def _process_regen_conf(
     """
     if save:
         system_conf_ = system_conf.lstrip("/")
-        now_ = datetime.utcnow().strftime("%Y%m%d.%H%M%S")
+        now_ = datetime.now(timezone.utc).strftime("%Y%m%d.%H%M%S")
         backup_path = os.path.join(BACKUP_CONF_DIR, f"{system_conf_}-{now_}")
         backup_dir = os.path.dirname(backup_path)
 
