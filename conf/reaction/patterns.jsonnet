@@ -1,3 +1,7 @@
+// Import IPs to ignore
+local ynh_settings = import '/etc/yunohost/settings.json';
+local ignored_cidrs = ynh_settings['security.reaction.reaction_allowlist'].value;
+
 {
   patterns: {
     HOST: {
@@ -10,6 +14,7 @@
         '127.0.0.1',
         '::1',
       ],
+      ignorecidr: ignored_cidrs,
     },
     // Some apps use <ADDR> instead of <HOST>
     // So we alias it
