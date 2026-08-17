@@ -1,6 +1,6 @@
 {
   patterns: {
-    ip: {
+    HOST: {
       // Accept IPv4 & IPv6
       type: 'ip',
       // Group IPv6 by /64
@@ -11,5 +11,8 @@
         '::1',
       ],
     },
+    // Some apps use <ADDR> instead of <HOST>
+    // So we alias it
+    ADDR: self.HOST,
   },
 }
