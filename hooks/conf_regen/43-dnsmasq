@@ -191,6 +191,10 @@ do_post_regen() {
 
     [[ -n "$regen_conf_files" ]] || return 0
 
+    chown -R root:root /etc/default/dnsmasq /etc/resolv.dnsmasq.conf /etc/dnsmasq.d/
+    chmod 644 /etc/default/dnsmasq /etc/resolv.dnsmasq.conf
+    chmod -R u=rwX,g=rX,o=rX /etc/dnsmasq.d/
+
     # Remove / disable services likely to conflict with dnsmasq
     for SERVICE in systemd-resolved bind9; do
         systemctl is-enabled $SERVICE &> /dev/null && systemctl disable $SERVICE 2> /dev/null
