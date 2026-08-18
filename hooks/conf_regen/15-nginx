@@ -182,6 +182,10 @@ do_post_regen() {
     chown root:root -R /etc/nginx
     chmod u=rwX,g=rX,o=rX -R /etc/nginx
 
+    if ls -l /var/www/.well-known/*/autoconfig; then
+        chmod -R u=rwX,g=rX,o=rX /var/www/.well-known/*/autoconfig
+    fi
+
     # We don't want nginx logs to be world-readable which could leak secrets from GET query args in some cases/apps...
     find /var/log/nginx -type f | xargs -r chmod 0640
     find /var/log/nginx -type f | xargs -r chown www-data:adm
