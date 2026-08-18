@@ -167,10 +167,6 @@ EOF
 do_post_regen() {
     regen_conf_files=$1
 
-    # Force permission (to cover some edge cases where root's umask is like 027 and then dnsmasq cant read this file)
-    chown root /etc/resolv.dnsmasq.conf
-    chmod 644 /etc/resolv.dnsmasq.conf
-
     # Fuck it, those domain/search entries from dhclient are usually annoying
     # lying shit from the ISP trying to MiTM
     if grep -q -E "^ *(domain|search)" /run/resolvconf/resolv.conf; then
@@ -191,8 +187,9 @@ do_post_regen() {
 
     [[ -n "$regen_conf_files" ]] || return 0
 
-    chown -R root:root /etc/default/dnsmasq /etc/resolv.dnsmasq.conf /etc/dnsmasq.d/
-    chmod 644 /etc/default/dnsmasq /etc/resolv.dnsmasq.conf
+    # Force permission (to cover some edge cases where root's umask is like 027 and then dnsmasq cant read this file)
+    chown -R root:root /etc/default/dnsmasq /etc/resolv.dnsmasq.conf /etc/dnsmasq.d/ /etc/dnsmasq.conf
+    chmod 644 /etc/default/dnsmasq /etc/resolv.dnsmasq.conf /etc/dnsmasq.conf
     chmod -R u=rwX,g=rX,o=rX /etc/dnsmasq.d/
 
     # Remove / disable services likely to conflict with dnsmasq
