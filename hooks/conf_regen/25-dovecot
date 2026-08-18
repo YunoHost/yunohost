@@ -73,7 +73,6 @@ do_post_regen() {
 
     # fix permissions
     chown -R vmail:mail /etc/dovecot/global_script
-    chmod 770 /etc/dovecot/global_script
     chmod -R u=rwX,g=rX,o= /etc/dovecot
     chown root:mail /var/mail
     chmod 1775 /var/mail
