@@ -105,20 +105,27 @@ local ban = import '_ban.jsonnet';
 
     ynh_config_add --template="reaction_filter.jsonnet" --destination="$conf_path"
 
-    ynh_systemctl --service=reaction --action=restart --wait_until="(Started|Restarted) reaction.service" --log_path=systemd
+    if ! reaction test-config -c /etc/reaction; then
+      ynh_print_warn "reaction failed to load the configuration for $app"
+      mv "$conf_path" "$conf_path.failed"
 
-    # Test if reaction failed (and that it was running in the first place)
-    systemctl --failed | grep -q reaction.service
-    if test $? -eq 0 && test -n "$reaction_running"
-    then
-        # Log the error
-        local reaction_error="$(journalctl --no-hostname --unit=reaction.service --lines=50 | grep "ERROR.*$app.*")"
-        ynh_print_warn "reaction failed to load the configuration for $app"
-        ynh_print_warn "${reaction_error#*WARNING}"
+    else
 
-        # Suffix the app's reaction conf and restart reaction
-        mv "$conf_path" "$conf_path.failed"
-        ynh_systemctl --service=reaction --action=restart --wait_until="(Started|Restarted) reaction.service" --log_path=systemd
+      ynh_systemctl --service=reaction --action=restart --wait_until="(Started|Restarted) reaction.service" --log_path=systemd
+
+      # Test if reaction failed (and that it was running in the first place)
+      systemctl --failed | grep -q reaction.service
+      if test $? -eq 0 && test -n "$reaction_running"
+      then
+          # Log the error
+          local reaction_error="$(journalctl --no-hostname --unit=reaction.service --lines=50 | grep "ERROR.*$app.*")"
+          ynh_print_warn "reaction failed to load the configuration for $app"
+          ynh_print_warn "${reaction_error#*WARNING}"
+
+          # Suffix the app's reaction conf and restart reaction
+          mv "$conf_path" "$conf_path.failed"
+          ynh_systemctl --service=reaction --action=restart --wait_until="(Started|Restarted) reaction.service" --log_path=systemd
+      fi
     fi
 }
 
