@@ -1,3 +1,9 @@
+// Calculate the IP range
+// Example if SSH port is 22: "1-21, 23-65536"
+local ynh_settings = import '/etc/yunohost/settings.json';
+local ssh_port = ynh_settings['security.ssh.port'].value;
+local range = '1-%(less1), %(more1)-65536' % { less1: std.toString(ssh_port - 1), more1: std.toString(ssh_port + 1) };
+
 {
   start: [
     [
@@ -24,7 +30,7 @@
             flags interval
           }
 
-          chain input {
+          chain ingress {
             # type filter → we're only accepting or dropping packets
             # hook ingress → before all kernel treatment
             type filter hook ingress priority 0
@@ -32,16 +38,15 @@
             policy accept
 
             # Check if IP is in all ports but ssh set
-            dport { 1-21, 23-65536 } ip  saddr @ban-all-but-ssh4 drop
-            dport { 1-21, 23-65536 } ip6 saddr @ban-all-but-ssh6 drop
+            dport { %(range) } ip  saddr @ban-all-but-ssh4 drop
+            dport { %(range) } ip6 saddr @ban-all-but-ssh6 drop
 
             # Check if (IP, port) ssh set
-            dport 22 ip  saddr @ban-ssh4 drop
-            dport 22 ip6 saddr @ban-ssh6 drop
+            dport %(ssh_port) ip  saddr @ban-ssh4 drop
+            dport %(ssh_port) ip6 saddr @ban-ssh6 drop
           }
-          # chain forward? (docker...)
         }
-      |||,
+      ||| % { range: range, ssh_port: ssh_port },
     ],
   ],
 
