@@ -1,8 +1,7 @@
 // ports can be 'all' or any port (list) understood by nftables
-local ban(time='10m', service='http,https') = {
+local ban(time='10m', ssh=false) = {
 
-  local set = if service == 'all' then 'ban' else 'banport',
-  local port = if service == 'all' then '' else '. dport { %s }' % service,
+  local set = if ssh then 'ban-ssh' else 'ban-all-but-ssh',
 
   // function that generates an nft command
   // example output:
@@ -15,7 +14,7 @@ local ban(time='10m', service='http,https') = {
     'inet',
     'reaction',
     set + iptype,
-    '{ <ip> %s }' % port,
+    '{ <ip> }',
   ],
 
   ban4: {

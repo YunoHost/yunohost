@@ -23,7 +23,7 @@ local recidive = import '_recidive.jsonnet';
         //   ],
         //   retry: 20,
         //   retryperiod: '10m',
-        //   actions: ban(time='10m', service='http,https') + recidive,
+        //   actions: ban(time='10m') + recidive,
         // },
 
         // Yunohost
@@ -33,7 +33,7 @@ local recidive = import '_recidive.jsonnet';
           ],
           retry: 10,
           retryperiod: '10m',
-          actions: ban(time='10m', service='http,https') + recidive,
+          actions: ban(time='10m') + recidive,
         },
         yunohostportalapi: {
           regex: [
@@ -41,7 +41,7 @@ local recidive = import '_recidive.jsonnet';
           ],
           retry: 20,
           retryperiod: '10m',
-          actions: ban(time='10m', service='http,https') + recidive,
+          actions: ban(time='10m') + recidive,
         },
       },
     },

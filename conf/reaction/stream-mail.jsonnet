@@ -13,7 +13,7 @@ local recidive = import '_recidive.jsonnet';
           ],
           retry: 5,
           retryperiod: '10m',
-          actions: ban(time='10m', service='smtp') + recidive,
+          actions: ban(time='10m') + recidive,
         },
         dovecot: {
           regex: [
@@ -22,7 +22,7 @@ local recidive = import '_recidive.jsonnet';
           ],
           retry: 5,
           retryperiod: '10m',
-          actions: ban(time='10m', service='smtp') + recidive,
+          actions: ban(time='10m') + recidive,
         },
       },
     },

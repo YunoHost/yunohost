@@ -4,23 +4,23 @@
       'nft',
       |||
         table inet reaction {
-          # IP sets to ban on all ports
-          set ban4 {
+          # IP sets to ban on all ports but ssh
+          set ban-all-but-ssh4 {
             type ipv4_addr
             flags interval
           }
-          set ban6 {
+          set ban-all-but-ssh6 {
             type ipv6_addr
             flags interval
           }
 
-          # IP sets to ban on multiport
-          set banport4 {
-            type ipv4_addr . inet_service
+          # IP sets to ban on ssh
+          set ban-ssh4 {
+            type ipv4_addr
             flags interval
           }
-          set banport6 {
-            type ipv6_addr . inet_service
+          set ban-ssh6 {
+            type ipv6_addr
             flags interval
           }
 
@@ -31,13 +31,13 @@
 
             policy accept
 
-            # Check if IP is in all ports set
-            ip  saddr @ban4 drop
-            ip6 saddr @ban6 drop
+            # Check if IP is in all ports but ssh set
+            dport { 1-21, 23-65536 } ip  saddr @ban-all-but-ssh4 drop
+            dport { 1-21, 23-65536 } ip6 saddr @ban-all-but-ssh6 drop
 
-            # Check if (IP, port) tuple is in multiport set
-            ip  saddr . tcp dport @banport4 drop
-            ip6 saddr . tcp dport @banport6 drop
+            # Check if (IP, port) ssh set
+            dport 22 ip  saddr @ban-ssh4 drop
+            dport 22 ip6 saddr @ban-ssh6 drop
           }
           # chain forward? (docker...)
         }
