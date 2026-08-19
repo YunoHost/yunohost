@@ -458,9 +458,9 @@ ynh_spawn_app_shell() {
         while IFS=$'\t' read -r k v; do
             export "$k=$v"
         done < <(
-        # We use a Python snippet because the output format of 'systemctl show'
-        # might not be properly parsed by Bash, especially with spaces and quotes.
-        python3 -c '
+            # We use a Python snippet because the output format of 'systemctl show'
+            # might not be properly parsed by Bash, especially with spaces and quotes.
+            python3 -c '
 import sys, shlex
 s=sys.argv[1]
 for item in shlex.split(s):
@@ -469,7 +469,7 @@ for item in shlex.split(s):
     k, v = item.split("=", 1)
     sys.stdout.write(k + "\t" + v + "\n")
 ' "$env_var"
-)
+        )
 
         # Source the EnvironmentFiles from the app's service
         local -a env_files
