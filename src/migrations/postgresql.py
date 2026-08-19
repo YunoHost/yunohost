@@ -100,7 +100,7 @@ class PostgreSQLMigration(Migration):
         sudocmd = f"LC_ALL=C sudo --login -u postgres PGUSER=postgres PGPASSWORD='{password}'"
         psqlcmd = "psql --tuples-only --no-align --dbname=postgres --command=\"SELECT datname FROM pg_database WHERE datistemplate = false OR datname = 'template1';\""
         _, out, _ = self.runcmd(f"{sudocmd} {psqlcmd}")
-        databases = [line.strip() for line in out]
+        databases = [line.strip().decode('utf8') for line in out]
         for database in databases:
             # See https://www.postgresql.org/docs/17/sql-altercollation.html#SQL-ALTERCOLLATION-NOTES
             self.runcmd(f"{sudocmd} psql --dbname='{database}' --command='REINDEX DATABASE {database};'")
