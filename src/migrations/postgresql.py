@@ -82,12 +82,9 @@ class PostgreSQLMigration(Migration):
         subprocess.check_call(["systemctl", "stop", "postgresql"])
         time.sleep(3)
 
-        logger.info("Dropping target cluster...")
-        # We do not trigger an exception if the command fails because that probably means cluster
-        # self.target_version doesn't exists, which is fine because it's created during the pg_upgradecluster)
-        cmd = ["pg_dropcluster", "--stop", str(self.target_version), "main"]
-        subprocess.run(cmd, env=environ, check=False)
-        time.sleep(3)
+        if self.cluster_is_installed(self.target_version, "main"):
+            logger.warning(f"PostgreSQL cluster {self.target_version}-main already exists. Renaming to {self.target_version}-renamed.")
+            subprocess.check_call(["pg_renamecluster", str(self.target_version), "main", "renamed"], env=environ)
 
         logger.info("Upgrading cluster...")
         cmd = ["pg_upgradecluster", "-m", "upgrade", str(self.previous_version), "main", "-v", str(self.target_version)]
