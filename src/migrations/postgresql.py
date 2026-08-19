@@ -22,7 +22,6 @@ import os
 import subprocess
 import time
 from logging import getLogger
-from pathlib import Path
 
 from moulinette import m18n
 
@@ -96,8 +95,7 @@ class PostgreSQLMigration(Migration):
     def run_post_migration(self):
         logger.warning(m18n.n("migration_postgresql_reindexing_databases"))
 
-        password = Path("/etc/yunohost/psql").read_text().strip()
-        sudocmd = f"LC_ALL=C sudo --login -u postgres PGUSER=postgres PGPASSWORD='{password}'"
+        sudocmd = "LC_ALL=C sudo -u postgres"
         psqlcmd = "psql --tuples-only --no-align --dbname=postgres --command=\"SELECT datname FROM pg_database WHERE datistemplate = false OR datname = 'template1';\""
         _, out, _ = self.runcmd(f"{sudocmd} {psqlcmd}")
         databases = [line.strip().decode('utf8') for line in out]
