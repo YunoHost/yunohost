@@ -131,9 +131,11 @@ class PostgreSQLMigration(Migration):
         returncode = p.returncode
         if raise_on_errors and returncode != 0:
             raise YunohostError(
-                "Failed to run command '{}'.\nreturncode: {}\nstdout:\n{}\nstderr:\n{}\n".format(
-                    cmd, returncode, out, err
-                )
+                f"Failed to run command '{cmd}'.\n"
+                f"returncode: {returncode}\n"
+                f"stdout:\n{out.decode('utf-8', errors='backslashreplace')}\n"
+                f"stderr:\n{err.decode('utf-8', errors='backslashreplace')}\n",
+                raw_msg=True
             )
 
         out = out.strip().split(b"\n")
