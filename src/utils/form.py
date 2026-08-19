@@ -1599,11 +1599,13 @@ class SelectOption(BaseChoicesOption):
     default: str | None = None
     _annotation = str
 
-    @model_validator(mode="after")
-    def check_choices(self) -> Any:
-        if self.choices == []:
-            raise ValueError("select choices should not be empty")
-        return self
+    # FIXME Some apps (like hotspot) might return empty choices in custom getters if there's no available option
+    # and this breaks the whole config panel. Commenting for now but might be reactivated at some point
+    # @model_validator(mode="after")
+    # def check_choices(self) -> Any:
+    #     if self.choices == []:
+    #         raise ValueError("select choices should not be empty")
+    #     return self
 
 
 class TagsOption(BaseChoicesOption):
