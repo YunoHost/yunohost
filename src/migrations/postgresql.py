@@ -58,37 +58,42 @@ class PostgreSQLMigration(Migration):
             )
 
         # Make sure there's a 15 cluster
-        try:
-            self.runcmd(f"pg_lsclusters | grep -q '^{self.previous_version} '")
-        except Exception:
+        if self.cluster_is_installed(self.previous_version):
+
+            if not space_used_by_directory(
+                f"/var/lib/postgresql/{self.previous_version}"
+            ) > free_space_in_directory("/var/lib/postgresql"):
+                raise YunohostValidationError(
+                    "migration_not_enough_space", path="/var/lib/postgresql/"
+                )
+
+            self.runcmd("systemctl stop postgresql")
+            time.sleep(3)
+            self.runcmd(
+                f"LC_ALL=C pg_dropcluster --stop {self.target_version} main || true"
+            )  # We do not trigger an exception if the command fails because that probably means cluster self.target_version doesn't exists, which is fine because it's created during the pg_upgradecluster)
+            time.sleep(3)
+            self.runcmd(
+                f"LC_ALL=C pg_upgradecluster -m upgrade {self.previous_version} main -v {self.target_version}"
+            )
+            self.runcmd(f"LC_ALL=C pg_dropcluster --stop {self.previous_version} main")
+
+            # Fix possibly borked postgresql default config when Immich is installed
+            self.runcmd(r"sed -i '/^\* \* 15 main postgres$/d' /etc/postgresql-common/user_clusters")
+
+            self.runcmd("systemctl start postgresql")
+
+            self.run_post_migration()
+
+        elif self.cluster_is_installed(self.target_version):
+            logger.info(f"Migration to version {self.target_version} looks already done, running the post-migrations steps")
+            self.run_post_migration()
+        else:
             logger.warning(
-                f"It looks like there's not active {self.previous_version} cluster, so probably don't need to run this migration"
-            )
-            return
-
-        if not space_used_by_directory(
-            f"/var/lib/postgresql/{self.previous_version}"
-        ) > free_space_in_directory("/var/lib/postgresql"):
-            raise YunohostValidationError(
-                "migration_not_enough_space", path="/var/lib/postgresql/"
+                f"It looks like there's no active cluster for postgresql-{self.previous_version}, so probably don't need to run this migration"
             )
 
-        self.runcmd("systemctl stop postgresql")
-        time.sleep(3)
-        self.runcmd(
-            f"LC_ALL=C pg_dropcluster --stop {self.target_version} main || true"
-        )  # We do not trigger an exception if the command fails because that probably means cluster self.target_version doesn't exists, which is fine because it's created during the pg_upgradecluster)
-        time.sleep(3)
-        self.runcmd(
-            f"LC_ALL=C pg_upgradecluster -m upgrade {self.previous_version} main -v {self.target_version}"
-        )
-        self.runcmd(f"LC_ALL=C pg_dropcluster --stop {self.previous_version} main")
-
-        # Fix possibly borked postgresql default config when Immich is installed
-        self.runcmd(r"sed -i '/^\* \* 15 main postgres$/d' /etc/postgresql-common/user_clusters")
-
-        self.runcmd("systemctl start postgresql")
-
+    def run_post_migration(self):
         logger.warning(m18n.n("migration_postgresql_reindexing_databases"))
 
         password = Path("/etc/yunohost/psql").read_text().strip()
@@ -106,6 +111,11 @@ class PostgreSQLMigration(Migration):
             "dpkg --list | grep '^ii ' | grep -q -w {}".format(package_name),
             raise_on_errors=False,
         )
+        return returncode == 0
+
+    def cluster_is_installed(self, version):
+        # Make sure there's a 15 cluster
+        (returncode, _, _) = self.runcmd(f"pg_lsclusters | grep -q '^{version} '", False)
         return returncode == 0
 
     def runcmd(self, cmd, raise_on_errors=True):
