@@ -24,7 +24,7 @@ from .postgresql import PostgreSQLMigration
 class MyMigration(PostgreSQLMigration):
     "Migrate DBs from Postgresql 15 to 17 after migrating to Trixie"
 
-    previous_version = "15"
-    target_version = "17"
+    previous_version = 15
+    target_version = 17
 
     dependencies = ["migrate_to_trixie"]
