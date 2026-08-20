@@ -222,7 +222,14 @@ class PythonMigration(Migration):
                 fp.write(pip_freeze_output)
                 fp.flush()
                 status = call_async_output(
-                    [venv_path / "bin/pip", "install", "-r", fp.name], callbacks
+                    [
+                        venv_path / "bin/pip",
+                        "install",
+                        "--no-build-isolation",
+                        "-r",
+                        fp.name,
+                    ],
+                    callbacks,
                 )
 
             if status != 0:
