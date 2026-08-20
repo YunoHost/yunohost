@@ -20,10 +20,15 @@
 
 import os
 from logging import getLogger
+from pathlib import Path
+import re
+import subprocess
+import tempfile
 
 from moulinette import m18n
 
 from ..tools import Migration, tools_migrations_state
+from ..utils.file_utils import read_file, rm
 from ..utils.process import call_async_output
 from ..utils.system import debian_version
 
@@ -61,6 +66,9 @@ class PythonMigration(Migration):
 
     migration_id: str
     state = None
+    py_version_re = re.compile(
+        r"version\s*=\s*(?P<version>\d+\.\d+)"
+    )  # Omit the patch number of the version
 
     def extract_app_from_venv_path(self, venv_path: str) -> str:
         venv_path = venv_path.replace("/var/www/", "")
@@ -161,6 +169,7 @@ class PythonMigration(Migration):
 
         venvs = self._get_all_venvs("/opt/") + self._get_all_venvs("/var/www/")
         for venv in venvs:
+            venv_path = Path(venv)
             app_corresponding_to_venv = self.extract_app_from_venv_path(venv)
 
             # Search for ignore apps
@@ -183,19 +192,39 @@ class PythonMigration(Migration):
                 )
             )
 
-            venv_cmd = ["python", "-m", "venv", venv]
-
-            # Get venv info
-            pyvenv_cfg = open(os.path.join(venv, "pyvenv.cfg")).read()
-            if "include-system-site-packages = true" in pyvenv_cfg:
-                venv_cmd.append("--system-site-packages")
+            old_python_version = self._extract_venv_python_version(venv_path)
+            if not old_python_version:
+                logger.warn(
+                    m18n.n(
+                        "migration_python_venv_cant_read_pyvenv",
+                        app=app_corresponding_to_venv,
+                    )
+                )
+                continue
 
             # Recreate the venv
             callbacks = (
                 lambda l: logger.debug("+ " + l.rstrip() + "\r"),
                 lambda l: logger.warning(l.rstrip()),
             )
-            status = call_async_output(["python", "-m", "venv", "--upgrade", venv], callbacks)
+            call_async_output(["python", "-m", "venv", "--upgrade", venv], callbacks)
+
+            pip_freeze_output = subprocess.check_output(
+                [
+                    venv_path / "bin/pip",
+                    "freeze",
+                    "--path",
+                    venv_path / f"lib/python{old_python_version}/site-packages",
+                ]
+            )
+
+            with tempfile.NamedTemporaryFile() as fp:
+                fp.write(pip_freeze_output)
+                fp.flush()
+                status = call_async_output(
+                    [venv_path / "bin/pip", "install", "-r", fp.name], callbacks
+                )
+
             if status != 0:
                 logger.error(
                     m18n.n(
@@ -203,3 +232,16 @@ class PythonMigration(Migration):
                         app=app_corresponding_to_venv,
                     )
                 )
+            self._cleanup(venv_path, old_python_version)
+
+    def _extract_venv_python_version(self, venv_path: Path) -> None | str:
+        py_version_match = self.py_version_re.search(
+            read_file(venv_path / "pyvenv.cfg")
+        )
+        return py_version_match.group("version") if py_version_match else None
+
+    def _cleanup(self, venv_path: Path, old_python_version: str):
+        rm(venv_path / f"lib/python{old_python_version}", recursive=True)
+        rm(venv_path / f"include/python{old_python_version}", recursive=True)
+        rm(venv_path / f"bin/python{old_python_version}")
+        rm(venv_path / f"bin/pip{old_python_version}")

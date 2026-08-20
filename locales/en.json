@@ -705,6 +705,7 @@
     "migration_python_venv_rebuild_disclaimer_rebuild": "Rebuilding the virtualenv will be attempted for the following apps (NB: the operation may take some time!): {rebuild_apps}",
     "migration_python_venv_rebuild_failed": "Failed to rebuild the Python virtualenv for {app}. The app may not work as long as this is not resolved. You should fix the situation by forcing the upgrade of this app using `yunohost app upgrade --force {app}`.",
     "migration_python_venv_rebuild_in_progress": "Now attempting to rebuild the Python virtualenv for `{app}`",
+    "migration_python_venv_cant_read_pyvenv": "Cannot read the previous python version in the pyvenv.cfg file for `{app}`",
     "migrations_already_ran": "Those migrations are already done: {ids}",
     "migrations_dependencies_not_satisfied": "Run these migrations: '{dependencies_id}', before migration {id}.",
     "migrations_exclusive_options": "'--auto', '--skip', and '--force-rerun' are mutually exclusive options.",
