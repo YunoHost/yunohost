@@ -34,7 +34,6 @@ do_pre_regen() {
     mkdir -p "${dovecot_dir}/global_script"
 
     # copy simple conf files
-    cp dovecot-ldap.conf "${dovecot_dir}/dovecot-ldap.conf"
     cp dovecot.sieve "${dovecot_dir}/global_script/dovecot.sieve"
 
     export pop3_enabled="$(jq -r '.pop3_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
