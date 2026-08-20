@@ -242,6 +242,7 @@ def portal_update(
             new_mails = [mail] + new_mails[1:]
 
         new_attr_dict["mail"] = new_mails
+        new_attr_dict["maildrop"] = [mail] + current_user["maildrop"][1:]
 
     if mailalias is not None:
         is_allowed_to_edit_mail_alias = portal_settings["portal_allow_edit_email_alias"]
