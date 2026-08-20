@@ -24,7 +24,6 @@ from logging import getLogger
 from moulinette import m18n
 
 from ..tools import Migration, tools_migrations_state
-from ..utils.file_utils import rm
 from ..utils.process import call_async_output
 from ..utils.system import debian_version
 
@@ -63,9 +62,6 @@ class PythonMigration(Migration):
     migration_id: str
     state = None
 
-    def venv_requirements_suffix(self) -> str:
-        return f".requirements_backup_for_{debian_version()}_upgrade.txt"
-
     def extract_app_from_venv_path(self, venv_path: str) -> str:
         venv_path = venv_path.replace("/var/www/", "")
         venv_path = venv_path.replace("/opt/yunohost/", "")
@@ -90,10 +86,8 @@ class PythonMigration(Migration):
         for file in os.listdir(dir):
             path = os.path.join(dir, file)
             if os.path.isdir(path):
-                activatepath = os.path.join(path, "bin", "activate")
-                if os.path.isfile(activatepath) and os.path.isfile(
-                    path + self.venv_requirements_suffix()
-                ):
+                pyvenv_path = os.path.join(path, "pyvenv.cfg")
+                if os.path.isfile(pyvenv_path):
                     result.append(path)
                     continue
                 if level < maxlevel:
@@ -133,9 +127,6 @@ class PythonMigration(Migration):
 
         venvs = self._get_all_venvs("/opt/") + self._get_all_venvs("/var/www/")
         for venv in venvs:
-            if not os.path.isfile(venv + self.venv_requirements_suffix()):
-                continue
-
             app_corresponding_to_venv = self.extract_app_from_venv_path(venv)
 
             # Search for ignore apps
@@ -177,7 +168,6 @@ class PythonMigration(Migration):
                 app_corresponding_to_venv.startswith(app)
                 for app in self.ignored_python_apps
             ):
-                rm(venv + self.venv_requirements_suffix())
                 logger.info(
                     m18n.n(
                         "migration_python_venv_rebuild_broken_app",
@@ -201,21 +191,11 @@ class PythonMigration(Migration):
                 venv_cmd.append("--system-site-packages")
 
             # Recreate the venv
-            rm(venv, recursive=True)
             callbacks = (
                 lambda l: logger.debug("+ " + l.rstrip() + "\r"),
                 lambda l: logger.warning(l.rstrip()),
             )
-            call_async_output(venv_cmd, callbacks)
-            status = call_async_output(
-                [
-                    f"{venv}/bin/pip",
-                    "install",
-                    "-r",
-                    venv + self.venv_requirements_suffix(),
-                ],
-                callbacks,
-            )
+            status = call_async_output(["python", "-m", "venv", "--upgrade", venv], callbacks)
             if status != 0:
                 logger.error(
                     m18n.n(
@@ -223,5 +203,3 @@ class PythonMigration(Migration):
                         app=app_corresponding_to_venv,
                     )
                 )
-            else:
-                rm(venv + self.venv_requirements_suffix())
