@@ -193,13 +193,20 @@ class PythonMigration(Migration):
                 )
             )
 
+            venv_cmd = ["python", "-m", "venv", venv]
+
+            # Get venv info
+            pyvenv_cfg = open(os.path.join(venv, "pyvenv.cfg")).read()
+            if "include-system-site-packages = true" in pyvenv_cfg:
+                venv_cmd.append("--system-site-packages")
+
             # Recreate the venv
             rm(venv, recursive=True)
             callbacks = (
                 lambda l: logger.debug("+ " + l.rstrip() + "\r"),
                 lambda l: logger.warning(l.rstrip()),
             )
-            call_async_output(["python", "-m", "venv", venv], callbacks)
+            call_async_output(venv_cmd, callbacks)
             status = call_async_output(
                 [
                     f"{venv}/bin/pip",
