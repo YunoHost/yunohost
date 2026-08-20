@@ -115,9 +115,10 @@ def _backup_pip_freeze_for_python_app_venvs():
         if not pip.is_file():
             logger.warning(f"Skipping venv {venv} because no 'pip' bin found")
             continue
-        pip_freeze = subprocess.check_output([pip, "freeze"]).decode(encoding="utf-8")
+        pip_freeze = subprocess.check_output([pip, "freeze", "--local"]).decode(encoding="utf-8")
         pip_freeze = re.sub(r"^pkg(-|_)resources==.*$", "", pip_freeze)
-        (venv / VENV_REQUIREMENTS_SUFFIX).write_text(pip_freeze)
+        requirements_file = (venv.parent) / (venv.name + VENV_REQUIREMENTS_SUFFIX)
+        requirements_file.write_text(pip_freeze)
 
 
 def unstable_apps() -> list[str]:
@@ -572,7 +573,7 @@ sideway (typically by SSHing from the local network, or through rescue access on
             new_file_pars = []
             paragraphs = Deb822.iter_paragraphs(file.read_text())
             for paragraph in paragraphs:
-                paragraph["Suites"] = "trixie"
+                paragraph["Suites"] = paragraph["Suites"].replace("bookworm", "trixie")
 
                 if re.match(
                     r"^https?://(repo|forge)\.yunohost\.org.*", paragraph["URIs"]
