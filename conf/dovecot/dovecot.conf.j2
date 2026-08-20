@@ -91,7 +91,7 @@ protocol imap {
 protocol lda {
   auth_socket_path = /var/run/dovecot/auth-master
   mail_plugins = quota sieve
-  postmaster_address = postmaster@trixietests.yunohost.org
+  postmaster_address = postmaster@{{ main_domain }}
 }
 
 namespace inbox {
