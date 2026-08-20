@@ -39,6 +39,9 @@ do_pre_regen() {
     # install plain conf files
     cp plain/* "$postfix_dir"
 
+    # Ensure legacy files are deleted on the system
+    touch "$postfix_dir/ldap-domains.cf"
+
     # prepare main.cf conf file
     main_domain=$(cat /etc/yunohost/current_host)
 
