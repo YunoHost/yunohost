@@ -114,7 +114,7 @@ def _backup_pip_freeze_for_python_app_venvs():
         if not pip.is_file():
             logger.warning(f"Skipping venv {venv} because no 'pip' bin found")
             continue
-        pip_freeze = subprocess.check_output([pip, "freeze"]).decode(encoding="utf-8")
+        pip_freeze = subprocess.check_output([pip, "freeze", "--local"]).decode(encoding="utf-8")
         pip_freeze = re.sub(r"^pkg(-|_)resources==.*$", "", pip_freeze)
         requirements_file = (venv.parent) / (venv.name + VENV_REQUIREMENTS_SUFFIX)
         requirements_file.write_text(pip_freeze)
