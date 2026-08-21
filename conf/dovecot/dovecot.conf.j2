@@ -61,10 +61,9 @@ passdb_default_password_scheme = SSHA
 passdb ldap {
   # bind = yes
   filter = (&(objectClass=inetOrgPerson)(|(uid=%{user})(mail=%{user}))(permission=cn=mail.main,ou=permission,dc=yunohost,dc=org))
-  #fields {
-  #  user = %{ldap:uid}
-  #  password = %{ldap:userPassword}
-  #}
+  fields {
+    user = %{ldap:uid}
+  }
 }
 
 # Internally, allow authentication from apps system user who have "enable_email = true"
@@ -74,6 +73,9 @@ passdb passwd-file {
 
 userdb ldap {
   filter = (&(objectClass=inetOrgPerson)(|(uid=%{user})(mail=%{user}))(permission=cn=mail.main,ou=permission,dc=yunohost,dc=org))
+  fields {
+    user = %{ldap:uid}
+  }
 }
 
 userdb passwd-file {
