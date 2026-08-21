@@ -77,7 +77,7 @@ class PythonMigration(Migration):
 
     migration_id: str
     state = None
-    pyenv_cfg_version_extractor = re.compile(
+    pyvenv_cfg_version_extractor = re.compile(
         r"version\s*=\s*(?P<version>\d+\.\d+)"  # Omit the patch number of the version
     )
 
@@ -112,8 +112,8 @@ class PythonMigration(Migration):
         for file in os.listdir(dir):
             path = os.path.join(dir, file)
             if os.path.isdir(path):
-                pyvenv_path = os.path.join(path, "pyvenv.cfg")
-                if os.path.isfile(pyvenv_path):
+                pyvenv_cfg_path = os.path.join(path, "pyvenv.cfg")
+                if os.path.isfile(pyvenv_cfg_path):
                     result.append(path)
                     continue
                 if level < maxlevel:
@@ -280,7 +280,7 @@ class PythonMigration(Migration):
                 raise e
 
     def _extract_venv_python_version(self, venv_path: Path) -> None | str:
-        py_version_match = self.pyenv_cfg_version_extractor.search(
+        py_version_match = self.pyvenv_cfg_version_extractor.search(
             read_file(venv_path / "pyvenv.cfg")
         )
         return py_version_match.group("version") if py_version_match else None
