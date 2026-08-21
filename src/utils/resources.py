@@ -1294,7 +1294,7 @@ class AptDependenciesAppResource(AppResource):
                 [
                     ynh_apt_install_dependencies_from_extra_repository,
                     f"--repo='{values['repo']}'",
-                    f"--key='{values.get('key', "")}'",
+                    f"--key='{values.get('key', '')}'",
                     f"--package='{' '.join(values['packages'])}'",
                 ]
             )
