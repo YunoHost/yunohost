@@ -264,18 +264,23 @@ class PythonMigration(Migration):
 
             (requirements, editables_requirements) = self._split_editables(requirements)
 
-            self._install_requirements(pip_path, requirements, app_corresponding_to_venv, callbacks)
+            try:
+                self._install_requirements(pip_path, requirements, app_corresponding_to_venv, callbacks)
 
-            if editables_requirements:
-                self._install_requirements(
-                    pip_path,
-                    editables_requirements,
-                    app_corresponding_to_venv,
-                    callbacks,
-                    extra_args=["--no-build-isolation"],
-                )
+                if editables_requirements:
+                    self._install_requirements(
+                        pip_path,
+                        editables_requirements,
+                        app_corresponding_to_venv,
+                        callbacks,
+                        extra_args=["--no-build-isolation"],
+                    )
 
-            self._cleanup_old_python_assets(venv_path, old_python_version)
+                self._cleanup_old_python_assets(venv_path, old_python_version)
+            except YunohostError:
+                continue
+            except Exception as e:
+                raise e
 
     def _extract_venv_python_version(self, venv_path: Path) -> None | str:
         py_version_match = self.pyenv_cfg_version_extractor.search(
