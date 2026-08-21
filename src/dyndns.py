@@ -373,6 +373,7 @@ def dyndns_update(
     import dns.update
 
     from .dns import _build_dns_conf
+    from .settings import settings_get
 
     # If domain is not given, update all DynDNS domains
     if domain is None:
@@ -462,7 +463,10 @@ def dyndns_update(
     logger.debug(f"Requested IPv4/v6 are ({ipv4}, {ipv6})")
 
     # no need to update
-    if (not force and not dry_run) and (old_ipv4 == ipv4 and old_ipv6 == ipv6):
+    dns_exposure = settings_get("misc.network.dns_exposure")
+    ignore_ipv4 = old_ipv4 == ipv4 if dns_exposure in ["both", "ipv4"] else True
+    ignore_ipv6 = old_ipv6 == ipv6 if dns_exposure in ["both", "ipv6"] else True
+    if (not force and not dry_run) and ignore_ipv4 and ignore_ipv6:
         logger.info("No update needed.")
         return
     else:
