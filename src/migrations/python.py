@@ -22,6 +22,7 @@ from functools import cached_property
 from logging import getLogger
 import os
 from pathlib import Path
+import sys
 from typing import Callable, Tuple
 try:
     from pip import __version__ as PIP_VERSION
@@ -76,7 +77,7 @@ class PythonMigration(Migration):
 
     migration_id: str
     state = None
-    py_version_re = re.compile(
+    pyenv_cfg_version_extractor = re.compile(
         r"version\s*=\s*(?P<version>\d+\.\d+)"  # Omit the patch number of the version
     )
 
@@ -131,6 +132,13 @@ class PythonMigration(Migration):
         match = re.match(rf'^{MAJOR_MINOR_PATCH_RE}', PIP_VERSION)
         if not match:
             raise YunohostError(f"cannot parse pip system version: {PIP_VERSION}", raw_msg=True)
+        return match.string
+
+    @cached_property
+    def python_version(self):
+        match = re.match(rf'^{MAJOR_MINOR_PATCH_RE}', sys.version)
+        if not match:
+            raise YunohostError(f"cannot extract python version from: {sys.version}", raw_msg=True)
         return match.string
 
     @property
@@ -231,6 +239,10 @@ class PythonMigration(Migration):
                 )
                 continue
 
+            if dpkg_compare_version(old_python_version, self.python_version) in [0, 1]:
+                logger.info(f"{app_corresponding_to_venv} looks already migrated, skipping")
+                continue
+
             # Recreate the venv
             callbacks: PipExecutionCallbacks = (
                 lambda line: logger.debug("+ " + line.rstrip() + "\r"),
@@ -266,7 +278,7 @@ class PythonMigration(Migration):
             self._cleanup_old_python_assets(venv_path, old_python_version)
 
     def _extract_venv_python_version(self, venv_path: Path) -> None | str:
-        py_version_match = self.py_version_re.search(
+        py_version_match = self.pyenv_cfg_version_extractor.search(
             read_file(venv_path / "pyvenv.cfg")
         )
         return py_version_match.group("version") if py_version_match else None
