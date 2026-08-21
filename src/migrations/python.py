@@ -141,9 +141,6 @@ class PythonMigration(Migration):
 
     @property
     def mode(self):
-        if not self.is_pending():
-            return "auto"
-
         if self._get_all_venvs("/opt/") + self._get_all_venvs("/var/www/"):
             return "manual"
         else:
