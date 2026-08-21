@@ -129,17 +129,17 @@ class PythonMigration(Migration):
 
     @cached_property
     def pip_version_normalized(self):
-        match = re.match(rf'^{MAJOR_MINOR_PATCH_RE}', PIP_VERSION)
+        match = re.match(rf'^(?P<version>{MAJOR_MINOR_PATCH_RE})', PIP_VERSION)
         if not match:
             raise YunohostError(f"cannot parse pip system version: {PIP_VERSION}", raw_msg=True)
-        return match.string
+        return match.group("version")
 
     @cached_property
     def python_version(self):
-        match = re.match(rf'^{MAJOR_MINOR_PATCH_RE}', sys.version)
+        match = re.match(rf'^(?P<version>{MAJOR_MINOR_PATCH_RE})', sys.version)
         if not match:
             raise YunohostError(f"cannot extract python version from: {sys.version}", raw_msg=True)
-        return match.string
+        return match.group("version")
 
     @property
     def mode(self):
