@@ -18,21 +18,31 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
+from functools import cached_property
 from logging import getLogger
+import os
 from pathlib import Path
+from typing import Callable, Tuple
+try:
+    from pip import __version__ as PIP_VERSION
+except ImportError:
+    PIP_VERSION = ""
 import re
-import subprocess
 import tempfile
 
 from moulinette import m18n
 
 from ..tools import Migration, tools_migrations_state
+from ..utils.error import YunohostError
 from ..utils.file_utils import read_file, rm
-from ..utils.process import call_async_output
-from ..utils.system import debian_version
+from ..utils.process import call_async_output, check_output
+from ..utils.system import debian_version, dpkg_compare_version
+
+type PipExecutionCallbacks = Tuple[Callable[[str], None], Callable[[str], None]]
 
 logger = getLogger("yunohost.migration")
+
+MAJOR_MINOR_PATCH_RE = r'\d+\.\d+\.\d+'
 
 
 class PythonMigration(Migration):
@@ -67,8 +77,15 @@ class PythonMigration(Migration):
     migration_id: str
     state = None
     py_version_re = re.compile(
-        r"version\s*=\s*(?P<version>\d+\.\d+)"
-    )  # Omit the patch number of the version
+        r"version\s*=\s*(?P<version>\d+\.\d+)"  # Omit the patch number of the version
+    )
+
+    pip_version_requirement_extractor_re = re.compile(rf"""
+        ^pip\s*==\s*
+        (?P<version>{MAJOR_MINOR_PATCH_RE}) # Only get the major, minor and patch
+        (?:[^\d].*)?$ # Also grab any residual characters that follows the patch,
+                      # but don't process them, they will be removed if we skip the pip upgrade.
+    """, re.VERBOSE)
 
     def extract_app_from_venv_path(self, venv_path: str) -> str:
         venv_path = venv_path.replace("/var/www/", "")
@@ -108,6 +125,13 @@ class PythonMigration(Migration):
                 self.migration_id, "pending"
             )
         return self.state == "pending"
+
+    @cached_property
+    def pip_version_normalized(self):
+        match = re.match(rf'^{MAJOR_MINOR_PATCH_RE}', PIP_VERSION)
+        if not match:
+            raise YunohostError(f"cannot parse pip system version: {PIP_VERSION}", raw_msg=True)
+        return match.string
 
     @property
     def mode(self):
@@ -167,9 +191,14 @@ class PythonMigration(Migration):
         if self.mode == "auto":
             return
 
+        if not self.pip_version_normalized:
+            logger.info("No pip version found, skipping")
+            return
+
         venvs = self._get_all_venvs("/opt/") + self._get_all_venvs("/var/www/")
         for venv in venvs:
             venv_path = Path(venv)
+            pip_path = venv_path / "bin/pip"
             app_corresponding_to_venv = self.extract_app_from_venv_path(venv)
 
             # Search for ignore apps
@@ -203,43 +232,38 @@ class PythonMigration(Migration):
                 continue
 
             # Recreate the venv
-            callbacks = (
-                lambda l: logger.debug("+ " + l.rstrip() + "\r"),
-                lambda l: logger.warning(l.rstrip()),
+            callbacks: PipExecutionCallbacks = (
+                lambda line: logger.debug("+ " + line.rstrip() + "\r"),
+                lambda line: logger.warning(line.rstrip()),
             )
             call_async_output(["python", "-m", "venv", "--upgrade", venv], callbacks)
 
-            pip_freeze_output = subprocess.check_output(
+            requirements = check_output(
                 [
-                    venv_path / "bin/pip",
+                    pip_path,
                     "freeze",
-                    "--path",
-                    venv_path / f"lib/python{old_python_version}/site-packages",
-                ]
+                    "--all",
+                    "--path=" + str(venv_path / f"lib/python{old_python_version}/site-packages"),
+                ],
+                shell=False
             )
 
-            with tempfile.NamedTemporaryFile() as fp:
-                fp.write(pip_freeze_output)
-                fp.flush()
-                status = call_async_output(
-                    [
-                        venv_path / "bin/pip",
-                        "install",
-                        "--no-build-isolation",
-                        "-r",
-                        fp.name,
-                    ],
+            requirements = self._remove_pip_if_not_newer_than_system_version(requirements)
+
+            (requirements, editables_requirements) = self._split_editables(requirements)
+
+            self._install_requirements(pip_path, requirements, app_corresponding_to_venv, callbacks)
+
+            if editables_requirements:
+                self._install_requirements(
+                    pip_path,
+                    editables_requirements,
+                    app_corresponding_to_venv,
                     callbacks,
+                    extra_args=["--no-build-isolation"],
                 )
 
-            if status != 0:
-                logger.error(
-                    m18n.n(
-                        "migration_python_venv_rebuild_failed",
-                        app=app_corresponding_to_venv,
-                    )
-                )
-            self._cleanup(venv_path, old_python_version)
+            self._cleanup_old_python_assets(venv_path, old_python_version)
 
     def _extract_venv_python_version(self, venv_path: Path) -> None | str:
         py_version_match = self.py_version_re.search(
@@ -247,8 +271,58 @@ class PythonMigration(Migration):
         )
         return py_version_match.group("version") if py_version_match else None
 
-    def _cleanup(self, venv_path: Path, old_python_version: str):
-        rm(venv_path / f"lib/python{old_python_version}", recursive=True)
-        rm(venv_path / f"include/python{old_python_version}", recursive=True)
-        rm(venv_path / f"bin/python{old_python_version}")
-        rm(venv_path / f"bin/pip{old_python_version}")
+    def _cleanup_old_python_assets(self, venv_path: Path, old_python_version: str):
+        rm(venv_path / f"lib/python{old_python_version}", recursive=True, force=True)
+        rm(venv_path / f"include/python{old_python_version}", recursive=True, force=True)
+        rm(venv_path / f"bin/python{old_python_version}", force=True)
+        rm(venv_path / f"bin/pip{old_python_version}", force=True)
+
+    def _remove_pip_if_not_newer_than_system_version(self, requirements: str):
+        """
+        In the requirements, look for line installing pip and either:
+           - keep it if the pip version asked is newer than the one provided by the system
+           - or empty the whole line otherwise
+
+        For the sake of simplicity, we only compare the major, minor and patch.
+        """
+        def remove_if_not_newer_than_system_pip(match: re.Match[str]) -> str:
+            # HACK: yeah, we use a tool meant for debian to compare versions for pip version…
+            # We assume that such a tool does the job when comparing versions which includes only
+            # a major, minor and patch.
+            if dpkg_compare_version(match.group("version"), self.pip_version_normalized) > 0:
+                return match.string
+            return ""
+
+        return re.sub(self.pip_version_requirement_extractor_re, remove_if_not_newer_than_system_pip, requirements)
+
+    def _split_editables(self, requirements: str) -> Tuple[str, str]:
+        new_requirements = []
+        editables = []
+        for line in requirements.splitlines():
+            if line.startswith("-e"):
+                editables.append(line)
+            else:
+                new_requirements.append(line)
+        return (str.join("\n", new_requirements), str.join("\n", editables))
+
+    def _install_requirements(self, pip_path: Path, requirements: str, app: str, callbacks: PipExecutionCallbacks, extra_args: list[str] = []):
+        with tempfile.NamedTemporaryFile() as fp:
+            fp.write(requirements.encode("utf8"))
+            fp.flush()
+            status = call_async_output(
+                [
+                    pip_path,
+                    "install",
+                    "--use-pep517",  # Seems like a sane default nowadays: https://pip.pypa.io/en/stable/news/#id112
+                    *extra_args,
+                    "-r",
+                    fp.name,
+                ],
+                callbacks,
+            )
+
+        if status != 0:
+            raise YunohostError(
+                "migration_python_venv_rebuild_failed",
+                app=app,
+            )
