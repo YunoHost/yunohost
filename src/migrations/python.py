@@ -78,7 +78,8 @@ class PythonMigration(Migration):
     migration_id: str
     state = None
     pyvenv_cfg_version_extractor = re.compile(
-        r"version\s*=\s*(?P<version>\d+\.\d+)"  # Omit the patch number of the version
+        r"^version\s*=\s*(?P<version>\d+\.\d+)",  # Omit the patch number of the version
+        re.MULTILINE
     )
 
     pip_version_requirement_extractor_re = re.compile(rf"""
@@ -86,7 +87,7 @@ class PythonMigration(Migration):
         (?P<version>{MAJOR_MINOR_PATCH_RE}) # Only get the major, minor and patch
         (?:[^\d].*)?$ # Also grab any residual characters that follows the patch,
                       # but don't process them, they will be removed if we skip the pip upgrade.
-    """, re.VERBOSE)
+    """, re.VERBOSE + re.MULTILINE)
 
     def extract_app_from_venv_path(self, venv_path: str) -> str:
         venv_path = venv_path.replace("/var/www/", "")
