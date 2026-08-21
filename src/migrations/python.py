@@ -136,10 +136,8 @@ class PythonMigration(Migration):
 
     @cached_property
     def python_version(self):
-        match = re.match(rf'^(?P<version>{MAJOR_MINOR_PATCH_RE})', sys.version)
-        if not match:
-            raise YunohostError(f"cannot extract python version from: {sys.version}", raw_msg=True)
-        return match.group("version")
+        """ Returns the python version without the patch """
+        return f"{sys.version_info.major}.{sys.version_info.minor}"
 
     @property
     def mode(self):
@@ -240,7 +238,7 @@ class PythonMigration(Migration):
                 continue
 
             if dpkg_compare_version(old_python_version, self.python_version) in [0, 1]:
-                logger.info(f"{app_corresponding_to_venv} looks already migrated, skipping")
+                logger.info(f"The {app_corresponding_to_venv} app looks already migrated, skipping")
                 continue
 
             # Recreate the venv
@@ -268,6 +266,7 @@ class PythonMigration(Migration):
                 self._install_requirements(pip_path, requirements, app_corresponding_to_venv, callbacks)
 
                 if editables_requirements:
+                    logger.debug("Installing the editables")
                     self._install_requirements(
                         pip_path,
                         editables_requirements,
@@ -277,7 +276,8 @@ class PythonMigration(Migration):
                     )
 
                 self._cleanup_old_python_assets(venv_path, old_python_version)
-            except YunohostError:
+            except YunohostError as e:
+                logger.error(e)
                 continue
             except Exception as e:
                 raise e
