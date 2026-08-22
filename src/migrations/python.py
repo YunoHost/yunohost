@@ -306,8 +306,11 @@ class PythonMigration(Migration):
         """
         def maybe_empty(match: re.Match[str]) -> str:
             assert self.pip_version
-            if Version(match.group("version")) > self.pip_version:
+            frozen_version = Version(match.group("version"))
+            if frozen_version > self.pip_version:
+                logger.debug(f"pip: Will reinstall the version required by the app: {frozen_version} (more recent than the system version: {self.pip_version})")
                 return match.string
+            logger.debug(f"pip: Will upgrade version from {frozen_version} to {self.pip_version} (the system version)")
             return ""
 
         return self.pip_version_requirement_extractor_re.sub(maybe_empty, requirements)
