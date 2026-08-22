@@ -22,7 +22,6 @@ from functools import cached_property
 from logging import getLogger
 import os
 from pathlib import Path
-import sys
 from typing import Callable, Tuple
 try:
     from pip import __version__ as PIP_VERSION
@@ -33,12 +32,14 @@ import tempfile
 
 from moulinette import m18n
 from configparser import ConfigParser, UNNAMED_SECTION
+from packaging.version import Version, VERSION_PATTERN
+from packaging.markers import default_environment
 
 from ..tools import Migration, tools_migrations_state
 from ..utils.error import YunohostError
 from ..utils.file_utils import rm
 from ..utils.process import call_async_output, check_output
-from ..utils.system import debian_version, dpkg_compare_version
+from ..utils.system import debian_version
 
 type ExecutionCallback = Tuple[Callable[[str], None], Callable[[str], None]]
 
@@ -59,20 +60,9 @@ class PyVenvConfig():
     def include_system_site_packages(self) -> bool:
         return self.data.get('include-system-site-packages', None) == 'true'
 
-    @property
-    def version(self) -> str:
-        return self.data['version']
-
     @cached_property
-    def version_parsed(self) -> Tuple[int, int, int]:
-        match = re.match(MAJOR_MINOR_PATCH_RE, self.version)
-        if not match:
-            raise YunohostError(f"Cannot parse version stored in {self.path}: {self.version}")
-        return (
-            int(match.group("major")),
-            int(match.group("minor")),
-            int(match.group("patch"))
-        )
+    def version(self) -> Version:
+        return Version(self.data['version'])
 
 
 class PythonMigration(Migration):
@@ -107,12 +97,10 @@ class PythonMigration(Migration):
     migration_id: str
     state = None
 
-    pip_version_requirement_extractor_re = re.compile(rf"""
-        ^pip\s*==\s*
-        (?P<version>{MAJOR_MINOR_PATCH_RE}) # Only get the major, minor and patch
-        (?:[^\d].*)?$ # Also grab any residual characters that follows the patch,
-                      # but don't process them, they will be removed if we skip the pip upgrade.
-    """, re.VERBOSE + re.MULTILINE)
+    pip_version_requirement_extractor_re = re.compile(
+        rf"^pip\s*==\s*(?P<version>{VERSION_PATTERN})\s*$",
+        re.VERBOSE + re.MULTILINE  # VERBOSE is required by VERSION_PATTERN
+    )
 
     def extract_app_from_venv_path(self, venv_path: str) -> str:
         venv_path = venv_path.replace("/var/www/", "")
@@ -154,16 +142,12 @@ class PythonMigration(Migration):
         return self.state == "pending"
 
     @cached_property
-    def pip_version_normalized(self):
-        match = re.match(rf'^(?P<version>{MAJOR_MINOR_PATCH_RE})', PIP_VERSION)
-        if not match:
-            raise YunohostError(f"cannot parse pip system version: {PIP_VERSION}", raw_msg=True)
-        return match.group("version")
+    def pip_version(self):
+        return Version(PIP_VERSION) if PIP_VERSION else None
 
     @cached_property
     def python_version(self):
-        """ Returns the python version without the patch """
-        return f"{sys.version_info.major}.{sys.version_info.minor}"
+        return Version(default_environment()['python_full_version'])
 
     @property
     def mode(self):
@@ -220,7 +204,7 @@ class PythonMigration(Migration):
         if self.mode == "auto":
             return
 
-        if not self.pip_version_normalized:
+        if not PIP_VERSION:
             logger.info("No pip version found, skipping")
             return
 
@@ -252,14 +236,11 @@ class PythonMigration(Migration):
 
             try:
                 venv_cfg = PyVenvConfig(venv_path)
-                (cfg_py_major, cfg_py_minor, _) = venv_cfg.version_parsed
-                # store the old python version without the patch part
-                old_python_version = f"{cfg_py_major}.{cfg_py_minor}"
             except Exception as e:
                 logger.warn(e)
                 continue
 
-            if dpkg_compare_version(old_python_version, self.python_version) > -1:
+            if venv_cfg.version >= self.python_version:
                 logger.info(f"The {app_corresponding_to_venv} app looks already migrated, skipping")
                 continue
 
@@ -271,12 +252,16 @@ class PythonMigration(Migration):
 
             self._upgrade_venv(venv, venv_cfg.include_system_site_packages, callbacks)
 
+            # store the old python version without the patch part
+            old_python_version_major_minor = f"{venv_cfg.version.major}.{venv_cfg.version.minor}"
+
             requirements = check_output(
                 [
                     pip_path,
                     "freeze",
                     "--all",
-                    "--path=" + str(venv_path / f"lib/python{old_python_version}/site-packages"),
+                    "--path",
+                    venv_path / f"lib/python{old_python_version_major_minor}/site-packages",
                 ],
                 shell=False
             )
@@ -298,18 +283,18 @@ class PythonMigration(Migration):
                         extra_args=["--no-build-isolation"],
                     )
 
-                self._cleanup_old_python_assets(venv_path, old_python_version)
+                self._cleanup_old_python_assets(venv_path, old_python_version_major_minor)
             except YunohostError as e:
                 logger.warn(e)
                 continue
             except Exception as e:
                 raise e
 
-    def _cleanup_old_python_assets(self, venv_path: Path, old_python_version: str):
-        rm(venv_path / f"lib/python{old_python_version}", recursive=True, force=True)
-        rm(venv_path / f"include/python{old_python_version}", recursive=True, force=True)
-        rm(venv_path / f"bin/python{old_python_version}", force=True)
-        rm(venv_path / f"bin/pip{old_python_version}", force=True)
+    def _cleanup_old_python_assets(self, venv_path: Path, old_python_version_major_minor: str):
+        rm(venv_path / f"lib/python{old_python_version_major_minor}", recursive=True, force=True)
+        rm(venv_path / f"include/python{old_python_version_major_minor}", recursive=True, force=True)
+        rm(venv_path / f"bin/python{old_python_version_major_minor}", force=True)
+        rm(venv_path / f"bin/pip{old_python_version_major_minor}", force=True)
 
     def _remove_pip_if_not_newer_than_system_version(self, requirements: str):
         """
@@ -319,15 +304,13 @@ class PythonMigration(Migration):
 
         For the sake of simplicity, we only compare the major, minor and patch.
         """
-        def remove_if_not_newer_than_system_pip(match: re.Match[str]) -> str:
-            # HACK: yeah, we use a tool meant for debian to compare versions for pip version…
-            # We assume that such a tool does the job when comparing versions which includes only
-            # a major, minor and patch.
-            if dpkg_compare_version(match.group("version"), self.pip_version_normalized) > 0:
+        def maybe_empty(match: re.Match[str]) -> str:
+            assert self.pip_version
+            if Version(match.group("version")) > self.pip_version:
                 return match.string
             return ""
 
-        return re.sub(self.pip_version_requirement_extractor_re, remove_if_not_newer_than_system_pip, requirements)
+        return self.pip_version_requirement_extractor_re.sub(maybe_empty, requirements)
 
     def _split_editables(self, requirements: str) -> Tuple[str, str]:
         new_requirements = []
