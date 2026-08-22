@@ -25,7 +25,9 @@ from logging import getLogger
 
 from moulinette import m18n
 
+from ..app import app_list
 from ..tools import Migration
+from ..utils.app_utils import _get_manifest_of_app
 from ..utils.error import YunohostError, YunohostValidationError
 from ..utils.system import free_space_in_directory, space_used_by_directory
 
@@ -42,8 +44,11 @@ class PostgreSQLMigration(Migration):
     def run(self):
         ynh_deps_cmd = 'grep -A10 "ynh-deps" /var/lib/dpkg/status | grep -E "Package:|Depends:" | grep -B1 postgresql'
         if os.system(ynh_deps_cmd) != 0:
-            logger.info("No YunoHost app seem to require postgresql... Skipping!")
-            return
+            # In addition, also check that no app declare in his resource postgresql. cf
+            # https://github.com/YunoHost/issues/issues/2737
+            if not self._has_app_with_psql_resource():
+                logger.info("No YunoHost app seem to require postgresql... Skipping!")
+                return
 
         if not self.package_is_installed(f"postgresql-{self.previous_version}"):
             logger.warning(m18n.n("migration_postgresql_previous_not_installed"))
@@ -103,6 +108,13 @@ class PostgreSQLMigration(Migration):
             # See https://www.postgresql.org/docs/17/sql-altercollation.html#SQL-ALTERCOLLATION-NOTES
             self.runcmd(f"{sudocmd} psql --dbname='{database}' --command='REINDEX DATABASE {database};'")
             self.runcmd(f"{sudocmd} psql --dbname='{database}' --command='ALTER DATABASE {database} REFRESH COLLATION VERSION;'")
+
+    def _has_app_with_psql_resource(self) -> bool:
+        for app_info in app_list()['apps']:
+            app_manifest = _get_manifest_of_app(app_info['id'])
+            if app_manifest.get('resources', {}).get('database', {}).get('type', None) == 'postgresql':
+                return True
+        return False
 
     def package_is_installed(self, package_name):
         (returncode, out, err) = self.runcmd(
