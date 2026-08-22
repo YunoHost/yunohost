@@ -283,7 +283,8 @@ class PythonMigration(Migration):
                         extra_args=["--no-build-isolation"],
                     )
 
-                self._cleanup_old_python_assets(venv_path, old_python_version_major_minor)
+                if not venv_cfg.include_system_site_packages:
+                    self._cleanup_old_python_assets(venv_path, old_python_version_major_minor)
             except YunohostError as e:
                 logger.warn(e)
                 continue
