@@ -250,10 +250,11 @@ class PythonMigration(Migration):
                 lambda line: logger.warning(line.rstrip()),
             )
 
-            self._upgrade_venv(venv, venv_cfg.include_system_site_packages, callbacks)
+            self._upgrade_venv(venv_path, venv_cfg.include_system_site_packages, callbacks)
 
             # store the old python version without the patch part
             old_python_version_major_minor = f"{venv_cfg.version.major}.{venv_cfg.version.minor}"
+            old_site_packages_path = venv_path / f"lib/python{old_python_version_major_minor}/site-packages"
 
             requirements = check_output(
                 [
@@ -261,7 +262,7 @@ class PythonMigration(Migration):
                     "freeze",
                     "--all",
                     "--path",
-                    venv_path / f"lib/python{old_python_version_major_minor}/site-packages",
+                    old_site_packages_path,
                 ],
                 shell=False
             )
@@ -271,7 +272,13 @@ class PythonMigration(Migration):
             (requirements, editables_requirements) = self._split_editables(requirements)
 
             try:
-                self._install_requirements(pip_path, requirements, app_corresponding_to_venv, callbacks)
+                self._install_requirements(
+                    pip_path,
+                    requirements,
+                    app_corresponding_to_venv,
+                    callbacks,
+                    exec_as_owner_of=old_site_packages_path
+                )
 
                 if editables_requirements:
                     logger.debug("Installing the editables")
@@ -280,6 +287,7 @@ class PythonMigration(Migration):
                         editables_requirements,
                         app_corresponding_to_venv,
                         callbacks,
+                        exec_as_owner_of=old_site_packages_path,
                         extra_args=["--no-build-isolation"],
                     )
 
@@ -326,16 +334,26 @@ class PythonMigration(Migration):
                 new_requirements.append(line)
         return (str.join("\n", new_requirements), str.join("\n", editables))
 
-    def _upgrade_venv(self, venv: str, include_system_site_packages: bool, callbacks: ExecutionCallback):
+    def _call_async_output(self, args: list[str | Path], callbacks: ExecutionCallback, exec_as_owner_of: Path | None):
+        if exec_as_owner_of and exec_as_owner_of.exists():
+            args = ["sudo", "-u", "#" + str(os.stat(exec_as_owner_of).st_uid), *args]
+        logger.debug(f"Running this command: {str.join(" ", [str(arg) for arg in args])}")
+        return call_async_output(args, callbacks)
+
+    def _upgrade_venv(self, venv: Path, include_system_site_packages: bool, callbacks: ExecutionCallback):
         venv_cmd = ["python", "-m", "venv", "--upgrade", venv]
         if include_system_site_packages:
             venv_cmd.append("--system-site-packages")
-        return self._call_async_output(venv_cmd, callbacks)
+        py_venv_path = venv / "pyvenv.cfg"
+        return self._call_async_output(venv_cmd, callbacks, exec_as_owner_of=py_venv_path)
 
-    def _install_requirements(self, pip_path: Path, requirements: str, app: str, callbacks: ExecutionCallback, extra_args: list[str] = []):
+    def _install_requirements(self, pip_path: Path, requirements: str, app: str, callbacks: ExecutionCallback, exec_as_owner_of: Path, extra_args: list[str] = []):
         with tempfile.NamedTemporaryFile() as fp:
             fp.write(requirements.encode("utf8"))
             fp.flush()
+
+            os.chown(path=fp.name, uid=os.stat(exec_as_owner_of).st_uid, gid=0)
+
             status = self._call_async_output(
                 [
                     pip_path,
@@ -346,6 +364,7 @@ class PythonMigration(Migration):
                     fp.name,
                 ],
                 callbacks,
+                exec_as_owner_of=exec_as_owner_of
             )
 
         if status != 0:
@@ -353,7 +372,3 @@ class PythonMigration(Migration):
                 "migration_python_venv_rebuild_failed",
                 app=app,
             )
-
-    def _call_async_output(self, args: list[str | Path], callbacks: ExecutionCallback):
-        logger.debug(f"Running this command: {str.join(" ", [str(arg) for arg in args])}")
-        return call_async_output(args, callbacks)
