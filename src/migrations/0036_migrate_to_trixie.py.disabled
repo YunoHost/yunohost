@@ -286,14 +286,17 @@ class MyMigration(Migration):
         # Mark this migration as completed before triggering the "new" migrations
         _write_migration_state(self.id, "done")
 
-        callbacks = (
-            lambda l: logger.debug("+ " + l.rstrip() + "\r"),
-            lambda l: logger.warning(l.rstrip()),
-        )
-        try:
-            call_async_output(["yunohost", "tools", "migrations", "run"], callbacks)
-        except Exception as e:
-            logger.error(e)
+        if not self.skip_postmigrations:
+            callbacks = (
+                lambda l: logger.debug("+ " + l.rstrip() + "\r"),
+                lambda l: logger.warning(l.rstrip()),
+            )
+            try:
+                call_async_output(["yunohost", "tools", "migrations", "run"], callbacks)
+            except Exception as e:
+                logger.error(e)
+        else:
+            logger.info(m18n.n("migration_0036_post_migrations_skipped", distrib="Trixie"))
 
         # If running from the webadmin, restart the API after a delay
         if Moulinette.interface.type == "api":

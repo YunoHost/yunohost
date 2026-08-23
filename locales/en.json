@@ -691,6 +691,7 @@
     "migration_0036_not_enough_free_space": "Free space is pretty low in /var/! You should have at least 1GB free to run this migration.",
     "migration_0036_patch_yunohost_dpkg": "Applying patch on dpkg database to workaround conflict issues…",
     "migration_0036_patching_sources_list": "Patching the sources.lists file…",
+    "migration_0036_post_migrations_skipped": "Post {distrib} migrations not run automatically as requested, run them when you want :)",
     "migration_0036_problematic_apps_warning": "Please note that the following possibly problematic installed apps were detected. It looks like those were not installed from the YunoHost app catalog, or are not flagged as 'working'. Consequently, it cannot be guaranteed that they will still work after the upgrade:",
     "migration_0036_start": "Starting migration to Trixie…",
     "migration_0036_still_on_bookworm_after_main_upgrade": "Something went wrong during the main upgrade, the system appears to still be on Debian Bookworm.",
