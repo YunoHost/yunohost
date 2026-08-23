@@ -72,53 +72,6 @@ logger = logging.getLogger("yunohost.migration")
 N_CURRENT_DEBIAN = 12
 N_CURRENT_YUNOHOST = 12
 
-VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_trixie_upgrade.txt"
-
-
-def _get_all_venvs(dir: Path, level: int = 0, maxlevel: int = 3) -> list[Path]:
-    """
-    Returns the list of all python virtual env directories recursively
-
-    Arguments:
-        dir - the directory to scan in
-        maxlevel - the depth of the recursion
-        level - do not edit this, used as an iterator
-    """
-    if not dir.exists():
-        return []
-
-    result = []
-    # Using os functions instead of glob, because glob doesn't support hidden folders, and we need recursion with a fixed depth
-    for path in dir.iterdir():
-        if path.is_dir():
-            activatepath = path / "bin" / "activate"
-            if activatepath.is_file():
-                content = activatepath.read_text()
-                if ("VIRTUAL_ENV" in content) and ("PYTHONHOME" in content):
-                    result.append(path)
-                    continue
-            if level < maxlevel:
-                result += _get_all_venvs(path, level=level + 1)
-    return result
-
-
-def _backup_pip_freeze_for_python_app_venvs():
-    """
-    Generate a requirements file for all python virtual env located inside /opt/ and /var/www/
-    """
-    venvs = _get_all_venvs(Path("/opt/")) + _get_all_venvs(Path("/var/www/"))
-    for venv in venvs:
-        # Generate a requirements file from venv
-        # Remove pkg resources from the freeze to avoid an error during the python venv https://stackoverflow.com/a/40167445
-        pip = venv / "bin" / "pip"
-        if not pip.is_file():
-            logger.warning(f"Skipping venv {venv} because no 'pip' bin found")
-            continue
-        pip_freeze = subprocess.check_output([pip, "freeze", "--local"]).decode(encoding="utf-8")
-        pip_freeze = re.sub(r"^pkg(-|_)resources==.*$", "", pip_freeze)
-        requirements_file = (venv.parent) / (venv.name + VENV_REQUIREMENTS_SUFFIX)
-        requirements_file.write_text(pip_freeze)
-
 
 def unstable_apps() -> list[str]:
     output = []
@@ -169,9 +122,6 @@ class MyMigration(Migration):
 
         # Stupid stuff because resolvconf later wants to edit /etc/resolv.conf and will miserably crash if it's immutable
         subprocess.check_call(["chattr", "-i", Path("/etc/resolv.conf").resolve()])
-
-        # Get requirements of the different venvs from python apps
-        _backup_pip_freeze_for_python_app_venvs()
 
         # Tell libc6 it's okay to restart system stuff during the upgrade
         subprocess.run(
