@@ -28,33 +28,23 @@ source /usr/share/yunohost/helpers
 do_pre_regen() {
     pending_dir=$1
 
-    cd /usr/share/yunohost/conf/fail2ban
+    reaction_dir="${pending_dir}/etc/reaction"
+    mkdir -p "${reaction_dir}/"
+    mkdir -p "${pending_dir}/etc/systemd/system/reaction.service.d/"
 
-    fail2ban_dir="${pending_dir}/etc/fail2ban"
-    mkdir -p "${fail2ban_dir}/filter.d"
-    mkdir -p "${fail2ban_dir}/jail.d"
-    mkdir -p "${pending_dir}/etc/systemd/system/fail2ban.service.d/"
-
-    cp yunohost.conf "${fail2ban_dir}/filter.d/yunohost.conf"
-    cp yunohost-portal.conf "${fail2ban_dir}/filter.d/yunohost-portal.conf"
-    cp postfix-sasl.conf "${fail2ban_dir}/filter.d/postfix-sasl.conf"
-    cp jail.conf "${fail2ban_dir}/jail.conf"
-    cp systemd-override-bind-nftables.conf "${pending_dir}/etc/systemd/system/fail2ban.service.d/systemd-override-bind-nftables.conf"
-
-    export ssh_port="$(jq -r '.ssh_port' <<< "$YNH_SETTINGS")"
-    ynh_render_template "yunohost-jails.conf" "${fail2ban_dir}/jail.d/yunohost-jails.conf"
+    cp /usr/share/yunohost/conf/reaction/*.jsonnet "$pending_dir"
+    cp /usr/share/yunohost/conf/reaction/systemd-override-bind-nftables.conf "${pending_dir}/etc/systemd/system/reaction.service.d/"
 }
 
 do_post_regen() {
     regen_conf_files=$1
 
-    if ls -l /etc/fail2ban/jail.d/*.conf; then
-        chown root:root /etc/fail2ban/jail.d/*.conf
-        chmod 644 /etc/fail2ban/jail.d/*.conf
-    fi
+    chown -R root:root /etc/reaction/
+    chmod 755 /etc/reaction/
+    chmod 644 /etc/reaction/*
 
     if [[ -n "$regen_conf_files" ]]; then
-        systemctl reload fail2ban
+        systemctl restart reaction
     fi
 }
 
