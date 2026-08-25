@@ -80,17 +80,29 @@ LogLevel VERBOSE
 LoginGraceTime 120
 PermitRootLogin no
 StrictModes yes
-PubkeyAuthentication yes
 PermitEmptyPasswords no
 ChallengeResponseAuthentication no
 UsePAM yes
 
-# PLEASE: if you wish to force everybody to authenticate using ssh keys, run this command:
-# yunohost settings set security.ssh.ssh_password_authentication -v no
-{% if password_authentication == "False" %}
+# Authentication methods
+
+# PLEASE: if you wish to change the authenticatation methods, run this command:
+# yunohost settings set security.ssh.ssh_authentication_methods -v <profile>
+
+# Note: when AuthenticationMethods is not specified, the default is "any" which
+# accepts any single authentication methods. Also, each authentication method
+# listed should be explicitly enabled. See
+# https://man.openbsd.org/sshd_config#AuthenticationMethods
+{% if authentication_methods == "password" %}
+PasswordAuthentication yes
+PubkeyAuthentication no
+{% elif authentication_methods == "publickey" %}
 PasswordAuthentication no
-{% else %}
-#PasswordAuthentication yes
+PubkeyAuthentication yes
+{% elif authentication_methods == "publickey_and_password"  %}
+AuthenticationMethods publickey,password
+PasswordAuthentication yes
+PubkeyAuthentication yes
 {% endif %}
 
 # Post-login stuff
