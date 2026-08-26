@@ -37,7 +37,7 @@ class MyMigration(Migration):
         exclude_conditions = ' '.join(exclude_conditions)
 
         # Exclude BTRFS snapshots (probably in readonly mode anyway)
-        exclude_conditions += ' -regex ".*/.snapshots\(/.*\)*"'
+        exclude_conditions += ' ( -regextype posix-extended -regex .*/.snapshots(/.*)? )'
 
         # Build the find command
         # Parenthesis are voluntarily unescaped with \ cause we do
@@ -47,6 +47,7 @@ class MyMigration(Migration):
         # else let chmod display a warning but avoid to display the file
         cmd += " -exec chmod o-w {} ; -print"
         cmd = cmd.split(' ')
+        logger.debug(cmd)
 
         # Call the command and display what happens in logs
         logger.debug("Removing others writable permissions for the following paths:")
