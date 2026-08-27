@@ -712,7 +712,7 @@
     "migration_description_0035_fix_apps_nodejs_version": "Fix nodejs versions in app systemd configurations",
     "migration_description_0036_dkim_keys_upgrade": "Upgrade DKIM keys to improve mail deliverability",
     "migration_description_0036_migrate_to_trixie": "Upgrade the system to Debian Trixie and YunoHost 13",
-    "migration_description_0037_fix_bad_permissions": "Remove some writable permissions on various paths for safty reasons",
+    "migration_description_0037_fix_bad_permissions": "Remove some writable permissions on various paths for safety reasons",
     "migration_ldap_backup_before_migration": "Creating a backup of LDAP database and apps settings prior to the actual migration.",
     "migration_ldap_can_not_backup_before_migration": "The backup of the system could not be completed before the migration failed. Error: {error}",
     "migration_ldap_migration_failed_trying_to_rollback": "Could not migrate… trying to roll back the system.",
