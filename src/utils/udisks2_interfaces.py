@@ -18,6 +18,8 @@
 #
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from typing import Any
 from unittest.mock import patch
 
@@ -43,6 +45,9 @@ UDISKS2_DRIVE_PATH = f"{UDISKS2_BASE_PATH}/drives"
 UDISKS2_DRIVE_IFC = "org.freedesktop.UDisks2.Drive"
 UDISKS2_DRIVE_ATA_IFC = "org.freedesktop.UDisks2.Drive.Ata"
 UDISKS2_DRIVE_NVME_IFC = "org.freedesktop.UDisks2.NVMe.Controller"
+
+
+UDISKS2_DEFAULT_ARGS = {"auth.no_user_interaction": ("b", True)}
 
 
 def _get_class_from_interfaces(_1, interface_names_iter, _2):
@@ -85,16 +90,23 @@ class GetDisksMixin(DbusInterfaceCommon):
                 object_path.startswith(UDISKS2_DRIVE_PATH)  # This is a drive
                 and not props["optical"]  # This is not a CD player
             ):
-                value = DiskResult(object_path, iface, props)
+                value = DiskResult(object_path, iface, props, self._dbus.attached_bus)
                 result[value.name] = value
 
         return result
 
 
 class DiskResult:
-    def __init__(self, object_path: str, iface: type[Disk], props: dict[str, Any]):
+    @property
+    def dbus_obj(self):
+        if not hasattr(self, "_dbus_obj"):
+            self._dbus_obj = self.iface(UDISKS2_SERVICE_NAME, self._object_path, self._bus)
+        return self._dbus_obj
+
+    def __init__(self, object_path: str, iface: type[Disk], props: dict[str, Any], bus: SdBus):
         self._object_path = object_path
-        self._iface = iface
+        self._bus = bus
+        self.iface = iface
         self.name = object_path.removeprefix(f"{UDISKS2_DRIVE_PATH}/")
         self.props = props
 
@@ -454,8 +466,16 @@ class Disk(
         raise NotImplementedError
 
 
+class SmartMixin:
+    """Common interface unifying SMART implementation for ATA, NVMe, etc."""
+
+    def get_smart_attributes(self) -> dict:
+        raise NotImplementedError
+
+
 class AtaController(
     DbusInterfaceCommon,
+    SmartMixin,
     interface_name="org.freedesktop.UDisks2.Drive.Ata",  # type: ignore[call-arg]
 ):
     @dbus_method(
@@ -469,13 +489,19 @@ class AtaController(
         input_signature="a{sv}",
         result_signature="a(ysqiiixia{sv})",
         flags=DbusUnprivilegedFlag,
+        method_name="SmartGetAttributes",
     )
-    def smart_get_attributes(
+
+    def __smart_get_attributes(
         self, options: dict[str, tuple[str, Any]]
     ) -> list[
         tuple[int, str, int, int, int, int, int, int, dict[str, tuple[str, Any]]]
     ]:
         raise NotImplementedError
+
+    def get_smart_attributes(self) -> dict:
+        attrs = self.__smart_get_attributes(UDISKS2_DEFAULT_ARGS)
+        return {k: v for (_, k, _, v, *_) in attrs}
 
     @dbus_method(
         input_signature="sa{sv}",
@@ -709,6 +735,7 @@ class AtaController(
 
 class NVMeController(
     DbusInterfaceCommon,
+    SmartMixin,
     interface_name="org.freedesktop.UDisks2.NVMe.Controller",  # type: ignore[call-arg]
 ):
     @dbus_method(
@@ -722,11 +749,16 @@ class NVMeController(
         input_signature="a{sv}",
         result_signature="a{sv}",
         flags=DbusUnprivilegedFlag,
+        method_name="SmartGetAttributes",
     )
-    def smart_get_attributes(
+    def __smart_get_attributes(
         self, options: dict[str, tuple[str, Any]]
     ) -> dict[str, tuple[str, Any]]:
         raise NotImplementedError
+
+    def get_smart_attributes(self) -> dict:
+        attrs = self.__smart_get_attributes(UDISKS2_DEFAULT_ARGS)
+        return {k: v for k, (_, v) in attrs.items()}
 
     @dbus_method(
         input_signature="sa{sv}",
