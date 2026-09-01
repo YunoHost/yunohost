@@ -50,6 +50,9 @@ do_pre_regen() {
 
     ynh_render_template "dovecot.conf.j2" "${dovecot_dir}/dovecot.conf"
 
+    rm -f "${dovecot_dir}/dovecot-ldap.conf"
+    touch "${dovecot_dir}/dovecot-ldap.conf"
+
     mkdir -p "${dovecot_dir}/yunohost.d"
     cp pre-ext.conf "${dovecot_dir}/yunohost.d"
     cp post-ext.conf "${dovecot_dir}/yunohost.d"
