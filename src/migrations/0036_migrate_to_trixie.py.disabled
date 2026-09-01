@@ -489,14 +489,17 @@ sideway (typically by SSHing from the local network, or through rescue access on
                     "/usr/share/keyrings/yunohost-bookworm.gpg",
                     "/usr/share/keyrings/yunohost-trixie.gpg",
                 )
-                .replace(
-                    "http://forge.yunohost.org/debian/ bookworm stable",
-                    # FIXME: REPLACE WITH STABLE
-                    "https://repo.yunohost.org/debian/ trixie unstable",
-                )
+                .replace("http://", "https://")
+                .replace("/forge.yunohost.org/debian", "/repo.yunohost.org/debian")
                 .replace(" bookworm ", " trixie ")
                 .replace(" bookworm-", " trixie-")
             )
+
+            # FIXME: Remove that, this is only while Trixie is not stable
+            if "https://repo.yunohost.org/debian" in line:
+                before, after = line.split(" trixie ")
+                if "testing" not in after:
+                    line = f"{before} trixie {after} testing"
 
             if "backports" in line:
                 line = f"# {line}"
