@@ -17,40 +17,13 @@ class MyMigration(Migration):
         return "manual"
 
     def run(self, *args):
+        from psutil import disk_partitions
         # Find all directories, files and socket with writable permissions
         # for others and not in excluded scope and remove this writable
         # permissions.
 
-        # Exclude some directories
-        exclude_dirs = [
-            '/proc',  # Not stored on disk
-            '/sys',  # Not stored on disk
-            '/dev',  # Not stored on disk
-            '/run',  # Not stored on disk
-            '/var/spool/postfix'  # Postfix public socket seems okish
-        ]
-        exclude_conditions = [
-            arg
-            for directory in exclude_dirs
-            for arg in ['-path', directory, '-o']
-        ]
-        exclude_conditions = ' '.join(exclude_conditions)
-
-        # Exclude BTRFS snapshots (probably in readonly mode anyway)
-        exclude_conditions += ' ( -regextype posix-extended -regex .*/.snapshots(/.*)? )'
-
-        # Build the find command
-        # Parenthesis are voluntarily unescaped with \ cause we do
-        # not use shell=True call_async_output option
-        cmd = f"/usr/bin/find / ( {exclude_conditions} ) -prune -o ( -type f -or -type d -or -type s ) -perm -o+w ! -perm /o+t"
-        # If chmod succeed, print the file (default AND operator of find cmd)
-        # else let chmod display a warning but avoid to display the file
-        cmd += " -exec chmod o-w {} ; -print"
-        cmd = cmd.split(' ')
-        logger.debug(cmd)
-
-        # Call the command and display what happens in logs
         logger.debug("Removing others writable permissions for the following paths:")
+        # Count number of files protected (or not if it failed to protect it)
         nb_paths_protected = 0
         nb_paths_unprotected = 0
 
@@ -68,7 +41,44 @@ class MyMigration(Migration):
             lambda line: log(WARNING, line),
             lambda line: log(ERROR, line),
         )
-        ret = call_async_output(cmd, callbacks)
+
+        # Exclude some directories
+        exclude_dirs = [
+            '/tmp',  # If not in ram, it's wiped at reboot and regularly
+            '/var/spool/postfix',  # Postfix public socket seems okish
+            '/ynh-dev'  # We don't want to explore /ynh-dev for that
+        ]
+        exclude_conditions = [
+            arg
+            for directory in exclude_dirs
+            for arg in ['-path', directory, '-o']
+        ]
+        exclude_conditions = ' '.join(exclude_conditions)
+
+        # Exclude BTRFS snapshots (probably in readonly mode anyway)
+        exclude_conditions += ' ( -regextype posix-extended -regex .*/.snapshots(/.*)? )'
+
+        # Define which FS we want to explore
+        fstypes_selected = ["ext2", "ext3", "ext4", "btrfs", "xfs"]
+
+        # Run a find command on each mountpoint binded to a selected FS
+        for partition in disk_partitions(True):
+            if partition.fstype not in fstypes_selected or not partition.mountpoint:
+                continue
+
+            # Build the find command
+            # Parenthesis are voluntarily unescaped with \ cause we do
+            # not use shell=True call_async_output option
+            cmd = f"/usr/bin/find {partition.mountpoint} -mount ( {exclude_conditions} ) -prune"
+            cmd += " -o ( -type f -or -type d -or -type s ) -perm -o+w ! -perm /o+t"
+            # If chmod succeed, print the file (default AND operator of find cmd)
+            # else let chmod display a warning but avoid to display the file
+            cmd += " -exec chmod o-w {} ; -print"
+            cmd = cmd.split(' ')
+            logger.debug(cmd)
+
+            # Call the command and display what happens in logs
+            ret = call_async_output(cmd, callbacks)
 
         # Give some summarized info to the instance admin
         if nb_paths_protected:
