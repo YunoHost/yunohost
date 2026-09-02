@@ -71,12 +71,13 @@ class MyMigration(Migration):
             # Build the find command
             # Parenthesis are voluntarily unescaped with \ cause we do
             # not use shell=True call_async_output option
-            cmd = f"/usr/bin/find {partition.mountpoint} -mount ( {exclude_conditions} ) -prune"
+            cmd = f"/usr/bin/find <PATH> -mount ( {exclude_conditions} ) -prune"
             cmd += " -o ( -type f -or -type d -or -type s ) -perm -o+w ! -perm /o+t"
             # If chmod succeed, print the file (default AND operator of find cmd)
             # else let chmod display a warning but avoid to display the file
             cmd += " -exec chmod o-w {} ; -print"
             cmd = cmd.split(' ')
+            cmd[1] = partition.mountpoint
             logger.debug(cmd)
 
             # Call the command and display what happens in logs
