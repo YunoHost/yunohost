@@ -63,7 +63,9 @@ class MyMigration(Migration):
 
         # Run a find command on each mountpoint binded to a selected FS
         for partition in disk_partitions(True):
-            if partition.fstype not in fstypes_selected or not partition.mountpoint:
+            if partition.fstype not in fstypes_selected \
+               or not partition.mountpoint \
+               or "ro" in partition.opts.split(','):
                 continue
 
             # Build the find command
