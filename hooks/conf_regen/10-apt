@@ -113,7 +113,7 @@ do_post_regen() {
     fi
 
     chown root:root -R /etc/apt
-    chmod -R u=rwX,g=rX,o=rX /etc/apt
+    chmod -R u=rwX,g=rX,o-w /etc/apt
 }
 
 "do_$1_regen" "$(echo "${*:2}" | xargs)"

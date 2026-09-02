@@ -188,7 +188,7 @@ objectClass: top"
     echo "Running slapdindex"
     su openldap -s "/bin/bash" -c "/usr/sbin/slapindex"
 
-    chmod u=rwX,g-w,o-w -R /etc/ldap
+    chmod  -R u=rwX,g=rX,o-w /etc/ldap
 
     echo "Reloading slapd"
     systemctl force-reload slapd

@@ -189,8 +189,7 @@ do_post_regen() {
 
     # Force permission (to cover some edge cases where root's umask is like 027 and then dnsmasq cant read this file)
     chown -R root:root /etc/default/dnsmasq /etc/resolv.dnsmasq.conf /etc/dnsmasq.d/ /etc/dnsmasq.conf
-    chmod 644 /etc/default/dnsmasq /etc/resolv.dnsmasq.conf /etc/dnsmasq.conf
-    chmod -R u=rwX,g=rX,o=rX /etc/dnsmasq.d/
+    chmod -R u=rwX,g=rX,o-w /etc/default/dnsmasq /etc/resolv.dnsmasq.conf /etc/dnsmasq.conf /etc/dnsmasq.d/
 
     # Remove / disable services likely to conflict with dnsmasq
     for SERVICE in systemd-resolved bind9; do
