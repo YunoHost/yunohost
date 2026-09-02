@@ -527,7 +527,12 @@ def user_update(
 
         user["mail"] = [mail] + user["mail"][1:]
         new_attr_dict["mail"] = user["mail"]
-        user["maildrop"] = [mail] + user["maildrop"][1:]
+        # Big fat WARNING: currently we put the user email in the last maildrop entry
+        # this is a temporary workaround to fix this discussion
+        # https://github.com/YunoHost/yunohost/pull/2341#discussion_r3879745312
+        # As soon as we have implemented the main email as the external email
+        # we will put again the main email in the first entry of the maildrop
+        user["maildrop"] = user["maildrop"][:-1] + [mail]
         new_attr_dict["maildrop"] = user["maildrop"]
 
     if add_mailalias is not None:
