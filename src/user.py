@@ -527,7 +527,8 @@ def user_update(
 
         user["mail"] = [mail] + user["mail"][1:]
         new_attr_dict["mail"] = user["mail"]
-        new_attr_dict["maildrop"] = [mail] + user["maildrop"][1:]
+        user["maildrop"] = [mail] + user["maildrop"][1:]
+        new_attr_dict["maildrop"] = user["maildrop"]
 
     if add_mailalias is not None:
         if not isinstance(add_mailalias, list):
