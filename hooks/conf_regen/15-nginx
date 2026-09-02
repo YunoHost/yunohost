@@ -183,7 +183,7 @@ do_post_regen() {
     chmod -R u=rwX,g=rX,o=--- /etc/nginx
 
     if ls -l /var/www/.well-known/*/autoconfig; then
-        chmod -R u=rwX,g=rX,o=rX /var/www/.well-known/*/autoconfig
+        chmod -R u=rwX,g=rX,o-w /var/www/.well-known/*/autoconfig
     fi
 
     # We don't want nginx logs to be world-readable which could leak secrets from GET query args in some cases/apps...
