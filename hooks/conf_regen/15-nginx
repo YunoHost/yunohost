@@ -180,7 +180,7 @@ do_post_regen() {
     fi
 
     chown root:root -R /etc/nginx
-    chmod u=rwX,g=rX,o=rX -R /etc/nginx
+    chmod -R u=rwX,g=rX,o=--- /etc/nginx
 
     if ls -l /var/www/.well-known/*/autoconfig; then
         chmod -R u=rwX,g=rX,o=rX /var/www/.well-known/*/autoconfig
