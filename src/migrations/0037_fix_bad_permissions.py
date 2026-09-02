@@ -14,7 +14,7 @@ class MyMigration(Migration):
 
     @property
     def mode(self):
-        return "auto"
+        return "manual"
 
     def run(self, *args):
         # Find all directories, files and socket with writable permissions
