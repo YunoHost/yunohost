@@ -171,7 +171,12 @@ def portal_me():
         "fullname": user["cn"][0],
         "mail": user["mail"][0],
         "mailalias": user["mail"][1:],
-        "mailforward": user["maildrop"][1:],
+        # FIXME Big fat WARNING: currently we put the user email in the last maildrop entry
+        # this is a temporary workaround to fix this discussion
+        # https://github.com/YunoHost/yunohost/pull/2341#discussion_r3879745312
+        # As soon as we have implemented the main email as the external email
+        # we will put again the main email in the first entry of the maildrop
+        "mailforward": user["maildrop"][:-1],
         "groups": groups,
         "apps": apps,
     }
@@ -242,6 +247,13 @@ def portal_update(
             new_mails = [mail] + new_mails[1:]
 
         new_attr_dict["mail"] = new_mails
+        # FIXME Big fat WARNING: currently we put the user email in the last maildrop entry
+        # this is a temporary workaround to fix this discussion
+        # https://github.com/YunoHost/yunohost/pull/2341#discussion_r3879745312
+        # As soon as we have implemented the main email as the external email
+        # we will put again the main email in the first entry of the maildrop
+        current_user["maildrop"] = current_user["maildrop"][:-1] + [mail]
+        new_attr_dict["maildrop"] = current_user["maildrop"]
 
     if mailalias is not None:
         is_allowed_to_edit_mail_alias = portal_settings["portal_allow_edit_email_alias"]
@@ -285,10 +297,15 @@ def portal_update(
         if not is_allowed_to_edit_mail_forward:
             raise YunohostValidationError("mail_edit_operation_unauthorized")
 
-        new_attr_dict["maildrop"] = [current_user["maildrop"][0]] + [
+        # FIXME Big fat WARNING: currently we put the user email in the last maildrop entry
+        # this is a temporary workaround to fix this discussion
+        # https://github.com/YunoHost/yunohost/pull/2341#discussion_r3879745312
+        # As soon as we have implemented the main email as the external email
+        # we will put again the main email in the first entry of the maildrop
+        new_attr_dict["maildrop"] = [current_user["maildrop"][-1]] + [
             mail.strip()
             for mail in mailforward
-            if mail and mail.strip() and mail != current_user["maildrop"][0]
+            if mail and mail.strip() and mail != current_user["maildrop"][-1]
         ]
 
     if newpassword:
@@ -337,7 +354,12 @@ def portal_update(
             "fullname": new_attr_dict["cn"],
             "mail": new_attr_dict["mail"][0],
             "mailalias": new_attr_dict["mail"][1:],
-            "mailforward": new_attr_dict["maildrop"][1:],
+            # FIXME Big fat WARNING: currently we put the user email in the last maildrop entry
+            # this is a temporary workaround to fix this discussion
+            # https://github.com/YunoHost/yunohost/pull/2341#discussion_r3879745312
+            # As soon as we have implemented the main email as the external email
+            # we will put again the main email in the first entry of the maildrop
+            "mailforward": new_attr_dict["maildrop"][:-1],
         }
     else:
         return {}

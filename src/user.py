@@ -102,7 +102,7 @@ def user_list(fields: list[str] | None = None) -> dict[str, dict[str, Any]]:
         "mail": lambda values, user: display_default(values[:1], user),
         "mail-alias": lambda values, _: values[1:],
         "mail-forward": lambda values, user: [
-            forward for forward in values if forward != user["uid"][0]
+            forward for forward in values if forward != user["mail"][0]
         ],
         "groups": lambda values, user: [
             group[3:].split(",")[0]
@@ -278,7 +278,7 @@ def user_create(
         "cn": [fullname],
         "uid": [username],
         "mail": mail,  # NOTE: this one seems to be already a list
-        "maildrop": [username],
+        "maildrop": [mail],
         "mailuserquota": [mailbox_quota or "0"],
         "userPassword": [_hash_user_password(password)],
         "gidNumber": [uid],
@@ -527,6 +527,13 @@ def user_update(
 
         user["mail"] = [mail] + user["mail"][1:]
         new_attr_dict["mail"] = user["mail"]
+        # FIXME Big fat WARNING: currently we put the user email in the last maildrop entry
+        # this is a temporary workaround to fix this discussion
+        # https://github.com/YunoHost/yunohost/pull/2341#discussion_r3879745312
+        # As soon as we have implemented the main email as the external email
+        # we will put again the main email in the first entry of the maildrop
+        user["maildrop"] = user["maildrop"][:-1] + [mail]
+        new_attr_dict["maildrop"] = user["maildrop"]
 
     if add_mailalias is not None:
         if not isinstance(add_mailalias, list):
@@ -579,7 +586,7 @@ def user_update(
         ):
             raise YunohostValidationError("mail_forward_remove_failed", mail=mail)
 
-    if "maildrop" in new_attr_dict:
+    if add_mailforward or remove_mailforward:
         env_dict["YNH_USER_MAILFORWARDS"] = ",".join(new_attr_dict["maildrop"])
 
     if mailbox_quota is not None:
@@ -665,7 +672,7 @@ def user_info(username: str) -> UserInfos:
         result_dict["mail-aliases"] = user["mail"][1:]
 
     if len(user["maildrop"]) > 1:
-        user["maildrop"].remove(username)
+        user["maildrop"].remove(user["mail"][0])
         result_dict["mail-forward"] = user["maildrop"]
 
     if "mailuserquota" in user:

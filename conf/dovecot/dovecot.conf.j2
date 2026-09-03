@@ -60,11 +60,10 @@ passdb_default_password_scheme = SSHA
 # Regular Yunohost accounts
 passdb ldap {
   # bind = yes
-  filter = (&(objectClass=inetOrgPerson)(uid=%{user | username })(permission=cn=mail.main,ou=permission,dc=yunohost,dc=org))
-  #fields {
-  #  user = %{ldap:uid}
-  #  password = %{ldap:userPassword}
-  #}
+  filter = (&(objectClass=inetOrgPerson)(|(uid=%{user})(mail=%{user}))(permission=cn=mail.main,ou=permission,dc=yunohost,dc=org))
+  fields {
+    user = %{ldap:uid}
+  }
 }
 
 # Internally, allow authentication from apps system user who have "enable_email = true"
@@ -73,7 +72,10 @@ passdb passwd-file {
 }
 
 userdb ldap {
-  filter = (&(objectClass=inetOrgPerson)(uid=%{user | username })(permission=cn=mail.main,ou=permission,dc=yunohost,dc=org))
+  filter = (&(objectClass=inetOrgPerson)(|(uid=%{user})(mail=%{user}))(permission=cn=mail.main,ou=permission,dc=yunohost,dc=org))
+  fields {
+    user = %{ldap:uid}
+  }
 }
 
 userdb passwd-file {
@@ -91,7 +93,7 @@ protocol imap {
 protocol lda {
   auth_socket_path = /var/run/dovecot/auth-master
   mail_plugins = quota sieve
-  postmaster_address = postmaster@trixietests.yunohost.org
+  postmaster_address = postmaster@{{ main_domain }}
 }
 
 namespace inbox {
