@@ -171,7 +171,7 @@ def portal_me():
         "fullname": user["cn"][0],
         "mail": user["mail"][0],
         "mailalias": user["mail"][1:],
-        # Big fat WARNING: currently we put the user email in the last maildrop entry
+        # FIXME Big fat WARNING: currently we put the user email in the last maildrop entry
         # this is a temporary workaround to fix this discussion
         # https://github.com/YunoHost/yunohost/pull/2341#discussion_r3879745312
         # As soon as we have implemented the main email as the external email
@@ -247,7 +247,7 @@ def portal_update(
             new_mails = [mail] + new_mails[1:]
 
         new_attr_dict["mail"] = new_mails
-        # Big fat WARNING: currently we put the user email in the last maildrop entry
+        # FIXME Big fat WARNING: currently we put the user email in the last maildrop entry
         # this is a temporary workaround to fix this discussion
         # https://github.com/YunoHost/yunohost/pull/2341#discussion_r3879745312
         # As soon as we have implemented the main email as the external email
@@ -297,7 +297,7 @@ def portal_update(
         if not is_allowed_to_edit_mail_forward:
             raise YunohostValidationError("mail_edit_operation_unauthorized")
 
-        # Big fat WARNING: currently we put the user email in the last maildrop entry
+        # FIXME Big fat WARNING: currently we put the user email in the last maildrop entry
         # this is a temporary workaround to fix this discussion
         # https://github.com/YunoHost/yunohost/pull/2341#discussion_r3879745312
         # As soon as we have implemented the main email as the external email
@@ -354,7 +354,7 @@ def portal_update(
             "fullname": new_attr_dict["cn"],
             "mail": new_attr_dict["mail"][0],
             "mailalias": new_attr_dict["mail"][1:],
-            # Big fat WARNING: currently we put the user email in the last maildrop entry
+            # FIXME Big fat WARNING: currently we put the user email in the last maildrop entry
             # this is a temporary workaround to fix this discussion
             # https://github.com/YunoHost/yunohost/pull/2341#discussion_r3879745312
             # As soon as we have implemented the main email as the external email

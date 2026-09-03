@@ -46,7 +46,7 @@ class MyMigration(Migration):
         for infos in users_infos:
             username = infos['uid'][0]
             logger.debug("Migrating maildrop field for user %s", username)
-            # Big fat WARNING: currently we put the user email in the last maildrop entry
+            # FIXME Big fat WARNING: currently we put the user email in the last maildrop entry
             # this is a temporary workaround to fix this discussion
             # https://github.com/YunoHost/yunohost/pull/2341#discussion_r3879745312
             # As soon as we have implemented the main email as the external email
