@@ -1,3 +1,28 @@
+yunohost (12.1.41) stable; urgency=medium
+
+  - Implement `yunohost app db app` to spawn a client db prompt ([#2297](http://github.com/YunoHost/yunohost/pull/2297))
+  - locales: various grammar and logging corrections (720a2f948, ad364f7f0, 02d7c2be1, ffd270c7f, 36da4e2ec, 622991f4a)
+  - helpers: various improvements and fixes ([#2180](http://github.com/YunoHost/yunohost/pull/2180), [#2267](http://github.com/YunoHost/yunohost/pull/2267), [#2303](https://github.com/YunoHost/yunohost/pull/2303), [#2323](http://github.com/YunoHost/yunohost/pull/2323), [#2327](http://github.com/YunoHost/yunohost/pull/2327), [#2320](http://github.com/YunoHost/yunohost/pull/2320))
+  - users: Add dash in user and group name and force first char to be alphanum ([#2298](http://github.com/YunoHost/yunohost/pull/2298))
+  - security: address CVE-2026-42945 on NGINX ([#2305](http://github.com/YunoHost/yunohost/pull/2305))
+  - mail: increase DKIM key length to 2048 bits ([#2098](http://github.com/YunoHost/yunohost/pull/2098), [#2342](https://github.com/YunoHost/yunohost/pull/2342), 9321ea24b)
+  - security(nginx): restrict permissions on /var/log/nginx/*.log ([#2286](http://github.com/YunoHost/yunohost/pull/2286))
+  - security(ssh): Upgrade ciphers and algorithms ([#2268](http://github.com/YunoHost/yunohost/pull/2268))
+  - chore(cleanup): various unused code removal ([#2318](http://github.com/YunoHost/yunohost/pull/2318), 5ea4ffbdb)
+  - resources: exclude second port used by app ([#2314]https://github.com/YunoHost/yunohost/pull/2314))
+  - fix: handle decoding errors in subprocess output ([#2316](https://github.com/YunoHost/yunohost/pull/2316))
+  - security: generate random ascii between a-zA-Z0-9 instead of a-f0-9 ([#2329](https://github.com/YunoHost/yunohost/pull/2329))
+  - diagnosis(fix): Hostkarma yellowlist is not blocklist ([#2333](http://github.com/YunoHost/yunohost/pull/2333))
+  - auth(fix): handle users with email aliases ([#2345](http://github.com/YunoHost/yunohost/pull/2345))
+  - migrations(trixie): improve and fix the migration script ([#2347](https://github.com/YunoHost/yunohost/pull/2347), [#2352](https://github.com/YunoHost/yunohost/pull/2352), 83df92b76, 6d85f04fd, 3c339cc33)
+  - app management(fix): github rate limit for fetch and clone operations (58913856a, 4cfa98af6, [#2364](https://github.com/YunoHost/yunohost/pull/2364))
+  - security: Restore or improve unix permissions ([#2344](https://github.com/YunoHost/yunohost/pull/2344))
+  - i18n: Translations updated for Chinese (Simplified Han script), French, Galician, German, Russian, Swedish, Ukrainian
+
+  Thanks to all contributors <3 ! (Alekseï, Alexandre Aubin, artlog, Félix Piédallu, Florent, frju365, g-rppl, Jonatan Nyberg, José M, Josue-T, Kayou, leinaduhcs, ljf (zamentur), Mayeul Cantan, oleole39, orhtej2, Poesty Li, ppr, tagada)
+
+ -- tituspijean <tituspijean@yunohost.org>  Thu, 03 Sep 2026 22:25:09 +0200
+
 yunohost (12.1.40.1) stable; urgency=low
 
   - diagnosis: fix fetching of the kernel version info, we want the mainline kernel version and not the debian kernel version (f5f28ba4a)
