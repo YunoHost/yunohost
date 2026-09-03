@@ -774,7 +774,7 @@ def _git_clone_light(
     logger.debug(f"Fetching {url} (branch={branch}, revision={revision}")
 
     git_ls_remote = check_output(
-        ["git", "ls-remote", "--symref", url, "HEAD"],
+        ["git", "-c", "http.version=HTTP/1.1", "ls-remote", "--symref", url, "HEAD"],
         env={"GIT_TERMINAL_PROMPT": "0", "LC_ALL": "C"},
         shell=False,
     )
