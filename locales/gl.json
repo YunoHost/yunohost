@@ -541,7 +541,7 @@
     "global_settings_setting_smtp_relay_port": "Porto do repetidor SMTP",
     "global_settings_setting_smtp_relay_user": "Usuaria no repetidor SMTP",
     "global_settings_setting_ssh_compatibility": "Compatibilidade SSH",
-    "global_settings_setting_ssh_compatibility_help": "Compromiso entre compatibilidade e seguridade para o servidor SSH. Aféctalle á cifraxe (e outros aspectos da seguridade). Máis info en https://infosec.mozilla.org/guidelines/openssh",
+    "global_settings_setting_ssh_compatibility_help": "Compromiso entre compatibilidade e seguridade para o servidor SSH. Aféctalle á cifraxe (e outros aspectos da seguridade). Podes ler /usr/share/yunohost/conf/ssh/sshd_config para ter máis información.",
     "global_settings_setting_ssh_name": "SSH",
     "global_settings_setting_ssh_password_authentication": "Autenticación con contrasinal",
     "global_settings_setting_ssh_password_authentication_help": "Permitir autenticación con contrasinal para SSH",
@@ -922,5 +922,6 @@
     "migration_0036_dkim_keys_upgrade_failed": "Non se puideron crear as novas claves de 2048 bits para {domains}.",
     "migration_0036_dkim_keys_upgrade_manual_action": "Para poder finalizar a migración, tes que actualizar as claves públicas DKIM para estas zonas DNS: {domains}\nExecuta o diagnóstico ou usa a pestana DNS en 'Webadmin > Dominios' ou con <cmd>yunohost domain dns suggest DOMAIN</cmd>. Se decidiches deter postfix, non esquezas reiniciarlo pasada 1 hora despois de editar a última zona DNS.",
     "migration_description_0036_dkim_keys_upgrade": "Actualizar as claves DKIM para mellorar a entrega de correo",
-    "migration_0036_dkim_keys_upgrade_disclaimer": "Ao realizar a migración das claves DKIM de 1024 bits ás novas de 2048 bits melloras a entrega dos correos. Os seguintes dominios vanse ver afectados e algún deles poderían precisar actualizar as claves DKIM na zona DNS xusto despois da migración: {domains}\nIMPORTANTE: para poder evitar problemas de entrega ou entrar en listas de bloqueo, esta migración hai que facela cando o servidor non estea a enviar correo. Por seguridade, podes deter o servizo postfix antes da migración e reinicialo 1 hora despois de que se actualicen as claves DKIM nas zonas DNS."
+    "migration_0036_dkim_keys_upgrade_disclaimer": "Ao realizar a migración das claves DKIM de 1024 bits ás novas de 2048 bits melloras a entrega dos correos. Os seguintes dominios vanse ver afectados e algún deles poderían precisar actualizar as claves DKIM na zona DNS xusto despois da migración: {domains}\nIMPORTANTE: para poder evitar problemas de entrega ou entrar en listas de bloqueo, esta migración hai que facela cando o servidor non estea a enviar correo. Por seguridade, podes deter o servizo postfix antes da migración e reinicialo 1 hora despois de que se actualicen as claves DKIM nas zonas DNS.",
+    "migration_0036_post_migrations_skipped": "As migracións posteriores a {distrib} non se realizaron automaicamente como se solicitou, fainas manualmente cando queiras :)"
 }
