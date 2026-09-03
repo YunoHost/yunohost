@@ -660,7 +660,7 @@ function _ynh_git_clone() {
     else
             git remote set-url origin "$url"
     fi
-        git fetch -c http.version=HTTP/1.1 -q --tags --prune origin "$branch"
+        git -c http.version=HTTP/1.1 fetch -q --tags --prune origin "$branch"
         git reset --hard origin/"$branch"
     popd || return 1
 }
