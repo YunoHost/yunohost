@@ -59,7 +59,7 @@ class MyMigration(Migration):
         exclude_conditions += ' ( -regextype posix-extended -regex .*/.snapshots(/.*)? )'
 
         # Define which FS we want to explore
-        fstypes_selected = ["ext2", "ext3", "ext4", "btrfs", "xfs"]
+        fstypes_selected = ["ext2", "ext3", "ext4", "btrfs", "xfs", "zfs"]
 
         # Run a find command on each mountpoint binded to a selected FS
         for partition in disk_partitions(True):
