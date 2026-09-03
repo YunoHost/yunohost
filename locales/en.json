@@ -693,6 +693,7 @@
     "migration_0036_patching_sources_list": "Patching the sources.lists file…",
     "migration_0036_post_migrations_skipped": "Post {distrib} migrations not run automatically as requested, run them when you want :)",
     "migration_0036_problematic_apps_warning": "Please note that the following possibly problematic installed apps were detected. It looks like those were not installed from the YunoHost app catalog, or are not flagged as 'working'. Consequently, it cannot be guaranteed that they will still work after the upgrade:",
+    "migration_0036_ssh_user_home_writable_by_group": "The user '{user}' uses ssh with a public key and have its home directory writable by a group or others. New version of openssh in YunoHost 13 forbid to login with public key inside a home directory writable by another user than the owner. You probably could fix it with <code>chmod og-w /home/{user}</code>. However, you might have some apps, process or customization needing this. ",
     "migration_0036_start": "Starting migration to Trixie…",
     "migration_0036_still_on_bookworm_after_main_upgrade": "Something went wrong during the main upgrade, the system appears to still be on Debian Bookworm.",
     "migration_0036_system_not_fully_up_to_date": "Your system is not fully up-to-date. Please perform a regular upgrade before running the migration to Trixie.",

@@ -42,6 +42,7 @@ incus exec migration-to-trixie -- yunohost tools migrations run 0036 --accept-di
 import jinja2
 import logging
 import re
+import stat
 import subprocess
 import textwrap
 from datetime import date
@@ -307,6 +308,9 @@ class MyMigration(Migration):
             cmd = 'at -M now >/dev/null 2>&1 <<< "sleep 10; systemctl restart nginx yunohost-api"'
             # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
             subprocess.check_call(["bash", "-c", cmd])
+        
+        # Reload sshd due to -R unknown option
+        subprocess.check_call(["systemctl", "reload", "sshd"])
 
         if self.yunohost_major_version() != N_CURRENT_YUNOHOST + 1:
             raise YunohostError(
@@ -403,6 +407,18 @@ class MyMigration(Migration):
 
             if upgradable_system_packages - lime2_hold_packages:
                 raise YunohostError("migration_0036_system_not_fully_up_to_date")
+
+        # Check ssh users won't be unable to login with public key after migration
+        # OpenSSH_10.0p2 forbid to login with public key that are in a /home/USER
+        # with write permissions on groups cause it's possible to move .ssh even 
+        # if groups have no write permissions on thi s.ssh directory.
+        for keys_path in Path('/home').glob('.ssh/authorized_keys'):
+            ssh_user = keys_path.parts[2]
+            user_home = Path('/home') / ssh_user
+            if bool(stat.S_IWGRP & user_home.stat().st_mode) \
+               or bool(stat.S_IWOTH & user_home.stat().st_mode):
+                raise YunohostError("migration_0036_ssh_user_home_writable_by_group", user=ssh_user)
+
 
     @property
     def disclaimer(self):
