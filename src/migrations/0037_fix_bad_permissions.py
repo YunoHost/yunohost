@@ -1,9 +1,10 @@
-from logging import getLogger, DEBUG, WARNING, ERROR
+from logging import DEBUG, ERROR, WARNING, getLogger
 
 from moulinette import m18n
+
 from ..tools import Migration
-from ..utils.process import call_async_output
 from ..utils.error import YunohostError
+from ..utils.process import call_async_output
 
 logger = getLogger("yunohost.migration")
 
@@ -44,28 +45,30 @@ class MyMigration(Migration):
 
         # Exclude some directories
         exclude_dirs = [
-            '/tmp',  # If not in ram, it's wiped at reboot and regularly
-            '/var/spool/postfix',  # Postfix public socket seems okish
-            '/ynh-dev'  # We don't want to explore /ynh-dev for that
+            "/tmp",  # If not in ram, it's wiped at reboot and regularly
+            "/var/spool/postfix",  # Postfix public socket seems okish
+            "/ynh-dev",  # We don't want to explore /ynh-dev for that
         ]
         exclude_conditions = [
-            arg
-            for directory in exclude_dirs
-            for arg in ['-path', directory, '-o']
+            arg for directory in exclude_dirs for arg in ["-path", directory, "-o"]
         ]
-        exclude_conditions = ' '.join(exclude_conditions)
+        exclude_conditions = " ".join(exclude_conditions)
 
         # Exclude BTRFS snapshots (probably in readonly mode anyway)
-        exclude_conditions += ' ( -regextype posix-extended -regex .*/.snapshots(/.*)? )'
+        exclude_conditions += (
+            " ( -regextype posix-extended -regex .*/.snapshots(/.*)? )"
+        )
 
         # Define which FS we want to explore
         fstypes_selected = ["ext2", "ext3", "ext4", "btrfs", "xfs", "zfs"]
 
         # Run a find command on each mountpoint binded to a selected FS
         for partition in disk_partitions(True):
-            if partition.fstype not in fstypes_selected \
-               or not partition.mountpoint \
-               or "ro" in partition.opts.split(','):
+            if (
+                partition.fstype not in fstypes_selected
+                or not partition.mountpoint
+                or "ro" in partition.opts.split(",")
+            ):
                 continue
 
             # Build the find command
@@ -76,7 +79,7 @@ class MyMigration(Migration):
             # If chmod succeed, print the file (default AND operator of find cmd)
             # else let chmod display a warning but avoid to display the file
             cmd += " -exec chmod o-w {} ; -print"
-            cmd = cmd.split(' ')
+            cmd = cmd.split(" ")
             cmd[1] = partition.mountpoint
             logger.debug(cmd)
 
@@ -85,13 +88,26 @@ class MyMigration(Migration):
 
         # Give some summarized info to the instance admin
         if nb_paths_protected:
-            logger.info(m18n.n("migration_0037_fix_bad_permissions_protected", nb=nb_paths_protected))
+            logger.info(
+                m18n.n(
+                    "migration_0037_fix_bad_permissions_protected",
+                    nb=nb_paths_protected,
+                )
+            )
 
         if nb_paths_unprotected:
-            logger.warning(m18n.n("migration_0037_fix_bad_permissions_unprotected", nb=nb_paths_unprotected))
+            logger.warning(
+                m18n.n(
+                    "migration_0037_fix_bad_permissions_unprotected",
+                    nb=nb_paths_unprotected,
+                )
+            )
 
         if ret != 0:
-            raise YunohostError(f"The find command fails for an unknow reasons (return code: {ret})", raw_msg=True)
+            raise YunohostError(
+                f"The find command fails for an unknow reasons (return code: {ret})",
+                raw_msg=True,
+            )
 
         if not nb_paths_unprotected and not nb_paths_protected:
             logger.success(m18n.n("migration_0037_fix_bad_permissions_safe_system"))
