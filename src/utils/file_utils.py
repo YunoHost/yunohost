@@ -284,11 +284,12 @@ def mkdir(
     try:
         oldmask = os.umask(000)
         path.mkdir(mode=mode)
-        os.umask(oldmask)
     except OSError:
         # mimic Python3.2+ os.makedirs exist_ok behaviour
         if not force or not path.is_dir():
             raise
+    finally:
+        os.umask(oldmask)
 
     if uid is not None or gid is not None:
         chown(path, uid, gid)

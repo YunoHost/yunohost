@@ -63,6 +63,7 @@ def cli(
         output_as=output_as,
         timeout=timeout,
         top_parser=parser,
+        umask=0o022,
     )
     sys.exit(ret)
 
@@ -95,6 +96,7 @@ def api(debug: bool, host: str, port: int, actionsmap: str | None = None) -> NoR
         locales_dir="/usr/share/yunohost/locales/",
         routes={("GET", "/installed"): is_installed_api},
         allowed_cors_origins=allowed_cors_origins,
+        umask=0o022,
     )
     sys.exit(ret)
 
@@ -116,6 +118,7 @@ def portalapi(debug: bool, host: str, port: int) -> NoReturn:
         actionsmap="/usr/share/yunohost/actionsmap-portal.yml",
         locales_dir="/usr/share/yunohost/locales/",
         allowed_cors_origins=allowed_cors_origins,
+        umask=0o022,
     )
     sys.exit(ret)
 

@@ -61,6 +61,10 @@ do_post_regen() {
         chmod 644 /etc/nftables.d/*.conf
     fi
 
+    chown root:root /etc/nftables.conf /etc/nftables.d
+    chmod u=rw-,g=r--,o-w /etc/nftables.conf
+    chmod -R u=rwX,g=rX,o-w /etc/nftables.d
+
     [[ -z "$regen_conf_files" ]] \
         || systemctl restart nftables
 }

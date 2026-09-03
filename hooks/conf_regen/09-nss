@@ -37,8 +37,8 @@ do_pre_regen() {
 do_post_regen() {
     regen_conf_files=$1
 
-    chmod 644 "/etc/nsswitch.conf"
-    chmod 640 "/etc/sssd/sssd.conf"
+    chmod u=rw-,g=r--,o-w "/etc/nsswitch.conf"
+    chmod u=rw-,g=r--,o=--- "/etc/sssd/sssd.conf"
 
     if [[ -n "$regen_conf_files" ]]; then
         sss_cache -E
