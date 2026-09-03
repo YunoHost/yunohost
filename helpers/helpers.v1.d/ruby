@@ -172,7 +172,7 @@ ynh_install_ruby() {
         popd
     else
         ynh_print_info --message="Installing ruby-build..."
-        git clone -q https://github.com/rbenv/ruby-build.git "${rbenv_install_dir}/plugins/ruby-build"
+        git -c http.version=HTTP/1.1 clone -q https://github.com/rbenv/ruby-build.git "${rbenv_install_dir}/plugins/ruby-build"
     fi
 
     rbenv_alias="$(command -v "$rbenv_install_dir"/plugins/*/bin/rbenv-alias rbenv-alias | head -1)"
@@ -185,7 +185,7 @@ ynh_install_ruby() {
         popd
     else
         ynh_print_info --message="Installing rbenv-aliases..."
-        git clone -q https://github.com/tpope/rbenv-aliases.git "${rbenv_install_dir}/plugins/rbenv-aliase"
+        git -c http.version=HTTP/1.1 clone -q https://github.com/tpope/rbenv-aliases.git "${rbenv_install_dir}/plugins/rbenv-aliase"
     fi
 
     rbenv_latest="$(command -v "$rbenv_install_dir"/plugins/*/bin/rbenv-latest rbenv-latest | head -1)"
@@ -198,7 +198,7 @@ ynh_install_ruby() {
         popd
     else
         ynh_print_info --message="Installing xxenv-latest..."
-        git clone -q https://github.com/momo-lab/xxenv-latest.git "${rbenv_install_dir}/plugins/xxenv-latest"
+        git -c http.version=HTTP/1.1 clone -q https://github.com/momo-lab/xxenv-latest.git "${rbenv_install_dir}/plugins/xxenv-latest"
     fi
 
     # Enable caching
