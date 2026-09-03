@@ -1,3 +1,9 @@
+yunohost (12.1.41.2) stable; urgency=low
+
+  - migration: fix disclaimer for 0037 (8134c376f)
+
+ -- Tagadda <tagada@yunohost.org>  Fri, 04 Sep 2026 00:56:33 +0200
+
 yunohost (12.1.41.1) stable; urgency=low
 
   - Upgrade requirement for moulinette (f5fea9053)
