@@ -17,6 +17,10 @@ class MyMigration(Migration):
     def mode(self):
         return "manual"
 
+    @property
+    def disclaimer(self) -> str | None:
+        return m18n.n("migration_0037_fix_bad_permissions_disclaimer")
+
     def run(self, *args):
         from psutil import disk_partitions
         # Find all directories, files and socket with writable permissions
