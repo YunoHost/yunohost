@@ -472,13 +472,15 @@ def portal_invitation_consume(token, username, fullname, password, external_emai
 
 # FIXME : this is probably not a proper global state shared between all the gevent/bottle threads
 # Though for now it looks like we have a single thread anyway so it may be OK ?
-CHALLENGES: dict[str, tuple[int, int]] = dict()
+CHALLENGES: dict[str, tuple[int, int, str]] = dict()
 
 
-def _generate_antibot_challenge() -> tuple[str, str]:
+def _generate_antibot_challenge() -> tuple[str, str, str]:
 
-    from random import randint, choice
+    from secrets import randbelow, choice
     from .utils.misc import random_ascii
+    from hashlib import sha256
+
     token = random_ascii(64)
 
     CALCULATIONS = {
@@ -487,8 +489,8 @@ def _generate_antibot_challenge() -> tuple[str, str]:
         "-": lambda a, b: a - b,
     }
 
-    x = randint(0, 10)
-    y = randint(0, 10)
+    x = randbelow(10)
+    y = randbelow(10)
     operator = choice(list(CALCULATIONS.keys()))
 
     # avoid negative results for subtraction
@@ -497,13 +499,23 @@ def _generate_antibot_challenge() -> tuple[str, str]:
 
     answer = CALCULATIONS[operator](x, y)
 
+    # Create a Proof of Work challenge
+    # Force bots to bruteforce 10 hashes
+    pow_answers = [str(randbelow(100000)) for i in range(10)]
+    def createHash(value: str):
+        m = sha256()
+        m.update(value.encode())
+        return m.hexdigest()
+    pow_challenges = [createHash(token + pow_answer)
+                      for pow_answer in pow_answers]
+    pow_challenge = '|'.join(pow_challenges)
+
     generated_time = int(time.time())
     calculation = f"{x} {operator} {y}"
-    CHALLENGES[token] = (generated_time, answer)
-
+    CHALLENGES[token] = (generated_time, answer, '|'.join(pow_answers))
     _cleanup_expired_antibot_challenges()
 
-    return token, calculation
+    return token, calculation, pow_challenge
 
 
 def _cleanup_expired_antibot_challenges() -> None:
@@ -523,16 +535,19 @@ def _cleanup_expired_antibot_challenges() -> None:
         del CHALLENGES[token]
 
 
-def _verify_antibot_challenge(token: str, answer: str) -> None:
+def _verify_antibot_challenge(token: str, answer: str, pow_answers: str) -> None:
 
     _cleanup_expired_antibot_challenges()
 
-    generated_time, expected_answer = CHALLENGES.pop(token, (0, None))
+    generated_time, expected_answer, pow_expected_answers = CHALLENGES.pop(token, (0, None, None))
     if expected_answer is None:
         raise YunohostValidationError("antibot_challenge_doesnt_exist_or_expired")
 
     if not isinstance(answer, str) or not answer.strip().isdigit() or int(answer.strip()) != expected_answer:
         raise YunohostValidationError("antibot_challenge_wrong_answer")
+
+    if not isinstance(pow_answers, str) or pow_answers != pow_expected_answers:
+        raise YunohostValidationError("antibot_challenge_no_proof_of_work")
 
     if int(time.time()) < generated_time + ANTIBOT_CHALLENGE_MIN_DURATION:
         raise YunohostValidationError("antibot_challenge_too_quick")
@@ -556,11 +571,11 @@ def portal_registration_challenge() -> dict[str, str]:
     domain = request.get_header("host")
     _assert_registration_enabled_for_domain(domain)
 
-    token, calculation = _generate_antibot_challenge()
-    return {"token": token, "calculation": calculation}
+    token, calculation, pow_challenge = _generate_antibot_challenge()
+    return {"token": token, "calculation": calculation, "pow": pow_challenge}
 
 
-def portal_registration_queue(username, fullname, password, external_email=None, notes=None, accept_tos=False, challenge_token="", challenge_answer="") -> None:
+def portal_registration_queue(username, fullname, password, external_email=None, notes=None, accept_tos=False, challenge_token="", challenge_answer="", proof_of_work="") -> None:
 
     try:
         Auth().get_session_cookie()
@@ -572,7 +587,7 @@ def portal_registration_queue(username, fullname, password, external_email=None,
     from bottle import request
     domain = request.get_header("host")
     _assert_registration_enabled_for_domain(domain)
-    _verify_antibot_challenge(challenge_token, challenge_answer)
+    _verify_antibot_challenge(challenge_token, challenge_answer, proof_of_work)
 
     _call_socket_api("user_registration_queue", {
         "username": username,
