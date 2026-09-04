@@ -1,3 +1,17 @@
+yunohost (13.0.7) testing; urgency=medium
+
+  - locales: update PostgreSQL migration messages to use placeholders for version numbers (e547ef930)
+  - fix(configpanels): remove SelectOption empty choice validator (61c0458be)
+  - migration(postgresql) Adapt postgresql generic migration to trixie ([#2343](https://github.com/YunoHost/yunohost/pull/2343), [#2346](https://github.com/YunoHost/yunohost/pull/2346), 6fa3c601e, [#2358](https://github.com/YunoHost/yunohost/pull/2358))
+  - migration(pyvenv): Improve migration python venv ([2353](https://github.com/YunoHost/yunohost/pull/2353), f630e32da)
+  - locales: Remove unused keys after Trixie (a351726b5)
+  - Merge changes from 12.1.41.2
+  - i18n: Translations updated for French, Galician, German, Russian, Swedish, Ukrainian
+
+  Thanks to all contributors <3 ! (Alekseï, Florent, Félix Piédallu, Jonatan Nyberg, Josue-T, José M, Kayou, axolotle, g-rppl, kay0u, leinaduhcs, orhtej2, ppr, ljf (zamentur))
+
+ -- ljf <ljf@yunohost.org>  Fri, 04 Sep 2026 02:03:47 +0200
+
 yunohost (12.1.41.2) stable; urgency=low
 
   - migration: fix disclaimer for 0037 (8134c376f)
