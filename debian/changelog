@@ -1,3 +1,9 @@
+yunohost (13.0.7.1) testing; urgency=low
+
+  - migration: rename 0037 to m0037 (723ea2dd6)
+
+ -- Tagada <tagada@yunohost.org>  Fri, 04 Sep 2026 04:35:23 +0200
+
 yunohost (13.0.7) testing; urgency=medium
 
   - locales: update PostgreSQL migration messages to use placeholders for version numbers (e547ef930)
