@@ -323,6 +323,10 @@ def test_resource_apt():
                 "repo": "deb https://repos.influxdata.com/debian stable main",
                 "key": "https://repos.influxdata.com/influxdata-archive.key",
                 "packages": "influxdb2",
+            },
+            "non-free-firmware": {
+                "repo": "deb http://deb.debian.org/debian __YNH_DEBIAN_VERSION__ non-free-firmware",
+                "packages": "firmware-atheros",
             }
         },
     }
@@ -330,6 +334,7 @@ def test_resource_apt():
     assert os.system("dpkg --list | grep -q 'ii *nyancat '") != 0
     assert os.system("dpkg --list | grep -q 'ii *sl '") != 0
     assert os.system("dpkg --list | grep -q 'ii *influxdb2 '") != 0
+    assert os.system("dpkg --list | grep -q 'ii *firmware-atheros '") != 0
     assert os.system("dpkg --list | grep -q 'ii *lolcat '") != 0
     assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps '") != 0
 
@@ -338,6 +343,7 @@ def test_resource_apt():
     assert os.system("dpkg --list | grep -q 'ii *nyancat '") == 0
     assert os.system("dpkg --list | grep -q 'ii *sl '") == 0
     assert os.system("dpkg --list | grep -q 'ii *influxdb2 '") == 0
+    assert os.system("dpkg --list | grep -q 'ii *firmware-atheros '") == 0
     assert (
         os.system("dpkg --list | grep -q 'ii *lolcat '") != 0
     )  # Lolcat shouldnt be installed yet
@@ -349,6 +355,7 @@ def test_resource_apt():
     assert os.system("dpkg --list | grep -q 'ii *nyancat '") == 0
     assert os.system("dpkg --list | grep -q 'ii *sl '") == 0
     assert os.system("dpkg --list | grep -q 'ii *influxdb2 '") == 0
+    assert os.system("dpkg --list | grep -q 'ii *firmware-atheros '") == 0
     assert os.system("dpkg --list | grep -q 'ii *lolcat '") == 0
     assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps '") == 0
 
@@ -357,6 +364,7 @@ def test_resource_apt():
     assert os.system("dpkg --list | grep -q 'ii *nyancat '") != 0
     assert os.system("dpkg --list | grep -q 'ii *sl '") != 0
     assert os.system("dpkg --list | grep -q 'ii *influxdb2 '") != 0
+    assert os.system("dpkg --list | grep -q 'ii *firmware-atheros '") != 0
     assert os.system("dpkg --list | grep -q 'ii *lolcat '") != 0
     assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps '") != 0
 

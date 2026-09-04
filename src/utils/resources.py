@@ -1184,7 +1184,7 @@ class AptDependenciesAppResource(AppResource):
 
     - `packages`: List of packages to be installed via `apt`
     - `packages_from_raw_bash`: A multi-line bash snippet (using triple quotes as open/close) which should echo additional packages to be installed. Meant to be used for packages to be conditionally installed depending on architecture, debian version, install questions, or other logic.
-    - `extras`: A dict of (repo, key, packages) corresponding to "extra" repositories to fetch dependencies from
+    - `extras`: A dict of (repo, key, packages) corresponding to "extra" repositories to fetch dependencies from (repo and packages are required).
 
     ### Provision/Update
 
@@ -1250,11 +1250,11 @@ class AptDependenciesAppResource(AppResource):
 
             if (
                 not isinstance(values.get("repo"), str)
-                or not isinstance(values.get("key"), str)
+                or ("key" in values and not isinstance(values.get("key"), str))
                 or not isinstance(values.get("packages"), list)
             ):
                 raise YunohostError(
-                    "In apt resource in the manifest: 'extras' repo should have the keys 'repo', 'key' defined as strings, 'packages' defined as list or 'packages_from_raw_bash' defined as string",
+                    "In apt resource in the manifest: 'extras' repo should have the keys 'repo', (optionally) 'key' defined as strings, 'packages' defined as list or 'packages_from_raw_bash' defined as string",
                     raw_msg=True,
                 )
 
@@ -1294,7 +1294,7 @@ class AptDependenciesAppResource(AppResource):
                 [
                     ynh_apt_install_dependencies_from_extra_repository,
                     f"--repo='{values['repo']}'",
-                    f"--key='{values['key']}'",
+                    f"--key='{values.get('key', '')}'",
                     f"--package='{' '.join(values['packages'])}'",
                 ]
             )
