@@ -364,6 +364,7 @@ def hook_exec(
             r"Creating new PostgreSQL cluster",
             r"/usr/lib/postgresql/13/bin/initdb",
             r"/usr/lib/postgresql/15/bin/initdb",
+            r"/usr/lib/postgresql/17/bin/initdb",
             r"The files belonging to this database system will be owned by user",
             r"This user must also own the server process.",
             r"The database cluster will be initialized with locale",
@@ -372,6 +373,7 @@ def hook_exec(
             r"Data page checksums are disabled.",
             r"fixing permissions on existing directory /var/lib/postgresql/13/main ... ok",
             r"fixing permissions on existing directory /var/lib/postgresql/15/main ... ok",
+            r"fixing permissions on existing directory /var/lib/postgresql/17/main ... ok",
             r"creating subdirectories \.\.\. ok",
             r"selecting dynamic .* \.\.\. ",
             r"selecting default .* \.\.\. ",
@@ -577,7 +579,7 @@ def hook_exec_with_script_debug_if_failure(*args, **kwargs):
     return failed, failure_message_with_debug_instructions
 
 
-def _extract_filename_parts(filename):
+def _extract_filename_parts(filename: str) -> tuple[str, str]:
     """Extract hook parts from filename"""
     if "-" in filename:
         priority, action = filename.split("-", 1)
@@ -595,14 +597,15 @@ def _extract_filename_parts(filename):
 _find_unsafe = re.compile(r"[^\w@%+=:,./-]", re.UNICODE).search
 
 
-def shell_quote(s):
+def shell_quote(string: object) -> str:
     """Return a shell-escaped version of the string *s*."""
-    s = str(s)
-    if not s:
+    string = str(string)
+    if not string:
         return "''"
-    if _find_unsafe(s) is None:
-        return s
+    if _find_unsafe(string) is None:
+        return string
 
     # use single quotes, and put single quotes into double quotes
     # the string $'b is then quoted as '$'"'"'b'
-    return "'" + s.replace("'", "'\"'\"'") + "'"
+    string = string.replace("'", "'\"'\"'")
+    return f"'{string}'"

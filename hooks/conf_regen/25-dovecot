@@ -41,14 +41,15 @@ do_pre_regen() {
     export main_domain=$(cat /etc/yunohost/current_host)
     export domain_list="$YNH_DOMAINS_WITH_MAIL_IN_AND_OUT"
 
-    ynh_render_template "dovecot.conf" "${dovecot_dir}/dovecot.conf"
-
-    # adapt it for IPv4-only hosts
-    if [ ! -f /proc/net/if_inet6 ]; then
-        sed -i \
-            's/^\(listen =\).*/\1 */' \
-            "${dovecot_dir}/dovecot.conf"
+    # adapt config for IPv4-only hosts
+    if [[ "$(jq -r '.smtp_allow_ipv6' <<< "$YNH_SETTINGS" | int_to_bool)" == "True" ]] \
+    && [[ -f /proc/net/if_inet6 ]]; then
+        export ipv6_enabled=True
+    else
+        export ipv6_enabled=False
     fi
+
+    ynh_render_template "dovecot.conf.j2" "${dovecot_dir}/dovecot.conf"
 
     mkdir -p "${dovecot_dir}/yunohost.d"
     cp pre-ext.conf "${dovecot_dir}/yunohost.d"
@@ -67,9 +68,6 @@ do_post_regen() {
             mkdir -p /var/vmail
             adduser --system --ingroup mail --uid 500 vmail --home /var/vmail --no-create-home
         }
-
-    # Delete legacy home for vmail that existed in the past but was empty, poluting /home/
-    [ ! -e /home/vmail ] || rmdir --ignore-fail-on-non-empty /home/vmail
 
     # fix permissions
     chown -R vmail:mail /etc/dovecot/global_script

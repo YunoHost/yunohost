@@ -700,5 +700,5 @@
     "migration_0027_yunohost_upgrade": "Rozpoczęcie aktualizacji YunoHost core…",
     "migration_not_enough_space": "Przygotuj wystarczającą ilość miejsca w {path} aby przeprowadzić migrację.",
     "migration_postgresql_previous_not_installed": "PostgreSQL nie został zainstalowany w twoim systemie. Nic nie musisz robić.",
-    "migration_postgresql_target_not_installed": "PostgreSQL 13 jest zainstalowany, ale nie PostgreSQL 15!? Mogło się zdarzyć coś dziwnego w twoim systemie :(…"
+    "migration_postgresql_target_not_installed": "PostgreSQL {previous} jest zainstalowany, ale nie PostgreSQL {target}!? Mogło się zdarzyć coś dziwnego w twoim systemie :(…"
 }

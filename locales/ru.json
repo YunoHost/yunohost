@@ -676,7 +676,7 @@
     "migration_0027_yunohost_upgrade": "Запуск обновления ядра YunoHost…",
     "migration_not_enough_space": "Выделите достаточное пространство в {path} для запуска миграции.",
     "migration_postgresql_previous_not_installed": "В вашей системе не была установлена PostgreSQL. Ничего не нужно делать.",
-    "migration_postgresql_target_not_installed": "Установлена PostgreSQL 13, но не PostgreSQL 15!? Возможно, в вашей системе произошло что-то странное:(…",
+    "migration_postgresql_target_not_installed": "Установлена PostgreSQL {previous}, но не PostgreSQL {target}!? Возможно, в вашей системе произошло что-то странное:(…",
     "migration_python_venv_rebuild_broken_app": "Пропускаем {app}, потому что virtualenv не может быть легко восстановлен для этого приложения. Вместо этого вам следует исправить ситуацию, принудительно обновив это приложение с помощью `yunohost app upgrade --force {app}`.",
     "migration_python_venv_rebuild_disclaimer_base": "После обновления до Debian Bookworm некоторые приложения на Python необходимо частично перестроить, чтобы перейти на новую версию Python, поставляемую в Debian (с технической точки зрения: необходимо заново создать то, что называется \"virtualenv\"). В то же время эти приложения на Python могут не работать. YunoHost может попытаться перестроить virtualenv для некоторых из них, как описано ниже. Для других приложений, или если попытка перестройки завершится неудачей, вам потребуется вручную принудительно обновить эти приложения.",
     "migration_python_venv_rebuild_disclaimer_ignored": "Virtualenvs не могут быть автоматически перестроены для этих приложений. Вам нужно принудительно обновить их, что можно сделать из командной строки с помощью: `yunohost app upgrade --force APP`: {ignored_apps}",
