@@ -21,13 +21,18 @@
 # Exit hook on subcommand error or unset variable
 set -eu
 
-backup_dir="$1/conf/ynh"
+# Source YNH helpers
+YNH_HELPERS_VERSION=2.1
+# shellcheck source=../../helpers/helpers
+source /usr/share/yunohost/helpers
 
-cp -a "${backup_dir}/current_host" /etc/yunohost/current_host
-cp -a "${backup_dir}/firewall.yml" /etc/yunohost/firewall.yml
-cp -a "${backup_dir}/permissions.yml" /etc/yunohost/permissions.yml
-[ ! -d "${backup_dir}/portal" ] || cp -a "${backup_dir}/portal" /etc/yunohost/portal
-[ ! -d "${backup_dir}/domains" ] || cp -a "${backup_dir}/domains" /etc/yunohost/domains
-[ ! -e "${backup_dir}/settings.yml" ] || cp -a "${backup_dir}/settings.yml" "/etc/yunohost/settings.yml"
-[ ! -d "${backup_dir}/dyndns" ] || cp -raT "${backup_dir}/dyndns" "/etc/yunohost/dyndns"
-[ ! -d "${backup_dir}/dkim" ] || cp -raT "${backup_dir}/dkim" "/etc/dkim"
+ynh_restore '/etc/yunohost/current_host'
+ynh_restore '/etc/yunohost/firewall.yml'
+# NB : these may not exists on some older backups
+# ./etc/yunohost/permissions.yml is the new one whereas ./permissions.yml is the old one
+{ [ ! -e "./etc/yunohost/permissions.yml" ] && [ ! -e "./permissions.yml" ]; } || ynh_restore /etc/yunohost/permissions.yml
+{ [ ! -d "./etc/yunohost/portal" ] && [ ! -d "./portal" ]; } || ynh_restore '/etc/yunohost/portal'
+{ [ ! -d "./etc/yunohost/domains" ] && [ ! -d "./domains" ]; } || ynh_restore '/etc/yunohost/domains'
+{ [ ! -e "./etc/yunohost/settings.yml" ] && [ ! -e "./settings.yml" ]; } || ynh_restore '/etc/yunohost/settings.yml'
+{ [ ! -d "./etc/yunohost/dyndns" ] && [ ! -d "./dyndns" ]; } || ynh_restore '/etc/yunohost/dyndns'
+{ [ ! -d "./etc/dkim" ] && [ ! -d "./dkim" ]; } || ynh_restore '/etc/dkim'

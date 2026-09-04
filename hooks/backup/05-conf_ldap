@@ -22,15 +22,13 @@
 set -eu
 
 # Source YNH helpers
+YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
-# Backup destination
-backup_dir="${1}/conf/ldap"
-
 # Backup the configuration
-ynh_backup "/etc/ldap/ldap.conf" "${backup_dir}/ldap.conf"
-slapcat -b cn=config -l "${backup_dir}/cn=config.master.ldif"
+ynh_backup "/etc/ldap/ldap.conf"
+slapcat -b cn=config -l "cn=config.master.ldif"
 
 # Backup the database
-slapcat -b dc=yunohost,dc=org -l "${backup_dir}/dc=yunohost-dc=org.ldif"
+slapcat -b dc=yunohost,dc=org -l "dc=yunohost-dc=org.ldif"

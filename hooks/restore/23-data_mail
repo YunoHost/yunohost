@@ -21,7 +21,13 @@
 # Exit hook on subcommand error or unset variable
 set -eu
 
-backup_dir="$1/data/mail"
+# Source YNH helpers
+YNH_HELPERS_VERSION=2.1
+# shellcheck source=../../helpers/helpers
+source /usr/share/yunohost/helpers
 
-cp -a "$backup_dir/." /var/mail/ || echo 'No mail found'
-chown -R vmail:mail /var/mail/
+if [ -d "./mail" ] || [ -d "./var/mail" ]
+then
+    ynh_restore /var/mail
+fi
+chown -R vmail:mail /var/mail
