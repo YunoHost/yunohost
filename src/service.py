@@ -575,7 +575,7 @@ def service_log(name, number=50):
 
 def _run_service_command(action: str, service: str) -> bool:
     """
-    Run services management command (start, stop, enable, disable, restart, reload)
+    Run services management command (start, stop, enable, disable, restart, reload, mask, unmask)
 
     Keyword argument:
         action -- Action to perform
@@ -594,6 +594,8 @@ def _run_service_command(action: str, service: str) -> bool:
         "reload-or-restart",
         "enable",
         "disable",
+        "mask",
+        "unmask",
     ]
     if action not in possible_actions:
         raise ValueError(
