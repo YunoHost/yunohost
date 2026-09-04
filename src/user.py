@@ -446,6 +446,8 @@ def user_update(
         _hash_user_password,
         assert_password_is_compatible,
         assert_password_is_strong_enough,
+        get_validation_strength,
+        get_password_help
     )
 
     domains = domain_list()["domains"]
@@ -486,23 +488,24 @@ def user_update(
 
     # change_password is None if user_update is not called to change the password
     if change_password is not None and change_password != "":
+        is_admin = "cn=admins,ou=groups,dc=yunohost,dc=org" in user["memberOf"]
+        password_profile = "admin" if is_admin else "user"
         # when in the cli interface if the option to change the password is called
         # without a specified value, change_password will be set to the const 0.
         # In this case we prompt for the new password.
         if Moulinette.interface.type == "cli" and not change_password:
+            validation_strength = get_validation_strength(password_profile)
             change_password = cast(
                 str,
                 Moulinette.prompt(
-                    m18n.n("ask_password"), is_password=True, confirm=True
+                    m18n.n("ask_password"), is_password=True, confirm=True,
+                    help=get_password_help(validation_strength)
                 ),
             )
 
         # Ensure compatibility and sufficiently complex password
         assert_password_is_compatible(change_password)
-        is_admin = "cn=admins,ou=groups,dc=yunohost,dc=org" in user["memberOf"]
-        assert_password_is_strong_enough(
-            "admin" if is_admin else "user", change_password
-        )
+        assert_password_is_strong_enough(password_profile, change_password)
 
         new_attr_dict["userPassword"] = _hash_user_password(change_password)
         env_dict["YNH_USER_PASSWORD"] = change_password
