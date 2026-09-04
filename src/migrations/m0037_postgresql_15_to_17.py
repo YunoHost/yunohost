@@ -32,7 +32,7 @@ from ..utils.system import free_space_in_directory, space_used_by_directory
 logger = getLogger("yunohost.migration")
 
 
-class PostgreSQLMigration(Migration):
+class MyMigration(Migration):
     "Migrate DBs between Postgresql versions after migrating to a new Debian version"
 
     # Provided by calling class
