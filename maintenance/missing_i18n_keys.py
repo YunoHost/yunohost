@@ -161,6 +161,12 @@ def find_expected_string_keys(project: Path) -> Generator[str, None, None]:
         "custom_css",
         "dns",
         "enable_public_apps_page",
+        "enable_self_registration",
+        "registration_invite_mail_template",
+        "registration_invite_notes",
+        "registration_require_and_verify_email",
+        "registration_self_registration_notes",
+        "registration_tos",
     ]
     domain_section_with_no_name = ["app", "cert_", "mail", "registrar"]
     config_domain_toml = project / "share" / "config_domain.toml"

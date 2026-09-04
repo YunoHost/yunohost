@@ -58,39 +58,118 @@ portal:
                     help: New password to set
                     nargs: "?"
 
-        ### portal_update_password()
-        # update_password:
-        #     action_help: Allow user to change their password
-        #     api: PUT /me/update_password
-        #     arguments:
-        #         -c:
-        #             full: --current
-        #             help: Current password
-        #         -p:
-        #             full: --password
-        #             help: New password to set
-
-        ### portal_reset_password()
-        reset_password:
-            action_help: Allow user to update their infos (display name, mail aliases/forward, ...)
-            api: PUT /me/reset_password
-            authentication:
-                # FIXME: to be implemented ?
-                api: reset_password_token
-            # FIXME: add args etc
-
-        ### portal_register()
-        register:
-            action_help: Allow user to register using an invite token or ???
-            api: POST /me
-            authentication:
-                # FIXME: to be implemented ?
-                api: register_invite_token
-            # FIXME: add args etc
-
         ### portal_public()
         public:
-            action_help: Allow anybody to list public apps and other infos regarding the public portal
+            action_help: Allow anybody to list public apps and other information regarding the public portal
             api: GET /public
             authentication:
                 api: null
+
+        ### portal_invitation_get()
+        invitation_get:
+            action_help: Obtain information about a pending invitation
+            # NB : we use the QUERY verb because we want something as close as
+            # "GET" but that doesnt log the token query arg which is supposed
+            # to be secret-ish
+            api: QUERY /invitation
+            authentication:
+                api: null
+            arguments:
+                --token:
+                    help: The invitation token
+
+        ### portal_invitation_consume()
+        invitation_consume:
+            action_help: Consume an invitation token to create an account
+            api: POST /invitation
+            authentication:
+                api: null
+            arguments:
+                --token:
+                    help: The invitation token
+                --username:
+                    help: The username of the new user. For example 'camille'
+                    extra:
+                        # The username may have been defined by the admin and may not be overridable
+                        required: False
+                        pattern: &pattern_username
+                            - !!str ^[a-z0-9][-a-z0-9_\.]*$
+                            - "pattern_username"
+                --fullname:
+                    help: The full name of the user. For example 'Camille Dupont'
+                    extra:
+                        required: True
+                        pattern: *pattern_fullname
+                --external-email:
+                    help: An external email to be used as mail forward / recovery email
+                    extra:
+                        required: False
+                        pattern: *pattern_email_forward
+                --password:
+                    help: The password chosen by the user
+                    extra:
+                        required: True
+                --accept-tos:
+                    help: Accept the Terms of Services (assuming some are defined by the admins)
+                    default: false
+                    action: store_true
+
+        ### portal_registration_challenge()
+        registration_challenge:
+            action_help: Obtain an antibot challenge token and question to be able to submit a registration request
+            api: GET /registration/challenge
+            authentication:
+                api: null
+
+        ### portal_registration_queue()
+        registration_queue:
+            action_help: Create a pending registration / account request
+            api: POST /registration
+            authentication:
+                api: null
+            arguments:
+                --username:
+                    help: The username of the new user. For example 'camille'
+                    extra:
+                        required: True
+                        pattern: *pattern_username
+                --fullname:
+                    help: The full name of the user. For example 'Camille Dupont'
+                    extra:
+                        required: True
+                        pattern: *pattern_fullname
+                --external-email:
+                    help: An external email to be used as mail forward / recovery email
+                    extra:
+                        required: False
+                        pattern: *pattern_email_forward
+                --password:
+                    help: The password chosen by the user
+                    extra:
+                        required: True
+                --notes:
+                    help: Custom notes from the user to the admin regarding the registration request
+                --accept-tos:
+                    help: Accept the Terms of Services (assuming some are defined by the admins)
+                    default: false
+                    action: store_true
+                --challenge-token:
+                    help: The anti-bot challenge token
+                    extra:
+                        required: True
+                --challenge-answer:
+                    help: The anti-bot challenge answer
+                    extra:
+                        required: True
+
+        ### portal_registration_confirm()
+        registration_confirm:
+            action_help: Confirm an account request via the link received by email
+            api: PUT /registration/<request_id>/confirm
+            authentication:
+                api: null
+            arguments:
+                request_id:
+                    help: The request ID of the account request to confirm
+                    extra:
+                        required: True

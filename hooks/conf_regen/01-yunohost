@@ -73,22 +73,23 @@ base_folder_and_perm_init() {
     chown root:root /var/cache/yunohost/sessions
     chmod 700 /var/cache/yunohost/sessions
 
-    if test -e /etc/yunohost/installed; then
-        # Initialize session secrets
-        # Obviously we only do this in the post_regen, ie during the postinstall, because we don't want every pre-installed instance to have the same secret
-        if [ ! -e /etc/yunohost/.admin_cookie_secret ]; then
-            dd if=/dev/urandom bs=1 count=1000 2> /dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 64 > /etc/yunohost/.admin_cookie_secret
-        fi
-        chown root:root /etc/yunohost/.admin_cookie_secret
-        chmod 400 /etc/yunohost/.admin_cookie_secret
+    # ################################ #
+    # User invitations / registrations #
+    # ################################ #
 
-        if [ ! -e /etc/yunohost/.ssowat_cookie_secret ]; then
-            # NB: we need this to be exactly 32 char long, because it is later used as a key for AES256
-            dd if=/dev/urandom bs=1 count=1000 2> /dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 32 > /etc/yunohost/.ssowat_cookie_secret
-        fi
-        chown ynh-portal:root /etc/yunohost/.ssowat_cookie_secret
-        chmod 400 /etc/yunohost/.ssowat_cookie_secret
-    fi
+    mkdir -p /etc/yunohost/.user_invitations
+    chown root:ynh-portal /etc/yunohost/.user_invitations
+    # Mode "710" is used in combination with "ynh-portal" being the group, because we want ynh-portal 
+    # to be able to read the invitation info (in the QUERY /invitation route) while also *not* being able to list
+    # the existing invitations (which would require the r permission).
+    # This is to avoid having to be root just for this ... In particular, if it went through the socket API everytime,
+    # this would allow an attacker to flood request that would possibly take up the lock,
+    # or at least use significant ressource, hence possibly leveraged for denial of service attack
+    chmod 710 /etc/yunohost/.user_invitations
+
+    mkdir -p /etc/yunohost/.user_registrations
+    chown root:root /etc/yunohost/.user_registrations
+    chmod 700 /etc/yunohost/.user_registrations
 
     ##################
     # Domain folders #
@@ -164,6 +165,35 @@ base_folder_and_perm_init() {
     fi
 }
 
+generate_secrets() {
+
+    # This is to generate secrets, which are actually not tracked by the regenconf
+
+    # Obviously we only do this in the post_regen, ie during the postinstall,
+    # because we don't want every pre-installed instances (eg RPi images) to have the same secret
+
+    if test -e /etc/yunohost/installed; then
+        if [ ! -e /etc/yunohost/.admin_cookie_secret ]; then
+            dd if=/dev/urandom bs=1 count=1000 2> /dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 64 > /etc/yunohost/.admin_cookie_secret
+        fi
+        chown root:root /etc/yunohost/.admin_cookie_secret
+        chmod 400 /etc/yunohost/.admin_cookie_secret
+
+        if [ ! -e /etc/yunohost/.ssowat_cookie_secret ]; then
+            # NB: we need this to be exactly 32 char long, because it is later used as a key for AES256
+            dd if=/dev/urandom bs=1 count=1000 2> /dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 32 > /etc/yunohost/.ssowat_cookie_secret
+        fi
+        chown ynh-portal:root /etc/yunohost/.ssowat_cookie_secret
+        chmod 400 /etc/yunohost/.ssowat_cookie_secret
+
+        if [ ! -e /etc/yunohost/.email_auth_secret ]; then
+            dd if=/dev/urandom bs=1 count=1000 2> /dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 64 > /etc/yunohost/.email_auth_secret
+        fi
+        chown root:root /etc/yunohost/.email_auth_secret
+        chmod 400 /etc/yunohost/.email_auth_secret
+    fi
+}
+
 do_init_regen() {
 
     cd /usr/share/yunohost/conf/yunohost
@@ -225,6 +255,8 @@ do_pre_regen() {
     pending_dir=$1
 
     cd /usr/share/yunohost/conf/yunohost
+
+    generate_secrets
 
     mkdir -p "$pending_dir/etc/systemd/system"
     mkdir -p "$pending_dir/etc/cron.d/"
@@ -294,6 +326,10 @@ EOF
 
     cp yunohost-api.service "$pending_dir/etc/systemd/system/yunohost-api.service"
     cp yunohost-portal-api.service "$pending_dir/etc/systemd/system/yunohost-portal-api.service"
+
+    cp yunohost-socket-api.socket "$pending_dir/etc/systemd/system/yunohost-socket-api.socket"
+    cp yunohost-socket-api@.service "$pending_dir/etc/systemd/system/yunohost-socket-api@.service"
+
     cp yunoprompt.service "$pending_dir/etc/systemd/system/yunoprompt.service"
     cp proc-hidepid.service "$pending_dir/etc/systemd/system/proc-hidepid.service"
     # Delete legacy yunohost-firewall service
@@ -368,7 +404,21 @@ do_post_regen() {
         systemctl restart systemd-logind
     }
     [[ ! "$regen_conf_files" =~ "yunohost-api.service" ]] || systemctl daemon-reload
-    [[ ! "$regen_conf_files" =~ "yunohost-portal-api.service" ]] || systemctl daemon-reload
+    [[ ! "$regen_conf_files" =~ "yunohost-portal-api.service" ]] || {
+        systemctl daemon-reload
+        if systemctl is-active yunohost-portal-api --quiet
+        then
+            systemctl restart yunohost-portal-api
+        fi
+    }
+    [[ ! "$regen_conf_files" =~ "yunohost-socket-api.socket" ]] || {
+        systemctl daemon-reload
+        if systemctl is-active yunohost-socket-api.socket --quiet
+        then
+            systemctl restart yunohost-socket-api.socket
+        fi
+    }
+
     [[ ! "$regen_conf_files" =~ "nftables.service.d/yunohost-nftables-hooks.conf" ]] || systemctl daemon-reload
 
     if [[ "$regen_conf_files" =~ "yunoprompt.service" ]]; then
@@ -384,6 +434,9 @@ do_post_regen() {
 
     systemctl enable yunohost-portal-api.service --quiet
     systemctl is-active yunohost-portal-api --quiet || systemctl start yunohost-portal-api.service
+
+    systemctl enable yunohost-socket-api.socket --quiet
+    systemctl is-active yunohost-socket-api.socket --quiet || systemctl start yunohost-socket-api.socket
 
     # Change dpkg vendor
     # see https://wiki.debian.org/Derivatives/Guidelines#Vendor

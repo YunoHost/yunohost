@@ -170,8 +170,10 @@ def domain_list(
     if features:
         domains_filtered = []
         for domain in domains:
-            config = domain_config_get(domain, key="feature", export=True)
-            if any(config.get(feature) == 1 for feature in features):
+            # NB : check note in _get_raw_domain_settings, hard-coded stuff for mail_in/mail_out
+            # to avoid relying on domain_config_get
+            config = _get_raw_domain_settings(domain)
+            if any(bool(config.get(feature)) for feature in features):
                 domains_filtered.append(domain)
         domains = domains_filtered
 
@@ -687,18 +689,32 @@ def domain_url_available(domain: str, path: str) -> bool:
     return len(_get_conflicting_apps(domain, path)) == 0
 
 
-def _get_raw_domain_settings(domain: str) -> dict:
+def _get_raw_domain_settings(domain: str) -> dict[str, Any]:
     """Get domain settings directly from file.
     Be carefull, domain settings are saved in `"diff"` mode (i.e. default settings are not saved)
     so the file may be completely empty
     """
     _assert_domain_exists(domain)
+
+    # This is hard-coded here and should match what's in
+    # share/config_domain.toml ... and in fact we only do this for mail_in /
+    # mail_out which we do use "a lot" in domain_list()'s "feature" filter This
+    # is pretty ugly and hackish, but better resource-wise than calling the
+    # entire config panel stack just to list domains with mail features
+    # enabled...
+    defaults = {
+        "mail_in": True,
+        "mail_out": True,
+    }
+
     # NB: this corresponds to save_path_tpl in DomainConfigPanel
     path = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
     if os.path.exists(path):
-        return read_yaml(path)  # type: ignore[return-value]
+        raw_settings: dict[str, Any] = read_yaml(path)  # type: ignore[assignment]
+        defaults.update(raw_settings)
+        return defaults
 
-    return {}
+    return defaults
 
 
 def domain_config_get(
@@ -765,8 +781,10 @@ def _get_DomainConfigPanel() -> type["ConfigPanel"]:
             panel_id, section_id, option_id = self.filter_key
 
             # Portal settings are only available on "topest" domains
+            # Same for registration settings
             if _get_parent_domain_of(self.entity, topest=True) is not None:
                 del raw_config["feature"]["portal"]
+                del raw_config["feature"]["registration"]
 
             # Optimize wether or not to load the DNS section,
             # e.g. we don't want to trigger the whole _get_registary_config_section
@@ -889,6 +907,11 @@ def _get_DomainConfigPanel() -> type["ConfigPanel"]:
                 "search_engine_name",
                 "portal_user_intro",
                 "portal_public_intro",
+                "enable_self_registration",
+                "registration_tos",
+                "registration_require_and_verify_email",
+                "registration_self_registration_notes",
+                "registration_invite_notes",
             ]
 
             if _get_parent_domain_of(self.entity, topest=True) is None and any(
