@@ -61,16 +61,22 @@ else:
     logger = getLogger("yunohost.user")
 
 
+def separate_by_comma(item: str, optional: bool = True) -> str:
+    if optional:
+        return fr"^({item}(,{item})*)?$"
+    return fr"^({item}(,{item})*)$"
+
+
+DOMAIN_REGEX = r"([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})"
 FIELDS_FOR_IMPORT = {
     "username": r"^[a-z0-9][-a-z0-9_.]*$",
-    "firstname": r"^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$",
-    "lastname": r"^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$",
-    "password": r"^|(.{3,})$",
-    "mail": r"^([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}))$",
-    "mail-alias": r"^|([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$",
-    "mail-forward": r"^|([\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$",
+    "fullname": r"^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$",
+    "password": r"^(.{3,})?$",
+    "mail": r"^[\w.-]+@" + DOMAIN_REGEX + r"$",
+    "mail-alias": separate_by_comma(r"[\w.-]+@" + DOMAIN_REGEX),
+    "mail-forward": separate_by_comma(r"[\w\+.-]+@" + DOMAIN_REGEX),
     "mailbox-quota": r"^(\d+[bkMGT])|0|$",
-    "groups": r"^|([a-z0-9][-a-z0-9_.]*(,?[a-z0-9][-a-z0-9_.]*)*)$",
+    "groups": separate_by_comma(r"[a-z0-9][-a-z0-9_.]*")
 }
 
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
@@ -730,6 +736,7 @@ def user_export() -> Union[str, "HTTPResponseType"]:
         writer.writeheader()
         users = user_list(list(FIELDS_FOR_IMPORT.keys()))["users"]
         for username, user in users.items():
+            user["fullname"] = user["fullname"].strip()
             user["mail-alias"] = ",".join(user["mail-alias"])
             user["mail-forward"] = ",".join(user["mail-forward"])
             user["groups"] = ",".join(user["groups"])
@@ -764,7 +771,7 @@ def user_import(
     Import users from CSV
 
     Keyword argument:
-        csvfile -- CSV file with columns username;firstname;lastname;password;mailbox_quota;mail;alias;forward;groups
+        csvfile -- CSV file with columns username;fullname;password;mailbox_quota;mail;alias;forward;groups
 
     """
 
@@ -965,7 +972,7 @@ def user_import(
 
         user_update(
             new_infos["username"],
-            fullname=(new_infos["firstname"] + " " + new_infos["lastname"]).strip(),
+            fullname=new_infos["fullname"].strip(),
             change_password=new_infos["password"],
             mailbox_quota=new_infos["mailbox-quota"],
             mail=new_infos["mail"],
@@ -1011,7 +1018,7 @@ def user_import(
                 user["password"],
                 mailbox_quota=user["mailbox-quota"],
                 from_import=True,
-                fullname=(user["firstname"] + " " + user["lastname"]).strip(),
+                fullname=user["fullname"].strip(),
             )
             _import_update(user)
             result["created"] += 1

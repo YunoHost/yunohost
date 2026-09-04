@@ -143,8 +143,7 @@ def test_import_user():
 
     fieldnames = [
         "username",
-        "firstname",
-        "lastname",
+        "fullname",
         "password",
         "mailbox-quota",
         "mail",
@@ -158,8 +157,7 @@ def test_import_user():
         writer.writerow(
             {
                 "username": "morgan-claude.good_7",
-                "firstname": "Morgan-Claude",
-                "lastname": "Good",
+                "firstname": "Morgan-Claude Good",
                 "password": "",
                 "mailbox-quota": "1G",
                 "mail": "morgan-claude.good_7@" + maindomain,
@@ -171,8 +169,7 @@ def test_import_user():
         writer.writerow(
             {
                 "username": "sam",
-                "firstname": "Sam",
-                "lastname": "White",
+                "firstname": "Sam White",
                 "password": "",
                 "mailbox-quota": "1G",
                 "mail": "sam@" + maindomain,
@@ -184,8 +181,7 @@ def test_import_user():
         writer.writerow(
             {
                 "username": "alice",
-                "firstname": "Alice",
-                "lastname": "White",
+                "firstname": "Alice White",
                 "password": "",
                 "mailbox-quota": "1G",
                 "mail": "alice@" + maindomain,
@@ -215,10 +211,10 @@ def test_import_user():
 def test_export_user():
     result = user_export()
     should_be = (
-        "username;firstname;lastname;password;mail;mail-alias;mail-forward;mailbox-quota;groups\r\n"
-        f"alice;Alice;White;;alice@{maindomain};;;0;admins,dev\r\n"
-        f"bob;Bob;Snow;;bob@{maindomain};;;0;apps\r\n"
-        f"jack;Jack;Black;;jack@{maindomain};;;0;"
+        "username;fullname;password;mail;mail-alias;mail-forward;mailbox-quota;groups\r\n"
+        f"alice;Alice White;;alice@{maindomain};;;0;admins,dev\r\n"
+        f"bob;Bob Snow;;bob@{maindomain};;;0;apps\r\n"
+        f"jack;Jack Black;;jack@{maindomain};;;0;"
     )
     assert result == should_be
 
