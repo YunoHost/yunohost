@@ -62,6 +62,67 @@ def tools_versions() -> dict[str, dict[str, str]]:
     return ynh_packages_version()
 
 
+def tools_dash() -> dict[str, Any]:
+
+    out = {
+        "apps": {},
+        "upgrades": {},
+        "diagnosis": {},
+    }
+
+    try:
+        out["upgrades"]["system_packages"] = len(list(_list_upgradable_apt_packages()))
+    except Exception as e:
+        out["upgrades"]["system_packages"] = -1
+        logger.error(f"Failed to fetch list of upgradable system packages!?: {e}")
+
+    try:
+        out["upgrades"]["pending_migrations"] = len(tools_migrations_list(pending=True)["migrations"])
+    except Exception as e:
+        out["upgrades"]["pending_migrations"] = -1
+        logger.error(f"Failed to fetch pending migrations!?: {e}")
+
+    try:
+        from .app import app_list
+        apps = app_list(full=True)["apps"]
+        out["upgrades"]["apps"] = len([
+            app
+            for app in apps
+            if app["upgrade"]["status"] in ["upgradable", "fail_requirements"]
+        ])
+        out["apps"]["notifications"] = 0
+        for app in apps:
+            post_install_or_upgrade_notifs = {
+                k: v
+                for k, v in app["manifest"]["notifications"].items()
+                if v and k in ["POST_INSTALL", "POST_UPGRADE"]
+            }
+            out["apps"]["notifications"] += len(post_install_or_upgrade_notifs)
+    except Exception as e:
+        out["upgrades"]["apps"] = -1
+        out["apps"]["notifications"] = -1
+        logger.error(f"Failed to fetch app infos!?: {e}")
+        raise e
+
+    try:
+        from .diagnosis import diagnosis_show
+        out["diagnosis"] = {
+            "warnings": 0,
+            "errors": 0
+        }
+        for category in diagnosis_show(issues=True, full=True)["reports"]:
+            for item in category["items"]:
+                if item["status"] == "WARNING":
+                    out["diagnosis"]["warnings"] += 1
+                if item["status"] == "ERROR":
+                    out["diagnosis"]["errors"] += 1
+    except Exception as e:
+        out["diagnosis"] = {"warnings": -1, "errors": -1}
+        logger.error(f"Failed to fetch diagnosis reports!?: {e}")
+
+    return out
+
+
 def tools_rootpw(new_password: str, check_strength: bool = True) -> None:
     from .utils.password import (
         assert_password_is_compatible,
