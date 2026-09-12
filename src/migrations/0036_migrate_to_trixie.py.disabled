@@ -54,6 +54,7 @@ from debian.deb822 import Deb822
 # TRIXIE? import _ldap  # noqa: F401
 from moulinette import Moulinette, m18n
 
+from .postgresql import assert_can_migrate_debian
 from ..app import app_list
 from ..regenconf import manually_modified_files
 from ..tools import Migration, _write_migration_state, tools_update
@@ -403,6 +404,8 @@ class MyMigration(Migration):
 
             if upgradable_system_packages - lime2_hold_packages:
                 raise YunohostError("migration_0036_system_not_fully_up_to_date")
+
+        assert_can_migrate_debian(15)
 
     @property
     def disclaimer(self):

@@ -22,14 +22,46 @@ import os
 import subprocess
 import time
 from logging import getLogger
+import re
 
 from moulinette import m18n
 
 from ..tools import Migration
 from ..utils.error import YunohostError, YunohostValidationError
+from ..utils.process import check_output
 from ..utils.system import free_space_in_directory, space_used_by_directory
 
 logger = getLogger("yunohost.migration")
+
+def assert_can_migrate_debian(deb_pg_major_version: int):
+    """
+    Checks that the migration to the next Debian version can be triggered
+    (pre-condition checks before actually going on)
+    """
+
+    # FIXME: ensure postgresql is installed.
+    # FIXME: immich removal does not seem to drop the cluster.
+    # TODO: check the following scenarios:
+    # - attempt to migrate with immich alone ()
+    # - attempt to migrate with immich along with readeck
+    clusters = check_output(f"pg_lsclusters --json | jq -r '.[] | select(.version | tonumber > {deb_pg_major_version}) | (.version + \"/\" + .cluster)'")
+    if clusters:
+        apps_with_cluster = []
+        for cluster in clusters.splitlines():
+            apps = check_output("sudo -u postgres psql --no-password --cluster=17/main --dbname=postgres --tuples-only --no-align --command=\"SELECT datname FROM pg_database WHERE datistemplate = false and datname <> 'postgres'\"")
+            apps_with_cluster += [ f"{app} ({cluster})" for app in apps.splitlines()]
+        raise YunohostValidationError("migration_apps_with_pg_too_recent", apps_list=("- " + str.join("- ", apps_with_cluster)))
+    postgresql_pkg_version = check_output("dpkg-query --show --showformat='${Version}\n' postgresql")
+    postgresql_pkg_version_major = postgresql_pkg_version and re.match(r'^\d+', postgresql_pkg_version)
+    if not postgresql_pkg_version_major or postgresql_pkg_version_major != str(deb_pg_major_version):
+        # %p seem to refer to the package name… I don't understand why this works given the documentation ¯\_(ツ)_/¯
+        # https://www.debian.org/doc/manuals/aptitude/ch02s05s01.fr.html#secDisplayFormat
+        installable_official_version = check_output(r"""aptitude versions --disable-columns --display-format '{"origin": "%O", "installable": "%p"}' postgresql | jq -r 'select(.origin | test("Debian:\\d+\\.\\d+/oldstable")) | .installable'""")
+        raise YunohostValidationError(
+            "migration_postgresql_pkg_unexpected_version",
+            installed_version=postgresql_pkg_version,
+            installable_official_version=installable_official_version
+        )
 
 
 class PostgreSQLMigration(Migration):
