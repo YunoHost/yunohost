@@ -16,7 +16,7 @@ mail_path = /var/mail/%{user | username }
 mail_uid = 500
 mail_gid = 8
 
-protocols = imap sieve
+protocols = imap sieve {% if pop3_enabled == "True" %}pop3{% endif %}
 
 mail_plugins {
     quota = yes
