@@ -75,6 +75,7 @@ userdb ldap {
   filter = (&(objectClass=inetOrgPerson)(|(uid=%{user})(mail=%{user}))(permission=cn=mail.main,ou=permission,dc=yunohost,dc=org))
   fields {
     user = %{ldap:uid}
+    quota_storage_size = %{ldap:mailuserquota}
   }
 }
 
@@ -140,6 +141,7 @@ service auth {
   }
 }
 
+# FIXME This is probably broken because /usr/bin/quota-warning.sh seem not existing ony any Yunohost instance
 service quota-warning {
   executable = script /usr/bin/quota-warning.sh
   user = vmail
