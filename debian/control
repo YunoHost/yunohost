@@ -28,7 +28,7 @@ Depends: python3-all (>= 3.13),
  , sudo, sssd, sssd-tools, libsss-sudo, sssd-ldap, slapd, ldap-utils, libnss-sss, libpam-sss
  , dnsmasq, resolvconf, libnss-myhostname
  , postfix, postfix-ldap, postfix-policyd-spf-perl, postfix-pcre, libsasl2-modules
- , dovecot-core, dovecot-imapd, dovecot-ldap, dovecot-lmtpd, dovecot-managesieved
+ , dovecot-core, dovecot-imapd, dovecot-pop3d, dovecot-ldap, dovecot-lmtpd, dovecot-managesieved
  , opendkim-tools, opendkim, postsrsd, procmail, mailutils
  , acl
  , git, curl, wget, cron, unzip, jq, bc, at, procps, j2cli
