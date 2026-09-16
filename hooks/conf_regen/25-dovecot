@@ -22,6 +22,7 @@
 set -eu
 
 # Source YNH helpers
+YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
@@ -37,19 +38,19 @@ do_pre_regen() {
     cp dovecot-ldap.conf "${dovecot_dir}/dovecot-ldap.conf"
     cp dovecot.sieve "${dovecot_dir}/global_script/dovecot.sieve"
 
-    export pop3_enabled="$(jq -r '.pop3_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
-    export main_domain=$(cat /etc/yunohost/current_host)
-    export domain_list="$YNH_DOMAINS_WITH_MAIL_IN_AND_OUT"
+    pop3_enabled="$(jq -r '.pop3_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
+    main_domain=$(cat /etc/yunohost/current_host)
+    domain_list="$YNH_DOMAINS_WITH_MAIL_IN_AND_OUT"
 
     # adapt config for IPv4-only hosts
     if [[ "$(jq -r '.smtp_allow_ipv6' <<< "$YNH_SETTINGS" | int_to_bool)" == "True" ]] \
     && [[ -f /proc/net/if_inet6 ]]; then
-        export ipv6_enabled=True
+        ipv6_enabled=True
     else
-        export ipv6_enabled=False
+        ipv6_enabled=False
     fi
 
-    ynh_render_template "dovecot.conf.j2" "${dovecot_dir}/dovecot.conf"
+    ynh_config_add --jinja --template="dovecot.conf.j2" --destination="${dovecot_dir}/dovecot.conf"
 
     mkdir -p "${dovecot_dir}/yunohost.d"
     cp pre-ext.conf "${dovecot_dir}/yunohost.d"

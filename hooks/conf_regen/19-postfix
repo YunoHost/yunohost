@@ -19,9 +19,10 @@
 #
 
 # Exit hook on subcommand error or unset variable
-set -e
+set -eu
 
 # Source YNH helpers
+YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
@@ -43,14 +44,14 @@ do_pre_regen() {
     main_domain=$(cat /etc/yunohost/current_host)
 
     # Support different strategy for security configurations
-    export compatibility="$(jq -r '.postfix_compatibility' <<< "$YNH_SETTINGS")"
+    compatibility="$(jq -r '.postfix_compatibility' <<< "$YNH_SETTINGS")"
 
     # Add possibility to specify a relay
     # Could be useful with some isp with no 25 port open or more complex setup
-    export relay_port=""
-    export relay_user=""
-    export relay_host=""
-    export relay_enabled="$(jq -r '.smtp_relay_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
+    relay_port=""
+    relay_user=""
+    relay_host=""
+    relay_enabled="$(jq -r '.smtp_relay_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
     if [ "${relay_enabled}" == "True" ]; then
         relay_host="$(jq -r '.smtp_relay_host' <<< "$YNH_SETTINGS")"
         relay_port="$(jq -r '.smtp_relay_port' <<< "$YNH_SETTINGS")"
@@ -66,11 +67,11 @@ do_pre_regen() {
 
         cat <<< "[${relay_host}]:${relay_port} ${relay_user}:${relay_password}" > "${postfix_dir}/sasl_passwd"
     fi
-    export enable_blocklists="$(jq -r '.enable_blocklists' <<< "$YNH_SETTINGS" | int_to_bool)"
+    enable_blocklists="$(jq -r '.enable_blocklists' <<< "$YNH_SETTINGS" | int_to_bool)"
 
     # Use this postfix server as a backup MX
-    export backup_mx_domains="$(jq -r '.smtp_backup_mx_domains' <<< "$YNH_SETTINGS" | sed 's/^null$//g' | sed "s/,/ /g")"
-    export backup_mx_emails="$(jq -r '.smtp_backup_mx_emails_whitelisted' <<< "$YNH_SETTINGS" | sed "s/,/ /g")"
+    backup_mx_domains="$(jq -r '.smtp_backup_mx_domains' <<< "$YNH_SETTINGS" | sed 's/^null$//g' | sed "s/,/ /g")"
+    backup_mx_emails="$(jq -r '.smtp_backup_mx_emails_whitelisted' <<< "$YNH_SETTINGS" | sed "s/,/ /g")"
     rm -f "${postfix_dir}/relay_recipients"
     touch "${postfix_dir}/relay_recipients"
     rm -f "${postfix_dir}/relay_recipients.db"
@@ -85,16 +86,15 @@ do_pre_regen() {
     # adapt config for IPv4-only hosts
     if [[ "$(jq -r '.smtp_allow_ipv6' <<< "$YNH_SETTINGS" | int_to_bool)" == "True" ]] \
     && [[ -f /proc/net/if_inet6 ]]; then
-        export ipv6_enabled=True
+        ipv6_enabled=True
     else
-        export ipv6_enabled=False
+        ipv6_enabled=False
     fi
-
-    export main_domain
-    export domain_list="$YNH_DOMAINS_WITH_MAIL_IN_AND_OUT"
-    ynh_render_template "main.cf.j2" "${postfix_dir}/main.cf"
-    ynh_render_template "sni.j2" "${postfix_dir}/sni"
-    ynh_render_template "postsrsd.j2" "${default_dir}/postsrsd"
+    
+    domain_list="$YNH_DOMAINS_WITH_MAIL_IN_AND_OUT"
+    ynh_config_add --jinja --template="main.cf.j2" --destination="${postfix_dir}/main.cf"
+    ynh_config_add --jinja --template="sni.j2" --destination="${postfix_dir}/sni"
+    ynh_config_add --jinja --template="postsrsd.j2" --destination="${default_dir}/postsrsd"
 
     # Activate mailbox only on domains with mail_in features
     # If mail_in is disabled for a domain, this allows to send
