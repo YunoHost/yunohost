@@ -1485,17 +1485,19 @@ class TestSelect(BaseTest):
                 *all_fails("2", "True", "y"),
             ]
         },
-        {
-            "raw_options": [{"choices": ""}, {"choices": []}],
-            "scenarios": [
-                # FIXME those should fail at option level (wrong default, dev error)
-                *all_fails(None, "", error=YunohostError),
-                *xpass(scenarios=[
-                    ("", "", {"optional": True}),
-                    (None, "", {"optional": True}),
-                ], reason="empty choices, should fail at option instantiation"),
-            ]
-        },
+        # Disabling those tests because the relevant code was disabled too.
+        # See 61c0458be4495b639c7af468848bcc768ff212c1
+        # {
+        #     "raw_options": [{"choices": ""}, {"choices": []}],
+        #     "scenarios": [
+        #         # FIXME those should fail at option level (wrong default, dev error)
+        #         *all_fails(None, "", error=YunohostError),
+        #         *xpass(scenarios=[
+        #             ("", "", {"optional": True}),
+        #             (None, "", {"optional": True}),
+        #         ], reason="empty choices, should fail at option instantiation"),
+        #     ]
+        # },
         # readonly
         ("one", "two", {"readonly": True, "choices": ["one", "two"], "default": "two"}),
     ]
