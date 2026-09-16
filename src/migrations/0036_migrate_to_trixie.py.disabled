@@ -459,11 +459,10 @@ class MyMigration(Migration):
         # OpenSSH_10.0p2 forbid to login with public key that are in a /home/USER
         # with write permissions on groups cause it's possible to move .ssh even 
         # if groups have no write permissions on thi s.ssh directory.
-        for keys_path in Path('/home').glob('.ssh/authorized_keys'):
+        for keys_path in Path('/home').glob('*/.ssh/authorized_keys'):
             ssh_user = keys_path.parts[2]
-            user_home = Path('/home') / ssh_user
-            if bool(stat.S_IWGRP & user_home.stat().st_mode) \
-               or bool(stat.S_IWOTH & user_home.stat().st_mode):
+            test_list = [ Path('/home') / ssh_user, keys_path.parent, keys_path ]
+            if any([ bool(stat.S_IWGRP & t.stat().st_mode) for t in test_list ]):
                 raise YunohostError("migration_0036_ssh_user_home_writable_by_group", user=ssh_user)
 
 
