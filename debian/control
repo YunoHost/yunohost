@@ -21,7 +21,7 @@ Depends: python3-all (>= 3.13),
  , udisks2, udisks2-btrfs, udisks2-lvm2
  , smartmontools
  , python3-zmq
- , nginx, nginx-extras (>=1.22)
+ , nginx, nginx-extras (>=1.22), libnginx-mod-http-headers-more-filter (>=0.36)
  , apt, apt-transport-https, apt-utils, aptitude, dirmngr
  , openssh-server, nftables, fail2ban, bind9-dnsutils
  , openssl, ca-certificates, netcat-openbsd, iproute2
