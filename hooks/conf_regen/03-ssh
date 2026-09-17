@@ -39,7 +39,7 @@ do_pre_regen() {
     [[ -f /proc/net/if_inet6 ]] && ipv6_enabled=true || ipv6_enabled=false
     export ipv6_enabled
 
-    ynh_render_template "sshd_config" "${pending_dir}/etc/ssh/sshd_config"
+    ynh_render_template "sshd_config.j2" "${pending_dir}/etc/ssh/sshd_config"
 }
 
 do_post_regen() {

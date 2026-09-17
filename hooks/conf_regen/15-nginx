@@ -43,10 +43,10 @@ do_base_regen() {
     cp fastcgi_params_with_auth "$nginx_dir"
     cp fastcgi_params_no_auth "$nginx_dir"
 
-    ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
-    ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
-    ynh_render_template "yunohost_admin.conf.inc" "${nginx_conf_dir}/yunohost_admin.conf.inc"
-    ynh_render_template "yunohost_api.conf.inc" "${nginx_conf_dir}/yunohost_api.conf.inc"
+    ynh_render_template "security.conf.inc.j2" "${nginx_conf_dir}/security.conf.inc"
+    ynh_render_template "yunohost_admin.conf.j2" "${nginx_conf_dir}/yunohost_admin.conf"
+    ynh_render_template "yunohost_admin.conf.inc.j2" "${nginx_conf_dir}/yunohost_admin.conf.inc"
+    ynh_render_template "yunohost_api.conf.inc.j2" "${nginx_conf_dir}/yunohost_api.conf.inc"
 
     mkdir -p "$nginx_conf_dir/default.d/"
     cp "redirect_to_admin.conf" "$nginx_conf_dir/default.d/"
@@ -102,12 +102,12 @@ do_pre_regen() {
     mkdir -p "${pending_dir}/etc/nginx/modules-enabled/"
 
     if [[ "$tls_passthrough_enabled" == "True" ]]; then
-        ynh_render_template "tls_passthrough.conf" "${tls_passthrough_module}"
+        ynh_render_template "tls_passthrough.conf.j2" "${tls_passthrough_module}"
         for tls_passthrough_domain_and_ip in ${tls_passthrough_list//,/ }; do
             export tls_passthrough_domain=$(echo "$tls_passthrough_domain_and_ip" | awk -F';' '{print $1}')
             export tls_passthrough_ip=$(echo "$tls_passthrough_domain_and_ip" | awk -F';' '{print $2}')
             export tls_passthrough_port=$(echo "$tls_passthrough_domain_and_ip" | awk -F';' '{print $3}')
-            ynh_render_template "tls_passthrough_server.conf" "${nginx_conf_dir}/${tls_passthrough_domain}.forward80.conf"
+            ynh_render_template "tls_passthrough_server.conf.j2" "${nginx_conf_dir}/${tls_passthrough_domain}.forward80.conf"
         done
     else
         touch "${tls_passthrough_module}"
@@ -140,13 +140,10 @@ do_pre_regen() {
             export mail_enabled="False"
         fi
 
-        ynh_render_template "server.tpl.conf" "${nginx_conf_dir}/${domain}.conf"
+        ynh_render_template "server.conf.j2" "${nginx_conf_dir}/${domain}.conf"
         if [ $mail_enabled == "True" ]; then
-            ynh_render_template "autoconfig.tpl.xml" "${mail_autoconfig_dir}/config-v1.1.xml"
+            ynh_render_template "autoconfig.xml.j2" "${mail_autoconfig_dir}/config-v1.1.xml"
         fi
-
-        touch "${domain_conf_dir}/yunohost_local.conf" # Clean legacy conf files
-
     done
 
     # Legacy file to remove, but we can't really remove it because it may be included by app confs...

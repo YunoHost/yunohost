@@ -45,16 +45,21 @@ YUNOHOST_PACKAGES = [
 ]
 
 
+def os_release() -> dict[str, str]:
+    """Please do NOT cache this function: this is the backend that always returns up to date info"""
+    return dict(
+        line.split("=") for line in Path("/etc/os-release").read_text().splitlines()
+    )
+
+
 @cache
 def debian_version() -> Literal["bookworm", "trixie"]:
-    command = 'grep "^VERSION_CODENAME=" /etc/os-release 2>/dev/null | cut -d= -f2'
-    return check_output(command)  # type: ignore[return-value]
+    return os_release()["VERSION_CODENAME"]  # type: ignore[return-value]
 
 
 @cache
 def debian_version_id() -> Literal[12, 13]:
-    command = 'grep "^VERSION_ID=" /etc/os-release 2>/dev/null | cut -d= -f2'
-    return int(check_output(command).strip('"'))  # type: ignore[return-value]
+    return int(os_release()["VERSION_ID"].strip('"'))  # type: ignore[return-value]
 
 
 @cache

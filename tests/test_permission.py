@@ -26,6 +26,7 @@ import string
 
 import pytest
 import requests
+import toml
 from yunohost.app import (
     APPS_SETTING_PATH,
     _get_app_settings,
@@ -91,13 +92,14 @@ def _permission_create_with_dummy_app(
             settings["path"] = path
         _set_app_settings(app, settings)
 
-        with open(os.path.join(APPS_SETTING_PATH, app, "manifest.json"), "w") as f:
-            json.dump(
+        with open(os.path.join(APPS_SETTING_PATH, app, "manifest.toml"), "w") as f:
+            toml.dump(
                 {
-                    "name": app,
+                    "packaging_format": 2,
                     "id": app,
+                    "name": app,
                     "description": {"en": "Dummy app to test permissions"},
-                    "arguments": {"install": []},
+                    "install": {},
                 },
                 f,
             )
@@ -217,10 +219,6 @@ def teardown_function(function):
 
     try:
         app_remove("permissions_app")
-    except Exception:
-        pass
-    try:
-        app_remove("legacy_app")
     except Exception:
         pass
 
@@ -977,8 +975,9 @@ def test_show_tile_cant_be_enabled():
 def test_permission_app_install():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
-        args="domain=%s&domain_2=%s&path=%s&init_main_permission=all_users&admin=%s"
-        % (maindomain, maindomain, "/urlpermissionapp", "alice"),
+        args="domain={}&domain_2={}&path={}&init_main_permission={}&admin={}".format(
+            maindomain, maindomain, "/urlpermissionapp", "all_users", "alice"
+        ),
         force=True,
     )
 
@@ -1009,8 +1008,9 @@ def test_permission_app_install():
 def test_permission_app_remove():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
-        args="domain=%s&domain_2=%s&path=%s&init_main_permission=all_users&admin=%s"
-        % (maindomain, maindomain, "/urlpermissionapp", "alice"),
+        args="domain={}&domain_2={}&path={}&init_main_permission={}&admin={}".format(
+            maindomain, maindomain, "/urlpermissionapp", "visitors", "alice"
+        ),
         force=True,
     )
     app_remove("permissions_app")
@@ -1023,8 +1023,9 @@ def test_permission_app_remove():
 def test_permission_app_change_url():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
-        args="domain=%s&domain_2=%s&path=%s&init_main_permission=visitors&admin=%s"
-        % (maindomain, maindomain, "/urlpermissionapp", "alice"),
+        args="domain={}&domain_2={}&path={}&init_main_permission={}&admin={}".format(
+            maindomain, maindomain, "/urlpermissionapp", "visitors", "alice"
+        ),
         force=True,
     )
 
@@ -1045,8 +1046,9 @@ def test_permission_app_change_url():
 def test_permission_protection_management_by_helper():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
-        args="domain=%s&domain_2=%s&path=%s&init_main_permission=visitors&admin=%s"
-        % (maindomain, maindomain, "/urlpermissionapp", "alice"),
+        args="domain={}&domain_2={}&path={}&init_main_permission={}&admin={}".format(
+            maindomain, maindomain, "/urlpermissionapp", "visitors", "alice"
+        ),
         force=True,
     )
 
@@ -1069,8 +1071,9 @@ def test_permission_protection_management_by_helper():
 def test_permission_app_propagation_on_ssowat():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
-        args="domain=%s&domain_2=%s&path=%s&init_main_permission=visitors&admin=%s"
-        % (maindomain, maindomain, "/urlpermissionapp", "alice"),
+        args="domain={}&domain_2={}&path={}&init_main_permission={}&admin={}".format(
+            maindomain, maindomain, "/urlpermissionapp", "visitors", "alice"
+        ),
         force=True,
     )
 
@@ -1099,32 +1102,3 @@ def test_permission_app_propagation_on_ssowat():
     assert not can_access_webpage(app_webroot + "/admin", logged_as=None)
     assert can_access_webpage(app_webroot + "/admin", logged_as="alice")
     assert not can_access_webpage(app_webroot + "/admin", logged_as="bob")
-
-
-def test_permission_legacy_app_propagation_on_ssowat():
-    app_install(
-        os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
-        args="domain=%s&domain_2=%s&path=%s&is_public=0"
-        % (maindomain, maindomain, "/legacy"),
-        force=True,
-    )
-
-    # App is configured as public by default using the legacy unprotected_uri mechanics
-    # It should automatically be migrated during the install
-    res = user_permission_list(full=True)["permissions"]
-    assert "visitors" not in res["legacy_app.main"]["allowed"]
-    assert "all_users" in res["legacy_app.main"]["allowed"]
-
-    app_webroot = "https://%s/legacy" % maindomain
-
-    assert not can_access_webpage(app_webroot, logged_as=None)
-    assert can_access_webpage(app_webroot, logged_as="alice")
-
-    # Try to update the permission and check that permissions are still consistent
-    user_permission_update(
-        "legacy_app.main", remove=["visitors", "all_users"], add="bob"
-    )
-
-    assert not can_access_webpage(app_webroot, logged_as=None)
-    assert not can_access_webpage(app_webroot, logged_as="alice")
-    assert can_access_webpage(app_webroot, logged_as="bob")
