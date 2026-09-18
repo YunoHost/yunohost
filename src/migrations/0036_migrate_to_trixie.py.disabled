@@ -477,32 +477,41 @@ sideway (typically by SSHing from the local network, or through rescue access on
 
         # TODO: migrate to deb822? See apt modernize-sources after upgrade
 
-        # This :
-        # - replace single 'bookworm' occurence by 'trixie'
-        # - comments lines containing "backports"
-        # - replace 'bookworm/updates' by 'trixie/updates' (or same with -)
-        # Special note about the security suite:
-        # https://www.debian.org/releases/bookworm/amd64/release-notes/ch-information.en.html#security-archive
         def patch_list_line(line: str) -> str:
-            line = (
-                line.replace(
+            """
+            - replace single 'bookworm' occurence by 'trixie'
+            - comments lines containing "backports"
+            - replace 'bookworm/updates' by 'trixie/updates' (or same with -)
+            Special note about the security suite:
+            https://www.debian.org/releases/bookworm/amd64/release-notes/ch-information.en.html#security-archive
+            deb [ option1=valeur1 option2=valeur2 ] uri suite [composant1] [composant2] [...]
+            """
+            deb_re = r"^(?P<deb>deb)\s*(?P<options>\[[^\]]*\])?\s*(?P<uri>[^\s]*)\s*(?P<suite>[^\s]*)\s*(?P<components>.*)$"
+            if not (match := re.match(deb_re, line)):
+                return line
+
+            deb, options, uri, suite, components = match.groups()
+
+            if options is not None:
+                assert isinstance(options, str)
+                options = options.replace(
                     "/usr/share/keyrings/yunohost-bookworm.gpg",
                     "/usr/share/keyrings/yunohost-trixie.gpg",
                 )
-                .replace("http://", "https://")
-                .replace("/forge.yunohost.org/debian", "/repo.yunohost.org/debian")
-                .replace(" bookworm ", " trixie ")
-                .replace(" bookworm-", " trixie-")
-            )
+            uri =  uri.replace("http://", "https://").replace("/forge.yunohost.org/debian", "/repo.yunohost.org/debian").removesuffix("/")
+            suite = suite.replace("bookworm", "trixie")
+            components_list = [component.replace("bookworm", "trixie")for component in components.split()]
 
             # FIXME: Remove that, this is only while Trixie is not stable
-            if "https://repo.yunohost.org/debian" in line:
-                before, after = line.split(" trixie ")
-                if "testing" not in after:
-                    line = f"{before} trixie {after} testing"
+            if "https://repo.yunohost.org/debian" in uri:
+                components_list.append("testing")
 
-            if "backports" in line:
-                line = f"# {line}"
+            # Unique values in components
+            seen = set()
+            components_list = [x for x in components_list if not (x in seen or seen.add(x))]
+            comment = "#" if "backports" in line else None
+
+            line = " ".join(filter(None, [comment, deb, options, uri, suite, *components_list]))
             return line
 
         for file in dot_list:
