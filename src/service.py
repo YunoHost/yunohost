@@ -57,6 +57,7 @@ def service_add(
     test_conf=None,
     needs_exposed_ports=None,
     need_lock=False,
+    unit_type=None,
 ):
     """
     Add a custom service
@@ -69,8 +70,12 @@ def service_add(
         test_conf -- Specify a custom bash command to check if the configuration of the service is valid or broken, similar to nginx -t.
         needs_exposed_ports -- A list of ports that needs to be publicly exposed for the service to work as intended.
         need_lock -- Use this option to prevent deadlocks if the service does invoke yunohost commands.
+        unit_type -- Specify that type of systemd unit to be added, e.g. mount.
     """
     services = _get_services()
+    
+    if unit_type is not None:
+        name=name+"."+unit_type
 
     services[name] = service = {}
 
