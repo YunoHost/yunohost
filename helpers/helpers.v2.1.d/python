@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+# [internal]
+_ynh_load_python_in_path_and_other_tweaks() {
+
+    # Get the absolute path of this version of Python
+    python_dir=$("$MISE_BIN_DIR/mise" bin-paths "python@$python_version")
+
+    if [ ! -e "$python_dir" ]; then
+        echo "Skipping loading python, because it doesn't seem to be provisioned yet. This is likely to happen during restore and other specific contexts."
+        return
+    fi
+
+    # At the difference of what’s done for other tools, DO NOT load the path of the Python version, as it will break the use of other helpers
+
+    # Cleanup Python versions
+    # Calling it here will remove unused versions on install/upgrade as well
+    _ynh_python_cleanup
+}
+
+# Auto-load Python path tweaks if this app uses the python resource in the manifest
+if [ -n "${python_version:-}" ] && (cat "$YNH_APP_BASEDIR/manifest.toml" | toml_to_json | jq -e ".resources.python" > /dev/null); then
+    _ynh_load_python_in_path_and_other_tweaks
+fi
+
+# Install a specific version of Python using mise
+#
+# The installed version is defined by `$python_version` which should be defined as global prior to calling this helper
+#
+# usage: ynh_python_install
+#
+# The helper adds the appropriate, specific version of python to the `$PATH` variable (which
+# is preserved when calling ynh_exec_as_app). Also defines:
+#
+# - `$path_with_python` to be used in the systemd config (`Environment="PATH=__PATH_WITH_PYTHON__"`)
+# - `$python_dir`, the directory containing the specific version of python, which may be used in the systemd config too (e.g. `ExecStart=__PYTHON_DIR__/python foo bar`)
+ynh_python_install() {
+
+    [[ -n "${python_version:-}" ]] || ynh_die "\$python_version should be defined prior to calling ynh_python_install"
+
+    ynh_mise_install
+
+    # Install the requested version of Python
+    local final_python_version=$("${MISE_BIN_DIR}"/mise ls-remote python@"$python_version" --json | jq -r '.[].version' | tail -n1 )
+    python_version=${final_python_version:-$python_version}
+    ynh_app_setting_set --key=python_version --value="$python_version"
+
+    # Installing precompiled python from the $install_dir so the created mise.toml will be at the right place
+    pushd "$install_dir" || ynh_die
+        ynh_print_info "Installing python@$python_version"
+        ynh_hide_warnings "$MISE_BIN_DIR"/mise use python@"$python_version"
+    popd || ynh_die
+
+    _ynh_load_python_in_path_and_other_tweaks
+}
+
+# Remove the version of Python used by the app.
+#
+# This helper will also cleanup unused Python versions
+#
+# usage: ynh_python_remove
+ynh_python_remove() {
+
+    [[ -n "${python_version:-}" ]] || ynh_die "\$python_version should be defined prior to calling ynh_python_remove"
+
+    # Remove the line for this app
+    ynh_app_setting_delete --key="python_version"
+
+    # Cleanup Python versions
+    _ynh_python_cleanup
+}
+
+# Remove no more needed versions of Python used by the app.
+#
+# [internal]
+#
+# This helper will check what Python version are no more required,
+# and uninstall them
+#
+# usage: _ynh_python_cleanup
+_ynh_python_cleanup() {
+
+    python_used_versions=$(
+        for app in $(yunohost app list --json | jq -r '.apps[].id'); do
+            yunohost app setting "$app" python_version 2>/dev/null
+        done | tr '\n' ' '
+    )
+    
+    local installed_versions=$("${MISE_BIN_DIR}/mise" ls python --json | jq -r '.[].version' | grep -v '^$')
+    for version in $installed_versions; do
+        if [[ " $python_used_versions " != *" $version "* ]]; then
+            ynh_print_info "Removing python@$version"
+            ynh_hide_warnings "$MISE_BIN_DIR/mise" unuse python@"$version"
+            ynh_hide_warnings "$MISE_BIN_DIR/mise" uninstall python@"$version"
+        fi
+    done
+
+    # Remove mise if no apps use it anymore
+    _ynh_mise_cleanup
+}

@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+#
+# Copyright (c) 2026 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+export MISE_VERSION=2026.5.8
+declare -A MISE_SHA256=(
+    [amd64]="883b0322a67be86b908d6513c6157afbe767abd39d047bbbc2b8f9102fa1987a"
+    [arm64]="8ff5b09451d65e91f4cd25b2febd83b58c909dca067acd06e2bff9944ea96cb5"
+    [armv7]="2431108204343f1aee120ea89a6104383a7018024c26af0ea087d5852b2f8d5b"
+)
+
+export MISE_INSTALL_DIR="/opt/mise"
+export MISE_BIN_DIR="$MISE_INSTALL_DIR/bin"
+export MISE_DATA_DIR="$MISE_INSTALL_DIR/binaries"
+export MISE_CACHE_DIR="$MISE_INSTALL_DIR/cache"
+export MISE_STATE_DIR="$MISE_INSTALL_DIR/state"
+
+readonly MISE_INSTALL_DIR
+readonly MISE_BIN_DIR
+readonly MISE_DATA_DIR
+readonly MISE_CACHE_DIR
+readonly MISE_STATE_DIR
+
+# [internal]
+_ynh_load_mise_in_path_and_other_tweaks() {
+    # Load the path of this version of mise in $PATH
+    if [[ :$PATH: != *":$MISE_BIN_DIR"* ]]; then
+        PATH="$MISE_BIN_DIR:$PATH"
+    fi
+
+    # Export PATH such that it's available through sudo -E / ynh_exec_as $app
+    export PATH
+
+    # This is in full lowercase such that it gets replaced in templates
+    # shellcheck disable=SC2034
+    path_with_mise="$PATH"
+    # shellcheck disable=SC2034
+    PATH_with_mise="$PATH"
+}
+
+ynh_mise_install() {
+
+    # Check early for the supported architecture
+    if [ "$YNH_ARCH" = amd64 ]; then
+        local MISE_ARCH="x64"
+    elif [ "$YNH_ARCH" = arm64 ]; then
+        local MISE_ARCH="$YNH_ARCH"
+    elif [ "$YNH_ARCH" = armv7 ]; then
+        local MISE_ARCH="$YNH_ARCH"
+    else
+        ynh_die "No available mise version for this architecture ($YNH_ARCH). Please raise an issue so we can have a look."
+    fi
+
+    if [[ ! -f "$MISE_BIN_DIR"/mise ]] || [[ "$($MISE_BIN_DIR/mise version --json | jq -r '.version' | awk '{print $1}')" != "$MISE_VERSION" ]]; then
+
+        mkdir -p "$MISE_INSTALL_DIR"
+
+        pushd "$MISE_INSTALL_DIR" || ynh_die
+        
+        local MISE_SOURCE=https://github.com/jdx/mise/releases/download/v$MISE_VERSION/mise-v$MISE_VERSION-linux-${MISE_ARCH}.tar.xz
+        local MISE_FILENAME="mise-v${MISE_VERSION}-linux-${MISE_ARCH}.tar.xz"
+
+        # NB. we have to declare the var as local first,
+        # otherwise 'local foo=$(false) || echo 'pwet'" doesn’t work
+        # because local always return 0 ...
+        local out
+        # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
+        out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document="$MISE_FILENAME" "$MISE_SOURCE" 2>&1) \
+            || ynh_die "$out"
+
+        # Check the control sum
+        if ! echo "${MISE_SHA256[$YNH_ARCH]} ${MISE_FILENAME}" | sha256sum --check --status; then
+            local actual_sum="$(sha256sum "$MISE_FILENAME" | cut --delimiter=' ' --fields=1)"
+            local actual_size="$(du -hs "$MISE_FILENAME" | cut --fields=1)"
+            ynh_safe_rm -f "$MISE_FILENAME"
+            ynh_die "Corrupt source for ${MISE_SOURCE}: Expected sha256sum to be ${MISE_SHA256[$YNH_ARCH]} but got ${actual_sum} (size: ${actual_size})."
+        fi
+
+        # Extract mise and remove tarball
+        tar -xf "$MISE_FILENAME" --strip-components 1
+        ynh_safe_rm "$MISE_FILENAME"
+
+        popd || ynh_die
+    fi
+
+    _ynh_load_mise_in_path_and_other_tweaks
+}
+
+# [internal]
+_ynh_mise_cleanup() {
+    if "${MISE_BIN_DIR}/mise" ls --json | jq -e '. | length == 0'; then
+        ynh_print_info "Removing mise"
+        ynh_safe_rm "$MISE_INSTALL_DIR"
+    fi
+}
