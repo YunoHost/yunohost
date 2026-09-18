@@ -38,6 +38,7 @@ from .domain import (
 )
 from .hook import hook_callback
 from .log import OperationLogger, is_unit_operation
+from .settings import settings_get
 from .utils.dns import dig, is_special_use_tld, is_yunohost_dyndns_domain
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import mkdir, read_file, read_toml, write_to_file
@@ -145,7 +146,7 @@ def _build_dns_conf(
             {"type": "A", "name": "*", "content": "123.123.123.123", "ttl": 3600},
             # if ipv6 available
             {"type": "AAAA", "name": "*", "content": "valid-ipv6", "ttl": 3600},
-            {"type": "CAA", "name": "@", "content": "0 issue \"letsencrypt.org\"", "ttl": 3600},
+            {"type": "CAA", "name": "@", "content": "0 issue \"the-ca-identifier\"", "ttl": 3600},
         ],
         "example_of_a_custom_rule": [
             {"type": "SRV", "name": "_matrix", "content": "domain.tld.", "ttl": 3600}
@@ -186,6 +187,7 @@ def _build_dns_conf(
         # foo.sub.domain.tld #   sub.domain.tld  #      foo  # .foo     #
         basename = _get_relative_name_for_dns_zone(domain, base_dns_zone)
         suffix = f".{basename}" if basename != "@" else ""
+        caa_value = settings_get("security.certauth.certification_authority_caa_value")
 
         # ttl = settings["ttl"]
         ttl = 3600
@@ -235,7 +237,7 @@ def _build_dns_conf(
             elif include_empty_AAAA_if_no_ipv6:
                 extra.append((f"*{suffix}", ttl, "AAAA", None))  # type: ignore[arg-type]
 
-            extra.append((basename, ttl, "CAA", '0 issue "letsencrypt.org"'))
+            extra.append((basename, ttl, "CAA", f"0 issue \"{caa_value}\""))
 
         ####################
         # Standard records #
