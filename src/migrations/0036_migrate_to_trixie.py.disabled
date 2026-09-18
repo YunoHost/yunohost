@@ -42,6 +42,7 @@ incus exec migration-to-trixie -- yunohost tools migrations run 0036 --accept-di
 import jinja2
 import logging
 import re
+import grp
 import stat
 import subprocess
 import textwrap
@@ -355,7 +356,7 @@ class MyMigration(Migration):
             cmd = 'at -M now >/dev/null 2>&1 <<< "sleep 10; systemctl restart nginx yunohost-api"'
             # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
             subprocess.check_call(["bash", "-c", cmd])
-        
+
         # Reload sshd due to -R unknown option
         subprocess.check_call(["systemctl", "reload", "sshd"])
 
@@ -457,14 +458,28 @@ class MyMigration(Migration):
 
         # Check ssh users won't be unable to login with public key after migration
         # OpenSSH_10.0p2 forbid to login with public key that are in a /home/USER
-        # with write permissions on groups cause it's possible to move .ssh even 
+        # with write permissions on groups cause it's possible to move .ssh even
         # if groups have no write permissions on thi s.ssh directory.
-        for keys_path in Path('/home').glob('*/.ssh/authorized_keys'):
-            ssh_user = keys_path.parts[2]
-            test_list = [ Path('/home') / ssh_user, keys_path.parent, keys_path ]
-            if any([ bool(stat.S_IWGRP & t.stat().st_mode) for t in test_list ]):
+
+        # List potential authorized_keys
+        ssh_apps = grp.getgrnam('ssh.app').gr_mem
+        ssh_apps += grp.getgrnam('sftp.app').gr_mem
+        potential_keys_paths = [
+            Path(Path('~' + ssh_app).expanduser()) / '.ssh/authorized_keys'
+            for ssh_app in ssh_apps
+        ]
+        potential_keys_paths += [
+            user_home / '.ssh/authorized_keys'
+            for user_home in Path('/home').iterdir()
+            if not user_home.name.startswith("yunohost.")
+        ]
+        potential_keys_paths += [Path('/root/.ssh/authorized_keys')]
+        for keys_path in potential_keys_paths:
+            if not keys_path.exists():
+                continue
+            test_list = [keys_path.parent.parent, keys_path.parent, keys_path]
+            if any([bool(stat.S_IWGRP & t.stat().st_mode) for t in test_list]):
                 raise YunohostError("migration_0036_ssh_user_home_writable_by_group", user=ssh_user)
-        1/0
 
 
     @property
