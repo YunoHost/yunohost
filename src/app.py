@@ -2188,6 +2188,13 @@ def app_ssowatconf() -> None:
         # Update with the new settings
         portal_settings.update(portal_email_settings)
 
+        raw_domain_settings = _get_raw_domain_settings(domain)
+        portal_settings["enable_self_registration"] = bool(raw_domain_settings.get("enable_self_registration", False))
+        portal_settings["registration_require_and_verify_email"] = bool(raw_domain_settings.get("registration_require_and_verify_email", False))
+        portal_settings["registration_tos"] = raw_domain_settings.get("registration_tos", "").strip() or None
+        portal_settings["registration_self_registration_notes"] = raw_domain_settings.get("registration_self_registration_notes", "").strip() or None
+        portal_settings["registration_invite_notes"] = raw_domain_settings.get("registration_invite_notes", "").strip() or None
+
         # Do no override anything else than "apps" since the file is shared
         # with domain's config panel "portal" options
         portal_settings["apps"] = apps
@@ -2654,52 +2661,3 @@ def app_dismiss_notification(app: str, name: Literal["post_install", "post_upgra
     _assert_is_installed(app)
 
     app_setting(app, f"_dismiss_notification_{name_}", value="1")
-
-
-def regen_mail_app_user_config_for_dovecot_and_postfix(
-    only: Literal["dovecot", "postfix"] | None = None,
-) -> None:
-    dovecot = True if only in [None, "dovecot"] else False
-    postfix = True if only in [None, "postfix"] else False
-
-    from .utils.password import _hash_user_password
-
-    postfix_map = []
-    dovecot_passwd = []
-    for app in _installed_apps():
-        settings = _get_app_settings(app)
-
-        if "domain" not in settings or "mail_pwd" not in settings:
-            continue
-
-        mail_user = settings.get("mail_user", app)
-        mail_domain = settings.get("mail_domain", settings["domain"])
-
-        if dovecot:
-            hashed_password = _hash_user_password(settings["mail_pwd"])
-            dovecot_passwd.append(
-                f"{app}:{hashed_password}::::::allow_nets=::1,127.0.0.1/24,local,mail={mail_user}@{mail_domain}"
-            )
-        if postfix:
-            postfix_map.append(f"{mail_user}@{mail_domain} {app}")
-
-    if dovecot:
-        app_senders_passwd = "/etc/dovecot/app-senders-passwd"
-        content = "# This file is regenerated automatically.\n# Please DO NOT edit manually ... changes will be overwritten!"
-        content += "\n" + "\n".join(dovecot_passwd)
-        write_to_file(app_senders_passwd, content)
-        chmod(app_senders_passwd, 0o440)
-        chown(app_senders_passwd, "root", "dovecot")
-
-    if postfix:
-        app_senders_map = "/etc/postfix/app_senders_login_maps"
-        content = "# This file is regenerated automatically.\n# Please DO NOT edit manually ... changes will be overwritten!"
-        content += "\n" + "\n".join(postfix_map)
-        write_to_file(app_senders_map, content)
-        chmod(app_senders_map, 0o440)
-        chown(app_senders_map, "postfix", "root")
-        ret = os.system(f"postmap {app_senders_map} 2>/dev/null")
-        if ret != 0:
-            logger.error(f"Uhoh, failed to run 'postmap {app_senders_map}' ?!")
-        chmod(app_senders_map + ".db", 0o640)
-        chown(app_senders_map + ".db", "postfix", "root")

@@ -455,17 +455,11 @@ def certificate_renew(
 
 
 def _email_renewing_failed(domain, exception_message, stack=""):
-    from_ = f"certmanager@{domain} (Certificate Manager)"
-    to_ = "root"
-    subject_ = f"Certificate renewing attempt for {domain} failed!"
-
+    from .utils.email import _send_email
+    _from = f"certmanager@{domain} (Certificate Manager)"
+    subject = f"Certificate renewing attempt for {domain} failed!"
     logs = _tail(50, "/var/log/yunohost/yunohost-cli.log")
-    message = f"""\
-From: {from_}
-To: {to_}
-Subject: {subject_}
-
-
+    body = f"""
 An attempt for renewing the certificate for domain {domain} failed with the following
 error :
 
@@ -481,11 +475,7 @@ investigate :
 """
 
     try:
-        import smtplib
-
-        smtp = smtplib.SMTP("localhost")
-        smtp.sendmail(from_, [to_], message.encode("utf-8"))
-        smtp.quit()
+        _send_email(_from=_from, to="root", subject=subject, body=body)
     except Exception as e:
         # Dont miserably crash the whole auto renew cert when one renewal fails ...
         # cf boring cases like https://github.com/YunoHost/issues/issues/2102

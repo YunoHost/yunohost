@@ -18,6 +18,47 @@ i18n = "domain_config"
         filter = "is_webapp"
         default = "_none"
 
+    [feature.registration]
+
+        [feature.registration.enable_self_registration]
+        type = "boolean"
+        default = false
+
+        [feature.registration.registration_require_and_verify_email]
+        type = "boolean"
+        default = false
+        visible = "enable_self_registration"
+
+        [feature.registration.registration_double_check_mail_stack_for_mail_notification]
+        type = "alert"
+        style = "info"
+        visible = "enable_self_registration"
+        # This message is hidden unless self-registration is enabled, to limit ui bloat
+        # However we should also display a similar message on the webadmin form
+
+        [feature.registration.registration_customize]
+        type = "boolean"
+        default = false
+
+        [feature.registration.registration_tos]
+        type = "string"
+        visible = "registration_customize"
+
+        [feature.registration.registration_invite_mail_template]
+        type = "text"
+        # Default value automatically filled by DomainConfigPanel if the current value is empty
+        visible = "registration_customize"
+
+        [feature.registration.registration_invite_notes]
+        type = "text"
+        # Default value automatically filled by DomainConfigPanel if the current value is empty
+        visible = "registration_customize"
+
+        [feature.registration.registration_self_registration_notes]
+        type = "text"
+        # Default value automatically filled by DomainConfigPanel if the current value is empty
+        visible = "registration_customize && enable_self_registration"
+
     [feature.portal]
     # Only available for "topest" domains
 

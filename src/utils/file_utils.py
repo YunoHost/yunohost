@@ -36,37 +36,32 @@ Jsonable = (
 )
 
 
-def read_file(file_path: str) -> str:
+def read_file(file_path: str | Path) -> str:
     """
     Read a regular text file
 
     Keyword argument:
         file_path -- Path to the text file
     """
-    assert isinstance(file_path, str), (
-        "Error: file_path '{}' should be a string but is of type '{}' instead".format(
-            file_path,
-            type(file_path),
-        )
-    )
+    assert isinstance(file_path, str) or isinstance(file_path, Path), f"Error: file_path '{file_path}' should be a string but is of type '{type(file_path)}' instead"
 
     # Check file exists
     if not os.path.isfile(file_path):
-        raise YunohostError("file_not_exist", path=file_path)
+        raise YunohostError("file_not_exist", path=str(file_path))
 
     # Open file and read content
     try:
         with open(file_path, "r") as f:
             file_content = f.read()
     except IOError as e:
-        raise YunohostError("cannot_open_file", file=file_path, error=str(e))
+        raise YunohostError("cannot_open_file", file=str(file_path), error=str(e))
     except Exception as e:
-        raise YunohostError("unknown_error_reading_file", file=file_path, error=str(e))
+        raise YunohostError("unknown_error_reading_file", file=str(file_path), error=str(e))
 
     return file_content
 
 
-def read_json(file_path: str) -> Jsonable:
+def read_json(file_path: str | Path) -> Jsonable:
     """
     Read a json file
 
@@ -81,7 +76,7 @@ def read_json(file_path: str) -> Jsonable:
     try:
         loaded_json = json.loads(file_content)
     except ValueError as e:
-        raise YunohostError("corrupted_json", ressource=file_path, error=str(e))
+        raise YunohostError("corrupted_json", ressource=str(file_path), error=str(e))
 
     return loaded_json
 
@@ -107,7 +102,7 @@ def read_yaml(file_: str | Path | TextIO) -> Jsonable:
     return loaded_yaml
 
 
-def read_toml(file_path: str) -> Jsonable:
+def read_toml(file_path: str | Path) -> Jsonable:
     """
     Safely read a toml file
 
@@ -122,13 +117,13 @@ def read_toml(file_path: str) -> Jsonable:
     try:
         loaded_toml = toml.loads(file_content, _dict=OrderedDict)
     except Exception as e:
-        raise YunohostError("corrupted_toml", ressource=file_path, error=str(e))
+        raise YunohostError("corrupted_toml", ressource=str(file_path), error=str(e))
 
     return loaded_toml
 
 
 def write_to_file(
-    file_path: str, data: str | bytes | list, file_mode: str = "w"
+    file_path: str | Path, data: str | bytes | list, file_mode: str = "w"
 ) -> None:
     """
     Write a single string or a list of string to a text file.
@@ -140,18 +135,9 @@ def write_to_file(
         file_mode -- Mode used when writing the file. Option meant to be used
         by append_to_file to avoid duplicating the code of this function.
     """
-    assert isinstance(data, str) or isinstance(data, bytes) or isinstance(data, list), (
-        f"Error: data '{str(data)}' should be either a string or a list but is of type '{type(data)}'"
-    )
-    assert not os.path.isdir(file_path), (
-        "Error: file_path '%s' point to a dir, it should be a file" % file_path
-    )
-    assert os.path.isdir(os.path.dirname(file_path)), (
-        "Error: the path ('{}') base dir ('{}') is not a dir".format(
-            file_path,
-            os.path.dirname(file_path),
-        )
-    )
+    assert isinstance(data, str) or isinstance(data, bytes) or isinstance(data, list), f"Error: data should be either a string or a list but is of type '{type(data)}'"
+    assert not os.path.isdir(file_path), f"Error: file_path '{file_path}' points to a dir, it should be a file"
+    assert os.path.isdir(os.path.dirname(file_path)), f"Error: the path ('{file_path}') base dir ('{os.path.dirname(file_path)}') is not a dir"
 
     # If data is a list, check elements are strings and build a single string
     if isinstance(data, list):
@@ -168,12 +154,12 @@ def write_to_file(
         with open(file_path, file_mode) as f:
             f.write(data)
     except IOError as e:
-        raise YunohostError("cannot_write_file", file=file_path, error=str(e))
+        raise YunohostError("cannot_write_file", file=str(file_path), error=str(e))
     except Exception as e:
-        raise YunohostError("error_writing_file", file=file_path, error=str(e))
+        raise YunohostError("error_writing_file", file=str(file_path), error=str(e))
 
 
-def append_to_file(file_path: str, data: str | bytes | list) -> None:
+def append_to_file(file_path: str | Path, data: str | bytes | list) -> None:
     """
     Append a single string or a list of string to a text file.
 
@@ -186,7 +172,7 @@ def append_to_file(file_path: str, data: str | bytes | list) -> None:
 
 
 def write_to_json(
-    file_path: str, data: Jsonable, sort_keys: bool = False, indent: int | None = None
+    file_path: str | Path, data: Jsonable, sort_keys: bool = False, indent: int | None = None
 ) -> None:
     """
     Write a dictionnary or a list to a json file
@@ -197,39 +183,22 @@ def write_to_json(
     """
 
     # Assumptions
-    assert isinstance(file_path, str), (
-        "Error: file_path '{}' should be a string but is of type '{}' instead".format(
-            file_path,
-            type(file_path),
-        )
-    )
-    assert isinstance(data, dict) or isinstance(data, list), (
-        "Error: data '{}' should be a dict or a list but is of type '{}' instead".format(
-            data,
-            type(data),
-        )
-    )
-    assert not os.path.isdir(file_path), (
-        "Error: file_path '%s' point to a dir, it should be a file" % file_path
-    )
-    assert os.path.isdir(os.path.dirname(file_path)), (
-        "Error: the path ('{}') base dir ('{}') is not a dir".format(
-            file_path,
-            os.path.dirname(file_path),
-        )
-    )
+    assert isinstance(file_path, str) or isinstance(file_path, Path), f"Error: file_path '{file_path}' should be a string or path but is of type '{type(file_path)}' instead"
+    assert isinstance(data, dict) or isinstance(data, list), f"Error: data should be a dict or a list but is of type '{type(data)}' instead"
+    assert not os.path.isdir(file_path), f"Error: file_path '{file_path}' point to a dir, it should be a file"
+    assert os.path.isdir(os.path.dirname(file_path)), f"Error: the path ('{file_path}') base dir ('{os.path.dirname(file_path)}') is not a dir"
 
     # Write dict to file
     try:
         with open(file_path, "w") as f:
             json.dump(data, f, sort_keys=sort_keys, indent=indent)
     except IOError as e:
-        raise YunohostError("cannot_write_file", file=file_path, error=str(e))
+        raise YunohostError("cannot_write_file", file=str(file_path), error=str(e))
     except Exception as e:
-        raise YunohostError("error_writing_file", file=file_path, error=str(e))
+        raise YunohostError("error_writing_file", file=str(file_path), error=str(e))
 
 
-def write_to_yaml(file_path: str, data: Jsonable) -> None:
+def write_to_yaml(file_path: str | Path, data: Jsonable) -> None:
     """
     Write a dictionnary or a list to a yaml file
 
@@ -238,7 +207,7 @@ def write_to_yaml(file_path: str, data: Jsonable) -> None:
         data -- The data to write (must be a dict or a list)
     """
     # Assumptions
-    assert isinstance(file_path, str)
+    assert isinstance(file_path, str) or isinstance(file_path, Path)
     assert isinstance(data, dict) or isinstance(data, list)
     assert not os.path.isdir(file_path)
     assert os.path.isdir(os.path.dirname(file_path))
@@ -248,9 +217,9 @@ def write_to_yaml(file_path: str, data: Jsonable) -> None:
         with open(file_path, "w") as f:
             yaml.safe_dump(data, f, default_flow_style=False)
     except IOError as e:
-        raise YunohostError("cannot_write_file", file=file_path, error=str(e))
+        raise YunohostError("cannot_write_file", file=str(file_path), error=str(e))
     except Exception as e:
-        raise YunohostError("error_writing_file", file=file_path, error=str(e))
+        raise YunohostError("error_writing_file", file=str(file_path), error=str(e))
 
 
 def mkdir(
@@ -309,7 +278,7 @@ def mkdir(
 
 
 def chown(
-    path: str,
+    path: str | Path,
     uid: str | int | None = None,
     gid: str | int | None = None,
     recursive: bool = False,
@@ -358,7 +327,7 @@ def chown(
 
 
 def chmod(
-    path: str, mode: int, fmode: int | None = None, recursive: bool = False
+    path: str | Path, mode: int, fmode: int | None = None, recursive: bool = False
 ) -> None:
     """Change the mode of a path
 

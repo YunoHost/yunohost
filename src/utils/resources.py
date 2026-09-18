@@ -825,7 +825,7 @@ class SystemuserAppResource(AppResource):
     home: str = ""
 
     def provision_or_update(self, context: Dict = {}):
-        from ..app import regen_mail_app_user_config_for_dovecot_and_postfix
+        from .email import regen_mail_senders_infos_for_dovecot_and_postfix
 
         # FIXME : validate that no yunohost user exists with that name?
         # and/or that no system user exists during install ?
@@ -878,7 +878,7 @@ class SystemuserAppResource(AppResource):
                 mail_pwd = random_ascii(24)
                 self.set_setting("mail_pwd", mail_pwd)
 
-            regen_mail_app_user_config_for_dovecot_and_postfix()
+            regen_mail_senders_infos_for_dovecot_and_postfix()
         else:
             self.delete_setting("mail_pwd")
             if (
@@ -891,10 +891,10 @@ class SystemuserAppResource(AppResource):
                 )
                 == 0
             ):
-                regen_mail_app_user_config_for_dovecot_and_postfix()
+                regen_mail_senders_infos_for_dovecot_and_postfix()
 
     def deprovision(self, context: Dict = {}):
-        from ..app import regen_mail_app_user_config_for_dovecot_and_postfix
+        from .email import regen_mail_senders_infos_for_dovecot_and_postfix
 
         if os.system(f"getent passwd {self.app} >/dev/null 2>/dev/null") == 0:
             os.system(f"deluser {self.app} >/dev/null")
@@ -919,7 +919,7 @@ class SystemuserAppResource(AppResource):
             or os.system(f"grep --quiet '^{self.app}:' /etc/dovecot/app-senders-passwd")
             == 0
         ):
-            regen_mail_app_user_config_for_dovecot_and_postfix()
+            regen_mail_senders_infos_for_dovecot_and_postfix()
 
         # FIXME : better logging and error handling, add stdout/stderr from the deluser/delgroup commands...
 

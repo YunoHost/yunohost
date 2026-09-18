@@ -18,6 +18,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import re
 import os
 import string
 import subprocess
@@ -53,11 +54,18 @@ STRENGTH_LEVELS = [
 ]
 
 
+def seems_already_hashed(password: str) -> bool:
+    # Regex is adapted from https://man.archlinux.org/man/crypt.5#sha512crypt
+    return bool(password.startswith("{CRYPT}$6$") and re.match(r"^\{CRYPT\}\$6\$(rounds=[1-9][0-9]+\$)?[./0-9a-zA-Z]{1,16}\$[./0-9a-zA-Z]{86}$", password))
+
+
 def assert_password_is_compatible(password: str) -> None:
     """
     UNIX seems to not like password longer than 127 chars ...
     e.g. SSH login gets broken (or even 'su admin' when entering the password)
     """
+    if seems_already_hashed(password):
+        return
 
     if len(password) >= 127:
         # Note that those imports are made here and can't be put
@@ -74,6 +82,14 @@ def assert_password_is_strong_enough(profile: str, password: str) -> None:
 
 
 def _hash_user_password(password: str) -> str:
+
+    # Make sure we dont re-hash passwords that are already hashed
+    # This also allow, for example, to provide password hash to user_create()
+    # which is motivated by the fact that, during self-registration, the registration data
+    # is stored temporarily for review, but we dont want to save the user's cleartext password
+    if seems_already_hashed(password):
+        return password
+
     import passlib.hash
 
     # passlib will returns something like:

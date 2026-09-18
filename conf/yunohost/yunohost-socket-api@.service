@@ -1,0 +1,15 @@
+[Unit]
+Description='Socket API', meant for ynh-portal to be able to trigger privileged actions related to user registrations and invites
+# (garbage-)CollectMode is recommended when using Accept=yes on the socket, in
+# https://www.freedesktop.org/software/systemd/man/latest/systemd.socket.html
+# otherwise failed invocation will remain listed in the "systemctl" list of unit
+CollectMode=inactive-or-failed
+
+[Service]
+ExecStart=/usr/bin/yunohost-socket-api
+User=root
+StandardInput=socket
+StandardOutput=socket
+
+[Install]
+WantedBy=multi-user.target
