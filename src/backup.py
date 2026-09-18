@@ -1447,6 +1447,7 @@ class RestoreManager:
             )
         finally:
             if not restore_failed:
+                from .app import regen_mail_app_user_config_for_dovecot_and_postfix
                 self.targets.set_result("apps", app_instance_name, "Success")
                 operation_logger.success()
 
@@ -1461,6 +1462,10 @@ class RestoreManager:
 
                 # Cleaning temporary scripts directory
                 shutil.rmtree(tmp_workdir_for_app, ignore_errors=True)
+
+                # Regenerate postfix maps for app system users who need to send emails,
+                # taking into account the latest apps settings
+                regen_mail_app_user_config_for_dovecot_and_postfix()
 
                 # Call post_app_restore hook
                 env_dict = _make_environment_for_app_script(app_instance_name)

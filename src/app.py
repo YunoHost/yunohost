@@ -703,6 +703,10 @@ def app_change_url(
 
             service_reload_or_restart("nginx")
 
+            # Regenerate postfix maps for app system users who need to send emails,
+            # taking into account the latest apps settings
+            regen_mail_app_user_config_for_dovecot_and_postfix()
+
             logger.success(
                 m18n.n("app_change_url_success", app=app, domain=domain, path=path)
             )
@@ -1100,6 +1104,9 @@ def app_upgrade(
                             f"{app_setting_path}/{file_to_copy}",
                             recursive=True,
                         )
+
+                # Regenerate postfix maps for app system users who need to send emails, taking into account the latest apps settings
+                regen_mail_app_user_config_for_dovecot_and_postfix()
 
                 # Clean and set permissions
                 rmtree(workdir)
@@ -1657,6 +1664,9 @@ def app_install(
     if "hooks" in os.listdir(extracted_app_folder):
         for file in os.listdir(extracted_app_folder + "/hooks"):
             hook_add(app_instance_name, extracted_app_folder + "/hooks/" + file)
+
+    # Regenerate postfix maps for app system users who need to send emails, taking into account the latest apps settings
+    regen_mail_app_user_config_for_dovecot_and_postfix()
 
     # Clean and set permissions
     rmtree(extracted_app_folder)
