@@ -2385,7 +2385,7 @@ storage:
         disk:
             subcategory_help: Manage et get infos about hard-drives
             actions:
-                # storage_disks_list
+                # storage_disk_list
                 list:
                     action_help: List hard-drives currently attached to this system optionnaly with infos
                     api: GET /storage/disk/list
@@ -2401,15 +2401,28 @@ storage:
                             full: --with-info
                             help: Get all informations for each archive
                             action: store_true
-                # storage_disks_info
+                # storage_disk_info
                 info:
                     action_help: Get hard-drive information
                     api: GET /storage/disk/info/<name>
                     arguments:
+                        name:
+                            help: Name of the disk for which to get infos
                         -H:
                             full: --human-readable
                             help: Print informations in a human-readable format
                             action: store_true
                         --human-readable-size:
                             help: Print sizes in a human-readable format
+                            action: store_true
+                # storage_disks_health
+                health:
+                    action_help: Get health-related informations about a disk
+                    api: GET /storage/disk/health/<name>
+                    arguments:
+                        name:
+                            help: Name of the disk for which to get infos
+                        -H:
+                            full: --human-readable
+                            help: Print informations in a human-readable format
                             action: store_true
