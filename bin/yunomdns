@@ -111,7 +111,8 @@ def main() -> bool:
     # Let's discover currently published .local domains accross the network
     zc = Zeroconf()
     listener = Listener()
-    browser = ServiceBrowser(zc, "_device-info._tcp.local.", listener)
+    servicetype="_workstation._tcp.local."
+    browser = ServiceBrowser(zc, servicetype, listener)
     sleep(2)
     browser.cancel()
     zc.close()
@@ -169,11 +170,11 @@ def main() -> bool:
             # Create a ServiceInfo object for each .local domain
             zcs[zc].append(
                 ServiceInfo(
-                    type_="_device-info._tcp.local.",
-                    name=f"{interface}: {d_domain}._device-info._tcp.local.",
-                    parsed_addresses=ips,
-                    port=80,
+                    type_=servicetype,
+                    name=f"{d_domain}.{servicetype}",
                     server=f"{d}.",
+                    parsed_addresses=ips,
+                    port=9,
                 )
             )
             print(f"Adding {d} with addresses {ips} on interface {interface}")
