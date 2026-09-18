@@ -21,6 +21,7 @@
 import logging
 import os
 import subprocess
+import json
 
 # FIXME: wtf ? what was that x_x
 # Prevent to import subprocess only for common classes
@@ -75,11 +76,19 @@ def call_async_output(args, callback, **kwargs) -> int | None:
     kwargs["stdout"] = LogPipe(callback[0], log_queue)
     kwargs["stderr"] = LogPipe(callback[1], log_queue)
     stdinfo = LogPipe(callback[2], log_queue) if len(callback) >= 3 else None
-    if stdinfo:
-        kwargs["pass_fds"] = [stdinfo.fdWrite]
+    helperapi = HelperAPI()
+
+    if stdinfo or helperapi:
         if "env" not in kwargs:
             kwargs["env"] = os.environ
-        kwargs["env"]["YNH_STDINFO"] = str(stdinfo.fdWrite)
+        kwargs["pass_fds"] = []
+        if stdinfo:
+            kwargs["pass_fds"] += [stdinfo.fdWrite]
+            kwargs["env"]["YNH_STDINFO"] = str(stdinfo.fdWrite)
+        if helperapi:
+            kwargs["pass_fds"] += [helperapi.fdWriteToYnh, helperapi.fdReadFromYnh]
+            kwargs["env"]["YNH_HELPERAPI_OUT"] = str(helperapi.fdWriteToYnh)
+            kwargs["env"]["YNH_HELPERAPI_IN"] = str(helperapi.fdReadFromYnh)
 
     if "env" in kwargs and not all(isinstance(v, str) for v in kwargs["env"].values()):
         logger.warning(
@@ -109,6 +118,8 @@ def call_async_output(args, callback, **kwargs) -> int | None:
         kwargs["stderr"].close()
         if stdinfo:
             stdinfo.close()
+        if helperapi:
+            helperapi.close()
 
     return p.poll()
 
@@ -128,6 +139,57 @@ else:
     from threading import Thread  # type: ignore[assignment]
 
     FileObjectThread = os.fdopen  # type: ignore[assignment,misc]
+
+
+def ynh_systemctl(args):
+    service, action = args.split()
+
+    p = subprocess.run(["systemctl", action, service])
+    return {"returncode": p.returncode, "data": {}, "error": {}}
+
+class HelperAPI(Thread):
+
+    def __init__(self):
+        """Setup the object with a logger and a loglevel
+        and start the thread
+        """
+        Thread.__init__(self)
+        self.daemon = False
+
+        self.fdReadFromScript, self.fdWriteToYnh = os.pipe()
+        self.fdReadFromYnh, self.fdWriteToScript = os.pipe()
+        self.pipeReaderFromScript = FileObjectThread(self.fdReadFromScript, "rb")
+
+        self.start()
+
+    def run(self):
+
+        helpers = {
+            "ynh_new_systemctl": ynh_systemctl
+        }
+
+        for cmd in iter(self.pipeReaderFromScript.readline, b""):
+            try:
+                cmd = json.loads(cmd.decode("utf-8").strip("\n"))
+            except Exception as e:
+                msg = f"Failed to parse cmd from helper API: {cmd}. Error: {e}"
+                logger.warning(msg)
+                ret = {"returncode": 128, "data": {}, "error": f}
+                os.write(self.fdWriteToScript, bytes((json.dumps(ret) + "\n").encode()))
+            else:
+                logger.info(f"Received cmd: {cmd}")
+                ret = helpers[cmd['cmd']](cmd['args'])
+                logger.info(f"Answering: {ret}")
+                os.write(self.fdWriteToScript, bytes((json.dumps(ret) + "\n").encode()))
+
+        self.pipeReaderFromScript.close()
+        os.close(self.fdWriteToScript)
+
+    def close(self):
+        os.close(self.fdWriteToYnh)
+        #os.close(self.fdWriteToScript)
+
+
 
 
 class LogPipe(Thread):  # type: ignore[valid-type,misc] # Don't know why mypy doesnt like this
