@@ -7,10 +7,16 @@
     <link rel="stylesheet" type="text/css" href="swagger/swagger-ui.css" />
     <link rel="stylesheet" type="text/css" href="swagger/index.css" />
     <link rel="icon" type="image/png" href="swagger/favicon-32x32.png" sizes="32x32" />
+    <style>
+        .topbar{
+            display: none;
+        }
+    </style>
   </head>
 
   <body>
-    <div id="swagger-ui"></div>
+    <div id="yunohost-portal"></div>
+    <div id="yunohost"></div>
     <script src="swagger/swagger-ui-bundle.js" charset="UTF-8"> </script>
     <script src="swagger/swagger-ui-standalone-preset.js" charset="UTF-8"> </script>
     <script src="openapi.js" type="text/javascript" language="javascript"></script>
@@ -19,8 +25,20 @@
   //<editor-fold desc="Changeable Configuration Block">
   // the following lines will be replaced by docker/configurator, when it runs in a docker-container
   window.ui = SwaggerUIBundle({
-    spec: openapiJSON,
-    dom_id: '#swagger-ui',
+    spec: yunohostApi,
+    dom_id: '#yunohost',
+    deepLinking: true,
+    displayOperationId: true,
+    validatorUrl: null,
+    presets: [
+      SwaggerUIBundle.presets.apis,
+      SwaggerUIStandalonePreset
+    ],
+    layout: "StandaloneLayout"
+  });
+  window.ui = SwaggerUIBundle({
+    spec: yunohostPortalApi,
+    dom_id: '#yunohost-portal',
     deepLinking: true,
     displayOperationId: true,
     validatorUrl: null,
