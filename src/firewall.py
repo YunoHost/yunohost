@@ -23,33 +23,48 @@ import re
 import shutil
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Literal, TypedDict
+from typing import Annotated, Any, Literal
 
-import miniupnpc
+import miniupnpc  # type: ignore
+from pydantic import BaseModel, Field, ValidationError
 import yaml
 from moulinette import m18n
 
 from .regenconf import regen_conf
-from .utils.error import YunohostError, YunohostValidationError
+from .utils.error import YunohostError, YunohostValidationError, pydantic_validationerror_to_str
 
 logger: Any = getLogger("yunohost.firewall")
 
+IPProto = Literal["tcp"] | Literal["udp"]
 
-class _YunoFirewallPortSettings(TypedDict):
-    comment: str
-    open: bool
-    upnp: bool
+PortNumber = Annotated[int, Field(gt=0, le=65535)]
 
 
-class YunoFirewallSettings(TypedDict):
+class YunoFirewallSettings(BaseModel):
     """This is the description of the content of /etc/yunohost/firewall.yml"""
 
-    tcp: dict[int | str, _YunoFirewallPortSettings]  # TCP firewall settings
-    udp: dict[int | str, _YunoFirewallPortSettings]  # UDP firewall settings
-    router_forwarding_upnp: bool  # Whether to enable uPNP port forwarding configuration
+    class PortSettings(BaseModel):
+        comment: str
+        open: bool
+        upnp: bool
 
+    tcp: dict[PortNumber | str, PortSettings]  # TCP firewall settings
+    udp: dict[PortNumber | str, PortSettings]  # UDP firewall settings
+    router_forwarding_upnp: bool = Field(default=False)  # Whether to enable uPNP port forwarding configuration
 
-IPProto = Literal["tcp"] | Literal["udp"]
+    def __getitem__(self, proto: IPProto) -> dict[PortNumber | str, PortSettings]:
+        if proto == "tcp":
+            return self.tcp
+        if proto == "udp":
+            return self.udp
+        raise ValueError(f"protocol should be tcp or udp, not {proto}")
+
+    def __setitem__(self, proto: IPProto, value: dict[PortNumber | str, PortSettings]) -> None:
+        if proto == "tcp":
+            self.tcp = value
+        if proto == "udp":
+            self.udp = value
+        raise ValueError(f"protocol should be tcp or udp, not {proto}")
 
 
 class YunoFirewall:
@@ -87,24 +102,27 @@ class YunoFirewall:
         router_forwarding_upnp: false
         """
 
-        self.config = yaml.safe_load(self.FIREWALL_FILE.read_text()) or {}  # type: ignore
-
-        if "tcp" not in self.config or "udp" not in self.config:
-            raise Exception(
-                f"Uhoh, no 'tcp' or 'udp' key found in {self.FIREWALL_FILE} ?!"
+        settings = yaml.safe_load(self.FIREWALL_FILE.read_text()) or {}
+        # print(settings)
+        try:
+            self.config = YunoFirewallSettings(**settings)
+        except ValidationError as errs:
+            raise YunohostError(
+                f"Error while loading {self.FIREWALL_FILE}: {pydantic_validationerror_to_str(errs)}",
+                raw_msg=True
             )
 
     def write(self) -> None:
         old_file = self.FIREWALL_FILE.parent / (self.FIREWALL_FILE.name + ".old")
         shutil.copyfile(self.FIREWALL_FILE, old_file)
-        self.FIREWALL_FILE.write_text(yaml.dump(self.config))
+        self.FIREWALL_FILE.write_text(yaml.dump(self.config.model_dump()))
 
     def list(self, protocol: str, forwarded: bool = False) -> list[int | str]:
         protocol, _ = self._validate_port(protocol, 0)
         return [
             port
             for port, status in self.config[protocol].items()
-            if (status["upnp"] if forwarded else status["open"])
+            if (status.upnp if forwarded else status.open)
         ]
 
     @staticmethod
@@ -115,6 +133,9 @@ class YunoFirewall:
             # Convert to int if it's not a range
             if "-" not in port:
                 port = int(port)
+        if isinstance(port, int):
+            if port < 0 or port > 65535:
+                raise ValueError(f"Port number should be between 0 and 65535, not {port}")
         if protocol not in ["tcp", "udp"]:
             raise ValueError(f"protocol should be tcp or udp, not {protocol}")
         return protocol, port  # type: ignore
@@ -125,22 +146,22 @@ class YunoFirewall:
         protocol, port = self._validate_port(protocol, port)
 
         if port not in self.config[protocol]:
-            self.config[protocol][port] = {
-                "open": False,
-                "upnp": False,
-                "comment": comment,
-            }
+            self.config[protocol][port] = YunoFirewallSettings.PortSettings(
+                open=False,
+                upnp=False,
+                comment=comment,
+            )
 
         # Keep existing comment if the one passed is empty
         if comment:
-            self.config[protocol][port]["comment"] = comment
+            self.config[protocol][port].comment = comment
 
-        if not self.config[protocol][port]["open"]:
-            self.config[protocol][port]["open"] = True
+        if not self.config[protocol][port].open:
+            self.config[protocol][port].open = True
             self.need_reload = True
 
-        if self.config[protocol][port]["upnp"] != upnp:
-            self.config[protocol][port]["upnp"] = upnp
+        if self.config[protocol][port].upnp != upnp:
+            self.config[protocol][port].upnp = upnp
             self.need_reload = True
         self.write()
 
@@ -152,8 +173,8 @@ class YunoFirewall:
         if port not in self.config[protocol]:
             return
 
-        if self.config[protocol][port]["upnp"]:
-            self.config[protocol][port]["upnp"] = False
+        if self.config[protocol][port].upnp:
+            self.config[protocol][port].upnp = False
             # not need_reload, it's only upnp
             self.upnp_to_close.append((protocol, port))
 
@@ -161,8 +182,8 @@ class YunoFirewall:
             self.write()
             return
 
-        if self.config[protocol][port]["open"]:
-            self.config[protocol][port]["open"] = False
+        if self.config[protocol][port].open:
+            self.config[protocol][port].open = False
             self.need_reload = True
         self.write()
 
@@ -181,7 +202,7 @@ class YunoFirewall:
     def apply(self, upnp: bool = True) -> bool:
         # FIXME: Ensure SSH is allowed
         ssh_port = _get_ssh_port()
-        if not (conf := self.config["tcp"].get(ssh_port)) or not conf["open"]:
+        if not (conf := self.config.tcp.get(ssh_port)) or not conf.open:
             self.open_port("tcp", ssh_port, "SSH port")
 
         # Just leverage regen_conf that will regen the nftables files, reload nftables
@@ -193,7 +214,7 @@ class YunoFirewall:
         self.need_reload = False
 
         # Refresh port forwarding with UPnP
-        if self.config.get("router_forwarding_upnp") and upnp:
+        if self.config.router_forwarding_upnp and upnp:
             YunoUPnP(self).refresh(self)
         return True
 
@@ -211,9 +232,9 @@ class YunoUPnP:
 
     def enabled(self, new_status: bool | None = None) -> bool:
         if new_status is not None:
-            self.firewall.config["router_forwarding_upnp"] = new_status
+            self.firewall.config.router_forwarding_upnp = new_status
             self.firewall.write()
-        return self.firewall.config.get("router_forwarding_upnp", False)
+        return self.firewall.config.router_forwarding_upnp
 
     def check_status(self) -> bool:
         if self.device_found < 1:
@@ -316,8 +337,8 @@ class YunoUPnP:
         protos: list[IPProto] = ["tcp", "udp"]
         for proto in protos:
             for port, info in firewall.config[proto].items():
-                if self.enabled() and info["open"] and info["upnp"]:
-                    status = status and self.open_port(proto, port, info["comment"])
+                if self.enabled() and info.open and info.upnp:
+                    status = status and self.open_port(proto, port, info.comment)
                 else:
                     status = status and self.close_port(proto, port)
 
