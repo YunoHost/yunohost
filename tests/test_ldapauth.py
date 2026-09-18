@@ -37,8 +37,8 @@ def setup_function(function):
     if os.system("systemctl is-active slapd >/dev/null") != 0:
         os.system("systemctl start slapd && sleep 3")
 
-    user_create("alice", maindomain, "Yunohost", admin=True, fullname="Alice White")
-    user_create("bob", maindomain, "test123Ynh", fullname="Bob Snow")
+    user_create("alice", maindomain, "testà?23Ynh55éé", admin=True, fullname="Alice White")
+    user_create("bob", maindomain, "test?23Ynh55", fullname="Bob Snow")
 
 
 def teardown_function():
@@ -49,20 +49,20 @@ def teardown_function():
 
 
 def test_authenticate():
-    LDAPAuth().authenticate_credentials(credentials="alice:Yunohost")
+    LDAPAuth().authenticate_credentials(credentials="alice:testà?23Ynh55éé")
 
 
 def test_authenticate_with_no_user():
     with pytest.raises(MoulinetteError):
-        LDAPAuth().authenticate_credentials(credentials="Yunohost")
+        LDAPAuth().authenticate_credentials(credentials="testà?23Ynh55éé")
 
     with pytest.raises(MoulinetteError):
-        LDAPAuth().authenticate_credentials(credentials=":Yunohost")
+        LDAPAuth().authenticate_credentials(credentials=":testà?23Ynh55éé")
 
 
 def test_authenticate_with_user_who_is_not_admin():
     with pytest.raises(MoulinetteError) as exception:
-        LDAPAuth().authenticate_credentials(credentials="bob:test123Ynh")
+        LDAPAuth().authenticate_credentials(credentials="bob:test?23Ynh55")
 
     translation = m18n.n("invalid_credentials")
     expected_msg = translation.format()
@@ -81,19 +81,19 @@ def test_authenticate_with_wrong_password():
 def test_authenticate_server_down():
     os.system("systemctl stop slapd && sleep 5")
 
-    LDAPAuth().authenticate_credentials(credentials="alice:Yunohost")
+    LDAPAuth().authenticate_credentials(credentials="alice:testà?23Ynh55éé")
 
 
 def test_authenticate_change_password():
-    LDAPAuth().authenticate_credentials(credentials="alice:Yunohost")
+    LDAPAuth().authenticate_credentials(credentials="alice:testà?23Ynh55éé")
 
-    user_update("alice", change_password="plopette")
+    user_update("alice", change_password="plopette;DBO87o_O")
 
     with pytest.raises(MoulinetteError) as exception:
-        LDAPAuth().authenticate_credentials(credentials="alice:Yunohost")
+        LDAPAuth().authenticate_credentials(credentials="alice:testà?23Ynh55ééYunohost")
 
     translation = m18n.n("invalid_credentials")
     expected_msg = translation.format()
     assert expected_msg in str(exception)
 
-    LDAPAuth().authenticate_credentials(credentials="alice:plopette")
+    LDAPAuth().authenticate_credentials(credentials="alice:plopette;DBO87o_O")

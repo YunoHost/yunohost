@@ -337,6 +337,7 @@ def domain_add(
             _ask_confirmation("confirm_tos_acknowledgement", kind="soft")
 
         if dyndns_recovery_password:
+            # FIXME dyndns password policy should not be defined by instance admin
             assert_password_is_strong_enough("admin", dyndns_recovery_password)
 
     operation_logger.start()

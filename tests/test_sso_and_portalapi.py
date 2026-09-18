@@ -46,7 +46,7 @@ from .conftest import get_test_apps_dir, message, raiseYunohostError
 maindomain = open("/etc/yunohost/current_host").read().strip()
 subdomain = f"sub.{maindomain}"
 secondarydomain = "secondary.test"
-dummy_password = "test123Ynh"
+dummy_password = "testà?23Ynh55éé"
 
 
 def setup_function(function):
@@ -106,7 +106,7 @@ def login(session, logged_as, logged_on=None):
     login_endpoint = f"https://{logged_on}/yunohost/portalapi/login"
     r = session.post(
         login_endpoint,
-        data={"credentials": f"{logged_as}:{dummy_password}"},
+        json={"credentials": f"{logged_as}:{dummy_password}"},
         headers={
             "X-Requested-With": "",
         },

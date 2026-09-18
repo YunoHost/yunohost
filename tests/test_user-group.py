@@ -58,9 +58,9 @@ def setup_function(function):
     global maindomain
     maindomain = _get_maindomain()
 
-    user_create("alice", maindomain, "test123Ynh", admin=True, fullname="Alice White")
-    user_create("bob", maindomain, "test123Ynh", fullname="Bob Snow")
-    user_create("jack", maindomain, "test123Ynh", fullname="Jack Black")
+    user_create("alice", maindomain, "testà?23Ynh55èè", admin=True, fullname="Alice White")
+    user_create("bob", maindomain, "test?23Ynh55", fullname="Bob Snow")
+    user_create("jack", maindomain, "test?23Ynh55", fullname="Jack Black")
 
     user_group_create("dev")
     user_group_create("apps")
@@ -116,7 +116,7 @@ def test_create_user():
         user_create(
             "morgan-claude.good_7",
             maindomain,
-            "test123Ynh",
+            "test?23Ynh55",
             fullname="Morgan-Claude Good",
         )
 
@@ -253,12 +253,12 @@ def test_create_user_with_password_too_simple(mocker):
 
 def test_create_user_already_exists(mocker):
     with raiseYunohostError(mocker, "user_already_exists"):
-        user_create("alice", maindomain, "test123Ynh", fullname="Alice White")
+        user_create("alice", maindomain, "test?23Ynh55", fullname="Alice White")
 
 
 def test_create_user_with_domain_that_doesnt_exists(mocker):
     with raiseYunohostError(mocker, "domain_unknown"):
-        user_create("alice", "doesnt.exists", "test123Ynh", fullname="Alice White")
+        user_create("alice", "doesnt.exists", "test?23Ynh55", fullname="Alice White")
 
 
 def test_update_user_with_mail_address_already_taken(mocker):
