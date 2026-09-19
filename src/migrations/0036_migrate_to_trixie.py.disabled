@@ -421,7 +421,8 @@ class MyMigration(Migration):
                 continue
             test_list = [keys_path.parent.parent, keys_path.parent, keys_path]
             if any([bool(stat.S_IWGRP & t.stat().st_mode) for t in test_list]):
-                raise YunohostError("migration_0036_ssh_user_home_writable_by_group", user=ssh_user)
+                raise YunohostError("migration_0036_ssh_user_home_writable_by_group", user=test_list[0].name, home=test_list[0])
+        1/0
 
 
     @property
