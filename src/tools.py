@@ -19,6 +19,7 @@
 #
 
 import os
+import pkgutil
 import pwd
 import re
 import subprocess
@@ -31,6 +32,7 @@ from moulinette import Moulinette, m18n
 from packaging import version
 from typing_extensions import TypedDict
 
+from . import migrations as migrations_module
 from .log import OperationLogger, is_unit_operation
 from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import chown, cp, mkdir, read_yaml, rm, write_to_yaml
@@ -73,8 +75,8 @@ def tools_rootpw(new_password: str, check_strength: bool = True) -> None:
         assert_password_is_strong_enough("admin", new_password)
 
     proc = subprocess.run(
-        ["passwd"],
-        input=f"{new_password}\n{new_password}\n".encode("utf-8"),
+        ["passwd", "--stdin"],
+        input=new_password.encode("utf-8"),
         capture_output=True,
     )
 
@@ -109,7 +111,8 @@ def _set_hostname(hostname: str, pretty_hostname: str | None = None) -> None:
         pretty_hostname = f"(YunoHost/{hostname})"
 
     # First clear nsswitch cache for hosts to make sure hostname is resolved...
-    subprocess.call(["nscd", "-i", "hosts"])
+    # FIXME: does sssd cache hosts ?
+    subprocess.call(["sss_cache", "-E"])
 
     # Then call hostnamectl
     commands = [
@@ -824,15 +827,6 @@ def tools_migrations_run(
 
         raise YunohostValidationError("migrations_no_such_migration", id=target)
 
-    # Dirty hack to mark the bullseye->bookworm as done ...
-    # it may still be marked as 'pending' if for some reason the migration crashed,
-    # but the admins ran 'apt full-upgrade' to manually finish the migration
-    # ... in which case it won't be magically flagged as 'done' until here
-    migrate_to_bookworm = get_matching_migration("migrate_to_bookworm")
-    if migrate_to_bookworm.state == "pending":
-        migrate_to_bookworm.state = "done"
-        _write_migration_state(migrate_to_bookworm.id, "done")
-
     # auto, skip and force are exclusive options
     if auto + skip + force_rerun > 1:
         raise YunohostValidationError("migrations_exclusive_options")
@@ -975,34 +969,24 @@ def _get_migrations_list() -> list["Migration"]:
     states = tools_migrations_state()["migrations"]
 
     migrations = []
-    migrations_folder = os.path.dirname(__file__) + "/migrations/"
-    for migration_file in [
-        x
-        for x in os.listdir(migrations_folder)
-        if re.match(r"^\d+_[a-zA-Z0-9_]+\.py$", x)
-    ]:
-        m = _load_migration(migration_file)
-        m.state = states.get(m.id, "pending")
-        migrations.append(m)
+    for module in pkgutil.iter_modules(migrations_module.__path__):
+        if re.match(r"^m\d+_[a-zA-Z0-9_]+$", module.name):
+            migration = _load_migration(module.name)
+            migration.state = states.get(migration.id, "pending")
+            migrations.append(migration)
 
     return sorted(migrations, key=lambda m: m.id)
 
 
-def _get_migration_by_name(migration_name):
+def _get_migration_by_name(migration_name: str) -> "Migration":
     """
     Low-level / "private" function to find a migration by its name
     """
 
-    try:
-        from . import migrations
-    except ImportError:
-        raise AssertionError(f"Unable to find migration with name {migration_name}")
-
-    migrations_path = migrations.__path__[0]
     migrations_found = [
-        x
-        for x in os.listdir(migrations_path)
-        if re.match(r"^\d+_%s\.py$" % migration_name, x)
+        module.name
+        for module in pkgutil.iter_modules(migrations_module.__path__)
+        if re.match(rf"^m\d+_{migration_name}$", module.name)
     ]
 
     assert len(migrations_found) == 1, (
@@ -1012,24 +996,23 @@ def _get_migration_by_name(migration_name):
     return _load_migration(migrations_found[0])
 
 
-def _load_migration(migration_file: str) -> "Migration":
-    migration_id = migration_file[: -len(".py")]
-
-    logger.debug(m18n.n("migrations_loading_migration", id=migration_id))
+def _load_migration(module_name: str) -> "Migration":
+    logger.debug(m18n.n("migrations_loading_migration", id=module_name))
 
     try:
         # this is python builtin method to import a module using a name, we
         # use that to import the migration as a python object so we'll be
         # able to run it in the next loop
-        module = import_module("yunohost.migrations.{}".format(migration_id))
-        return module.MyMigration(migration_id)
+        module = import_module(f"yunohost.migrations.{module_name}")
+        # The module has its name prefixed with "m"
+        return module.MyMigration(module_name.removeprefix("m"))
     except Exception as e:
         import traceback
 
         traceback.print_exc()
 
         raise YunohostError(
-            "migrations_failed_to_load_migration", id=migration_id, error=e
+            "migrations_failed_to_load_migration", id=module_name, error=e
         )
 
 

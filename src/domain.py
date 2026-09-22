@@ -32,6 +32,7 @@ from typing import (
     Optional,
     TypedDict,
     Union,
+    overload,
 )
 
 from moulinette import Moulinette, m18n
@@ -254,6 +255,18 @@ def _assert_domain_exists(domain: str) -> None:
 def _list_subdomains_of(parent_domain: str) -> list[str]:
     _assert_domain_exists(parent_domain)
     return [domain for domain in _get_domains() if domain.endswith(f".{parent_domain}")]
+
+
+@overload
+def _get_parent_domain_of(  # noqa: E704
+    domain: str, return_self: Literal[True] = True, topest: bool = False
+) -> str: ...
+
+
+@overload
+def _get_parent_domain_of(  # noqa: E704
+    domain: str, return_self: Literal[False], topest: bool = False
+) -> str | None: ...
 
 
 def _get_parent_domain_of(
@@ -832,7 +845,9 @@ def _get_DomainConfigPanel() -> type["ConfigPanel"]:
             exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
         ) -> None:
             next_settings = {
-                k: v for k, v in form.dict().items() if previous_settings.get(k) != v
+                k: v
+                for k, v in form.model_dump().items()
+                if previous_settings.get(k) != v
             }
 
             if "default_app" in next_settings:
@@ -900,7 +915,7 @@ def _get_DomainConfigPanel() -> type["ConfigPanel"]:
                 # that can be read by the portal API.
                 # FIXME remove those from the config panel saved values?
 
-                portal_values = form.dict(include=set(portal_options))
+                portal_values = form.model_dump(include=set(portal_options))
                 # Remove logo from values else filename will replace b64 content
                 if "portal_logo" in portal_values:
                     portal_values.pop("portal_logo")

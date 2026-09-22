@@ -145,10 +145,9 @@ class MyDiagnoser(Diagnoser):  # type: ignore
                     # A bad or missing A record is critical ...
                     # And so is a wrong AAAA record
                     # (However, a missing AAAA record is acceptable)
-                    if (
-                        results[f"A:{basename}"] != "OK"
-                        or results[f"AAAA:{basename}"] == "WRONG"
-                    ):
+                    record_a = results.get(f"A:{basename}", "missing")
+                    record_aaaa = results.get(f"AAAA:{basename}", "WRONG")
+                    if record_a != "OK" or record_aaaa == "WRONG":
                         return True
 
                 return False

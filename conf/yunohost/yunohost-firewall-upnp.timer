@@ -1,0 +1,9 @@
+[Unit]
+Description=YunoHost UPnP update timer
+
+[Timer]
+OnCalendar=*-*-* *:0/30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -233,7 +233,6 @@ class AppResource:
 
         env_ = _make_environment_for_app_script(
             self.app,
-            force_include_app_settings=True,
         )
         env_.update(env)
 
@@ -261,7 +260,6 @@ class AppResource:
             self.app,
             workdir=workdir,
             action=f"{action}_{self.type}",
-            force_include_app_settings=True,
         )
         env_.update(env)
 
@@ -695,9 +693,6 @@ class PermissionsResource(AppResource):
             user_permission_update,
         )
 
-        # Delete legacy is_public setting if not already done
-        self.delete_setting("is_public")
-
         # Detect that we're using a full-domain app,
         # in which case we probably need to automagically
         # define the "path" setting with "/"
@@ -992,7 +987,10 @@ class InstalldirAppResource(AppResource):
         # If during install, /var/www/$app already exists, assume that it's okay to remove and recreate it
         # FIXME : is this the right thing to do ?
         if not current_install_dir and os.path.isdir(self.dir):
-            rm(self.dir, recursive=True)
+            raise YunohostError(
+                f"App installation directory '{self.dir}' already exists! Please delete or move it.",
+                raw_msg=True,
+            )
 
         # isdir will be True if the path is a symlink pointing to a dir
         # This should cover cases where people moved the data dir to another place via a symlink (ie we dont enter the if)
@@ -1263,16 +1261,33 @@ class AptDependenciesAppResource(AppResource):
             key: values for key, values in self.extras.items() if values["packages"]
         }
 
-        # Yarn repository is now provided by the core.
-        # Let's "move" any extra apt resources depending on yarn to the standard packages list.
+        # Yarn classic repository is deprecated, see https://classic.yarnpkg.com/lang/en/docs/install
+        # Let's forbid packages to add Yarn repository or apt dependency.
+        yarn_seen = False
+
+        if "yarn" in self.packages:
+            yarn_seen = True
+            self.packages.remove("yarn")
+
         for key in list(self.extras.keys()):
-            if self.extras[key][
-                "repo"
-            ] == "deb https://dl.yarnpkg.com/debian/ stable main" and self.extras[key][
+            yarn_repo = "deb https://dl.yarnpkg.com/debian/ stable main"
+            if self.extras[key]["repo"] == yarn_repo and self.extras[key][
                 "packages"
             ] == ["yarn"]:
-                self.packages.append("yarn")
+                yarn_seen = True
                 del self.extras[key]
+
+        if yarn_seen:
+            logger.warning(
+                "App depends on Yarn via APT, but this is not supported anymore."
+            )
+            logger.warning(
+                "Operation will most likely fail. You need to manually install Yarn before retrying."
+            )
+            logger.warning(
+                "Continuing, but this will become a hard error in the future..."
+            )
+            # raise YunohostError("App depends on Yarn via APT, but this is not supported anymore.")
 
     def provision_or_update(self, context: Dict = {}):
         if self.helpers_version >= 2.1:
@@ -1542,7 +1557,7 @@ class DatabaseAppResource(AppResource):
 
     def db_exists(self, db_name):
         if self.dbtype == "mysql":
-            return os.system(f"mysqlshow | grep -q -w '{db_name}' 2>/dev/null") == 0
+            return os.system(f"mariadb-show | grep -q -w '{db_name}' 2>/dev/null") == 0
         elif self.dbtype == "postgresql":
             return (
                 os.system(

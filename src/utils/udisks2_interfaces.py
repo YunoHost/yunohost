@@ -45,7 +45,7 @@ UDISKS2_DRIVE_ATA_IFC = "org.freedesktop.UDisks2.Drive.Ata"
 UDISKS2_DRIVE_NVME_IFC = "org.freedesktop.UDisks2.NVMe.Controller"
 
 
-def _get_class_from_interfaces(_1, interface_names_iter, _2):
+def _get_class_from_interfaces(_1, interface_names_iter, _2, _3):
     if UDISKS2_DRIVE_ATA_IFC in interface_names_iter:
         return AtaDisk
     if UDISKS2_DRIVE_NVME_IFC in interface_names_iter:

@@ -1,0 +1,21 @@
+# PLEASE READ THIS WARNING AND DON'T EDIT THIS FILE
+
+# You are probably reading this file because you tried to install apache2 or
+# bind9. These 2 packages conflict with YunoHost.
+
+# Installing apache2 will break nginx and break the entire YunoHost ecosystem
+# on your server, therefore don't remove those lines!
+
+# You have been warned.
+
+Package: apache2 apache2-bin
+Pin: release *
+Pin-Priority: -1
+
+# Also bind9 will conflict with dnsmasq.
+# Same story as for apache2.
+# Don't install it, don't remove those lines.
+
+Package: bind9
+Pin: release *
+Pin-Priority: -1

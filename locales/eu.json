@@ -676,7 +676,7 @@
     "migration_0027_yunohost_upgrade": "YunoHosten muineko bertsio-berriztea abiarazten…",
     "migration_not_enough_space": "Egin nahikoa toki {path}-en mugrazioa exekutatu ahal izateko.",
     "migration_postgresql_previous_not_installed": "PostgreSQL ez zegoen sisteman instalatuta. Ez dago egiteko ezer.",
-    "migration_postgresql_target_not_installed": "PostgreSQL 13 instalatuta dago, baina PostgreSQL 15 ez? Zerbait arraroa gertatu zaio zure sistemari :( …",
+    "migration_postgresql_target_not_installed": "PostgreSQL {previous} instalatuta dago, baina PostgreSQL {target} ez? Zerbait arraroa gertatu zaio zure sistemari :( …",
     "migration_python_venv_rebuild_broken_app": "{app} aplikazioaren virtualenv-a ezin da modu errazean berreraiki eta egin gabe utziko da. Konpondu aplikazioa bertsio-berritzen 'yunohost app upgrade --force {app}' erabiliz.",
     "migration_python_venv_rebuild_disclaimer_base": "Debian Bookworm-era eguneratu ondoren, Python-en aplikazio batzuk partzialki berreraiki behar dira Debian-ek dakarren Python-en bertsio berrira bihurtzeko (termino teknikoetan: 'virtualenv' deritzaiona birsortu egin behar da). Bitartean, baliteke Python aplikazio horiek ez funtzionatzea. YunoHost virtualenv-a berreraikitzen saia daiteke horietako batzuentzat, jarraian zehazten den bezala. Beste aplikazio batzuetarako, edo berreraikitzeko saiakerak huts egiten badu, aplikazio horiek eskuz bertsio-berritzera behartu beharko dituzu.",
     "migration_python_venv_rebuild_disclaimer_ignored": "Ezin dira automatikoki berreraiki aplikazio horien virtualenvs-ak. Bertsio-berritzera behartu behar dituzu honako komandoarekin: 'yunohost app upgrade --force APP': {ignored_apps}",

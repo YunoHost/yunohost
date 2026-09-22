@@ -676,7 +676,7 @@
     "migration_0027_yunohost_upgrade": "A iniciar a actualización do núcleo de YunoHost…",
     "migration_not_enough_space": "Ter espazo suficiente en {path} para realizar a migración.",
     "migration_postgresql_previous_not_installed": "PostgreSQL non estaba instalado no teu sistema. Nada que facer.",
-    "migration_postgresql_target_not_installed": "PostgreSQL 13 está instalado, pero non PostgreSQL 15!? Isto é algo raro que pasa no teu sistema :(…",
+    "migration_postgresql_target_not_installed": "PostgreSQL {previous} está instalado, pero non PostgreSQL {target}!? Isto é algo raro que pasa no teu sistema :(…",
     "migration_python_venv_rebuild_broken_app": "Omitindo {app} porque o virtualenv non se pode reconstruir facilmente para esta app. Deberás arranxar a situación forzando a actualización desta app con `yunohost app upgrade --force {app}`.",
     "migration_python_venv_rebuild_disclaimer_base": "Debido á actualización a Debian Bookworm, algunhas aplicacións Python teñen que ser parcialmente reconstruídas para convertelas á nova versión de Python que inclúe Debian (en termos técnicos: hai que recrear o que se chama 'virtualenv'). Mentrar tanto algunhas aplicacións Python poderían non funcionar. YunoHost pode intentar reconstruír o virtualenv dalgunha delas, como se indica aquí abaixo. Para outras, o se o intento de reconstrución falla, deberás forzar manualmente a actualización desas apps.",
     "migration_python_venv_rebuild_disclaimer_ignored": "Non se pode reconstruir automáticamente o virtualenv destas apps. Tes que forzar a actualización, que se pode facer desde a liña de ordes con: `yunohost app upgrade --force APP`: {ignored_apps}",
