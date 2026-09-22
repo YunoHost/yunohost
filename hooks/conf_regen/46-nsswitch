@@ -37,6 +37,8 @@ do_pre_regen() {
 do_post_regen() {
     regen_conf_files=$1
 
+    chmod u=rw-,g=r--,o-w /etc/nsswitch.conf
+
     if [[ -n "$regen_conf_files" ]]; then
         systemctl restart unscd
     fi
