@@ -573,8 +573,14 @@ def user_update(
     if add_mailforward:
         if not isinstance(add_mailforward, list):
             add_mailforward = [add_mailforward]
-        new_attr_dict["maildrop"] = set(user["maildrop"])
-        new_attr_dict["maildrop"].update(set(add_mailforward))
+        new_attr_dict["maildrop"] = list(user["maildrop"])
+        # FIXME Big fat WARNING: currently we put the user email in the last maildrop entry
+        # this is a temporary workaround to fix this discussion
+        # https://github.com/YunoHost/yunohost/pull/2341#discussion_r3879745312
+        # As soon as we have implemented the main email as the external email
+        # we will put again the main email in the first entry of the maildrop
+        for mailforward in add_mailforward:
+            new_attr_dict["maildrop"].insert(-1, mailforward)
 
     if remove_mailforward:
         if not isinstance(remove_mailforward, list):
