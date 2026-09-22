@@ -327,7 +327,7 @@ def test_resource_apt():
             "non-free-firmware": {
                 "repo": "deb http://deb.debian.org/debian __YNH_DEBIAN_VERSION__ non-free-firmware",
                 "packages": "firmware-atheros",
-            }
+            },
         },
     }
 
