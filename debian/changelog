@@ -1,3 +1,13 @@
+yunohost (13.0.8) testing; urgency=low
+
+  - cli: BREAKING CHANGE: Normalize casing of `--force` shorthand in `app` cli (53ddd94de)
+  - fix: yunohost-diagnosis.service security restrictions in LXC context (dcbd4117f)
+  - feat: Content-Security-Policy modularity ([#2354](http://github.com/YunoHost/yunohost/pull/2354))
+
+  Thanks to all contributors <3 ! (ewilly, Félix Piédallu, Mateusz)
+
+ -- tituspijean <tituspijean@yunohost.org>  Thu, 17 Sep 2026 21:27:00 +0200
+
 yunohost (13.0.7.1) testing; urgency=low
 
   - migration: rename 0037 to m0037 (723ea2dd6)
