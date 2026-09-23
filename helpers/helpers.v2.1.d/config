@@ -174,9 +174,9 @@ _ynh_app_config_show() {
         if [[ "${old[$short_setting]}" != YNH_NULL ]]; then
             if [[ "${formats[$short_setting]}" == "yaml" ]]; then
                 ynh_return "${short_setting}:"
-                ynh_return "$(echo "${old[$short_setting]}" | sed 's/^/  /g')"
+                ynh_return "$(echo -e "${old[$short_setting]}" | sed 's/^/  /g')"
             else
-                ynh_return "${short_setting}: '$(echo "${old[$short_setting]}" | sed "s/'/''/g" | sed ':a;N;$!ba;s/\n/\n\n/g')'"
+                ynh_return "${short_setting}: '$(echo -e "${old[$short_setting]}" | sed "s/'/''/g" | sed ':a;N;$!ba;s/\n/\n\n/g')'"
             fi
         fi
     done
