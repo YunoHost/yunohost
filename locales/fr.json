@@ -922,5 +922,6 @@
     "migration_0036_dkim_keys_upgrade_pending_mails": "{pending_mails} messages se trouvent dans votre file d'attente de courrier. Afin d'éviter tout risque de mise sur liste noire et tout problème de délivrabilité, cette migration doit être effectuée à un moment où votre serveur n'envoie pas d'emails. Vous pouvez arrêter temporairement Postfix et utiliser <code>postsuper -d ALL</code> pour vider votre file d'attente de courrier. Pour voir quels emails se trouvent dans la file d'attente, utilisez <code>postqueue -p</code>",
     "migration_0036_dkim_keys_upgrade_failed": "Impossible de générer une nouvelle clé de 2048 bits pour {domains}.",
     "migration_0036_dkim_keys_upgrade_manual_action": "Pour finaliser le processus de migration, vous devez mettre à jour les clés publiques DKIM dans les zones DNS suivantes : {domains}\nLancez le diagnostic ou utilisez l'onglet DNS dans 'Webadmin > Domaines', ou encore via la commande <cmd>yunohost domain dns suggest DOMAINE</cmd>. Si vous avez décidé d'arrêter Postfix, n'oubliez pas de le redémarrer une heure après avoir modifié votre dernière zone DNS.",
-    "migration_description_0036_dkim_keys_upgrade": "Mettez à jour vos clés DKIM pour améliorer la délivrabilité de vos emails"
+    "migration_description_0036_dkim_keys_upgrade": "Mettez à jour vos clés DKIM pour améliorer la délivrabilité de vos emails",
+    "migration_0036_post_migrations_skipped": "Les migrations ne s'exécutent pas automatiquement comme demandé après le passage à {distrib} ; lancez-les quand vous le souhaitez :)"
 }
