@@ -419,10 +419,25 @@ class MyMigration(Migration):
         for keys_path in potential_keys_paths:
             if not keys_path.exists():
                 continue
-            test_list = [keys_path.parent.parent, keys_path.parent, keys_path]
-            if any([bool(stat.S_IWGRP & t.stat().st_mode) for t in test_list]):
-                raise YunohostError("migration_0036_ssh_user_home_writable_by_group", user=test_list[0].name, home=test_list[0])
-        1/0
+            home = keys_path.parent.parent
+            cmd = ["getfacl", "-cea", home, keys_path.parent, keys_path]
+            acl = subprocess.check_output(cmd).decode()
+            for permission in acl.split("\n"):
+                if permission.startswith("group:") and permission[-2] == 'w':
+                    group = permission.split(':')[1]
+                    if group in apps:
+                        raise YunohostError(
+                            "migration_0036_ssh_app_need_upgrade",
+                            user=home.name,
+                            app=group,
+                            home=home
+                        )
+                    raise YunohostError(
+                        "migration_0036_ssh_user_home_writable_by_group",
+                        user=home.name,
+                        permission=permission,
+                        home=home
+                    )
 
 
     @property
