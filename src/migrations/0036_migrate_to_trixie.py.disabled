@@ -500,7 +500,7 @@ sideway (typically by SSHing from the local network, or through rescue access on
                 )
             uri =  uri.replace("http://", "https://").replace("/forge.yunohost.org/debian", "/repo.yunohost.org/debian").removesuffix("/")
             suite = suite.replace("bookworm", "trixie")
-            components_list = [component.replace("bookworm", "trixie")for component in components.split()]
+            components_list = [component.replace("bookworm", "trixie") for component in components.split()]
 
             # FIXME: Remove that, this is only while Trixie is not stable
             if "https://repo.yunohost.org/debian" in uri:
