@@ -11,7 +11,7 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU Affero General Public License for more details.
 #
 # You should have received a copy of the GNU Affero General Public License
@@ -22,17 +22,18 @@
 set -eu
 
 # Source YNH helpers
+YNH_HELPERS_VERSION=2.1
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
-# Backup destination
-backup_dir="${1}/data/home"
-
 # Backup user home
-for f in $(find /home/* -type d -prune | awk -F/ '{print $NF}'); do
-    if [[ ! "$f" =~ ^yunohost|lost\+found ]]; then
-        if [ ! -e "/home/$f/.nobackup" ]; then
-            ynh_backup "/home/$f" "${backup_dir}/$f" 1
-        fi
+# NB : we use 'find' to avoid using * / globbing which has possible pitfalls such as
+# nullglobs, not matching entries starting with dots, etc...
+# The printf %f allows to obtain only the file name, without the basedir in front
+while read -r f; do
+    # Filter-out stuff like yunohost.multimedia, yunohost.app
+    # as well as home dirs flagged to not be backed up using the .nobackup file flag
+    if [[ ! "$f" =~ ^yunohost|lost\+found ]] && [[ ! -e "/home/$f/.nobackup" ]]; then
+        ynh_backup "/home/$f"
     fi
-done
+done <<< "$(find /home/ -mindepth 1 -prune -type d -printf '%f\n')"
