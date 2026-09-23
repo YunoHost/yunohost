@@ -63,8 +63,8 @@ else:
 
 def separate_by_comma(item: str, optional: bool = True) -> str:
     if optional:
-        return fr"^({item}(,{item})*)?$"
-    return fr"^({item}(,{item})*)$"
+        return rf"^({item}(,{item})*)?$"
+    return rf"^({item}(,{item})*)$"
 
 
 DOMAIN_REGEX = r"([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})"
@@ -76,7 +76,7 @@ FIELDS_FOR_IMPORT = {
     "mail-alias": separate_by_comma(r"[\w.-]+@" + DOMAIN_REGEX),
     "mail-forward": separate_by_comma(r"[\w\+.-]+@" + DOMAIN_REGEX),
     "mailbox-quota": r"^(\d+[bkMGT])|0|$",
-    "groups": separate_by_comma(r"[a-z0-9][-a-z0-9_.]*")
+    "groups": separate_by_comma(r"[a-z0-9][-a-z0-9_.]*"),
 }
 
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
