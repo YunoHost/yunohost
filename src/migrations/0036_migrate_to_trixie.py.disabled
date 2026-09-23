@@ -56,7 +56,7 @@ from debian.deb822 import Deb822
 # TRIXIE? import _ldap  # noqa: F401
 from moulinette import Moulinette, m18n
 
-from ..app import app_list
+from ..app import app_list, _installed_apps
 from ..regenconf import manually_modified_files
 from ..tools import Migration, _write_migration_state, tools_update
 from ..utils.error import YunohostError
@@ -416,6 +416,7 @@ class MyMigration(Migration):
             if not user_home.name.startswith("yunohost.")
         ]
         potential_keys_paths += [Path('/root/.ssh/authorized_keys')]
+        apps = _installed_apps()
         for keys_path in potential_keys_paths:
             if not keys_path.exists():
                 continue
@@ -438,7 +439,6 @@ class MyMigration(Migration):
                         permission=permission,
                         home=home
                     )
-
 
     @property
     def disclaimer(self):
