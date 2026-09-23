@@ -157,7 +157,7 @@ def test_import_user():
         writer.writerow(
             {
                 "username": "morgan-claude.good_7",
-                "firstname": "Morgan-Claude Good",
+                "fullname": "Morgan-Claude Good",
                 "password": "",
                 "mailbox-quota": "1G",
                 "mail": "morgan-claude.good_7@" + maindomain,
@@ -169,7 +169,7 @@ def test_import_user():
         writer.writerow(
             {
                 "username": "sam",
-                "firstname": "Sam White",
+                "fullname": "Sam White",
                 "password": "",
                 "mailbox-quota": "1G",
                 "mail": "sam@" + maindomain,
@@ -181,7 +181,7 @@ def test_import_user():
         writer.writerow(
             {
                 "username": "alice",
-                "firstname": "Alice White",
+                "fullname": "Alice White",
                 "password": "",
                 "mailbox-quota": "1G",
                 "mail": "alice@" + maindomain,
