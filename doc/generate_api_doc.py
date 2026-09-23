@@ -54,7 +54,7 @@ def main():
                     },
                 }
             },
-        }
+        },
     )
     yunohost_portal_json = generate(
         title="YunoHost Portal API",
@@ -62,7 +62,7 @@ def main():
         api_path="/yunohost-portal/api",
         actionmap_path="../share/actionsmap-portal.yml",
         api_version=api_version,
-        additional_paths={}
+        additional_paths={},
     )
     openapi_js = f"var yunohostApi = {yunohost_json};"
     openapi_js += f"\nvar yunohostPortalApi = {yunohost_portal_json};"
@@ -70,7 +70,9 @@ def main():
         f.write(openapi_js)
 
 
-def generate(title, description, api_path, actionmap_path, api_version, additional_paths):
+def generate(
+    title, description, api_path, actionmap_path, api_version, additional_paths
+):
     with open(actionmap_path) as f:
         action_map = yaml.safe_load(f)
 
@@ -140,7 +142,7 @@ def generate(title, description, api_path, actionmap_path, api_version, addition
             },
         },
     }
-    resource_list['paths'].update(additional_paths)
+    resource_list["paths"].update(additional_paths)
 
     def convert_categories(categories, parent_category=""):
         for category, category_params in categories.items():
