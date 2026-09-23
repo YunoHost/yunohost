@@ -2083,6 +2083,9 @@ tools:
                     --accept-disclaimer:
                         help: Accept disclaimers of migrations (please read them before using this option)
                         action: store_true
+                    --skip-postmigrations:
+                        action: store_true
+                        help: Don't automatically run the following migrations if any. Especially useful to not run the migrations following a Debian version bump and run them manually instead (to be used only if you know what you are doing)
 
               ### tools_migrations_state()
               state:
@@ -2403,6 +2406,8 @@ storage:
                     action_help: Get hard-drive information
                     api: GET /storage/disk/info/<name>
                     arguments:
+                        name:
+                            help: Disk to get information from
                         -H:
                             full: --human-readable
                             help: Print informations in a human-readable format

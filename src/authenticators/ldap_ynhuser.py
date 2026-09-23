@@ -124,21 +124,15 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
             )
             return False
 
+        # Check all the user's email aliases: if one matches the domain, they can access it.
         user_mail_list = user_result[0]["mail"]
-        if len(user_mail_list) != 1:
-            logger.error(
-                f"User {user} found, but has the wrong number of email addresses: {user_mail_list}"
-            )
-            return False
-
-        user_mail = user_mail_list[0]
-        if "@" not in user_mail:
-            logger.error(f"Invalid email address for {user}: {user_mail}")
-            return False
-
-        if user_mail.split("@")[1] == domain:
-            # A user from that domain is welcome
-            return True
+        for user_mail in user_mail_list:
+            if "@" not in user_mail:
+                logger.error(f"Invalid email address for {user}: {user_mail}")
+                continue
+            if user_mail.split("@")[1] == domain:
+                # A user from that domain is welcome
+                return True
 
         # Users from other domains don't belong here
         return False

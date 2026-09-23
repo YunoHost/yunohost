@@ -65,7 +65,7 @@ class MyMigration(Migration):
         else:
             domains = "no domains seems concerned"
 
-        return m18n.n("migration_0037_upgrade_dkim_keys_disclaimer", domains=domains)
+        return m18n.n("migration_0036_dkim_keys_upgrade_disclaimer", domains=domains)
 
     def check_assertions(self):
         try:
@@ -74,7 +74,7 @@ class MyMigration(Migration):
             return
         if pending_mails > 0:
             raise YunohostError(
-                "migration_0037_upgrade_dkim_keys_pending_mails",
+                "migration_0036_dkim_keys_upgrade_pending_mails",
                 pending_mails=pending_mails,
             )
 
@@ -112,7 +112,7 @@ class MyMigration(Migration):
             except subprocess.CalledProcessError:
                 logger.error(
                     m18n.n(
-                        "migration_0037_upgrade_dkim_keys_failed",
+                        "migration_0036_dkim_keys_upgrade_failed",
                         domains=", ".join(domains),
                     )
                 )
@@ -144,6 +144,6 @@ class MyMigration(Migration):
             domains = "\n - " + "\n - ".join(self.manual_domains)
             logger.warning(
                 m18n.n(
-                    "migration_0037_upgrade_dkim_keys_manual_action", domains=domains
+                    "migration_0036_dkim_keys_upgrade_manual_action", domains=domains
                 )
             )
