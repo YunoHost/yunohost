@@ -42,6 +42,8 @@ incus exec migration-to-trixie -- yunohost tools migrations run 0036 --accept-di
 import jinja2
 import logging
 import re
+import grp
+import stat
 import subprocess
 import textwrap
 from datetime import date
@@ -54,7 +56,7 @@ from debian.deb822 import Deb822
 # TRIXIE? import _ldap  # noqa: F401
 from moulinette import Moulinette, m18n
 
-from ..app import app_list
+from ..app import app_list, _installed_apps
 from ..regenconf import manually_modified_files
 from ..tools import Migration, _write_migration_state, tools_update
 from ..utils.error import YunohostError
@@ -308,6 +310,9 @@ class MyMigration(Migration):
             # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
             subprocess.check_call(["bash", "-c", cmd])
 
+        # Reload sshd due to -R unknown option
+        subprocess.check_call(["systemctl", "reload", "sshd"])
+
         if self.yunohost_major_version() != N_CURRENT_YUNOHOST + 1:
             raise YunohostError(
                 "Still on YunoHost 12.x at the end of the migration, eh? Sounds like the migration didn't really complete!?",
@@ -403,6 +408,48 @@ class MyMigration(Migration):
 
             if upgradable_system_packages - lime2_hold_packages:
                 raise YunohostError("migration_0036_system_not_fully_up_to_date")
+
+        # Check ssh users won't be unable to login with public key after migration
+        # OpenSSH_10.0p2 forbid to login with public key that are in a /home/USER
+        # with write permissions on groups cause it's possible to move .ssh even
+        # if groups have no write permissions on thi s.ssh directory.
+
+        # List potential authorized_keys
+        ssh_apps = grp.getgrnam('ssh.app').gr_mem
+        ssh_apps += grp.getgrnam('sftp.app').gr_mem
+        potential_keys_paths = [
+            Path(Path('~' + ssh_app).expanduser()) / '.ssh/authorized_keys'
+            for ssh_app in ssh_apps
+        ]
+        potential_keys_paths += [
+            user_home / '.ssh/authorized_keys'
+            for user_home in Path('/home').iterdir()
+            if not user_home.name.startswith("yunohost.")
+        ]
+        potential_keys_paths += [Path('/root/.ssh/authorized_keys')]
+        apps = _installed_apps()
+        for keys_path in potential_keys_paths:
+            if not keys_path.exists():
+                continue
+            home = keys_path.parent.parent
+            cmd = ["getfacl", "-cea", home, keys_path.parent, keys_path]
+            acl = subprocess.check_output(cmd).decode()
+            for permission in acl.split("\n"):
+                if permission.startswith("group:") and permission[-2] == 'w':
+                    group = permission.split(':')[1]
+                    if group in apps:
+                        raise YunohostError(
+                            "migration_0036_ssh_app_need_upgrade",
+                            user=home.name,
+                            app=group,
+                            home=home
+                        )
+                    raise YunohostError(
+                        "migration_0036_ssh_user_home_writable_by_group",
+                        user=home.name,
+                        permission=permission,
+                        home=home
+                    )
 
     @property
     def disclaimer(self):
