@@ -53,6 +53,8 @@ _update_key() {
     if [[ ! -s "$target" ]]; then
         curl --connect-timeout 900 -s -o - "$url" | gpg --dearmor -o "$target"
     fi
+    # Always chmod for old files
+    chmod 644 "$target"
 }
 
 do_post_regen() {
