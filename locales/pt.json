@@ -239,5 +239,6 @@
     "yunohost_already_installed": "AYunoHost já está instalado",
     "yunohost_configured": "YunoHost configurada com êxito",
     "yunohost_installing": "A instalar a YunoHost…",
-    "yunohost_not_installed": "YunoHost ainda não está corretamente configurado. Por favor execute as 'ferramentas pós-instalação yunohost'"
+    "yunohost_not_installed": "YunoHost ainda não está corretamente configurado. Por favor execute as 'ferramentas pós-instalação yunohost'",
+    "all_users": "Todos os utilizadores do YunoHost"
 }
