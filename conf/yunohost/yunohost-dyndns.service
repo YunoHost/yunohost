@@ -8,7 +8,7 @@ User=root
 Group=root
 WorkingDirectory=/root
 # Ensure IPv4 is available
-ExecCondition=ping -q -W5 -c1 ipv4.yunohost.org
+ExecCondition=ping -q -W5 -c1 dyndns.yunohost.org
 # Ensure an operation is not already running
 ExecCondition=test ! -e /var/run/moulinette_yunohost.lock
 ExecStart=yunohost dyndns update --email
@@ -33,7 +33,8 @@ ProtectKernelModules=yes
 ProtectKernelTunables=yes
 LockPersonality=yes
 SystemCallArchitectures=native
-SystemCallFilter=~@clock @debug @module @mount @obsolete @reboot @setuid @swap @cpu-emulation
+# @setuid removed from the baseline
+SystemCallFilter=~@clock @debug @module @mount @obsolete @reboot @swap @cpu-emulation
 # @privileged # (not sure why this need to be removed...)
 
 # Denying access to capabilities that should not be relevant for webapps
