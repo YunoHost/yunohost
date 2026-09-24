@@ -7,7 +7,7 @@ Type=simple
 User=root
 Group=root
 WorkingDirectory=/root
-# Ensure IPv4 is available
+# Ensure IPv4 or v6 is available
 ExecCondition=ping -q -W5 -c1 dyndns.yunohost.org
 # Ensure an operation is not already running
 ExecCondition=test ! -e /var/run/moulinette_yunohost.lock
