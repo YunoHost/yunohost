@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+import functools
 import json
 import logging
 import os
@@ -66,6 +67,9 @@ def start_log_broker() -> None:
 
     p = Process(target=server)
     p.start()
+
+    # Connect the shared PUB socket now so it's ready when the first operation starts
+    _get_shared_pub_socket()
 
 
 class SSEEventBase(TypedDict):
@@ -120,6 +124,26 @@ SSEEvent = (
 )
 
 
+@functools.cache
+def _get_shared_pub_socket() -> Any:
+    import zmq
+
+    ctx = zmq.Context()  # type: ignore[attr-defined]
+    socket = ctx.socket(zmq.PUB)  # type: ignore[attr-defined]
+    socket.connect(LOG_BROKER_BACKEND_ENDPOINT)
+    return socket
+
+
+def _get_or_reconnect_shared_pub_socket() -> Any:
+    socket = _get_shared_pub_socket()
+    if socket.closed:
+        _get_shared_pub_socket.cache_clear()
+        socket = _get_shared_pub_socket()
+        # Wait for the new socket to connect to the broker
+        time.sleep(1)
+    return socket
+
+
 class SSELogStreamingHandler(logging.Handler):
     def __init__(self, operation_id: str, flash: bool = False) -> None:
         super().__init__()
@@ -128,7 +152,6 @@ class SSELogStreamingHandler(logging.Handler):
         self.ref_id: str | None
         self.log_stream_cache: IO[str] | None
 
-        import zmq
         from moulinette import Moulinette
 
         from ..log import OPERATIONS_PATH
@@ -142,9 +165,7 @@ class SSELogStreamingHandler(logging.Handler):
 
             self.ref_id = str(uuid4())
 
-        self.context = zmq.Context()  # type: ignore[attr-defined]  # Mypy derping about zmq, might be fixed once on trixie ?
-        self.socket = self.context.socket(zmq.PUB)  # type: ignore[attr-defined]  # Mypy derping about zmq, might be fixed once on trixie ?
-        self.socket.connect(LOG_BROKER_BACKEND_ENDPOINT)
+        self.socket = _get_or_reconnect_shared_pub_socket()
 
         if not flash:
             # Since we're starting this operation, garbage all the previous streamcache
@@ -157,10 +178,6 @@ class SSELogStreamingHandler(logging.Handler):
             self.log_stream_cache = stream_file.open("w")
         else:
             self.log_stream_cache = None
-
-        # FIXME ? ... Boring hack because otherwise it seems we lose messages emitted while
-        # the socket ain't properly connected to the other side
-        time.sleep(1)
 
     def emit(self, record: logging.LogRecord) -> None:
         event: SSEEventMessage = {
@@ -217,8 +234,6 @@ class SSELogStreamingHandler(logging.Handler):
 
     def close(self, *args: Any, **kwargs: Any) -> None:
         super().close(*args, **kwargs)
-        self.socket.close()
-        self.context.term()
         if self.log_stream_cache:
             self.log_stream_cache.close()
 
@@ -260,19 +275,27 @@ def get_current_operation() -> (
     return pid, operation_id, process_command_line, started_by
 
 
+@functools.cache
+def _get_shared_sub_context() -> Any:
+    # Shared green context for all SSE clients, only the SUB sockets are per-connection.
+    import zmq.green as zmq
+
+    return zmq.Context()  # type: ignore[attr-defined]
+
+
 def sse_stream() -> Generator[str, None, None]:
     # We need zmq.green to uh have some sort of async ? (I think)
     import zmq.green as zmq
 
     from ..log import OPERATIONS_PATH, log_list
 
-    ctx = zmq.Context()
-    sub = ctx.socket(zmq.SUB)
+    ctx = _get_shared_sub_context()
+    sub = ctx.socket(zmq.SUB)  # one fresh socket per client connection
     sub.subscribe("")
     sub.connect(LOG_BROKER_FRONTEND_ENDPOINT)
 
     # Set client-side auto-reconnect timeout, ms.
-    yield "retry: 100\n\n"
+    yield "retry: 3000\n\n"
 
     # Check if there's any ongoing operation right now
     _, current_operation_id, _, _ = get_current_operation()
@@ -360,4 +383,3 @@ def sse_stream() -> Generator[str, None, None]:
                     logging.warning(f"Failed to process message: {e}")
     finally:
         sub.close()
-        ctx.term()
