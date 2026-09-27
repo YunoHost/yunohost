@@ -43,7 +43,6 @@ import jinja2
 import logging
 import re
 import grp
-import stat
 import subprocess
 import textwrap
 from datetime import date
@@ -545,7 +544,7 @@ sideway (typically by SSHing from the local network, or through rescue access on
                     "/usr/share/keyrings/yunohost-bookworm.gpg",
                     "/usr/share/keyrings/yunohost-trixie.gpg",
                 )
-            uri =  uri.replace("http://", "https://").replace("/forge.yunohost.org/debian", "/repo.yunohost.org/debian").removesuffix("/")
+            uri = uri.replace("http://", "https://").replace("/forge.yunohost.org/debian", "/repo.yunohost.org/debian").removesuffix("/")
             suite = suite.replace("bookworm", "trixie")
             components_list = [component.replace("bookworm", "trixie") for component in components.split()]
 
