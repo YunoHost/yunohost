@@ -23,15 +23,17 @@ Generate JSON specification files API
 """
 
 import json
-import os
 import sys
+from pathlib import Path
 
 import yaml
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
 
 def main():
-    with open("../debian/changelog") as f:
-        top_changelog = f.readline()
+    changelog = PROJECT_ROOT / "debian" / "changelog"
+    top_changelog = changelog.open().readline()
     api_version = top_changelog[top_changelog.find("(") + 1 : top_changelog.find(")")]
 
     yunohost_json = generate(
@@ -58,7 +60,10 @@ def main():
     )
     yunohost_portal_json = generate(
         title="YunoHost Portal API",
-        description="This is the YunoHost Portal API used on all YunoHost instances. This API is essentially used by YunoHost Portal.",
+        description=(
+            "This is the YunoHost Portal API used on all YunoHost instances. "
+            "This API is essentially used by YunoHost Portal."
+        ),
         api_path="/yunohost-portal/api",
         actionmap_path="../share/actionsmap-portal.yml",
         api_version=api_version,
@@ -66,16 +71,15 @@ def main():
     )
     openapi_js = f"var yunohostApi = {yunohost_json};"
     openapi_js += f"\nvar yunohostPortalApi = {yunohost_portal_json};"
-    with open(os.getcwd() + "/openapi.js", "w") as f:
-        f.write(openapi_js)
+    js_file = Path.cwd() / "openapi.js"
+    js_file.write_text(openapi_js)
 
 
 def generate(
     title, description, api_path, actionmap_path, api_version, additional_paths
 ):
-    with open(actionmap_path) as f:
-        action_map = yaml.safe_load(f)
-
+    actionsmap_yml = PROJECT_ROOT / "share" / "actionsmap.yml"
+    action_map = yaml.safe_load(actionsmap_yml.open())
     # try:
     #    with open("/etc/yunohost/current_host", "r") as f:
     #        domain = f.readline().rstrip()
