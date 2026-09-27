@@ -547,6 +547,8 @@
     "global_settings_setting_ssh_name": "SSH",
     "global_settings_setting_ssh_password_authentication": "Password authentication",
     "global_settings_setting_ssh_password_authentication_help": "Allow password authentication for SSH",
+    "global_settings_setting_ssh_root_pubkey_authentication": "Root public key authentication",
+    "global_settings_setting_ssh_root_pubkey_authentication_help": "Allow public key authentication for the root account on SSH",
     "global_settings_setting_ssh_port": "SSH port",
     "global_settings_setting_ssh_port_help": "A port lower than 1024 is preferred to prevent usurpation attempts by non-administrator services on the remote machine. You should also avoid using a port already in use, such as 80 or 443.",
     "global_settings_setting_tls_passthrough_enabled": "Enable TLS-passthrough / SNI-based forwarding",
