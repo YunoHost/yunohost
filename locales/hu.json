@@ -3,8 +3,8 @@
     "action_invalid": "Érvénytelen művelet '{action}'",
     "admin_password": "Adminisztrátori jelszó",
     "app_already_installed": "{app} már telepítve van",
-    "app_already_installed_cant_change_url": "Ez az app már telepítve van. Ezzel a funkcióval az url nem változtatható. Javaslat 'app url változtatás' ha lehetséges.",
-    "app_argument_choice_invalid": "{name} érvénytelen választás, csak egyike lehet {choices} közül",
+    "app_already_installed_cant_change_url": "Ez az app már telepítve van. Ezzel a funkcióval az url nem változtatható. Ellenőrizd a 'app changeurl'-vel, hogy elérhető-e.",
+    "app_argument_choice_invalid": "A \"{name}\" parancshoz nem tartozik \"{value}\" nevű érv, használd a következők egyikét: \"{choices}\"",
     "app_argument_invalid": "'{name}' hibás paraméter érték :{error}",
     "cannot_open_file": "{file} megnyitása sikertelen (Oka: {error})",
     "download_timeout": "{url} régóta nem válaszol, folyamat megszakítva.",
@@ -12,5 +12,15 @@
     "invalid_url": "Helytelen URL: {url} (biztos létezik az oldal?)",
     "password_too_simple_1": "A jelszónak legalább 8 karakter hosszúnak kell lennie",
     "unknown_group": "Ismeretlen csoport: '{group}'",
-    "unknown_user": "Ismeretlen felhasználó: '{user}'"
+    "unknown_user": "Ismeretlen felhasználó: '{user}'",
+    "admins": "Adminisztrátorok",
+    "all_users": "Minden YunoHost felhasználó",
+    "already_up_to_date": "Nincs teendő. Minden napra kész.",
+    "app_action_broke_system": "Úgy tűnik, ez a tevékenység leállította ezeket a fontos folyamatokat: {services}",
+    "app_action_cannot_be_ran_because_required_services_down": "Ezeknek a folyamatoknak futniuk kell a következőhöz: {services}. Próbáld meg újraindítani őket a folytatáshoz (és nézz utána, miért nem futnak).",
+    "app_action_failed": "A(z) {action} művelet futtatása a(z) {app} applikáción hibába ütközött",
+    "app_arch_not_supported": "Ezt az appot csak a {required}-s architektúrára lehet telepíteni de a tiéd a {current}-on fut",
+    "app_change_url_success": "{app} URL-je mostantól {domain}{path}",
+    "domain_deleted": "Domain törölve",
+    "domain_deletion_failed": "A {domain} domain törlése hibába ütközött: {error}"
 }
