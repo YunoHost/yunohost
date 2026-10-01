@@ -35,6 +35,7 @@ def send_admin_email(from_addr: str, subject: str, content: str) -> None:
             From: {from_addr}
             To: {to_addr}
             Subject: {subject}
+            Content-Type: text/plain; charset=utf-8
 
         """)
         + content
