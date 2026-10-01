@@ -30,7 +30,11 @@ from ..app import app_list
 from ..tools import Migration
 from ..utils.app_utils import _get_manifest_of_app
 from ..utils.error import YunohostValidationError
-from ..utils.system import free_space_in_directory, space_used_by_directory
+from ..utils.system import (
+    free_space_in_directory,
+    space_used_by_directory,
+    aptitude_with_progress_bar
+)
 
 logger = getLogger("yunohost.migration")
 
@@ -90,6 +94,11 @@ class PostgreSQLMigration(Migration):
         if self.cluster_is_installed(self.target_version, "main"):
             logger.warning(f"PostgreSQL cluster {self.target_version}-main already exists. Renaming to {self.target_version}-renamed.")
             subprocess.check_call(["pg_renamecluster", str(self.target_version), "main", "renamed"], env=environ)
+
+        if self.package_is_installed(f"postgresql-{self.previous_version}-postgis-3"):
+            logger.info("Installing the new postgis version")
+            aptitude_with_progress_bar("update")
+            aptitude_with_progress_bar(f"install -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold  postgresql-{self.target_version}-postgis-3")
 
         logger.info("Upgrading cluster...")
         cmd = ["pg_upgradecluster", "-m", "upgrade", str(self.previous_version), "main", "-v", str(self.target_version)]
