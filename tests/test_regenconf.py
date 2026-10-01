@@ -19,14 +19,18 @@
 #
 
 import os
+from time import sleep
 
 from yunohost.domain import domain_add, domain_list, domain_remove
 from yunohost.regenconf import (
     _force_clear_hashes,
     _get_conf_hashes,
+    _get_regenconf_infos,
     manually_modified_files,
     regen_conf,
 )
+from yunohost.service import _get_services, service_restart, service_status
+from yunohost.tools import tools_regen_conf
 
 from .conftest import message
 
@@ -44,6 +48,7 @@ def setup_function(function):
 def teardown_function(function):
     clean()
     _force_clear_hashes([TEST_DOMAIN_NGINX_CONFIG])
+    os.umask(0o022)
 
 
 def clean():
@@ -175,6 +180,40 @@ def test_stale_hashes_if_file_manually_deleted():
 
     assert not os.path.exists(TEST_DOMAIN_DNSMASQ_CONFIG)
     assert TEST_DOMAIN_DNSMASQ_CONFIG not in _get_conf_hashes("dnsmasq")
+
+
+def test_regen_conf_umask_000():
+    """
+    Test that the regen-conf is still working and that all file are correctly protected
+    even if the umask is too open
+    """
+    os.umask(0o000)
+    tools_regen_conf(force=True)
+
+    all_config_file = [
+        f2 for f in _get_regenconf_infos().values() for f2 in f["conffiles"].keys()
+    ]
+    for f in all_config_file:
+        # Ensure that all file managed by the regen-conf is not writable by anybody
+        assert (os.stat(f).st_mode & 0o002) == 0
+
+
+def test_regen_conf_umask_027():
+    """
+    Test that the regen-conf is still working and that the services are working as expected
+    even if the umask is too restrictive
+    """
+    os.umask(0o027)
+    tools_regen_conf(force=True)
+
+    # Ensure that all services are still working even if the regen-conf was run with umask 027
+    for s in _get_services():
+        service_restart(s)
+        for x in range(1, 10):
+            if service_status(s)["status"] == "running":
+                break
+            sleep(1)
+        assert service_status(s)["status"] == "running"
 
 
 # This test only works if you comment the part at the end of the regen-conf in

@@ -61,16 +61,22 @@ else:
     logger = getLogger("yunohost.user")
 
 
+def separate_by_comma(item: str, optional: bool = True) -> str:
+    if optional:
+        return rf"^({item}(,{item})*)?$"
+    return rf"^({item}(,{item})*)$"
+
+
+DOMAIN_REGEX = r"([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})"
 FIELDS_FOR_IMPORT = {
     "username": r"^[a-z0-9][-a-z0-9_.]*$",
-    "firstname": r"^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$",
-    "lastname": r"^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$",
-    "password": r"^|(.{3,})$",
-    "mail": r"^([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}))$",
-    "mail-alias": r"^|([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$",
-    "mail-forward": r"^|([\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$",
+    "fullname": r"^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$",
+    "password": r"^(.{3,})?$",
+    "mail": r"^[\w.-]+@" + DOMAIN_REGEX + r"$",
+    "mail-alias": separate_by_comma(r"[\w.-]+@" + DOMAIN_REGEX),
+    "mail-forward": separate_by_comma(r"[\w\+.-]+@" + DOMAIN_REGEX),
     "mailbox-quota": r"^(\d+[bkMGT])|0|$",
-    "groups": r"^|([a-z0-9][-a-z0-9_.]*(,?[a-z0-9][-a-z0-9_.]*)*)$",
+    "groups": separate_by_comma(r"[a-z0-9][-a-z0-9_.]*"),
 }
 
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
@@ -102,7 +108,7 @@ def user_list(fields: list[str] | None = None) -> dict[str, dict[str, Any]]:
         "mail": lambda values, user: display_default(values[:1], user),
         "mail-alias": lambda values, _: values[1:],
         "mail-forward": lambda values, user: [
-            forward for forward in values if forward != user["uid"][0]
+            forward for forward in values if forward != user["mail"][0]
         ],
         "groups": lambda values, user: [
             group[3:].split(",")[0]
@@ -278,7 +284,7 @@ def user_create(
         "cn": [fullname],
         "uid": [username],
         "mail": mail,  # NOTE: this one seems to be already a list
-        "maildrop": [username],
+        "maildrop": [mail],
         "mailuserquota": [mailbox_quota or "0"],
         "userPassword": [_hash_user_password(password)],
         "gidNumber": [uid],
@@ -527,6 +533,13 @@ def user_update(
 
         user["mail"] = [mail] + user["mail"][1:]
         new_attr_dict["mail"] = user["mail"]
+        # FIXME Big fat WARNING: currently we put the user email in the last maildrop entry
+        # this is a temporary workaround to fix this discussion
+        # https://github.com/YunoHost/yunohost/pull/2341#discussion_r3879745312
+        # As soon as we have implemented the main email as the external email
+        # we will put again the main email in the first entry of the maildrop
+        user["maildrop"] = user["maildrop"][:-1] + [mail]
+        new_attr_dict["maildrop"] = user["maildrop"]
 
     if add_mailalias is not None:
         if not isinstance(add_mailalias, list):
@@ -566,8 +579,14 @@ def user_update(
     if add_mailforward:
         if not isinstance(add_mailforward, list):
             add_mailforward = [add_mailforward]
-        new_attr_dict["maildrop"] = set(user["maildrop"])
-        new_attr_dict["maildrop"].update(set(add_mailforward))
+        new_attr_dict["maildrop"] = list(user["maildrop"])
+        # FIXME Big fat WARNING: currently we put the user email in the last maildrop entry
+        # this is a temporary workaround to fix this discussion
+        # https://github.com/YunoHost/yunohost/pull/2341#discussion_r3879745312
+        # As soon as we have implemented the main email as the external email
+        # we will put again the main email in the first entry of the maildrop
+        for mailforward in add_mailforward:
+            new_attr_dict["maildrop"].insert(-1, mailforward)
 
     if remove_mailforward:
         if not isinstance(remove_mailforward, list):
@@ -579,7 +598,7 @@ def user_update(
         ):
             raise YunohostValidationError("mail_forward_remove_failed", mail=mail)
 
-    if "maildrop" in new_attr_dict:
+    if add_mailforward or remove_mailforward:
         env_dict["YNH_USER_MAILFORWARDS"] = ",".join(new_attr_dict["maildrop"])
 
     if mailbox_quota is not None:
@@ -665,7 +684,7 @@ def user_info(username: str) -> UserInfos:
         result_dict["mail-aliases"] = user["mail"][1:]
 
     if len(user["maildrop"]) > 1:
-        user["maildrop"].remove(username)
+        user["maildrop"].remove(user["mail"][0])
         result_dict["mail-forward"] = user["maildrop"]
 
     if "mailuserquota" in user:
@@ -728,6 +747,7 @@ def user_export() -> Union[str, "HTTPResponseType"]:
         writer.writeheader()
         users = user_list(list(FIELDS_FOR_IMPORT.keys()))["users"]
         for username, user in users.items():
+            user["fullname"] = user["fullname"].strip()
             user["mail-alias"] = ",".join(user["mail-alias"])
             user["mail-forward"] = ",".join(user["mail-forward"])
             user["groups"] = ",".join(user["groups"])
@@ -762,7 +782,7 @@ def user_import(
     Import users from CSV
 
     Keyword argument:
-        csvfile -- CSV file with columns username;firstname;lastname;password;mailbox_quota;mail;alias;forward;groups
+        csvfile -- CSV file with columns username;fullname;password;mailbox_quota;mail;alias;forward;groups
 
     """
 
@@ -963,7 +983,7 @@ def user_import(
 
         user_update(
             new_infos["username"],
-            fullname=(new_infos["firstname"] + " " + new_infos["lastname"]).strip(),
+            fullname=new_infos["fullname"].strip(),
             change_password=new_infos["password"],
             mailbox_quota=new_infos["mailbox-quota"],
             mail=new_infos["mail"],
@@ -1009,7 +1029,7 @@ def user_import(
                 user["password"],
                 mailbox_quota=user["mailbox-quota"],
                 from_import=True,
-                fullname=(user["firstname"] + " " + user["lastname"]).strip(),
+                fullname=user["fullname"].strip(),
             )
             _import_update(user)
             result["created"] += 1

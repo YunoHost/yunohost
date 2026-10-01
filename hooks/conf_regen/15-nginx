@@ -176,9 +176,11 @@ do_post_regen() {
         echo 'fastcgi_param  HTTP_HOST        $host;' >> /etc/nginx/fastcgi_params
     fi
 
-    if ls -l /etc/nginx/conf.d/*.d/*.conf; then
-        chown root:root /etc/nginx/conf.d/*.d/*.conf
-        chmod 644 /etc/nginx/conf.d/*.d/*.conf
+    chown root:root -R /etc/nginx
+    chmod -R u=rwX,g=rX,o=--- /etc/nginx
+
+    if ls -l /var/www/.well-known/*/autoconfig; then
+        chmod -R u=rwX,g=rX,o-w /var/www/.well-known/*/autoconfig
     fi
 
     # We don't want nginx logs to be world-readable which could leak secrets from GET query args in some cases/apps...

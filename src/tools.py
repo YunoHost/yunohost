@@ -804,6 +804,7 @@ def tools_migrations_run(
     auto: bool = False,
     force_rerun: bool = False,
     accept_disclaimer: bool = False,
+    skip_postmigrations: bool = False,
 ) -> None:
     """
     Perform migrations
@@ -813,6 +814,7 @@ def tools_migrations_run(
     --auto         Automatic mode, won't run manual migrations (to be used only if you know what you are doing)
     --force-rerun  Re-run already-ran migrations (to be used only if you know what you are doing)(must explicit which migrations)
     --accept-disclaimer  Accept disclaimers of migrations (please read them before using this option) (only valid for one migration)
+    --skip-postmigrations  Don't automatically run the following migrations if any. Especially useful to not run the migrations following a Debian version bump and run them manually instead (to be used only if you know what you are doing)
     """
 
     all_migrations = _get_migrations_list()
@@ -910,6 +912,8 @@ def tools_migrations_run(
         # Start register change on system
         operation_logger = OperationLogger("tools_migrations_migrate_forward")
         operation_logger.start()
+
+        migration.skip_postmigrations = skip_postmigrations
 
         if skip:
             logger.warning(m18n.n("migrations_skip_migration", id=migration.id))
@@ -1090,11 +1094,15 @@ class Migration:
 
     state: Literal["pending", "done", "skipped"] | None = None
     mode: Literal["auto", "manual"] = "auto"
+
     # List of migration ids required before running this migration
     dependencies: list[str] = []
 
     # For migrations that have @ldap_migration
     ldap_migration_started = False
+
+    # To skip the automatic run of the migrations following up the current one
+    skip_postmigrations: bool = False
 
     @property
     def disclaimer(self) -> str | None:
