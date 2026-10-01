@@ -35,17 +35,14 @@ from configparser import ConfigParser, UNNAMED_SECTION
 from packaging.version import Version, VERSION_PATTERN
 from packaging.markers import default_environment
 
-from ..tools import Migration, tools_migrations_state
+from ..tools import Migration
 from ..utils.error import YunohostError
 from ..utils.file_utils import rm
 from ..utils.process import call_async_output, check_output
-from ..utils.system import debian_version
 
 type ExecutionCallback = Tuple[Callable[[str], None], Callable[[str], None]]
 
 logger = getLogger("yunohost.migration")
-
-MAJOR_MINOR_PATCH_RE = r'(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)'
 
 
 class PyVenvConfig():
@@ -134,13 +131,6 @@ class PythonMigration(Migration):
                     result += self._get_all_venvs(path, level=level + 1)
         return result
 
-    def is_pending(self):
-        if not self.state:
-            self.state = tools_migrations_state()["migrations"].get(
-                self.migration_id, "pending"
-            )
-        return self.state == "pending"
-
     @cached_property
     def pip_version(self):
         return Version(PIP_VERSION) if PIP_VERSION else None
@@ -149,61 +139,7 @@ class PythonMigration(Migration):
     def python_version(self):
         return Version(default_environment()['python_full_version'])
 
-    @property
-    def mode(self):
-        if self._get_all_venvs("/opt/") + self._get_all_venvs("/var/www/"):
-            return "manual"
-        else:
-            return "auto"
-
-    @property
-    def disclaimer(self):
-        # Avoid having a super long disclaimer to generate if migrations has
-        # been done
-        if not self.is_pending():
-            return None
-
-        # Disclaimer should be empty if in auto, otherwise it excepts the --accept-disclaimer option during debian postinst
-        if self.mode == "auto":
-            return None
-
-        ignored_apps = []
-        rebuild_apps = []
-
-        venvs = self._get_all_venvs("/opt/") + self._get_all_venvs("/var/www/")
-        for venv in venvs:
-            app_corresponding_to_venv = self.extract_app_from_venv_path(venv)
-
-            # Search for ignore apps
-            if any(
-                app_corresponding_to_venv.startswith(app)
-                for app in self.ignored_python_apps
-            ):
-                ignored_apps.append(app_corresponding_to_venv)
-            else:
-                rebuild_apps.append(app_corresponding_to_venv)
-
-        msg = m18n.n(
-            "migration_python_venv_rebuild_disclaimer_base",
-            debian_pretty=debian_version().title(),
-        )
-        if rebuild_apps:
-            msg += "\n\n" + m18n.n(
-                "migration_python_venv_rebuild_disclaimer_rebuild",
-                rebuild_apps="\n    - " + "\n    - ".join(rebuild_apps),
-            )
-        if ignored_apps:
-            msg += "\n\n" + m18n.n(
-                "migration_python_venv_rebuild_disclaimer_ignored",
-                ignored_apps="\n    - " + "\n    - ".join(ignored_apps),
-            )
-
-        return msg
-
     def run(self):
-        if self.mode == "auto":
-            return
-
         if not PIP_VERSION:
             logger.info("No pip version found, skipping")
             return
