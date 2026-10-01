@@ -29,7 +29,7 @@ from moulinette import m18n
 from ..app import app_list
 from ..tools import Migration
 from ..utils.app_utils import _get_manifest_of_app
-from ..utils.error import YunohostError, YunohostValidationError
+from ..utils.error import YunohostValidationError
 from ..utils.system import free_space_in_directory, space_used_by_directory
 
 logger = getLogger("yunohost.migration")
