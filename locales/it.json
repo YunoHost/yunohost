@@ -643,5 +643,19 @@
     "yunohost_configured": "YunoHost ora è configurato",
     "yunohost_installing": "Installazione di YunoHost…",
     "yunohost_not_installed": "YunoHost non è correttamente installato. Esegui 'yunohost tools postinstall'",
-    "yunohost_postinstall_end_tip": "La post-installazione è completata! Per rifinire il tuo setup, considera di:\n\t- eseguire una diagnosi per la ricerca di problemi nella sezione 'Diagnosi' del webadmin (o eseguendo da terminale 'yunohost diagnosis run');\n\t- leggere 'Finalizing your setup' e 'Getting to know YunoHost' nella documentazione admin: https://doc.yunohost.org/admin."
+    "yunohost_postinstall_end_tip": "La post-installazione è completata! Per rifinire il tuo setup, considera di:\n\t- eseguire una diagnosi per la ricerca di problemi nella sezione 'Diagnosi' del webadmin (o eseguendo da terminale 'yunohost diagnosis run');\n\t- leggere 'Finalizing your setup' e 'Getting to know YunoHost' nella documentazione admin: https://doc.yunohost.org/admin.",
+    "app_config_permission_allowed": "Gruppi/utenti abilitati ad accedere",
+    "app_config_permission_allowed_warn_protected": "NB: Questo permesso è 'protetto'; pertanto il gruppo 'visitatori' non può essere aggiunto/rimosso dai gruppi autorizzati.",
+    "app_config_permission_description": "Descrizione",
+    "app_config_permission_description_help": "Questo è davvero utile solamente se stai utilizzando la modalità del portale 'descrittiva'",
+    "app_config_permission_extraperm_section_name": "Permesso '{perm}'",
+    "app_config_permission_label": "Etichetta",
+    "app_config_permission_location": "Corrisponde a [{absolute_url}]({absolute_url})",
+    "app_config_permission_logo": "Logo personalizzato da utilizzare",
+    "app_config_permission_logo_help": "Solo i file PNG sono supportati",
+    "app_config_permission_show_tile": "Visualizza riquadro nel portale",
+    "app_db_prompt_no_app_database": "Nessun database è stato dichiarato nel manifesto dell'app",
+    "app_db_prompt_type_not_supported": "Il comando non supporta questo tipo di database: {type}",
+    "app_config__core_name": "Riquadri e autorizzazioni",
+    "app_upgrade_bad_quality": "Questa applicazione è attualmente segnalata come non funzionante nel catalogo delle applicazioni di YunoHost. Potrebbe trattarsi di un problema temporaneo, mentre i responsabili della manutenzione cercano di risolverlo. Nel frattempo, l'aggiornamento di questa app è disabilitato."
 }
