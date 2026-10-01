@@ -22,5 +22,17 @@
     "app_arch_not_supported": "Ezt az appot csak a {required}-s architektúrára lehet telepíteni de a tiéd a {current}-on fut",
     "app_change_url_success": "{app} URL-je mostantól {domain}{path}",
     "domain_deleted": "Domain törölve",
-    "domain_deletion_failed": "A {domain} domain törlése hibába ütközött: {error}"
+    "domain_deletion_failed": "A {domain} domain törlése hibába ütközött: {error}",
+    "app_change_url_identical_domains": "Az új és a volt domain/url_path megegyeznek (\"{domain}{path}\"), nincs teendő.",
+    "app_change_url_no_script": "A(z) {app_name} app még nem támogatja az URL módosítást. Próbálja meg frissíteni.",
+    "app_extraction_failed": "Nem sikerült kicsomagolni a telepítési fájlokat",
+    "app_id_invalid": "Hibás app azonosító",
+    "app_install_files_invalid": "Ezeket a fájlokat nem lehet telepíteni",
+    "app_make_default_location_already_used": "A(z) {app} applikációt nem sikerült a fő domain-hez hozzárendelni, mert a(z) \"{domain}\"-t már használja a(z) \"{other_app}\"",
+    "app_location_unavailable": "Ez az URL vagy nem elérhető, vagy ütközik a már telepített applikációkkal:\n{apps}",
+    "app_not_correctly_installed": "A(z) {app} úgy tűnik helytelenül lett telepítve",
+    "app_not_installed": "A(z) {app} nem található a telepített applikációk listájában: {all_apps}",
+    "app_not_properly_removed": "A(z) {app} hibásan lett eltávolítva",
+    "app_removed": "{app} eltávolítva",
+    "app_requirements_checking": "Ellenőrizzük a(z) {app} követelményeit…"
 }
