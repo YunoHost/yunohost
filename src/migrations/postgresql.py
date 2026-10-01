@@ -124,5 +124,5 @@ class PostgreSQLMigration(Migration):
 
     def cluster_is_installed(self, version: int, name: str) -> bool:
         clusters_info = json.loads(subprocess.check_output(["pg_lsclusters", "--json"]))
-        clusters = [[cluster["version"], cluster["cluster"]] for cluster in clusters_info]
+        clusters = [[int(cluster["version"]), cluster["cluster"]] for cluster in clusters_info]
         return [version, name] in clusters
