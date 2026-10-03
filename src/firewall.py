@@ -30,6 +30,7 @@ import yaml
 from moulinette import m18n
 
 from .regenconf import regen_conf
+from .service import _run_service_command
 from .utils.error import YunohostError, YunohostValidationError
 
 logger: Any = getLogger("yunohost.firewall")
@@ -186,9 +187,14 @@ class YunoFirewall:
 
         # Just leverage regen_conf that will regen the nftables files, reload nftables
         try:
-            regen_conf(["nftables"], force=True)
+            result = regen_conf(["nftables"], force=True)
         except YunohostError:
             return False
+
+        # Restart nftables if the regen conf doesn't do it cause no managed
+        # configurations has been regenerated
+        if "nftables" not in result:
+            _run_service_command("restart", "nftables")
 
         self.need_reload = False
 
