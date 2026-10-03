@@ -219,6 +219,10 @@ class SettingsConfigPanel(ConfigPanel):
         except Exception:
             raw_settings["passwordless_sudo"] = False
 
+        for setting_name, f in default_hooks.items():
+            if raw_settings.get(setting_name, None) is None:
+                raw_settings[setting_name] = f(setting_name)
+
         return raw_settings
 
     def _apply(
@@ -240,7 +244,6 @@ class SettingsConfigPanel(ConfigPanel):
 
             tools_rootpw(root_password, check_strength=True)
 
-        # FIXME should be done with a post_change_hook
         if passwordless_sudo is not None:
             from .utils.ldap import _get_ldap_interface
 
@@ -275,8 +278,18 @@ class SettingsConfigPanel(ConfigPanel):
 
 
 # Meant to be a dict of setting_name -> function to call
+default_hooks: dict[str, Callable] = {}
 validate_hooks: dict[str, Callable] = {}
 post_change_hooks: dict[str, Callable] = {}
+
+
+def default_hook(setting_name):
+    # TODO: Check that setting_name exists
+    def decorator(func):
+        default_hooks[setting_name] = func
+        return func
+
+    return decorator
 
 
 def validate_hook(setting_name):
@@ -413,3 +426,54 @@ def reconfigure_dovecot(setting_name, old_value, new_value):
             regen_conf(names=["dovecot"])
         command = ["apt-get", "-y", "remove", "dovecot-pop3d"]
         subprocess.call(command, env=environment)
+
+
+@default_hook("tmpfs_enabled")
+def is_tmpfs_enabled(setting_name):
+    with open('/proc/mounts', 'r') as f:
+        for line in f.readlines():
+            if line.startswith("tmpfs /tmp "):
+                return True
+    return False
+
+
+@validate_hook("tmpfs_max_size")
+def validate_tmpfs_max_size(setting_name, old_value, new_value):
+    if old_value != new_value:
+        if setting_name == "tmpfs_max_size":
+            from psutil import virtual_memory
+            from .utils.system import space_used_by_directory
+            ram = virtual_memory()
+            ram_total = round(ram.total / 1024.0 / 1024.0)
+            ram_available = round(ram.available / 1024.0 / 1024.0)
+            ratio = 1
+            if new_value.endswith("%"):
+                ratio = ram_total / 100
+            elif new_value.endswith("G"):
+                ratio = 1024
+            max_size_in_mega = int(new_value[:-1]) * ratio
+            max_allowed = ram_total - 512
+            max_advice = min(ram_available, 8 * 1024)
+            tmp_current_size = space_used_by_directory("/tmp", follow_symlinks=False) / 1024 / 1024
+            if max_size_in_mega > max_allowed:
+                raise YunohostValidationError(
+                    "global_settings_setting_tmpfs_max_size_too_big",
+                    max_allowed=max_allowed, max_advice=max_advice)
+
+            if max_size_in_mega < tmp_current_size:
+                raise YunohostValidationError(
+                    "global_settings_setting_tmpfs_max_size_too_small",
+                    current_size=tmp_current_size)
+
+            if max_size_in_mega > max_advice:
+                logger.warning(m18n.n(
+                    "global_settings_setting_tmpfs_max_size_danger",
+                    max_advice=max_advice
+                ))
+
+
+@post_change_hook("tmpfs_enabled")
+@post_change_hook("tmpfs_max_size")
+def reconfigure_tmpfs(setting_name, old_value, new_value):
+    if old_value != new_value:
+        regen_conf(names=["tmpfs"])
