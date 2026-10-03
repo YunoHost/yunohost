@@ -168,6 +168,18 @@ i18n = "global_settings_setting"
         type = "boolean"
         default = false
 
+    [misc.storage]
+        visible = true
+
+        [misc.storage.tmpfs_enabled]
+        type = "boolean"
+        default = false
+        
+        [misc.storage.tmpfs_max_size]
+        type = "string"
+        default = "25%"
+        visible = "tmpfs_enabled"
+        
     [misc.network]
 
         [misc.network.dns_exposure]

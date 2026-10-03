@@ -389,3 +389,9 @@ def reconfigure_dovecot(setting_name, old_value, new_value):
             regen_conf(names=["dovecot"])
         command = ["apt-get", "-y", "remove", "dovecot-pop3d"]
         subprocess.call(command, env=environment)
+
+@post_change_hook("tmpfs_enabled")
+@post_change_hook("tmpfs_max_size")
+def reconfigure_tmpfs(setting_name, old_value, new_value):
+    if old_value != new_value:
+        regen_conf(names=["tmpfs"])
