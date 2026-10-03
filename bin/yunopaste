@@ -33,10 +33,10 @@ def create_snippet(data: str) -> str:
         response = requests.post(url, data=data.encode("utf-8"), timeout=TIMEOUT)
         response.raise_for_status()
         dockey = json.loads(response.text)["key"]
-        return f"{SERVER_URL}/raw/{dockey}"
     except requests.exceptions.RequestException as e:
         print(f"\033[31mError: {e}\033[0m", file=sys.stderr)
         sys.exit(1)
+    return f"{SERVER_URL}/raw/{dockey}"
 
 
 def main() -> None:
@@ -48,7 +48,7 @@ def main() -> None:
 
     url = create_snippet(output)
 
-    print("\033[32mURL: {}\033[0m".format(url))
+    print(f"\033[32mURL: {url}\033[0m")
 
 
 if __name__ == "__main__":

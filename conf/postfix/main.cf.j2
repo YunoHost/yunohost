@@ -1,21 +1,73 @@
 # See /usr/share/postfix/main.cf.dist for a commented, more complete version
 
+# See http://www.postfix.org/COMPATIBILITY_README.html
+compatibility_level = 3.11
 
-# Debian specific:  Specifying a file name will cause the first
-# line of that file to be used as the name.  The Debian default
-# is /etc/mailname.
+# Which domain that locally-originated mail appears to come from.
+# Debian policy suggests to read this value from /etc/mailname.
+#XX needs a review in postinst&config
 #myorigin = /etc/mailname
+#myorigin = $mydomain
+#myorigin = $myhostname
 
+# Text that follows the 220 code in the SMTP server's greeting banner.
+# You MUST specify $myhostname at the start due to an RFC requirement.
 smtpd_banner = $myhostname Service ready
-biff = no
 
-# appending .domain is the MUA's job.
-append_dot_mydomain = no
+# IP protocols to use: ipv4, ipv6, or all
+# (set this explicitly so `post-install upgrade-configuration' wont complain)
+inet_protocols = {% if ipv6_enabled == "True" %}all{% else %}ipv4{% endif %}
+
+# The myhostname parameter specifies the internet hostname of this mail system.
+myhostname = {{ main_domain }}
+
+# The mydomain parameter specifies the local internet domain name.
+mydomain = {{ main_domain }}
+
+# List of "trusted" SMTP clients (maptype:mapname allowed) that have more
+# privileges than "strangers".  If mynetworks is not specified (the default),
+# mynetworks_style is used to compute its value.
+mynetworks = 127.0.0.0/8{% if ipv6_enabled == "True" %} [::ffff:127.0.0.0]/104 [::1]/128{% endif %}
 
 # Uncomment the next line to generate "delayed mail" warnings
 #delay_warning_time = 4h
 
-readme_directory = no
+# List of domains (maptype:mapname allowed) that this machine considers
+# itself the final destination for.
+mydestination = localhost
+
+# Maximum size of a user mailbox
+mailbox_size_limit = 0
+
+# Optional external command to use instead of mailbox delivery.  If set,
+# you must set up an alias to forward root mail to a real user.
+#mailbox_command = /usr/bin/procmail
+mailbox_command = procmail -a "$EXTENSION"
+
+# List of alias maps to use to lookup local addresses.
+# Per Debian Policy it should be /etc/aliases.
+alias_maps = hash:/etc/aliases
+
+# List of alias maps to make indexes on, when running newaliases.
+alias_database = hash:/etc/aliases
+
+# Notify (or not) local biff service when new mail arrives.
+# Rarely used these days.
+biff = no
+
+# Separator between user name and address extension (user+foo@domain)
+recipient_delimiter = +
+
+# A host to send "other" mail to
+{% if relay_enabled != "True" %}
+relayhost =
+{% else %}
+relayhost = [{{ relay_host }}]:{{ relay_port }}
+{% endif %}
+
+
+# appending .domain is the MUA's job.
+append_dot_mydomain = no
 
 # -- TLS for incoming connections
 ###############################################################################
@@ -30,11 +82,13 @@ smtpd_tls_chain_files =
 tls_server_sni_maps = hash:/etc/postfix/sni
 
 {% if compatibility == "intermediate" %}
-# generated 2023-06-13, Mozilla Guideline v5.7, Postfix 3.7.5, OpenSSL 3.0.9, intermediate configuration
-# https://ssl-config.mozilla.org/#server=postfix&version=3.7.5&config=intermediate&openssl=3.0.9&guideline=5.7
+# generated 2025-10-31, Mozilla Guideline v5.7, Postfix 3.10.4, OpenSSL 3.5.1, intermediate config
+# https://ssl-config.mozilla.org/#server=postfix&version=3.10.4&config=intermediate&openssl=3.5.1&guideline=5.7
+smtpd_tls_mandatory_protocols = >=TLSv1.2
+smtpd_tls_protocols           = >=TLSv1.2
+smtp_tls_mandatory_protocols  = >=TLSv1.2
+smtp_tls_protocols            = >=TLSv1.2
 
-smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1
-smtpd_tls_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1
 smtpd_tls_mandatory_ciphers = medium
 
 # curl https://ssl-config.mozilla.org/ffdhe2048.txt > /path/to/dhparam.pem
@@ -43,12 +97,16 @@ smtpd_tls_dh1024_param_file = /usr/share/yunohost/ffdhe2048.pem
 
 tls_medium_cipherlist = ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305
 {% else %}
-# generated 2023-06-13, Mozilla Guideline v5.7, Postfix 3.7.5, OpenSSL 3.0.9, modern configuration
-# https://ssl-config.mozilla.org/#server=postfix&version=3.7.5&config=modern&openssl=3.0.9&guideline=5.7
-
-smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1, !TLSv1.2
-smtpd_tls_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1, !TLSv1.2
+# generated 2025-10-31, Mozilla Guideline v5.7, Postfix 3.10.4, OpenSSL 3.5.1, modern config
+# https://ssl-config.mozilla.org/#server=postfix&version=3.10.4&config=modern&openssl=3.5.1&guideline=5.7
+smtpd_tls_mandatory_protocols = >=TLSv1.3
+smtpd_tls_protocols           = >=TLSv1.3
+smtp_tls_mandatory_protocols  = >=TLSv1.3
+smtp_tls_protocols            = >=TLSv1.3
 {% endif %}
+
+tls_eecdh_auto_curves = X25519 prime256v1 secp384r1
+tls_ffdhe_auto_groups =
 
 tls_preempt_cipherlist = no
 ###############################################################################
@@ -75,22 +133,6 @@ smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
 
 # See /usr/share/doc/postfix/TLS_README.gz in the postfix-doc package for
 # information on enabling SSL in the smtp client.
-
-myhostname = {{ main_domain }}
-alias_maps = hash:/etc/aliases
-alias_database = hash:/etc/aliases
-mydomain = {{ main_domain }}
-mydestination = localhost
-{% if relay_enabled != "True" %}
-relayhost =
-{% else %}
-relayhost = [{{ relay_host }}]:{{ relay_port }}
-{% endif %}
-mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128
-mailbox_command = procmail -a "$EXTENSION"
-mailbox_size_limit = 0
-recipient_delimiter = +
-inet_interfaces = all
 
 #### Fit to the maximum message size to 25mb, more than allowed by GMail or Yahoo ####
 # /!\ This size is the size of the attachment in base64.
@@ -220,4 +262,3 @@ relay_domains = $mydestination {{backup_mx_domains}}
 relay_recipient_maps = hash:/etc/postfix/relay_recipients
 maximal_queue_lifetime = 20d
 {% endif %}
-

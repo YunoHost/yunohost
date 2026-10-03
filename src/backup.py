@@ -29,7 +29,7 @@ import tarfile
 import tempfile
 import time
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import reduce
 from glob import glob
 from logging import getLogger
@@ -298,9 +298,7 @@ class BackupManager:
         self.name = name
 
         # Define working directory if needed and initialize it
-        self.work_dir = work_dir
-        if self.work_dir is None:
-            self.work_dir = os.path.join(BACKUP_PATH, "tmp", name)
+        self.work_dir = work_dir or os.path.join(BACKUP_PATH, "tmp", name)
         self._init_work_dir()
 
         # Initialize backup methods
@@ -928,7 +926,7 @@ class RestoreManager:
             logger.debug(
                 "restoring from backup '%s' created on %s",
                 self.name,
-                datetime.utcfromtimestamp(self.info["created_at"]),
+                datetime.fromtimestamp(self.info["created_at"], tz=timezone.utc),
             )
 
     def _postinstall_if_needed(self):
@@ -1275,7 +1273,7 @@ class RestoreManager:
         else:
             operation_logger.success()
 
-        domain.domain_list_cache = {}
+        domain.domain_list_cache = []
 
         regen_conf()
 
@@ -1317,7 +1315,7 @@ class RestoreManager:
                              name should be already install)
         """
         from .app import app_remove
-        from .utils.legacy import _patch_legacy_helpers
+        from .utils.resources import AppResourceManager
 
         def copytree(src, dst, symlinks=False, ignore=None):
             for item in os.listdir(src):
@@ -1345,9 +1343,6 @@ class RestoreManager:
         app_backup_in_archive = os.path.join(app_dir_in_archive, "backup")
         app_settings_in_archive = os.path.join(app_dir_in_archive, "settings")
         app_scripts_in_archive = os.path.join(app_settings_in_archive, "scripts")
-
-        # Attempt to patch legacy helpers...
-        _patch_legacy_helpers(app_settings_in_archive)
 
         # Delete _common.sh file in backup
         common_file = os.path.join(app_backup_in_archive, "_common.sh")
@@ -1420,14 +1415,12 @@ class RestoreManager:
         operation_logger.flush()
 
         manifest = _get_manifest_of_app(app_settings_in_archive)
-        if manifest["packaging_format"] >= 2:
-            from .utils.resources import AppResourceManager
 
-            AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
-                rollback_and_raise_exception_if_failure=True,
-                operation_logger=operation_logger,
-                action="restore",
-            )
+        AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
+            rollback_and_raise_exception_if_failure=True,
+            operation_logger=operation_logger,
+            action="restore",
+        )
 
         # Execute the app install script
         restore_failed = True
@@ -1565,6 +1558,10 @@ class BackupMethod:
     @property
     def method_name(self):
         """Return the string name of a BackupMethod (eg "tar" or "copy")"""
+        raise YunohostError("backup_abstract_method")
+
+    def backup(self):
+        """Save the prepared files"""
         raise YunohostError("backup_abstract_method")
 
     @property
@@ -1945,10 +1942,10 @@ class TarBackupMethod(BackupMethod):
 
         if "info.json" in tar.getnames():
             leading_dot = ""
-            tar.extract("info.json", path=self.work_dir)
+            tar.extract("info.json", path=self.work_dir, filter="data")
         elif "./info.json" in files_in_archive:
             leading_dot = "./"
-            tar.extract("./info.json", path=self.work_dir)
+            tar.extract("./info.json", path=self.work_dir, filter="data")
         else:
             logger.debug(
                 "unable to retrieve 'info.json' inside the archive", exc_info=1
@@ -1959,9 +1956,9 @@ class TarBackupMethod(BackupMethod):
             )
 
         if "backup.csv" in files_in_archive:
-            tar.extract("backup.csv", path=self.work_dir)
+            tar.extract("backup.csv", path=self.work_dir, filter="data")
         elif "./backup.csv" in files_in_archive:
-            tar.extract("./backup.csv", path=self.work_dir)
+            tar.extract("./backup.csv", path=self.work_dir, filter="data")
         else:
             # Old backup archive have no backup.csv file
             pass
@@ -1987,13 +1984,13 @@ class TarBackupMethod(BackupMethod):
                 for tarinfo in tar.getmembers()
                 if tarinfo.name.startswith(leading_dot + system_part)
             ]
-            tar.extractall(members=subdir_and_files, path=self.work_dir)
+            tar.extractall(members=subdir_and_files, path=self.work_dir, filter="tar")
         subdir_and_files = [
             tarinfo
             for tarinfo in tar.getmembers()
             if tarinfo.name.startswith(leading_dot + "hooks/restore/")
         ]
-        tar.extractall(members=subdir_and_files, path=self.work_dir)
+        tar.extractall(members=subdir_and_files, path=self.work_dir, filter="tar")
 
         # Extract apps backup
         for app in apps_targets:
@@ -2002,7 +1999,7 @@ class TarBackupMethod(BackupMethod):
                 for tarinfo in tar.getmembers()
                 if tarinfo.name.startswith(leading_dot + "apps/" + app)
             ]
-            tar.extractall(members=subdir_and_files, path=self.work_dir)
+            tar.extractall(members=subdir_and_files, path=self.work_dir, filter="tar")
 
         tar.close()
 
@@ -2013,7 +2010,7 @@ class TarBackupMethod(BackupMethod):
         file_to_extract = tar.getmember(file)
         # Remove the path
         file_to_extract.name = os.path.basename(file_to_extract.name)
-        tar.extract(file_to_extract, path=target)
+        tar.extract(file_to_extract, path=target, filter="tar")
         tar.close()
 
 
@@ -2421,9 +2418,9 @@ def backup_info(name, with_details=False, human_readable=False):
 
         try:
             if "info.json" in files_in_archive:
-                tar.extract("info.json", path=info_dir)
+                tar.extract("info.json", path=info_dir, filter="data")
             elif "./info.json" in files_in_archive:
-                tar.extract("./info.json", path=info_dir)
+                tar.extract("./info.json", path=info_dir, filter="data")
             else:
                 raise KeyError
         except KeyError:
@@ -2464,7 +2461,7 @@ def backup_info(name, with_details=False, human_readable=False):
 
     result = {
         "path": archive_file,
-        "created_at": datetime.utcfromtimestamp(info["created_at"]),
+        "created_at": datetime.fromtimestamp(info["created_at"], tz=timezone.utc),
         "description": info["description"],
         "size": size,
     }

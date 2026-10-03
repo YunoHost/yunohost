@@ -22,7 +22,8 @@ import os
 import shutil
 import subprocess
 import sys
-from datetime import datetime
+import textwrap
+from datetime import datetime, timezone
 from glob import glob
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, cast
@@ -34,9 +35,9 @@ from .log import OperationLogger
 from .regenconf import regen_conf
 from .service import _run_service_command
 from .utils.error import YunohostError, YunohostValidationError
-from .utils.file_utils import chmod, chown, read_file
+from .utils.file_utils import chmod, chown, read_file, tail
+from .utils.misc import send_admin_email
 from .utils.network import get_public_ip
-from .utils.process import check_output
 from .vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 
 if TYPE_CHECKING:
@@ -158,7 +159,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
         )
 
         # Paths of files and folder we'll need
-        date_tag = datetime.utcnow().strftime("%Y%m%d.%H%M%S")
+        date_tag = datetime.now(timezone.utc).strftime("%Y%m%d.%H%M%S")
         new_cert_folder = f"{CERT_FOLDER}/{domain}-history/{date_tag}-selfsigned"
 
         conf_template = os.path.join(SSL_DIR, "openssl.cnf")
@@ -398,11 +399,11 @@ def certificate_renew(
         if not no_checks:
             try:
                 _check_domain_is_ready_for_ACME(domain)
-            except Exception as e:
-                logger.error(e)
+            except Exception as err:
+                logger.error(err)
                 if email:
                     logger.error("Sending email with details to root ...")
-                    _email_renewing_failed(domain, e)
+                    _email_renewing_failed(domain, err)
                 continue
 
         logger.info("Now attempting renewing of certificate for domain %s !", domain)
@@ -454,38 +455,35 @@ def certificate_renew(
 #
 
 
-def _email_renewing_failed(domain, exception_message, stack=""):
-    from_ = f"certmanager@{domain} (Certificate Manager)"
-    to_ = "root"
-    subject_ = f"Certificate renewing attempt for {domain} failed!"
+def _email_renewing_failed(
+    domain: str, exception_message: str | Exception, stack: str = ""
+) -> None:
+    from_addr = f"certmanager@{domain} (Certificate Manager)"
+    subject = f"Certificate renewing attempt for {domain} failed!"
 
-    logs = _tail(50, "/var/log/yunohost/yunohost-cli.log")
-    message = f"""\
-From: {from_}
-To: {to_}
-Subject: {subject_}
+    logs = tail("/var/log/yunohost/yunohost-cli.log", 50)
+    message = (
+        textwrap.dedent(f"""\
+            An attempt for renewing the certificate for domain {domain} failed with the
+            following error:
 
+        """)
+        + f"{exception_message}\n{stack}"
+        + textwrap.dedent("""
 
-An attempt for renewing the certificate for domain {domain} failed with the following
-error :
+            Here's the tail of /var/log/yunohost/yunohost-cli.log, which might help to
+            investigate :
 
-{exception_message}
-{stack}
+        """)
+        + logs
+        + textwrap.dedent("""
 
-Here's the tail of /var/log/yunohost/yunohost-cli.log, which might help to
-investigate :
-
-{logs}
-
--- Certificate Manager
-"""
+            -- Certificate Manager
+        """)
+    )
 
     try:
-        import smtplib
-
-        smtp = smtplib.SMTP("localhost")
-        smtp.sendmail(from_, [to_], message.encode("utf-8"))
-        smtp.quit()
+        send_admin_email(from_addr, subject, message)
     except Exception as e:
         # Dont miserably crash the whole auto renew cert when one renewal fails ...
         # cf boring cases like https://github.com/YunoHost/issues/issues/2102
@@ -555,7 +553,7 @@ def _fetch_and_enable_new_certificate(domain, no_checks=False):
     logger.debug("Saving the key and signed certificate...")
 
     # Create corresponding directory
-    date_tag = datetime.utcnow().strftime("%Y%m%d.%H%M%S")
+    date_tag = datetime.now(timezone.utc).strftime("%Y%m%d.%H%M%S")
 
     new_cert_folder = f"{CERT_FOLDER}/{domain}-history/{date_tag}-letsencrypt"
 
@@ -588,15 +586,17 @@ def _fetch_and_enable_new_certificate(domain, no_checks=False):
 
 
 def _prepare_certificate_signing_request(domain, key_file, output_folder):
-    from OpenSSL import crypto  # lazy loading this module for performance reasons
+    from cryptography import x509  # lazy loading this module for performance reasons
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.x509.oid import NameOID
 
     from .hook import hook_callback
 
     # Init a request
-    csr = crypto.X509Req()
+    csr = x509.CertificateSigningRequestBuilder()
 
     # Set the domain
-    csr.get_subject().CN = domain
+    csr = csr.subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, domain)]))
 
     sanlist = []
     hook_results = hook_callback("cert_alternate_names", env={"domain": domain})
@@ -617,35 +617,30 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
                 sanlist += result["stdreturn"]
 
     if sanlist:
-        subsanlist = [f"DNS:{sub}.{domain}" for sub in sanlist if "." not in sub]
+        sanlist = [f"{sub}.{domain}" for sub in sanlist if "." not in sub]
         # This is meant for situation such as cryptpad where we need to be able to have a cert for sandbox-domain.tld (with a dash, not just sandbox.domain.tld)
-        domainsanlist = [f"DNS:{domain}" for domain in sanlist if "." in domain]
-        sanlist = ", ".join(subsanlist + domainsanlist)
-        csr.add_extensions(
-            [
-                crypto.X509Extension(
-                    b"subjectAltName",
-                    False,
-                    sanlist.encode("utf-8"),
-                )
-            ]
+        sanlist += [altdomain for altdomain in sanlist if "." in altdomain]
+
+        csr = csr.add_extension(
+            x509.SubjectAlternativeName(
+                [x509.DNSName(altdomain) for altdomain in sanlist]
+            ),
+            critical=False,
         )
 
     # Set the key
-    with open(key_file, "rt") as f:
-        key = crypto.load_privatekey(crypto.FILETYPE_PEM, f.read())
-
-    csr.set_pubkey(key)
+    with open(key_file, "rb") as pem_file:
+        private_key = serialization.load_pem_private_key(pem_file.read(), password=None)
 
     # Sign the request
-    csr.sign(key, "sha256")
+    csr = csr.sign(private_key, hashes.SHA256())
 
     # Save the request in tmp folder
     csr_file = output_folder + domain + ".csr"
     logger.debug("Saving to %s.", csr_file)
 
-    with open(csr_file, "wb") as f:
-        f.write(crypto.dump_certificate_request(crypto.FILETYPE_PEM, csr))
+    with open(csr_file, "wb") as pem_file:
+        pem_file.write(csr.public_bytes(serialization.Encoding.PEM))
 
 
 def _get_status(domain):
@@ -654,10 +649,13 @@ def _get_status(domain):
     if not os.path.isfile(cert_file):
         raise YunohostError("certmanager_no_cert_file", domain=domain, file=cert_file)
 
-    from OpenSSL import crypto  # lazy loading this module for performance reasons
+    from cryptography import x509  # lazy loading this module for performance reasons
+    from cryptography.x509.oid import NameOID
 
     try:
-        cert = crypto.load_certificate(crypto.FILETYPE_PEM, open(cert_file).read())
+        with open(cert_file, "rb") as pem_file:
+            cert = x509.load_pem_x509_certificate(pem_file.read())
+
     except Exception as exception:
         import traceback
 
@@ -669,19 +667,17 @@ def _get_status(domain):
             reason=exception,
         )
 
-    cert_subject = cert.get_subject().CN
-    cert_issuer = cert.get_issuer().CN
-    organization_name = cert.get_issuer().O
-    valid_up_to = datetime.strptime(
-        cert.get_notAfter().decode("utf-8"), "%Y%m%d%H%M%SZ"
-    )
-    days_remaining = (valid_up_to - datetime.utcnow()).days
+    cert_subject = cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
+    cert_issuer = cert.issuer.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
+    org_name = cert.issuer.get_attributes_for_oid(NameOID.ORGANIZATION_NAME)[0].value
+    valid_up_to_utc = cert.not_valid_after_utc
+    days_remaining = (valid_up_to_utc - datetime.now(tz=timezone.utc)).days
 
     # Identify that a domain's cert is self-signed if the cert dir
     # is actually a symlink to a dir ending with -selfsigned
     if os.path.realpath(os.path.join(CERT_FOLDER, domain)).endswith("-selfsigned"):
         CA_type = "selfsigned"
-    elif organization_name == "Let's Encrypt":
+    elif org_name == "Let's Encrypt":
         CA_type = "letsencrypt"
     else:
         CA_type = "other"
@@ -729,13 +725,19 @@ def _generate_account_key():
 
 
 def _generate_key(destination_path):
-    from OpenSSL import crypto  # lazy loading this module for performance reasons
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
 
-    k = crypto.PKey()
-    k.generate_key(crypto.TYPE_RSA, KEY_SIZE)
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=KEY_SIZE)
 
-    with open(destination_path, "wb") as f:
-        f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
+    with open(destination_path, "wb") as key_file:
+        key_file.write(
+            private_key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
+        )
 
 
 def _set_permissions(path, user, group, permissions):
@@ -782,7 +784,7 @@ def _backup_current_cert(domain):
 
     cert_folder_domain = os.path.join(CERT_FOLDER, domain)
 
-    date_tag = datetime.utcnow().strftime("%Y%m%d.%H%M%S")
+    date_tag = datetime.now(timezone.utc).strftime("%Y%m%d.%H%M%S")
     backup_folder = f"{cert_folder_domain}-backups/{date_tag}"
 
     shutil.copytree(cert_folder_domain, backup_folder)
@@ -912,7 +914,3 @@ def _name_self_CA():
 
     logger.warning(m18n.n("certmanager_unable_to_parse_self_CA_name", file=ca_conf))
     return ""
-
-
-def _tail(n, file_path):
-    return check_output(f"tail -n {n} '{file_path}'")
