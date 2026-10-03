@@ -106,7 +106,6 @@ class PostgreSQLMigration(Migration):
 
         self.run_post_migration()
 
-
     def run_post_migration(self):
         logger.warning(m18n.n("migration_postgresql_reindexing_databases"))
         environ = os.environ.copy()
