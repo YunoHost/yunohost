@@ -26,6 +26,7 @@ set -e
 source /usr/share/yunohost/helpers
 
 do_init_regen() {
+    :
 }
 
 do_pre_regen() {
