@@ -169,8 +169,6 @@ i18n = "global_settings_setting"
         default = false
 
     [misc.storage]
-        visible = true
-
         [misc.storage.tmpfs_enabled]
         type = "boolean"
         default = false
@@ -178,6 +176,8 @@ i18n = "global_settings_setting"
         [misc.storage.tmpfs_max_size]
         type = "string"
         default = "25%"
+        pattern.regexp = '^([1-9]?[0-9]%|[1-9]?[0-9]G|[0-9]+M)$'
+        pattern.error = "You should express it in percentage (50%), in gigabytes (1G) or in megabytes (512M)."
         visible = "tmpfs_enabled"
         
     [misc.network]
