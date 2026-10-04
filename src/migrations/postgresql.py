@@ -106,10 +106,11 @@ class PostgreSQLMigration(Migration):
             if self.package_is_installed(ext)
         ]
         psql_extensions_to_install_str = str.join(" ", psql_extensions_to_install)
-        aptitude_with_progress_bar("update")
+        if psql_extensions_to_install_str:
+            aptitude_with_progress_bar("update")
 
-        logger.info(f"Installing the new postgresql extensions: {psql_extensions_to_install_str}")
-        aptitude_with_progress_bar("install -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold " + psql_extensions_to_install_str)
+            logger.info(f"Installing the new postgresql extensions: {psql_extensions_to_install_str}")
+            aptitude_with_progress_bar("install -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold " + psql_extensions_to_install_str)
 
         logger.info("Upgrading cluster...")
         cmd = ["pg_upgradecluster", "-m", "upgrade", str(self.previous_version), "main", "-v", str(self.target_version)]
