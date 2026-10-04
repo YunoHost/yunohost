@@ -495,6 +495,7 @@
     "global_settings_setting_tmpfs_max_size": "Maximum space in RAM for temporary files",
     "global_settings_setting_tmpfs_max_size_help": "In percentage (25%) of total RAM, gigabytes (1G) or megabytes (512M).",
     "global_settings_setting_tmpfs_max_size_too_big": "Max tmpfs size could not be greater than {max_allowed}M and you probably should stay below {max_advice}M.",
+    "global_settings_setting_tmpfs_max_size_too_small": "Max tmpfs size could not be smaller than it's current size {current_size}M.",
     "global_settings_setting_tmpfs_max_size_danger": "The max space size for tmpfs you have configured seems too high, you probably should stay below {max_advice}M.",
     "global_settings_setting_backup_name": "Backup",
     "global_settings_setting_dns_custom_resolvers_enabled": "Use custom DNS resolvers",
