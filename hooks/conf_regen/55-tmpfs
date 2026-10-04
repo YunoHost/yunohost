@@ -62,12 +62,17 @@ do_post_regen() {
         [[ -z "$regen_conf_files" ]] \
             || systemctl daemon-reload
 
-        # FIXME remove the '|| true' on trixie
-        systemctl status tmp.mount &> /dev/null \
-            && systemctl reload-or-restart tmp.mount || true
+        if ! systemctl is-active --quiet tmp.mount ; then
+            # We can't start tmp.mount cause target is probably busy
+            ynh_print_warn --message="Reboot needed to switch /tmp on ram"
+        else
+            systemctl reload tmp.mount
+        fi
     else
-        systemctl is-active --quiet tmp.mount \
-            && systemctl stop tmp.mount 2> /dev/null 
+        if systemctl is-active --quiet tmp.mount ; then
+            # We can't stop tmp.mount cause target is probably busy
+            ynh_print_warn --message="Reboot needed to switch /tmp on disk"
+        fi
         systemctl mask tmp.mount 2> /dev/null 
     fi
     
