@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+# Exit hook on subcommand error or unset variable
+set -e
+
+# Source YNH helpers
+# shellcheck source=../../helpers/helpers
+source /usr/share/yunohost/helpers
+
+do_init_regen() {
+    :
+}
+
+do_pre_regen() {
+    pending_dir=$1
+
+    export tmpfs_enabled="$(jq -r '.tmpfs_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
+    # Note that the usual specifier expansion is applied to this settingi
+    # literal percent characters should hence be written as "%%".
+    # https://www.freedesktop.org/software/systemd/man/latest/systemd.mount.html#Options=
+    export tmpfs_max_size="$(jq -r '.tmpfs_max_size' <<< "$YNH_SETTINGS"| sed s@%@%%@)"
+
+    cd /usr/share/yunohost/conf/tmpfs
+    mkdir -p "${pending_dir}/etc/systemd/system/tmp.mount.d"
+    if [ "${tmpfs_enabled}" == "True" ]; then
+        ynh_render_template tmpfs-override.tpl.conf "${pending_dir}/etc/systemd/system/tmp.mount.d/yunohost-override.conf"
+    else
+        touch "${pending_dir}/etc/systemd/system/tmp.mount.d/yunohost-override.conf"
+    fi
+}
+
+do_post_regen() {
+    regen_conf_files=$1
+
+    export tmpfs_enabled="$(jq -r '.tmpfs_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
+    if [ "${tmpfs_enabled}" == "True" ]; then
+        chown root:root /etc/systemd/system/tmp.mount.d/yunohost-override.conf
+        chmod u=rw-,g=r--,o-w /etc/systemd/system/tmp.mount.d/yunohost-override.conf
+
+        systemctl unmask tmp.mount 2> /dev/null
+        [[ -z "$regen_conf_files" ]] \
+            || systemctl daemon-reload
+
+        # FIXME remove the '|| true' on trixie
+        systemctl status tmp.mount &> /dev/null \
+            && systemctl reload-or-restart tmp.mount || true
+    else
+        systemctl is-active --quiet tmp.mount \
+            && systemctl stop tmp.mount 2> /dev/null 
+        systemctl mask tmp.mount 2> /dev/null 
+    fi
+    
+}
+
+"do_$1_regen" "$(echo "${*:2}" | xargs)"

@@ -240,6 +240,7 @@ class SettingsConfigPanel(ConfigPanel):
 
             tools_rootpw(root_password, check_strength=True)
 
+        # FIXME should be done with a post_change_hook
         if passwordless_sudo is not None:
             from .utils.ldap import _get_ldap_interface
 
@@ -249,8 +250,6 @@ class SettingsConfigPanel(ConfigPanel):
                 {"sudoOption": "!authenticate" if passwordless_sudo else []},
             )
 
-        # First save settings except virtual + default ones
-        super()._apply(form, config, previous_settings, exclude=self.virtual_settings)
         next_settings = {
             k: v
             for k, v in form.dict(exclude=self.virtual_settings).items()
@@ -258,19 +257,44 @@ class SettingsConfigPanel(ConfigPanel):
         }
 
         for setting_name, value in next_settings.items():
-            try:
-                # FIXME not sure to understand why we need the previous value if
-                # updated_settings has already been filtered
-                trigger_post_change_hook(
-                    setting_name, previous_settings.get(setting_name), value
-                )
-            except Exception as e:
-                logger.error(f"Post-change hook for setting failed : {e}")
-                raise
+            # FIXME not sure to understand why we need the previous value if
+            # updated_settings has already been filtered
+            trigger_validate_hook(
+                setting_name, previous_settings.get(setting_name), value
+            )
+
+        # First save settings except virtual + default ones
+        super()._apply(form, config, previous_settings, exclude=self.virtual_settings)
+
+        for setting_name, value in next_settings.items():
+            # FIXME not sure to understand why we need the previous value if
+            # updated_settings has already been filtered
+            trigger_post_change_hook(
+                setting_name, previous_settings.get(setting_name), value
+            )
 
 
 # Meant to be a dict of setting_name -> function to call
+validate_hooks: dict[str, Callable] = {}
 post_change_hooks: dict[str, Callable] = {}
+
+
+def validate_hook(setting_name):
+    # TODO: Check that setting_name exists
+    def decorator(func):
+        validate_hooks[setting_name] = func
+        return func
+
+    return decorator
+
+
+def trigger_validate_hook(setting_name, old_value, new_value):
+    if setting_name not in validate_hooks:
+        logger.debug(f"Nothing to validate before changing setting {setting_name}")
+        return
+
+    f = validate_hooks[setting_name]
+    f(setting_name, old_value, new_value)
 
 
 def post_change_hook(setting_name):
@@ -389,3 +413,38 @@ def reconfigure_dovecot(setting_name, old_value, new_value):
             regen_conf(names=["dovecot"])
         command = ["apt-get", "-y", "remove", "dovecot-pop3d"]
         subprocess.call(command, env=environment)
+
+
+@validate_hook("tmpfs_max_size")
+def validate_tmpfs_max_size(setting_name, old_value, new_value):
+    if old_value != new_value:
+        if setting_name == "tmpfs_max_size":
+            from psutil import virtual_memory
+            ram = virtual_memory()
+            ram_total = round(ram.total / 1024.0 / 1024.0)
+            ram_available = round(ram.available / 1024.0 / 1024.0)
+            ratio = 1
+            if new_value.endswith("%"):
+                ratio = ram_total / 100
+            elif new_value.endswith("G"):
+                ratio = 1024
+            max_size_in_mega = int(new_value[:-1]) * ratio
+            max_allowed = ram_total - 512
+            max_advice = min(ram_available, 8 * 1024)
+            if max_size_in_mega > max_allowed:
+                raise YunohostValidationError(
+                    "global_settings_setting_tmpfs_max_size_too_big",
+                    max_allowed=max_allowed, max_advice=max_advice)
+
+            if max_size_in_mega > max_advice:
+                logger.warning(m18n.n(
+                    "global_settings_setting_tmpfs_max_size_danger",
+                    max_advice=max_advice
+                ))
+
+
+@post_change_hook("tmpfs_enabled")
+@post_change_hook("tmpfs_max_size")
+def reconfigure_tmpfs(setting_name, old_value, new_value):
+    if old_value != new_value:
+        regen_conf(names=["tmpfs"])
