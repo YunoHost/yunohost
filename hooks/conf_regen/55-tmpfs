@@ -27,7 +27,7 @@ source /usr/share/yunohost/helpers
 
 do_init_regen() {
     ram_total=$(free --mebi | head -n 2 | tail -n 1 | awk '{print $2}')
-    if (( ram_total > 4000 )); then
+    if (( ram_total >= 4096 )); then
         yunohost settings set misc.storage.tmpfs_enabled -v yes
     fi
 }

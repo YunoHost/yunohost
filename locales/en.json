@@ -686,6 +686,8 @@
     "migration_0031_terms_of_services": "This migration is purely an informational message about the fact that the YunoHost project now publishes Terms of Services related to the technical and community services.",
     "migration_0036_apt_lists_file_still_exists": "The legacy file '{file}' still exists while it shouldn't. It will be renamed as '{file}.legacy_bookworm'.",
     "migration_0036_cleaning_up": "Cleaning up cache and packages not useful anymore…",
+    "migration_0036_configuring_tmp_in_ram": "Configuring /tmp in ram with tmpfs (max size: {ram}M)… You can adjust the value in global settings.",
+    "migration_0036_configuring_tmp_on_disk": "Configuring /tmp on disk instead of ram (not enough ram)… You can change that in global settings.",
     "migration_0036_delayed_api_restart": "The YunoHost API will automatically be restarted in 15 seconds. It may be unavailable for a few seconds, and then you will have to login again.",
     "migration_0036_dkim_keys_upgrade_disclaimer": "Running this migration upgrade legacy 1024 bits DKIM keys into 2048 bits in order to improve mail deliverability. Following domains are concerned and some of them could need to update DKIM keys in your DNS zone just after the migration: {domains}\nIMPORTANT: In order to avoid potential blacklisting and delivery issue, this migration must be run at a time when your server is not sending email. For safety, you can stop postfix service before the migration and restart it 1 hour after your DKIM keys has been updated in your DNS zones.",
     "migration_0036_dkim_keys_upgrade_failed": "Unable to generate a new 2048 bits key for {domains}.",
