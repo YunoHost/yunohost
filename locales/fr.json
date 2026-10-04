@@ -545,6 +545,8 @@
     "global_settings_setting_ssh_name": "SSH",
     "global_settings_setting_ssh_password_authentication": "Authentification par mot de passe",
     "global_settings_setting_ssh_password_authentication_help": "Autoriser l'authentification par mot de passe pour SSH",
+    "global_settings_setting_ssh_root_pubkey_authentication": "Authentification root par clé publique",
+    "global_settings_setting_ssh_root_pubkey_authentication_help": "Autoriser l'authentification par clé publique pour le compte root",
     "global_settings_setting_ssh_port": "Port SSH",
     "global_settings_setting_ssh_port_help": "Il est préférable d'utiliser un port inférieur à 1024 pour éviter les tentatives d'usurpation par des services non administrateurs sur la machine distante. Vous devez également éviter d'utiliser un port déjà utilisé tel que le 80 ou le 443.",
     "global_settings_setting_tls_passthrough_enabled": "Activer le flux TLS-passthrough/transfert basé sur les SNI",
