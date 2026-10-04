@@ -432,7 +432,7 @@
     "ssowat_conf_generated": "La configuracion SSowat es generada",
     "system_upgraded": "Lo sistèma es estat actualizat",
     "system_username_exists": "Lo nom d’utilizaire existís ja dins los utilizaires sistèma",
-    "this_action_broke_dpkg": "Aquesta accion a copat dpkg/apt (los gestionaris de paquets del sistèma)… Podètz ensajar de resòlver aqueste problèma en vos connectant amb SSH e executant « sudo dpkg --configure -a ».",
+    "this_action_broke_dpkg": "Aquesta accion a copat dpkg/apt (los gestionaris de paquets del sistèma)… Podètz ensajar de resòlvre aqueste problèma en vos connectant amb SSH e executant « sudo dpkg --configure -a ».",
     "unbackup_app": "L’aplicacion « {app} » serà pas salvagardada",
     "unexpected_error": "Una error inesperada s’es producha: {error}",
     "unknown_error_reading_file": "Error desconeguda en ensajar de legir lo fichièr {file} (rason : {error})",

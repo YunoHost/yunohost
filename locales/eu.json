@@ -750,7 +750,7 @@
     "pattern_password": "Gutxienez hiru karaktere izan behar ditu",
     "pattern_password_app": "Barka, baina pasahitzek ezin dituzte honako karaktereak izan: {forbidden_chars}",
     "pattern_port_or_range": "Ataka zenbaki (0-65535) edo errenkada (100:200) baliagarri bat izan behar da",
-    "pattern_username": "Txikiz idatzitako karaktere alfanumerikoak eta azpiko marra soilik eduki ditzake",
+    "pattern_username": "Txikiz idatzitako karaktere alfanumerikoak, puntua, marra eta azpiko marra soilik eduki ditzake",
     "permission_already_allowed": "'{group} taldeak badauka lehendik ere '{permission}' baimena",
     "permission_already_disallowed": "'{group}' taldeak desgaituta dauka lehendik ere '{permission} baimena",
     "permission_cannot_remove_main": "Ezin da baimen nagusi bat kendu",
