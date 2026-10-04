@@ -30,7 +30,11 @@ from ..app import app_list
 from ..tools import Migration
 from ..utils.app_utils import _get_manifest_of_app
 from ..utils.error import YunohostValidationError
-from ..utils.system import free_space_in_directory, space_used_by_directory
+from ..utils.system import (
+    free_space_in_directory,
+    space_used_by_directory,
+    aptitude_with_progress_bar
+)
 
 logger = getLogger("yunohost.migration")
 
@@ -90,6 +94,23 @@ class PostgreSQLMigration(Migration):
         if self.cluster_is_installed(self.target_version, "main"):
             logger.warning(f"PostgreSQL cluster {self.target_version}-main already exists. Renaming to {self.target_version}-renamed.")
             subprocess.check_call(["pg_renamecluster", str(self.target_version), "main", "renamed"], env=environ)
+
+        # Install new psql extension
+        psql_extensions = [
+            f"postgresql-{self.previous_version}-postgis-3",
+            f"postgresql-{self.previous_version}-pgvector"
+        ]
+        psql_extensions_to_install = [
+            ext.replace(f"-{self.previous_version}-", f"-{self.target_version}-")
+            for ext in psql_extensions
+            if self.package_is_installed(ext)
+        ]
+        psql_extensions_to_install_str = str.join(" ", psql_extensions_to_install)
+        if psql_extensions_to_install_str:
+            aptitude_with_progress_bar("update")
+
+            logger.info(f"Installing the new postgresql extensions: {psql_extensions_to_install_str}")
+            aptitude_with_progress_bar("install -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold " + psql_extensions_to_install_str)
 
         logger.info("Upgrading cluster...")
         cmd = ["pg_upgradecluster", "-m", "upgrade", str(self.previous_version), "main", "-v", str(self.target_version)]
