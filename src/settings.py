@@ -244,7 +244,6 @@ class SettingsConfigPanel(ConfigPanel):
 
             tools_rootpw(root_password, check_strength=True)
 
-        # FIXME should be done with a post_change_hook
         if passwordless_sudo is not None:
             from .utils.ldap import _get_ldap_interface
 
