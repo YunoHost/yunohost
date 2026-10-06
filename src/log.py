@@ -137,13 +137,20 @@ log_list_cache: dict[str, dict[str, Any]] = {}
 
 
 def log_list(
-    limit=None, with_details=False, with_suboperations=False, since_days_ago=30
+    limit=None,
+    with_details=False,
+    with_suboperations=False,
+    since_days_ago=30,
+    before=None,
 ):
     """
     List available logs
 
     Keyword argument:
         limit -- Maximum number of logs
+        before -- Only list operations older than the one with this name.
+        Operation names start with their date, so this is a cursor for pagination:
+        pass the name of the last operation you got to fetch the next ones.
         with_details -- Include details (e.g. if the operation was a success).
         Likely to increase the command time as it needs to open and parse the
         metadata file for each log...
@@ -175,6 +182,9 @@ def log_list(
             )
 
         logs = [log for log in logs if parent_symlink_points_to_dev_null(log)]
+
+    if before:
+        logs = [log for log in logs if log[: -len(".yml")] < before]
 
     if limit is not None:
         logs = logs[:limit]
