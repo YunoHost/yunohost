@@ -139,5 +139,18 @@
     "user_unknown": "Amiḍan n {user} d arussin",
     "yunohost_already_installed": "YunoHost yettusebded yakan",
     "yunohost_api": "API n YunoHost",
-    "yunohost_installing": "Yesebdad YunoHost…"
+    "yunohost_installing": "Yesebdad YunoHost…",
+    "global_settings_setting_webadmin_name": "Webadmin",
+    "app_removed": "{app} yettwakkes",
+    "app_start_restore": "Tiririn n {app}…",
+    "log_user_import": "Kter-d imiḍanen",
+    "field_invalid": "Urti arameɣtu '{field}'",
+    "diagnosis_ip_global": "IP tamatut: <code>{global}</code>",
+    "domain_config_auth_application_secret": "Tasarut tuffirt n usnas",
+    "yunohost_configured": "YunoHost yettwaswel tura",
+    "global_settings_setting_root_password_confirm": "Awal n uɛeddi amaynut n waẓar root (sentem)",
+    "group_unknown": "Agraw '{group}' ur yettwassen ara",
+    "log_domain_config_set": "Aleqqem n tawila n taɣult n '{}'",
+    "diagnosis_ip_no_ipv4": "Aqeddac-a ur yesɛi ara IPv4 itteddun.",
+    "diagnosis_ip_no_ipv6": "Aqeddac ur yesɛi ara IPv6 itteddun."
 }
