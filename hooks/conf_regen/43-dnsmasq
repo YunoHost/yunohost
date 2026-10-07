@@ -144,7 +144,7 @@ do_pre_regen() {
     done
 
     export spamhaus_ips
-    ynh_render_template "spamhaus.j2" "${dnsmasq_dir}/spamhaus"
+    ynh_config_add --jinja --template="spamhaus.j2" --destination="${dnsmasq_dir}/spamhaus"
 
     # remove old domain conf files
     for conf_file in /etc/dnsmasq.d/*.*; do

@@ -90,7 +90,7 @@ do_pre_regen() {
     else
         ipv6_enabled=False
     fi
-    
+
     domain_list="$YNH_DOMAINS_WITH_MAIL_IN_AND_OUT"
     ynh_config_add --jinja --template="main.cf.j2" --destination="${postfix_dir}/main.cf"
     ynh_config_add --jinja --template="sni.j2" --destination="${postfix_dir}/sni"
@@ -101,7 +101,7 @@ do_pre_regen() {
     # mails on external mailbox using this domain
     # See: https://forum.yunohost.org/t/how-to-keep-your-mailbox-outside-yunohost/4860
     export domain_list="$YNH_DOMAINS_WITH_MAIL_IN"
-    ynh_render_template "virtual-mailbox-domains.j2" "${postfix_dir}/virtual-mailbox-domains"
+    ynh_config_add --jinja --template="virtual-mailbox-domains.j2" --destination="${postfix_dir}/virtual-mailbox-domains"
 }
 
 do_post_regen() {
