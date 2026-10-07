@@ -230,80 +230,62 @@ do_pre_regen() {
     mkdir -p "$pending_dir/etc/cron.d/"
     mkdir -p "$pending_dir/etc/cron.daily/"
 
-    # add cron job for diagnosis to be ran at 7h and 19h + a random delay between
-    # 0 and 20min, meant to avoid every instances running their diagnosis at
-    # exactly the same time, which may overload the diagnosis server.
-    cat > "$pending_dir/etc/cron.d/yunohost-diagnosis" << EOF
-SHELL=/bin/bash
-0 7,19 * * * root : YunoHost Automatic Diagnosis; sleep \$((RANDOM\\%1200)); yunohost diagnosis run --email > /dev/null 2>/dev/null || echo "Running the automatic diagnosis failed miserably"
-EOF
+    # Twice a day job for YunoHost diagnosis
+    cp yunohost-diagnosis.timer "$pending_dir/etc/systemd/system/yunohost-diagnosis.timer"
+    cp yunohost-diagnosis.service "$pending_dir/etc/systemd/system/yunohost-diagnosis.service"
 
-    # Cron job that upgrade the app list everyday
-    cat > "$pending_dir/etc/cron.daily/yunohost-fetch-apps-catalog" << EOF
-#!/bin/bash
-sleep \$((RANDOM%3600)); yunohost tools update apps > /dev/null
-EOF
+    # Daily job for app catalog update
+    cp yunohost-update-catalog.timer "$pending_dir/etc/systemd/system/yunohost-update-catalog.timer"
+    cp yunohost-update-catalog.service "$pending_dir/etc/systemd/system/yunohost-update-catalog.service"
 
-    # Cron job that renew lets encrypt certificates if there's any that needs renewal
-    cat > "$pending_dir/etc/cron.daily/yunohost-certificate-renew" << EOF
-#!/bin/bash
-yunohost domain cert renew --email
-EOF
+    # Daily job for SSL certificate update
+    cp yunohost-renew-certs.timer "$pending_dir/etc/systemd/system/yunohost-renew-certs.timer"
+    cp yunohost-renew-certs.service "$pending_dir/etc/systemd/system/yunohost-renew-certs.service"
 
-    # If we subscribed to a dyndns domain, add the corresponding cron
-    # - delay between 0 and 60 secs to spread the check over a 1 min window
-    # - do not run the command if some process already has the lock, to avoid queuing hundreds of commands...
-    if ls -l /etc/yunohost/dyndns/K*.key 2> /dev/null; then
-        cat > "$pending_dir/etc/cron.d/yunohost-dyndns" << EOF
-SHELL=/bin/bash
-# Every 10 minutes,
-#   - (sleep random 60 is here to spread requests over a 1-min window)
-#   - if ipv4/6.yunohost.org answers ping (basic check to validate that we're connected to the internet and yunohost infra aint down)
-#   - and if lock ain't already taken by another command
-#   - trigger yunohost dyndns update
-*/10 * * * * root : YunoHost DynDNS update; sleep \$((RANDOM\\%60)); ! ping -q -W5 -c1 ipv4.yunohost.org >/dev/null 2>&1 || test -e /var/run/moulinette_yunohost.lock || yunohost dyndns update >> /dev/null
-EOF
-    else
-        # (Delete cron if no dyndns domain found)
-        touch "$pending_dir/etc/cron.d/yunohost-dyndns"
-    fi
+    # Every 10 minutes job to update the DynDNS records
+    # It will only be enabled if we actually subscribed to a dyndns domain
+    cp yunohost-dyndns.timer "$pending_dir/etc/systemd/system/yunohost-dyndns.timer"
+    cp yunohost-dyndns.service "$pending_dir/etc/systemd/system/yunohost-dyndns.service"
+
+    # Every 10 minutes job to update UPnP (if enabled)
+    cp yunohost-firewall-upnp.timer "$pending_dir/etc/systemd/system/yunohost-firewall-upnp.timer"
+    cp yunohost-firewall-upnp.service "$pending_dir/etc/systemd/system/yunohost-firewall-upnp.service"
 
     # Skip ntp if inside a container (inspired from the conf of systemd-timesyncd)
     if systemctl | grep -q 'ntp.service'; then
         mkdir -p "$pending_dir/etc/systemd/system/ntp.service.d/"
-        cat > "$pending_dir/etc/systemd/system/ntp.service.d/ynh-override.conf" << EOF
-[Unit]
-ConditionCapability=CAP_SYS_TIME
-ConditionVirtualization=!container
-EOF
+        cp ntp-ynh-override.conf "$pending_dir/etc/systemd/system/ntp.service.d/ynh-override.conf"
     fi
 
     mkdir -p "$pending_dir/etc/systemd/system/nftables.service.d/"
     cp yunohost-nftables-hooks-override.conf "$pending_dir/etc/systemd/system/nftables.service.d/yunohost-nftables-hooks.conf"
-    # Delete legacy conflict between yunohost and nftables
-    touch "$pending_dir/etc/systemd/system/nftables.service.d/ynh-override.conf"
 
     # Don't suspend computer on LidSwitch
     mkdir -p "$pending_dir/etc/systemd/logind.conf.d/"
-    cat > "$pending_dir/etc/systemd/logind.conf.d/ynh-override.conf" << EOF
-[Login]
-HandleLidSwitch=ignore
-HandleLidSwitchDocked=ignore
-HandleLidSwitchExternalPower=ignore
-EOF
+    cp logind-ynh-override.conf "$pending_dir/etc/systemd/logind.conf.d/ynh-override.conf"
 
     cp yunohost-api.service "$pending_dir/etc/systemd/system/yunohost-api.service"
     cp yunohost-portal-api.service "$pending_dir/etc/systemd/system/yunohost-portal-api.service"
     cp yunoprompt.service "$pending_dir/etc/systemd/system/yunoprompt.service"
     cp proc-hidepid.service "$pending_dir/etc/systemd/system/proc-hidepid.service"
-    # Delete legacy yunohost-firewall service
-    touch "$pending_dir/etc/systemd/system/yunohost-firewall.service"
 
     mkdir -p "$pending_dir/etc/dpkg/origins/"
     cp dpkg-origins "$pending_dir/etc/dpkg/origins/yunohost"
 
+    # Delete legacy conflict between yunohost and nftables
+    touch "$pending_dir/etc/systemd/system/nftables.service.d/ynh-override.conf"
+
+    # Delete legacy yunohost-firewall service
+    touch "$pending_dir/etc/systemd/system/yunohost-firewall.service"
+
     # Remove legacy hackish/clumsy nodejs autoupdate which ends up filling up space with ambiguous upgrades >_>
     touch "$pending_dir/etc/cron.daily/node_update"
+
+    # Remove legacy crons replaced with systemd timers/services
+    touch "$pending_dir/etc/cron.d/yunohost-diagnosis"
+    touch "$pending_dir/etc/cron.daily/yunohost-fetch-apps-catalog"
+    touch "$pending_dir/etc/cron.daily/yunohost-certificate-renew"
+    touch "$pending_dir/etc/cron.d/yunohost-dyndns"
 }
 
 do_post_regen() {
@@ -333,10 +315,6 @@ do_post_regen() {
         chmod 644 /etc/php/*/fpm/pool.d/*.conf
     fi
 
-    find /etc/cron.*/yunohost-* -type f -exec chmod 755 {} \;
-    find /etc/cron.d/yunohost-* -type f -exec chmod 644 {} \;
-    find /etc/cron.*/yunohost-* -type f -exec chown root:root {} \;
-
     for USER in $(yunohost user list --quiet --output-as json | jq -r '.users | .[] | .username'); do
         [ ! -e "/home/$USER" ] || setfacl -m g:all_users:--- "/home/$USER"
     done
@@ -355,35 +333,54 @@ do_post_regen() {
     grep -q '^ssh.app:' /etc/group || groupadd ssh.app
     grep -q '^sftp.app:' /etc/group || groupadd sftp.app
 
+
+    # Reload systemd if any system service was touched
+    if [[ "$regen_conf_files" =~ "/etc/systemd/system" ]]; then
+        systemctl daemon-reload
+    fi
+
     # Propagates changes in systemd service config overrides
     if systemctl | grep -q 'ntp.service'; then
         [[ ! "$regen_conf_files" =~ "ntp.service.d/ynh-override.conf" ]] || {
-            systemctl daemon-reload
             systemctl restart ntp
         }
     fi
 
     [[ ! "$regen_conf_files" =~ "login.conf.d/ynh-override.conf" ]] || {
-        systemctl daemon-reload
         systemctl restart systemd-logind
     }
-    [[ ! "$regen_conf_files" =~ "yunohost-api.service" ]] || systemctl daemon-reload
-    [[ ! "$regen_conf_files" =~ "yunohost-portal-api.service" ]] || systemctl daemon-reload
-    [[ ! "$regen_conf_files" =~ "nftables.service.d/yunohost-nftables-hooks.conf" ]] || systemctl daemon-reload
 
     if [[ "$regen_conf_files" =~ "yunoprompt.service" ]]; then
-        systemctl daemon-reload
         action=$([[ -e /etc/systemd/system/yunoprompt.service ]] && echo 'enable' || echo 'disable')
         systemctl "$action" yunoprompt --quiet --now
     fi
     if [[ "$regen_conf_files" =~ "proc-hidepid.service" ]]; then
-        systemctl daemon-reload
         action=$([[ -e /etc/systemd/system/proc-hidepid.service ]] && echo 'enable' || echo 'disable')
         systemctl "$action" proc-hidepid --quiet --now
     fi
 
+    systemctl enable yunohost-diagnosis.timer --quiet --now
+    systemctl enable yunohost-update-catalog.timer --quiet --now
+    systemctl enable yunohost-renew-certs.timer --quiet --now
+
+    # If we subscribed to a dyndns domain, enable the dyndns timer
+    if ls -l /etc/yunohost/dyndns/K*.key 2> /dev/null; then
+        systemctl enable yunohost-dyndns.timer --quiet --now
+    else
+        if systemctl is-active yunohost-dyndns.timer --quiet; then
+            systemctl stop yunohost-dyndns.timer --quiet
+        fi
+        systemctl disable yunohost-dyndns.timer --quiet
+    fi
+
     systemctl enable yunohost-portal-api.service --quiet
     systemctl is-active yunohost-portal-api --quiet || systemctl start yunohost-portal-api.service
+
+    # If the legacy UPnP cron was installed, enable the systemd timer
+    if [[ -f "/etc/cron.d/yunohost-firewall-upnp" ]]; then
+        rm "/etc/cron.d/yunohost-firewall-upnp"
+        systemctl enable yunohost-firewall-upnp.timer --quiet --now
+    fi
 
     # Change dpkg vendor
     # see https://wiki.debian.org/Derivatives/Guidelines#Vendor

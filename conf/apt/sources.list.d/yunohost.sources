@@ -1,0 +1,5 @@
+Types: deb
+URIs: https://repo.yunohost.org/debian/
+Suites: trixie
+Components: stable testing
+Signed-By: /usr/share/keyrings/yunohost-trixie.gpg

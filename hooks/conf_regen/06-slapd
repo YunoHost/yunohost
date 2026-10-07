@@ -69,8 +69,7 @@ EOF
         | grep -v "none elapsed\|Closing DB" || true
     chown -R openldap: /var/lib/ldap
 
-    nscd -i group || true
-    nscd -i passwd || true
+    sss_cache -E
 
     systemctl restart slapd
 }
@@ -139,10 +138,9 @@ do_post_regen() {
     chown -R openldap:openldap /etc/ldap/schema/
     chown -R openldap:openldap /etc/ldap/slapd.d/
 
-    # Fix weird scenarios where /etc/sudo-ldap.conf doesn't exists (yet is supposed to be
-    # created by the sudo-ldap package) : https://github.com/YunoHost/issues/issues/2091
-    if [ ! -e /etc/sudo-ldap.conf ]; then
-        ln -s /etc/ldap/ldap.conf /etc/sudo-ldap.conf
+    # Legacy : In YunoHost <= 12, this file was installed for sudo-ldap, and is now replaced with sss
+    if [ -e /etc/sudo-ldap.conf ]; then
+        rm /etc/sudo-ldap.conf
     fi
 
     # If we changed the systemd ynh-override conf
@@ -163,7 +161,7 @@ objectClass: posixGroup
 objectClass: top"
         chown -R openldap: /var/lib/ldap
         systemctl restart slapd
-        nscd -i group
+        sss_cache -E
     fi
 
     if [ -z "$regen_conf_files" ] && [ "$FORCE" == "false" ]; then

@@ -491,7 +491,7 @@ def parse_argument_optional(
     return (argument, case, functions)
 
 
-def parse_argument_action(  # noqa: C901, PLR0911, PLR0912
+def parse_argument_action(
     name: str,
     info: dict[str, Any],
 ) -> tuple[str, Case | None, list[Function]]:
@@ -601,7 +601,7 @@ def parse_argument_action(  # noqa: C901, PLR0911, PLR0912
                 call,
             )
         # Lastly, save the content
-        func = {"name": function_name, "shell_call": call}
+        func = Function(name=function_name, shell_call=call)
         functions.append(func)
         return (function_name, None, functions)
 
@@ -626,7 +626,7 @@ def parse_argument_action(  # noqa: C901, PLR0911, PLR0912
                     _norm_name("__ynh_" + subcall["ynh_selector"]),
                 )
         # Lastly, save the content
-        func = {"name": function_name, "aggregated": aggregation}
+        func = Function(name=function_name, aggregated=aggregation)
         functions.append(func)
         return (function_name, None, functions)
 
