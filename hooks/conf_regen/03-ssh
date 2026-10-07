@@ -53,6 +53,9 @@ do_post_regen() {
     chown root:root "/etc/ssh/sshd_config"
     chmod 644 "/etc/ssh/sshd_config"
 
+    # Make sure custom SSH config is backed up
+    ynh_backup "/etc/ssh/sshd_config.d" "$backup_dir"
+
     systemctl restart ssh
 }
 
