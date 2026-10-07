@@ -31,19 +31,60 @@ import yaml
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
-def main() -> None:
+def main():
+    changelog = PROJECT_ROOT / "debian" / "changelog"
+    top_changelog = changelog.open().readline()
+    api_version = top_changelog[top_changelog.find("(") + 1 : top_changelog.find(")")]
+
+    yunohost_json = generate(
+        title="YunoHost API",
+        description="This is the YunoHost API used on all YunoHost instances. This API is essentially used by YunoHost Webadmin.",
+        api_path="/yunohost/api",
+        actionmap_path="../share/actionsmap.yml",
+        api_version=api_version,
+        additional_paths={
+            "/installed": {
+                "get": {
+                    "tags": ["public"],
+                    "summary": "Test if the API is working",
+                    "parameters": [],
+                    "security": [],
+                    "responses": {
+                        "200": {
+                            "description": "Successfully working",
+                        }
+                    },
+                }
+            },
+        },
+    )
+    yunohost_portal_json = generate(
+        title="YunoHost Portal API",
+        description=(
+            "This is the YunoHost Portal API used on all YunoHost instances. "
+            "This API is essentially used by YunoHost Portal."
+        ),
+        api_path="/yunohost-portal/api",
+        actionmap_path="../share/actionsmap-portal.yml",
+        api_version=api_version,
+        additional_paths={},
+    )
+    openapi_js = f"var yunohostApi = {yunohost_json};"
+    openapi_js += f"\nvar yunohostPortalApi = {yunohost_portal_json};"
+    js_file = Path.cwd() / "openapi.js"
+    js_file.write_text(openapi_js)
+
+
+def generate(
+    title, description, api_path, actionmap_path, api_version, additional_paths
+):
     actionsmap_yml = PROJECT_ROOT / "share" / "actionsmap.yml"
     action_map = yaml.safe_load(actionsmap_yml.open())
-
     # try:
     #    with open("/etc/yunohost/current_host", "r") as f:
     #        domain = f.readline().rstrip()
     # except IOError:
     #    domain = requests.get("http://ip.yunohost.org").text
-
-    changelog = PROJECT_ROOT / "debian" / "changelog"
-    top_changelog = changelog.open().readline()
-    api_version = top_changelog[top_changelog.find("(") + 1 : top_changelog.find(")")]
 
     csrf = {
         "name": "X-Requested-With",
@@ -55,11 +96,8 @@ def main() -> None:
     resource_list = {
         "openapi": "3.0.3",
         "info": {
-            "title": "YunoHost API",
-            "description": (
-                "This is the YunoHost API used on all YunoHost instances. "
-                "This API is essentially used by YunoHost Webadmin."
-            ),
+            "title": title,
+            "description": description,
             "version": api_version,
         },
         "servers": [
@@ -106,21 +144,9 @@ def main() -> None:
                     },
                 }
             },
-            "/installed": {
-                "get": {
-                    "tags": ["public"],
-                    "summary": "Test if the API is working",
-                    "parameters": [],
-                    "security": [],
-                    "responses": {
-                        "200": {
-                            "description": "Successfully working",
-                        }
-                    },
-                }
-            },
         },
     }
+    resource_list["paths"].update(additional_paths)
 
     def convert_categories(categories, parent_category=""):
         for category, category_params in categories.items():
@@ -283,13 +309,7 @@ def main() -> None:
     del action_map["_global"]
     convert_categories(action_map)
 
-    openapi_json = json.dumps(resource_list)
-    # Save the OpenAPI json
-    json_file = Path.cwd() / "openapi.json"
-    json_file.write_text(openapi_json)
-
-    js_file = Path.cwd() / "openapi.js"
-    js_file.write_text(f"var openapiJSON = {openapi_json}")
+    return json.dumps(resource_list)
 
 
 if __name__ == "__main__":

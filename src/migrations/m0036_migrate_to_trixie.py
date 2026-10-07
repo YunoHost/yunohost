@@ -42,6 +42,7 @@ incus exec migration-to-trixie -- yunohost tools migrations run 0036 --accept-di
 import jinja2
 import logging
 import re
+import grp
 import subprocess
 import textwrap
 from datetime import date
@@ -54,7 +55,7 @@ from debian.deb822 import Deb822
 # TRIXIE? import _ldap  # noqa: F401
 from moulinette import Moulinette, m18n
 
-from ..app import app_list
+from ..app import app_list, _installed_apps
 from ..regenconf import manually_modified_files
 from ..tools import Migration, _write_migration_state, tools_update
 from ..utils.error import YunohostError
@@ -71,52 +72,6 @@ logger = logging.getLogger("yunohost.migration")
 
 N_CURRENT_DEBIAN = 12
 N_CURRENT_YUNOHOST = 12
-
-VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_trixie_upgrade.txt"
-
-
-def _get_all_venvs(dir: Path, level: int = 0, maxlevel: int = 3) -> list[Path]:
-    """
-    Returns the list of all python virtual env directories recursively
-
-    Arguments:
-        dir - the directory to scan in
-        maxlevel - the depth of the recursion
-        level - do not edit this, used as an iterator
-    """
-    if not dir.exists():
-        return []
-
-    result = []
-    # Using os functions instead of glob, because glob doesn't support hidden folders, and we need recursion with a fixed depth
-    for path in dir.iterdir():
-        if path.is_dir():
-            activatepath = path / "bin" / "activate"
-            if activatepath.is_file():
-                content = activatepath.read_text()
-                if ("VIRTUAL_ENV" in content) and ("PYTHONHOME" in content):
-                    result.append(path)
-                    continue
-            if level < maxlevel:
-                result += _get_all_venvs(path, level=level + 1)
-    return result
-
-
-def _backup_pip_freeze_for_python_app_venvs():
-    """
-    Generate a requirements file for all python virtual env located inside /opt/ and /var/www/
-    """
-    venvs = _get_all_venvs(Path("/opt/")) + _get_all_venvs(Path("/var/www/"))
-    for venv in venvs:
-        # Generate a requirements file from venv
-        # Remove pkg resources from the freeze to avoid an error during the python venv https://stackoverflow.com/a/40167445
-        pip = venv / "bin" / "pip"
-        if not pip.is_file():
-            logger.warning(f"Skipping venv {venv} because no 'pip' bin found")
-            continue
-        pip_freeze = subprocess.check_output([pip, "freeze"]).decode(encoding="utf-8")
-        pip_freeze = re.sub(r"^pkg(-|_)resources==.*$", "", pip_freeze)
-        (venv / VENV_REQUIREMENTS_SUFFIX).write_text(pip_freeze)
 
 
 def unstable_apps() -> list[str]:
@@ -168,9 +123,6 @@ class MyMigration(Migration):
 
         # Stupid stuff because resolvconf later wants to edit /etc/resolv.conf and will miserably crash if it's immutable
         subprocess.check_call(["chattr", "-i", Path("/etc/resolv.conf").resolve()])
-
-        # Get requirements of the different venvs from python apps
-        _backup_pip_freeze_for_python_app_venvs()
 
         # Tell libc6 it's okay to restart system stuff during the upgrade
         subprocess.run(
@@ -335,14 +287,17 @@ class MyMigration(Migration):
         # Mark this migration as completed before triggering the "new" migrations
         _write_migration_state(self.id, "done")
 
-        callbacks = (
-            lambda l: logger.debug("+ " + l.rstrip() + "\r"),
-            lambda l: logger.warning(l.rstrip()),
-        )
-        try:
-            call_async_output(["yunohost", "tools", "migrations", "run"], callbacks)
-        except Exception as e:
-            logger.error(e)
+        if not self.skip_postmigrations:
+            callbacks = (
+                lambda l: logger.debug("+ " + l.rstrip() + "\r"),
+                lambda l: logger.warning(l.rstrip()),
+            )
+            try:
+                call_async_output(["yunohost", "tools", "migrations", "run"], callbacks)
+            except Exception as e:
+                logger.error(e)
+        else:
+            logger.info(m18n.n("migration_0036_post_migrations_skipped", distrib="Trixie"))
 
         # If running from the webadmin, restart the API after a delay
         if Moulinette.interface.type == "api":
@@ -353,6 +308,9 @@ class MyMigration(Migration):
             cmd = 'at -M now >/dev/null 2>&1 <<< "sleep 10; systemctl restart nginx yunohost-api"'
             # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
             subprocess.check_call(["bash", "-c", cmd])
+
+        # Reload sshd due to -R unknown option
+        subprocess.check_call(["systemctl", "reload", "sshd"])
 
         if self.yunohost_major_version() != N_CURRENT_YUNOHOST + 1:
             raise YunohostError(
@@ -450,6 +408,48 @@ class MyMigration(Migration):
             if upgradable_system_packages - lime2_hold_packages:
                 raise YunohostError("migration_0036_system_not_fully_up_to_date")
 
+        # Check ssh users won't be unable to login with public key after migration
+        # OpenSSH_10.0p2 forbid to login with public key that are in a /home/USER
+        # with write permissions on groups cause it's possible to move .ssh even
+        # if groups have no write permissions on thi s.ssh directory.
+
+        # List potential authorized_keys
+        ssh_apps = grp.getgrnam('ssh.app').gr_mem
+        ssh_apps += grp.getgrnam('sftp.app').gr_mem
+        potential_keys_paths = [
+            Path(Path('~' + ssh_app).expanduser()) / '.ssh/authorized_keys'
+            for ssh_app in ssh_apps
+        ]
+        potential_keys_paths += [
+            user_home / '.ssh/authorized_keys'
+            for user_home in Path('/home').iterdir()
+            if not user_home.name.startswith("yunohost.")
+        ]
+        potential_keys_paths += [Path('/root/.ssh/authorized_keys')]
+        apps = _installed_apps()
+        for keys_path in potential_keys_paths:
+            if not keys_path.exists():
+                continue
+            home = keys_path.parent.parent
+            cmd = ["getfacl", "-cea", home, keys_path.parent, keys_path]
+            acl = subprocess.check_output(cmd).decode()
+            for permission in acl.split("\n"):
+                if permission.startswith("group:") and permission[-2] == 'w':
+                    group = permission.split(':')[1]
+                    if group in apps:
+                        raise YunohostError(
+                            "migration_0036_ssh_app_need_upgrade",
+                            user=home.name,
+                            app=group,
+                            home=home
+                        )
+                    raise YunohostError(
+                        "migration_0036_ssh_user_home_writable_by_group",
+                        user=home.name,
+                        permission=permission,
+                        home=home
+                    )
+
     @property
     def disclaimer(self):
         # Avoid having a super long disclaimer + uncessary check if we ain't
@@ -523,29 +523,41 @@ sideway (typically by SSHing from the local network, or through rescue access on
 
         # TODO: migrate to deb822? See apt modernize-sources after upgrade
 
-        # This :
-        # - replace single 'bookworm' occurence by 'trixie'
-        # - comments lines containing "backports"
-        # - replace 'bookworm/updates' by 'trixie/updates' (or same with -)
-        # Special note about the security suite:
-        # https://www.debian.org/releases/bookworm/amd64/release-notes/ch-information.en.html#security-archive
         def patch_list_line(line: str) -> str:
-            line = (
-                line.replace(
+            """
+            - replace single 'bookworm' occurence by 'trixie'
+            - comments lines containing "backports"
+            - replace 'bookworm/updates' by 'trixie/updates' (or same with -)
+            Special note about the security suite:
+            https://www.debian.org/releases/bookworm/amd64/release-notes/ch-information.en.html#security-archive
+            deb [ option1=valeur1 option2=valeur2 ] uri suite [composant1] [composant2] [...]
+            """
+            deb_re = r"^(?P<deb>deb)\s*(?P<options>\[[^\]]*\])?\s*(?P<uri>[^\s]*)\s*(?P<suite>[^\s]*)\s*(?P<components>.*)$"
+            if not (match := re.match(deb_re, line)):
+                return line
+
+            deb, options, uri, suite, components = match.groups()
+
+            if options is not None:
+                assert isinstance(options, str)
+                options = options.replace(
                     "/usr/share/keyrings/yunohost-bookworm.gpg",
                     "/usr/share/keyrings/yunohost-trixie.gpg",
                 )
-                .replace(
-                    "http://forge.yunohost.org/debian/ bookworm stable",
-                    # FIXME: REPLACE WITH STABLE
-                    "https://repo.yunohost.org/debian/ trixie unstable",
-                )
-                .replace(" bookworm ", " trixie ")
-                .replace(" bookworm-", " trixie-")
-            )
+            uri = uri.replace("http://", "https://").replace("/forge.yunohost.org/debian", "/repo.yunohost.org/debian").removesuffix("/")
+            suite = suite.replace("bookworm", "trixie")
+            components_list = [component.replace("bookworm", "trixie") for component in components.split()]
 
-            if "backports" in line:
-                line = f"# {line}"
+            # FIXME: Remove that, this is only while Trixie is not stable
+            if "https://repo.yunohost.org/debian" in uri:
+                components_list.append("testing")
+
+            # Unique values in components
+            seen = set()
+            components_list = [x for x in components_list if not (x in seen or seen.add(x))]
+            comment = "#" if "backports" in line else None
+
+            line = " ".join(filter(None, [comment, deb, options, uri, suite, *components_list]))
             return line
 
         for file in dot_list:

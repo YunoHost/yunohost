@@ -40,6 +40,9 @@ do_pre_regen() {
     # install plain conf files
     cp plain/* "$postfix_dir"
 
+    # Ensure legacy files are deleted on the system
+    touch "$postfix_dir/ldap-domains.cf"
+
     # prepare main.cf conf file
     main_domain=$(cat /etc/yunohost/current_host)
 
@@ -123,6 +126,8 @@ do_post_regen() {
     postmap -F hash:/etc/postfix/sni
 
     python3 -c 'from yunohost.app import regen_mail_app_user_config_for_dovecot_and_postfix as r; r(only="postfix")'
+
+    chmod u=rwX,g=rX,o-w -R /etc/postfix
 
     [[ -z "$regen_conf_files" ]] \
         || { systemctl restart postfix && systemctl restart postsrsd; }

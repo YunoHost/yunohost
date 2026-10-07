@@ -18,16 +18,18 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import json
 import os
 import subprocess
 import time
 from logging import getLogger
-from pathlib import Path
 
 from moulinette import m18n
 
+from ..app import app_list
 from ..tools import Migration
-from ..utils.error import YunohostError, YunohostValidationError
+from ..utils.app_utils import _get_manifest_of_app
+from ..utils.error import YunohostValidationError
 from ..utils.system import free_space_in_directory, space_used_by_directory
 
 logger = getLogger("yunohost.migration")
@@ -37,14 +39,17 @@ class PostgreSQLMigration(Migration):
     "Migrate DBs between Postgresql versions after migrating to a new Debian version"
 
     # Provided by calling class
-    previous_version: str
-    target_version: str
+    previous_version: int
+    target_version: int
 
     def run(self):
-        ynh_deps_cmd = 'grep -A10 "ynh-deps" /var/lib/dpkg/status | grep -E "Package:|Depends:" | grep -B1 postgresql'
-        if os.system(ynh_deps_cmd) != 0:
-            logger.info("No YunoHost app seem to require postgresql... Skipping!")
-            return
+        ynh_deps_cmd = "grep -A10 'ynh-deps' /var/lib/dpkg/status | grep -E 'Package:|Depends:' | grep -B1 postgresql"
+        if subprocess.run(ynh_deps_cmd, shell=True, stdout=subprocess.DEVNULL, check=False).returncode != 0:
+            # In addition, also check that no app declare in his resource postgresql. cf
+            # https://github.com/YunoHost/issues/issues/2737
+            if not self._has_app_with_psql_resource():
+                logger.info("No YunoHost app seem to require postgresql... Skipping!")
+                return
 
         if not self.package_is_installed(f"postgresql-{self.previous_version}"):
             logger.warning(m18n.n("migration_postgresql_previous_not_installed"))
@@ -58,75 +63,77 @@ class PostgreSQLMigration(Migration):
             )
 
         # Make sure there's a 15 cluster
-        try:
-            self.runcmd(f"pg_lsclusters | grep -q '^{self.previous_version} '")
-        except Exception:
-            logger.warning(
-                f"It looks like there's not active {self.previous_version} cluster, so probably don't need to run this migration"
-            )
+        if not self.cluster_is_installed(int(self.previous_version), "main"):
+            if self.cluster_is_installed(int(self.target_version), "main"):
+                logger.info(f"Migration to version {self.target_version} looks already done, running the post-migrations steps")
+                self.run_post_migration()
+            else:
+                logger.warning(
+                    f"It looks like there's no active cluster for postgresql-{self.previous_version}, "
+                    "so probably don't need to run this migration."
+                )
             return
 
-        if not space_used_by_directory(
-            f"/var/lib/postgresql/{self.previous_version}"
-        ) > free_space_in_directory("/var/lib/postgresql"):
+        used_space = space_used_by_directory(f"/var/lib/postgresql/{self.previous_version}", follow_symlinks=False)
+        free_space = free_space_in_directory("/var/lib/postgresql")
+        if used_space >= free_space:
             raise YunohostValidationError(
                 "migration_not_enough_space", path="/var/lib/postgresql/"
             )
 
-        self.runcmd("systemctl stop postgresql")
+        environ = os.environ.copy()
+        environ["LC_ALL"] = "C"
+
+        subprocess.check_call(["systemctl", "stop", "postgresql"])
         time.sleep(3)
-        self.runcmd(
-            f"LC_ALL=C pg_dropcluster --stop {self.target_version} main || true"
-        )  # We do not trigger an exception if the command fails because that probably means cluster self.target_version doesn't exists, which is fine because it's created during the pg_upgradecluster)
-        time.sleep(3)
-        self.runcmd(
-            f"LC_ALL=C pg_upgradecluster -m upgrade {self.previous_version} main -v {self.target_version}"
-        )
-        self.runcmd(f"LC_ALL=C pg_dropcluster --stop {self.previous_version} main")
+
+        if self.cluster_is_installed(self.target_version, "main"):
+            logger.warning(f"PostgreSQL cluster {self.target_version}-main already exists. Renaming to {self.target_version}-renamed.")
+            subprocess.check_call(["pg_renamecluster", str(self.target_version), "main", "renamed"], env=environ)
+
+        logger.info("Upgrading cluster...")
+        cmd = ["pg_upgradecluster", "-m", "upgrade", str(self.previous_version), "main", "-v", str(self.target_version)]
+        subprocess.check_call(cmd, env=environ)
+
+        logger.info("Dropping old cluster...")
+        cmd = ["pg_dropcluster", "--stop", str(self.previous_version), "main"]
+        subprocess.check_call(cmd, env=environ)
 
         # Fix possibly borked postgresql default config when Immich is installed
-        self.runcmd(r"sed -i '/^\* \* 15 main postgres$/d' /etc/postgresql-common/user_clusters")
+        subprocess.check_call(["sed", "-i", r"/^\* \* 15 main postgres$/d", "/etc/postgresql-common/user_clusters"])
 
-        self.runcmd("systemctl start postgresql")
+        subprocess.check_call(["systemctl", "start", "postgresql"])
 
+        self.run_post_migration()
+
+    def run_post_migration(self):
         logger.warning(m18n.n("migration_postgresql_reindexing_databases"))
+        environ = os.environ.copy()
+        environ["LC_ALL"] = "C"
 
-        password = Path("/etc/yunohost/psql").read_text().strip()
-        sudocmd = f"LC_ALL=C sudo --login -u postgres PGUSER=postgres PGPASSWORD='{password}'"
-        psqlcmd = "psql --tuples-only --no-align --dbname=postgres --command=\"SELECT datname FROM pg_database WHERE datistemplate = false OR datname = 'template1';\""
-        _, out, _ = self.runcmd(f"{sudocmd} {psqlcmd}")
-        databases = [line.strip() for line in out]
+        psqlcmd = "SELECT datname FROM pg_database WHERE datistemplate = false OR datname = 'template1';"
+        cmd = ["sudo", "-u", "postgres", "psql", "--tuples-only", "--no-align", "--dbname=postgres", "--command", psqlcmd]
+        out = subprocess.check_output(cmd, env=environ, text=True)
+
+        databases = [line.strip() for line in out.splitlines()]
         for database in databases:
             # See https://www.postgresql.org/docs/17/sql-altercollation.html#SQL-ALTERCOLLATION-NOTES
-            self.runcmd(f"{sudocmd} psql --dbname='{database}' --command='REINDEX DATABASE {database};'")
-            self.runcmd(f"{sudocmd} psql --dbname='{database}' --command='ALTER DATABASE {database} REFRESH COLLATION VERSION;'")
+            cmd = ["sudo", "-u", "postgres", "psql", "--dbname", database, "--command", f"REINDEX DATABASE {database};"]
+            subprocess.check_call(cmd, env=environ)
+            cmd = ["sudo", "-u", "postgres", "psql", "--dbname", database, "--command", f"ALTER DATABASE {database} REFRESH COLLATION VERSION;"]
+            subprocess.check_call(cmd, env=environ)
+
+    def _has_app_with_psql_resource(self) -> bool:
+        for app_info in app_list()['apps']:
+            app_manifest = _get_manifest_of_app(app_info['id'])
+            if app_manifest.get('resources', {}).get('database', {}).get('type', None) == 'postgresql':
+                return True
+        return False
 
     def package_is_installed(self, package_name):
-        (returncode, out, err) = self.runcmd(
-            "dpkg --list | grep '^ii ' | grep -q -w {}".format(package_name),
-            raise_on_errors=False,
-        )
-        return returncode == 0
+        return subprocess.run(["dpkg-query", "--no-pager", "-l", package_name], check=False, stdout=subprocess.DEVNULL).returncode == 0
 
-    def runcmd(self, cmd, raise_on_errors=True):
-        logger.debug("Running command: " + cmd)
-
-        p = subprocess.Popen(
-            cmd,
-            shell=True,
-            executable="/bin/bash",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-
-        out, err = p.communicate()
-        returncode = p.returncode
-        if raise_on_errors and returncode != 0:
-            raise YunohostError(
-                "Failed to run command '{}'.\nreturncode: {}\nstdout:\n{}\nstderr:\n{}\n".format(
-                    cmd, returncode, out, err
-                )
-            )
-
-        out = out.strip().split(b"\n")
-        return (returncode, out, err)
+    def cluster_is_installed(self, version: int, name: str) -> bool:
+        clusters_info = json.loads(subprocess.check_output(["pg_lsclusters", "--json"]))
+        clusters = [[int(cluster["version"]), cluster["cluster"]] for cluster in clusters_info]
+        return [version, name] in clusters

@@ -16,7 +16,7 @@ mail_path = /var/mail/%{user | username }
 mail_uid = 500
 mail_gid = 8
 
-protocols = imap sieve
+protocols = imap sieve {% if pop3_enabled == "True" %}pop3{% endif %}
 
 mail_plugins {
     quota = yes
@@ -60,11 +60,10 @@ passdb_default_password_scheme = SSHA
 # Regular Yunohost accounts
 passdb ldap {
   # bind = yes
-  filter = (&(objectClass=inetOrgPerson)(uid=%{user | username })(permission=cn=mail.main,ou=permission,dc=yunohost,dc=org))
-  #fields {
-  #  user = %{ldap:uid}
-  #  password = %{ldap:userPassword}
-  #}
+  filter = (&(objectClass=inetOrgPerson)(|(uid=%{user})(mail=%{user}))(permission=cn=mail.main,ou=permission,dc=yunohost,dc=org))
+  fields {
+    user = %{ldap:uid}
+  }
 }
 
 # Internally, allow authentication from apps system user who have "enable_email = true"
@@ -73,7 +72,11 @@ passdb passwd-file {
 }
 
 userdb ldap {
-  filter = (&(objectClass=inetOrgPerson)(uid=%{user | username })(permission=cn=mail.main,ou=permission,dc=yunohost,dc=org))
+  filter = (&(objectClass=inetOrgPerson)(|(uid=%{user})(mail=%{user}))(permission=cn=mail.main,ou=permission,dc=yunohost,dc=org))
+  fields {
+    user = %{ldap:uid}
+    quota_storage_size = %{ldap:mailuserquota}
+  }
 }
 
 userdb passwd-file {
@@ -91,7 +94,7 @@ protocol imap {
 protocol lda {
   auth_socket_path = /var/run/dovecot/auth-master
   mail_plugins = quota sieve
-  postmaster_address = postmaster@trixietests.yunohost.org
+  postmaster_address = postmaster@{{ main_domain }}
 }
 
 namespace inbox {
@@ -138,6 +141,7 @@ service auth {
   }
 }
 
+# FIXME This is probably broken because /usr/bin/quota-warning.sh seem not existing ony any Yunohost instance
 service quota-warning {
   executable = script /usr/bin/quota-warning.sh
   user = vmail

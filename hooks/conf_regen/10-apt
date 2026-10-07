@@ -53,6 +53,8 @@ _update_key() {
     if [[ ! -s "$target" ]]; then
         curl --connect-timeout 900 -s -o - "$url" | gpg --dearmor -o "$target"
     fi
+    # Always chmod for old files
+    chmod 644 "$target"
 }
 
 do_post_regen() {
@@ -89,6 +91,9 @@ do_post_regen() {
     if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION; then
         update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
     fi
+
+    chown root:root -R /etc/apt
+    chmod -R u=rwX,g=rX,o-w /etc/apt
 }
 
 "do_$1_regen" "$(echo "${*:2}" | xargs)"
