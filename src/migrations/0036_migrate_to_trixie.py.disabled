@@ -48,6 +48,7 @@ import subprocess
 import textwrap
 from datetime import date
 from pathlib import Path
+from psutil import virtual_memory
 from time import sleep
 
 import requests
@@ -58,6 +59,7 @@ from moulinette import Moulinette, m18n
 
 from ..app import app_list, _installed_apps
 from ..regenconf import manually_modified_files
+from ..settings import settings_set
 from ..tools import Migration, _write_migration_state, tools_update
 from ..utils.error import YunohostError
 from ..utils.process import call_async_output, check_output
@@ -284,6 +286,21 @@ class MyMigration(Migration):
             # If the upgrade was sucessful, we want to unhold the apps packages
             if apps_packages:
                 aptitude_with_progress_bar("unhold " + ' '.join(apps_packages))
+
+        # Adjust tmpfs configuration
+        # Since debian 13, tmpfs is activated by default, however it could not be 
+        # a good things for small servers with not so much ram
+        ram = virtual_memory()
+        ram_total = round(ram.total / 1024.0 / 1024.0)
+        ram_available = round(ram.available / 1024.0 / 1024.0)
+        if ram_total >= 4096 and ram_available >= 1024:
+            tmpfs_max_size = round(min(ram_total * 0.25, ram_available))
+            logger.info(m18n.n("migration_0036_configuring_tmp_in_ram", max_size=tmpfs_max_size))
+            settings_set("misc.storage.tmpfs_max_size", f"{tmpfs_max_size}M")
+            settings_set("misc.storage.tmpfs_enabled", True)
+        else:
+            logger.info(m18n.n("migration_0036_configuring_tmp_on_disk"))
+
 
         # Mark this migration as completed before triggering the "new" migrations
         _write_migration_state(self.id, "done")
