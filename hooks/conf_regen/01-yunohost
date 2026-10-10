@@ -244,7 +244,7 @@ EOF
 sleep \$((RANDOM%3600)); yunohost tools update apps > /dev/null
 EOF
 
-    # Cron job that renew lets encrypt certificates if there's any that needs renewal
+    # Cron job that renew certificates from the CA if there's any that needs renewal
     cat > "$pending_dir/etc/cron.daily/yunohost-certificate-renew" << EOF
 #!/bin/bash
 yunohost domain cert renew --email
