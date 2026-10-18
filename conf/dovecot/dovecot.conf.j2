@@ -164,10 +164,10 @@ service stats {
 }
 
 
-sieve_script before {
+sieve_script personal {
   driver = file
-  path = /var/mail/sievescript/%{user | username }/scripts/
-  active_path = /var/mail/sievescript/%{user | username }/.dovecot.sieve
+  path = /var/mail/sievescript/%{user}/scripts/
+  active_path = /var/mail/sievescript/%{user}/.dovecot.sieve
 }
 
 sieve_script before {
