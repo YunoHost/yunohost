@@ -374,6 +374,9 @@ def dyndns_update(
 
     from .dns import _build_dns_conf
 
+    from .settings import settings_get
+    dns_exposure = settings_get("misc.network.dns_exposure")
+
     # If domain is not given, update all DynDNS domains
     if domain is None:
         dyndns_domains = dyndns_list()["domains"]
@@ -395,12 +398,18 @@ def dyndns_update(
     key = keys[0]
 
     # Get current IPv4 and IPv6
-    ipv4 = get_public_ip()
-    ipv6 = get_public_ip(6)
+    ipv4 = get_public_ip() if dns_exposure in ["both", "ipv4"] else False
+    ipv6 = get_public_ip(6) if dns_exposure in ["both", "ipv6"] else False
 
     if ipv4 is None and ipv6 is None:
         logger.debug(
             "No ipv4 nor ipv6 ?! Sounds like the server is not connected to the internet, or the ipv4/6.yunohost.org infrastructure is down somehow"
+        )
+        return
+
+    if ipv4 is False and ipv6 is False:
+        logger.debug(
+            "DNS exposure setting is set to neither 'both', 'ipv4', nor 'ipv6'. What the heck."
         )
         return
 
@@ -417,10 +426,15 @@ def dyndns_update(
     # Python's dns.update is similar to the old nsupdate cli tool
     update = dns.update.Update(zone, keyring=keyring, keyalgorithm=dns.tsig.HMAC_SHA512)
 
-    auth_resolvers = []
+    type_to_resolve = []
+    if dns_exposure in ["both", "ipv4"]:
+        type_to_resolve += "A"
+    if dns_exposure in ["both", "ipv6"]:
+        type_to_resolve += "AAAA"
 
+    auth_resolvers = []
     for dns_auth in DYNDNS_DNS_AUTH:
-        for type_ in ["A", "AAAA"]:
+        for type_ in type_to_resolve:
             ok, result = dig(dns_auth, type_)
             if ok == "ok" and len(result) and result[0]:
                 auth_resolvers.append(result[0])
@@ -455,14 +469,16 @@ def dyndns_update(
 
         raise YunohostError(f"Failed to resolve {rdtype} for {domain}", raw_msg=True)
 
-    old_ipv4 = resolve_domain(domain, "A")
-    old_ipv6 = resolve_domain(domain, "AAAA")
+    old_ipv4 = resolve_domain(domain, "A") if dns_exposure in ["both", "ipv4"] else False
+    old_ipv6 = resolve_domain(domain, "AAAA") if dns_exposure in ["both", "ipv6"] else False
 
     logger.debug(f"Old IPv4/v6 are ({old_ipv4}, {old_ipv6})")
     logger.debug(f"Requested IPv4/v6 are ({ipv4}, {ipv6})")
 
     # no need to update
-    if (not force and not dry_run) and (old_ipv4 == ipv4 and old_ipv6 == ipv6):
+    ignore_ipv4 = old_ipv4 == ipv4 if dns_exposure in ["both", "ipv4"] else True
+    ignore_ipv6 = old_ipv6 == ipv6 if dns_exposure in ["both", "ipv6"] else True
+    if (not force and not dry_run) and ignore_ipv4 and ignore_ipv6:
         logger.info("No update needed.")
         return
     else:
