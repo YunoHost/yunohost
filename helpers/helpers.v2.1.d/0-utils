@@ -664,3 +664,21 @@ function _ynh_git_clone() {
         git reset --hard origin/"$branch"
     popd || return 1
 }
+
+
+function ynh_new_systemctl() {
+    _ynh_helper_api "$@"
+}
+
+function _ynh_helper_api() {
+   local request="{\"cmd\": \"${FUNCNAME[1]}\", \"args\": \"$@\"}"
+   echo "Calling helper api with:"
+   echo "$request" | jq
+   cat <<< "$request" >&"$YNH_HELPERAPI_OUT"
+   local ret
+   read -u $YNH_HELPERAPI_IN ret
+
+   echo "Got return data:"
+   echo "$ret" | jq
+
+}
