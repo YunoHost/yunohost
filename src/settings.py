@@ -339,7 +339,7 @@ def reconfigure_nginx_and_yunohost(setting_name, old_value, new_value):
 
 
 @post_change_hook("ssh_compatibility")
-@post_change_hook("ssh_password_authentication")
+@post_change_hook("ssh_authentication_methods")
 def reconfigure_ssh(setting_name, old_value, new_value):
     if old_value != new_value:
         regen_conf(names=["ssh"])

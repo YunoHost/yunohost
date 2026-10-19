@@ -38,9 +38,13 @@ i18n = "global_settings_setting"
         type = "number"
         default = 22
 
-        [security.ssh.ssh_password_authentication]
-        type = "boolean"
-        default = true
+        [security.ssh.ssh_authentication_methods]
+        type = "select"
+        choices.password = "Only password authentication required (not recommended)"
+        choices.publickey = "Only public key authentication required (recommended)"
+        choices.publickey_and_password = "Public key and password authentication required"
+        default = "password"
+
 
     [security.nginx]
         [security.nginx.nginx_redirect_to_https]
