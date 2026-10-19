@@ -298,6 +298,12 @@ def tools_postinstall(
     # Enable and start YunoHost firewall at boot time
     _run_service_command("enable", "nftables")
 
+    # Enable and start udisks at boot time
+    # Somehow, it can be masked upon installation
+    _run_service_command("unmask", "udisks2")
+    _run_service_command("enable", "udisks2")
+    _run_service_command("start", "udisks2")
+
     tools_regen_conf(names=["ssh"], force=True)
 
     # Restore original ssh conf, as chosen by the
