@@ -20,8 +20,35 @@
 
 from typing import Any
 
+from pydantic import ValidationError
 from moulinette import m18n
 from moulinette.core import MoulinetteAuthenticationError, MoulinetteError
+
+
+def pydantic_validationerror_to_str(errs: ValidationError) -> str:
+    def loc_to_dot_sep(loc: tuple[str | int, ...]) -> str:
+        path = ''
+        for i, x in enumerate(loc):
+            if isinstance(x, str):
+                if i > 0:
+                    path += '.'
+                path += x
+            elif isinstance(x, int):
+                path += f'[{x}]'
+            else:
+                raise TypeError('Unexpected type')
+        return path
+
+    def print_one_err(error: dict) -> str:  # type: ignore
+        return f"{error['msg']}: {loc_to_dot_sep(error['loc'])}"
+
+    if len(errs.errors()) == 1:
+        return print_one_err(errs.errors()[0])
+    else:
+        result = ""
+        for err in errs.errors():
+            result += f"\n- {print_one_err(err)}"
+        return result
 
 
 class YunohostError(MoulinetteError):
