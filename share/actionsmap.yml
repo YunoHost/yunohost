@@ -2244,6 +2244,9 @@ log:
                     full: --with-suboperations
                     help: Include metadata about operations that are not the main operation but are sub-operations triggered by another ongoing operation... (e.g. initializing groups/permissions when installing an app)
                     action: store_true
+                -b:
+                    full: --before
+                    help: Only list operations older than the one with this name. Use it as a cursor with --limit to page through the list.
 
         ### log_show()
         show:
