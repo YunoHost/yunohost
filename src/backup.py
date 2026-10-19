@@ -29,8 +29,8 @@ import tarfile
 import tempfile
 import time
 from collections import OrderedDict
+from contextlib import contextmanager
 from datetime import datetime
-from functools import reduce
 from glob import glob
 from logging import getLogger
 from typing import TYPE_CHECKING, cast
@@ -85,12 +85,52 @@ CONF_MARGIN_SPACE_SIZE = 10  # IN MB
 POSTINSTALL_ESTIMATE_SPACE_SIZE = 5  # In MB
 MB_ALLOWED_TO_ORGANIZE = 10
 
+# Extensions supported by the tar backup method, in resolution order
+ARCHIVE_EXTENSIONS = (".tar.gz", ".tar")
+
 if TYPE_CHECKING:
     from .utils.logging import YunohostLogger
 
     logger = cast(YunohostLogger, getLogger("yunohost.backup"))
 else:
     logger = getLogger("yunohost.backup")
+
+
+def _archive_file_from_name(name: str) -> str | None:
+    """
+    Return the path of the archive named 'name', trying every supported
+    extension. lexists() is used to also catch archives being broken
+    symlinks, which callers handle explicitly.
+    """
+    for ext in ARCHIVE_EXTENSIONS:
+        archive_file = f"{ARCHIVES_PATH}/{name}{ext}"
+        if os.path.lexists(archive_file):
+            return archive_file
+    return None
+
+
+@contextmanager
+def _open_archive_for_reading(archive_file: str):
+    """
+    Open a .tar / .tar.gz archive for a single sequential pass: members can
+    only be iterated over once, in order.
+
+    Stream mode is much faster than random access on compressed archives,
+    where every backward seek means re-decompressing the archive from the
+    start.
+    """
+    tar = tarfile.open(archive_file, "r|*")
+
+    # Restoring a backup requires full fidelity, whereas the default filter
+    # becomes the restrictive "data" in Python 3.14, cf.
+    # https://docs.python.org/3/library/tarfile.html#extraction-filters
+    if hasattr(tarfile, "fully_trusted_filter"):
+        tar.extraction_filter = tarfile.fully_trusted_filter  # type: ignore
+
+    try:
+        yield tar
+    finally:
+        tar.close()
 
 
 class BackupRestoreTargetsManager:
@@ -1855,8 +1895,10 @@ class TarBackupMethod(BackupMethod):
             return os.path.join(self.repo, self.name + ".tar.gz")
 
         f = os.path.join(self.repo, self.name + ".tar")
-        if os.path.exists(f + ".gz"):
-            f += ".gz"
+        for ext in ARCHIVE_EXTENSIONS:
+            if os.path.exists(os.path.join(self.repo, self.name + ext)):
+                f = os.path.join(self.repo, self.name + ext)
+                break
         return f
 
     def backup(self):
@@ -1874,15 +1916,35 @@ class TarBackupMethod(BackupMethod):
         self._check_is_enough_free_space()
 
         # Open archive file for writing
+        # When compressing, pipe the tar stream through an external compressor
+        # to compress on every core, as Python's built-in tar compression is
+        # single-threaded
+        compressor = None
+        if self._archive_file.endswith(".gz") and shutil.which("pigz"):
+            compressor = ["pigz", "-c"]
+
+        compress_proc = None
+        archive_fd = None
         try:
-            tar = tarfile.open(
-                self._archive_file,
-                "w:gz" if self._archive_file.endswith(".gz") else "w",
-            )
+            if compressor:
+                archive_fd = open(self._archive_file, "wb")
+                compress_proc = subprocess.Popen(
+                    compressor, stdin=subprocess.PIPE, stdout=archive_fd
+                )
+                tar = tarfile.open(fileobj=compress_proc.stdin, mode="w|")
+            else:
+                tar = tarfile.open(
+                    self._archive_file,
+                    "w:gz" if self._archive_file.endswith(".gz") else "w",
+                )
         except Exception:
             logger.debug(
                 "unable to open '%s' for writing", self._archive_file, exc_info=1
             )
+            if compress_proc is not None:
+                compress_proc.kill()
+            if archive_fd is not None:
+                archive_fd.close()
             raise YunohostError("backup_archive_open_failed")
 
         # Add files to the archive
@@ -1904,6 +1966,24 @@ class TarBackupMethod(BackupMethod):
             raise YunohostError("backup_creation_failed")
         finally:
             tar.close()
+            if compress_proc is not None:
+                try:
+                    if compress_proc.stdin:
+                        compress_proc.stdin.close()
+                except BrokenPipeError:
+                    pass
+                compress_proc.wait()
+            if archive_fd is not None:
+                archive_fd.close()
+
+        if compress_proc is not None and compress_proc.returncode != 0:
+            logger.error(
+                "%s exited with code %s while compressing '%s'",
+                compressor[0],
+                compress_proc.returncode,
+                self._archive_file,
+            )
+            raise YunohostError("backup_creation_failed")
 
         # Move info file
         shutil.copy(
@@ -1925,10 +2005,44 @@ class TarBackupMethod(BackupMethod):
 
         # Mount the tarball
         logger.debug(m18n.n("restore_extracting"))
+
+        # Build the list of stuff to extract from the archive: info.json and
+        # backup.csv, plus the system parts and apps selected for restoration
+        wanted_files = ["info.json", "backup.csv"]
+        wanted_prefixes = ["hooks/restore/"]
+
+        for system_part in self.manager.targets.list("system", exclude=["Skipped"]):
+            # Caution: conf_ynh_currenthost helpers put its files in
+            # conf/ynh
+            if system_part.startswith("conf_"):
+                system_part = "conf/"
+            else:
+                system_part = system_part.replace("_", "/") + "/"
+            if system_part not in wanted_prefixes:
+                wanted_prefixes.append(system_part)
+
+        for app in self.manager.targets.list("apps", exclude=["Skipped"]):
+            wanted_prefixes.append("apps/" + app)
+
+        extracted = set()
+
+        def members_to_extract(tar):
+            for member in tar:
+                # Old backup archives have members named "./foo" instead of "foo"
+                name = member.name[2:] if member.name.startswith("./") else member.name
+                if name in wanted_files or any(
+                    name.startswith(prefix) for prefix in wanted_prefixes
+                ):
+                    extracted.add(name)
+                    yield member
+
+        # Extract everything in a single sequential pass over the archive
         try:
-            tar = tarfile.open(
-                self._archive_file,
-                "r:gz" if self._archive_file.endswith(".gz") else "r",
+            with _open_archive_for_reading(self._archive_file) as tar:
+                tar.extractall(path=self.work_dir, members=members_to_extract(tar))
+        except (IOError, EOFError, tarfile.ReadError) as e:
+            raise YunohostError(
+                "backup_archive_corrupted", archive=self._archive_file, error=str(e)
             )
         except Exception:
             logger.debug(
@@ -1936,85 +2050,35 @@ class TarBackupMethod(BackupMethod):
             )
             raise YunohostError("backup_archive_open_failed")
 
-        try:
-            files_in_archive = tar.getnames()
-        except (IOError, EOFError, tarfile.ReadError) as e:
-            raise YunohostError(
-                "backup_archive_corrupted", archive=self._archive_file, error=str(e)
-            )
-
-        if "info.json" in tar.getnames():
-            leading_dot = ""
-            tar.extract("info.json", path=self.work_dir)
-        elif "./info.json" in files_in_archive:
-            leading_dot = "./"
-            tar.extract("./info.json", path=self.work_dir)
-        else:
+        if "info.json" not in extracted:
             logger.debug(
                 "unable to retrieve 'info.json' inside the archive", exc_info=1
             )
-            tar.close()
             raise YunohostError(
                 "backup_archive_cant_retrieve_info_json", archive=self._archive_file
             )
 
-        if "backup.csv" in files_in_archive:
-            tar.extract("backup.csv", path=self.work_dir)
-        elif "./backup.csv" in files_in_archive:
-            tar.extract("./backup.csv", path=self.work_dir)
-        else:
-            # Old backup archive have no backup.csv file
-            pass
-
-        # Extract system parts backup
-        conf_extracted = False
-
-        system_targets = self.manager.targets.list("system", exclude=["Skipped"])
-        apps_targets = self.manager.targets.list("apps", exclude=["Skipped"])
-
-        for system_part in system_targets:
-            # Caution: conf_ynh_currenthost helpers put its files in
-            # conf/ynh
-            if system_part.startswith("conf_"):
-                if conf_extracted:
-                    continue
-                system_part = "conf/"
-                conf_extracted = True
-            else:
-                system_part = system_part.replace("_", "/") + "/"
-            subdir_and_files = [
-                tarinfo
-                for tarinfo in tar.getmembers()
-                if tarinfo.name.startswith(leading_dot + system_part)
-            ]
-            tar.extractall(members=subdir_and_files, path=self.work_dir)
-        subdir_and_files = [
-            tarinfo
-            for tarinfo in tar.getmembers()
-            if tarinfo.name.startswith(leading_dot + "hooks/restore/")
-        ]
-        tar.extractall(members=subdir_and_files, path=self.work_dir)
-
-        # Extract apps backup
-        for app in apps_targets:
-            subdir_and_files = [
-                tarinfo
-                for tarinfo in tar.getmembers()
-                if tarinfo.name.startswith(leading_dot + "apps/" + app)
-            ]
-            tar.extractall(members=subdir_and_files, path=self.work_dir)
-
-        tar.close()
+        if "backup.csv" not in extracted:
+            # Every archive created since YunoHost 2.6.3 contains a
+            # backup.csv, and restoring archives older than 4.2 is refused
+            # anyway: a missing backup.csv means the archive is corrupted or
+            # truncated
+            raise YunohostError(
+                "backup_archive_corrupted",
+                archive=self._archive_file,
+                error="backup.csv is missing inside the archive",
+            )
 
     def copy(self, file, target):
-        tar = tarfile.open(
-            self._archive_file, "r:gz" if self._archive_file.endswith(".gz") else "r"
-        )
-        file_to_extract = tar.getmember(file)
-        # Remove the path
-        file_to_extract.name = os.path.basename(file_to_extract.name)
-        tar.extract(file_to_extract, path=target)
-        tar.close()
+        with _open_archive_for_reading(self._archive_file) as tar:
+            for member in tar:
+                if member.name == file:
+                    # Remove the path
+                    member.name = os.path.basename(member.name)
+                    tar.extract(member, path=target)
+                    break
+            else:
+                raise KeyError(f"filename {file!r} not found in the archive")
 
 
 class CustomBackupMethod(BackupMethod):
@@ -2301,17 +2365,22 @@ def backup_list(with_info=False, human_readable=False):
     """
     # Get local archives sorted according to last modification time
     # (we do a realpath() to resolve symlinks)
-    archives = glob(f"{ARCHIVES_PATH}/*.tar.gz") + glob(f"{ARCHIVES_PATH}/*.tar")
+    archives = [
+        archive
+        for ext in ARCHIVE_EXTENSIONS
+        for archive in glob(f"{ARCHIVES_PATH}/*{ext}")
+    ]
     archives = {os.path.realpath(archive) for archive in archives}
     archives = {archive for archive in archives if os.path.exists(archive)}
     archives = sorted(archives, key=lambda x: os.path.getctime(x))
     # Extract only filename without the extension
 
     def remove_extension(f):
-        if f.endswith(".tar.gz"):
-            return os.path.basename(f)[: -len(".tar.gz")]
-        else:
-            return os.path.basename(f)[: -len(".tar")]
+        f = os.path.basename(f)
+        for ext in ARCHIVE_EXTENSIONS:
+            if f.endswith(ext):
+                return f[: -len(ext)]
+        return f
 
     archives = [remove_extension(f) for f in archives]
 
@@ -2340,13 +2409,10 @@ def backup_download(name):
         )
         return
 
-    archive_file = f"{ARCHIVES_PATH}/{name}.tar"
-
     # Check file exist (even if it's a broken symlink)
-    if not os.path.lexists(archive_file):
-        archive_file += ".gz"
-        if not os.path.lexists(archive_file):
-            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+    archive_file = _archive_file_from_name(name)
+    if not archive_file:
+        raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
     # If symlink, retrieve the real path
     if os.path.islink(archive_file):
@@ -2378,21 +2444,18 @@ def backup_info(name, with_details=False, human_readable=False):
     """
     original_name = name
 
-    if name.endswith(".tar.gz"):
-        name = name[: -len(".tar.gz")]
-    elif name.endswith(".tar"):
-        name = name[: -len(".tar")]
-
-    archive_file = f"{ARCHIVES_PATH}/{name}.tar"
+    for ext in ARCHIVE_EXTENSIONS:
+        if name.endswith(ext):
+            name = name[: -len(ext)]
+            break
 
     # Check file exist (even if it's a broken symlink)
-    if not os.path.lexists(archive_file):
-        archive_file += ".gz"
+    archive_file = _archive_file_from_name(name)
+    if not archive_file:
+        # Maybe the user provided a path to the backup?
+        archive_file = original_name
         if not os.path.lexists(archive_file):
-            # Maybe the user provided a path to the backup?
-            archive_file = original_name
-            if not os.path.lexists(archive_file):
-                raise YunohostValidationError("backup_archive_name_unknown", name=name)
+            raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
     # If symlink, retrieve the real path
     if os.path.islink(archive_file):
@@ -2407,36 +2470,30 @@ def backup_info(name, with_details=False, human_readable=False):
     info_file = f"{ARCHIVES_PATH}/{name}.info.json"
 
     if not os.path.exists(info_file):
-        tar = tarfile.open(
-            archive_file, "r:gz" if archive_file.endswith(".gz") else "r"
-        )
         info_dir = info_file + ".d"
 
+        info_json_found = False
         try:
-            files_in_archive = tar.getnames()
+            with _open_archive_for_reading(archive_file) as tar:
+                for member in tar:
+                    if member.name in ("info.json", "./info.json"):
+                        tar.extract(member, path=info_dir)
+                        info_json_found = True
+                        break
         except (IOError, EOFError, tarfile.ReadError) as e:
             raise YunohostError(
                 "backup_archive_corrupted", archive=archive_file, error=str(e)
             )
 
-        try:
-            if "info.json" in files_in_archive:
-                tar.extract("info.json", path=info_dir)
-            elif "./info.json" in files_in_archive:
-                tar.extract("./info.json", path=info_dir)
-            else:
-                raise KeyError
-        except KeyError:
+        if not info_json_found:
             logger.debug(
                 "unable to retrieve '%s' inside the archive", info_file, exc_info=1
             )
             raise YunohostError(
                 "backup_archive_cant_retrieve_info_json", archive=archive_file
             )
-        else:
-            shutil.move(os.path.join(info_dir, "info.json"), info_file)
-        finally:
-            tar.close()
+
+        shutil.move(os.path.join(info_dir, "info.json"), info_file)
         os.rmdir(info_dir)
 
     try:
@@ -2452,13 +2509,8 @@ def backup_info(name, with_details=False, human_readable=False):
     # Retrieve backup size
     size = info.get("size", 0)
     if not size:
-        tar = tarfile.open(
-            archive_file, "r:gz" if archive_file.endswith(".gz") else "r"
-        )
-        size = reduce(
-            lambda x, y: getattr(x, "size", x) + getattr(y, "size", y), tar.getmembers()
-        )
-        tar.close()
+        with _open_archive_for_reading(archive_file) as tar:
+            size = sum(member.size for member in tar)
     if human_readable:
         size = binary_to_human(size) + "B"
 
@@ -2505,9 +2557,7 @@ def backup_delete(name, display_success: bool = True):
 
     hook_callback("pre_backup_delete", args=[name])
 
-    archive_file = f"{ARCHIVES_PATH}/{name}.tar"
-    if not os.path.exists(archive_file) and os.path.exists(archive_file + ".gz"):
-        archive_file += ".gz"
+    archive_file = _archive_file_from_name(name) or f"{ARCHIVES_PATH}/{name}.tar"
     info_file = f"{ARCHIVES_PATH}/{name}.info.json"
 
     files_to_delete = [archive_file, info_file]
