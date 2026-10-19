@@ -91,6 +91,7 @@ mailbox_command = procmail -a "$EXTENSION"
 mailbox_size_limit = 0
 recipient_delimiter = +
 inet_interfaces = all
+smtp_address_preference = ipv6
 
 #### Fit to the maximum message size to 25mb, more than allowed by GMail or Yahoo ####
 # /!\ This size is the size of the attachment in base64.
