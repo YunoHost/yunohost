@@ -37,7 +37,7 @@ class YunohostError(MoulinetteError):
     def __init__(
         self,
         key: str,
-        raw_msg: bool = False,
+        raw_msg: str | bool = False,
         log_ref: str | None = None,
         error_details: str | None = None,
         *args: Any,
@@ -47,7 +47,9 @@ class YunohostError(MoulinetteError):
         self.kwargs = kwargs  # Saving the key is useful for unit testing
         self.log_ref = log_ref
         self.error_details = error_details
-        if raw_msg:
+        if isinstance(raw_msg, str):
+            msg = raw_msg
+        elif raw_msg:
             msg = key
         else:
             msg = m18n.n(key, *args, **kwargs)
