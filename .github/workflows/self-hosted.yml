@@ -12,6 +12,6 @@ jobs:
     steps:
       - name: Tests
         run: |
-          host
+          hostname
           ls -lah
           env
