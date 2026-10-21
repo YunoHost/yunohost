@@ -1406,15 +1406,14 @@ class RestoreManager:
         env_dict = _make_environment_for_app_script(
             app_instance_name, workdir=app_workdir, action="restore"
         )
-        env_dict.update(
-            {
-                "YNH_BACKUP_DIR": self.work_dir,
-                "YNH_BACKUP_CSV": os.path.join(self.work_dir, "backup.csv"),
-                "YNH_APP_BACKUP_DIR": os.path.join(
-                    self.work_dir, "apps", app_instance_name, "backup"
-                ),
-            }
-        )
+        env_dict_more = {
+            "YNH_BACKUP_DIR": self.work_dir,
+            "YNH_BACKUP_CSV": os.path.join(self.work_dir, "backup.csv"),
+            "YNH_APP_BACKUP_DIR": os.path.join(
+                self.work_dir, "apps", app_instance_name, "backup"
+            ),
+        }
+        env_dict.update(env_dict_more)
 
         operation_logger.extra["env"] = env_dict
         operation_logger.flush()
@@ -1428,6 +1427,14 @@ class RestoreManager:
                 operation_logger=operation_logger,
                 action="restore",
             )
+
+        # Boring stuff : the resource upgrade may have added/remove/updated setting
+        # so we need to reflect this in the env_dict used to call the actual upgrade script x_x
+        # Or: the old manifest may be in v1 and the new in v2, so force to add the setting in env
+        env_dict = _make_environment_for_app_script(
+            app_instance_name, workdir=app_workdir, action="restore"
+        )
+        env_dict.update(env_dict_more)
 
         # Execute the app install script
         restore_failed = True
