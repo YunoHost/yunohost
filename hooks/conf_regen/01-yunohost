@@ -322,7 +322,7 @@ do_post_regen() {
     # Misc configuration / state files
     for file in /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql}; do
         if [ -f "$file" ]; then
-            if [ "$file" != "mdns.yml" ]; then
+            if [ "$file" != "/etc/yunohost/mdns.yml" ]; then
                 chown root:root "$file"
             fi
             chmod 600 "$file"
