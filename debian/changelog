@@ -1,3 +1,44 @@
+yunohost (13.0.9) testing; urgency=low
+
+  - conf: nginx: Indicate email address as default identifier in mail autoconfig (4af6cf1f4)
+  - conf: dovecot: Be able to login with any email alias (98d76bdbc)
+  - conf: dovecot: Cleanup debugging value in config file (b53711d47)
+  - conf: dovecot: Add missing user mapping in dovecot (1de88f257)
+  - conf: dovecot: Fix pop3 support (254e38741)
+  - conf: dovecot: Fix user quota (72ce493c1)
+  - conf: dovecot: remove legacy doveco-ldap.conf (3dd10f8ec)
+  - conf: postfix: Remove legacy ldap-domains.cf (511fd3571)
+  - conf: postfix: Use the maildrop attribute (594585020)
+  - migrations: Add migration for ldap maildrop field (40027fd66)
+  - portal, user: maildrop should be an email (9609adec9)
+  - migrations, portal, user: Add workaround for maildrop field used as email in nextcloud (0a9c93a63)
+  - Rename m0040_migrate_ldap_maildrop_filed.py to m0040_migrate_ldap_maildrop_field.py (0d61432c8)
+  - fix: rename locale after migration renaming (10324a09f)
+  - [fix] Support mail migration rerun (fc11ce197)
+  - [fix] dovecot-pop3d is not a yunohost requirement (2d0395a60)
+  - [fix] Set main drop mail at the end after adding a mail forward (a43213e61)
+  - code linting (d1306d1ca)
+  - conf_regen: apt: Ensure GPG key permissions to 644 (e79faa075)
+  - migrations: Revert faulty merge from dev (8d2f60c16)
+  - [fix] Yunohost dyndns update unable to ping dur to @setuid filtering (7941ac4f1)
+  - [enh] Move comments (cc171476b)
+  - [enh] Improve comments (ba232d1f0)
+  - Remove disclaimer for venv migration ([#2374](http://github.com/YunoHost/yunohost/pull/2374))
+  - Migrations: postgresql: Rename target cluster instead of deleting it ([#2350](http://github.com/YunoHost/yunohost/pull/2350))
+  - lint: fix issue in postgresql.py (too many blank lines) (c9cbef58b)
+  - [enh] Update nginx ciphers (17dbcf5d1)
+  - [enh] Update ciphers for postfix and dovecot (7cbbb2340)
+  - [enh] Update ssh kex algo for trixie (af1c5878a)
+  - [enh] Support postgresql cluster migration with postgis (57759dbd6)
+  - [fix] Support pgvector migration (bc65f3bcd)
+  - [enh] Do one apt install instead of 2 (4337e52d4)
+  - [fix] psql migration fail if no extension is installed (9a6b1cf87)
+  - i18n: Translations updated for Basque, French, Galician, Hungarian, Italian, Occitan, Persian, Portuguese, Russian, Ukrainian
+
+  Thanks to all contributors <3 ! (Alekseï, Éric Gaspar, Florent, HgO, José M, Josué Tille, ljf, ppr, Quentí, Salame Turco, Simon F, tituspijean, xabirequejo, نادکارو)
+
+ -- Félix Piédallu <felix@piedallu.me>  Mon, 26 Oct 2026 13:37:00 +0100
+
 yunohost (13.0.8) testing; urgency=low
 
   - cli: BREAKING CHANGE: Normalize casing of `--force` shorthand in `app` cli (53ddd94de)
