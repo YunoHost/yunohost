@@ -78,7 +78,9 @@ LogLevel VERBOSE
 # Using regular users in combination with /bin/su or /usr/bin/sudo ensure a clear audit track.
 
 LoginGraceTime 120
-PermitRootLogin no
+# PLEASE: if you wish to allow root login with public keys, run this command:
+# yunohost settings set security.ssh.ssh_root_pubkey_authentication -v yes
+PermitRootLogin {% if root_pubkey_authentication == "False" %}no{% else %}prohibit-password{% endif %}
 StrictModes yes
 PubkeyAuthentication yes
 PermitEmptyPasswords no
