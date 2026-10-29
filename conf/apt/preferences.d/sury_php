@@ -1,0 +1,14 @@
+# Use php-common from sury instead of debian repos
+Package: php-common
+Pin: origin "packages.sury.org"
+Pin-Priority: 500
+
+# Use php (no-version) from debian repositories
+Package: php php-*
+Pin: origin "packages.sury.org"
+Pin-Priority: -1
+
+# Ban some packages from sury
+Package: openssl libssl1.1 libssl-dev
+Pin: origin "packages.sury.org"
+Pin-Priority: -1

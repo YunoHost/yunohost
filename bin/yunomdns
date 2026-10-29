@@ -24,23 +24,23 @@ Pythonic declaration of mDNS .local domains for YunoHost
 
 import sys
 from ipaddress import ip_address
+from pathlib import Path
 from time import sleep
-from typing import Dict, List
 
 import ifaddr
 import yaml
 from zeroconf import ServiceBrowser, ServiceInfo, Zeroconf
 
 
-def get_network_local_interfaces() -> Dict[str, Dict[str, List[str]]]:
+def get_network_local_interfaces() -> dict[str, dict[str, list[str]]]:
     """
     Returns interfaces with their associated local IPs
     """
 
-    interfaces = {
+    return {
         adapter.name: {
             "ipv4": [
-                ip.ip
+                str(ip.ip)
                 for ip in adapter.ips
                 if ip.is_IPv4
                 and ip_address(ip.ip).is_private
@@ -57,24 +57,23 @@ def get_network_local_interfaces() -> Dict[str, Dict[str, List[str]]]:
         for adapter in ifaddr.get_adapters()
         if adapter.name != "lo"
     }
-    return interfaces
 
 
 # Listener class, to detect duplicates on the network
 # Stores the list of servers in its list property
 class Listener:
     def __init__(self) -> None:
-        self.list = []
+        self.list: list[str] = []
 
-    def remove_service(self, zeroconf: Zeroconf, type: str, name: str) -> None:
-        info = zeroconf.get_service_info(type, name)
+    def remove_service(self, zeroconf: Zeroconf, type_: str, name: str) -> None:
+        info = zeroconf.get_service_info(type_, name)
         self.list.remove(info.server)
 
-    def update_service(self, zeroconf: Zeroconf, type: str, name: str) -> None:
+    def update_service(self, zeroconf: Zeroconf, type_: str, name: str) -> None:
         pass
 
-    def add_service(self, zeroconf: Zeroconf, type: str, name: str) -> None:
-        info = zeroconf.get_service_info(type, name)
+    def add_service(self, zeroconf: Zeroconf, type_: str, name: str) -> None:
+        info = zeroconf.get_service_info(type_, name)
         self.list.append(info.server[:-1])
 
 
@@ -83,7 +82,7 @@ def main() -> bool:
     #  CONFIG
     ###
 
-    with open("/etc/yunohost/mdns.yml", "r") as f:
+    with Path("/etc/yunohost/mdns.yml").open("r") as f:
         config = yaml.safe_load(f) or {}
 
     required_fields = ["domains"]
@@ -120,7 +119,7 @@ def main() -> bool:
     if "yunohost.local" not in config["domains"]:
         config["domains"].append("yunohost.local")
 
-    def find_domain_not_already_published(domain):
+    def find_domain_not_already_published(domain: str) -> str:
 
         # Try domain.local ... but if it's already published by another entity,
         # try domain-2.local, domain-3.local, ...
@@ -140,7 +139,7 @@ def main() -> bool:
         find_domain_not_already_published(domain) for domain in config["domains"]
     ]
 
-    zcs: Dict[Zeroconf, List[ServiceInfo]] = {}
+    zcs: dict[Zeroconf, list[ServiceInfo]] = {}
 
     for interface in config["interfaces"]:
 
@@ -151,14 +150,14 @@ def main() -> bool:
             continue
 
         # Broadcast IPv4 and IPv6
-        ips: List[str] = interfaces[interface]["ipv4"] + interfaces[interface]["ipv6"]
+        ips: list[str] = interfaces[interface]["ipv4"] + interfaces[interface]["ipv6"]
 
         # If at least one IP is listed
         if not ips:
             continue
 
         # Create a Zeroconf object, and store the ServiceInfos
-        zc = Zeroconf(interfaces=ips)  # type: ignore
+        zc = Zeroconf(interfaces=ips)
         zcs[zc] = []
 
         for d in config["domains"]:
@@ -194,7 +193,7 @@ def main() -> bool:
         pass
     finally:
         print("Unregistering...")
-        for zc, infos in zcs.items():
+        for zc in zcs:
             zc.unregister_all_services()
             zc.close()
 

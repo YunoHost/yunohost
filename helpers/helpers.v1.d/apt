@@ -550,7 +550,9 @@ ynh_remove_extra_repo() {
 
     ynh_secure_remove --file="/etc/apt/sources.list.d/$name.list"
     # Sury pinning is managed by the regenconf in the core...
-    [[ "$name" == "extra_php_version" ]] || ynh_secure_remove "/etc/apt/preferences.d/$name"
+    if [[ "$name" != "sury_php" ]]; then
+        ynh_secure_remove "/etc/apt/preferences.d/$name"
+    fi
     if [ -e /etc/apt/trusted.gpg.d/$name.gpg ]; then
         ynh_secure_remove --file="/etc/apt/trusted.gpg.d/$name.gpg"
     fi
@@ -576,9 +578,9 @@ ynh_remove_extra_repo() {
 # | arg: -a, --append       - Do not overwrite existing files.
 # | arg: -t, --trusted      - Add trusted=yes to the repository (not recommended)
 #
-# Example for a repo like deb http://forge.yunohost.org/debian/ stretch stable
+# Example for a repo like deb http://repo.yunohost.org/debian/ stretch stable
 #                             uri                               suite   component
-# ynh_add_repo --uri=http://forge.yunohost.org/debian/ --suite=stretch --component=stable
+# ynh_add_repo --uri=http://repo.yunohost.org/debian/ --suite=stretch --component=stable
 #
 # Requires YunoHost version 3.8.1 or higher.
 ynh_add_repo() {
@@ -651,7 +653,9 @@ ynh_pin_repo() {
     fi
 
     # Sury pinning is managed by the regenconf in the core...
-    [[ "$name" != "extra_php_version" ]] || return 0
+    if [[ "$name" == "sury_php" ]]; then
+        return 0
+    fi
 
     mkdir --parents "/etc/apt/preferences.d"
     echo "Package: $package

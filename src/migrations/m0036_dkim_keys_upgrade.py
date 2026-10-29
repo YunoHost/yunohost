@@ -59,12 +59,11 @@ class MyMigration(Migration):
         return "manual"
 
     @property
-    def disclaimer(self):
-        if self.upgradable_domains:
-            domains = "\n - " + "\n - ".join(self.upgradable_domains)
-        else:
-            domains = "no domains seems concerned"
+    def disclaimer(self) -> str | None:
+        if not self.upgradable_domains:
+            return None
 
+        domains = "\n - " + "\n - ".join(self.upgradable_domains)
         return m18n.n("migration_0036_dkim_keys_upgrade_disclaimer", domains=domains)
 
     def check_assertions(self):

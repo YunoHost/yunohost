@@ -95,13 +95,13 @@ def dig(
     # run the DNS query to a DNS resolvers up...
     # In diagnosis dnsrecords, with 10 domains this means at least 12min, too long.
     resolver.timeout = 1.0
-    # resolver.lifetime is the timeout for resolver.query()
+    # resolver.lifetime is the timeout for resolver.resolve()
     # By default set it to 5 seconds to allow 4 resolvers to be unreachable.
     resolver.lifetime = timeout
 
     answers: dns.resolver.Answer | list[str]
     try:
-        answers = resolver.query(qname, rdtype)
+        answers = resolver.resolve(qname, rdtype, search=True)
     except (
         dns.resolver.NXDOMAIN,
         dns.resolver.NoNameservers,

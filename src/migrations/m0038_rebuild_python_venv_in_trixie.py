@@ -1,6 +1,6 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2026 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -18,30 +18,9 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-# Exit hook on subcommand error or unset variable
-set -eu
+from .python import PythonMigration
 
-do_init_regen() {
-    do_pre_regen ""
-    systemctl restart unscd
-}
 
-do_pre_regen() {
-    pending_dir=$1
-
-    cd /usr/share/yunohost/conf/nsswitch
-
-    install -D -m 644 nsswitch.conf "$pending_dir/etc/nsswitch.conf"
-}
-
-do_post_regen() {
-    regen_conf_files=$1
-
-    chmod u=rw-,g=r--,o-w /etc/nsswitch.conf
-
-    if [[ -n "$regen_conf_files" ]]; then
-        systemctl restart unscd
-    fi
-}
-
-"do_$1_regen" "$(echo "${*:2}" | xargs)"
+class MyMigration(PythonMigration):
+    dependencies = ["migrate_to_trixie"]
+    migration_id = "0038_rebuild_python_venv_in_trixie"
