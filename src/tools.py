@@ -308,6 +308,8 @@ def tools_postinstall(
     if ram_total >= 4096:
         tmpfs_max_size = round(ram_total * 0.25)
         logger.info(m18n.n("tmpfs_configuration", ram=tmpfs_max_size))
+        logger.info(m18n.n("tmpfs_configuration_help"))
+
         # FIXME: currently we have a bug with setting a unique attribute with visible
         # so i use here a workaround to be sure all the context is loaded
         # see: https://github.com/YunoHost/issues/issues/2483
@@ -316,7 +318,7 @@ def tools_postinstall(
                      verbose=False)
     else:
         logger.info(m18n.n("tmpfs_deactivation"))
-    logger.info(m18n.n("tmpfs_configuration_help"))
+        logger.info(m18n.n("tmpfs_configuration_help"))
 
     tools_regen_conf(names=["ssh"], force=True)
 
