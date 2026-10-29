@@ -287,7 +287,7 @@ class MyMigration(Migration):
                 aptitude_with_progress_bar("unhold " + ' '.join(apps_packages))
 
         # Adjust tmpfs configuration
-        # Since debian 13, tmpfs is activated by default, however it could not be 
+        # Since debian 13, tmpfs is activated by default, however it could not be
         # a good things for small servers with not so much ram
         ram = virtual_memory()
         ram_total = round(ram.total / 1024.0 / 1024.0)
@@ -300,7 +300,6 @@ class MyMigration(Migration):
         else:
             logger.info(m18n.n("migration_0036_configuring_tmp_on_disk"))
             settings_set("misc.storage.tmpfs_enabled", False)
-
 
         # Mark this migration as completed before triggering the "new" migrations
         _write_migration_state(self.id, "done")
