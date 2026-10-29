@@ -296,8 +296,7 @@ class MyMigration(Migration):
         if ram_total >= 4096 and ram_available >= 1024:
             tmpfs_max_size = round(min(ram_total * 0.25, ram_available))
             logger.info(m18n.n("migration_0036_configuring_tmp_in_ram", ram=tmpfs_max_size))
-            settings_set("misc.storage.tmpfs_max_size", f"{tmpfs_max_size}M")
-            settings_set("misc.storage.tmpfs_enabled", True)
+            settings_set("misc.storage", args=f"tmpfs_max_size={tmpfs_max_size}M&tmpfs_enabled=yes")
         else:
             logger.info(m18n.n("migration_0036_configuring_tmp_on_disk"))
             settings_set("misc.storage.tmpfs_enabled", False)
