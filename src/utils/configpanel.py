@@ -585,6 +585,7 @@ class ConfigPanel:
         value: Any = None,
         args: str | None = None,
         args_file: str | None = None,
+        verbose: bool = True,
         operation_logger: Union["OperationLogger", None] = None,
     ) -> None:
         self.filter_key = parse_filter_key(key)
@@ -618,6 +619,7 @@ class ConfigPanel:
             self.form,
             prefilled_answers=prefilled_answers,
             hooks=self.hooks,
+            verbose=verbose
         )
 
         if operation_logger:
@@ -875,12 +877,13 @@ class ConfigPanel:
         prefilled_answers: dict[str, Any] = {},
         action_id: str | None = None,
         hooks: "Hooks" = {},
+        verbose: bool = True
     ) -> "FormModel":
         # FIXME could be turned into a staticmethod
         logger.debug("Ask unanswered question and prevalidate data")
 
         interactive = Moulinette.interface.type == "cli" and os.isatty(1)
-        verbose = action_id is None or len(list(config.options)) > 1
+        verbose = verbose and (action_id is None or len(list(config.options)) > 1)
 
         if interactive:
             config.translate()

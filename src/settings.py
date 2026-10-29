@@ -91,7 +91,7 @@ def settings_list(full=False):
 
 
 @is_unit_operation()
-def settings_set(operation_logger, key=None, value=None, args=None, args_file=None):
+def settings_set(operation_logger, key=None, value=None, args=None, args_file=None, verbose=True):
     """
     Set an entry value in the settings
 
@@ -102,7 +102,8 @@ def settings_set(operation_logger, key=None, value=None, args=None, args_file=No
     """
     BaseOption.operation_logger = operation_logger
     settings = SettingsConfigPanel()
-    return settings.set(key, value, args, args_file, operation_logger=operation_logger)
+    return settings.set(key, value, args, args_file,
+                        verbose=verbose, operation_logger=operation_logger)
 
 
 @is_unit_operation()
