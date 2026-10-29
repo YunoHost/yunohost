@@ -312,6 +312,7 @@ def tools_postinstall(
         settings_set("misc.storage.tmpfs_enabled", True)
     else:
         logger.info(m18n.n("tmpfs_deactivation"))
+    logger.info(m18n.n("tmpfs_configuration_help"))
 
     tools_regen_conf(names=["ssh"], force=True)
 
