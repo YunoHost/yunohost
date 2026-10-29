@@ -154,6 +154,7 @@ def tools_postinstall(
     from .dyndns import _dyndns_available, dyndns_unsubscribe
     from .permission import _set_system_perms
     from .service import _run_service_command
+    from .settings import settings_set
     from .user import ADMIN_ALIASES, user_create
     from .utils.app_utils import _ask_confirmation
     from .utils.dns import is_yunohost_dyndns_domain
@@ -300,6 +301,17 @@ def tools_postinstall(
 
     # Enable and start YunoHost firewall at boot time
     _run_service_command("enable", "nftables")
+
+    # Adjust tmpfs configuration
+    ram = psutil.virtual_memory()
+    ram_total = round(ram.total / 1024.0 / 1024.0)
+    if ram_total >= 4096:
+        tmpfs_max_size = round(ram_total * 0.25)
+        logger.info(m18n.n("tmpfs_configuration", ram=tmpfs_max_size))
+        settings_set("misc.storage.tmpfs_max_size", f"{tmpfs_max_size}M")
+        settings_set("misc.storage.tmpfs_enabled", True)
+    else:
+        logger.info(m18n.n("tmpfs_deactivation"))
 
     tools_regen_conf(names=["ssh"], force=True)
 
