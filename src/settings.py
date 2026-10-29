@@ -430,7 +430,7 @@ def reconfigure_dovecot(setting_name, old_value, new_value):
 
 @default_hook("tmpfs_enabled")
 def is_tmpfs_enabled(setting_name):
-    with open('/proc/mounts', 'r') as f:
+    with open("/proc/mounts", "r") as f:
         for line in f.readlines():
             if line.startswith("tmpfs /tmp "):
                 return True
@@ -442,7 +442,9 @@ def validate_tmpfs_max_size(setting_name, old_value, new_value):
     if old_value != new_value:
         if setting_name == "tmpfs_max_size":
             from psutil import virtual_memory
+
             from .utils.system import space_used_by_directory
+
             ram = virtual_memory()
             ram_total = round(ram.total / 1024.0 / 1024.0)
             ram_available = round(ram.available / 1024.0 / 1024.0)
@@ -454,22 +456,29 @@ def validate_tmpfs_max_size(setting_name, old_value, new_value):
             max_size_in_mega = int(new_value[:-1]) * ratio
             max_allowed = ram_total - 512
             max_advice = min(ram_available, 8 * 1024)
-            tmp_current_size = space_used_by_directory("/tmp", follow_symlinks=False) / 1024 / 1024
+            tmp_current_size = (
+                space_used_by_directory("/tmp", follow_symlinks=False) / 1024 / 1024
+            )
             if max_size_in_mega > max_allowed:
                 raise YunohostValidationError(
                     "global_settings_setting_tmpfs_max_size_too_big",
-                    max_allowed=max_allowed, max_advice=max_advice)
+                    max_allowed=max_allowed,
+                    max_advice=max_advice,
+                )
 
             if max_size_in_mega < tmp_current_size:
                 raise YunohostValidationError(
                     "global_settings_setting_tmpfs_max_size_too_small",
-                    current_size=tmp_current_size)
+                    current_size=tmp_current_size,
+                )
 
             if max_size_in_mega > max_advice:
-                logger.warning(m18n.n(
-                    "global_settings_setting_tmpfs_max_size_danger",
-                    max_advice=max_advice
-                ))
+                logger.warning(
+                    m18n.n(
+                        "global_settings_setting_tmpfs_max_size_danger",
+                        max_advice=max_advice,
+                    )
+                )
 
 
 @post_change_hook("tmpfs_enabled")

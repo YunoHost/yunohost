@@ -32,7 +32,7 @@ do_pre_regen() {
     # Note that the usual specifier expansion is applied to this setting
     # literal percent characters should hence be written as "%%".
     # https://www.freedesktop.org/software/systemd/man/latest/systemd.mount.html#Options=
-    export tmpfs_max_size="$(jq -r '.tmpfs_max_size' <<< "$YNH_SETTINGS"| sed s@%@%%@)"
+    export tmpfs_max_size="$(jq -r '.tmpfs_max_size' <<< "$YNH_SETTINGS" | sed s@%@%%@)"
 
     cd /usr/share/yunohost/conf/tmpfs
     mkdir -p "${pending_dir}/etc/systemd/system/tmp.mount.d"
@@ -55,20 +55,20 @@ do_post_regen() {
         [[ -z "$regen_conf_files" ]] \
             || systemctl daemon-reload
 
-        if ! systemctl is-active --quiet tmp.mount ; then
+        if ! systemctl is-active --quiet tmp.mount; then
             # We can't start tmp.mount cause target is probably busy
             ynh_print_warn --message="Reboot needed to switch /tmp on ram"
         else
             systemctl reload tmp.mount
         fi
     else
-        if systemctl is-active --quiet tmp.mount ; then
+        if systemctl is-active --quiet tmp.mount; then
             # We can't stop tmp.mount cause target is probably busy
             ynh_print_warn --message="Reboot needed to switch /tmp on disk"
         fi
-        systemctl mask tmp.mount 2> /dev/null 
+        systemctl mask tmp.mount 2> /dev/null
     fi
-    
+
 }
 
 "do_$1_regen" "$(echo "${*:2}" | xargs)"
