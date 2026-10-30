@@ -912,7 +912,6 @@
     "yunohost_installing": "A instalar YunoHost…",
     "yunohost_not_installed": "YunoHost non está instalado correctamente. Executa 'yunohost tools postinstall'",
     "yunohost_postinstall_end_tip": "Post-install completada! Para rematar a configuración considera:\n- diagnosticar potenciais problemas na sección 'Diagnóstico' na webadmin (ou 'yunohost diagnosis run' na liña de comandos);\n- ler 'Rematando a configuración' e 'Coñece YunoHost' na documentación da administración: https://doc.yunohost.org/admin.",
-    "migration_0036_apt_lists_file_still_exists": "O ficheiro '{file}' procedente de versións antigas non debería existir. Vaise renomear como '{file}.legacy_bookworm'.",
     "app_db_prompt_no_app_database": "Semella que esta app non ten declarada unha base de datos no seu manifesto",
     "app_db_prompt_type_not_supported": "A orde non é compatible con este tipo de base de datos: {type}",
     "migration_0036_dkim_keys_upgrade_pending_mails": "Tes {pending_mails} correos pendentes na cola de correo. Para evitar que te bloqueen e problemas de entrega, esta migración debe realizarse cando o teu servidor non esta enviando correo. Podes deter temporalmente postfix e usar <code>postsuper -d ALL</code> para liberar a cola do correo. Mira os correos que están na cola con <code>postqueue -p</code>",

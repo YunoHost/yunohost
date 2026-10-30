@@ -912,5 +912,4 @@
     "yunohost_installing": "YunoHost instalatzen…",
     "yunohost_not_installed": "YunoHost ez da zuzen instalatu. Exekutatu 'yunohost tools postinstall'",
     "yunohost_postinstall_end_tip": "Instalatu ondorengo prozesua amaitu da! Sistemaren konfigurazioa bukatzeko:\n- erabili 'Diagnostikoak' gunea ohiko arazoei aurre hartzeko. Abiarazi administrazio-gunean edo exekutatu 'yunohost diagnosis run';\n- irakurri 'Finalizing your setup' eta 'Getting to know YunoHost' atalak. Dokumentazioan aurki ditzakezu: https://doc.yunohost.org/admin.",
-    "migration_0036_apt_lists_file_still_exists": "'{file}' fitxategia zaharkitua dago, eta ez litzateke hemen egon beharko. Berrizendatuko da: '{file}.legacy_bookworm'."
 }

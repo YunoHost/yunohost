@@ -903,7 +903,6 @@
     "migration_0036_delayed_api_restart": "YunoHost API 将在 15 秒后自动重启。可能会在几秒钟内不可用，之后您需要重新登录。",
     "migration_0036_general_warning": "最后，请注意此迁移是**一项精细操作**。YunoHost 团队已尽力审查和测试，但迁移仍可能导致系统或其应用的部分功能出现问题。\n\n因此，建议：\n    - **执行备份**：备份所有关键数据或应用。更多信息请访问 https://doc.yunohost.org/backup；\n    - **保持耐心**：启动迁移后，根据您的互联网连接和硬件，可能需要长达一小时才能完成所有升级；\n    - **寻求社区帮助**：如果遇到问题需要排查，请在论坛上联系社区。",
     "migration_0036_main_upgrade": "正在启动主升级…",
-    "migration_0036_apt_lists_file_still_exists": "旧文件 '{file}' 仍然存在，但它不应存在。将重命名为 '{file}.legacy_bookworm'。",
     "migration_0036_modified_files": "请注意，发现以下文件已被手动修改，升级后可能会被覆盖：",
     "migration_0036_not_bullseye": "当前 Debian 发行版不是 Bookworm！如果您已经运行了 Bookworm -> Trixie 迁移，则此错误表明迁移过程未 100% 成功（否则 YunoHost 会将其标记为已完成）。建议与支持团队一起调查情况，他们需要迁移的**完整**日志，可以在 Web 管理界面的工具 > 日志中找到。",
     "migration_0036_not_enough_free_space": "/var/ 目录可用空间不足！您应至少有 1GB 空闲空间才能运行此迁移。",
