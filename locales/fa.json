@@ -304,7 +304,7 @@
     "firewall_reload_failed": "بارگیری مجدد فایروال امکان پذیر نیست. اطلاعات بیشتر در گزارش.",
     "firewall_reloaded": "فایروال بارگیری مجدد شد",
     "global_settings_setting_admin_strength": "الزامات گذرواژه رمز عبور مدیر",
-    "global_settings_setting_backup_compress_tar_archives_help": "هنگام ایجاد پشتیبان جدید ، بایگانی های فشرده (.tar.gz) را به جای بایگانی های فشرده نشده (.tar) انتخاب کنید. N.B. : فعال کردن این گزینه به معنای ایجاد آرشیوهای پشتیبان سبک تر است ، اما روش پشتیبان گیری اولیه به طور قابل توجهی طولانی تر و سنگین تر بر روی CPU خواهد بود.",
+    "global_settings_setting_backup_compress_tar_archives_help": "هنگام ایجاد نسخه‌های پشتیبان جدید، آرشیوها را به‌جای فرمت غیرفشرده (.tar)، به‌صورت فشرده (.tar.gz) ایجاد کنید. نکته‌ی مهم (N.B.): فعال‌سازی این گزینه به معنای ایجاد آرشیوهای پشتیبان سبک‌تر است، اما فرآیند اولیه‌ی پشتیبان‌گیری به‌طور قابل‌توجهی طولانی‌تر خواهد بود و فشار پردازشی (CPU) بیشتری به سامانه وارد خواهد کرد.",
     "global_settings_setting_nginx_compatibility_help": "سازگاری در مقابل مبادله امنیتی برای وب‌کارساز انجینکس. روی رمزها (و سایر جنبه های مرتبط با امنیت) تأثیر می گذارد",
     "global_settings_setting_postfix_compatibility_help": "سازگاری در مقابل مبادله امنیتی برای کارساز Postfix. روی رمزها (و سایر جنبه های مرتبط با امنیت) تأثیر می گذارد",
     "global_settings_setting_security_experimental_enabled_help": "فعال کردن ویژگی های امنیتی آزمایشی (اگر نمی دانید در حال انجام چه کاری هستید این کار را انجام ندهید!)",
@@ -556,5 +556,7 @@
     "yunohost_configured": "YunoHost اکنون پیکربندی شده است",
     "yunohost_installing": "در حال نصب YunoHost…",
     "yunohost_not_installed": "YunoHost به درستی نصب نشده است. لطفا 'yunohost tools postinstall' را اجرا کنید",
-    "yunohost_postinstall_end_tip": "پس از نصب کامل شد! برای نهایی کردن تنظیمات خود ، لطفاً موارد زیر را در نظر بگیرید:\n - تشخیص مشکلات احتمالی از طریق بخش \"عیب یابی\" webadmin (یا 'yunohost diagnosis run' در خط فرمان) ؛\n - خواندن قسمت های \"نهایی کردن راه اندازی خود\" و \"آشنایی با YunoHost\" در اسناد مدیریت: https://doc.yunohost.org/admin."
+    "yunohost_postinstall_end_tip": "پس از نصب کامل شد! برای نهایی کردن تنظیمات خود ، لطفاً موارد زیر را در نظر بگیرید:\n - تشخیص مشکلات احتمالی از طریق بخش \"عیب یابی\" webadmin (یا 'yunohost diagnosis run' در خط فرمان) ؛\n - خواندن قسمت های \"نهایی کردن راه اندازی خود\" و \"آشنایی با YunoHost\" در اسناد مدیریت: https://doc.yunohost.org/admin.",
+    "app_arch_not_supported": "این کاره تنها روی معماری‌های {required} قابل نصب است، اما معماری کارساز شما {current} است",
+    "app_action_failed": "اجرای عملیات {action} برای برنامه {app} ناموفق بود"
 }

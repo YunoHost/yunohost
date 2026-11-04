@@ -37,6 +37,8 @@ do_pre_regen() {
 do_post_regen() {
     regen_conf_files=$1
 
+    chmod u=rw-,g=r--,o=r-- /etc/nslcd.conf
+
     [[ -z "$regen_conf_files" ]] \
         || systemctl restart nslcd
 }

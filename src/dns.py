@@ -740,10 +740,7 @@ def domain_dns_push(
         )
 
         if record["type"] == "TXT":
-            if not record["content"].startswith('"'):
-                record["content"] = '"' + record["content"]
-            if not record["content"].endswith('"'):
-                record["content"] = record["content"] + '"'
+            record["content"] = _normalize_txt_content(record["content"])
 
         # Check if this record was previously set by YunoHost
         record["managed_by_yunohost"] = (
@@ -1026,6 +1023,23 @@ def _set_managed_dns_records_hashes(domain: str, hashes: list) -> None:
     settings = _get_domain_settings(domain)
     settings["managed_dns_records_hashes"] = hashes or []
     _set_domain_settings(domain, settings)
+
+
+def _normalize_txt_content(content: str) -> str:
+    """
+    A TXT value longer than 255 chars is stored as several chunks by registrars,
+    e.g. '"v=DKIM1; ... p=aaa" "bbb"' (typical since DKIM keys are 2048 bits).
+    Join them back so it compares equal to the single-chunk form we generate.
+    """
+
+    content = re.sub(r'"\s+"', "", content.strip())
+
+    if not content.startswith('"'):
+        content = '"' + content
+    if not content.endswith('"') or content == '"':
+        content = content + '"'
+
+    return content
 
 
 def _hash_dns_record(record: DNSRecord) -> int:

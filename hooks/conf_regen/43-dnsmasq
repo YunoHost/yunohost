@@ -167,10 +167,6 @@ EOF
 do_post_regen() {
     regen_conf_files=$1
 
-    # Force permission (to cover some edge cases where root's umask is like 027 and then dnsmasq cant read this file)
-    chown root /etc/resolv.dnsmasq.conf
-    chmod 644 /etc/resolv.dnsmasq.conf
-
     # Fuck it, those domain/search entries from dhclient are usually annoying
     # lying shit from the ISP trying to MiTM
     if grep -q -E "^ *(domain|search)" /run/resolvconf/resolv.conf; then
@@ -190,6 +186,10 @@ do_post_regen() {
     grep -q "127.0.0.1.*$short_hostname" /etc/hosts || echo -e "\n127.0.0.1\t$short_hostname" >> /etc/hosts
 
     [[ -n "$regen_conf_files" ]] || return 0
+
+    # Force permission (to cover some edge cases where root's umask is like 027 and then dnsmasq cant read this file)
+    chown -R root:root /etc/default/dnsmasq /etc/resolv.dnsmasq.conf /etc/dnsmasq.d/ /etc/dnsmasq.conf
+    chmod -R u=rwX,g=rX,o-w /etc/default/dnsmasq /etc/resolv.dnsmasq.conf /etc/dnsmasq.conf /etc/dnsmasq.d/
 
     # Remove / disable services likely to conflict with dnsmasq
     for SERVICE in systemd-resolved bind9; do

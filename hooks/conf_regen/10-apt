@@ -111,6 +111,9 @@ do_post_regen() {
     if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION; then
         update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
     fi
+
+    chown root:root -R /etc/apt
+    chmod -R u=rwX,g=rX,o-w /etc/apt
 }
 
 "do_$1_regen" "$(echo "${*:2}" | xargs)"
