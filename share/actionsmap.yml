@@ -523,6 +523,32 @@ user:
                         key:
                             help: The key to be removed
 
+        twofactor:
+            subcategory_help: Manage users' two-factor authentication (TOTP)
+            actions:
+
+                ### user_twofactor_status()
+                status:
+                    action_help: Show whether two-factor authentication is enabled and/or mandatory for this user
+                    api: GET /users/<username>/twofactor
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+                                autocomplete: *users_list
+
+                ### user_twofactor_reset()
+                reset:
+                    action_help: Remove the two-factor authentication of this user (eg. lost phone). If 2FA is mandatory for them, they will have to set it up again on their next login.
+                    api: DELETE /users/<username>/twofactor
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+                                autocomplete: *users_list
+
 #############################
 #          Domain           #
 #############################

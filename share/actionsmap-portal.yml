@@ -58,6 +58,46 @@ portal:
                     help: New password to set
                     nargs: "?"
 
+        ### portal_twofactor_status()
+        twofactor_status:
+            action_help: Show the status of the user's two-factor authentication
+            api: GET /me/twofactor
+
+        ### portal_twofactor_setup()
+        twofactor_setup:
+            action_help: Generate a new TOTP secret and recovery codes, to be confirmed with twofactor_enable
+            api: POST /me/twofactor/setup
+
+        ### portal_twofactor_enable()
+        twofactor_enable:
+            action_help: Enable two-factor authentication by confirming a code generated from the secret returned by twofactor_setup
+            api: PUT /me/twofactor
+            arguments:
+                --setup-token:
+                    help: Token returned by twofactor_setup
+                    required: True
+                --code:
+                    help: Current 6-digit code from the authenticator app
+                    required: True
+
+        ### portal_twofactor_disable()
+        twofactor_disable:
+            action_help: Disable two-factor authentication (refused when mandatory)
+            api: DELETE /me/twofactor
+            arguments:
+                --code:
+                    help: Current 6-digit code, or a recovery code
+                    required: True
+
+        ### portal_twofactor_recovery_codes()
+        twofactor_recovery_codes:
+            action_help: Generate a new set of recovery codes (the previous ones are invalidated)
+            api: POST /me/twofactor/recovery_codes
+            arguments:
+                --code:
+                    help: Current 6-digit code, or a recovery code
+                    required: True
+
         ### portal_update_password()
         # update_password:
         #     action_help: Allow user to change their password

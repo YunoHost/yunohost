@@ -1674,6 +1674,50 @@ def user_ssh_remove_key(username: str, key: str) -> None:
 #
 
 
+#
+# Two-factor authentication subcategory
+#
+
+
+def user_twofactor_status(username: str) -> dict[str, Any]:
+    from .utils.ldap import _get_ldap_interface
+    from .utils.twofactor import read_user_data, status, user_is_admin
+
+    if username not in user_list()["users"]:
+        raise YunohostValidationError("user_unknown", user=username)
+    return status(
+        read_user_data(_get_ldap_interface(), username), user_is_admin(username)
+    )
+
+
+@is_unit_operation([("username", "user")])
+def user_twofactor_reset(operation_logger: "OperationLogger", username: str) -> None:
+    from .authenticators.ldap_admin import Authenticator as AdminAuth
+    from .authenticators.ldap_ynhuser import Authenticator as PortalAuth
+    from .utils.ldap import _get_ldap_interface
+    from .utils.twofactor import clear_enrollment, is_enrolled, read_user_data
+
+    if username not in user_list()["users"]:
+        raise YunohostValidationError("user_unknown", user=username)
+    ldap = _get_ldap_interface()
+    if not is_enrolled(read_user_data(ldap, username)):
+        raise YunohostValidationError("twofactor_not_enabled")
+
+    operation_logger.start()
+    clear_enrollment(ldap, username)
+
+    # Existing sessions were opened with the old second factor
+    PortalAuth.invalidate_all_sessions_for_user(username)
+    AdminAuth.invalidate_all_sessions_for_user(username)
+
+    logger.success(m18n.n("twofactor_reset_success", user=username))
+
+
+#
+# End two-factor authentication subcategory
+#
+
+
 def _update_admins_group_aliases(
     old_main_domain: str | None, new_main_domain: str
 ) -> None:

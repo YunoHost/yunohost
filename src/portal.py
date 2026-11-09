@@ -363,3 +363,72 @@ def portal_update(
         }
     else:
         return {}
+
+
+#
+# Two-factor authentication
+#
+
+
+def _twofactor_context() -> tuple[str, LDAPInterface, bool]:
+    """
+    Return (username, ldap interface bound as the user, is_admin).
+    2FA attributes are only readable/writable by the user themself,
+    hence the user-bound LDAP connection.
+    """
+    from .utils.twofactor import user_is_admin
+
+    session = Auth().get_session_cookie(decrypt_pwd=True)
+    username = session["user"]
+    return username, LDAPInterface(username, session["pwd"]), user_is_admin(username)
+
+
+def portal_twofactor_status() -> dict[str, Any]:
+    from .utils.twofactor import read_user_data, status
+
+    username, ldap_user, is_admin = _twofactor_context()
+    return status(read_user_data(ldap_user, username), is_admin)
+
+
+def portal_twofactor_setup() -> dict[str, Any]:
+    from .authenticators.ldap_ynhuser import SESSION_SECRET
+    from .utils.twofactor import (
+        get_policy,
+        is_enrolled,
+        issuer,
+        new_setup,
+        read_user_data,
+    )
+
+    if get_policy() == "disabled":
+        raise YunohostValidationError("twofactor_disabled_by_admin")
+
+    username, ldap_user, _ = _twofactor_context()
+    if is_enrolled(read_user_data(ldap_user, username)):
+        raise YunohostValidationError("twofactor_already_enabled")
+
+    return new_setup(username, SESSION_SECRET(), issuer())
+
+
+def portal_twofactor_enable(setup_token: str, code: str) -> None:
+    from .authenticators.ldap_ynhuser import SESSION_SECRET
+    from .utils.twofactor import self_enable
+
+    username, ldap_user, _ = _twofactor_context()
+    self_enable(ldap_user, username, setup_token, code, SESSION_SECRET())
+    logger.info(f"User {username} enabled 2FA")
+
+
+def portal_twofactor_disable(code: str) -> None:
+    from .utils.twofactor import self_disable
+
+    username, ldap_user, is_admin = _twofactor_context()
+    self_disable(ldap_user, username, code, is_admin)
+    logger.info(f"User {username} disabled 2FA")
+
+
+def portal_twofactor_recovery_codes(code: str) -> dict[str, list[str]]:
+    from .utils.twofactor import self_regenerate_recovery_codes
+
+    username, ldap_user, _ = _twofactor_context()
+    return {"recovery_codes": self_regenerate_recovery_codes(ldap_user, username, code)}
