@@ -2174,6 +2174,11 @@ def app_ssowatconf() -> None:
         for k, v in settings_get("security.portal", export=True).items()
         if "allow_edit_email" in k
     }
+    password_policy_settings = {
+        k: v
+        for k, v in settings_get("security.password", export=True).items()
+        if k.endswith("_strength")
+    }
     for domain, apps in portal_domains_apps.items():
         portal_settings = {}
 
@@ -2187,6 +2192,7 @@ def app_ssowatconf() -> None:
 
         # Update with the new settings
         portal_settings.update(portal_email_settings)
+        portal_settings.update(password_policy_settings)
 
         # Do no override anything else than "apps" since the file is shared
         # with domain's config panel "portal" options

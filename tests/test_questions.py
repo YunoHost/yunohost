@@ -766,19 +766,19 @@ class TestPassword(BaseTest):
         *all_fails([], ["one"], {}, raw_option={"optional": True}, error=AttributeError),  # FIXME those fails with AttributeError
         *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
         *nones(None, "", output=""),
-        ("s3cr3t!!", YunohostError, {"default": "SUPAs3cr3t!!"}),  # default is forbidden
+        ("S3cr3t!!", YunohostError, {"default": "SUPAs3cr3t!!"}),  # default is forbidden
         *xpass(scenarios=[
-            ("s3cr3t!!", "s3cr3t!!", {"example": "SUPAs3cr3t!!"}),  # example is forbidden
+            ("S3cr3t!!", "S3cr3t!!", {"example": "SUPAs3cr3t!!"}),  # example is forbidden
         ], reason="Should fail; example is forbidden"),
         *xpass(scenarios=[
             (" value \n moarc0mpl1cat3d\n  ", "value \n moarc0mpl1cat3d"),
             (" some_ value", "some_ value"),
         ], reason="Should output exactly the same"),
-        ("s3cr3t!!", "s3cr3t!!"),
+        ("S3cr3t!!", "S3cr3t!!"),
         ("secret", FAIL),
         *[("supersecret" + char, FAIL) for char in FORBIDDEN_PASSWORD_CHARS],  # FIXME maybe add ` \n` to the list?
         # readonly
-        ("s3cr3t!!", YunohostError, {"readonly": True}),  # readonly is forbidden
+        ("S3cr3t!!", YunohostError, {"readonly": True}),  # readonly is forbidden
     ]
     # fmt: on
 
@@ -1928,7 +1928,7 @@ def test_options_query_string():
     results = {
         "string_id": "string",
         "text_id": "text\ntext",
-        "password_id": "sUpRSCRT",
+        "password_id": "sUpRSCRT2",
         "color_id": "#ff0",
         "number_id": 10,
         "boolean_id": 1,
@@ -1951,7 +1951,7 @@ def test_options_query_string():
         yield (
             "string_id= string"
             "&text_id=text\ntext"
-            "&password_id=sUpRSCRT"
+            "&password_id=sUpRSCRT2"
             "&color_id=#ffff00"
             "&number_id=10"
             "&boolean_id=y"
