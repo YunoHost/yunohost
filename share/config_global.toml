@@ -25,6 +25,16 @@ i18n = "global_settings_setting"
         # The actual value is dynamically computed by checking the sudoOption of cn=admins,ou=sudo
         default = false
 
+    [security.twofactor]
+
+        [security.twofactor.twofactor_policy]
+        type = "select"
+        choices.disabled = "Disabled"
+        choices.optional = "Optional (each user can enable it for themself)"
+        choices.enforced_admins = "Mandatory for administrators"
+        choices.enforced_all = "Mandatory for everybody"
+        default = "optional"
+
     [security.ssh]
 
         [security.ssh.ssh_compatibility]

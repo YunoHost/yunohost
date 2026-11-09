@@ -42,6 +42,8 @@ from ..utils.error import YunohostAuthenticationError, YunohostError
 from ..utils.file_utils import read_json
 from ..utils.ldap import _get_ldap_interface
 from ..utils.misc import random_ascii
+from ..utils.twofactor import check_login as check_twofactor_login
+from ..utils.twofactor import user_is_admin as twofactor_user_is_admin
 
 logger = logging.getLogger("yunohostportal.authenticators.ldap_ynhuser")
 
@@ -244,6 +246,15 @@ class Authenticator(BaseAuthenticator):  # type: ignore
 
         if not user_is_allowed_on_domain(username, request.get_header("host")):
             raise YunohostAuthenticationError("unable_authenticate")
+
+        # Password is valid and user may access this domain:
+        # now enforce the second factor if needed
+        check_twofactor_login(
+            username,
+            password,
+            is_admin=twofactor_user_is_admin(username),
+            signing_key=SESSION_SECRET(),
+        )
 
         return {
             "user": username,

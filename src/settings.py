@@ -352,6 +352,42 @@ def regen_ssowatconf(setting_name, old_value, new_value):
         app_ssowatconf()
 
 
+@post_change_hook("twofactor_policy")
+def apply_twofactor_policy(setting_name, old_value, new_value):
+    from .authenticators.ldap_admin import Authenticator as AdminAuth
+    from .authenticators.ldap_ynhuser import Authenticator as PortalAuth
+    from .user import user_list
+    from .utils.ldap import _get_ldap_interface
+    from .utils.twofactor import (
+        is_enforced,
+        is_enrolled,
+        read_user_data,
+        user_is_admin,
+        write_policy,
+    )
+
+    # The portal API doesn't run as root and can't read the settings,
+    # so the policy is mirrored in a world-readable file
+    write_policy(new_value)
+
+    # Users who now must use 2FA but haven't enrolled yet are logged out
+    # everywhere, such that they go through the enrollment on next login
+    # (sessions are otherwise extended indefinitely while being used)
+    ldap = _get_ldap_interface()
+    for user in user_list()["users"]:
+        is_admin = user_is_admin(user)
+        if not is_enforced(new_value, is_admin) or is_enforced(
+            old_value or "", is_admin
+        ):
+            continue
+        if is_enrolled(read_user_data(ldap, user)):
+            continue
+        logger.info(m18n.n("twofactor_logging_out_user_for_enrollment", user=user))
+        PortalAuth.invalidate_all_sessions_for_user(user)
+        if is_admin:
+            AdminAuth.invalidate_all_sessions_for_user(user)
+
+
 @post_change_hook("dns_custom_resolvers_enabled")
 @post_change_hook("dns_custom_resolvers_list")
 def reconfigure_dnsmasq(setting_name, old_value, new_value):

@@ -36,6 +36,7 @@ from moulinette.authentication import BaseAuthenticator
 from ..utils.error import YunohostAuthenticationError, YunohostError
 from ..utils.ldap import _get_ldap_interface
 from ..utils.misc import random_ascii
+from ..utils.twofactor import check_login as check_twofactor_login
 
 logger = logging.getLogger("yunohost.authenticators.ldap_admin")
 
@@ -150,6 +151,12 @@ class Authenticator(BaseAuthenticator):  # type: ignore
             # Free the connection, we don't really need it to keep it open as the point is only to check authentication...
             if con:
                 con.unbind_s()
+
+        # Password is valid: now enforce the second factor if needed
+        # (admins are, by definition, admins)
+        check_twofactor_login(
+            uid, password, is_admin=True, signing_key=SESSION_SECRET()
+        )
 
         return {"user": uid}
 
