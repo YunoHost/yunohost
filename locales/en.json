@@ -891,7 +891,7 @@
     "tos_dyndns_acknowledgement": "You chose to register a DynDNS domain which is a service provided by the YunoHost project. Considering that domain names are an important aspect of long-term digital services, we remind you to read carefully the corresponding Terms of Services, in particular the section regarding those free domain names: <https://doc.yunohost.org/terms_of_services>.",
     "tos_postinstall_acknowledgement": "The YunoHost project is a team of volunteers who have made common cause to create a free operating system for servers, called YunoHost. The YunoHost software is published under the AGPLv3 license (<https://www.gnu.org/licenses/agpl-3.0.txt>). In connection with this software, the project administers and makes available several technical and community services for various purposes. By using these services, you agree to be bound by the following Terms of Services: <https://doc.yunohost.org/terms_of_services>.",
     "twofactor_already_enabled": "Two-factor authentication is already enabled",
-    "twofactor_cannot_disable_enforced": "Two-factor authentication is mandatory on this server and cannot be disabled. Ask an administrator if you lost access to your authenticator app.",
+    "twofactor_cannot_disable_enforced": "Two-factor authentication is mandatory for your account and cannot be disabled. Ask an administrator if you lost access to your authenticator app.",
     "twofactor_code_invalid": "Invalid two-factor authentication code",
     "twofactor_code_required": "Please enter the code from your authenticator app, or one of your recovery codes",
     "twofactor_disabled_by_admin": "Two-factor authentication is disabled on this server",
