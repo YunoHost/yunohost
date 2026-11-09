@@ -35,6 +35,18 @@ i18n = "global_settings_setting"
         choices.enforced_all = "Mandatory for everybody"
         default = "optional"
 
+        [security.twofactor.twofactor_enforced_warning]
+        type = "alert"
+        style = "warning"
+        icon = "warning"
+        visible = "twofactor_policy == 'enforced_admins' || twofactor_policy == 'enforced_all'"
+
+        [security.twofactor.twofactor_disabled_warning]
+        type = "alert"
+        style = "danger"
+        icon = "warning"
+        visible = "twofactor_policy == 'disabled'"
+
     [security.ssh]
 
         [security.ssh.ssh_compatibility]

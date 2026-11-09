@@ -563,6 +563,8 @@
     "global_settings_setting_tls_passthrough_list": "List of forwarding",
     "global_settings_setting_tls_passthrough_list_help": "Should be a list of DOMAIN;DESTINATION;PORT, such as domain.tld;192.168.1.42;443 or domain.tld;server.local;8123",
     "global_settings_setting_tls_passthrough_name": "TLS-passthrough / SNI-based forwarding",
+    "global_settings_setting_twofactor_disabled_warning": "Two-factor authentication will no longer be asked to anyone, including the users who have already set it up: their password alone will be enough to log in.",
+    "global_settings_setting_twofactor_enforced_warning": "As soon as you save, the affected accounts that haven't set up two-factor authentication yet (possibly including yours) will be logged out, and will have to set it up on their next login before getting access. To avoid being interrupted, first set up your own in the user portal: 'Edit my profile' > 'Two-factor authentication'. If an administrator loses access to their authenticator app, it can be reset from the command line with 'yunohost user twofactor reset USERNAME'.",
     "global_settings_setting_twofactor_name": "Two-factor authentication",
     "global_settings_setting_twofactor_policy": "Two-factor authentication (TOTP) policy",
     "global_settings_setting_twofactor_policy_help": "Applies to the webadmin, the user portal and apps protected by the SSO. It does NOT apply to apps doing their own LDAP authentication, nor to email, XMPP or SSH. When making it mandatory, affected users who haven't set it up yet are logged out and will have to set it up on their next login.",
