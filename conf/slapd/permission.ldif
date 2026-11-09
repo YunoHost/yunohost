@@ -38,6 +38,19 @@ olcAttributeTypes: ( 1.3.6.1.4.1.17953.9.1.9 NAME 'isProtected'
   DESC 'YunoHost application permission protection' OBSOLETE
   EQUALITY booleanMatch
   SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE )
+# For two-factor authentication
+olcAttributeTypes: ( 1.3.6.1.4.1.17953.9.1.10 NAME 'twoFactorSecret'
+  DESC 'YunoHost user TOTP secret (base32)'
+  EQUALITY caseExactMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{64} SINGLE-VALUE )
+olcAttributeTypes: ( 1.3.6.1.4.1.17953.9.1.11 NAME 'twoFactorLastCounter'
+  DESC 'YunoHost user last accepted TOTP time-step (anti-replay)'
+  EQUALITY integerMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+olcAttributeTypes: ( 1.3.6.1.4.1.17953.9.1.12 NAME 'twoFactorRecoveryCode'
+  DESC 'YunoHost user 2FA recovery code hash'
+  EQUALITY caseExactMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{128} )
 # OBJECTCLASS
 # For Applications
 olcObjectClasses: ( 1.3.6.1.4.1.17953.9.2.1 NAME 'groupOfNamesYnh'
@@ -53,4 +66,4 @@ olcObjectClasses: ( 1.3.6.1.4.1.17953.9.2.2 NAME 'permissionYnh'
 olcObjectClasses: ( 1.3.6.1.4.1.17953.9.2.3 NAME 'userPermissionYnh'
   DESC 'a YunoHost user with permission attributes'
   SUP top AUXILIARY
-  MAY ( permission ) )
+  MAY ( permission $ twoFactorSecret $ twoFactorLastCounter $ twoFactorRecoveryCode ) )
