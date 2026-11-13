@@ -30,5 +30,4 @@ jobs:
       - name: Upload built packages
         uses: actions/upload-artifact@v7
         with:
-          archive: false
           path: packages/*
