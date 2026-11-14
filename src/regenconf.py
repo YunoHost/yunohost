@@ -511,17 +511,22 @@ def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
 
     """
 
-    if orig_file and os.path.exists(orig_file):
-        with open(orig_file, "r") as orig_file:
-            orig_file = orig_file.readlines()
-    else:
-        orig_file = []
+    def read_file(file_path: str | os.PathLike) -> list[str]:
+        if file_path and os.path.exists(file_path):
+            try:
+                with open(file_path, "r") as f:
+                    return f.readlines()
+            except UnicodeDecodeError:
+                binary_file = ["Binary or non utf-8 file\n"]
+                with open(file_path, 'rb', buffering=0) as f:
+                    file_hash = hashlib.file_digest(f, 'sha1').hexdigest()
+                    binary_file += [f"SHA1: {file_hash}\n"]
+                    return binary_file
+        else:
+            return []
 
-    if new_file and os.path.exists(new_file):
-        with open(new_file, "r") as new_file:
-            new_file = new_file.readlines()
-    else:
-        new_file = []
+    orig_file = read_file(orig_file)
+    new_file = read_file(new_file)
 
     # Compare files and format output
     diff = unified_diff(orig_file, new_file)
