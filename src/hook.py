@@ -227,8 +227,7 @@ def hook_callback(
     args: list[str | bool] | None = None,
     chdir=None,
     env=None,
-    pre_callback=None,
-    post_callback=None,
+    compute_args_and_workdir_for_individual_script=None,
 ):
     """
     Execute all scripts binded to an action
@@ -239,12 +238,9 @@ def hook_callback(
         args -- Ordered list of arguments to pass to the scripts
         chdir -- The directory from where the scripts will be executed
         env -- Dictionnary of environment variables to export
-        pre_callback -- An object to call before each script execution with
+        compute_args_and_workdir_for_individual_script -- An object to call before each script execution with
             (name, priority, path, args) as arguments and which must return
-            the arguments to pass to the script
-        post_callback -- An object to call after each script execution with
-            (name, priority, path, succeed) as arguments
-
+            a tuple with: (the arguments to pass to the script, the chdir to set)
     """
     result: dict[str, dict] = {}
     hooks_dict = {}
@@ -280,15 +276,10 @@ def hook_callback(
         return result
 
     # Validate callbacks
-    if not callable(pre_callback):
+    if not callable(compute_args_and_workdir_for_individual_script):
 
-        def pre_callback(name, priority, path, args):
-            return args
-
-    if not callable(post_callback):
-
-        def post_callback(name, priority, path, succeed):
-            return None
+        def compute_args_and_workdir_for_individual_script(name, priority, path, args):
+            return args, chdir
 
     # Iterate over hooks and execute them
     for priority in sorted(hooks_dict):
@@ -296,19 +287,20 @@ def hook_callback(
             state = "succeed"
             path = info["path"]
             try:
-                hook_args = pre_callback(
+                hook_args, hook_chdir = compute_args_and_workdir_for_individual_script(
                     name=name, priority=priority, path=path, args=args
                 )
                 hook_return = hook_exec(
-                    path, args=hook_args, chdir=chdir, env=env, raise_on_error=True
+                    path,
+                    args=hook_args if hook_args else args,
+                    chdir=hook_chdir if hook_chdir else chdir,
+                    env=env, raise_on_error=True
                 )[1]
             except YunohostError as e:
                 state = "failed"
                 hook_return = {}
                 logger.error(e.strerror, exc_info=True)
-                post_callback(name=name, priority=priority, path=path, succeed=False)
-            else:
-                post_callback(name=name, priority=priority, path=path, succeed=True)
+
             if name not in result:
                 result[name] = {}
             result[name][path] = {"state": state, "stdreturn": hook_return}
