@@ -42,6 +42,10 @@ i18n = "global_settings_setting"
         type = "boolean"
         default = true
 
+        [security.ssh.ssh_root_pubkey_authentication]
+        type = "boolean"
+        default = false
+
     [security.nginx]
         [security.nginx.nginx_redirect_to_https]
         type = "boolean"
