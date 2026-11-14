@@ -142,3 +142,8 @@ Match Group sftp.app,!ssh.app
 # server has access to a web console through which to log in.
 Match Address 192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,169.254.0.0/16,fe80::/10,fd00::/8
     PermitRootLogin yes
+
+# If you'd like to add extra/custom configuration, please create separate files
+# in /etc/ssh/sshd_config.d/ folder. Their rules will be applied in alphanumeric
+# order of the filename.
+Include /etc/ssh/sshd_config.d/*.conf
