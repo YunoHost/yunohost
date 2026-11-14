@@ -248,6 +248,10 @@ class MyDiagnoser(Diagnoser):
 
                 details.append("diagnosis_mail_blocklist_website")
 
+                # Warn about risk of false alert in specific known cases
+                if item_type == 'ipv6' and blocklist["name"] == 'Spamhaus ZEN':
+                    details.append("diagnosis_mail_blocklist_listed_by_ipv6_specific_provider_warning")
+
                 yield dict(
                     meta={
                         "test": "mail_blocklist",
