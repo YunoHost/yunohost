@@ -20,6 +20,7 @@
 
 import os
 import re
+import subprocess
 import time
 from collections import OrderedDict
 from difflib import SequenceMatcher
@@ -31,6 +32,7 @@ from moulinette import Moulinette, m18n
 from .domain import (
     _assert_domain_exists,
     _get_domain_settings,
+    _get_maindomain,
     _get_parent_domain_of,
     _list_subdomains_of,
     _set_domain_settings,
@@ -115,6 +117,49 @@ class DNSRecord(TypedDict):
     identifier: NotRequired[Any]
     action: NotRequired[Literal["delete", "create", "update", "unchanged"]]
 
+
+
+#: SSHFP algorithm numbers (RFC 4255 and successors) we advertise. DSA (2) is
+#: deliberately absent: it is disabled in OpenSSH by default and advertising it
+#: would only widen the attack surface.
+SSHFP_ALGORITHMS = (1, 3, 4)
+
+
+def _build_sshfp_records(basename: str, ttl: int) -> list[tuple]:
+    """SSHFP records for this host's SSH keys, as (name, ttl, type, content).
+
+    Computed by ssh-keygen rather than by hashing the keys ourselves: it is the
+    reference implementation, it already knows every key type OpenSSH supports,
+    and a single call covers all of them. The record name it prints is
+    irrelevant here — the caller supplies one relative to the DNS zone — so a
+    placeholder is passed and only the algorithm onwards is kept.
+    """
+    try:
+        out = subprocess.run(
+            ["ssh-keygen", "-r", "placeholder"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError) as e:
+        logger.warning(f"Could not compute SSHFP records: {e}")
+        return []
+
+    records = []
+    for line in out.splitlines():
+        # placeholder IN SSHFP <algorithm> <digest-type> <fingerprint>
+        parts = line.split()
+        if len(parts) != 6 or parts[2] != "SSHFP":
+            continue
+        algorithm, digest_type, fingerprint = parts[3], parts[4], parts[5]
+        if int(algorithm) not in SSHFP_ALGORITHMS:
+            continue
+        records.append(
+            (basename, ttl, "SSHFP", f"{algorithm} {digest_type} {fingerprint.lower()}")
+        )
+
+    # By algorithm then digest type, so the suggestion reads in a stable order.
+    return sorted(records, key=lambda r: r[3])
 
 def _build_dns_conf(
     base_domain: str, include_empty_AAAA_if_no_ipv6=False, dkim_split=False
@@ -236,6 +281,12 @@ def _build_dns_conf(
                 extra.append((f"*{suffix}", ttl, "AAAA", None))  # type: ignore[arg-type]
 
             extra.append((basename, ttl, "CAA", '0 issue "letsencrypt.org"'))
+
+            # SSHFP describes the *host*'s SSH keys, so it belongs on the
+            # server's main domain only — not on every domain that happens to
+            # point at the same machine.
+            if domain == _get_maindomain():
+                extra.extend(_build_sshfp_records(basename, ttl))
 
         ####################
         # Standard records #
@@ -701,8 +752,8 @@ def domain_dns_push(
         registrar: registrar_credentials,
     }
 
-    # Get only records for relevant types: A, AAAA, MX, TXT, CNAME, SRV
-    relevant_types = ["A", "AAAA", "MX", "TXT", "CNAME", "SRV", "CAA"]
+    # Get only records for relevant types
+    relevant_types = ["A", "AAAA", "MX", "TXT", "CNAME", "SRV", "CAA", "SSHFP"]
     current_records = []
 
     for rtype in relevant_types:

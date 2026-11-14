@@ -201,7 +201,8 @@ class MyDiagnoser(Diagnoser):  # type: ignore
             return False
         if r["content"] is None and r["current"] is not None:
             return False
-        elif isinstance(r["current"], list):
+        elif isinstance(r["current"], list) and r["type"] != "SSHFP":
+            # SSHFP is legitimately multi-valued: one record per key and digest.
             return False
 
         if r["type"] == "TXT":
@@ -240,6 +241,13 @@ class MyDiagnoser(Diagnoser):  # type: ignore
             expected_str = r["content"].split()[-1]
             current_str = r["current"].split()[-1]
             return expected_str == current_str
+        elif r["type"] == "SSHFP":
+            # A host publishes several SSHFP records under one name, and dig
+            # returns the fingerprint uppercased where we produce it lowercase.
+            assert r["content"] is not None and r["current"] is not None
+            current = r["current"] if isinstance(r["current"], list) else [r["current"]]
+            expected_str = " ".join(r["content"].split()).lower()
+            return any(" ".join(c.split()).lower() == expected_str for c in current)
         elif r["type"] == "CAA":
             # For CAA, check only the last item, ignore the 0 / 128 nightmare
             assert r["content"] is not None and r["current"] is not None
