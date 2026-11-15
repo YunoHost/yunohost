@@ -1,3 +1,28 @@
+yunohost (12.1.42) stable; urgency=low
+
+  - tests: process: Remove flappy cat:doesntexists test (1928e7b31)
+  - Make GPG key optional in apt extra repo helper ([#2355](http://github.com/YunoHost/yunohost/pull/2355))
+  - fix(actionsmap): missing 'name' key for disk info (e0a6a452d)
+  - [enh] Add portal API doc (c486a819d)
+  - [fix] Bad regex + fullname support in user imports ([#2332](http://github.com/YunoHost/yunohost/pull/2332))
+  - [fix] No SSH with public key after trixie migration ([#2351](http://github.com/YunoHost/yunohost/pull/2351))
+  - migrations: trixie: apt: split atomic .replace with multiple .replace ([#2363](http://github.com/YunoHost/yunohost/pull/2363))
+  - doc: Modernizing python (32dc42e63)
+  - [fix] No hooks triggered during firewall reload (cb7c9a8ea)
+  - migrations: trixie: Remove legacy apt sources file (a437f4b0a)
+  - [CI] Reformat / remove stale translated strings ([#2369](http://github.com/YunoHost/yunohost/pull/2369))
+  - [enh] New single validation mechanism for settings (c9307f6b8)
+  - [enh] Support tmpfs (4da430d3d)
+  - [fix] Workaround to set a settings with visible value (15e88bd21)
+  - Update n to 11.0.0 (3df1286ff)
+  - Fix app restore when app settings changed by resources ([#2388](http://github.com/YunoHost/yunohost/pull/2388))
+  - [fix] Restore missing comma in locales/fr.json (cae23c661)
+  - i18n: Translations updated for Basque, French, Galician, Hungarian, Italian, Occitan, Persian, Portuguese, Russian, Ukrainian
+
+  Thanks to all contributors <3 ! (Alekseï, Emir, Éric Gaspar, HgO, José M, Josue-T, ljf, ljf (zamentur), ppr, Quentí, Salame Turco, Simon F, tituspijean, xabirequejo, zamentur, نادکارو)
+
+ -- Félix Piédallu <felix@piedallu.me>  Sun, 15 Nov 2026 12:02:14 +0100
+
 yunohost (12.1.41.2) stable; urgency=low
 
   - migration: fix disclaimer for 0037 (8134c376f)
