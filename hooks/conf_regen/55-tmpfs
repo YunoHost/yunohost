@@ -25,6 +25,10 @@ set -eu
 # shellcheck source=../../helpers/helpers
 source /usr/share/yunohost/helpers
 
+tmp_in_fstab() {
+    findmnt --fstab --noheadings --mountpoint /tmp > /dev/null 2>&1
+}
+
 do_pre_regen() {
     pending_dir=$1
 
@@ -36,7 +40,7 @@ do_pre_regen() {
 
     cd /usr/share/yunohost/conf/tmpfs
     mkdir -p "${pending_dir}/etc/systemd/system/tmp.mount.d"
-    if [ "${tmpfs_enabled}" == "True" ]; then
+    if [ "${tmpfs_enabled}" == "True" ] && ! tmp_in_fstab; then
         ynh_render_template tmpfs-override.tpl.conf "${pending_dir}/etc/systemd/system/tmp.mount.d/yunohost-override.conf"
     else
         touch "${pending_dir}/etc/systemd/system/tmp.mount.d/yunohost-override.conf"
@@ -47,11 +51,24 @@ do_post_regen() {
     regen_conf_files=$1
 
     tmpfs_enabled="$(jq -r '.tmpfs_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
+
+    if tmp_in_fstab; then
+        # Heal systems where 12.1.42 already masked an fstab-backed tmp.mount
+        if [ -L /etc/systemd/system/tmp.mount ] && [ "$(readlink /etc/systemd/system/tmp.mount)" = "/dev/null" ]; then
+            systemctl unmask tmp.mount 2> /dev/null || true
+            systemctl daemon-reload
+        fi
+        if [ "${tmpfs_enabled}" == "True" ]; then
+            ynh_print_warn --message="/tmp is already defined in /etc/fstab, skipping tmpfs setup"
+        fi
+        return 0
+    fi
+
     if [ "${tmpfs_enabled}" == "True" ]; then
         chown root:root /etc/systemd/system/tmp.mount.d/yunohost-override.conf
         chmod u=rw-,g=r--,o-w /etc/systemd/system/tmp.mount.d/yunohost-override.conf
 
-        systemctl unmask tmp.mount 2> /dev/null
+        systemctl unmask tmp.mount 2> /dev/null || true
         [[ -z "$regen_conf_files" ]] \
             || systemctl daemon-reload
 
@@ -66,9 +83,8 @@ do_post_regen() {
             # We can't stop tmp.mount cause target is probably busy
             ynh_print_warn --message="Reboot needed to switch /tmp on disk"
         fi
-        systemctl mask tmp.mount 2> /dev/null
+        systemctl mask tmp.mount 2> /dev/null || true
     fi
-
 }
 
 "do_$1_regen" "$(echo "${*:2}" | xargs)"
