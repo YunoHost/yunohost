@@ -141,6 +141,18 @@ class MyDiagnoser(Diagnoser):  # type: ignore
                 summary="diagnosis_security_vulnerable_to_meltdown",
                 details=["diagnosis_security_vulnerable_to_meltdown_details"],
             )
+        # Check for the ssh authentication method actually used (not ynh
+        # ssh_authentication_methods setting) and print warning if only password
+        # is used
+        with open(r'/etc/ssh/sshd_config', 'r') as file:
+            sshd_config = file.read()
+            if re.search("PasswordAuthentication *yes", sshd_config) and (re.search("PubkeyAuthentication *no", sshd_config) or not re.search("PubkeyAuthentication *yes", sshd_config)):
+                yield dict(
+                    meta={"test": "sshd_config_insecure_authentication_methods"},
+                    status="WARNING",
+                    summary="diagnosis_sshd_config_insecure_authentication_methods",
+                    details=["diagnosis_sshd_config_insecure_authentication_methods_details"],
+                )
 
         bad_sury_packages = list(self.bad_sury_packages())
         if bad_sury_packages:
