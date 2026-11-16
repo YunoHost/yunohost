@@ -1,3 +1,28 @@
+yunohost (13.0.10) testing; urgency=low
+
+  - [fix] yunomdns service has no permission to access its config ([#2390](http://github.com/YunoHost/yunohost/pull/2390))
+  - [enh] Remove deprecated postfix features ([#2386](http://github.com/YunoHost/yunohost/pull/2386))
+  - Implement mail quota warning message ([#2385](http://github.com/YunoHost/yunohost/pull/2385))
+  - Fix sieve filter configuration (305dc8fce)
+  - [fix] Add Content-Type header with charset to admin emails (6f8657d9e)
+  - Merge branch 'dev' into trixie (47c5d3c18)
+  - [enh] Configure tmpsfs in postinstall (bbe4990ad)
+  - [fix] Missing help (c5424dc1f)
+  - [fix] linter (df9839d4a)
+  - [fix] Workaround to set a settings with visible attribute (4ce9d9037)
+  - [fix] Workaround to set a settings with visible value (04baf875e)
+  - [fix] Don't display header if no question (f4b053a18)
+  - [enh] Display the tmpfs help before success log (966ef9c60)
+  - Remove legacy translation string for migration (5f5ae2ceb)
+  - workflows: Add build deb package workflow (eae902710)
+  - workflows: build: Use ubuntu-26.04 (3b20aecdd)
+  - workflows: build: allow archive (337602b71)
+  - workflows: build: Fix stable / unstable test (4f7d46195)
+
+  Thanks to all contributors <3 ! (ajoe, Josue-T, Josué Tille, ljf, ljf (zamentur), zamentur)
+
+ -- Félix Piédallu <felix@piedallu.me>  Fri, 13 Nov 2026 14:01:13 +0100
+
 yunohost (13.0.9) testing; urgency=low
 
   - conf: nginx: Indicate email address as default identifier in mail autoconfig (4af6cf1f4)

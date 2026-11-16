@@ -395,7 +395,7 @@ user:
                     api: GET /users/permissions/<permission>
                     arguments:
                         permission:
-                            help: Name of the permission to fetch info about (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
+                            help: Name of the permission to fetch info about (use "yunohost user permission list" and "yunohost user permission list -f" to see all the current permissions)
                             extra:
                                 autocomplete: &permissions_list
                                     ynh_selector: user permission list

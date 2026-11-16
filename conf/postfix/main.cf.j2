@@ -71,8 +71,6 @@ append_dot_mydomain = no
 
 # -- TLS for incoming connections
 ###############################################################################
-smtpd_use_tls = yes
-
 smtpd_tls_security_level = may
 smtpd_tls_auth_only = yes
 smtpd_tls_chain_files =
@@ -90,10 +88,6 @@ smtp_tls_mandatory_protocols  = >=TLSv1.2
 smtp_tls_protocols            = >=TLSv1.2
 
 smtpd_tls_mandatory_ciphers = medium
-
-# curl https://ssl-config.mozilla.org/ffdhe2048.txt > /path/to/dhparam.pem
-# not actually 1024 bits, this applies to all DHE >= 1024 bits
-smtpd_tls_dh1024_param_file = /usr/share/yunohost/ffdhe2048.pem
 
 tls_medium_cipherlist = ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305
 {% else %}

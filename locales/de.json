@@ -826,7 +826,6 @@
     "migration_0036_cleaning_up": "Cache und nicht mehr benötigte Pakete bereinigen…",
     "migration_0036_delayed_api_restart": "Die YunoHost-API wird in 15 Sekunden automatisch neu gestartet und ist möglicherweise für einige Sekunden nicht verfügbar. Anschließend musst du dich erneut anmelden.",
     "migration_0036_main_upgrade": "Haupt-Upgrade wird gestartet…",
-    "migration_0036_apt_lists_file_still_exists": "Die veraltete Datei „{file}“ ist noch vorhanden, obwohl sie eigentlich nicht mehr vorhanden sein sollte. Sie wird in „{file}.legacy_bookworm“ umbenannt.",
     "migration_0036_modified_files": "Bitte beachte, dass die folgenden Dateien manuell geändert wurden und nach dem Upgrade möglicherweise überschrieben werden:",
     "migration_0036_not_enough_free_space": "In /var/ ist nur noch wenig freier Speicherplatz vorhanden! Für diese Migration sollten mindestens 1 GB freier Speicherplatz zur Verfügung stehen.",
     "migration_0036_patch_yunohost_dpkg": "Anwenden eines Patches auf die dpkg-Datenbank, um Konflikte zu umgehen…",
