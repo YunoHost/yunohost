@@ -50,6 +50,7 @@ Conflicts: iptables-persistent
  , dovecot-core (>= 1:2.4)
  , fail2ban (>= 1.1)
  , nftables (>= 1.1)
+ , php-litespeed
 Description: manageable and configured self-hosting server
  YunoHost aims to make self-hosting accessible to everyone. It configures
  an email, Web and IM server alongside a LDAP base. It also provides
