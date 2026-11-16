@@ -106,6 +106,24 @@ i18n = "global_settings_setting"
         type = "boolean"
         default = false
 
+    [security.certauth]
+    visible = false
+        [security.certauth.certification_authority]
+        type = "string"
+        default = "letsencrypt"
+
+        [security.certauth.certification_authority_fullname]
+        type = "string"
+        default = "Let's Encrypt"
+
+        [security.certauth.certification_authority_acme_url]
+        type = "url"
+        default = "https://acme-v02.api.letsencrypt.org"
+
+        [security.certauth.certification_authority_caa_value]
+        type = "string"
+        default = "letsencrypt.org"
+
 [email]
     [email.pop3]
         [email.pop3.pop3_enabled]
