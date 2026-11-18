@@ -1,3 +1,14 @@
+yunohost (12.1.43) stable; urgency=medium
+
+  - regenconf(fix): local-fs failed if tmp.mount masked and tmp is in fstab ([#2401](http://github.com/YunoHost/yunohost/pull/2401))
+  - security(fix): Patch bookworm nginx conf until we get patch on nginx ([#2403](http://github.com/YunoHost/yunohost/pull/2403))
+  - security(fix): Update failregex and daemon for postfix-sasl.conf - #2349⁠ (76dda329f)
+  - cli(fix): typo in command help message ([#2398](http://github.com/YunoHost/yunohost/pull/2398))
+
+  Thanks to all contributors <3 ! (DeMiro5001, ljf, oleole39)
+
+ -- ljf <ljf@yunohost.org>  Wed, 18 Nov 2026 23:46:27 +0100
+
 yunohost (12.1.42) stable; urgency=low
 
   - tests: process: Remove flappy cat:doesntexists test (1928e7b31)
