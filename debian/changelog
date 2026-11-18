@@ -1,3 +1,18 @@
+yunohost (13.0.11) testing; urgency=medium
+
+  - security(fix): Patch trixie nginx conf until we get patch on nginx ([#2404](http://github.com/YunoHost/yunohost/pull/2404))
+  - security(fix): Update failregex and daemon for postfix-sasl.conf - #2349⁠ (e05201406)
+  - locales(fix): Restore missing comma in locales/fr.json (dd0ba9fcd)
+  - cli(fix): typo in command help message ([#2398](http://github.com/YunoHost/yunohost/pull/2398))
+  - mail(fix): secondary mx (dd9bb3515)
+  - locales(fix): json syntax error in eu.json (722f2168e)
+  - regenconf(fix): local-fs failed if tmp.mount masked and tmp is in fstab ([#2401](http://github.com/YunoHost/yunohost/pull/2401))
+  - resources(fix): port resource: take secondary ports into account (35a678727)
+
+  Thanks to all contributors <3 ! (DeMiro5001, Emir, Florent, Holger Brunn, ljf, oleole39)
+
+ -- ljf <ljf@yunohost.org>  Thu, 19 Nov 2026 00:47:18 +0100
+
 yunohost (13.0.10) testing; urgency=low
 
   - [fix] yunomdns service has no permission to access its config ([#2390](http://github.com/YunoHost/yunohost/pull/2390))
