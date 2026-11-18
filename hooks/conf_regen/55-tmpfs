@@ -37,21 +37,28 @@ do_pre_regen() {
     cd /usr/share/yunohost/conf/tmpfs
     mkdir -p "${pending_dir}/etc/systemd/system/tmp.mount.d"
     if [ "${tmpfs_enabled}" == "True" ]; then
-        ynh_render_template tmpfs-override.tpl.conf "${pending_dir}/etc/systemd/system/tmp.mount.d/yunohost-override.conf"
+        touch "${pending_dir}/etc/systemd/system/tmp.mount.d/yunohost-override.conf"
+        ynh_render_template tmpfs-override.tpl.conf "${pending_dir}/etc/systemd/system/tmp.mount"
     else
         touch "${pending_dir}/etc/systemd/system/tmp.mount.d/yunohost-override.conf"
+        touch "${pending_dir}/etc/systemd/system/tmp.mount"
     fi
 }
 
 do_post_regen() {
     regen_conf_files=$1
 
+    # Heal systems where 12.1.42 already masked tmp.mount
+    if [ "$(readlink /etc/systemd/system/tmp.mount)" = "/dev/null" ]; then
+        systemctl unmask tmp.mount 2> /dev/null || true
+        systemctl daemon-reload
+    fi
+
     tmpfs_enabled="$(jq -r '.tmpfs_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
     if [ "${tmpfs_enabled}" == "True" ]; then
-        chown root:root /etc/systemd/system/tmp.mount.d/yunohost-override.conf
-        chmod u=rw-,g=r--,o-w /etc/systemd/system/tmp.mount.d/yunohost-override.conf
+        chown root:root /etc/systemd/system/tmp.mount
+        chmod u=rw-,g=r--,o-w /etc/systemd/system/tmp.mount
 
-        systemctl unmask tmp.mount 2> /dev/null
         [[ -z "$regen_conf_files" ]] \
             || systemctl daemon-reload
 
@@ -64,9 +71,8 @@ do_post_regen() {
     else
         if systemctl is-active --quiet tmp.mount; then
             # We can't stop tmp.mount cause target is probably busy
-            ynh_print_warn --message="Reboot needed to switch /tmp on disk"
+            ynh_print_warn --message="Reboot needed to switch /tmp on disk (or other fstab config)"
         fi
-        systemctl mask tmp.mount 2> /dev/null
     fi
 
 }
