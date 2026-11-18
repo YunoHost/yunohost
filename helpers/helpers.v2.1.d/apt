@@ -59,7 +59,7 @@ ynh_apt_install_dependencies() {
 
     if [[ -n "$specific_php_version" ]]; then
         # Cover a small edge case where a packager could have specified "php7.4-pwet php5-gni" which is confusing
-        [[ $(echo $specific_php_version | wc -l) -eq 1 ]] \
+        [[ $(echo "$specific_php_version" | wc -l) -eq 1 ]] \
             || ynh_die "Inconsistent php versions in dependencies ... found : $specific_php_version"
 
         dependencies+=", php${specific_php_version}, php${specific_php_version}-fpm, php${specific_php_version}-common"
@@ -74,14 +74,16 @@ ynh_apt_install_dependencies() {
             fi
         fi
         # Store php_version into the config of this app
-        ynh_app_setting_set --key=php_version --value=$specific_php_version
+        ynh_app_setting_set --key=php_version --value="$specific_php_version"
 
         # Set the default php version back as the default version for php-cli.
-        if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION; then
-            update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
+        if test -e "/usr/bin/php$YNH_DEFAULT_PHP_VERSION"; then
+            update-alternatives --set php "/usr/bin/php$YNH_DEFAULT_PHP_VERSION"
         fi
-    elif grep --quiet 'php' <<< "$dependencies"; then
-        ynh_app_setting_set --key=php_version --value=$YNH_DEFAULT_PHP_VERSION
+    # Otherwise force php_version back to the default version ...
+    # ... except we don't want to do this when appending the "extra" dependencies if they don't contain a php version ...
+    elif grep --quiet 'php' <<< "$dependencies" && [[ $YNH_APT_INSTALL_DEPENDENCIES_REPLACE == "true" ]]; then
+        ynh_app_setting_set --key=php_version --value="$YNH_DEFAULT_PHP_VERSION"
     fi
 
     # Specific tweak related to Postgresql (cf end of the helper)
@@ -97,7 +99,7 @@ ynh_apt_install_dependencies() {
     else
         local current_dependencies=""
         if _ynh_apt_package_is_installed "${app_ynh_deps}"; then
-            current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${app_ynh_deps}) "
+            current_dependencies="$(dpkg-query --show --showformat='${Depends}' "${app_ynh_deps}") "
             current_dependencies=${current_dependencies// | /|}
         fi
         dependencies="$current_dependencies, $dependencies"
@@ -109,11 +111,11 @@ ynh_apt_install_dependencies() {
 
     # Prepare the virtual-dependency control file for dpkg-deb --build
     local TMPDIR=$(mktemp --directory)
-    mkdir -p ${TMPDIR}/${app_ynh_deps}/DEBIAN
+    mkdir -p "${TMPDIR}/${app_ynh_deps}/DEBIAN"
     # For some reason, dpkg-deb insists for folder perm to be 755 and sometimes it's 777 o_O?
-    chmod -R 755 ${TMPDIR}/${app_ynh_deps}
+    chmod -R 755 "${TMPDIR}/${app_ynh_deps}"
 
-    cat > ${TMPDIR}/${app_ynh_deps}/DEBIAN/control << EOF
+    cat > "${TMPDIR}/${app_ynh_deps}/DEBIAN/control" << EOF
 Section: misc
 Priority: optional
 Package: ${app_ynh_deps}
@@ -125,14 +127,14 @@ Description: Fake package for ${app} (YunoHost app) dependencies
  This meta-package is only responsible of installing its dependencies.
 EOF
 
-    _ynh_apt update
+    _ynh_apt update --error-on=any
 
     _ynh_wait_dpkg_free
 
     # Install the fake package without its dependencies with dpkg --force-depends
     if ! LC_ALL=C dpkg-deb --build "${TMPDIR}/${app_ynh_deps}" "${TMPDIR}/${app_ynh_deps}.deb" > "${TMPDIR}/dpkg_log" 2>&1; then
         cat "${TMPDIR}/dpkg_log" >&2
-        ynh_die --message="Unable to install dependencies"
+        ynh_die "Unable to install dependencies"
     fi
     # Don't crash in case of error, because is nicely covered by the following line
     LC_ALL=C dpkg --force-depends --install "${TMPDIR}/${app_ynh_deps}.deb" 2>&1 | tee "${TMPDIR}/dpkg_log" || true
@@ -143,12 +145,15 @@ EOF
         # (the following is ran inside { } to not start a subshell otherwise ynh_die wouldnt exit the original process)
         # Parse the list of problematic dependencies from dpkg's log ...
         # (relevant lines look like: "foo-ynh-deps depends on bar; however:")
-        cat $TMPDIR/dpkg_log
-        local problematic_dependencies="$(grep -oP '(?<=-ynh-deps depends on ).*(?=; however)' $TMPDIR/dpkg_log | tr '\n' ' ')"
+        cat "$TMPDIR/dpkg_log"
+        local problematic_dependencies
+        mapfile -t problematic_dependencies < <(grep -oP '(?<=-ynh-deps depends on ).*(?=; however)' "$TMPDIR/dpkg_log")
         # Fake an install of those dependencies to see the errors
         # The sed command here is, Print only from 'Reading state info' to the end.
-        [[ -n "$problematic_dependencies" ]] && _ynh_apt_install $problematic_dependencies --dry-run 2>&1 | sed --quiet '/Reading state info/,$p' | grep -v "fix-broken\|Reading state info" >&2
-        ynh_die "Unable to install apt dependencies"
+        if ((${#problematic_dependencies[@]} != 0)); then
+            _ynh_apt_install "${problematic_dependencies[@]}" --dry-run 2>&1 | sed --quiet '/Reading state info/,$p' | grep -v "fix-broken\|Reading state info" >&2
+        fi
+        ynh_die "Unable to install apt dependencies, it might be due to a conflict with another app - or you should check and share the previous log about what are the problematic dependencies"
     }
     rm --recursive --force "$TMPDIR" # Remove the temp dir.
 
@@ -174,21 +179,21 @@ ynh_apt_remove_dependencies() {
 
     local current_dependencies=""
     if _ynh_apt_package_is_installed "${app_ynh_deps}"; then
-        current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${app_ynh_deps}) "
+        current_dependencies="$(dpkg-query --show --showformat='${Depends}' "${app_ynh_deps}") "
         current_dependencies=${current_dependencies// | /|}
     fi
 
     # Edge case where the app dep may be on hold,
     # cf https://forum.yunohost.org/t/migration-error-cause-of-ffsync/20675/4
-    if apt-mark showhold | grep -q -w ${app_ynh_deps}; then
-        apt-mark unhold ${app_ynh_deps}
+    if apt-mark showhold | grep -q -w "${app_ynh_deps}"; then
+        apt-mark unhold "${app_ynh_deps}"
     fi
 
     # Remove the fake package and its dependencies if they not still used.
     # (except if dpkg doesn't know anything about the package,
     # which should be symptomatic of a failed install, and we don't want bash to report an error)
-    if dpkg-query --show ${app_ynh_deps} &> /dev/null; then
-        _ynh_apt autoremove --purge ${app_ynh_deps}
+    if dpkg-query --show "${app_ynh_deps}" &> /dev/null; then
+        _ynh_apt autoremove --purge "${app_ynh_deps}"
     fi
 }
 
@@ -207,6 +212,10 @@ ynh_apt_install_dependencies_from_extra_repository() {
     local key
     ynh_handle_getopts_args "$@"
     # ===========================================
+
+    # split package into packages list
+    local packages
+    read -r -a packages <<< "$package"
 
     # Split the repository into uri, suite and components.
     IFS=', ' read -r -a repo_parts <<< "$repo"
@@ -252,7 +261,7 @@ EOF
     if [ -n "$key" ] && [[ "$key" != "trusted=yes" ]]; then
         mkdir --parents "/etc/apt/trusted.gpg.d"
         # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
-        wget --timeout 900 --quiet "$key" --output-document=- | gpg --dearmor > /etc/apt/trusted.gpg.d/$app.gpg
+        wget --timeout 900 --quiet "$key" --output-document=- | gpg --dearmor > "/etc/apt/trusted.gpg.d/$app.gpg"
     fi
 
     # Update the list of package with the new repo NB: we use -o
@@ -260,7 +269,13 @@ EOF
     # ynh_apt_install_dependencies will also call an ynh_apt update on its own
     # and it's good to limit unecessary requests ...  Here we mainly want to
     # validate that the url+key is correct before going further
-    _ynh_apt update -o Dir::Etc::sourcelist="/etc/apt/sources.list.d/$app.list"
+    _ynh_apt update --error-on=any -o Dir::Etc::sourcelist="/etc/apt/sources.list.d/$app.list"
+
+    # Force the cache to be reupdated on the next "apt update" (in
+    # ynh_apt_install_dependencies) because the previous command with
+    # ::sourcelist option makes apt forget about every other package for other,
+    # so we want to force the cache to be reupdated entirely
+    touch "/etc/apt/sources.list.d/$app.list"
 
     # Install requested dependencies from this extra repository.
     # NB: because of the mechanism with $ynh_apt_install_DEPENDENCIES_REPLACE,
@@ -270,15 +285,18 @@ EOF
 
     # Force to upgrade to the last version...
     # Without doing apt install, an already installed dep is not upgraded
-    local apps_auto_installed="$(apt-mark showauto $package)"
-    _ynh_apt_install "$package"
-    [ -z "$apps_auto_installed" ] || apt-mark auto $apps_auto_installed
+    local apps_auto_installed
+    mapfile -t apps_auto_installed < <(apt-mark showauto "${packages[@]}")
+    _ynh_apt_install "${packages[@]}"
+    if ((${#apps_auto_installed[@]} != 0)); then
+        apt-mark auto "${apps_auto_installed[@]}"
+    fi
 
     # Remove this extra repository after packages are installed
     ynh_safe_rm "/etc/apt/sources.list.d/$app.list"
     ynh_safe_rm "/etc/apt/preferences.d/$app"
     ynh_safe_rm "/etc/apt/trusted.gpg.d/$app.gpg"
-    _ynh_apt update
+    _ynh_apt update --error-on=any
 }
 
 # #####################
@@ -302,7 +320,7 @@ _ynh_wait_dpkg_free() {
             local dpkg_dir="/var/lib/dpkg/updates/"
 
             # For each file in $dpkg_dir
-            while read dpkg_file <&9; do
+            while read -r dpkg_file <&9; do
                 # Check if the name of this file contains only numbers.
                 if echo "$dpkg_file" | grep --perl-regexp --quiet "^[[:digit:]]+$"; then
                     # If so, that a remaining of dpkg.
@@ -337,12 +355,26 @@ _ynh_apt_package_version() {
 
 # APT wrapper for non-interactive operation
 _ynh_apt() {
+
+    # Optimization when just calling apt update : check if the cache was
+    # already refreshed in the last 30 min, which should be enough and prevent
+    # unecessary traffic and annoying wait time during app dependency installs etc
+    if [[ "$*" == "update" ]]; then
+        # trick from https://stackoverflow.com/a/205710
+        local aptcache="/var/cache/apt/pkgcache.bin"
+        sleep 1
+        if [[ -e $aptcache ]] && [[ -n "$(find $aptcache -mmin -30)" ]] && [[ -z "$(find /etc/apt/ -newer $aptcache)" ]]; then
+            echo "apt cache was already updated in the last 30 minutes, skipping 'apt update'"
+            return
+        fi
+    fi
+
     _ynh_wait_dpkg_free
-    LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --assume-yes --quiet -o=Acquire::Retries=3 -o=Dpkg::Use-Pty=0 $@
+    LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --assume-yes --quiet -o=Acquire::Retries=3 -o=Dpkg::Use-Pty=0 "$@"
 }
 
 # Wrapper around "apt install" with the appropriate options
 _ynh_apt_install() {
     _ynh_apt --no-remove --option Dpkg::Options::=--force-confdef \
-        --option Dpkg::Options::=--force-confold install $@
+        --option Dpkg::Options::=--force-confold install "$@"
 }

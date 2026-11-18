@@ -36,9 +36,7 @@ ynh_string_random() {
     filter=${filter:-'A-Za-z0-9'}
     # ===========================================
 
-    dd if=/dev/urandom bs=1 count=1000 2> /dev/null \
-        | tr --complement --delete "$filter" \
-        | sed --quiet 's/\(.\{'"$length"'\}\).*/\1/p'
+    tr --complement --delete "$filter" < /dev/urandom | head -c "$length"
 }
 
 # Substitute/replace a string (or expression) by another in a file
@@ -49,7 +47,9 @@ ynh_string_random() {
 # | arg: --file=     - File in which the string will be replaced.
 #
 # As this helper is based on sed command, regular expressions and references to
-# sub-expressions can be used (see sed manual page for more information)
+# sub-expressions can be used (see sed manual page for more information). In particular
+# for back-references, as in sed without specific options, you will need to escape
+# the parentheses of the capture group.
 ynh_replace() {
     # ============ Argument parsing =============
     local -A args_array=([m]=match= [r]=replace= [f]=file=)
@@ -117,7 +117,7 @@ ynh_sanitize_dbid() {
     # ===========================================
 
     # We should avoid having - and . in the name of databases. They are replaced by _
-    echo ${db_name//[-.]/_}
+    echo "${db_name//[-.]/_}"
 }
 
 # Normalize the url path syntax
@@ -143,5 +143,5 @@ ynh_normalize_url_path() {
     if [ "${path_url:${#path_url}-1}" == "/" ] && [ ${#path_url} -gt 1 ]; then # If the last character is a / and that not the only character.
         path_url="${path_url:0:${#path_url}-1}"                                # Delete the last character
     fi
-    echo $path_url
+    echo "$path_url"
 }

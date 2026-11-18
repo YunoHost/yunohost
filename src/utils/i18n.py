@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2025 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -21,7 +21,7 @@
 from moulinette import m18n
 
 
-def _value_for_locale(values):
+def _value_for_locale(values: str | dict[str, str]) -> str:
     """
     Return proper value for current locale
 

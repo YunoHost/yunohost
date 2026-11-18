@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2025 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -26,14 +26,15 @@ from importlib import import_module
 from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import (
+
+from .log import is_unit_operation
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import (
     read_json,
     read_yaml,
     write_to_json,
     write_to_yaml,
 )
-
-from yunohost.utils.error import YunohostError, YunohostValidationError
 
 logger = getLogger("yunohost.diagnosis")
 
@@ -121,7 +122,7 @@ def diagnosis_show(
         all_reports.append(report)
 
     if share:
-        from yunohost.utils.yunopaste import yunopaste
+        from .utils.yunopaste import yunopaste
 
         content = _dump_human_readable_reports(all_reports)
         url = yunopaste(content)
@@ -154,8 +155,13 @@ def _dump_human_readable_reports(reports):
     return output
 
 
+@is_unit_operation(sse_only=True)
 def diagnosis_run(
-    categories=[], force=False, except_if_never_ran_yet=False, email=False
+    operation_logger,
+    categories=[],
+    force=False,
+    except_if_never_ran_yet=False,
+    email=False,
 ):
     if (email or except_if_never_ran_yet) and not os.path.exists(DIAGNOSIS_CACHE):
         return
@@ -172,6 +178,8 @@ def diagnosis_run(
             raise YunohostValidationError(
                 "diagnosis_unknown_categories", categories=", ".join(unknown_categories)
             )
+
+    operation_logger.start()
 
     issues = []
     # Call the hook ...
@@ -210,10 +218,12 @@ def diagnosis_run(
         logger.warning(m18n.n("diagnosis_display_tip"))
 
 
+@is_unit_operation(flash=True)
 def diagnosis_ignore(filter, list=False):
     return _diagnosis_ignore(add_filter=filter, list=list)
 
 
+@is_unit_operation(flash=True)
 def diagnosis_unignore(filter):
     return _diagnosis_ignore(remove_filter=filter)
 
@@ -675,7 +685,7 @@ def _load_diagnoser(diagnoser_name):
 
 
 def _email_diagnosis_issues():
-    from yunohost.domain import _get_maindomain
+    from .domain import _get_maindomain
 
     maindomain = _get_maindomain()
     from_ = f"diagnosis@{maindomain} (Automatic diagnosis on {maindomain})"

@@ -53,6 +53,16 @@ user:
                --fields:
                     help: fields to fetch (username, fullname, mail, mail-alias, mail-forward, mailbox-quota, groups, shell, home-path)
                     nargs: "+"
+                    choices:
+                        - username
+                        - fullname
+                        - mail
+                        - mail-alias
+                        - mail-forward
+                        - mailbox-quota
+                        - groups
+                        - shell
+                        - home-path
 
         ### user_create()
         create:
@@ -63,7 +73,7 @@ user:
                     help: The unique username to create
                     extra:
                         pattern: &pattern_username
-                            - !!str ^[a-z0-9_\.]+$
+                            - !!str ^[a-z0-9][-a-z0-9_\.]*$
                             - "pattern_username"
                 -F:
                     full: --fullname
@@ -91,6 +101,10 @@ user:
                         pattern: &pattern_domain
                             - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
                             - "pattern_domain"
+                        autocomplete: &domains_list
+                            ynh_selector: domain list
+                            jq_selector: '.domains[]'
+                            use_cache: false
                 -q:
                     full: --mailbox-quota
                     help: Mailbox size quota
@@ -115,6 +129,10 @@ user:
                     help: Username to delete
                     extra:
                         pattern: *pattern_username
+                        autocomplete: &users_list
+                            ynh_selector: user list --fields username
+                            jq_selector: '.users[].username'
+                            use_cache: false
                 --purge:
                     help: Purge user's home and mail directories
                     action: store_true
@@ -129,6 +147,8 @@ user:
             arguments:
                 username:
                     help: Username to update
+                    extra:
+                        autocomplete: *users_list
                 -F:
                     full: --fullname
                     help: The full name of the user. For example 'Camille Dupont'
@@ -189,6 +209,8 @@ user:
             arguments:
                 username:
                     help: Username or email to get information
+                    extra:
+                        autocomplete: *users_list
 
         ### user_export()
         export:
@@ -203,6 +225,9 @@ user:
                 csvfile:
                     help: "CSV file with columns username, firstname, lastname, password, mail, mailbox-quota, mail-alias, mail-forward, groups (separated by coma)"
                     type: open
+                    extra:
+                        autocomplete:
+                            zsh_completion: _files
                 -u:
                     full: --update
                     help: Update all existing users contained in the CSV file (by default existing users are ignored)
@@ -240,7 +265,7 @@ user:
                             help: Name of the group to be created
                             extra:
                                 pattern: &pattern_groupname
-                                    - !!str ^[a-z0-9_]+$
+                                    - !!str ^[a-z0-9][-a-z0-9_\.]*$
                                     - "pattern_groupname"
 
                 ### user_group_delete()
@@ -252,6 +277,10 @@ user:
                             help: Name of the group to be deleted
                             extra:
                                 pattern: *pattern_groupname
+                                autocomplete: &user_groups_list
+                                    ynh_selector: user group list -s
+                                    jq_selector: '.groups[]'
+                                    use_cache: false
 
                 ### user_group_info()
                 info:
@@ -261,7 +290,8 @@ user:
                         groupname:
                             help: Name of the group to fetch info about
                             extra:
-                                pattern: *pattern_username
+                                pattern: *pattern_groupname
+                                autocomplete: *user_groups_list
 
                 ### user_group_add()
                 add:
@@ -272,12 +302,14 @@ user:
                             help: Name of the group to add user(s) to
                             extra:
                                 pattern: *pattern_groupname
+                                autocomplete: *user_groups_list
                         usernames:
                             help: User(s) to add in the group
                             nargs: "*"
                             metavar: USERNAME
                             extra:
                                 pattern: *pattern_username
+                                autocomplete: *users_list
 
                 ### user_group_remove()
                 remove:
@@ -288,12 +320,14 @@ user:
                             help: Name of the group to remove user(s) from
                             extra:
                                 pattern: *pattern_groupname
+                                autocomplete: *user_groups_list
                         usernames:
                             help: User(s) to remove from the group
                             nargs: "*"
                             metavar: USERNAME
                             extra:
                                 pattern: *pattern_username
+                                autocomplete: *users_list
 
                 ### user_group_add_mailalias()
                 add-mailalias:
@@ -304,6 +338,7 @@ user:
                             help: Name of the group to add user(s) to
                             extra:
                                 pattern: *pattern_groupname
+                                autocomplete: *user_groups_list
                         aliases:
                           help: Mail aliases to add
                           nargs: "+"
@@ -323,6 +358,7 @@ user:
                             help: Name of the group to add user(s) to
                             extra:
                                 pattern: *pattern_groupname
+                                autocomplete: *user_groups_list
                         aliases:
                           help: Mail aliases to remove
                           nargs: "+"
@@ -343,10 +379,11 @@ user:
                         apps:
                             help: Apps to list permission for (all by default)
                             nargs: "*"
-                        -s:
-                            full: --short
-                            help: Only list permission names
-                            action: store_true
+                            extra:
+                                autocomplete: &apps_list
+                                    ynh_selector: app list
+                                    jq_selector: '.apps[].id'
+                                    use_cache: false
                         -f:
                             full: --full
                             help: Display all info known about each permission, including the full user list of each group it is granted to.
@@ -358,7 +395,12 @@ user:
                     api: GET /users/permissions/<permission>
                     arguments:
                         permission:
-                            help: Name of the permission to fetch info about (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
+                            help: Name of the permission to fetch info about (use "yunohost user permission list" and "yunohost user permission list -f" to see all the current permissions)
+                            extra:
+                                autocomplete: &permissions_list
+                                    ynh_selector: user permission list
+                                    jq_selector: '.permissions | keys[]'
+                                    use_cache: false
 
                 ### user_permission_update()
                 update:
@@ -367,15 +409,34 @@ user:
                     arguments:
                         permission:
                             help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
+                            extra:
+                                autocomplete: *permissions_list
                         -l:
                             full: --label
-                            help: Label for this permission. This label will be shown on the SSO and in the admin
+                            help: Custom label for this app / permission
                         -s:
                             full: --show_tile
-                            help: Define if a tile will be shown in the SSO
+                            help: Define if a tile will be shown in the user portal
                             choices:
                                 - 'True'
                                 - 'False'
+                        -L:
+                            full: --logo
+                            help: File to use as logo for this app / permission. Only PNG are supported.
+                            type: argparse.FileType('rb')
+                        -d:
+                            full: --description
+                            help: Custom description for this app / permission
+                        -o:
+                            full: --order
+                            help: Order number to be used when displaying the tiles in the user portal. Default is 100 so set this to any low value for the tile to appear first, or higher value to appear last.
+                            type: int
+                        -H:
+                            full: --hide_from_public
+                            help: Mark the tile as to be hidden from the 'public app list' (if enabled). Useful for apps such as Nextcloud that need to be exposed to be publicly exposed for desktop/mobile client to be able to connect to, but not meant to be listed for visitors.
+                            choices:
+                                - "True"
+                                - "False"
 
                 ## user_permission_add()
                 add:
@@ -384,12 +445,18 @@ user:
                     arguments:
                         permission:
                             help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
+                            extra:
+                                autocomplete: *permissions_list
                         names:
                             help: Group or usernames to grant this permission to
                             nargs: "*"
                             metavar: GROUP_OR_USER
                             extra:
                                 pattern: *pattern_username
+                                autocomplete: &user_and_groups_list
+                                    ynh_selector: user group list
+                                    jq_selector: '[(.groups | keys), ([.groups[] | select(.members).members[]] | unique)] | add[]'
+                                    use_cache: false
 
                 ## user_permission_remove()
                 remove:
@@ -398,20 +465,19 @@ user:
                     arguments:
                         permission:
                             help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
+                            extra:
+                                autocomplete: *permissions_list
                         names:
                             help: Group or usernames to revoke this permission to
                             nargs: "*"
                             metavar: GROUP_OR_USER
                             extra:
                                 pattern: *pattern_username
+                                autocomplete: *user_and_groups_list
 
-                ## user_permission_reset()
-                reset:
-                    action_help: Reset allowed groups to the default (all_users) for a given permission
-                    api: DELETE /users/permissions/<permission>
-                    arguments:
-                        permission:
-                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
+                ## user_permission_ldapsync()
+                ldapsync:
+                    action_help: Resynchronize permissions to LDAP from app settings. This is a purely technical command, only meant to be ran if you manually modified permission settings in app, which is absolutely not recommended.
 
         ssh:
             subcategory_help: Manage ssh access
@@ -426,6 +492,7 @@ user:
                             help: Username of the user
                             extra:
                                 pattern: *pattern_username
+                                autocomplete: *users_list
 
                 ### user_ssh_keys_add()
                 add-key:
@@ -436,6 +503,7 @@ user:
                             help: Username of the user
                             extra:
                                 pattern: *pattern_username
+                                autocomplete: *users_list
                         key:
                             help: The key to be added
                         -c:
@@ -451,6 +519,7 @@ user:
                             help: Username of the user
                             extra:
                                 pattern: *pattern_username
+                                autocomplete: *users_list
                         key:
                             help: The key to be removed
 
@@ -485,6 +554,7 @@ domain:
                     help: Domain to check
                     extra:
                         pattern: *pattern_domain
+                        autocomplete: *domains_list
 
         ### domain_add()
         add:
@@ -518,6 +588,7 @@ domain:
                     help: Domain to delete
                     extra:
                         pattern: *pattern_domain
+                        autocomplete: *domains_list
                 -r:
                     full: --remove-apps
                     help: Remove apps installed on the domain
@@ -549,6 +620,7 @@ domain:
                     help: Change the current main domain
                     extra:
                         pattern: *pattern_domain
+                        autocomplete: *domains_list
 
         ### domain_url_available()
         url-available:
@@ -560,6 +632,7 @@ domain:
                     help: The domain for the web path (e.g. your.domain.tld)
                     extra:
                         pattern: *pattern_domain
+                        autocomplete: *domains_list
                 path:
                     help: The path to check (e.g. /coffee)
 
@@ -572,6 +645,8 @@ domain:
             arguments:
               domain:
                   help: Domain name
+                  extra:
+                      autocomplete: *domains_list
               action:
                   help: action id
               -a:
@@ -590,6 +665,7 @@ domain:
                             help: Domain to subscribe to the DynDNS service
                             extra:
                                 pattern: *pattern_domain
+                                autocomplete: *domains_list
                         -p:
                             full: --recovery-password
                             nargs: "?"
@@ -606,6 +682,7 @@ domain:
                             help: Domain to unsubscribe from the DynDNS service
                             extra:
                                 pattern: *pattern_domain
+                                autocomplete: *domains_list
                                 required: True
                         -p:
                             full: --recovery-password
@@ -623,6 +700,7 @@ domain:
                             help: Domain to set recovery password for
                             extra:
                                 pattern: *pattern_domain
+                                autocomplete: *domains_list
                                 required: True
                         -p:
                             full: --recovery-password
@@ -643,6 +721,8 @@ domain:
                     arguments:
                       domain:
                           help: Domain name
+                          extra:
+                              autocomplete: *domains_list
                       key:
                           help: A specific panel, section or a question identifier
                           nargs: '?'
@@ -662,6 +742,8 @@ domain:
                     arguments:
                       domain:
                           help: Domain name
+                          extra:
+                              autocomplete: *domains_list
                       key:
                           help: The question or form key
                           nargs: '?'
@@ -686,6 +768,7 @@ domain:
                             help: Target domain
                             extra:
                                 pattern: *pattern_domain
+                                autocomplete: *domains_list
 
                 ### domain_dns_push()
                 push:
@@ -696,6 +779,7 @@ domain:
                             help: Domain name to push DNS conf for
                             extra:
                                 pattern: *pattern_domain
+                                autocomplete: *domains_list
                         -d:
                             full: --dry-run
                             help: Only display what's to be pushed
@@ -720,6 +804,8 @@ domain:
                         domain_list:
                             help: Domains to check
                             nargs: "*"
+                            extra:
+                                autocomplete: *domains_list
                         --full:
                             help: Show more details
                             action: store_true
@@ -732,6 +818,8 @@ domain:
                         domain_list:
                             help: Domains for which to install the certificates
                             nargs: "*"
+                            extra:
+                                autocomplete: *domains_list
                         --force:
                             help: Install even if current certificate is not self-signed
                             action: store_true
@@ -750,6 +838,8 @@ domain:
                         domain_list:
                             help: Domains for which to renew the certificates
                             nargs: "*"
+                            extra:
+                                autocomplete: *domains_list
                         --force:
                             help: Ignore the validity threshold (15 days)
                             action: store_true
@@ -759,7 +849,6 @@ domain:
                         --no-checks:
                             help: Does not perform any check that your domain seems correctly configured (DNS, reachability) before attempting to renew. (Not recommended)
                             action: store_true
-
 
 #############################
 #            App            #
@@ -799,10 +888,18 @@ app:
             arguments:
                 app:
                     help: Name, local path or git URL of the app to fetch the manifest of
+                    extra:
+                        autocomplete: &apps_catalog_list
+                            ynh_selector: app catalog
+                            jq_selector: '.apps | keys[]'
+                            use_cache: True
                 -s:
                     full: --with-screenshot
                     help: Also return a base64 screenshot if any (API only)
                     action: store_true
+                    extra:
+                        autocomplete:
+                            hide_in_help: True
 
         ### app_list()
         list:
@@ -813,10 +910,6 @@ app:
                     full: --full
                     help: Display all details, including the app manifest and various other infos
                     action: store_true
-                -u:
-                    full: --upgradable
-                    help: List only apps that can upgrade to a newer version
-                    action: store_true
 
         ### app_info()
         info:
@@ -825,9 +918,14 @@ app:
             arguments:
                 app:
                     help: Specific app ID
+                    extra:
+                        autocomplete: *apps_list
                 -f:
                     full: --full
                     help: Display all details, including the app manifest and various other infos
+                    action: store_true
+                --with-pre-upgrade-notifications:
+                    help: Also fetch pre-upgrade notifications, if an upgrade is available (this is meant for the web API)
                     action: store_true
 
         ### app_map()
@@ -838,6 +936,8 @@ app:
                 -a:
                     full: --app
                     help: Specific app to map
+                    extra:
+                        autocomplete: *apps_list
                 -r:
                     full: --raw
                     help: Return complete dict
@@ -847,6 +947,7 @@ app:
                     help: Allowed app map for a user
                     extra:
                         pattern: *pattern_username
+                        autocomplete: *users_list
 
         ### app_install()
         install:
@@ -855,6 +956,8 @@ app:
             arguments:
                 app:
                     help: Name, local path or git URL of the app to install
+                    extra:
+                        autocomplete: *apps_catalog_list
                 -l:
                     full: --label
                     help: Custom name for the app
@@ -869,6 +972,10 @@ app:
                     full: --force
                     help: Do not ask confirmation if the app is not safe to use (low quality, experimental or 3rd party), or when the app displays a post-install notification
                     action: store_true
+                -i:
+                    full: --ignore-yunohost-version
+                    help: Attempt to install the app even if your YunoHost version is below the required one
+                    action: store_true
 
         ### app_remove()
         remove:
@@ -877,6 +984,8 @@ app:
             arguments:
                 app:
                     help: App to remove
+                    extra:
+                        autocomplete: *apps_list
                 -p:
                     full: --purge
                     help: Also remove all application data
@@ -890,6 +999,8 @@ app:
                 app:
                     help: App(s) to upgrade (default all)
                     nargs: "*"
+                    extra:
+                        autocomplete: *apps_list
                 -u:
                     full: --url
                     help: Git url to fetch for upgrade
@@ -908,6 +1019,10 @@ app:
                     full: --continue-on-failure
                     help: Continue to upgrade apps even if one or more upgrade failed
                     action: store_true
+                -i:
+                    full: --ignore-yunohost-version
+                    help: Attempt to upgrade the app even if your YunoHost version is below the required one
+                    action: store_true
 
         ### app_change_url()
         change-url:
@@ -916,6 +1031,8 @@ app:
             arguments:
                 app:
                     help: Target app instance name
+                    extra:
+                        autocomplete: *apps_list
                 -d:
                     full: --domain
                     help: New app domain on which the application will be moved
@@ -923,6 +1040,7 @@ app:
                         ask: ask_new_domain
                         pattern: *pattern_domain
                         required: True
+                        autocomplete: *domains_list
                 -p:
                     full: --path
                     help: New path at which the application will be moved
@@ -937,6 +1055,8 @@ app:
             arguments:
                 app:
                     help: App ID
+                    extra:
+                        autocomplete: *apps_list
                 key:
                     help: Key to get/set
                 -v:
@@ -955,6 +1075,18 @@ app:
             arguments:
                 app:
                     help: App ID
+                    extra:
+                        autocomplete: *apps_list
+
+        ### app_db()
+        db:
+            action_help: Open an interactive database client prompt for the app
+            api: GET /apps/<app>/db
+            arguments:
+                app:
+                    help: App ID
+                    extra:
+                        autocomplete: *apps_list
 
         ### app_register_url()
         register-url:
@@ -963,8 +1095,12 @@ app:
             arguments:
                 app:
                     help: App which will use the web path
+                    extra:
+                        autocomplete: *apps_list
                 domain:
                     help: The domain on which the app should be registered (e.g. your.domain.tld)
+                    extra:
+                        autocomplete: *domains_list
                 path:
                     help: The path to be registered (e.g. /coffee)
 
@@ -977,9 +1113,13 @@ app:
             arguments:
                 app:
                     help: App name to put on domain root
+                    extra:
+                        autocomplete: *apps_list
                 -d:
                     full: --domain
                     help: Specific domain to put app on (the app domain by default)
+                    extra:
+                        autocomplete: *domains_list
                 -u:
                     full: --undo
                     help: Undo redirection
@@ -993,8 +1133,13 @@ app:
             arguments:
                 app:
                     help: App ID to dismiss notification for
+                    extra:
+                        autocomplete: *apps_list
                 name:
                     help: Notification name, either post_install or post_upgrade
+                    choices:
+                     - post_install
+                     - post_upgrade
 
         ### app_ssowatconf()
         ssowatconf:
@@ -1007,6 +1152,8 @@ app:
             arguments:
                 app:
                     help: App ID
+                    extra:
+                        autocomplete: *apps_list
                 new_label:
                     help: New app label
 
@@ -1023,6 +1170,8 @@ app:
                   arguments:
                     app:
                         help: App name
+                        extra:
+                            autocomplete: *apps_list
 
               ### app_action_run()
               run:
@@ -1031,6 +1180,8 @@ app:
                   arguments:
                     app:
                         help: App name
+                        extra:
+                            autocomplete: *apps_list
                     action:
                         help: action id
                     -a:
@@ -1050,6 +1201,8 @@ app:
                   arguments:
                     app:
                         help: App name
+                        extra:
+                            autocomplete: *apps_list
                     key:
                         help: A specific panel, section or a question identifier
                         nargs: '?'
@@ -1061,6 +1214,9 @@ app:
                         full: --export
                         help: Only export key/values, meant to be reimported using "config set --args-file"
                         action: store_true
+                    --core:
+                        help: Get the 'core' config for this app, such as permissions stuff. This option is only meant for API.
+                        action: store_true
 
               ### app_config_set()
               set:
@@ -1069,6 +1225,8 @@ app:
                   arguments:
                     app:
                         help: App name
+                        extra:
+                            autocomplete: *apps_list
                     key:
                         help: The question or panel key
                         nargs: '?'
@@ -1082,6 +1240,9 @@ app:
                         full: --args-file
                         help: YAML or JSON file with key/value couples
                         type: open
+                    --core:
+                        help: Set the 'core' config for this app, such as permissions stuff. This option is only meant for API.
+                        action: store_true
 
 #############################
 #          Backup           #
@@ -1117,6 +1278,8 @@ backup:
                 --apps:
                     help: List of application names to backup (or all if none given)
                     nargs: "*"
+                    extra:
+                        autocomplete: *apps_list
                 --dry-run:
                     help: "'Simulate' the backup and return the size details per item to backup"
                     action: store_true
@@ -1128,14 +1291,24 @@ backup:
             arguments:
                 name:
                     help: Name or path of the backup archive
+                    extra:
+                        autocomplete: &backups_list
+                            ynh_selector: backup list
+                            jq_selector: '.archives[]'
+                            use_cache: false
                 --system:
                     help: List of system parts to restore (or all if none is given)
                     nargs: "*"
                 --apps:
                     help: List of application names to restore (or all if none is given)
                     nargs: "*"
+                    extra:
+                        autocomplete: *apps_list
                 --force:
                     help: Force restauration on an already installed system
+                    action: store_true
+                --no-remove-on-failure:
+                    help: For app only, debug option to avoid removing the app on a failed restore
                     action: store_true
 
         ### backup_list()
@@ -1159,6 +1332,8 @@ backup:
             arguments:
                 name:
                     help: Name or path of the backup archive
+                    extra:
+                        autocomplete: *backups_list
                 -d:
                     full: --with-details
                     help: Show additional backup information
@@ -1186,7 +1361,7 @@ backup:
                     help: Name of the archive to delete
                     extra:
                         pattern: *pattern_backup_archive_name
-
+                        autocomplete: *backups_list
 
 #############################
 #         Settings          #
@@ -1212,6 +1387,11 @@ settings:
             arguments:
                 key:
                     help: Settings key
+                    extra:
+                        autocomplete: &settings_list
+                            ynh_selector: settings list
+                            jq_selector: '. | keys[]'
+                            use_cache: false
                 -f:
                     full: --full
                     help: Display all details (meant to be used by the API)
@@ -1229,6 +1409,8 @@ settings:
                 key:
                     help: The question or form key
                     nargs: '?'
+                    extra:
+                        autocomplete: *settings_list
                 -v:
                     full: --value
                     help: new value
@@ -1248,6 +1430,8 @@ settings:
             arguments:
                 key:
                     help: Settings key
+                    extra:
+                        autocomplete: *settings_list
 
 #############################
 #         Service           #
@@ -1269,6 +1453,9 @@ service:
                     full: --log
                     help: Absolute path to log file to display
                     nargs: "+"
+                    extra:
+                        autocomplete:
+                            zsh_completion: _files
                 --test_status:
                     help: Specify a custom bash command to check the status of the service. Note that it only makes sense to specify this if the corresponding systemd service does not return the proper information already.
                 --test_conf:
@@ -1289,6 +1476,11 @@ service:
             arguments:
                 name:
                     help: Service name to remove
+                    extra:
+                        autocomplete: &services_list
+                            ynh_selector: service status
+                            jq_selector: '. | keys[]'
+                            use_cache: false
 
         ### service_start()
         start:
@@ -1299,6 +1491,8 @@ service:
                     help: Service name to start
                     nargs: "+"
                     metavar: NAME
+                    extra:
+                        autocomplete: *services_list
 
         ### service_stop()
         stop:
@@ -1309,6 +1503,8 @@ service:
                     help: Service name to stop
                     nargs: "+"
                     metavar: NAME
+                    extra:
+                        autocomplete: *services_list
 
         ### service_reload()
         reload:
@@ -1318,6 +1514,8 @@ service:
                     help: Service name to reload
                     nargs: "+"
                     metavar: NAME
+                    extra:
+                        autocomplete: *services_list
 
         ### service_restart()
         restart:
@@ -1328,6 +1526,8 @@ service:
                     help: Service name to restart
                     nargs: "+"
                     metavar: NAME
+                    extra:
+                        autocomplete: *services_list
 
         ### service_reload_or_restart()
         reload_or_restart:
@@ -1337,6 +1537,8 @@ service:
                     help: Service name to reload or restart
                     nargs: "+"
                     metavar: NAME
+                    extra:
+                        autocomplete: *services_list
 
         ### service_enable()
         enable:
@@ -1347,6 +1549,8 @@ service:
                     help: Service name to enable
                     nargs: "+"
                     metavar: NAME
+                    extra:
+                        autocomplete: *services_list
 
         ### service_disable()
         disable:
@@ -1357,6 +1561,8 @@ service:
                     help: Service name to disable
                     nargs: "+"
                     metavar: NAME
+                    extra:
+                        autocomplete: *services_list
 
         ### service_status()
         status:
@@ -1369,6 +1575,8 @@ service:
                     help: Service name to show
                     nargs: "*"
                     metavar: NAME
+                    extra:
+                        autocomplete: *services_list
 
         ### service_log()
         log:
@@ -1377,6 +1585,8 @@ service:
             arguments:
                 name:
                     help: Service name to log
+                    extra:
+                        autocomplete: *services_list
                 -n:
                     full: --number
                     help: Number of lines to display
@@ -1399,13 +1609,105 @@ firewall:
                     full: --raw
                     help: Return the complete YAML dict
                     action: store_true
-                -i:
-                    full: --by-ip-version
-                    help: List rules by IP version
-                    action: store_true
+                -p:
+                    full: --protocol
+                    help: "If not raw, protocol type to list (tcp/udp)"
+                    choices:
+                        - tcp
+                        - udp
+                    nargs: "?"
+                    default: tcp
                 -f:
-                    full: --list-forwarded
-                    help: List forwarded ports with UPnP
+                    full: --forwarded
+                    help: If not raw, list UPnP forwarded ports instead of open ports
+                    action: store_true
+
+        ### firewall_is_open()
+        is-open:
+            action_help: Returns whether the port is open or not.
+            api: GET /firewall/<protocol>/<port>
+            arguments:
+                port:
+                    help: Port or range of ports to check
+                    extra:
+                        pattern: &pattern_port_or_range
+                            - !!str ((^|(?!\A):)([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])){1,2}?$
+                            - "pattern_port_or_range"
+                -p:
+                    full: --protocol
+                    help: "Protocol type (tcp/udp)"
+                    choices:
+                        - tcp
+                        - udp
+                    default: tcp
+
+        ### firewall_open()
+        open:
+            action_help: Allow connections on a port
+            api: PUT /firewall/<protocol>/open/<port>
+            arguments:
+                port:
+                    help: Port or range of ports to open
+                    extra:
+                        pattern: *pattern_port_or_range
+                -p:
+                    full: --protocol
+                    help: "Protocol type (tcp/udp)"
+                    choices:
+                        - tcp
+                        - udp
+                    default: tcp
+                comment:
+                    help: A reason for the port to be open (like the app's name)
+                    default: ""
+                --upnp:
+                    help: Add forwarding of this port with UPnP
+                    action: store_true
+                --no-reload:
+                    help: Do not reload firewall rules
+                    action: store_true
+
+        ### firewall_close()
+        close:
+            action_help: Disallow connections on a port
+            api: PUT /firewall/<protocol>/close/<port>
+            arguments:
+                port:
+                    help: Port or range of ports to close
+                    extra:
+                        pattern: *pattern_port_or_range
+                -p:
+                    full: --protocol
+                    help: "Protocol type (tcp/udp)"
+                    choices:
+                        - tcp
+                        - udp
+                    default: tcp
+                --upnp-only:
+                    help: Only remove forwarding of this port with UPnP
+                    action: store_true
+                --no-reload:
+                    help: Do not reload firewall rules
+                    action: store_true
+
+        ### firewall_delete()
+        delete:
+            action_help: Unregister a port from YunoHost
+            api: PUT /firewall/<protocol>/delete/<port>
+            arguments:
+                port:
+                    help: Port or range of ports to delete
+                    extra:
+                        pattern: *pattern_port_or_range
+                -p:
+                    full: --protocol
+                    help: "Protocol type (tcp/udp)"
+                    choices:
+                        - tcp
+                        - udp
+                    default: tcp
+                --no-reload:
+                    help: Do not reload firewall rules
                     action: store_true
 
         ### firewall_allow()
@@ -1423,9 +1725,7 @@ firewall:
                 port:
                     help: Port or range of ports to open
                     extra:
-                        pattern: &pattern_port_or_range
-                            - !!str ((^|(?!\A):)([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])){1,2}?$
-                            - "pattern_port_or_range"
+                        pattern: *pattern_port_or_range
                 -4:
                     full: --ipv4-only
                     help: Only add a rule for IPv4 connections
@@ -1482,7 +1782,6 @@ firewall:
                         - enable
                         - disable
                         - status
-                        - reload
                     nargs: "?"
                     default: status
                 --no-refresh:
@@ -1500,10 +1799,7 @@ firewall:
 
         ### firewall_stop()
         stop:
-            action_help: Stop iptables and ip6tables
-
-
-
+            action_help: Remove all the firewall rules
 
 #############################
 #          DynDNS           #
@@ -1522,6 +1818,7 @@ dyndns:
                     help: Full domain to subscribe with ( deprecated, use 'yunohost domain dyndns subscribe' instead )
                     extra:
                         pattern: *pattern_domain
+                        autocomplete: *domains_list
                 -p:
                     full: --recovery-password
                     nargs: "?"
@@ -1539,6 +1836,7 @@ dyndns:
                     help: Full domain to update
                     extra:
                         pattern: *pattern_domain
+                        autocomplete: *domains_list
                 -f:
                     full: --force
                     help: Force the update (for debugging only)
@@ -1547,7 +1845,6 @@ dyndns:
                     full: --dry-run
                     help: Only display the generated zone
                     action: store_true
-
 
 #############################
 #           Tools           #
@@ -1578,6 +1875,7 @@ tools:
                     help: Change the current main domain
                     extra:
                         pattern: *pattern_domain
+                        autocomplete: *domains_list
 
         ### tools_postinstall()
         postinstall:
@@ -1594,6 +1892,7 @@ tools:
                         ask: ask_main_domain
                         pattern: *pattern_domain
                         required: True
+                        autocomplete: *domains_list
                 -u:
                     full: --username
                     help: Username for the first (admin) user. For example 'camille'
@@ -1601,6 +1900,7 @@ tools:
                         ask: ask_admin_username
                         pattern: *pattern_username
                         required: True
+                        autocomplete: *users_list
                 -F:
                     full: --fullname
                     help: The full name for the first (admin) user. For example 'Camille Dupont'
@@ -1633,6 +1933,14 @@ tools:
                     help: Automatically reply to the terms of services prompt, for example for non-interactive installations
                     action: store_true
 
+
+        update_norefresh:
+            # This exists mainly for the API, such that there's an explicit read-only (GET) route 
+            # vs the old/regular/legacy(?)/ambiguous PUT /update route ...
+            hide_in_help: True
+            action_help: List available system/apps updates (without refreshing caches)
+            api: GET /update
+
         ### tools_update()
         update:
             action_help: YunoHost update
@@ -1647,6 +1955,9 @@ tools:
                     nargs: "?"
                     metavar: TARGET
                     default: all
+                --no-refresh:
+                    help: Does not run apt update or fetch the apps catalog, only list upgradable packages and apps
+                    action: store_true
 
         ### tools_upgrade()
         upgrade:
@@ -1670,7 +1981,7 @@ tools:
 
         ### tools_basic_space_cleanup()
         basic-space-cleanup:
-            action_help: Basic space cleanup (apt, journalctl, logs, ...)
+            action_help: Basic space cleanup (apt, journalctl, system and YunoHost logs, ...)
 
         ### tools_shutdown()
         shutdown:
@@ -1755,6 +2066,11 @@ tools:
                     targets:
                         help: Migrations to run (all pendings by default)
                         nargs: "*"
+                        extra:
+                            autocomplete: &migrations_list
+                                ynh_selector: tools migrations list
+                                jq_selector: '.migrations[].id'
+                                use_cache: false
                     --skip:
                         help: Skip specified migrations (to be used only if you know what you are doing)
                         action: store_true
@@ -1767,11 +2083,13 @@ tools:
                     --accept-disclaimer:
                         help: Accept disclaimers of migrations (please read them before using this option)
                         action: store_true
+                    --skip-postmigrations:
+                        action: store_true
+                        help: Don't automatically run the following migrations if any. Especially useful to not run the migrations following a Debian version bump and run them manually instead (to be used only if you know what you are doing)
 
               ### tools_migrations_state()
               state:
                   action_help: Show current migrations state
-
 
 #############################
 #           Hook            #
@@ -1786,8 +2104,13 @@ hook:
             arguments:
                 app:
                     help: App to link with
+                    extra:
+                        autocomplete: *apps_list
                 file:
                     help: Script to add
+                    extra:
+                        autocomplete:
+                            zsh_completion: _files
 
         ### hook_remove()
         remove:
@@ -1795,16 +2118,43 @@ hook:
             arguments:
                 app:
                     help: Scripts related to app will be removed
+                    extra:
+                        autocomplete: *apps_list
 
         ### hook_info()
         info:
-            hide_in_help: True
+            hide_in_help: false
             action_help: Get information about a given hook
             arguments:
                 action:
                     help: Action name
+                    choices: &hook_action_choices
+                        - post_user_create
+                        - post_user_delete
+                        - post_user_update
+                        - post_app_addaccess
+                        - post_app_removeaccess
+                        - post_domain_add
+                        - post_domain_remove
+                        - post_cert_update
+                        - custom_dns_rules
+                        - post_app_change_url
+                        - post_app_upgrade
+                        - post_app_install
+                        - post_app_remove
+                        - backup
+                        - restore
+                        - backup_method
+                        - post_iptable_rules
+                        - conf_regen
                 name:
                     help: Hook name
+                    extra:
+                        autocomplete: &hooks_list_case
+                            ynh_selector: hook list
+                            jq_selector: '.hooks[]'
+                            depends: previous
+                            use_cache: true
 
         ### hook_list()
         list:
@@ -1813,6 +2163,7 @@ hook:
             arguments:
                 action:
                     help: Action name
+                    choices: *hook_action_choices
                 -l:
                     full: --list-by
                     help: Property to list hook by
@@ -1833,6 +2184,7 @@ hook:
             arguments:
                 action:
                     help: Action name
+                    choices: *hook_action_choices
                 -n:
                     full: --hooks
                     help: List of hooks names to execute
@@ -1852,6 +2204,10 @@ hook:
             arguments:
                 path:
                     help: Path of the script to execute
+                    extra:
+                        autocomplete:
+                            zsh_completion: _files
+
                 -a:
                     full: --args
                     help: Ordered list of arguments to pass to the script
@@ -1897,7 +2253,12 @@ log:
                 - display
             arguments:
                 path:
-                    help: Log file which to display the content. 'last' or 'last-X' selects the last but X log file
+                    help: Log file which to display the content
+                    extra:
+                        autocomplete: &logs_list
+                            ynh_selector: log list
+                            jq_selector: '.operation[].name'
+                            use_cache: false
                 -n:
                     full: --number
                     help: Number of lines to display
@@ -1922,7 +2283,8 @@ log:
             arguments:
                 path:
                     help: Log file to share
-
+                    extra:
+                        autocomplete: *logs_list
 
 #############################
 #          Diagnosis        #
@@ -1942,6 +2304,11 @@ diagnosis:
                 categories:
                     help: Diagnosis categories to display (all by default)
                     nargs: "*"
+                    extra:
+                        autocomplete: &diagnosis_list
+                            ynh_selector: diagnosis list
+                            jq_selector: '.categories[]'
+                            use_cache: false
                 --full:
                     help: Display additional information
                     action: store_true
@@ -1961,6 +2328,8 @@ diagnosis:
             arguments:
                 category:
                     help: Diagnosis category to fetch results from
+                    extra:
+                        autocomplete: *diagnosis_list
                 item:
                     help: "List of criteria describing the test. Must correspond exactly to the 'meta' infos in 'yunohost diagnosis show'"
                     metavar: CRITERIA
@@ -1973,6 +2342,8 @@ diagnosis:
                 categories:
                     help: Diagnosis categories to run (all by default)
                     nargs: "*"
+                    extra:
+                        autocomplete: *diagnosis_list
                 --force:
                     help: Ignore the cached report even if it is still 'fresh'
                     action: store_true
@@ -2003,3 +2374,44 @@ diagnosis:
                     help: Remove a filter (it should be an existing filter as listed with "ignore --list")
                     nargs: "*"
                     metavar: CRITERIA
+
+
+#############################
+#           Storage         #
+#############################
+storage:
+    category_help: Manage hard-drives, filesystem, pools
+    subcategories:
+        disk:
+            subcategory_help: Manage et get infos about hard-drives
+            actions:
+                # storage_disks_list
+                list:
+                    action_help: List hard-drives currently attached to this system optionnaly with infos
+                    api: GET /storage/disk/list
+                    arguments:
+                        -H:
+                            full: --human-readable
+                            help: Print informations in a human-readable format
+                            action: store_true
+                        --human-readable-size:
+                            help: Print sizes in a human-readable format
+                            action: store_true
+                        -i:
+                            full: --with-info
+                            help: Get all informations for each archive
+                            action: store_true
+                # storage_disks_info
+                info:
+                    action_help: Get hard-drive information
+                    api: GET /storage/disk/info/<name>
+                    arguments:
+                        name:
+                            help: Disk to get information from
+                        -H:
+                            full: --human-readable
+                            help: Print informations in a human-readable format
+                            action: store_true
+                        --human-readable-size:
+                            help: Print sizes in a human-readable format
+                            action: store_true

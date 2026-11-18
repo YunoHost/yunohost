@@ -27,6 +27,7 @@
 # format and how placeholders are replaced with actual variables.
 #
 # Additionally, ynh_config_add_nginx will replace:
+#
 # - `#sub_path_only`      by empty string if `path` is not `'/'`
 # - `#root_path_only`     by empty string if `path`  *is*  `'/'`
 #

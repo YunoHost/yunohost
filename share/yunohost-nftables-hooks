@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+HOOK_FOLDER="/usr/share/yunohost/hooks/"
+CUSTOM_HOOK_FOLDER="/etc/yunohost/hooks.d/"
+
+run_parts() {
+    dir="$1"
+    if [ -d "$dir" ]; then
+        run-parts "$dir"
+    fi
+}
+
+pre_or_post="${1:-pre}"
+
+run_parts "$HOOK_FOLDER/${pre_or_post}_nftables"
+run_parts "$CUSTOM_HOOK_FOLDER/${pre_or_post}_nftables"
+
+# This one is legacy, apps should use the new ${pre_or_post}_nftables hook
+run_parts "$HOOK_FOLDER/${pre_or_post}_iptable_rules"
+run_parts "$CUSTOM_HOOK_FOLDER/${pre_or_post}_iptable_rules"

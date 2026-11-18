@@ -38,6 +38,9 @@ ynh_app_setting_get() {
 
 # Set an application setting
 #
+# When choosing the setting key's name, note that including the following keywords will make the associated setting's value appear masked in the debug logs (cf. [related code](https://github.com/YunoHost/yunohost/blob/216210d5e97070b85c96ebb4548c6abf36987771/src/log.py#L571)): `pwd`, `pass`, `passwd`, `password`, `passphrase`, `secret\w*` (regex),  `\w+key` (regex), `token`, `PASSPHRASE`
+# This is meant to allow sharing the logs while preserving confidential data, but having this in mind is useful would you expect to see those values while debugging your scripts.
+#
 # usage: ynh_app_setting_set --key=key --value=value
 # | arg: --app=     - the application id (global $app by default)
 # | arg: --key=     - the setting name to set
@@ -62,7 +65,7 @@ ynh_app_setting_set() {
 #
 # Hence it's meant as a replacement for this legacy overly complex syntax:
 #
-# ```
+# ```bash
 # if [ -z "${foo:-}" ]
 # then
 #     foo="bar"
@@ -86,7 +89,7 @@ ynh_app_setting_set_default() {
     # ===========================================
 
     if [ -z "${!key:-}" ]; then
-        eval $key=\$value
+        eval "$key=\$value"
         ynh_app_setting "set" "$app" "$key" "$value"
     fi
 }
@@ -148,7 +151,7 @@ EOF
 if [[ -n "${app:-}" ]] && [[ -n "${phpversion:-}" ]]; then
     if [[ -z "${php_version:-}" ]]; then
         php_version=$phpversion
-        ynh_app_setting_set --key=php_version --value=$php_version
+        ynh_app_setting_set --key=php_version --value="$php_version"
     fi
     ynh_app_setting_delete --key=phpversion
     unset phpversion

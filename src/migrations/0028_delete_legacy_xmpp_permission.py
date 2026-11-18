@@ -20,7 +20,7 @@
 
 from logging import getLogger
 
-from yunohost.tools import Migration
+from ..tools import Migration
 
 logger = getLogger("yunohost.migration")
 
@@ -37,16 +37,7 @@ class MyMigration(Migration):
     introduced_in_version = "12.0"
     dependencies = []
 
-    ldap_migration_started = False
-
     @Migration.ldap_migration
     def run(self, *args):
-        from yunohost.permission import permission_delete, user_permission_list
-
-        self.ldap_migration_started = True
-
-        if "xmpp.main" in user_permission_list()["permissions"]:
-            permission_delete("xmpp.main", force=True)
-
-    def run_after_system_restore(self):
-        self.run()
+        # Superseded by migration 0033 / permission rework to move infos out of ldap
+        pass

@@ -1,0 +1,219 @@
+#compdef yunohost
+#
+# -----------------------------------------------------------------------------
+# Description
+# -----------
+#  Completion script for yunohost, automatically generated from the action map
+#  decribed by `yunohost.yml`
+# -----------------------------------------------------------------------------
+
+local state line curcontext
+
+# For debug purposes only
+__log() {
+    echo $@ >> '/tmp/zsh-completion.log'
+}
+
+# First argument: The name of the completion list
+# 2nd argument:   The command to get it
+# (( $+functions[__get_ynh_cache] )) ||
+function __get_ynh_cache() {
+    # Checking a global cache policy is defined,
+    # and linkage to ynh-cache-policy
+    local update_policy completion_items
+    zstyle -s ":completion:${curcontext}:" cache-policy update_policy
+    if [[ -z "$update_policy" ]]; then
+        zstyle ":completion:${curcontext}:" cache-policy __yunohost_cache_policy
+    fi
+    # If the cache is invalid (too old), regenerate it
+    if _cache_invalid $1 || ! _retrieve_cache $1; then
+        completion_items=(`eval $2`)
+        _store_cache $1 completion_items
+    else
+        _retrieve_cache $1
+    fi
+    echo $completion_items
+}
+
+# (( $+functions[__yunohost_cache_policy] )) ||
+__yunohost_cache_policy(){
+    local cache_file="$1"
+    # Rebuild if the yunohost executable is newer than cache
+    [[ "${commands[yunohost]}" -nt "${cache_file}" ]] && return
+
+    # Rebuild if cache is more than a week old
+    local -a oldp
+    # oldp=( "$1"(mM+1) ) # month
+    # oldp=( "$1"(Nm+7) ) # 1 week
+    oldp=( "$1"(Nmd+1) ) # 1 day
+    (( $#oldp )) && return
+    return 1
+}
+
+#
+# Routing function, used to go through $words and find the correct subfunction
+# (Suggestions welcome to improve that design... =/ )
+# (( $+functions[__jump] )) ||
+function __jump() {
+    local cmd
+
+    # Remember the subcommand name
+    if (( ${#@} == 0 )); then
+        local cmd=${words[2]}
+    else
+        cmd=$1 # < no more used?
+    fi
+
+    # Set the context for the subcommand
+    ynhcommand="${ynhcommand}_${cmd}"
+    # Narrow the range of words we are looking at to exclude `yunohost`
+    (( CURRENT-- ))
+    shift words
+    # Run the completion for the subcommand
+    if ! _call_function ret ${ynhcommand#:*:}; then
+        _default && ret=0
+    fi
+    return ret
+}
+
+#-----------------------------------------
+#   Command
+#-----------------------------------------
+#
+# Principal entry point with general options and list of commands
+# (( $+functions[_yunohost] )) ||
+function _yunohost() {
+    local curcontext="${curcontext}" state line ret=1
+    local mode
+    # `ynhcommand` is where `__jump` builds the name of the completion function
+    ynhcommand='_yunohost'
+
+    typeset -ag common_options; common_options=(
+        '(-h --help)'{-h,--help}'[Show this help message and exit]:help:'
+        '--version[Display YunoHost packages versions]:version:'
+        '--output-as[Output result in another format]:output-as:(json plain none)'
+        '--debug[Log and print debug messages]'
+        '--quiet[Don'"'"'t produce any output]'
+        '--timeout[Number of seconds before this command will timeout because it can'"'"'t acquire the lock (meaning that another command is currently running), by default there is no timeout and the command will wait until it can get the lock]:timeout:'
+    )
+
+    if (( CURRENT > 2 )); then
+        __jump
+    else
+        local -a yunohost_categories; yunohost_categories=(
+            {%- for catinfo in categories %}
+            {%- if catinfo.help and catinfo.level == 1 %}
+            '{{ catinfo.name }}:{{ catinfo.help }}'
+            {%- endif %}
+            {%- endfor %}
+        )
+        _describe -V -t yunohost-commands 'yunohost category' yunohost_categories "$@"
+    fi
+
+    _arguments -s -C $common_options
+    # unset common_option
+}
+
+#-----------------------------------------
+#   Subcommands
+#-----------------------------------------
+
+{%- for catinfo in categories %}
+{%- if catinfo.actions or catinfo.subs %}
+#-----------------------------------------
+#               {{ catinfo.name }}
+#-----------------------------------------
+
+# (( $+functions[_yunohost_{{ catinfo.name }}] )) ||
+function _yunohost_{{ catinfo.name }}() {
+    if (( CURRENT > 2 )); then
+        __jump
+    else
+        {%- if catinfo.actions %}
+        local -a yunohost_{{ catinfo.name }}; yunohost_{{ catinfo.name }}=(
+            {%- for actioninfo in catinfo.actions %}
+            {%- if actioninfo.help %}
+            '{{ actioninfo.name }}:{{ actioninfo.help }}'
+            {%- endif %}
+            {%- endfor %}
+        )
+        _describe -V -t yunohost-{{ catinfo.name }} 'yunohost {{ catinfo.name }} category' yunohost_{{ catinfo.name }} "$@"
+
+        {%- endif %}
+        {% if catinfo.subs %}
+        local -a yunohost_{{ catinfo.name }}_subcategories; yunohost_{{ catinfo.name }}_subcategories=(
+            {%- for subcat_name, subcat_desc in catinfo.subs.items() %}
+            {%- if subcat_desc %}
+            '{{ subcat_name }}:{{ subcat_desc }}'
+            {%- endif %}
+            {%- endfor %}
+        )
+        _describe -V -t yunohost-{{ catinfo.name }}-subcategories 'yunohost {{ catinfo.name }} subcategories' yunohost_{{ catinfo.name }}_subcategories "$@"
+        {%- endif %}
+    fi
+}
+
+{% if catinfo.actions %}
+{% for actioninfo in catinfo.actions %}
+# (( $+functions[_yunohost_{{ catinfo.name }}_{{ actioninfo.name }}] )) ||
+{%- if actioninfo.arguments %}
+function _yunohost_{{ catinfo.name }}_{{ actioninfo.name }}() {
+    {%- if actioninfo.cases %}
+    local context state state_descr line
+    typeset -A opt_args
+    {% endif %}
+    _arguments -s -C \
+        {%- for argumentinfo in actioninfo.arguments %}
+        {{ argumentinfo }} {% if loop.revindex != 1 %}\{% endif %}
+        {%- endfor %}
+    {%- if actioninfo.cases %}
+
+    if (($CURRENT > 2)); then
+        case "$state" in
+            {%- for case in actioninfo.cases %}
+            {{ case.name }})
+                local previous="$words[${CURRENT} - 1]"
+                local cmd_ret=$({{ case.shell_call }})
+                if (( ${#cmd_ret} != 0 )); then
+                    local -a cmd_list=("${(s/ /)cmd_ret}")
+                    _values '{{ case.name }}' $cmd_list
+                fi
+                ;;
+            {%- endfor %}
+        esac
+    fi
+    return $?
+    {%- endif %}
+}
+
+{%- else %}
+function _yunohost_{{ catinfo.name }}_{{ actioninfo.name }}() { }
+
+{%- endif %}
+{% endfor %}
+{% endif %}
+{%- endif %}
+{%- endfor %}
+
+#-----------------------------------------
+#   Completion functions
+#-----------------------------------------
+
+{% for funcinfo in functions %}
+{%- if funcinfo.aggregated %}
+
+# (( $+functions[{{ funcinfo.name }}] )) ||
+function {{ funcinfo.name }}() {
+    _alternative \
+        {{ funcinfo.aggregated }}
+}
+{%- elif funcinfo.shell_call %}
+
+# (( $+functions[{{ funcinfo.name }}] )) ||
+function {{ funcinfo.name }}() {
+    compadd "$@" -- ${(@)$({{ funcinfo.shell_call }})}
+}
+{%- endif %}
+{% endfor %}
+
+_yunohost "$@"

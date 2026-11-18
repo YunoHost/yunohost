@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2025 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -22,29 +22,37 @@ import atexit
 import logging
 import os
 import time
+from functools import cache
+from typing import Callable, Literal, Mapping
 
 import ldap
 import ldap.modlist as modlist
 import ldap.sasl
+from ldap.ldapobject import LDAPObject, ReconnectLDAPObject
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 
-from yunohost.utils.error import YunohostError
+from ..utils.error import YunohostError
 
 logger = logging.getLogger("yunohost.utils.ldap")
 
-# We use a global variable to do some caching
+
+# We cache the interface to do some caching
 # to avoid re-authenticating in case we call _get_ldap_authenticator multiple times
-_ldap_interface = None
+@cache
+def _get_ldap_interface() -> "LDAPInterface":
+    return LDAPInterface()
 
 
-def _get_ldap_interface():
-    global _ldap_interface
+# Add this to properly close / delete the ldap interface / authenticator
+# when Python exits ...
+# Otherwise there's a risk that some funky error appears at the very end
+# of the command due to Python stuff being unallocated in wrong order.
+def _destroy_ldap_interface() -> None:
+    _get_ldap_interface.cache_clear()
 
-    if _ldap_interface is None:
-        _ldap_interface = LDAPInterface()
 
-    return _ldap_interface
+atexit.register(_destroy_ldap_interface)
 
 
 # We regularly want to extract stuff like 'bar' in ldap path like
@@ -53,38 +61,79 @@ def _get_ldap_interface():
 #
 # e.g. using _ldap_path_extract(path, "foo") on the previous example will
 # return bar
-def _ldap_path_extract(path, info):
+def _ldap_path_extract(path: str, info: str) -> str:
     for element in path.split(","):
-        if element.startswith(info + "="):
-            return element[len(info + "=") :]
+        if element.startswith(f"{info}="):
+            return element[len(f"{info}=") :]
+    raise YunohostError(f"Didnt find info {info} in {path} !?")
 
 
-# Add this to properly close / delete the ldap interface / authenticator
-# when Python exits ...
-# Otherwise there's a risk that some funky error appears at the very end
-# of the command due to Python stuff being unallocated in wrong order.
-def _destroy_ldap_interface():
-    global _ldap_interface
-    if _ldap_interface is not None:
-        del _ldap_interface
+def modifyModlist_finegrained(
+    old_entry: Mapping[str, str | list[str] | set[str]],
+    new_entry: Mapping[str, str | list[str] | set[str]],
+) -> list[tuple[int, str, list[str]]]:
+    """
+    Prepare an optimized modification list to give to ldap.modify_ext()
+    """
+    ldif = []
+    for attribute, value in new_entry.items():
+        if not isinstance(value, (list, set)):
+            value = {value}
+        old_value: str | list[str] | set[str] = old_entry.get(attribute, set())
+        if not isinstance(old_value, (list, set)):
+            old_value = {old_value.strip()}
+        if isinstance(value, set) and value == set(old_value):
+            continue
+        if isinstance(value, list) and value == list(old_value):
+            continue
 
+        if not old_value:
+            ldif.append((ldap.MOD_ADD, attribute, list(value)))
+        elif not value:
+            ldif.append((ldap.MOD_DELETE, attribute, list(old_value)))
+        # Add or/and delete only needed values with unordered set
+        elif isinstance(value, set):
+            values_to_del = set(old_value) - value
+            if values_to_del == set(old_value):
+                ldif.append((ldap.MOD_REPLACE, attribute, list(value)))
+                continue
+            elif values_to_del:
+                ldif.append((ldap.MOD_DELETE, attribute, list(values_to_del)))
 
-atexit.register(_destroy_ldap_interface)
+            values_to_add = value - set(old_value)
+            if values_to_add:
+                ldif.append((ldap.MOD_ADD, attribute, list(values_to_add)))
 
-URI = "ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi"
-BASEDN = "dc=yunohost,dc=org"
-ROOTDN = "gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth"
-USERDN = "uid={username},ou=users,dc=yunohost,dc=org"
+        # Add or/and delete only needed values with ordered list
+        else:
+            for i, v in enumerate(value):
+                if i >= len(old_value) or old_value[i] != v:  # type: ignore
+                    break
+            if i == 0:
+                ldif.append((ldap.MOD_REPLACE, attribute, value))
+            else:
+                if old_value[i:]:  # type: ignore
+                    ldif.append((ldap.MOD_DELETE, attribute, old_value[i:]))  # type: ignore
+                if value[i:]:
+                    ldif.append((ldap.MOD_ADD, attribute, value[i:]))
+
+    return ldif
 
 
 class LDAPInterface:
+    URI = "ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi"
+    BASEDN = "dc=yunohost,dc=org"
+    ROOTDN = "gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth"
+    USERDN = "uid={username},ou=users,dc=yunohost,dc=org"
 
-    def __init__(self, user=None, password=None):
+    def __init__(self, user: str | None = None, password: str | None = None) -> None:
+        self.userdn: str
+        self._connect: Callable[[LDAPObject], None]
 
         if user is None:
             if os.getuid() == 0:
                 logger.debug("initializing root ldap interface")
-                self.userdn = ROOTDN
+                self.userdn = self.ROOTDN
                 self._connect = lambda con: con.sasl_non_interactive_bind_s("EXTERNAL")
             else:
                 logger.debug("initializing anonymous ldap interface")
@@ -92,15 +141,14 @@ class LDAPInterface:
                 self._connect = lambda con: None
         else:
             logger.debug("initializing user ldap interface")
-            self.userdn = USERDN.format(username=user)
+            self.userdn = self.USERDN.format(username=user)
             self._connect = lambda con: con.simple_bind_s(self.userdn, password)
 
         self.connect()
 
-    def connect(self):
-
-        def _reconnect():
-            con = ldap.ldapobject.ReconnectLDAPObject(URI, retry_max=10, retry_delay=2)
+    def connect(self) -> None:
+        def _reconnect() -> LDAPObject:
+            con = ReconnectLDAPObject(self.URI, retry_max=10, retry_delay=2)
             self._connect(con)
             return con
 
@@ -133,12 +181,17 @@ class LDAPInterface:
             else:
                 self.con = con
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Disconnect and free ressources"""
         if hasattr(self, "con") and self.con:
             self.con.unbind_s()
 
-    def search(self, base=None, filter="(objectClass=*)", attrs=["dn"]):
+    def search(
+        self,
+        base: str | None = None,
+        filter: str = "(objectClass=*)",
+        attrs: set[str] | list[str] | None = ["dn"],
+    ) -> list[dict[str, list[str]]]:
         """Search in LDAP base
 
         Perform an LDAP search operation with given arguments and return
@@ -154,9 +207,9 @@ class LDAPInterface:
 
         """
         if not base:
-            base = BASEDN
+            base = self.BASEDN
         else:
-            base = base + "," + BASEDN
+            base = f"{base},{self.BASEDN}"
 
         try:
             result = self.con.search_s(base, ldap.SCOPE_SUBTREE, filter, attrs)
@@ -169,7 +222,7 @@ class LDAPInterface:
                 raw_msg=True,
             )
 
-        result_list = []
+        result_list: list[dict[str, list[str]]] = []
         if not attrs or "dn" not in attrs:
             result_list = [entry for dn, entry in result]
         else:
@@ -177,7 +230,7 @@ class LDAPInterface:
                 entry["dn"] = [dn]
                 result_list.append(entry)
 
-        def decode(value):
+        def decode(value: str | bytes) -> str:
             if isinstance(value, bytes):
                 value = value.decode("utf-8")
             return value
@@ -187,11 +240,13 @@ class LDAPInterface:
         for stuff in result_list:
             if isinstance(stuff, dict):
                 for key, values in stuff.items():
-                    stuff[key] = [decode(v) for v in values]
+                    stuff[key] = [decode(value) for value in values]
 
         return result_list
 
-    def add(self, rdn, attr_dict):
+    def add(
+        self, rdn: str, attr_dict: Mapping[str, str | list[str] | set[str]]
+    ) -> bool:
         """
         Add LDAP entry
 
@@ -203,7 +258,7 @@ class LDAPInterface:
             Boolean | MoulinetteError
 
         """
-        dn = f"{rdn},{BASEDN}"
+        dn = f"{rdn},{self.BASEDN}"
         ldif = modlist.addModlist(attr_dict)
         for i, (k, v) in enumerate(ldif):
             if isinstance(v, list):
@@ -223,7 +278,7 @@ class LDAPInterface:
         else:
             return True
 
-    def remove(self, rdn):
+    def remove(self, rdn: str) -> bool:
         """
         Remove LDAP entry
 
@@ -234,7 +289,7 @@ class LDAPInterface:
             Boolean | MoulinetteError
 
         """
-        dn = f"{rdn},{BASEDN}"
+        dn = f"{rdn},{self.BASEDN}"
         try:
             self.con.delete_s(dn)
         except Exception as e:
@@ -246,7 +301,12 @@ class LDAPInterface:
         else:
             return True
 
-    def update(self, rdn, attr_dict, new_rdn=False):
+    def update(
+        self,
+        rdn: str,
+        attr_dict: Mapping[str, str | list[str] | set[str]],
+        new_rdn: str | Literal[False] = False,
+    ) -> bool:
         """
         Modify LDAP entry
 
@@ -259,11 +319,19 @@ class LDAPInterface:
             Boolean | MoulinetteError
 
         """
-        dn = f"{rdn},{BASEDN}"
-        actual_entry = self.search(rdn, attrs=None)
-        ldif = modlist.modifyModlist(actual_entry[0], attr_dict, ignore_oldexistent=1)
+        dn = f"{rdn},{self.BASEDN}"
+        current_entry = self.search(rdn, attrs=None)
 
-        if ldif == []:
+        # Previously, we used modifyModlist, which directly uses the lib system libldap
+        # supplied with openldap. Unfortunately, the output of this command was not
+        # optimal with attributes containing lists (complete deletion then complete
+        # rewriting of the list). In view of the major performance problems associated
+        # with our inherited permissions system, we decided to rewrite this part to
+        # optimize the output.
+        # ldif = modlist.modifyModlist(current_entry[0], attr_dict, ignore_oldexistent=1)
+        ldif = modifyModlist_finegrained(current_entry[0], attr_dict)
+
+        if not ldif:
             logger.debug("Nothing to update in LDAP")
             return True
 
@@ -273,25 +341,34 @@ class LDAPInterface:
                 new_base = dn.split(",", 1)[1]
                 dn = new_rdn + "," + new_base
 
-            for i, (a, k, vs) in enumerate(ldif):
-                if isinstance(vs, list):
-                    vs = [v.encode("utf-8") for v in vs]
-                elif isinstance(vs, str):
-                    vs = [vs.encode("utf-8")]
-                ldif[i] = (a, k, vs)
+            # mod_op : 0 ADD, 1 DELETE, 2 REPLACE
+            def encode_values(values: list[str] | str) -> list[bytes]:
+                if isinstance(values, list):
+                    return [value.encode("utf-8") for value in values]
+                elif isinstance(values, str):
+                    return [values.encode("utf-8")]
+                return values
 
-            self.con.modify_ext_s(dn, ldif)
+            encoded_ldif = [
+                (mod_op, attribute, encode_values(values))
+                for mod_op, attribute, values in ldif
+            ]
+
+            self.con.modify_ext_s(dn, encoded_ldif)
         except Exception as e:
             raise MoulinetteError(
-                "error during LDAP update operation with: rdn='%s', "
-                "attr_dict=%s, new_rdn=%s and exception: %s"
-                % (rdn, attr_dict, new_rdn, e),
+                "Error during LDAP update operation:\n"
+                f" rdn: {rdn}\n"
+                f" attr_dict: {attr_dict}\n"
+                f" new_rdn: {new_rdn}\n"
+                f" ldif: {ldif}\n"
+                f" exception: {e}",
                 raw_msg=True,
             )
         else:
             return True
 
-    def validate_uniqueness(self, value_dict):
+    def validate_uniqueness(self, value_dict: dict[str, str]) -> bool:
         """
         Check uniqueness of values
 
@@ -316,7 +393,9 @@ class LDAPInterface:
             )
         return True
 
-    def get_conflict(self, value_dict, base_dn=None):
+    def get_conflict(
+        self, value_dict: dict[str, str], base_dn: str | None = None
+    ) -> tuple[str, str] | None:
         """
         Check uniqueness of values
 

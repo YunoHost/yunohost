@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+#
+# completion for yunohost
+# automatically generated from the actionsmap
+#
+
+_yunohost()
+{
+	local cur prev opts narg
+	COMPREPLY=()
+
+	# the number of words already typed
+	narg=${#COMP_WORDS[@]}
+
+	# the current word being typed
+	cur="${COMP_WORDS[COMP_CWORD]}"
+
+	# If one is currently typing a category,
+	# match with categorys
+	if [[ $narg == 2 ]]; then
+		opts="{{ categories | join(" ") }}"
+	fi
+
+	# If one already typed a category,
+	# match the actions or the subcategories of that category
+	if [[ $narg == 3 ]]; then
+		# the category typed
+		category="${COMP_WORDS[1]}"
+		{%- for category, catinfo in categories.items() %}
+		if [[ $category == "{{ category }}" ]]; then
+			opts="{{ (catinfo.actions + catinfo.subs.keys()|list) | join(" ") }}"
+		fi
+		{%- endfor %}
+	fi
+
+	# If one already typed an action or a subcategory,
+	# match the actions of that subcategory
+	if [[ $narg == 4 ]]; then
+		# the category typed
+		category="${COMP_WORDS[1]}"
+
+		# the action or the subcategory typed
+		action_or_subcategory="${COMP_WORDS[2]}"
+
+		{%- for category, catinfo in categories.items() %}
+		{%- if catinfo.subs %}
+		if [[ $category == "{{ category }}" ]]; then
+			{%- for sub, subinfo in catinfo.subs.items() %}
+			if [[ $action_or_subcategory == "{{ sub }}" ]]; then
+				opts="{{ subinfo | join(" ") }}"
+			fi
+			{%- endfor %}
+		fi
+		{%- endif -%}
+		{%- endfor %}
+	fi
+
+	# If no options were found propose --help
+	if [ -z "$opts" ]; then
+		prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+		if [[ $prev != "--help" ]]; then
+			opts=( --help )
+		fi
+	fi
+	COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+	return 0
+}
+
+complete -F _yunohost yunohost

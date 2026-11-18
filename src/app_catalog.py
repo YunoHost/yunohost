@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2025 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -22,13 +22,14 @@ import hashlib
 import os
 import re
 from logging import getLogger
+from pathlib import Path
+from typing import Any, Literal, NotRequired, TypedDict
 
 from moulinette import m18n
-from moulinette.utils.filesystem import mkdir, read_json, read_yaml, write_to_json
-from moulinette.utils.network import download_json
 
-from yunohost.utils.error import YunohostError
-from yunohost.utils.i18n import _value_for_locale
+from .utils.error import YunohostError
+from .utils.file_utils import download_json, mkdir, read_json, read_yaml, write_to_json
+from .utils.i18n import _value_for_locale
 
 logger = getLogger("yunohost.app_catalog")
 
@@ -37,15 +38,42 @@ APPS_CATALOG_LOGOS = "/usr/share/yunohost/applogos"
 APPS_CATALOG_CONF = "/etc/yunohost/apps_catalog.yml"
 APPS_CATALOG_API_VERSION = 3
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
-DEFAULT_APPS_CATALOG_LIST = [{"id": "default", "url": APPS_CATALOG_DEFAULT_URL}]
+DEFAULT_APPS_CATALOG_LIST: list[dict[Literal["id", "url"], str]] = [
+    {"id": "default", "url": APPS_CATALOG_DEFAULT_URL}
+]
+SECURITY_INDEX_SUPPORTED_VERSION = 1
 
 
-def app_catalog(full=False, with_categories=False, with_antifeatures=False):
+class SecurityIssueInfos(TypedDict):
+    date: str
+    title: str
+    more_infos: (
+        str | list[str]
+    )  # typically an URL, for example a forum thread or github issue
+    fixed_in_version: (
+        str | dict[Literal["bookworm", "trixie"], str]
+    )  # eg "1.2.3~ynh1" or "2.2.27-3+deb9u5"
+    level: Literal["warning", "error"]
+
+
+class AppCatalog(TypedDict):
+    apps: dict[str, dict[str, Any]]
+    categories: NotRequired[list[dict[str, Any]]]
+    antifeatures: NotRequired[list[dict[str, Any]]]
+    security: NotRequired[
+        dict[Literal["apps", "system"], dict[str, list[SecurityIssueInfos]]]
+    ]
+    from_api_version: NotRequired[int]
+
+
+def app_catalog(
+    full: bool = False, with_categories: bool = False, with_antifeatures: bool = False
+) -> AppCatalog:
     """
     Return a dict of apps available to installation from Yunohost's app catalog
     """
 
-    from yunohost.app import _installed_apps
+    from .utils.app_utils import _installed_apps
 
     # Get app list from catalog cache
     catalog = _load_apps_catalog()
@@ -65,7 +93,7 @@ def app_catalog(full=False, with_categories=False, with_antifeatures=False):
                 "level": infos["level"],
             }
 
-    _catalog = {"apps": catalog["apps"]}
+    _catalog: AppCatalog = {"apps": catalog["apps"]}
 
     if with_categories:
         for category in catalog["categories"]:
@@ -98,7 +126,7 @@ def app_catalog(full=False, with_categories=False, with_antifeatures=False):
     return _catalog
 
 
-def app_search(string):
+def app_search(string: str) -> dict[Literal["apps"], dict[str, Any]]:
     """
     Return a dict of apps whose description or name match the search string
     """
@@ -107,17 +135,17 @@ def app_search(string):
     catalog_of_apps = app_catalog()
 
     # Selecting apps according to a match in app name or description
-    matching_apps = {"apps": {}}
+    matching_apps = {}
     for app in catalog_of_apps["apps"].items():
         if re.search(string, app[0], flags=re.IGNORECASE) or re.search(
             string, app[1]["description"], flags=re.IGNORECASE
         ):
-            matching_apps["apps"][app[0]] = app[1]
+            matching_apps[app[0]] = app[1]
 
-    return matching_apps
+    return {"apps": matching_apps}
 
 
-def _read_apps_catalog_list():
+def _read_apps_catalog_list() -> list[dict[Literal["id", "url"], str]]:
     """
     Read the json corresponding to the list of apps catalogs
     """
@@ -134,18 +162,18 @@ def _read_apps_catalog_list():
                 pass
         # Support the case where file exists but is empty
         # by returning [] if list_ is None
-        return list_ if list_ else []
+        return list_ if list_ else []  # type: ignore[return-value]
     except Exception as e:
         raise YunohostError(
             f"Could not read the apps_catalog list ... : {e}", raw_msg=True
         )
 
 
-def _actual_apps_catalog_api_url(base_url):
+def _actual_apps_catalog_api_url(base_url: str) -> str:
     return f"{base_url}/v{APPS_CATALOG_API_VERSION}/apps.json"
 
 
-def _update_apps_catalog():
+def _update_apps_catalog() -> None:
     """
     Fetches the json for each apps_catalog and update the cache
 
@@ -180,7 +208,7 @@ def _update_apps_catalog():
 
         # Fetch the json
         try:
-            apps_catalog_content = download_json(actual_api_url)
+            apps_catalog_content: AppCatalog = download_json(actual_api_url)  # type: ignore[assignment]
         except Exception as e:
             raise YunohostError(
                 "apps_catalog_failed_to_download",
@@ -194,7 +222,7 @@ def _update_apps_catalog():
         # Save the apps_catalog data in the cache
         cache_file = f"{APPS_CATALOG_CACHE}/{apps_catalog_id}.json"
         try:
-            write_to_json(cache_file, apps_catalog_content)
+            write_to_json(cache_file, apps_catalog_content)  # type: ignore[arg-type]
         except Exception as e:
             raise YunohostError(
                 f"Unable to write cache data for {apps_catalog_id} apps_catalog : {e}",
@@ -218,15 +246,15 @@ def _update_apps_catalog():
 
         import requests
 
-        def fetch_logo(logo_hash):
+        def fetch_logo(logo_hash: str) -> bool:
             try:
                 r = requests.get(
                     f"{apps_catalog['url']}/v{APPS_CATALOG_API_VERSION}/logos/{logo_hash}.png",
                     timeout=10,
                 )
-                assert (
-                    r.status_code == 200
-                ), f"Got status code {r.status_code}, expected 200"
+                assert r.status_code == 200, (
+                    f"Got status code {r.status_code}, expected 200"
+                )
                 if hashlib.sha256(r.content).hexdigest() != logo_hash:
                     raise Exception(
                         f"Found inconsistent hash while downloading logo {logo_hash}"
@@ -242,24 +270,46 @@ def _update_apps_catalog():
             # Is this even needed to iterate on the results ?
             pass
 
-    logger.success(m18n.n("apps_catalog_update_success"))
+    logger.success(m18n.n("apps_catalog_update_success"))  # type: ignore
 
 
-def _load_apps_catalog():
+_apps_catalog_cache_timestamp: float = 0
+_apps_catalog_cache: AppCatalog | None = None
+
+
+def _load_apps_catalog() -> AppCatalog:
     """
     Read all the apps catalog cache files and build a single dict (merged_catalog)
     corresponding to all known apps and categories
     """
 
-    merged_catalog = {"apps": {}, "categories": [], "antifeatures": []}
+    timestamps = []
+    catalog_conf = Path(APPS_CATALOG_CONF)
+    if catalog_conf.exists():
+        stats = catalog_conf.stat()
+        timestamps.append(stats.st_mtime)
+        timestamps.append(stats.st_ctime)
+    for f in Path(APPS_CATALOG_CACHE).glob("*.json"):
+        stats = f.stat()
+        timestamps.append(stats.st_mtime)
+        timestamps.append(stats.st_ctime)
+
+    timestamp = max(timestamps) if timestamps else 0
+    global _apps_catalog_cache
+    global _apps_catalog_cache_timestamp
+    if _apps_catalog_cache and timestamp <= _apps_catalog_cache_timestamp:
+        return _apps_catalog_cache
+
+    merged_catalog: AppCatalog = {"apps": {}, "categories": [], "antifeatures": []}
 
     for apps_catalog_id in [L["id"] for L in _read_apps_catalog_list()]:
         # Let's load the json from cache for this catalog
-        cache_file = f"{APPS_CATALOG_CACHE}/{apps_catalog_id}.json"
+        cache_file = Path(APPS_CATALOG_CACHE) / (apps_catalog_id + ".json")
 
+        apps_catalog_content: AppCatalog | None
         try:
             apps_catalog_content = (
-                read_json(cache_file) if os.path.exists(cache_file) else None
+                read_json(str(cache_file)) if cache_file.exists() else None  # type: ignore[assignment]
             )
         except Exception as e:
             raise YunohostError(
@@ -276,7 +326,9 @@ def _load_apps_catalog():
         ):
             logger.info(m18n.n("apps_catalog_obsolete_cache"))
             _update_apps_catalog()
-            apps_catalog_content = read_json(cache_file)
+            apps_catalog_content = read_json(str(cache_file))  # type: ignore[assignment]
+
+        assert apps_catalog_content is not None
 
         del apps_catalog_content["from_api_version"]
 
@@ -304,4 +356,65 @@ def _load_apps_catalog():
         merged_catalog["categories"] += apps_catalog_content.get("categories", [])
         merged_catalog["antifeatures"] += apps_catalog_content.get("antifeatures", [])
 
+    # Save as cache for next call
+    _apps_catalog_cache = merged_catalog
+    _apps_catalog_cache_timestamp = timestamp
+
     return merged_catalog
+
+
+def _load_security_issues_list() -> dict[
+    Literal["apps", "system"], dict[str, list[SecurityIssueInfos]]
+]:
+    apps_issues: dict[str, list[SecurityIssueInfos]] = {}
+    system_issues: dict[str, list[SecurityIssueInfos]] = {}
+
+    for apps_catalog_id in [L["id"] for L in _read_apps_catalog_list()]:
+        cache_file = Path(APPS_CATALOG_CACHE) / (apps_catalog_id + ".json")
+        if not cache_file.exists():
+            continue
+        content: AppCatalog
+        try:
+            content = read_json(str(cache_file)) or {}  # type: ignore[assignment]
+            assert content is not None, f"Uhoh, read json from {cache_file} is None!?"
+        except Exception as e:
+            raise YunohostError(
+                f"Unable to read cache for security issue list {cache_file} : {e}",
+                raw_msg=True,
+            )
+
+        security_index: (
+            dict[Literal["apps", "system"], dict[str, list[SecurityIssueInfos]]] | None
+        ) = content.get("security")
+        security_index_version: int | None = (
+            security_index.get("version") if security_index else None  # type: ignore
+        )  # type: ignore[index,call-overload]
+        # Even if not mentioned in the typing, security_index has a "version" key
+        if security_index_version != SECURITY_INDEX_SUPPORTED_VERSION:
+            if security_index_version is None:
+                logger.warning(
+                    f"Catalog '{apps_catalog_id}' is missing the security vulnerability index. Please contact the people maintaing this catalog."
+                )
+            elif security_index_version > SECURITY_INDEX_SUPPORTED_VERSION:
+                logger.warning(
+                    f"In catalog {apps_catalog_id}, the security index info is too recent. You should probably upgrade YunoHost."
+                )
+            elif security_index_version < SECURITY_INDEX_SUPPORTED_VERSION:
+                logger.warning(
+                    f"Security index format from catalog '{apps_catalog_id}' is too old, please contact the people maintaining it to upgrade it to the recent standards?"
+                )
+            continue
+
+        assert security_index is not None
+
+        for app, entries in security_index["apps"].items():
+            if app not in apps_issues:
+                apps_issues[app] = []
+            apps_issues[app] += entries
+
+        for package, entries in security_index["system"].items():
+            if package not in system_issues:
+                system_issues[package] = []
+            system_issues[package] += entries
+
+    return {"apps": apps_issues, "system": system_issues}

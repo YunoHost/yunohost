@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2025 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -21,32 +21,32 @@
 import os
 import subprocess
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Callable, Union
 
 from moulinette import m18n
 
-from yunohost.firewall import firewall_reload
-from yunohost.log import is_unit_operation
-from yunohost.regenconf import regen_conf
-from yunohost.utils.configpanel import ConfigPanel, parse_filter_key
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.form import BaseOption
+from .firewall import firewall_reload
+from .log import is_unit_operation
+from .regenconf import regen_conf
+from .utils.configpanel import ConfigPanel, parse_filter_key
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.form import BaseOption
 
 if TYPE_CHECKING:
     from typing import cast
 
-    from moulinette.utils.log import MoulinetteLogger
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
-    from yunohost.log import OperationLogger
-    from yunohost.utils.configpanel import (
+    from .log import OperationLogger
+    from .utils.configpanel import (
         ConfigPanelGetMode,
         ConfigPanelModel,
         RawSettings,
     )
-    from yunohost.utils.form import FormModel
+    from .utils.form import FormModel
+    from .utils.logging import YunohostLogger
 
-    logger = cast(MoulinetteLogger, getLogger("yunohost.settings"))
+    logger = cast(YunohostLogger, getLogger("yunohost.settings"))
 else:
     logger = getLogger("yunohost.settings")
 
@@ -210,7 +210,7 @@ class SettingsConfigPanel(ConfigPanel):
 
         # Specific logic for virtual setting "passwordless_sudo"
         try:
-            from yunohost.utils.ldap import _get_ldap_interface
+            from .utils.ldap import _get_ldap_interface
 
             ldap = _get_ldap_interface()
             raw_settings["passwordless_sudo"] = "!authenticate" in ldap.search(
@@ -218,6 +218,10 @@ class SettingsConfigPanel(ConfigPanel):
             )[0].get("sudoOption", [])
         except Exception:
             raw_settings["passwordless_sudo"] = False
+
+        for setting_name, f in default_hooks.items():
+            if raw_settings.get(setting_name, None) is None:
+                raw_settings[setting_name] = f(setting_name)
 
         return raw_settings
 
@@ -236,21 +240,19 @@ class SettingsConfigPanel(ConfigPanel):
             if root_password != root_password_confirm:
                 raise YunohostValidationError("password_confirmation_not_the_same")
 
-            from yunohost.tools import tools_rootpw
+            from .tools import tools_rootpw
 
             tools_rootpw(root_password, check_strength=True)
 
         if passwordless_sudo is not None:
-            from yunohost.utils.ldap import _get_ldap_interface
+            from .utils.ldap import _get_ldap_interface
 
             ldap = _get_ldap_interface()
             ldap.update(
                 "cn=admins,ou=sudo",
-                {"sudoOption": ["!authenticate"] if passwordless_sudo else []},
+                {"sudoOption": "!authenticate" if passwordless_sudo else []},
             )
 
-        # First save settings except virtual + default ones
-        super()._apply(form, config, previous_settings, exclude=self.virtual_settings)
         next_settings = {
             k: v
             for k, v in form.dict(exclude=self.virtual_settings).items()
@@ -258,19 +260,54 @@ class SettingsConfigPanel(ConfigPanel):
         }
 
         for setting_name, value in next_settings.items():
-            try:
-                # FIXME not sure to understand why we need the previous value if
-                # updated_settings has already been filtered
-                trigger_post_change_hook(
-                    setting_name, previous_settings.get(setting_name), value
-                )
-            except Exception as e:
-                logger.error(f"Post-change hook for setting failed : {e}")
-                raise
+            # FIXME not sure to understand why we need the previous value if
+            # updated_settings has already been filtered
+            trigger_validate_hook(
+                setting_name, previous_settings.get(setting_name), value
+            )
+
+        # First save settings except virtual + default ones
+        super()._apply(form, config, previous_settings, exclude=self.virtual_settings)
+
+        for setting_name, value in next_settings.items():
+            # FIXME not sure to understand why we need the previous value if
+            # updated_settings has already been filtered
+            trigger_post_change_hook(
+                setting_name, previous_settings.get(setting_name), value
+            )
 
 
 # Meant to be a dict of setting_name -> function to call
-post_change_hooks = {}
+default_hooks: dict[str, Callable] = {}
+validate_hooks: dict[str, Callable] = {}
+post_change_hooks: dict[str, Callable] = {}
+
+
+def default_hook(setting_name):
+    # TODO: Check that setting_name exists
+    def decorator(func):
+        default_hooks[setting_name] = func
+        return func
+
+    return decorator
+
+
+def validate_hook(setting_name):
+    # TODO: Check that setting_name exists
+    def decorator(func):
+        validate_hooks[setting_name] = func
+        return func
+
+    return decorator
+
+
+def trigger_validate_hook(setting_name, old_value, new_value):
+    if setting_name not in validate_hooks:
+        logger.debug(f"Nothing to validate before changing setting {setting_name}")
+        return
+
+    f = validate_hooks[setting_name]
+    f(setting_name, old_value, new_value)
 
 
 def post_change_hook(setting_name):
@@ -304,11 +341,21 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 
 
 @post_change_hook("portal_theme")
+@post_change_hook("portal_allow_edit_email")
+@post_change_hook("portal_allow_edit_email_alias")
+@post_change_hook("portal_allow_edit_email_forward")
 def regen_ssowatconf(setting_name, old_value, new_value):
     if old_value != new_value:
-        from yunohost.app import app_ssowatconf
+        from .app import app_ssowatconf
 
         app_ssowatconf()
+
+
+@post_change_hook("dns_custom_resolvers_enabled")
+@post_change_hook("dns_custom_resolvers_list")
+def reconfigure_dnsmasq(setting_name, old_value, new_value):
+    if old_value != new_value:
+        regen_conf(names=["dnsmasq"])
 
 
 @post_change_hook("tls_passthrough_enabled")
@@ -357,7 +404,6 @@ def reconfigure_postfix(setting_name, old_value, new_value):
 
 @post_change_hook("pop3_enabled")
 def reconfigure_dovecot(setting_name, old_value, new_value):
-
     environment = os.environ.copy()
     environment.update({"DEBIAN_FRONTEND": "noninteractive"})
 
@@ -380,3 +426,63 @@ def reconfigure_dovecot(setting_name, old_value, new_value):
             regen_conf(names=["dovecot"])
         command = ["apt-get", "-y", "remove", "dovecot-pop3d"]
         subprocess.call(command, env=environment)
+
+
+@default_hook("tmpfs_enabled")
+def is_tmpfs_enabled(setting_name):
+    with open("/proc/mounts", "r") as f:
+        for line in f.readlines():
+            if line.startswith("tmpfs /tmp "):
+                return True
+    return False
+
+
+@validate_hook("tmpfs_max_size")
+def validate_tmpfs_max_size(setting_name, old_value, new_value):
+    if old_value != new_value:
+        if setting_name == "tmpfs_max_size":
+            from psutil import virtual_memory
+
+            from .utils.system import space_used_by_directory
+
+            ram = virtual_memory()
+            ram_total = round(ram.total / 1024.0 / 1024.0)
+            ram_available = round(ram.available / 1024.0 / 1024.0)
+            ratio = 1
+            if new_value.endswith("%"):
+                ratio = ram_total / 100
+            elif new_value.endswith("G"):
+                ratio = 1024
+            max_size_in_mega = int(new_value[:-1]) * ratio
+            max_allowed = ram_total - 512
+            max_advice = min(ram_available, 8 * 1024)
+            tmp_current_size = (
+                space_used_by_directory("/tmp", follow_symlinks=False) / 1024 / 1024
+            )
+            if max_size_in_mega > max_allowed:
+                raise YunohostValidationError(
+                    "global_settings_setting_tmpfs_max_size_too_big",
+                    max_allowed=max_allowed,
+                    max_advice=max_advice,
+                )
+
+            if max_size_in_mega < tmp_current_size:
+                raise YunohostValidationError(
+                    "global_settings_setting_tmpfs_max_size_too_small",
+                    current_size=tmp_current_size,
+                )
+
+            if max_size_in_mega > max_advice:
+                logger.warning(
+                    m18n.n(
+                        "global_settings_setting_tmpfs_max_size_danger",
+                        max_advice=max_advice,
+                    )
+                )
+
+
+@post_change_hook("tmpfs_enabled")
+@post_change_hook("tmpfs_max_size")
+def reconfigure_tmpfs(setting_name, old_value, new_value):
+    if old_value != new_value:
+        regen_conf(names=["tmpfs"])

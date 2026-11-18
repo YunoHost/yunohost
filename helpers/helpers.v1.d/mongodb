@@ -19,7 +19,6 @@
 #
 
 # Execute a mongo command
-#
 # example: ynh_mongo_exec --command='db.getMongo().getDBNames().indexOf("wekan")'
 # example: ynh_mongo_exec --command="db.getMongo().getDBNames().indexOf(\"wekan\")"
 #
@@ -32,7 +31,6 @@
 # | arg: -P, --port=                        - The port to connect to
 # | arg: -c, --command=                     - The command to evaluate
 # | arg: -e, --eval                         - Evaluate instead of execute the command.
-#
 #
 ynh_mongo_exec() {
     # Declare an array to define the options of this helper.

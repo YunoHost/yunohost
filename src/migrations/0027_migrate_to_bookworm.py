@@ -18,6 +18,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+# Explicitly import packages to prevent an issue that may arise later because of python3.9 being replaced by 3.11 in the middle of the upgrade etc
+import _strptime  # noqa: F401
 import glob
 import os
 import subprocess
@@ -25,18 +27,15 @@ from datetime import date
 from time import sleep
 
 import _ldap  # noqa: F401
-
-# Explicitly import packages to prevent an issue that may arise later because of python3.9 being replaced by 3.11 in the middle of the upgrade etc
-import _strptime  # noqa: F401
 from moulinette import Moulinette, m18n
-from moulinette.utils.filesystem import read_file, write_to_file
-from moulinette.utils.process import call_async_output, check_output
 
-from yunohost.app import unstable_apps
-from yunohost.regenconf import manually_modified_files, regen_conf
-from yunohost.tools import Migration, _write_migration_state, tools_update
-from yunohost.utils.error import YunohostError
-from yunohost.utils.system import (
+from ..app import app_list
+from ..regenconf import manually_modified_files, regen_conf
+from ..tools import Migration, _write_migration_state, tools_update
+from ..utils.error import YunohostError
+from ..utils.file_utils import read_file, write_to_file
+from ..utils.process import call_async_output, check_output
+from ..utils.system import (
     _list_upgradable_apt_packages,
     aptitude_with_progress_bar,
     free_space_in_directory,
@@ -102,6 +101,25 @@ def _backup_pip_freeze_for_python_app_venvs():
         os.system(
             f"{venv}/bin/pip freeze | grep -E -v 'pkg(-|_)resources==' > {venv}{VENV_REQUIREMENTS_SUFFIX} 2>/dev/null"
         )
+
+
+def unstable_apps() -> list[str]:
+    output = []
+    deprecated_apps = ["mailman", "ffsync"]
+
+    for infos in app_list(full=True)["apps"]:
+        if (
+            not infos.get("from_catalog")
+            or infos.get("from_catalog", {}).get("state")
+            in [
+                "inprogress",
+                "notworking",
+            ]
+            or infos["id"] in deprecated_apps
+        ):
+            output.append(infos["id"])
+
+    return output
 
 
 class MyMigration(Migration):

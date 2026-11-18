@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2025 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -23,13 +23,13 @@ from pathlib import Path
 from typing import Any, Union
 
 import ldap
-from moulinette.utils.filesystem import read_json
 
-from yunohost.authenticators.ldap_ynhuser import Authenticator as Auth
-from yunohost.authenticators.ldap_ynhuser import user_is_allowed_on_domain
-from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.ldap import LDAPInterface, _get_ldap_interface, _ldap_path_extract
-from yunohost.utils.password import (
+from .authenticators.ldap_ynhuser import Authenticator as Auth
+from .authenticators.ldap_ynhuser import user_is_allowed_on_domain
+from .utils.error import YunohostError, YunohostValidationError
+from .utils.file_utils import read_json
+from .utils.ldap import LDAPInterface, _get_ldap_interface, _ldap_path_extract
+from .utils.password import (
     _hash_user_password,
     assert_password_is_compatible,
     assert_password_is_strong_enough,
@@ -55,7 +55,7 @@ def _get_user_infos(
 
 def _get_portal_settings(
     domain: Union[str, None] = None, username: Union[str, None] = None
-):
+) -> dict[str, Any]:
     """
     Returns domain's portal settings which are a combo of domain's portal config panel options
     and the list of apps availables on this domain computed by `app.app_ssowatconf()`.
@@ -75,14 +75,17 @@ def _get_portal_settings(
         "portal_theme": "system",
         "portal_tile_theme": "simple",
         "portal_title": "YunoHost",
-        "show_other_domains_apps": False,
+        "show_other_domains_apps": True,
         "domain": domain,
+        "portal_allow_edit_email": False,
+        "portal_allow_edit_email_alias": False,
+        "portal_allow_edit_email_forward": False,
     }
 
     portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{domain}.json")
 
     if portal_settings_path.exists():
-        settings.update(read_json(str(portal_settings_path)))
+        settings.update(read_json(str(portal_settings_path)))  # type: ignore[arg-type]
         # Portal may be public (no login required)
         settings["public"] = bool(settings.pop("enable_public_apps_page", False))
 
@@ -96,24 +99,38 @@ def _get_portal_settings(
 
         for path in glob.glob(f"{PORTAL_SETTINGS_DIR}/*.json"):
             if path != str(portal_settings_path):
-                apps.update(read_json(path)["apps"])
+                path_dict: dict[str, dict] = read_json(path)  # type: ignore[assignment]
+                apps.update(path_dict["apps"])
 
     if username:
         # Add user allowed or public apps
         settings["apps"] = {
-            name: app
-            for name, app in apps.items()
-            if username in app["users"] or app["public"]
+            app: infos
+            for app, infos in apps.items()
+            if username in infos["users"] or infos["public"]
         }
     elif settings["public"]:
         # Add public apps (e.g. with "visitors" in group permission)
-        settings["apps"] = {name: app for name, app in apps.items() if app["public"]}
+        settings["apps"] = {
+            app: infos
+            for app, infos in apps.items()
+            if infos["public"] and not infos.get("hide_from_public")
+        }
+
+    # Sort dictionnary according to the "order" info
+    settings["apps"] = dict(
+        sorted(
+            [(app, infos) for app, infos in settings["apps"].items()],
+            key=lambda v: (v[1].get("order", 100), v[0]),
+        )
+    )
 
     return settings
 
 
 def portal_public():
-    """Get public settings
+    """
+    Get public settings
     If the portal is set as public, it will include the list of public apps
     """
 
@@ -172,18 +189,20 @@ def portal_me():
 
 def portal_update(
     fullname: Union[str, None] = None,
+    mail: Union[str, None] = None,
     mailforward: Union[list[str], None] = None,
     mailalias: Union[list[str], None] = None,
     currentpassword: Union[str, None] = None,
     newpassword: Union[str, None] = None,
 ):
-    from yunohost.domain import domain_list
+    from .domain import domain_list
 
     domains = domain_list()["domains"]
     username, domain, current_user = _get_user_infos(
         ["givenName", "sn", "cn", "mail", "maildrop", "memberOf"]
     )
-    new_attr_dict = {}
+    new_attr_dict: dict[str, Any] = {}
+    portal_settings = _get_portal_settings(domain, username)
 
     if fullname is not None and fullname != current_user["cn"]:
         fullname = fullname.strip()
@@ -191,20 +210,51 @@ def portal_update(
         lastname = (
             " ".join(fullname.split()[1:]) or " "
         )  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
-        new_attr_dict["givenName"] = [firstname]  # TODO: Validate
-        new_attr_dict["sn"] = [lastname]  # TODO: Validate
-        new_attr_dict["cn"] = new_attr_dict["displayName"] = [
-            (firstname + " " + lastname).strip()
-        ]
+        new_attr_dict["givenName"] = firstname  # TODO: Validate
+        new_attr_dict["sn"] = lastname  # TODO: Validate
+        new_attr_dict["cn"] = new_attr_dict["displayName"] = (
+            firstname + " " + lastname
+        ).strip()
+
+    new_mails = current_user["mail"]
+
+    if mail is not None:
+        is_allowed_to_edit_main_email = portal_settings["portal_allow_edit_email"]
+        if not is_allowed_to_edit_main_email:
+            raise YunohostValidationError("mail_edit_operation_unauthorized")
+
+        if mail not in new_mails:
+            local_part, domain = mail.split("@")
+            if local_part in ADMIN_ALIASES:
+                raise YunohostValidationError("mail_unavailable")
+
+            try:
+                _get_ldap_interface().validate_uniqueness({"mail": mail})
+            except YunohostError:
+                raise YunohostValidationError("mail_already_exists", mail=mail)
+
+            if domain not in domains or not user_is_allowed_on_domain(username, domain):
+                raise YunohostValidationError("mail_alias_unauthorized", domain=domain)
+            new_mails[0] = mail
+        else:
+            # email already exist in the list we just move it on the first place
+            new_mails.remove(mail)
+            new_mails = [mail] + new_mails[1:]
+
+        new_attr_dict["mail"] = new_mails
 
     if mailalias is not None:
+        is_allowed_to_edit_mail_alias = portal_settings["portal_allow_edit_email_alias"]
+        if not is_allowed_to_edit_mail_alias:
+            raise YunohostValidationError("mail_edit_operation_unauthorized")
+
         mailalias = [mail.strip() for mail in mailalias if mail and mail.strip()]
         # keep first current mail unaltered
-        mails = [current_user["mail"][0]]
+        mails = [new_mails[0]]
 
         for index, mail in enumerate(mailalias):
-            if mail in current_user["mail"]:
-                if mail != current_user["mail"][0] and mail not in mails:
+            if mail in new_mails:
+                if mail != new_mails[0] and mail not in mails:
                     mails.append(mail)
                 continue  # already in mails, skip validation
 
@@ -229,6 +279,12 @@ def portal_update(
         new_attr_dict["mail"] = mails
 
     if mailforward is not None:
+        is_allowed_to_edit_mail_forward = portal_settings[
+            "portal_allow_edit_email_forward"
+        ]
+        if not is_allowed_to_edit_mail_forward:
+            raise YunohostValidationError("mail_edit_operation_unauthorized")
+
         new_attr_dict["maildrop"] = [current_user["maildrop"][0]] + [
             mail.strip()
             for mail in mailforward
@@ -248,7 +304,7 @@ def portal_update(
         except YunohostValidationError as e:
             raise YunohostValidationError(e.key, path="newpassword")
 
-        new_attr_dict["userPassword"] = [_hash_user_password(newpassword)]
+        new_attr_dict["userPassword"] = _hash_user_password(newpassword)
 
     # Check that current password is valid
     # To be able to edit the user info, an authenticated ldap session is needed
@@ -278,7 +334,8 @@ def portal_update(
     # be run as root
     if all(field is not None for field in (fullname, mailalias, mailforward)):
         return {
-            "fullname": new_attr_dict["cn"][0],
+            "fullname": new_attr_dict["cn"],
+            "mail": new_attr_dict["mail"][0],
             "mailalias": new_attr_dict["mail"][1:],
             "mailforward": new_attr_dict["maildrop"][1:],
         }

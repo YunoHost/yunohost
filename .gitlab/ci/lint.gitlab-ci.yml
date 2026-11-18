@@ -38,4 +38,4 @@ i18n-keys:
   image: "build-and-lint"
   needs: []
   script:
-    - python3 maintenance/missing_i18n_keys.py --check
+    - python3 maintenance/missing_i18n_keys.py check

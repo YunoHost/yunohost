@@ -1,0 +1,35 @@
+version = "1.0"
+i18n = "app_config"
+
+[_core]
+
+    # This is duplicated for each permission and named "permission_main", "permission_admin" etc.
+    # Keys are also made unique by prefixing them with "permission_main" / "permission_admin",
+    # for example the label key is "permission_{permid}_label"
+    [_core.permissions]
+
+        [_core.permissions.url]
+        type = "url"
+        visible = false
+
+        [_core.permissions.location]
+        type = "markdown"
+        # Core automatically add a "visible=false" if url is empty (but since the keys are dynamic, can't do it here)
+
+        [_core.permissions.label]
+        type = "string"
+
+        [_core.permissions.description]
+        type = "string"
+
+        [_core.permissions.show_tile]
+        type = "boolean"
+        # Core automatically add a "visible=false" if url is empty (but since the keys are dynamic, can't do it here)
+
+        [_core.permissions.logo]
+        type = "file"
+        accept = ["image/png"]
+
+        [_core.permissions.allowed]
+        type = "tags"
+        # Core automatically add a "readonly" if protected is true

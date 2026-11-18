@@ -18,9 +18,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-set -e
+# Exit hook on subcommand error or unset variable
+set -eu
 
-. /usr/share/yunohost/helpers
+# Source YNH helpers
+# shellcheck source=../../helpers/helpers
+source /usr/share/yunohost/helpers
 
 do_pre_regen() {
     pending_dir=$1
@@ -36,7 +39,7 @@ do_pre_regen() {
 
     export pop3_enabled="$(jq -r '.pop3_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
     export main_domain=$(cat /etc/yunohost/current_host)
-    export domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]" | tr '\n' ' ')"
+    export domain_list="$YNH_DOMAINS_WITH_MAIL_IN_AND_OUT"
 
     ynh_render_template "dovecot.conf" "${dovecot_dir}/dovecot.conf"
 
@@ -61,8 +64,8 @@ do_post_regen() {
     # create vmail user
     id vmail > /dev/null 2>&1 \
         || {
-             mkdir -p /var/vmail
-                                  adduser --system --ingroup mail --uid 500 vmail --home /var/vmail --no-create-home
+            mkdir -p /var/vmail
+            adduser --system --ingroup mail --uid 500 vmail --home /var/vmail --no-create-home
         }
 
     # Delete legacy home for vmail that existed in the past but was empty, poluting /home/
@@ -70,7 +73,9 @@ do_post_regen() {
 
     # fix permissions
     chown -R vmail:mail /etc/dovecot/global_script
-    chmod 770 /etc/dovecot/global_script
+    chmod -R u=rwX,g=rX,o-w /etc/dovecot
+    chmod -R u=rwX,g=---,o=--- /etc/dovecot/private
+    chmod g+w /etc/dovecot/global_script
     chown root:mail /var/mail
     chmod 1775 /var/mail
 
@@ -87,4 +92,4 @@ do_post_regen() {
     systemctl restart dovecot
 }
 
-do_$1_regen ${@:2}
+"do_$1_regen" "$(echo "${*:2}" | xargs)"

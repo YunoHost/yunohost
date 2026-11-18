@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2025 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -19,16 +19,15 @@
 #
 
 import os
-from typing import List
 
-from yunohost.diagnosis import Diagnoser
-from yunohost.service import service_status
+from ..diagnosis import Diagnoser
+from ..service import service_status
 
 
 class MyDiagnoser(Diagnoser):
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
-    dependencies: List[str] = []
+    dependencies: list[str] = []
 
     def run(self):
         all_result = service_status()

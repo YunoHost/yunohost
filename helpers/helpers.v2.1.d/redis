@@ -44,8 +44,7 @@ ynh_redis_get_free_db() {
     echo "$db"
 }
 
-# Create a master password and set up global settings
-# Please always call this script in install and restore scripts
+# Erase a redis database so it can be reused by other apps.
 #
 # usage: ynh_redis_remove_db database
 # | arg: database - the database to erase
