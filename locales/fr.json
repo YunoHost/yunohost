@@ -935,5 +935,6 @@
     "global_settings_setting_tmpfs_max_size_too_big": "La taille maximale de tmpfs ne peut pas dépasser {max_allowed} Mo et il est recommandé de ne pas dépasser {max_advice} Mo.",
     "global_settings_setting_tmpfs_max_size_too_small": "La taille maximale de tmpfs ne peut pas être inférieure à sa taille actuelle {current_size} Mo.",
     "global_settings_setting_tmpfs_max_size_danger": "La taille maximale de l'espace alloué au système de fichiers tmpfs que vous avez configuré semble trop élevée ; vous devriez probablement rester en dessous de {max_advice} Mo.",
-    "migration_0036_configuring_tmp_in_ram": "Configuration du répertoire /tmp en mémoire vive avec tmpfs (taille maximale : {ram} Mo) … Vous pouvez modifier ou ajuster cette valeur dans les paramètres généraux."
+    "migration_0036_configuring_tmp_in_ram": "Configuration du répertoire /tmp en mémoire vive avec tmpfs (taille maximale : {ram} Mo) … Vous pouvez modifier ou ajuster cette valeur dans les paramètres généraux.",
+    "migration_0036_configuring_tmp_on_disk": "Configurer le répertoire /tmp sur le disque dur plutôt qu'en mémoire vive (car la mémoire vive, couramment appelée RAM, est insuffisante) … Vous pouvez modifier ce paramètre dans les paramètres généraux."
 }
