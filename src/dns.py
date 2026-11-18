@@ -208,7 +208,15 @@ def _build_dns_conf(
             mail.append((basename, ttl, "MX", f"10 {domain}."))
 
         if settings["mail_out"]:
-            mail.append((basename, ttl, "TXT", '"v=spf1 a mx -all"'))
+            # Tentative de mitigation en cas où le serveur du domaine d'envoi du mail est différent
+            # du serveur du domaine (site externalisé) Issue: #2465
+            spf4 = ""
+            spf6 = ""
+            if ipv4:
+                spf4 = ' ip4:' + ipv4
+            if ipv6:
+                spf6 = ' ip6:' + ipv6
+            mail.append((basename, ttl, "TXT", f'"v=spf1 a mx{spf4}{spf6} -all"'))
 
             # DKIM/DMARC record
             dkim_host, dkim_publickey = _get_DKIM(domain)
