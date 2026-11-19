@@ -39,7 +39,7 @@ incus exec migration-to-trixie -- yunohost tools migrations run 0036 --accept-di
 
 # Explicitly import packages to prevent an issue that may arise later because of python3.9 being replaced by 3.11 in the middle of the upgrade etc
 # TRIXIE? import _strptime  # noqa: F401
-import jinja2
+import grp
 import logging
 import re
 import subprocess
@@ -48,16 +48,20 @@ from datetime import date
 from pathlib import Path
 from time import sleep
 
+import jinja2
 import requests
 from debian.deb822 import Deb822
 
 # TRIXIE? import _ldap  # noqa: F401
 from moulinette import Moulinette, m18n
+from psutil import virtual_memory
 
-from ..app import app_list
+from ..app import _installed_apps, app_list
 from ..regenconf import manually_modified_files
+from ..settings import settings_set
 from ..tools import Migration, _write_migration_state, tools_update
 from ..utils.error import YunohostError
+from ..utils.file_utils import rm
 from ..utils.process import call_async_output, check_output
 from ..utils.system import (
     _list_upgradable_apt_packages,
@@ -71,52 +75,6 @@ logger = logging.getLogger("yunohost.migration")
 
 N_CURRENT_DEBIAN = 12
 N_CURRENT_YUNOHOST = 12
-
-VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_trixie_upgrade.txt"
-
-
-def _get_all_venvs(dir: Path, level: int = 0, maxlevel: int = 3) -> list[Path]:
-    """
-    Returns the list of all python virtual env directories recursively
-
-    Arguments:
-        dir - the directory to scan in
-        maxlevel - the depth of the recursion
-        level - do not edit this, used as an iterator
-    """
-    if not dir.exists():
-        return []
-
-    result = []
-    # Using os functions instead of glob, because glob doesn't support hidden folders, and we need recursion with a fixed depth
-    for path in dir.iterdir():
-        if path.is_dir():
-            activatepath = path / "bin" / "activate"
-            if activatepath.is_file():
-                content = activatepath.read_text()
-                if ("VIRTUAL_ENV" in content) and ("PYTHONHOME" in content):
-                    result.append(path)
-                    continue
-            if level < maxlevel:
-                result += _get_all_venvs(path, level=level + 1)
-    return result
-
-
-def _backup_pip_freeze_for_python_app_venvs():
-    """
-    Generate a requirements file for all python virtual env located inside /opt/ and /var/www/
-    """
-    venvs = _get_all_venvs(Path("/opt/")) + _get_all_venvs(Path("/var/www/"))
-    for venv in venvs:
-        # Generate a requirements file from venv
-        # Remove pkg resources from the freeze to avoid an error during the python venv https://stackoverflow.com/a/40167445
-        pip = venv / "bin" / "pip"
-        if not pip.is_file():
-            logger.warning(f"Skipping venv {venv} because no 'pip' bin found")
-            continue
-        pip_freeze = subprocess.check_output([pip, "freeze"]).decode(encoding="utf-8")
-        pip_freeze = re.sub(r"^pkg(-|_)resources==.*$", "", pip_freeze)
-        (venv / VENV_REQUIREMENTS_SUFFIX).write_text(pip_freeze)
 
 
 def unstable_apps() -> list[str]:
@@ -151,7 +109,8 @@ def package_is_installed(package: str) -> bool:
         f"dpkg --list | grep '^ii ' | grep -q -w {package}",
         check=False,
         shell=True,
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
     return result.returncode == 0
 
@@ -169,9 +128,6 @@ class MyMigration(Migration):
         # Stupid stuff because resolvconf later wants to edit /etc/resolv.conf and will miserably crash if it's immutable
         subprocess.check_call(["chattr", "-i", Path("/etc/resolv.conf").resolve()])
 
-        # Get requirements of the different venvs from python apps
-        _backup_pip_freeze_for_python_app_venvs()
-
         # Tell libc6 it's okay to restart system stuff during the upgrade
         subprocess.run(
             ["debconf-set-selections"],
@@ -183,17 +139,16 @@ class MyMigration(Migration):
         if package_is_installed("postgresql-common"):
             subprocess.run(
                 ["debconf-set-selections"],
-                input="postgresql-common postgresql-common/obsolete-major seen true".encode("utf-8"),
+                input="postgresql-common postgresql-common/obsolete-major seen true".encode(
+                    "utf-8"
+                ),
                 check=True,
             )
 
         # Do not restart services during apt upgrade, that we know for sure will be broken before a conf-regen
         # FIXME : we should find a ~robust way to auto-delete the policy-rc.d file after the migration went through,
         # ideally wrapping everything in a context manager somehow
-        self.prevent_services_restart_during_upgrade([
-            "nginx",
-            "dovecot"
-        ])
+        self.prevent_services_restart_during_upgrade(["nginx", "dovecot"])
 
         # Hold import yunohost packages
         apps_packages = self.get_apps_equivs_packages()
@@ -293,6 +248,11 @@ class MyMigration(Migration):
         )
         subprocess.run("apt clean --assume-yes", shell=True, check=True)
 
+        for filename in ["extra_php_version.list", "yarn.list"]:
+            legacy_file: Path = Path("/etc/apt/sources.list.d") / filename
+            if legacy_file.exists():
+                rm(str(legacy_file))
+
         #
         # Stupid hack for stupid dnsmasq not picking up its new init.d script then breaking everything ...
         # https://forum.yunohost.org/t/20676
@@ -319,24 +279,48 @@ class MyMigration(Migration):
         except Exception:
             # Retry after unholding the app packages, maybe it can unlock the situation idk
             if apps_packages:
-                aptitude_with_progress_bar("unhold " + ' '.join(apps_packages))
+                aptitude_with_progress_bar("unhold " + " ".join(apps_packages))
                 aptitude_with_progress_bar(full_upgrade_cmd)
         else:
             # If the upgrade was sucessful, we want to unhold the apps packages
             if apps_packages:
-                aptitude_with_progress_bar("unhold " + ' '.join(apps_packages))
+                aptitude_with_progress_bar("unhold " + " ".join(apps_packages))
+
+        # Adjust tmpfs configuration
+        # Since debian 13, tmpfs is activated by default, however it could not be
+        # a good things for small servers with not so much ram
+        ram = virtual_memory()
+        ram_total = round(ram.total / 1024.0 / 1024.0)
+        ram_available = round(ram.available / 1024.0 / 1024.0)
+        if ram_total >= 4096 and ram_available >= 1024:
+            tmpfs_max_size = round(min(ram_total * 0.25, ram_available))
+            logger.info(
+                m18n.n("migration_0036_configuring_tmp_in_ram", ram=tmpfs_max_size)
+            )
+            settings_set(
+                "misc.storage",
+                args=f"tmpfs_max_size={tmpfs_max_size}M&tmpfs_enabled=yes",
+            )
+        else:
+            logger.info(m18n.n("migration_0036_configuring_tmp_on_disk"))
+            settings_set("misc.storage.tmpfs_enabled", False)
 
         # Mark this migration as completed before triggering the "new" migrations
         _write_migration_state(self.id, "done")
 
-        callbacks = (
-            lambda l: logger.debug("+ " + l.rstrip() + "\r"),
-            lambda l: logger.warning(l.rstrip()),
-        )
-        try:
-            call_async_output(["yunohost", "tools", "migrations", "run"], callbacks)
-        except Exception as e:
-            logger.error(e)
+        if not self.skip_postmigrations:
+            callbacks = (
+                lambda l: logger.debug("+ " + l.rstrip() + "\r"),
+                lambda l: logger.warning(l.rstrip()),
+            )
+            try:
+                call_async_output(["yunohost", "tools", "migrations", "run"], callbacks)
+            except Exception as e:
+                logger.error(e)
+        else:
+            logger.info(
+                m18n.n("migration_0036_post_migrations_skipped", distrib="Trixie")
+            )
 
         # If running from the webadmin, restart the API after a delay
         if Moulinette.interface.type == "api":
@@ -347,6 +331,9 @@ class MyMigration(Migration):
             cmd = 'at -M now >/dev/null 2>&1 <<< "sleep 10; systemctl restart nginx yunohost-api"'
             # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
             subprocess.check_call(["bash", "-c", cmd])
+
+        # Reload sshd due to -R unknown option
+        subprocess.check_call(["systemctl", "reload", "sshd"])
 
         if self.yunohost_major_version() != N_CURRENT_YUNOHOST + 1:
             raise YunohostError(
@@ -444,6 +431,48 @@ class MyMigration(Migration):
             if upgradable_system_packages - lime2_hold_packages:
                 raise YunohostError("migration_0036_system_not_fully_up_to_date")
 
+        # Check ssh users won't be unable to login with public key after migration
+        # OpenSSH_10.0p2 forbid to login with public key that are in a /home/USER
+        # with write permissions on groups cause it's possible to move .ssh even
+        # if groups have no write permissions on thi s.ssh directory.
+
+        # List potential authorized_keys
+        ssh_apps = grp.getgrnam("ssh.app").gr_mem
+        ssh_apps += grp.getgrnam("sftp.app").gr_mem
+        potential_keys_paths = [
+            Path(Path("~" + ssh_app).expanduser()) / ".ssh/authorized_keys"
+            for ssh_app in ssh_apps
+        ]
+        potential_keys_paths += [
+            user_home / ".ssh/authorized_keys"
+            for user_home in Path("/home").iterdir()
+            if not user_home.name.startswith("yunohost.")
+        ]
+        potential_keys_paths += [Path("/root/.ssh/authorized_keys")]
+        apps = _installed_apps()
+        for keys_path in potential_keys_paths:
+            if not keys_path.exists():
+                continue
+            home = keys_path.parent.parent
+            cmd = ["getfacl", "-cea", home, keys_path.parent, keys_path]
+            acl = subprocess.check_output(cmd).decode()
+            for permission in acl.split("\n"):
+                if permission.startswith("group:") and permission[-2] == "w":
+                    group = permission.split(":")[1]
+                    if group in apps:
+                        raise YunohostError(
+                            "migration_0036_ssh_app_need_upgrade",
+                            user=home.name,
+                            app=group,
+                            home=home,
+                        )
+                    raise YunohostError(
+                        "migration_0036_ssh_user_home_writable_by_group",
+                        user=home.name,
+                        permission=permission,
+                        home=home,
+                    )
+
     @property
     def disclaimer(self):
         # Avoid having a super long disclaimer + uncessary check if we ain't
@@ -497,7 +526,10 @@ sideway (typically by SSHing from the local network, or through rescue access on
 
         return jinja2.Template(message_jinja).render(
             beta=True,
-            migration_recent=date.today() < date(2026, 6, 1),  # FIXME: maybe retweak this later for the stable trixie release
+            migration_recent=date.today()
+            < date(
+                2026, 6, 1
+            ),  # FIXME: maybe retweak this later for the stable trixie release
             migration_0036_general_warning=m18n.n("migration_0036_general_warning"),
             # Get list of problematic apps ? I.e. not official or community+working
             problematic_apps=unstable_apps(),
@@ -517,29 +549,52 @@ sideway (typically by SSHing from the local network, or through rescue access on
 
         # TODO: migrate to deb822? See apt modernize-sources after upgrade
 
-        # This :
-        # - replace single 'bookworm' occurence by 'trixie'
-        # - comments lines containing "backports"
-        # - replace 'bookworm/updates' by 'trixie/updates' (or same with -)
-        # Special note about the security suite:
-        # https://www.debian.org/releases/bookworm/amd64/release-notes/ch-information.en.html#security-archive
         def patch_list_line(line: str) -> str:
-            line = (
-                line.replace(
+            """
+            - replace single 'bookworm' occurence by 'trixie'
+            - comments lines containing "backports"
+            - replace 'bookworm/updates' by 'trixie/updates' (or same with -)
+            Special note about the security suite:
+            https://www.debian.org/releases/bookworm/amd64/release-notes/ch-information.en.html#security-archive
+            deb [ option1=valeur1 option2=valeur2 ] uri suite [composant1] [composant2] [...]
+            """
+            deb_re = r"^(?P<deb>deb)\s*(?P<options>\[[^\]]*\])?\s*(?P<uri>[^\s]*)\s*(?P<suite>[^\s]*)\s*(?P<components>.*)$"
+            if not (match := re.match(deb_re, line)):
+                return line
+
+            deb, options, uri, suite, components = match.groups()
+
+            if options is not None:
+                assert isinstance(options, str)
+                options = options.replace(
                     "/usr/share/keyrings/yunohost-bookworm.gpg",
                     "/usr/share/keyrings/yunohost-trixie.gpg",
                 )
-                .replace(
-                    "http://forge.yunohost.org/debian/ bookworm stable",
-                    # FIXME: REPLACE WITH STABLE
-                    "https://repo.yunohost.org/debian/ trixie unstable",
-                )
-                .replace(" bookworm ", " trixie ")
-                .replace(" bookworm-", " trixie-")
+            uri = (
+                uri.replace("http://", "https://")
+                .replace("/forge.yunohost.org/debian", "/repo.yunohost.org/debian")
+                .removesuffix("/")
             )
+            suite = suite.replace("bookworm", "trixie")
+            components_list = [
+                component.replace("bookworm", "trixie")
+                for component in components.split()
+            ]
 
-            if "backports" in line:
-                line = f"# {line}"
+            # FIXME: Remove that, this is only while Trixie is not stable
+            if "https://repo.yunohost.org/debian" in uri:
+                components_list.append("testing")
+
+            # Unique values in components
+            seen = set()
+            components_list = [
+                x for x in components_list if not (x in seen or seen.add(x))
+            ]
+            comment = "#" if "backports" in line else None
+
+            line = " ".join(
+                filter(None, [comment, deb, options, uri, suite, *components_list])
+            )
             return line
 
         for file in dot_list:
@@ -550,7 +605,7 @@ sideway (typically by SSHing from the local network, or through rescue access on
             new_file_pars = []
             paragraphs = Deb822.iter_paragraphs(file.read_text())
             for paragraph in paragraphs:
-                paragraph["Suites"] = "trixie"
+                paragraph["Suites"] = paragraph["Suites"].replace("bookworm", "trixie")
 
                 if re.match(
                     r"^https?://(repo|forge)\.yunohost\.org.*", paragraph["URIs"]
@@ -590,8 +645,22 @@ sideway (typically by SSHing from the local network, or through rescue access on
     def apt_t64_packages_list(self) -> list[str]:
         # https://media1.tenor.com/m/vzLCBSJxywUAAAAd/quelle-indignit%C3%A9-sarkozy.gif
 
-        installed_packages = check_output("apt list --installed 2>/dev/null | grep -v -F 'Listing...' | awk -F/ '{print $1}'", shell=True).strip().split("\n")
-        t64_packages = check_output("apt search '.*t64' 2>/dev/null | grep 't64/' | awk -F/ '{print $1}'", shell=True).strip().split("\n")
+        installed_packages = (
+            check_output(
+                "apt list --installed 2>/dev/null | grep -v -F 'Listing...' | awk -F/ '{print $1}'",
+                shell=True,
+            )
+            .strip()
+            .split("\n")
+        )
+        t64_packages = (
+            check_output(
+                "apt search '.*t64' 2>/dev/null | grep 't64/' | awk -F/ '{print $1}'",
+                shell=True,
+            )
+            .strip()
+            .split("\n")
+        )
 
         t64_upgrades = []
         for t64_package in t64_packages:

@@ -50,7 +50,7 @@ do_pre_regen() {
     cd /usr/share/yunohost/conf/nftables
     mkdir -p "${pending_dir}/etc/nftables.d"
     cp nftables.conf "${pending_dir}/etc/nftables.conf"
-    ynh_render_template nftables.d/yunohost-firewall.tpl.conf "${pending_dir}/etc/nftables.d/yunohost-firewall.conf"
+    ynh_render_template nftables.d/yunohost-firewall.conf.j2 "${pending_dir}/etc/nftables.d/yunohost-firewall.conf"
 }
 
 do_post_regen() {
@@ -60,6 +60,10 @@ do_post_regen() {
         chown root:root /etc/nftables.d/*.conf
         chmod 644 /etc/nftables.d/*.conf
     fi
+
+    chown root:root /etc/nftables.conf /etc/nftables.d
+    chmod u=rw-,g=r--,o-w /etc/nftables.conf
+    chmod -R u=rwX,g=rX,o-w /etc/nftables.d
 
     [[ -z "$regen_conf_files" ]] \
         || systemctl restart nftables

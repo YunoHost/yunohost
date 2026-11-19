@@ -73,7 +73,7 @@ user:
                     help: The unique username to create
                     extra:
                         pattern: &pattern_username
-                            - !!str ^[a-z0-9_\.]+$
+                            - !!str ^[a-z0-9][-a-z0-9_\.]*$
                             - "pattern_username"
                 -F:
                     full: --fullname
@@ -265,7 +265,7 @@ user:
                             help: Name of the group to be created
                             extra:
                                 pattern: &pattern_groupname
-                                    - !!str ^[a-z0-9_]+$
+                                    - !!str ^[a-z0-9][-a-z0-9_\.]*$
                                     - "pattern_groupname"
 
                 ### user_group_delete()
@@ -395,7 +395,7 @@ user:
                     api: GET /users/permissions/<permission>
                     arguments:
                         permission:
-                            help: Name of the permission to fetch info about (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
+                            help: Name of the permission to fetch info about (use "yunohost user permission list" and "yunohost user permission list -f" to see all the current permissions)
                             extra:
                                 autocomplete: &permissions_list
                                     ynh_selector: user permission list
@@ -1004,10 +1004,10 @@ app:
                 -u:
                     full: --url
                     help: Git url to fetch for upgrade
-                -f:
+                -F:
                     full: --file
                     help: Folder or tarball for upgrade
-                -F:
+                -f:
                     full: --force
                     help: Force the update, even though the app is up to date
                     action: store_true
@@ -1072,6 +1072,16 @@ app:
             action_help: Open an interactive shell with the app environment already loaded
             # Here we set a GET only not to lock the command line. There is no actual API endpoint for app_shell()
             api: GET /apps/<app>/shell
+            arguments:
+                app:
+                    help: App ID
+                    extra:
+                        autocomplete: *apps_list
+
+        ### app_db()
+        db:
+            action_help: Open an interactive database client prompt for the app
+            api: GET /apps/<app>/db
             arguments:
                 app:
                     help: App ID
@@ -1835,6 +1845,9 @@ dyndns:
                     full: --dry-run
                     help: Only display the generated zone
                     action: store_true
+                --email:
+                    help: Send an email to root with logs if some updating fails
+                    action: store_true
 
 #############################
 #           Tools           #
@@ -1925,7 +1938,7 @@ tools:
 
 
         update_norefresh:
-            # This exists mainly for the API, such that there's an explicit read-only (GET) route 
+            # This exists mainly for the API, such that there's an explicit read-only (GET) route
             # vs the old/regular/legacy(?)/ambiguous PUT /update route ...
             hide_in_help: True
             action_help: List available system/apps updates (without refreshing caches)
@@ -2073,6 +2086,9 @@ tools:
                     --accept-disclaimer:
                         help: Accept disclaimers of migrations (please read them before using this option)
                         action: store_true
+                    --skip-postmigrations:
+                        action: store_true
+                        help: Don't automatically run the following migrations if any. Especially useful to not run the migrations following a Debian version bump and run them manually instead (to be used only if you know what you are doing)
 
               ### tools_migrations_state()
               state:
@@ -2393,6 +2409,8 @@ storage:
                     action_help: Get hard-drive information
                     api: GET /storage/disk/info/<name>
                     arguments:
+                        name:
+                            help: Disk to get information from
                         -H:
                             full: --human-readable
                             help: Print informations in a human-readable format

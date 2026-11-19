@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2026 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -18,26 +18,9 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from logging import getLogger
-
-from ..tools import Migration
-
-logger = getLogger("yunohost.migration")
-
-###################################################
-# Tools used also for restoration
-###################################################
+from .python import PythonMigration
 
 
-class MyMigration(Migration):
-    """
-    Delete legacy XMPP permission
-    """
-
-    introduced_in_version = "12.0"
-    dependencies = []
-
-    @Migration.ldap_migration
-    def run(self, *args):
-        # Superseded by migration 0033 / permission rework to move infos out of ldap
-        pass
+class MyMigration(PythonMigration):
+    dependencies = ["migrate_to_trixie"]
+    migration_id = "0038_rebuild_python_venv_in_trixie"

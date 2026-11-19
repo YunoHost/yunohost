@@ -40,10 +40,8 @@ do_post_regen() {
     for domain in $YNH_DOMAINS_WITH_MAIL_IN_AND_OUT; do
         domain_key="/etc/dkim/${domain}.mail.key"
         if [ ! -f "$domain_key" ]; then
-            # We use a 1024 bit size because nsupdate doesn't seem to be able to
-            # handle 2048...
             opendkim-genkey --domain="$domain" \
-                --selector=mail --directory=/etc/dkim -b 1024
+                --selector=mail --directory=/etc/dkim -b 2048
             mv /etc/dkim/mail.private "$domain_key"
             mv /etc/dkim/mail.txt "/etc/dkim/${domain}.mail.txt"
         fi

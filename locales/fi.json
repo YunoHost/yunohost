@@ -1,5 +1,5 @@
 {
     "aborting": "Keskeytetään.",
-    "password_too_simple_1": "Salasanan pitää olla ainakin 8 merkin pituinen",
-    "action_invalid": "Virheellinen toiminta '{action}'"
+    "action_invalid": "Virheellinen toiminta '{action}'",
+    "password_too_simple_1": "Salasanan pitää olla ainakin 8 merkin pituinen"
 }

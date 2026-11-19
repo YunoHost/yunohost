@@ -24,7 +24,9 @@ import hashlib
 import json
 import os
 import subprocess
+import textwrap
 from logging import getLogger
+from typing import TYPE_CHECKING, cast
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
@@ -34,10 +36,16 @@ from .log import is_unit_operation
 from .regenconf import regen_conf
 from .utils.dns import dig, is_yunohost_dyndns_domain
 from .utils.error import YunohostError, YunohostValidationError
-from .utils.file_utils import chmod, chown, rm, write_to_file
+from .utils.file_utils import chmod, chown, rm, tail, write_to_file
+from .utils.misc import send_admin_email
 from .utils.network import get_public_ip
 
-logger = getLogger("yunohost.dyndns")
+if TYPE_CHECKING:
+    from .utils.logging import YunohostLogger
+
+    logger = cast(YunohostLogger, getLogger("yunohost.app"))
+else:
+    logger = getLogger("yunohost.dyndns")
 
 DYNDNS_PROVIDER = "dyndns.yunohost.org"
 DYNDNS_DNS_AUTH = ["ns0.yunohost.org", "ns1.yunohost.org"]
@@ -89,7 +97,7 @@ def _dyndns_available(domain: str) -> bool:
 
 
 @is_unit_operation(exclude=["recovery_password"])
-def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
+def dyndns_subscribe(operation_logger, domain, recovery_password=None):
     """
     Subscribe to a DynDNS service
 
@@ -175,6 +183,7 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
 
     # Send subscription
     try:
+        # TODO: Use the newer, simpler dynette API format (just base64 the secret)
         # Yeah the secret is already a base64-encoded but we double-bas64-encode it, whatever...
         b64encoded_key = base64.b64encode(secret.encode()).decode()
         data = {"subdomain": domain}
@@ -356,23 +365,20 @@ def dyndns_list() -> dict[str, list[str]]:
 @is_unit_operation()
 def dyndns_update(
     operation_logger,
-    domain=None,
-    force=False,
-    dry_run=False,
+    domain: str | None = None,
+    force: bool = False,
+    dry_run: bool = False,
+    email: bool = False,
 ):
     """
     Update IP on DynDNS platform
 
     Keyword argument:
         domain -- Full domain to update
+        force -- Force the update
+        dry_run -- Only display the generated zone
+        email -- Emails root if updating failed
     """
-
-    import dns.query
-    import dns.tsig
-    import dns.tsigkeyring
-    import dns.update
-
-    from .dns import _build_dns_conf
 
     # If domain is not given, update all DynDNS domains
     if domain is None:
@@ -382,9 +388,39 @@ def dyndns_update(
             raise YunohostValidationError("dyndns_no_domain_registered")
 
         for domain in dyndns_domains:
-            dyndns_update(domain, force=force, dry_run=dry_run)
+            dyndns_update(domain, force=force, dry_run=dry_run, email=email)
 
         return
+
+    try:
+        _dyndns_update(operation_logger, domain, force, dry_run)
+    except Exception as err:
+        if email:
+            _email_update_failed(domain, err, "")
+            raise err
+
+
+def _dyndns_update(
+    operation_logger,
+    domain: str,
+    force: bool,
+    dry_run: bool,
+):
+    """
+    Update IP on DynDNS platform
+
+    Keyword argument:
+        domain -- Full domain to update
+        force -- Force the update
+        dry_run -- Only display the generated zone
+    """
+
+    import dns.query
+    import dns.tsig
+    import dns.tsigkeyring
+    import dns.update
+
+    from .dns import _build_dns_conf
 
     # If key is not given, pick the first file we find with the domain given
     keys = glob.glob(f"/etc/yunohost/dyndns/K{domain}.+*.key")
@@ -405,8 +441,7 @@ def dyndns_update(
         return
 
     # Extract 'host', e.g. 'nohost.me' from 'foo.nohost.me'
-    zone = domain.split(".")[1:]
-    zone = ".".join(zone)
+    zone = ".".join(domain.split(".")[1:])
 
     logger.debug("Building zone update ...")
 
@@ -470,7 +505,7 @@ def dyndns_update(
         operation_logger.start()
         logger.info("Update needed, going on...")
 
-    dns_conf = _build_dns_conf(domain)
+    dns_conf = _build_dns_conf(domain, dkim_split=True)
 
     # Delete custom DNS records, we don't support them (have to explicitly
     # authorize them on dynette)
@@ -498,7 +533,8 @@ def dyndns_update(
             # should be muc.the.domain.tld. or the.domain.tld
             if record["content"] == "@":
                 record["content"] = domain
-            record["content"] = record["content"].replace(";", r"\;")
+            if record["content"]:
+                record["content"] = record["content"].replace(";", r"\;")
             name = (
                 f"{record['name']}.{domain}." if record["name"] != "@" else f"{domain}."
             )
@@ -524,3 +560,37 @@ def dyndns_update(
         print(
             "Warning: dry run, this is only the generated config, it won't be applied"
         )
+
+
+def _email_update_failed(
+    domain: str, exception_message: str | Exception, stack: str = ""
+) -> None:
+    from_addr = f"dyndnsmanager@{domain} (DynDNS Manager)"
+    subject = f"DynDNS records update attempt for {domain} failed!"
+
+    logs = tail("/var/log/yunohost/yunohost-cli.log", 50)
+    message = (
+        textwrap.dedent(f"""\
+            An attempt for updating the DynDNS records for domain {domain} failed with the
+            following error:
+
+        """)
+        + f"{exception_message}\n{stack}"
+        + textwrap.dedent("""
+
+            Here's the tail of /var/log/yunohost/yunohost-cli.log, which might help to investigate:
+
+        """)
+        + logs
+        + textwrap.dedent("""
+
+            -- DynDNS Manager
+        """)
+    )
+
+    try:
+        send_admin_email(from_addr, subject, message)
+    except Exception as e:
+        # Dont miserably crash the whole auto renew cert when one renewal fails ...
+        # cf boring cases like https://github.com/YunoHost/issues/issues/2102
+        logger.exception(f"Failed to send mail about dyndns update failure ... : {e}")

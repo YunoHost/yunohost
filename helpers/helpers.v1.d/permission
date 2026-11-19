@@ -188,7 +188,7 @@ ynh_permission_exists() {
 
 # Redefine the url associated to a permission
 #
-# usage: ynh_permission_url --permission "permission" [--url="url"] [--add_url="new-url" [ "other-new-url" ]] [--remove_url="old-url" [ "other-old-url" ]]
+# usage: ynh_permission_url --permission="permission" [--url="url"] [--add_url="new-url" [ "other-new-url" ]] [--remove_url="old-url" [ "other-old-url" ]]
 #                                                     [--auth_header=true|false] [--clear_urls]
 # | arg: -p, --permission=   - the name for the permission (by default a permission named "main" is removed automatically when the app is removed)
 # | arg: -u, --url=          - (optional) URL for which access will be allowed/forbidden. Note that if you want to remove url you can pass an empty sting as arguments ("").
@@ -256,7 +256,7 @@ ynh_permission_url() {
 
 # Update a permission for the app
 #
-# usage: ynh_permission_update --permission "permission" [--add="group" ["group" ...]] [--remove="group" ["group" ...]]
+# usage: ynh_permission_update --permission="permission" [--add="group" ["group" ...]] [--remove="group" ["group" ...]]
 #                                                        [--show_tile=true|false] [--protected=true|false]
 # | arg: -p, --permission= - the name for the permission (by default a permission named "main" already exist)
 # | arg: -a, --add=        - the list of group or users to enable add to the permission
@@ -350,38 +350,4 @@ ynh_permission_has_user() {
     done
 
     return 1
-}
-
-# Check if a legacy permissions exist
-#
-# usage: ynh_legacy_permissions_exists
-# | exit: Return 1 if the permission doesn't exist, 0 otherwise
-#
-# Requires YunoHost version 4.1.2 or higher.
-ynh_legacy_permissions_exists() {
-    for permission in "skipped" "unprotected" "protected"; do
-        if ynh_permission_exists --permission="legacy_${permission}_uris"; then
-            return 0
-        fi
-    done
-    return 1
-}
-
-# Remove all legacy permissions
-#
-# usage: ynh_legacy_permissions_delete_all
-#
-# example:
-#   if ynh_legacy_permissions_exists
-#   then
-#       ynh_legacy_permissions_delete_all
-#       # You can recreate the required permissions here with ynh_permission_create
-#   fi
-# Requires YunoHost version 4.1.2 or higher.
-ynh_legacy_permissions_delete_all() {
-    for permission in "skipped" "unprotected" "protected"; do
-        if ynh_permission_exists --permission="legacy_${permission}_uris"; then
-            ynh_permission_delete --permission="legacy_${permission}_uris"
-        fi
-    done
 }

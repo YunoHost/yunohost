@@ -113,13 +113,18 @@ def test_list_groups():
 
 def test_create_user():
     with message("user_created"):
-        user_create("albert", maindomain, "test123Ynh", fullname="Albert Good")
+        user_create(
+            "morgan-claude.good_7",
+            maindomain,
+            "test123Ynh",
+            fullname="Morgan-Claude Good",
+        )
 
     group_res = user_group_list()["groups"]
-    assert "albert" in user_list()["users"]
-    assert "albert" in group_res
-    assert "albert" in group_res["albert"]["members"]
-    assert "albert" in group_res["all_users"]["members"]
+    assert "morgan-claude.good_7" in user_list()["users"]
+    assert "morgan-claude.good_7" in group_res
+    assert "morgan-claude.good_7" in group_res["morgan-claude.good_7"]["members"]
+    assert "morgan-claude.good_7" in group_res["all_users"]["members"]
 
 
 def test_del_user():
@@ -138,8 +143,7 @@ def test_import_user():
 
     fieldnames = [
         "username",
-        "firstname",
-        "lastname",
+        "fullname",
         "password",
         "mailbox-quota",
         "mail",
@@ -152,22 +156,20 @@ def test_import_user():
         writer.writeheader()
         writer.writerow(
             {
-                "username": "albert",
-                "firstname": "Albert",
-                "lastname": "Good",
+                "username": "morgan-claude.good_7",
+                "fullname": "Morgan-Claude Good",
                 "password": "",
                 "mailbox-quota": "1G",
-                "mail": "albert@" + maindomain,
-                "mail-alias": "albert2@" + maindomain,
-                "mail-forward": "albert@example.com",
+                "mail": "morgan-claude.good_7@" + maindomain,
+                "mail-alias": "morgan-claude.good_72@" + maindomain,
+                "mail-forward": "morgan-claude.good_7@example.com",
                 "groups": "dev",
             }
         )
         writer.writerow(
             {
                 "username": "sam",
-                "firstname": "Sam",
-                "lastname": "White",
+                "fullname": "Sam White",
                 "password": "",
                 "mailbox-quota": "1G",
                 "mail": "sam@" + maindomain,
@@ -179,8 +181,7 @@ def test_import_user():
         writer.writerow(
             {
                 "username": "alice",
-                "firstname": "Alice",
-                "lastname": "White",
+                "fullname": "Alice White",
                 "password": "",
                 "mailbox-quota": "1G",
                 "mail": "alice@" + maindomain,
@@ -195,12 +196,12 @@ def test_import_user():
 
     group_res = user_group_list()["groups"]
     user_res = user_list(list(FIELDS_FOR_IMPORT.keys()))["users"]
-    assert "albert" in user_res
+    assert "morgan-claude.good_7" in user_res
     assert "sam" in user_res
     assert "alice" in user_res
     assert "bob" not in user_res
     assert len(user_res["sam"]["mail-alias"]) == 2
-    assert "albert" in group_res["dev"]["members"]
+    assert "morgan-claude.good_7" in group_res["dev"]["members"]
     assert "sam" in group_res["apps"]["members"]
     assert "sam" not in group_res["dev"]["members"]
     assert "alice" in group_res["admins"]["members"]
@@ -210,22 +211,22 @@ def test_import_user():
 def test_export_user():
     result = user_export()
     should_be = (
-        "username;firstname;lastname;password;mail;mail-alias;mail-forward;mailbox-quota;groups\r\n"
-        f"alice;Alice;White;;alice@{maindomain};;;0;admins,dev\r\n"
-        f"bob;Bob;Snow;;bob@{maindomain};;;0;apps\r\n"
-        f"jack;Jack;Black;;jack@{maindomain};;;0;"
+        "username;fullname;password;mail;mail-alias;mail-forward;mailbox-quota;groups\r\n"
+        f"alice;Alice White;;alice@{maindomain};;;0;admins,dev\r\n"
+        f"bob;Bob Snow;;bob@{maindomain};;;0;apps\r\n"
+        f"jack;Jack Black;;jack@{maindomain};;;0;"
     )
     assert result == should_be
 
 
 def test_create_group():
-    with message("group_created", group="adminsys"):
-        user_group_create("adminsys")
+    with message("group_created", group="volunteer-stand.2026_02"):
+        user_group_create("volunteer-stand.2026_02")
 
     group_res = user_group_list()["groups"]
-    assert "adminsys" in group_res
-    assert "members" in group_res["adminsys"].keys()
-    assert group_res["adminsys"]["members"] == []
+    assert "volunteer-stand.2026_02" in group_res
+    assert "members" in group_res["volunteer-stand.2026_02"].keys()
+    assert group_res["volunteer-stand.2026_02"]["members"] == []
 
 
 def test_del_group():

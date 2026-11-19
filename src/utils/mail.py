@@ -1,6 +1,6 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2026 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -18,27 +18,16 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-# Exit hook on subcommand error or unset variable
-set -eu
 
-do_init_regen() {
-    do_pre_regen ""
-    systemctl restart nslcd
-}
+from .process import check_output
 
-do_pre_regen() {
-    pending_dir=$1
 
-    cd /usr/share/yunohost/conf/nslcd
-
-    install -D -m 644 nslcd.conf "${pending_dir}/etc/nslcd.conf"
-}
-
-do_post_regen() {
-    regen_conf_files=$1
-
-    [[ -z "$regen_conf_files" ]] \
-        || systemctl restart nslcd
-}
-
-"do_$1_regen" "$(echo "${*:2}" | xargs)"
+def get_pending_mails_nb() -> int:
+    """
+    Return number of pending mails in queue
+    """
+    command = (
+        'postqueue -p | grep -v "Mail queue is empty" | grep -c "^[A-Z0-9]" || true'
+    )
+    output = check_output(command)
+    return int(output)
