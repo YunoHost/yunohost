@@ -31,9 +31,9 @@ from ..tools import Migration
 from ..utils.app_utils import _get_manifest_of_app
 from ..utils.error import YunohostValidationError
 from ..utils.system import (
+    aptitude_with_progress_bar,
     free_space_in_directory,
     space_used_by_directory,
-    aptitude_with_progress_bar
 )
 
 logger = getLogger("yunohost.migration")
@@ -48,7 +48,12 @@ class PostgreSQLMigration(Migration):
 
     def run(self):
         ynh_deps_cmd = "grep -A10 'ynh-deps' /var/lib/dpkg/status | grep -E 'Package:|Depends:' | grep -B1 postgresql"
-        if subprocess.run(ynh_deps_cmd, shell=True, stdout=subprocess.DEVNULL, check=False).returncode != 0:
+        if (
+            subprocess.run(
+                ynh_deps_cmd, shell=True, stdout=subprocess.DEVNULL, check=False
+            ).returncode
+            != 0
+        ):
             # In addition, also check that no app declare in his resource postgresql. cf
             # https://github.com/YunoHost/issues/issues/2737
             if not self._has_app_with_psql_resource():
@@ -69,7 +74,9 @@ class PostgreSQLMigration(Migration):
         # Make sure there's a 15 cluster
         if not self.cluster_is_installed(int(self.previous_version), "main"):
             if self.cluster_is_installed(int(self.target_version), "main"):
-                logger.info(f"Migration to version {self.target_version} looks already done, running the post-migrations steps")
+                logger.info(
+                    f"Migration to version {self.target_version} looks already done, running the post-migrations steps"
+                )
                 self.run_post_migration()
             else:
                 logger.warning(
@@ -78,7 +85,9 @@ class PostgreSQLMigration(Migration):
                 )
             return
 
-        used_space = space_used_by_directory(f"/var/lib/postgresql/{self.previous_version}", follow_symlinks=False)
+        used_space = space_used_by_directory(
+            f"/var/lib/postgresql/{self.previous_version}", follow_symlinks=False
+        )
         free_space = free_space_in_directory("/var/lib/postgresql")
         if used_space >= free_space:
             raise YunohostValidationError(
@@ -92,13 +101,18 @@ class PostgreSQLMigration(Migration):
         time.sleep(3)
 
         if self.cluster_is_installed(self.target_version, "main"):
-            logger.warning(f"PostgreSQL cluster {self.target_version}-main already exists. Renaming to {self.target_version}-renamed.")
-            subprocess.check_call(["pg_renamecluster", str(self.target_version), "main", "renamed"], env=environ)
+            logger.warning(
+                f"PostgreSQL cluster {self.target_version}-main already exists. Renaming to {self.target_version}-renamed."
+            )
+            subprocess.check_call(
+                ["pg_renamecluster", str(self.target_version), "main", "renamed"],
+                env=environ,
+            )
 
         # Install new psql extension
         psql_extensions = [
             f"postgresql-{self.previous_version}-postgis-3",
-            f"postgresql-{self.previous_version}-pgvector"
+            f"postgresql-{self.previous_version}-pgvector",
         ]
         psql_extensions_to_install = [
             ext.replace(f"-{self.previous_version}-", f"-{self.target_version}-")
@@ -109,11 +123,24 @@ class PostgreSQLMigration(Migration):
         if psql_extensions_to_install_str:
             aptitude_with_progress_bar("update")
 
-            logger.info(f"Installing the new postgresql extensions: {psql_extensions_to_install_str}")
-            aptitude_with_progress_bar("install -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold " + psql_extensions_to_install_str)
+            logger.info(
+                f"Installing the new postgresql extensions: {psql_extensions_to_install_str}"
+            )
+            aptitude_with_progress_bar(
+                "install -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold "
+                + psql_extensions_to_install_str
+            )
 
         logger.info("Upgrading cluster...")
-        cmd = ["pg_upgradecluster", "-m", "upgrade", str(self.previous_version), "main", "-v", str(self.target_version)]
+        cmd = [
+            "pg_upgradecluster",
+            "-m",
+            "upgrade",
+            str(self.previous_version),
+            "main",
+            "-v",
+            str(self.target_version),
+        ]
         subprocess.check_call(cmd, env=environ)
 
         logger.info("Dropping old cluster...")
@@ -121,7 +148,14 @@ class PostgreSQLMigration(Migration):
         subprocess.check_call(cmd, env=environ)
 
         # Fix possibly borked postgresql default config when Immich is installed
-        subprocess.check_call(["sed", "-i", r"/^\* \* 15 main postgres$/d", "/etc/postgresql-common/user_clusters"])
+        subprocess.check_call(
+            [
+                "sed",
+                "-i",
+                r"/^\* \* 15 main postgres$/d",
+                "/etc/postgresql-common/user_clusters",
+            ]
+        )
 
         subprocess.check_call(["systemctl", "start", "postgresql"])
 
@@ -133,28 +167,68 @@ class PostgreSQLMigration(Migration):
         environ["LC_ALL"] = "C"
 
         psqlcmd = "SELECT datname FROM pg_database WHERE datistemplate = false OR datname = 'template1';"
-        cmd = ["sudo", "-u", "postgres", "psql", "--tuples-only", "--no-align", "--dbname=postgres", "--command", psqlcmd]
+        cmd = [
+            "sudo",
+            "-u",
+            "postgres",
+            "psql",
+            "--tuples-only",
+            "--no-align",
+            "--dbname=postgres",
+            "--command",
+            psqlcmd,
+        ]
         out = subprocess.check_output(cmd, env=environ, text=True)
 
         databases = [line.strip() for line in out.splitlines()]
         for database in databases:
             # See https://www.postgresql.org/docs/17/sql-altercollation.html#SQL-ALTERCOLLATION-NOTES
-            cmd = ["sudo", "-u", "postgres", "psql", "--dbname", database, "--command", f"REINDEX DATABASE {database};"]
+            cmd = [
+                "sudo",
+                "-u",
+                "postgres",
+                "psql",
+                "--dbname",
+                database,
+                "--command",
+                f"REINDEX DATABASE {database};",
+            ]
             subprocess.check_call(cmd, env=environ)
-            cmd = ["sudo", "-u", "postgres", "psql", "--dbname", database, "--command", f"ALTER DATABASE {database} REFRESH COLLATION VERSION;"]
+            cmd = [
+                "sudo",
+                "-u",
+                "postgres",
+                "psql",
+                "--dbname",
+                database,
+                "--command",
+                f"ALTER DATABASE {database} REFRESH COLLATION VERSION;",
+            ]
             subprocess.check_call(cmd, env=environ)
 
     def _has_app_with_psql_resource(self) -> bool:
-        for app_info in app_list()['apps']:
-            app_manifest = _get_manifest_of_app(app_info['id'])
-            if app_manifest.get('resources', {}).get('database', {}).get('type', None) == 'postgresql':
+        for app_info in app_list()["apps"]:
+            app_manifest = _get_manifest_of_app(app_info["id"])
+            if (
+                app_manifest.get("resources", {}).get("database", {}).get("type", None)
+                == "postgresql"
+            ):
                 return True
         return False
 
     def package_is_installed(self, package_name):
-        return subprocess.run(["dpkg-query", "--no-pager", "-l", package_name], check=False, stdout=subprocess.DEVNULL).returncode == 0
+        return (
+            subprocess.run(
+                ["dpkg-query", "--no-pager", "-l", package_name],
+                check=False,
+                stdout=subprocess.DEVNULL,
+            ).returncode
+            == 0
+        )
 
     def cluster_is_installed(self, version: int, name: str) -> bool:
         clusters_info = json.loads(subprocess.check_output(["pg_lsclusters", "--json"]))
-        clusters = [[int(cluster["version"]), cluster["cluster"]] for cluster in clusters_info]
+        clusters = [
+            [int(cluster["version"]), cluster["cluster"]] for cluster in clusters_info
+        ]
         return [version, name] in clusters

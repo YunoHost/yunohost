@@ -333,7 +333,6 @@ do_post_regen() {
     grep -q '^ssh.app:' /etc/group || groupadd ssh.app
     grep -q '^sftp.app:' /etc/group || groupadd sftp.app
 
-
     # Reload systemd if any system service was touched
     if [[ "$regen_conf_files" =~ "/etc/systemd/system" ]]; then
         systemctl daemon-reload

@@ -619,7 +619,7 @@ class ConfigPanel:
             self.form,
             prefilled_answers=prefilled_answers,
             hooks=self.hooks,
-            verbose=verbose
+            verbose=verbose,
         )
 
         if operation_logger:
@@ -877,7 +877,7 @@ class ConfigPanel:
         prefilled_answers: dict[str, Any] = {},
         action_id: str | None = None,
         hooks: "Hooks" = {},
-        verbose: bool = True
+        verbose: bool = True,
     ) -> "FormModel":
         # FIXME could be turned into a staticmethod
         logger.debug("Ask unanswered question and prevalidate data")

@@ -21,6 +21,7 @@
 import logging
 
 from yunohost.utils.ldap import _get_ldap_interface
+
 from ..tools import Migration
 
 logger = logging.getLogger("yunohost.migration")
@@ -36,16 +37,12 @@ class MyMigration(Migration):
         users_infos = ldap.search(
             "ou=users",
             "(objectclass=mailAccount)",
-            [
-                "uid",
-                "mail",
-                "maildrop"
-            ],
+            ["uid", "mail", "maildrop"],
         )
 
         for infos in users_infos:
-            username = infos['uid'][0]
-            if '@' in infos["maildrop"][0]:
+            username = infos["uid"][0]
+            if "@" in infos["maildrop"][0]:
                 continue
             logger.debug("Migrating maildrop field for user %s", username)
 
@@ -54,7 +51,7 @@ class MyMigration(Migration):
             # https://github.com/YunoHost/yunohost/pull/2341#discussion_r3879745312
             # As soon as we have implemented the main email as the external email
             # we will put again the main email in the first entry of the maildrop
-            new_maildrop = set(infos["maildrop"][1:] + [infos['mail'][0]])
+            new_maildrop = set(infos["maildrop"][1:] + [infos["mail"][0]])
             ldap.update(f"uid={username},ou=users", {"maildrop": new_maildrop})
 
     def run(self):

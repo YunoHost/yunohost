@@ -518,8 +518,8 @@ def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
                     return f.readlines()
             except UnicodeDecodeError:
                 binary_file = ["Binary or non utf-8 file\n"]
-                with open(file_path, 'rb', buffering=0) as f:
-                    file_hash = hashlib.file_digest(f, 'sha1').hexdigest()
+                with open(file_path, "rb", buffering=0) as f:
+                    file_hash = hashlib.file_digest(f, "sha1").hexdigest()
                     binary_file += [f"SHA1: {file_hash}\n"]
                     return binary_file
         else:

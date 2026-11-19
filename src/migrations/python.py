@@ -18,22 +18,23 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import os
 from functools import cached_property
 from logging import getLogger
-import os
 from pathlib import Path
 from typing import Callable, Tuple
+
 try:
     from pip import __version__ as PIP_VERSION
 except ImportError:
     PIP_VERSION = ""
 import re
 import tempfile
+from configparser import UNNAMED_SECTION, ConfigParser
 
 from moulinette import m18n
-from configparser import ConfigParser, UNNAMED_SECTION
-from packaging.version import Version, VERSION_PATTERN
 from packaging.markers import default_environment
+from packaging.version import VERSION_PATTERN, Version
 
 from ..tools import Migration
 from ..utils.error import YunohostError
@@ -45,7 +46,7 @@ type ExecutionCallback = Tuple[Callable[[str], None], Callable[[str], None]]
 logger = getLogger("yunohost.migration")
 
 
-class PyVenvConfig():
+class PyVenvConfig:
     def __init__(self, venv_path: Path):
         self.path = venv_path / "pyvenv.cfg"
         parser = ConfigParser(allow_unnamed_section=True)
@@ -55,11 +56,11 @@ class PyVenvConfig():
 
     @property
     def include_system_site_packages(self) -> bool:
-        return self.data.get('include-system-site-packages', None) == 'true'
+        return self.data.get("include-system-site-packages", None) == "true"
 
     @cached_property
     def version(self) -> Version:
-        return Version(self.data['version'])
+        return Version(self.data["version"])
 
 
 class PythonMigration(Migration):
@@ -96,7 +97,7 @@ class PythonMigration(Migration):
 
     pip_version_requirement_extractor_re = re.compile(
         rf"^pip\s*==\s*(?P<version>{VERSION_PATTERN})\s*$",
-        re.VERBOSE + re.MULTILINE  # VERBOSE is required by VERSION_PATTERN
+        re.VERBOSE + re.MULTILINE,  # VERBOSE is required by VERSION_PATTERN
     )
 
     def extract_app_from_venv_path(self, venv_path: str) -> str:
@@ -137,7 +138,7 @@ class PythonMigration(Migration):
 
     @cached_property
     def python_version(self):
-        return Version(default_environment()['python_full_version'])
+        return Version(default_environment()["python_full_version"])
 
     def run(self):
         if not PIP_VERSION:
@@ -177,7 +178,9 @@ class PythonMigration(Migration):
                 continue
 
             if venv_cfg.version >= self.python_version:
-                logger.info(f"The {app_corresponding_to_venv} app looks already migrated, skipping")
+                logger.info(
+                    f"The {app_corresponding_to_venv} app looks already migrated, skipping"
+                )
                 continue
 
             # Recreate the venv
@@ -186,11 +189,17 @@ class PythonMigration(Migration):
                 lambda line: logger.warning(line.rstrip()),
             )
 
-            self._upgrade_venv(venv_path, venv_cfg.include_system_site_packages, callbacks)
+            self._upgrade_venv(
+                venv_path, venv_cfg.include_system_site_packages, callbacks
+            )
 
             # store the old python version without the patch part
-            old_python_version_major_minor = f"{venv_cfg.version.major}.{venv_cfg.version.minor}"
-            old_site_packages_path = venv_path / f"lib/python{old_python_version_major_minor}/site-packages"
+            old_python_version_major_minor = (
+                f"{venv_cfg.version.major}.{venv_cfg.version.minor}"
+            )
+            old_site_packages_path = (
+                venv_path / f"lib/python{old_python_version_major_minor}/site-packages"
+            )
 
             requirements = check_output(
                 [
@@ -200,10 +209,12 @@ class PythonMigration(Migration):
                     "--path",
                     old_site_packages_path,
                 ],
-                shell=False
+                shell=False,
             )
 
-            requirements = self._remove_pip_if_not_newer_than_system_version(requirements)
+            requirements = self._remove_pip_if_not_newer_than_system_version(
+                requirements
+            )
 
             (requirements, editables_requirements) = self._split_editables(requirements)
 
@@ -213,7 +224,7 @@ class PythonMigration(Migration):
                     requirements,
                     app_corresponding_to_venv,
                     callbacks,
-                    exec_as_owner_of=old_site_packages_path
+                    exec_as_owner_of=old_site_packages_path,
                 )
 
                 if editables_requirements:
@@ -228,16 +239,28 @@ class PythonMigration(Migration):
                     )
 
                 if not venv_cfg.include_system_site_packages:
-                    self._cleanup_old_python_assets(venv_path, old_python_version_major_minor)
+                    self._cleanup_old_python_assets(
+                        venv_path, old_python_version_major_minor
+                    )
             except YunohostError as e:
                 logger.warn(e)
                 continue
             except Exception as e:
                 raise e
 
-    def _cleanup_old_python_assets(self, venv_path: Path, old_python_version_major_minor: str):
-        rm(venv_path / f"lib/python{old_python_version_major_minor}", recursive=True, force=True)
-        rm(venv_path / f"include/python{old_python_version_major_minor}", recursive=True, force=True)
+    def _cleanup_old_python_assets(
+        self, venv_path: Path, old_python_version_major_minor: str
+    ):
+        rm(
+            venv_path / f"lib/python{old_python_version_major_minor}",
+            recursive=True,
+            force=True,
+        )
+        rm(
+            venv_path / f"include/python{old_python_version_major_minor}",
+            recursive=True,
+            force=True,
+        )
         rm(venv_path / f"bin/python{old_python_version_major_minor}", force=True)
         rm(venv_path / f"bin/pip{old_python_version_major_minor}", force=True)
 
@@ -249,13 +272,18 @@ class PythonMigration(Migration):
 
         For the sake of simplicity, we only compare the major, minor and patch.
         """
+
         def maybe_empty(match: re.Match[str]) -> str:
             assert self.pip_version
             frozen_version = Version(match.group("version"))
             if frozen_version > self.pip_version:
-                logger.debug(f"pip: Will reinstall the version required by the app: {frozen_version} (more recent than the system version: {self.pip_version})")
+                logger.debug(
+                    f"pip: Will reinstall the version required by the app: {frozen_version} (more recent than the system version: {self.pip_version})"
+                )
                 return match.string
-            logger.debug(f"pip: Will upgrade version from {frozen_version} to {self.pip_version} (the system version)")
+            logger.debug(
+                f"pip: Will upgrade version from {frozen_version} to {self.pip_version} (the system version)"
+            )
             return ""
 
         return self.pip_version_requirement_extractor_re.sub(maybe_empty, requirements)
@@ -270,20 +298,42 @@ class PythonMigration(Migration):
                 new_requirements.append(line)
         return (str.join("\n", new_requirements), str.join("\n", editables))
 
-    def _call_async_output(self, args: list[str | Path], callbacks: ExecutionCallback, exec_as_owner_of: Path | None):
+    def _call_async_output(
+        self,
+        args: list[str | Path],
+        callbacks: ExecutionCallback,
+        exec_as_owner_of: Path | None,
+    ):
         if exec_as_owner_of and exec_as_owner_of.exists():
             args = ["sudo", "-u", "#" + str(os.stat(exec_as_owner_of).st_uid), *args]
-        logger.debug(f"Running this command: {str.join(" ", [str(arg) for arg in args])}")
+        logger.debug(
+            f"Running this command: {str.join(' ', [str(arg) for arg in args])}"
+        )
         return call_async_output(args, callbacks)
 
-    def _upgrade_venv(self, venv: Path, include_system_site_packages: bool, callbacks: ExecutionCallback):
+    def _upgrade_venv(
+        self,
+        venv: Path,
+        include_system_site_packages: bool,
+        callbacks: ExecutionCallback,
+    ):
         venv_cmd = ["python", "-m", "venv", "--upgrade", venv]
         if include_system_site_packages:
             venv_cmd.append("--system-site-packages")
         py_venv_path = venv / "pyvenv.cfg"
-        return self._call_async_output(venv_cmd, callbacks, exec_as_owner_of=py_venv_path)
+        return self._call_async_output(
+            venv_cmd, callbacks, exec_as_owner_of=py_venv_path
+        )
 
-    def _install_requirements(self, pip_path: Path, requirements: str, app: str, callbacks: ExecutionCallback, exec_as_owner_of: Path, extra_args: list[str] = []):
+    def _install_requirements(
+        self,
+        pip_path: Path,
+        requirements: str,
+        app: str,
+        callbacks: ExecutionCallback,
+        exec_as_owner_of: Path,
+        extra_args: list[str] = [],
+    ):
         with tempfile.NamedTemporaryFile() as fp:
             fp.write(requirements.encode("utf8"))
             fp.flush()
@@ -300,7 +350,7 @@ class PythonMigration(Migration):
                     fp.name,
                 ],
                 callbacks,
-                exec_as_owner_of=exec_as_owner_of
+                exec_as_owner_of=exec_as_owner_of,
             )
 
         if status != 0:

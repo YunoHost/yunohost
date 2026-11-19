@@ -42,7 +42,7 @@ do_pre_regen() {
 
     # adapt config for IPv4-only hosts
     if [[ "$(jq -r '.smtp_allow_ipv6' <<< "$YNH_SETTINGS" | int_to_bool)" == "True" ]] \
-    && [[ -f /proc/net/if_inet6 ]]; then
+        && [[ -f /proc/net/if_inet6 ]]; then
         export ipv6_enabled=True
     else
         export ipv6_enabled=False
