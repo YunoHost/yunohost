@@ -168,7 +168,7 @@ def main() -> None:
         if errors:
             fatal_errors.append(file.name)
 
-        # locale = sort_locale(locale)
+        locale = sort_locale(locale)
 
         with file.open("w") as locale_io:
             json.dump(
