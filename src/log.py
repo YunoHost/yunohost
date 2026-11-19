@@ -37,6 +37,7 @@ from .utils.error import YunohostError, YunohostValidationError
 from .utils.file_utils import read_file, read_yaml
 from .utils.logging import SUCCESS
 from .utils.system import get_ynh_package_version
+from .utils.password import redact_secrets
 
 logger = getLogger("yunohost.log")
 
@@ -558,38 +559,7 @@ class RedactingFormatter(Formatter):
 
     def format(self, record):
         msg = super(RedactingFormatter, self).format(record)
-        self.identify_data_to_redact(msg)
-        for data in self.data_to_redact:
-            # we check that data is not empty string,
-            # otherwise this may lead to super epic stuff
-            # (try to run "foo".replace("", "bar"))
-            if data:
-                msg = msg.replace(data, "**********")
-                # bash set -x display comparison like this: [[ ohno != \o\h\n\o ]]
-                msg = msg.replace("\\" + "\\".join(data), "**********")
-        return msg
-
-    def identify_data_to_redact(self, record):
-        # Wrapping this in a try/except because we don't want this to
-        # break everything in case it fails miserably for some reason :s
-        try:
-            # This matches stuff like db_pwd=the_secret or admin_password=other_secret
-            # (the secret part being at least 3 chars to avoid catching some lines like just "db_pwd=")
-            # Some names like "key" or "manifest_key" are ignored, used in helpers like ynh_app_setting_set or ynh_read_manifest
-            match = re.search(
-                r"(pwd|pass|passwd|password|passphrase|secret\w*|\w+key|token|PASSPHRASE)=(\S{3,})$",
-                record.strip(),
-            )
-            if (
-                match
-                and match.group(2) not in self.data_to_redact
-                and match.group(1) not in ["key", "manifest_key"]
-            ):
-                self.data_to_redact.append(match.group(2))
-        except Exception as e:
-            logger.warning(
-                "Failed to parse line to try to identify data to redact ... : %s" % e
-            )
+        return redact_secrets(msg, self.data_to_redact)
 
 
 class OperationLogger:
