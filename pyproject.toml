@@ -7,11 +7,11 @@ authors = [
     { name = "YunoHost", email = "yunohost@yunohost.org" }
 ]
 
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 
 # These dependencies might not be up to date, please see debian/control instead
 dependencies = [
-    "moulinette @ git+https://github.com/yunohost/moulinette@dev",
+    "moulinette @ git+https://github.com/yunohost/moulinette@trixie",
     "bottle",
     "cryptography",
     # "dbus-python",
@@ -20,14 +20,13 @@ dependencies = [
     "email-validator",
     "jinja2",
     "pyjwt>=1.7,<2.0",
-    "lexicon",
+    "dns-lexicon",
     "miniupnpc",
     "packaging",
     "passlib",
     "psutil",
     "publicsuffix2",
-    "pydantic>=1.0,<2.0",
-    "pyopenssl",
+    "pydantic>=2.0,<3.0",
     # "python-ldap",
     "python-magic",
     "pyyaml",
@@ -45,7 +44,6 @@ tests = [
     "types-gevent",
     "types-passlib",
     "types-psutil",
-    "types-pyOpenSSL",
     "types-pyYAML",
     "types-requests",
     "types-toml",
@@ -69,7 +67,7 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 # Those are the public, external modules that don't provide typing
 module = ["jwt", "sortedcollections", "IPython", "ldap.*", "dbus", "sdbus.*",
-    "psutil", "bottle", "miniupnpc", "lexicon.*", "publicsuffix2"]
+    "psutil", "bottle", "miniupnpc", "lexicon.*", "publicsuffix2", "pydantic_extra_types.*"]
 ignore_missing_imports = true
 
 
@@ -92,6 +90,8 @@ markers = [
     "with_backup_recommended_app_installed",
     "clean_opt_dir",
     "with_wordpress_archive_from_3p8",
+    "with_wordpress_archive_from_11p2",
+    "with_system_archive_from_11p2",
     "with_legacy_app_installed",
     "with_backup_recommended_app_installed_with_ynh_restore",
     "with_permission_app_installed",
@@ -117,13 +117,13 @@ omit = [
 
 
 [tool.tox]
-env_list = ["py311-lint", "py311-invalidcode", "py311-black-check", "py311-black-run"]
+env_list = ["py313-lint", "py313-invalidcode", "py313-black-check", "py313-black-run"]
 
 [tool.tox.env_run_base]
 skip_install = true
 allowlist_externals = ["black"]
 
-[tool.tox.env.py311-lint]
+[tool.tox.env.py313-lint]
 deps = ["flake8"]
 commands = [[
     "flake8", "src", "doc", "maintenance",
@@ -131,7 +131,7 @@ commands = [[
     "--exclude", "src/vendor,tests"
 ]]
 
-[tool.tox.env.py311-invalidcode]
+[tool.tox.env.py313-invalidcode]
 deps = ["flake8"]
 commands = [[
     "flake8", "src", "bin", "maintenance",
@@ -139,16 +139,16 @@ commands = [[
     "--exclude", "src/vendor,tests"
 ]]
 
-[tool.tox.env.py311-mypy]
+[tool.tox.env.py313-mypy]
 skip_install = false
 deps = ["mypy>=1.17"]
 dependency_groups = ["tests"]
 commands = [["mypy", "--install-types", "--non-interactive", "src/",]]
 
-[tool.tox.env.py311-black-check]
+[tool.tox.env.py313-black-check]
 deps = ["flake8"]
 commands = [["black", "bin", "src", "doc", "maintenance", "tests", "--check", "--diff"]]
 
-[tool.tox.env.py311-black-run]
+[tool.tox.env.py313-black-run]
 deps = ["black"]
 commands = [["black", "bin", "src", "doc", "maintenance", "tests"]]

@@ -27,24 +27,21 @@ Pages are stored in OUTPUT_DIR
 """
 
 import argparse
+import datetime
 import gzip
-import os
 from collections import OrderedDict
-from datetime import date
+from pathlib import Path
+from typing import Any, TextIO
 
 import yaml
 from jinja2 import Template
 
-base_path = os.path.split(os.path.realpath(__file__))[0]
-
-template = Template(open(os.path.join(base_path, "manpage.template")).read())
-
-
-THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-ACTIONSMAP_FILE = os.path.join(THIS_SCRIPT_DIR, "../share/actionsmap.yml")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+TEMPLATE_FILE = PROJECT_ROOT / "doc" / "manpage.template"
+ACTIONSMAP_FILE = PROJECT_ROOT / "share" / "actionsmap.yml"
 
 
-def ordered_yaml_load(stream):
+def ordered_yaml_load(stream: TextIO) -> dict[str, Any]:
     class OrderedLoader(yaml.SafeLoader):
         pass
 
@@ -55,52 +52,42 @@ def ordered_yaml_load(stream):
     return yaml.load(stream, OrderedLoader)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="generate yunohost manpage based on actionsmap.yml"
     )
-    parser.add_argument("-o", "--output", default="output/yunohost")
+    parser.add_argument("-o", "--output", type=Path, default="output/yunohost")
     parser.add_argument("-z", "--gzip", action="store_true", default=False)
-
     args = parser.parse_args()
 
-    if os.path.isdir(args.output):
-        if not os.path.exists(args.output):
-            os.makedirs(args.output)
-
-        output_path = os.path.join(args.output, "yunohost")
+    if args.output.is_dir():
+        output_path: Path = args.output / "yunohost"
     else:
-        output_dir = os.path.split(args.output)[0]
-
-        if output_dir and not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-
         output_path = args.output
+    args.output.parent.mkdir(exist_ok=True)
 
-    # man pages of "yunohost *"
-    with open(ACTIONSMAP_FILE, "r") as actionsmap:
-        # Getting the dictionary containning what actions are possible per domain
-        actionsmap = ordered_yaml_load(actionsmap)
+    # Getting the dictionary containning what actions are possible per domain
+    actionsmap = ordered_yaml_load(ACTIONSMAP_FILE.open())
 
-        for i in list(actionsmap.keys()):
-            if i.startswith("_"):
-                del actionsmap[i]
+    for i in list(actionsmap.keys()):
+        if i.startswith("_"):
+            del actionsmap[i]
 
-        today = date.today()
+    today = datetime.datetime.now(tz=datetime.UTC).date()
 
-        result = template.render(
-            month=today.strftime("%B"),
-            year=today.year,
-            categories=actionsmap,
-            str=str,
-        )
+    template = Template(TEMPLATE_FILE.read_text())
+    result = template.render(
+        month=today.strftime("%B"),
+        year=today.year,
+        categories=actionsmap,
+        str=str,
+    )
 
-        if not args.gzip:
-            with open(output_path, "w") as output:
-                output.write(result)
-        else:
-            with gzip.open(output_path, mode="w", compresslevel=9) as output:
-                output.write(result.encode())
+    if not args.gzip:
+        output_path.write_text(result)
+    else:
+        with gzip.open(output_path, mode="w", compresslevel=9) as output:
+            output.write(result.encode())
 
 
 if __name__ == "__main__":

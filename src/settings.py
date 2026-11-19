@@ -91,7 +91,7 @@ def settings_list(full=False):
 
 
 @is_unit_operation()
-def settings_set(operation_logger, key=None, value=None, args=None, args_file=None):
+def settings_set(operation_logger, key=None, value=None, args=None, args_file=None, verbose=True):
     """
     Set an entry value in the settings
 
@@ -102,7 +102,8 @@ def settings_set(operation_logger, key=None, value=None, args=None, args_file=No
     """
     BaseOption.operation_logger = operation_logger
     settings = SettingsConfigPanel()
-    return settings.set(key, value, args, args_file, operation_logger=operation_logger)
+    return settings.set(key, value, args, args_file,
+                        verbose=verbose, operation_logger=operation_logger)
 
 
 @is_unit_operation()
@@ -163,7 +164,7 @@ class SettingsConfigPanel(ConfigPanel):
         self.config, self.form = self._get_config_panel(prevalidate=True)
 
         # FIXME find a better way to exclude previous settings
-        previous_settings = self.form.dict()
+        previous_settings = self.form.model_dump()
 
         for option in self.config.options:
             if not option.readonly and (
@@ -255,7 +256,7 @@ class SettingsConfigPanel(ConfigPanel):
 
         next_settings = {
             k: v
-            for k, v in form.dict(exclude=self.virtual_settings).items()
+            for k, v in form.model_dump(exclude=self.virtual_settings).items()
             if previous_settings.get(k) != v
         }
 

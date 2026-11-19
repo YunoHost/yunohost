@@ -23,7 +23,7 @@ import glob
 import os
 import re
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from io import IOBase
 from logging import INFO, FileHandler, Formatter, getLogger
 from typing import Any
@@ -708,7 +708,7 @@ class OperationLogger:
         """
 
         if self.started_at is None:
-            self.started_at = datetime.utcnow()
+            self.started_at = datetime.now(timezone.utc)
             self.flush()
             self._register_log()
             if self.sse_handler is not None and not self.flash:
@@ -879,7 +879,7 @@ class OperationLogger:
         if error is not None and not isinstance(error, str):
             error = str(error)
 
-        self.ended_at = datetime.utcnow()
+        self.ended_at = datetime.now(timezone.utc)
         self._error = error
         self._success = error is None
 

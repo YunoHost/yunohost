@@ -53,7 +53,11 @@ def _parse_cli_args() -> tuple[argparse.ArgumentParser, argparse.Namespace, list
         "--timeout",
         type=int,
         default=None,
-        help="Number of seconds before this command will timeout because it can't acquire the lock (meaning that another command is currently running), by default there is no timeout and the command will wait until it can get the lock",
+        help="""
+            Number of seconds before this command will timeout because it can't acquire
+            the lock (meaning that another command is currently running), by default
+            there is no timeout and the command will wait until it can get the lock
+        """,
     )
     # deprecated arguments
     parser.add_argument(
@@ -74,7 +78,8 @@ def _parse_cli_args() -> tuple[argparse.ArgumentParser, argparse.Namespace, list
     return parser, opts, args
 
 
-# Stupid PATH management because sometimes (e.g. some cron job) PATH is only /usr/bin:/bin ...
+# Stupid PATH management because sometimes (e.g. some cron job) PATH is
+# only /usr/bin:/bin ...
 
 default_path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 if os.environ["PATH"] != default_path:
@@ -85,7 +90,10 @@ if os.environ["PATH"] != default_path:
 
 def main() -> None:
     if os.geteuid() != 0:
-        print("\033[1;31mError:\033[0m yunohost command must be run as root or with sudo.", file=sys.stderr)
+        print(
+            "\033[1;31mError:\033[0m yunohost must be run as root or with sudo.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     parser, opts, args = _parse_cli_args()

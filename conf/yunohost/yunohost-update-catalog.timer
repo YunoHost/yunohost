@@ -1,0 +1,12 @@
+[Unit]
+Description=Fetch the YunoHost apps catalog daily
+
+[Timer]
+OnCalendar=daily
+# TODO forky: Use RandomizedOffsetSec instead and remove FixedRandomDelay
+RandomizedDelaySec=24h
+FixedRandomDelay=1
+Persistent=true
+
+[Install]
+WantedBy=timers.target

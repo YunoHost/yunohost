@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+PERCENT=$1
+USER=$2
+
+case "$PERCENT" in
+  95)
+    subject="URGENT: Mailbox is 95% full"
+    message="Your mailbox is almost full (over 95%).
+
+Please free up space immediately by deleting old or large messages. Once you reach 100%, incoming messages will be rejected and senders will receive an error."
+    ;;
+  100)
+    subject="Mailbox is FULL - incoming mail is being rejected"
+    message="Your mailbox has exceeded its quota. New messages sent to you are currently being rejected, and senders receive an 'over quota' error.
+
+Please delete messages now to restore normal delivery."
+    ;;
+  below)
+    subject="Mailbox is back under its quota"
+    message="Your mailbox is back under its quota and you can receive mail normally again."
+    ;;
+  *)
+    subject="Mailbox is $PERCENT% full"
+    message="Your mailbox is currently over $PERCENT% of its allowed capacity."
+    ;;
+esac
+
+cat << EOF | /usr/lib/dovecot/dovecot-lda -d "$USER" -o quota_enforce=no
+From: postmaster@$(postconf -h myhostname)
+Subject: $subject
+
+Hello,
+
+$message
+
+Regards,
+The mail administrator
+EOF

@@ -26,7 +26,7 @@ HostKey {{ key }}{% endfor %}
   # https://man.openbsd.org/sshd_config
 
   # Use only post quantic algo (it's paranoid mode)
-  KexAlgorithms sntrup761x25519-sha512,sntrup761x25519-sha512@openssh.com
+  KexAlgorithms mlkem768x25519-sha256,sntrup761x25519-sha512
   Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com
   
   # The algorithms that contain "-etm" calculate the MAC after encryption 
@@ -37,7 +37,7 @@ HostKey {{ key }}{% endfor %}
   #
   # Intermediate mode is equivalent to the default debian openssh version.
   # See KexAlgorithms, Ciphers and MACs in 
-  # https://manpages.debian.org/bookworm/openssh-server/sshd_config.5.en.html
+  # https://manpages.debian.org/trixie/openssh-server/sshd_config.5.en.html
 
 {% else %}
   # The 'modern' ssh mode has been selected.
@@ -48,13 +48,13 @@ HostKey {{ key }}{% endfor %}
   # So we take default values from latest openssh version...
   # https://man.openbsd.org/sshd_config
   # ...and we remove non supported values in the current openssh version in use.
-  # https://manpages.debian.org/bookworm/openssh-server/sshd_config.5.en.html
+  # https://manpages.debian.org/trixie/openssh-server/sshd_config.5.en.html
   #
   # We also removed all weak algorithms not included into 'modern' Mozilla guidelines
   # https://infosec.mozilla.org/guidelines/openssh
   # NB: Mozilla prioritizes the most secure algos rather than the most powerful ones
   # (hmac before umac, largest key).
-  KexAlgorithms sntrup761x25519-sha512,sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521 
+  KexAlgorithms mlkem768x25519-sha256,sntrup761x25519-sha512,sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521 
   Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
   MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512,hmac-sha2-256,umac-128@openssh.com
 {% endif %}
