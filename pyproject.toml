@@ -11,7 +11,7 @@ requires-python = ">=3.13"
 
 # These dependencies might not be up to date, please see debian/control instead
 dependencies = [
-    "moulinette @ git+https://github.com/yunohost/moulinette@trixie",
+    "moulinette @ git+https://github.com/yunohost/moulinette@dev",
     "bottle",
     "cryptography",
     # "dbus-python",
