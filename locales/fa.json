@@ -9,8 +9,10 @@
     "already_up_to_date": "کاری برای انجام دادن نیست. همه چیز در حال حاضر به روز است.",
     "app_action_broke_system": "این اقدام به نظر می رسد سرویس های مهمی را خراب کرده است: {services}",
     "app_action_cannot_be_ran_because_required_services_down": "برای اجرای این عملیات سرویس هایی که مورد نیازاند و باید اجرا شوند: {services}. سعی کنید آنها را مجدداً راه اندازی کنید (و علت خرابی احتمالی آنها را بررسی کنید).",
+    "app_action_failed": "اجرای عملیات {action} برای برنامه {app} ناموفق بود",
     "app_already_installed": "{app} قبلاً نصب شده است",
     "app_already_installed_cant_change_url": "این برنامه قبلاً نصب شده است. URL فقط با این عملکرد قابل تغییر نیست. در صورت موجود بودن برنامه `app changeurl` را بررسی کنید.",
+    "app_arch_not_supported": "این کاره تنها روی معماری‌های {required} قابل نصب است، اما معماری کارساز شما {current} است",
     "app_argument_choice_invalid": "برای آرگومان '{name}' از یکی از این گزینه ها '{choices}' استفاده کنید",
     "app_argument_invalid": "یک مقدار معتبر انتخاب کنید برای استدلال '{name}':{error}",
     "app_change_url_identical_domains": "دامنه /url_path قدیمی و جدیدیکسان هستند ('{domain}{path}') ، کاری برای انجام دادن نیست.",
@@ -556,7 +558,5 @@
     "yunohost_configured": "YunoHost اکنون پیکربندی شده است",
     "yunohost_installing": "در حال نصب YunoHost…",
     "yunohost_not_installed": "YunoHost به درستی نصب نشده است. لطفا 'yunohost tools postinstall' را اجرا کنید",
-    "yunohost_postinstall_end_tip": "پس از نصب کامل شد! برای نهایی کردن تنظیمات خود ، لطفاً موارد زیر را در نظر بگیرید:\n - تشخیص مشکلات احتمالی از طریق بخش \"عیب یابی\" webadmin (یا 'yunohost diagnosis run' در خط فرمان) ؛\n - خواندن قسمت های \"نهایی کردن راه اندازی خود\" و \"آشنایی با YunoHost\" در اسناد مدیریت: https://doc.yunohost.org/admin.",
-    "app_arch_not_supported": "این کاره تنها روی معماری‌های {required} قابل نصب است، اما معماری کارساز شما {current} است",
-    "app_action_failed": "اجرای عملیات {action} برای برنامه {app} ناموفق بود"
+    "yunohost_postinstall_end_tip": "پس از نصب کامل شد! برای نهایی کردن تنظیمات خود ، لطفاً موارد زیر را در نظر بگیرید:\n - تشخیص مشکلات احتمالی از طریق بخش \"عیب یابی\" webadmin (یا 'yunohost diagnosis run' در خط فرمان) ؛\n - خواندن قسمت های \"نهایی کردن راه اندازی خود\" و \"آشنایی با YunoHost\" در اسناد مدیریت: https://doc.yunohost.org/admin."
 }
