@@ -1833,7 +1833,7 @@ class RubyAppResource(AppResource):
             {self.rbenv} alias {self.app} '{ruby_version}'
         """,
         )
-        
+
         self.set_setting("ruby_version", ruby_version)
 
         self.garbage_collect_unused_versions()
