@@ -19,7 +19,9 @@
 #
 
 # (this is used in the apt helpers, big meh ...)
-readonly YNH_DEFAULT_PHP_VERSION=8.2
+DEBIAN_DEFAULT_PHP_VERSION=$(apt-cache depends php | grep -Eo "php[0-9].[0-9]" | sed "s@^php@@")
+    
+readonly YNH_DEFAULT_PHP_VERSION=$( [[ ! -z ${DEBIAN_DEFAULT_PHP_VERSION} ]] && echo ${DEBIAN_DEFAULT_PHP_VERSION} || echo "8.2" )
 
 # Create a dedicated PHP-FPM config
 #
