@@ -555,7 +555,12 @@ ynh_add_swap() {
         truncate -s 0 "/swap_$app"
 
         # try to set the No_COW attribute on the swapfile with chattr (depending of the filesystem type)
-        chattr +C "/swap_$app" 2> /dev/null
+        local root_fs_type=$(cat /proc/mounts | awk '{ if ($2 == var) print $3 }' var="/")
+        if [[ "$root_fs_type" == "btrfs" || "$root_fs_type" == "f2fs" ]]; then
+            chattr +C "/swap_$app"
+        else
+            echo "Skipping chattr +C for swap because the root filesystem is '$root_fs_type' which doesn't support this "no copy-on-write" attribute"
+        fi
 
         # Preallocate space for the swap file, fallocate may sometime not be used, use dd instead in this case
         if ! fallocate -l ${swap_size}K "/swap_$app"; then
@@ -579,8 +584,13 @@ ynh_del_swap() {
     if [ -e "/swap_$app" ]; then
         # Clean the fstab
         sed -i "/#Swap added by $app/d" /etc/fstab
-        # Deactive the swap file
-        swapoff "/swap_$app"
+        # Desactive the swap file if active
+        local swap_filename=$(cat /proc/swaps | awk '{ if ($1 == var) print $1 }' var="/swap_$app")
+        if [[ "$swap_filename" == "/swap_$app" ]]; then
+            swapoff "/swap_$app"
+        else
+            echo "Skipping swapoff because /swap_$app in not mounted"
+        fi
         # And remove it
         rm "/swap_$app"
     fi
