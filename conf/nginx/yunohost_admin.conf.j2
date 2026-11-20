@@ -14,7 +14,7 @@ server {
     # Prevent 301/302 rewrite/redirect from including the 444 port
     port_in_redirect off;
     {%- endif %}
-    http2 off;
+    http2 on;
 
     include /etc/nginx/conf.d/security.conf.inc;
 
