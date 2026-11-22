@@ -984,7 +984,7 @@ class NumberOption(BaseInputOption):
         if isinstance(value, str):
             value = value.strip()
 
-        if isinstance(value, str) and value.isdigit():
+        if isinstance(value, str) and value.replace(".", "").replace("-", "", 1).isdigit():
             return int(value)
 
         if value in [None, ""]:
