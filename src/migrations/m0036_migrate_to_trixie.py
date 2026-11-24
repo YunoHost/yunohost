@@ -46,14 +46,13 @@ import subprocess
 import textwrap
 from datetime import date
 from pathlib import Path
-from time import sleep
 
 import jinja2
 import requests
 from debian.deb822 import Deb822
 
 # TRIXIE? import _ldap  # noqa: F401
-from moulinette import Moulinette, m18n
+from moulinette import m18n
 from psutil import virtual_memory
 
 from ..app import _installed_apps, app_list

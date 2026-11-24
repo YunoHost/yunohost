@@ -27,8 +27,6 @@ from functools import cache
 from pathlib import Path
 from typing import Any, Literal
 
-from moulinette import Moulinette
-
 from debian import debian_support
 
 from ..utils.error import YunohostError
