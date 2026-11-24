@@ -36,7 +36,7 @@ do
         cat << EOF | at -M now >/dev/null 2>&1
 # Wait for apt / dpkg / yunohost to not be up anymore, hence the upgrade finished
 
-while pgrep -x apt || pgrep -x apt-get || pgrep dpkg || test -e /var/run/moulinette_yunohost.lock;
+timeout 7200 while pgrep -x apt || pgrep -x apt-get || pgrep dpkg || test -e /var/run/moulinette_yunohost.lock;
 do
    sleep 3
 done
