@@ -22,7 +22,12 @@
 # and zcat /usr/share/doc/init-system-helpers/README.policy-rc.d.gz
 # and the code inside /usr/bin/deb-systemd-invoke to see how it calls /usr/sbin/policy-rc.d ...
 # and also invoke-rc.d ...
-for service in yunohost-api nginx $(cat /var/run/yunohost/services-to-restart-after-upgrade) 
+services="yunohost-api nginx"
+if [ -e /var/run/yunohost/services-to-restart-after-upgrade ];
+then
+    services="$services $(cat /var/run/yunohost/services-to-restart-after-upgrade)"
+fi
+for service in $services
 do
     if [[ "$1" =~ "${service}" ]] && [ -e /var/run/moulinette_yunohost.lock ]; then
        if ! pgrep $service; then
