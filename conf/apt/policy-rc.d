@@ -29,7 +29,7 @@ then
 fi
 for service in $services
 do
-    if [[ "$1" =~ "${service}" ]] && [ -e /var/run/moulinette_yunohost.lock ]; then
+    if [[ "$1" == "${service}.service" || "$1" == "${service}" ]] && [ -e /var/run/moulinette_yunohost.lock ]; then
        if ! pgrep $service; then
            exit 101
        fi
