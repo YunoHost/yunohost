@@ -28,6 +28,7 @@ do_pre_regen() {
 
     mkdir --parents "${pending_dir}/etc/apt/preferences.d"
     mkdir --parents "${pending_dir}/etc/apt/sources.list.d"
+    mkdir --parents "${pending_dir}/usr/sbin"
 
     # Remove renamed files
     touch "${pending_dir}/etc/apt/preferences.d/extra_php_version"
