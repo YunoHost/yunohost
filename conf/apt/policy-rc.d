@@ -18,7 +18,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-for service in nginx dovecot 
+# c.f. https://manpages.debian.org/bullseye/init-system-helpers/deb-systemd-invoke.1p.en.html
+# and zcat /usr/share/doc/init-system-helpers/README.policy-rc.d.gz
+# and the code inside /usr/bin/deb-systemd-invoke to see how it calls /usr/sbin/policy-rc.d ...
+# and also invoke-rc.d ...
+for service in yunohost-api nginx $(cat /var/run/yunohost/services-to-restart-after-upgrade) 
 do
     if [[ "$1" =~ "${service}" ]] && [ -e /var/run/moulinette_yunohost.lock ]; then
        if ! pgrep $service; then
