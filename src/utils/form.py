@@ -2185,6 +2185,7 @@ def prompt_or_validate_form(
     prefilled_answers: dict[str, Any] = {},
     context: Context = {},
     hooks: Hooks = {},
+    only_ask_option_id: str | None = None,
 ) -> FormModel:
     for option in options:
         interactive = Moulinette.interface.type == "cli" and os.isatty(1)
@@ -2198,6 +2199,17 @@ def prompt_or_validate_form(
                     action=option.id,
                     help=option.help,
                 )
+
+        if only_ask_option_id is not None and option.id != only_ask_option_id:
+            # This is not the option being set: only expose its current value
+            # in the context, such that the conditions of the option being set
+            # can reference it
+            if isinstance(option, BaseInputOption):
+                value = option.normalize(form[option.id], option)
+                if isinstance(option, BooleanOption) and value is not None:
+                    value = value == option.yes
+                context[option.id] = value
+            continue
 
         if not option.is_visible(context):
             if isinstance(option, BaseInputOption):
