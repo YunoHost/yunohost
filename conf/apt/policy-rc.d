@@ -36,7 +36,7 @@ do
        restart_after=$(cat <<EOF 
 # Wait for apt / dpkg / yunohost to not be up anymore, hence the upgrade finished
 
-timeout 7200 bash -c -- 'while pgrep -x apt || pgrep -x apt-get || pgrep dpkg || test -e /var/run/moulinette_yunohost.lock;
+timeout 86400 bash -c -- 'while pgrep -x apt || pgrep -x apt-get || pgrep dpkg || test -e /var/run/moulinette_yunohost.lock;
 do
    sleep 3
 done'
