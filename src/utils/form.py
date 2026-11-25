@@ -984,10 +984,10 @@ class NumberOption(BaseInputOption):
         if isinstance(value, str):
             value = value.strip()
             if value.isascii():
-            try:
-                return int(value)
-            except ValueError:
-                pass
+                try:
+                    return int(value)
+                except ValueError:
+                    pass
 
         if value in [None, ""]:
             return None
