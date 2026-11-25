@@ -33,13 +33,13 @@ do
        if ! systemctl is-active --quiet "$service"; then
            exit 101
        fi
-        cat << EOF | at -M now >/dev/null 2>&1
+       restart_after=$(cat <<EOF 
 # Wait for apt / dpkg / yunohost to not be up anymore, hence the upgrade finished
 
-timeout 7200 while pgrep -x apt || pgrep -x apt-get || pgrep dpkg || test -e /var/run/moulinette_yunohost.lock;
+timeout 7200 bash -c -- 'while pgrep -x apt || pgrep -x apt-get || pgrep dpkg || test -e /var/run/moulinette_yunohost.lock;
 do
    sleep 3
-done
+done'
 
 # Restart the service, though only if it wasnt already restarted by something else in the last 60 secs
 
@@ -50,6 +50,8 @@ then
     systemctl restart $service
 fi
 EOF
+)
+        systemd-run --no-block --quiet bash -c "$restart_after"
         exit 101
     fi
 done
