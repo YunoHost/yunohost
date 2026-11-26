@@ -85,8 +85,6 @@ class PythonMigration(Migration):
         "microblogpub",  # uses poetry
         "pgadmin",  # bunch of manual patches
         "pretalx",  # ynh_replace into the venv
-        "synapse",  # specific stuff for ARM to prevent local compiling etc
-        "synapse",  # ynh_setup_source into the venv
         "tracim",  # pip install -e .
         "weblate",  # weblate settings are .. inside the venv T_T
         "yunohost_appgenerator",  # uses pdm
