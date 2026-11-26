@@ -319,8 +319,8 @@ class MyMigration(Migration):
                 m18n.n("migration_0036_post_migrations_skipped", distrib="Trixie")
             )
 
-        # Disable temporary policy-rc.d "restart after upgrade" services
-        rm("/var/run/yunohost/services-to-restart-after-upgrade")
+        # Remove dovecot from services to delay the restart after an upgrade
+        rm("/var/run/yunohost/policy-rc.d.delayed-restarts")
 
         # Reload sshd due to -R unknown option
         subprocess.check_call(["systemctl", "reload", "sshd"])
@@ -612,11 +612,11 @@ sideway (typically by SSHing from the local network, or through rescue access on
             file.unlink()
 
     def prevent_services_restart_during_upgrade(self, services: list[str]) -> None:
-        # services-to-restart-after-upgrade is used by yunohost policy-rc.d to
-        # decide which service (in more of nginx) need to be restarted after
-        # the upgrade
+        # policy-rc.d.delayed-restarts is used by yunohost policy-rc.d to
+        # decide which service (in more of nginx and yunohost-api) should be
+        # restarted after the upgrade (if needed)
 
-        policy_rc = Path("/var/run/yunohost/services-to-restart-after-upgrade")
+        policy_rc = Path("/var/run/yunohost/policy-rc.d.delayed-restarts")
         policy_rc.write_text(" ".join(services))
         policy_rc.chmod(600)
 

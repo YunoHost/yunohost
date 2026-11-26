@@ -18,37 +18,54 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-# c.f. https://manpages.debian.org/bullseye/init-system-helpers/deb-systemd-invoke.1p.en.html
+# Here you can find some resources to understand policy-rc.d
+# https://manpages.debian.org/bullseye/init-system-helpers/deb-systemd-invoke.1p.en.html
 # and zcat /usr/share/doc/init-system-helpers/README.policy-rc.d.gz
 # and the code inside /usr/bin/deb-systemd-invoke to see how it calls /usr/sbin/policy-rc.d ...
-# and also invoke-rc.d ...
-services="yunohost-api nginx"
-if [ -e /var/run/yunohost/services-to-restart-after-upgrade ];
-then
-    services="$services $(cat /var/run/yunohost/services-to-restart-after-upgrade)"
-fi
+# and also invoke-rc.d code too ...
+
+[[ "$1" == "--quiet" ]] && shift 1
+[[ "$1" == "--list" ]] && exit 0
+
+id=$1
+actions=$2
+
+# We just want to control "restart" operations
+# Here we voluntarily avoid to forbid nginx 'upgrade' custom action
+# cause this action should not cut any connection.
+# FIXME Properly managed the multiactions case
+[[ " $actions " =~ " restart " || " $actions " =~ " try-restart " ]] || exit 0
+
+DELAYED_SERVICES_FILE=/var/run/yunohost/policy-rc.d.delayed-restarts
+
+# nginx is in this list in the case the custom upgrade action fail
+# in this case the postinst try a restart action
+services="yunohost-api nginx $(cat $DELAYED_SERVICES_FILE 2>/dev/null)"
 for service in $services
 do
-    if [[ "$1" == "${service}.service" || "$1" == "${service}" ]] && [ -e /var/run/moulinette_yunohost.lock ]; then
-       if ! systemctl is-active --quiet "$service"; then
-           exit 101
-       fi
-       restart_after=$(cat <<EOF 
-# Wait for apt / dpkg / yunohost to not be up anymore, hence the upgrade finished
-
-timeout 86400 bash -c -- 'while pgrep -x apt || pgrep -x apt-get || pgrep dpkg || test -e /var/run/moulinette_yunohost.lock;
+    if [[ "$id" == "${service}.service" || "$id" == "${service}" ]] \
+       && fuser /var/run/moulinette_yunohost.lock &>/dev/null
+    then
+        systemctl is-enabled --quiet "$service" \
+          || systemctl is-active --quiet "$service" || exit 101
+        
+        # Wait for apt / dpkg / yunohost to not be up anymore, hence the upgrade finished
+        # to try to restart the service if it's still enabled
+        # SECONDS is a specific bash var, see https://tldp.org/LDP/abs/html/internalvariables.html
+        restart_after=$(cat <<EOF 
+SECONDS=0
+while (( SECONDS < 86400 )) && ( \
+          fuser /var/run/unattended-upgrades.lock &>/dev/null \
+          || fuser /var/lib/dpkg/lock-frontend &>/dev/null \
+          || fuser /var/run/moulinette_yunohost.lock &>/dev/null \
+      )
 do
-   sleep 3
-done'
+   sleep 5
+done
 
-# Restart the service, though only if it wasnt already restarted by something else in the last 60 secs
-
-API_START_TIMESTAMP="\$(date --date="\$(systemctl show $service | grep ExecMainStartTimestamp= | awk -F= '{print \$2}')" +%s)"
-
-if [ "\$(( \$(date +%s) - \$API_START_TIMESTAMP ))" -ge 60 ];
-then
-    systemctl restart $service
-fi
+systemctl is-enabled --quiet "$service" \
+  || systemctl is-active --quiet "$service" || exit 1
+systemctl restart $service
 EOF
 )
         systemd-run --no-block --quiet bash -c "$restart_after"
