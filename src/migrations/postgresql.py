@@ -191,7 +191,7 @@ class PostgreSQLMigration(Migration):
                 "--dbname",
                 database,
                 "--command",
-                f"REINDEX DATABASE {database};",
+                f'REINDEX DATABASE "{database}";',
             ]
             subprocess.check_call(cmd, env=environ)
             cmd = [
@@ -202,7 +202,7 @@ class PostgreSQLMigration(Migration):
                 "--dbname",
                 database,
                 "--command",
-                f"ALTER DATABASE {database} REFRESH COLLATION VERSION;",
+                f'ALTER DATABASE "{database}" REFRESH COLLATION VERSION;',
             ]
             subprocess.check_call(cmd, env=environ)
 
