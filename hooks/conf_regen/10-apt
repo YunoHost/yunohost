@@ -47,6 +47,7 @@ do_pre_regen() {
     cp /usr/share/yunohost/conf/apt/sources.list.d/* "${pending_dir}/etc/apt/sources.list.d"
     
     # policy-rc.d to avoid restarting nginx when a websocket is in use by web admin
+    # FIXME in theory it should be managed with update-alternatives...
     cp /usr/share/yunohost/conf/apt/policy-rc.d "${pending_dir}/usr/sbin/policy-rc.d"
 }
 
