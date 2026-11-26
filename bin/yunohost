@@ -66,6 +66,13 @@ def _parse_cli_args() -> tuple[argparse.ArgumentParser, argparse.Namespace, list
     parser.add_argument(
         "--json", action="store_true", default=False, help=argparse.SUPPRESS
     )
+    parser.add_argument(
+        "--actionsmap",
+        action="store",
+        default=None,
+        type=str,
+        help="Alternate actionsmap to use for moulinette; useful for development",
+    )
 
     opts, args = parser.parse_known_args()
 
@@ -107,6 +114,7 @@ def main() -> None:
         quiet=opts.quiet,
         output_as=opts.output_as,
         timeout=opts.timeout,
+        actionsmap=opts.actionsmap,
         args=args,
         parser=parser,
     )
