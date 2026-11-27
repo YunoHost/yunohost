@@ -310,9 +310,10 @@ def tools_postinstall(
         logger.info(m18n.n("tmpfs_configuration", ram=tmpfs_max_size))
         logger.info(m18n.n("tmpfs_configuration_help"))
 
-        # FIXME: currently we have a bug with setting a unique attribute with visible
-        # so i use here a workaround to be sure all the context is loaded
-        # see: https://github.com/YunoHost/issues/issues/2483
+        # Set both settings in one go so that the tmpfs regen-conf hook is
+        # only triggered once, with the final values. Also note that
+        # tmpfs_max_size is only visible, hence settable, once tmpfs_enabled
+        # is enabled.
         settings_set(
             "misc.storage",
             args=f"tmpfs_max_size={tmpfs_max_size}M&tmpfs_enabled=yes",

@@ -55,6 +55,15 @@ EXAMPLE_SETTINGS = """
         type = "select"
         choices = ["a", "b", "c"]
         default = "a"
+
+        [example.example.visible_trigger]
+        type = "boolean"
+        default = 0
+
+        [example.example.visible_if_trigger]
+        type = "string"
+        default = "default_value"
+        visible = "visible_trigger"
 """
 
 
@@ -225,6 +234,15 @@ def test_settings_set_bad_value_select():
             settings_set("example.example.select", 42)
         with pytest.raises(YunohostError):
             settings_set("example.example.select", "pouet")
+
+
+def test_settings_set_option_with_visible_attribute():
+    settings_set("example.example.visible_if_trigger", "yolo")
+    assert settings_get("example.example.visible_if_trigger") == "default_value"
+
+    settings_set("example.example.visible_trigger", "yes")
+    settings_set("example.example.visible_if_trigger", "yolo")
+    assert settings_get("example.example.visible_if_trigger") == "yolo"
 
 
 def test_settings_list_modified():

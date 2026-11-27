@@ -607,7 +607,14 @@ class ConfigPanel:
         else:
             prefilled_answers = parse_prefilled_values(args, args_file)
 
+        if option_id:
+            self.filter_key = (panel_id, section_id, None)
+
         self.config, self.form = self._get_config_panel()
+
+        if option_id and not self.config.get_option(option_id):
+            raise YunohostValidationError("config_unknown_filter_key", filter_key=key)
+
         # FIXME find a better way to exclude previous settings
         previous_settings = self.form.model_dump()
 
@@ -620,6 +627,7 @@ class ConfigPanel:
             prefilled_answers=prefilled_answers,
             hooks=self.hooks,
             verbose=verbose,
+            only_ask_option_id=option_id,
         )
 
         if operation_logger:
@@ -878,6 +886,7 @@ class ConfigPanel:
         action_id: str | None = None,
         hooks: "Hooks" = {},
         verbose: bool = True,
+        only_ask_option_id: str | None = None,
     ) -> "FormModel":
         # FIXME could be turned into a staticmethod
         logger.debug("Ask unanswered question and prevalidate data")
@@ -923,6 +932,7 @@ class ConfigPanel:
                     prefilled_answers=prefilled_answers,
                     context=context,
                     hooks=hooks,
+                    only_ask_option_id=only_ask_option_id,
                 )
 
         return form
