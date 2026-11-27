@@ -34,6 +34,8 @@ from moulinette.interfaces.cli import colorize, get_locale
 
 from .utils.logging import init_logging
 
+DEFAULT_ACTIONSMAP = "/usr/share/yunohost/actionsmap.yml"
+
 
 def is_installed() -> bool:
     """Returns whether YunoHost is installed on the system."""
@@ -45,11 +47,13 @@ def cli(
     quiet: bool,
     output_as: str,
     timeout: int | None,
+    actionsmap: str,
     args: list[str],
     parser: "argparse.ArgumentParser",
 ) -> NoReturn:
     """Entry point for YunoHost CLI"""
     init_logging(interface="cli", debug=debug, quiet=quiet)
+    actionsmap = actionsmap or DEFAULT_ACTIONSMAP
 
     # Check that YunoHost is installed
     if not is_installed():
@@ -57,7 +61,7 @@ def cli(
 
     ret = moulinette.cli(
         args,
-        actionsmap="/usr/share/yunohost/actionsmap.yml",
+        actionsmap=actionsmap,
         locales_dir="/usr/share/yunohost/locales/",
         output_as=output_as,
         timeout=timeout,
@@ -69,7 +73,7 @@ def cli(
 
 def api(debug: bool, host: str, port: int, actionsmap: str | None = None) -> NoReturn:
     """Entry point for YunoHost API server"""
-    actionsmap = actionsmap or "/usr/share/yunohost/actionsmap.yml"
+    actionsmap = actionsmap or DEFAULT_ACTIONSMAP
     path = Path(actionsmap).resolve()
     if path.exists():
         actionsmap = str(path)
