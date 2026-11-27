@@ -624,8 +624,6 @@ def tools_upgrade(operation_logger: OperationLogger, target: str | None = None) 
 
         # Prepare dist-upgrade command
         dist_upgrade = "DEBIAN_FRONTEND=noninteractive"
-        if Moulinette.interface.type == "api":
-            dist_upgrade += " YUNOHOST_API_RESTART_WILL_BE_HANDLED_BY_YUNOHOST=yes"
         dist_upgrade += " APT_LISTCHANGES_FRONTEND=none"
         dist_upgrade += " apt-get"
         dist_upgrade += (
@@ -652,18 +650,6 @@ def tools_upgrade(operation_logger: OperationLogger, target: str | None = None) 
             ),
         )
         returncode = call_async_output(dist_upgrade, callbacks, shell=True)
-
-        # If yunohost is being upgraded from the webadmin
-        if (
-            any(p["name"] == "yunohost" for p in upgradables)
-            and Moulinette.interface.type == "api"
-        ):
-            # Restart the API after 10 sec (at now doesn't support sub-minute times...)
-            # We do this so that the API / webadmin still gets the proper HTTP response
-            # It's then up to the webadmin to implement a proper UX process to wait 10 sec and then auto-fresh the webadmin
-            cmd = 'at -M now >/dev/null 2>&1 <<< "sleep 10; systemctl restart yunohost-api"'
-            # For some reason subprocess doesn't like the redirections so we have to use bash -c explicitly...
-            subprocess.check_call(["bash", "-c", cmd])
 
         if returncode != 0:
             upgradables = list(_list_upgradable_apt_packages())

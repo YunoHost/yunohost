@@ -27,8 +27,6 @@ from functools import cache
 from pathlib import Path
 from typing import Any, Literal
 
-from moulinette import Moulinette
-
 from debian import debian_support
 
 from ..utils.error import YunohostError
@@ -427,11 +425,6 @@ def aptitude_with_progress_bar(cmd: str) -> None:
 
     original_cmd = cmd
     cmd = f'LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none aptitude {cmd} --quiet=2 -o=Dpkg::Use-Pty=0 -o "APT::Status-Fd=$YNH_STDINFO"'
-
-    # If upgrading yunohost from the API, delay the Yunohost-api restart
-    # (this should be the last time we need it before bookworm, because on bookworm, yunohost-admin cookies will be persistent upon api restart)
-    if " yunohost " in cmd and Moulinette.interface.type == "api":
-        cmd = "YUNOHOST_API_RESTART_WILL_BE_HANDLED_BY_YUNOHOST=yes " + cmd
 
     logger.debug(f"Running: {cmd}")
 

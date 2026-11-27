@@ -46,14 +46,13 @@ import subprocess
 import textwrap
 from datetime import date
 from pathlib import Path
-from time import sleep
 
 import jinja2
 import requests
 from debian.deb822 import Deb822
 
 # TRIXIE? import _ldap  # noqa: F401
-from moulinette import Moulinette, m18n
+from moulinette import m18n
 from psutil import virtual_memory
 
 from ..app import _installed_apps, app_list
@@ -146,9 +145,7 @@ class MyMigration(Migration):
             )
 
         # Do not restart services during apt upgrade, that we know for sure will be broken before a conf-regen
-        # FIXME : we should find a ~robust way to auto-delete the policy-rc.d file after the migration went through,
-        # ideally wrapping everything in a context manager somehow
-        self.prevent_services_restart_during_upgrade(["nginx", "dovecot"])
+        self.prevent_services_restart_during_upgrade(["dovecot"])
 
         # Hold import yunohost packages
         apps_packages = self.get_apps_equivs_packages()
@@ -322,15 +319,8 @@ class MyMigration(Migration):
                 m18n.n("migration_0036_post_migrations_skipped", distrib="Trixie")
             )
 
-        # If running from the webadmin, restart the API after a delay
-        if Moulinette.interface.type == "api":
-            logger.warning(m18n.n("migration_0036_delayed_api_restart"))
-            sleep(5)
-            # Restart the API after 10 sec (at now doesn't support sub-minute times...)
-            # We do this so that the API / webadmin still gets the proper HTTP response
-            cmd = 'at -M now >/dev/null 2>&1 <<< "sleep 10; systemctl restart nginx yunohost-api"'
-            # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
-            subprocess.check_call(["bash", "-c", cmd])
+        # Remove dovecot from services to delay the restart after an upgrade
+        rm("/var/run/yunohost/policy-rc.d.delayed-restarts")
 
         # Reload sshd due to -R unknown option
         subprocess.check_call(["systemctl", "reload", "sshd"])
@@ -622,25 +612,13 @@ sideway (typically by SSHing from the local network, or through rescue access on
             file.unlink()
 
     def prevent_services_restart_during_upgrade(self, services: list[str]) -> None:
-        # c.f. https://manpages.debian.org/bullseye/init-system-helpers/deb-systemd-invoke.1p.en.html
-        # and zcat /usr/share/doc/init-system-helpers/README.policy-rc.d.gz
-        # and the code inside /usr/bin/deb-systemd-invoke to see how it calls /usr/sbin/policy-rc.d ...
-        # and also invoke-rc.d ...
+        # policy-rc.d.delayed-restarts is used by yunohost policy-rc.d to
+        # decide which service (in more of nginx and yunohost-api) should be
+        # restarted after the upgrade (if needed)
 
-        shell_test = "true"
-        for service in services:
-            shell_test += f' || [[ "$1" =~ "{service}" ]]'
-
-        policy_rc = Path("/usr/sbin/policy-rc.d")
-        policy_rc.write_text(
-            textwrap.dedent(f"""\
-            #!/usr/bin/env bash
-            if {shell_test}; then
-                exit 101
-            fi
-        """)
-        )
-        policy_rc.chmod(755)
+        policy_rc = Path("/var/run/yunohost/policy-rc.d.delayed-restarts")
+        policy_rc.write_text(" ".join(services))
+        policy_rc.chmod(600)
 
     def apt_t64_packages_list(self) -> list[str]:
         # https://media1.tenor.com/m/vzLCBSJxywUAAAAd/quelle-indignit%C3%A9-sarkozy.gif

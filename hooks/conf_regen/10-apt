@@ -28,6 +28,7 @@ do_pre_regen() {
 
     mkdir --parents "${pending_dir}/etc/apt/preferences.d"
     mkdir --parents "${pending_dir}/etc/apt/sources.list.d"
+    mkdir --parents "${pending_dir}/usr/sbin"
 
     # Remove renamed files
     touch "${pending_dir}/etc/apt/preferences.d/extra_php_version"
@@ -44,6 +45,10 @@ do_pre_regen() {
     # Copy the configuration files
     cp /usr/share/yunohost/conf/apt/preferences.d/* "${pending_dir}/etc/apt/preferences.d"
     cp /usr/share/yunohost/conf/apt/sources.list.d/* "${pending_dir}/etc/apt/sources.list.d"
+    
+    # policy-rc.d to avoid restarting nginx when a websocket is in use by web admin
+    # FIXME in theory it should be managed with update-alternatives...
+    cp /usr/share/yunohost/conf/apt/policy-rc.d "${pending_dir}/usr/sbin/policy-rc.d"
 }
 
 _update_key() {
@@ -91,6 +96,10 @@ do_post_regen() {
     if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION; then
         update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
     fi
+
+    chown root:root /usr/sbin/policy-rc.d
+    chmod u=rwx,g=r--,o=r-- /usr/sbin/policy-rc.d
+    
 
     chown root:root -R /etc/apt
     chmod -R u=rwX,g=rX,o-w /etc/apt
