@@ -358,7 +358,7 @@ def _get_DKIM(domain):
 
     return (
         dkim.group("host"),
-        re.sub(r'"[\s\n]+"', '" "', dkim.group("c").strip(), re.M | re.S),
+        re.sub(r'"[\s\n]+"', '" "', dkim.group("c").strip(), flags=re.M | re.S),
     )
 
 
