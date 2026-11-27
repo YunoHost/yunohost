@@ -333,7 +333,7 @@ class MyMigration(Migration):
             subprocess.check_call(["bash", "-c", cmd])
 
         # Reload sshd due to -R unknown option
-        subprocess.check_call(["systemctl", "reload", "sshd"])
+        subprocess.check_call(["systemctl", "reload", "ssh"])
 
         if self.yunohost_major_version() != N_CURRENT_YUNOHOST + 1:
             raise YunohostError(
