@@ -1,0 +1,17 @@
+name: Run on self-hosted runner
+
+on:
+  push:
+    branches: [ "fpu-self_hosted_runner" ]
+  pull_request:
+
+
+jobs:
+  updater:
+    runs-on: self-hosted
+    steps:
+      - name: Tests
+        run: |
+          hostname
+          ls -lah
+          env
