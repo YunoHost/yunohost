@@ -550,11 +550,15 @@ sideway (typically by SSHing from the local network, or through rescue access on
             https://www.debian.org/releases/bookworm/amd64/release-notes/ch-information.en.html#security-archive
             deb [ option1=valeur1 option2=valeur2 ] uri suite [composant1] [composant2] [...]
             """
-            deb_re = r"^(?P<deb>deb)\s*(?P<options>\[[^\]]*\])?\s*(?P<uri>[^\s]*)\s*(?P<suite>[^\s]*)\s*(?P<components>.*)$"
+            deb_re = r"^(?P<deb>deb(-src)?)\s*(?P<options>\[[^\]]*\])?\s*(?P<uri>[^\s]*)\s*(?P<suite>[^\s]*)\s*(?P<components>.*)$"
             if not (match := re.match(deb_re, line)):
                 return line
 
-            deb, options, uri, suite, components = match.groups()
+            deb = match.groupdict().get("deb")
+            options = match.groupdict().get("options")
+            uri = match.groupdict().get("uri", "")
+            suite = match.groupdict().get("suite", "")
+            components = match.groupdict().get("components", "")
 
             if options is not None:
                 assert isinstance(options, str)
@@ -579,8 +583,8 @@ sideway (typically by SSHing from the local network, or through rescue access on
             return line
 
         for file in dot_list:
-            lines = file.read_text().splitlines(keepends=True)
-            file.write_text("".join(patch_list_line(line) for line in lines))
+            lines = file.read_text().splitlines()
+            file.write_text("".join(f"{patch_list_line(line)}\n" for line in lines))
 
         for file in deb822s:
             new_file_pars = []
