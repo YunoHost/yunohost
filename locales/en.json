@@ -345,6 +345,7 @@
     "diagnosis_rfkill_wifi_details": "This warning sneaks in many command outputs, breaking some apps. It is usually required to specify your country code with the command <code>sudo raspi-config</code>. Here is the error:<br>{rfkill_wifi_error}",
     "diagnosis_rootfstotalspace_critical": "The root filesystem only has a total of {space} which is quite worrisome! You will likely run out of disk space very quickly! It's recommended to have at least 16 GB for the root filesystem.",
     "diagnosis_rootfstotalspace_warning": "The root filesystem only has a total of {space}. This may be okay, but be careful because ultimately you may run out of disk space quickly… It's recommended to have at least 16 GB for the root filesystem.",
+    "diagnosis_security_in_sources_list": "It looks like apt (the package manager) is not configured to use the security repository. We strongly encourage enabling the security repository, because it's there to protect your system with latest security fixes.",
     "diagnosis_security_vulnerable_to_meltdown": "You appear vulnerable to the Meltdown critical security vulnerability",
     "diagnosis_security_vulnerable_to_meltdown_details": "To fix this, you should upgrade your system and reboot to load the new linux kernel (or contact your server provider if this doesn't work). See https://meltdownattack.com/ for more info.",
     "diagnosis_services_bad_status": "Service {service} is {status} :(",

@@ -163,6 +163,13 @@ class MyDiagnoser(Diagnoser):  # type: ignore
                 summary="diagnosis_backports_in_sources_list",
             )
 
+        if self.security_in_sources_list():
+            yield dict(
+                meta={"test": "security_in_sources_list"},
+                status="WARNING",
+                summary="diagnosis_security_in_sources_list"
+            )
+
         # Using yunohost testing channel
         lists = list(Path("/etc/apt/").rglob("*.list"))
         deb822 = list(Path("/etc/apt/").rglob("*.sources"))
@@ -245,6 +252,10 @@ class MyDiagnoser(Diagnoser):  # type: ignore
     def backports_in_sources_list(self) -> bool:
         cmd = "grep -q -nr '^ *deb .*-backports' /etc/apt/sources.list*"
         return os.system(cmd) == 0
+
+    def security_in_sources_list(self) -> bool:
+        cmd = "grep -q -nr '^ *deb .*-security' /etc/apt/sources.list*"
+        return os.system(cmd) != 0
 
     def number_of_recent_auth_failure(self) -> int:
         # Those syslog facilities correspond to auth and authpriv
