@@ -541,9 +541,7 @@ def _get_registrar_config_section(domain: str) -> OrderedDict[str, Any]:
         registrar_infos["infos"]["style"] = "warning"
     else:
         registrar_infos["registrar"]["default"] = registrar
-        registrar_infos["infos"]["ask"] = m18n.n(
-            "domain_dns_registrar_supported", registrar=registrar
-        )
+        registrar_infos["infos"]["ask"] = m18n.n("domain_dns_registrar_supported")
 
         TESTED_REGISTRARS = ["ovh", "gandi"]
         if registrar not in TESTED_REGISTRARS:
