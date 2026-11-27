@@ -61,7 +61,7 @@ class MyMigration(Migration):
 
         for file in dot_list:
             lines = file.read_text().splitlines()
-            file.write_text("\n".join(patch_list_line(line) for line in lines))
+            file.write_text("".join(f"{patch_list_line(line)}\n" for line in lines))
 
     def run(self):
         self.unbreak_sources_list()
