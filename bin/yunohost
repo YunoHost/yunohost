@@ -71,7 +71,7 @@ def _parse_cli_args() -> tuple[argparse.ArgumentParser, argparse.Namespace, list
         action="store",
         default=None,
         type=str,
-        help="Alternate actionsmap to use for moulinette; useful for development",
+        help="Alternate actionsmap to use for moulinette; useful for specific developments where ynh-dev is not sufficient",
     )
 
     opts, args = parser.parse_known_args()
