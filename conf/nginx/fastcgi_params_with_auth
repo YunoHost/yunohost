@@ -29,3 +29,25 @@ fastcgi_param  SERVER_NAME        $server_name;
 
 # PHP only, required if PHP was built with --enable-force-cgi-redirect
 fastcgi_param  REDIRECT_STATUS    200;
+
+# Hotfix CVE-2026-42945
+# In such a case, passing "$http_host" upstream exposes the raw client-supplied
+# Host value ("malformedhost") to the backend application, even though it does
+# not match the effective request target. Applications often use HTTP_HOST for
+# redirects, absolute URL generation, virtual host routing, or security checks;
+# forwarding the raw Host header can therefore lead to incorrect or unsafe
+# behaviour.
+#
+# Newer nginx versions (since 1.30.0) introduce variables "$is_request_port" and
+# "$request_port", allowing HTTP_HOST to be constructed as:
+#     $host$is_request_port$request_port
+#
+# In stable/oldstable packages we use "$host" as a security workaround.
+# It avoids forwarding an untrusted raw Host header to the backend.
+#
+# Note: this changes behaviour compared to previous versions, because "$host"
+# does not preserve the client-supplied port, while "$http_host" typically
+# does. Existing deployments that rely on "$http_host" containing a port number
+# may therefore break or behave differently after this change.
+
+fastcgi_param  HTTP_HOST        $host;

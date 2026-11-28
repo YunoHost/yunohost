@@ -15,19 +15,19 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.11
+        python-version: 3.13
 
     - name: Install tox and any other packages
       run: pip install tox toml pyyaml
 
     - if: success() || failure()
-      run: tox -e py311-lint
+      run: tox -e py313-lint
 
     - if: success() || failure()
-      run: tox -e py311-invalidcode
+      run: tox -e py313-invalidcode
 
     - if: success() || failure()
-      run: tox -e py311-mypy
+      run: tox -e py313-mypy
 
     - name: Check i18n keys
       if: success() || failure()

@@ -5,6 +5,7 @@
     "additional_urls_already_removed": "A URL adicional '{url}' já foi removida da permissão '{permission}'",
     "admin_password": "Senha de administração",
     "admins": "Admins",
+    "all_users": "Todos os utilizadores do YunoHost",
     "already_up_to_date": "Nada a ser feito. Tudo já está atualizado.",
     "app_action_broke_system": "Esta ação parece ter quebrado estes serviços importantes: {services}",
     "app_action_cannot_be_ran_because_required_services_down": "Estes serviços devem estar funcionado para executar esta ação: {services}. Tente reiniciá-los para continuar (e possivelmente investigar o porquê de não estarem funcionado).",

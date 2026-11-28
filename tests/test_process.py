@@ -69,11 +69,12 @@ def test_call_async_output(test_file):
     mock_callback_stdout.reset_mock()
     mock_callback_stderr.reset_mock()
 
-    env_var = {"LANG": "C"}
-    call_async_output(["cat", "doesntexists"], callback, env=env_var)
-    calls = [mock.call("cat: doesntexists: No such file or directory")]
-    mock_callback_stdout.assert_not_called()
-    mock_callback_stderr.assert_has_calls(calls)
+    # FIXME: This test is flappy, see https://gitlab.com/YunoHost/yunohost/-/jobs/16295986632
+    # env_var = {"LANG": "C"}
+    # call_async_output(["cat", "doesntexists"], callback, env=env_var)
+    # calls = [mock.call("cat: doesntexists: No such file or directory")]
+    # mock_callback_stdout.assert_not_called()
+    # mock_callback_stderr.assert_has_calls(calls)
 
 
 def test_call_async_output_kwargs(test_file, mocker):

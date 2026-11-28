@@ -45,11 +45,7 @@ def render(actions: dict[str, Any]) -> str:
         template_file.read_text(),
         comment_start_string="disabled because bash contains {#",
     )
-
-    result = template.render(
-        categories=actions,
-    )
-    return result
+    return template.render(categories=actions)
 
 
 def get_actions() -> dict[str, Any]:
@@ -65,7 +61,7 @@ def get_actions() -> dict[str, Any]:
         fullmap[category]["actions"] = []
         fullmap[category]["subs"] = {}
 
-        for action, _ in cat_info.get("actions", {}).items():
+        for action in cat_info.get("actions", {}):
             fullmap[category]["actions"].append(action)
 
         for subcat, sub_info in cat_info.get("subcategories", {}).items():

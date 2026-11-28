@@ -71,6 +71,7 @@
     "app_unknown": "Onbekende app",
     "app_unsupported_remote_type": "Niet ondersteund besturings type voor de app",
     "app_upgrade_app_name": "Bezig {app} te upgraden…",
+    "app_upgrade_bad_quality": "Deze applicatie is op dit moment gesignaleerd als stuk op de YunoHost applicatie catalogus. Dit kan een voorlopig probleem zijn terwijl de beheerders proberen om het probleem op te lossen. In tussentijd is het bijwerken van deze app uitgeschakeld.",
     "app_upgrade_failed": "Het is niet gelukt app {app} bij te werken: {error}",
     "app_upgrade_script_failed": "Er is een fout opgetreden in het upgradescript van de app",
     "app_upgrade_several_apps": "De volgende apps zullen worden geüpgraded: {apps}",
@@ -220,6 +221,5 @@
     "user_home_creation_failed": "Kan de map '{home}' voor gebruiker niet aanmaken",
     "user_unknown": "Gebruikersnaam {user} is onbekend",
     "user_update_failed": "Kan gebruiker niet bijwerken {user}: {error}",
-    "yunohost_configured": "YunoHost configuratie is OK",
-    "app_upgrade_bad_quality": "Deze applicatie is op dit moment gesignaleerd als stuk op de YunoHost applicatie catalogus. Dit kan een voorlopig probleem zijn terwijl de beheerders proberen om het probleem op te lossen. In tussentijd is het bijwerken van deze app uitgeschakeld."
+    "yunohost_configured": "YunoHost configuratie is OK"
 }

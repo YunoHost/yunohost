@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2026 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -22,5 +22,5 @@ from .python import PythonMigration
 
 
 class MyMigration(PythonMigration):
-    dependencies = ["migrate_to_bookworm"]
-    migration_id = "0030_rebuild_python_venv_in_bookworm"
+    dependencies = ["migrate_to_trixie"]
+    migration_id = "0038_rebuild_python_venv_in_trixie"

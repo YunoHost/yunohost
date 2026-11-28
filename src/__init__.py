@@ -18,8 +18,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal, NoReturn
 
 if TYPE_CHECKING:
@@ -27,7 +27,6 @@ if TYPE_CHECKING:
 
     from moulinette.core import MoulinetteLock
 
-from pathlib import Path
 
 import moulinette
 from moulinette import m18n
@@ -35,10 +34,12 @@ from moulinette.interfaces.cli import colorize, get_locale
 
 from .utils.logging import init_logging
 
+DEFAULT_ACTIONSMAP = "/usr/share/yunohost/actionsmap.yml"
+
 
 def is_installed() -> bool:
     """Returns whether YunoHost is installed on the system."""
-    return os.path.isfile("/etc/yunohost/installed")
+    return Path("/etc/yunohost/installed").is_file()
 
 
 def cli(
@@ -46,11 +47,13 @@ def cli(
     quiet: bool,
     output_as: str,
     timeout: int | None,
+    actionsmap: str,
     args: list[str],
     parser: "argparse.ArgumentParser",
 ) -> NoReturn:
     """Entry point for YunoHost CLI"""
     init_logging(interface="cli", debug=debug, quiet=quiet)
+    actionsmap = actionsmap or DEFAULT_ACTIONSMAP
 
     # Check that YunoHost is installed
     if not is_installed():
@@ -58,27 +61,28 @@ def cli(
 
     ret = moulinette.cli(
         args,
-        actionsmap="/usr/share/yunohost/actionsmap.yml",
+        actionsmap=actionsmap,
         locales_dir="/usr/share/yunohost/locales/",
         output_as=output_as,
         timeout=timeout,
         top_parser=parser,
+        umask=0o022,
     )
     sys.exit(ret)
 
 
 def api(debug: bool, host: str, port: int, actionsmap: str | None = None) -> NoReturn:
     """Entry point for YunoHost API server"""
-    actionsmap = actionsmap or "/usr/share/yunohost/actionsmap.yml"
+    actionsmap = actionsmap or DEFAULT_ACTIONSMAP
     path = Path(actionsmap).resolve()
     if path.exists():
         actionsmap = str(path)
 
     allowed_cors_origins = []
-    allowed_cors_origins_file = "/etc/yunohost/.admin-api-allowed-cors-origins"
+    allowed_cors_origins_file = Path("/etc/yunohost/.admin-api-allowed-cors-origins")
 
-    if os.path.exists(allowed_cors_origins_file):
-        allowed_cors_origins = open(allowed_cors_origins_file).read().strip().split(",")
+    if allowed_cors_origins_file.is_file():
+        allowed_cors_origins = allowed_cors_origins_file.read_text().strip().split(",")
 
     init_logging(interface="api", debug=debug)
 
@@ -95,6 +99,7 @@ def api(debug: bool, host: str, port: int, actionsmap: str | None = None) -> NoR
         locales_dir="/usr/share/yunohost/locales/",
         routes={("GET", "/installed"): is_installed_api},
         allowed_cors_origins=allowed_cors_origins,
+        umask=0o022,
     )
     sys.exit(ret)
 
@@ -102,10 +107,10 @@ def api(debug: bool, host: str, port: int, actionsmap: str | None = None) -> NoR
 def portalapi(debug: bool, host: str, port: int) -> NoReturn:
     """Entry point for YunoHost Portal API server"""
     allowed_cors_origins = []
-    allowed_cors_origins_file = "/etc/yunohost/.portal-api-allowed-cors-origins"
+    allowed_cors_origins_file = Path("/etc/yunohost/.portal-api-allowed-cors-origins")
 
-    if os.path.exists(allowed_cors_origins_file):
-        allowed_cors_origins = open(allowed_cors_origins_file).read().strip().split(",")
+    if allowed_cors_origins_file.is_file():
+        allowed_cors_origins = allowed_cors_origins_file.read_text().strip().split(",")
 
     # FIXME : is this the logdir we want ? (yolo to work around permission issue)
     init_logging(interface="portalapi", debug=debug, logdir="/var/log")
@@ -116,6 +121,7 @@ def portalapi(debug: bool, host: str, port: int) -> NoReturn:
         actionsmap="/usr/share/yunohost/actionsmap-portal.yml",
         locales_dir="/usr/share/yunohost/locales/",
         allowed_cors_origins=allowed_cors_origins,
+        umask=0o022,
     )
     sys.exit(ret)
 

@@ -30,6 +30,7 @@ import yaml
 from moulinette import m18n
 
 from .regenconf import regen_conf
+from .service import _run_service_command
 from .utils.error import YunohostError, YunohostValidationError
 
 logger: Any = getLogger("yunohost.firewall")
@@ -186,9 +187,14 @@ class YunoFirewall:
 
         # Just leverage regen_conf that will regen the nftables files, reload nftables
         try:
-            regen_conf(["nftables"], force=True)
+            result = regen_conf(["nftables"], force=True)
         except YunohostError:
             return False
+
+        # Restart nftables if the regen conf doesn't do it cause no managed
+        # configurations has been regenerated
+        if "nftables" not in result:
+            _run_service_command("restart", "nftables")
 
         self.need_reload = False
 
@@ -202,8 +208,6 @@ class YunoFirewall:
 
 
 class YunoUPnP:
-    UPNP_CRON_JOB = Path("/etc/cron.d/yunohost-firewall-upnp")
-
     def __init__(self, firewall: "YunoFirewall") -> None:
         self.firewall = firewall
         self.description = "Yunohost firewall"
@@ -330,10 +334,8 @@ class YunoUPnP:
             logger.error("Not enabling UPnP because no UPnP device was found")
             return
         if not self.enabled():
-            # Add cron job
-            self.UPNP_CRON_JOB.write_text(
-                "*/50 * * * * root /usr/bin/yunohost firewall upnp status >>/dev/null\n"
-            )
+            # Enable cron timer
+            os.system("systemctl enable yunohost-firewall-upnp.timer --now --quiet ")
             self.enabled(True)
 
     def close_ports(self) -> None:
@@ -359,8 +361,8 @@ class YunoUPnP:
 
     def disable(self) -> None:
         if self.enabled():
-            # Remove cron job
-            self.UPNP_CRON_JOB.unlink(missing_ok=True)
+            # Disable cron timer
+            os.system("systemctl disable yunohost-firewall-upnp.timer --now --quiet ")
             self.close_ports()
             self.enabled(False)
 

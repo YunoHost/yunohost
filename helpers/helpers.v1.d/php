@@ -18,7 +18,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-readonly YNH_DEFAULT_PHP_VERSION=8.2
+readonly YNH_DEFAULT_PHP_VERSION=8.4
 # Declare the actual PHP version to use.
 # A packager willing to use another version of PHP can override the variable into its _common.sh.
 YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
@@ -122,11 +122,7 @@ ynh_add_fpm_config() {
     fi
 
     # Set the default PHP-FPM version by default
-    if dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} lt 2; then
-        phpversion="${phpversion:-$YNH_PHP_VERSION}"
-    else
-        phpversion="${phpversion:-$_globalphpversion}"
-    fi
+    phpversion="${phpversion:-$_globalphpversion}"
 
     local old_phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
 

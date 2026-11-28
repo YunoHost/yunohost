@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2024 YunoHost Contributors
+# Copyright (c) 2026 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -18,13 +18,16 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from .postgresql import PostgreSQLMigration
+
+from .process import check_output
 
 
-class MyMigration(PostgreSQLMigration):
-    "Migrate DBs from Postgresql 13 to 15 after migrating to Bookworm"
-
-    previous_version = "13"
-    target_version = "15"
-
-    dependencies = ["migrate_to_bookworm"]
+def get_pending_mails_nb() -> int:
+    """
+    Return number of pending mails in queue
+    """
+    command = (
+        'postqueue -p | grep -v "Mail queue is empty" | grep -c "^[A-Z0-9]" || true'
+    )
+    output = check_output(command)
+    return int(output)

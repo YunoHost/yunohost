@@ -29,8 +29,9 @@ i18n = "global_settings_setting"
 
         [security.ssh.ssh_compatibility]
         type = "select"
-        choices.intermediate = "Intermediate (compatible with older softwares)"
+        choices.intermediate = "Intermediate (compatible with older softwares, default debian openssh config)"
         choices.modern = "Modern (recommended)"
+        choices.paranoid = "Paranoid (openssh client 9+)"
         default = "modern"
 
         [security.ssh.ssh_port]
@@ -167,6 +168,18 @@ i18n = "global_settings_setting"
         type = "boolean"
         default = false
 
+    [misc.storage]
+        [misc.storage.tmpfs_enabled]
+        type = "boolean"
+        default = false
+        
+        [misc.storage.tmpfs_max_size]
+        type = "string"
+        default = "25%"
+        pattern.regexp = '^([1-9]?[0-9]%|[1-9]?[0-9]G|[0-9]+M)$'
+        pattern.error = "You should express it in percentage (50%), in gigabytes (1G) or in megabytes (512M)."
+        visible = "tmpfs_enabled"
+        
     [misc.network]
 
         [misc.network.dns_exposure]

@@ -716,9 +716,9 @@ def _sync_permissions_with_ldap() -> None:
 
     logger.debug("Permissions were resynchronized to LDAP")
 
-    # Reload/invalidate unscd cache to full propagate the changes
-    os.system("nscd --invalidate=passwd")
-    os.system("nscd --invalidate=group")
+    # Reload/invalidate sssd cache to full propagate the changes
+    os.system("sss_cache --users")
+    os.system("sss_cache --groups")
 
 
 def _update_app_permission_setting(
